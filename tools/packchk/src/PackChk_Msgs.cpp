@@ -233,9 +233,9 @@ const MsgTable PackChk::msgTable = {
 
   // 600... further PackCHk Errors
   { "M600", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Attribute '%ATTR%' on '%TAG%' is deprecated." } },
-  { "M601", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
-  { "M602", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
-  { "M603", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M601", { MsgLevel::LEVEL_WARNING,  CRLF_B, "'%TAG%' missing on '%TAG2%'" } },
+  { "M602", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Attribute '%ATTR%' already set, see Line %LINE%" } },
+  { "M603", { MsgLevel::LEVEL_WARNING,  CRLF_B, "No license information found" } },
   { "M604", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
   { "M605", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
   { "M606", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },

@@ -63,6 +63,7 @@ private:
   bool CheckRequirements(RtePackage* pKg);
   bool CheckRequirements_Packages(RteItem* requirement);
   bool CheckLicense(RtePackage* pKg, CheckFilesVisitor& fileVisitor);
+  bool CheckLicenseFile(RteItem* item, const std::string& path);
   bool CheckFeatureDevice(RteDeviceProperty* prop, const std::string& devName);
   bool CheckFeatureBoard(RteItem* prop, const std::string& boardName);
   bool CheckDeviceProperties(RtePackage* pKg);

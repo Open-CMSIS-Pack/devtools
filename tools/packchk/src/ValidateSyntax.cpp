@@ -152,6 +152,27 @@ bool ValidateSyntax::CheckAllFiles(RtePackage* pKg)
   return(true);
 }
 
+bool ValidateSyntax::CheckLicenseFile(RteItem* item, const string& path) {
+  bool bOk = false;
+  const auto lineNo = item->GetLineNumber();
+
+  if(!path.empty()) {
+    if(XmlValueAdjuster::IsAbsolute(path)) {
+      LogMsg("M326", PATH(path), lineNo);   // error : absolute paths are not permitted
+    }
+    else if(path.find('\\') != string::npos) {
+      if(XmlValueAdjuster::IsURL(path)) {
+        LogMsg("M370", URL(path), lineNo);  // error : backslash are non permitted in URL
+      }
+      else {
+        LogMsg("M327", PATH(path), lineNo); // error : backslash are not recommended
+      }
+    }
+  }
+
+  return bOk;
+}
+
 /**
  * @brief check (for) license file
  * @param pKg package under test
@@ -160,21 +181,80 @@ bool ValidateSyntax::CheckAllFiles(RtePackage* pKg)
  */
 bool ValidateSyntax::CheckLicense(RtePackage* pKg, CheckFilesVisitor& fileVisitor)
 {
+  bool bLicFound = false;
   const string& licPath = pKg->GetItemValue("license");
-  if(licPath.empty()) {
-    return true;
+  if(!licPath.empty()) {
+    bLicFound = true;
+    CheckLicenseFile(pKg, licPath);
   }
 
-  if(XmlValueAdjuster::IsAbsolute(licPath)) {
-    LogMsg("M326", PATH(licPath));   // error : absolute paths are not permitted
+  const auto licenseSets = pKg->GetLicenseSets();
+  if(licenseSets) {
+    const auto& children = licenseSets->GetChildren();
+    if(children.empty()) {
+      LogMsg("M601", TAG("licenseSet"), TAG2("licenseSets")); // license set must be defined if <licenseSets> 
+    }
+
+    map<string, RteItem*> licenseSetIds;
+    RteItem* defaultLicenseSet = nullptr;
+
+    for(const auto& child : children) {
+      bLicFound = true;
+      const auto& id = child->GetID();
+      if(id.empty()) {
+        LogMsg("M308", TAG("id"), TAG2("licenseSet")); // Attribute '%TAG%' missing on '%TAG2%'
+        continue;
+      }
+
+      const auto& found = licenseSetIds.find(id);
+      if(found != licenseSetIds.end()) {
+        const auto& foundId = found->first;
+        const auto foundChild = found->second;
+        LogMsg("M367", TYP("id"), NAME(foundId), LINE(foundChild->GetLineNumber()), child->GetLineNumber()); // Redefined %TYPE% '%NAME%' found, see Line %LINE%
+      }
+      else {
+        licenseSetIds[id] = child;
+      }
+
+      if(child->GetAttribute("default") == "1") {
+        if(defaultLicenseSet) {
+          LogMsg("M602", VAL("ATTR", "default")); // Attribute '%ATTR%' already set, see Line %LINE%
+        }
+        else {
+          defaultLicenseSet = child;
+        }
+      }
+
+      const auto& lincenseChilds = child->GetChildren();
+      if(lincenseChilds.empty()) {
+        LogMsg("M601", TAG("license"), TAG2("licenseSet")); // '%TAG%' missing on '%TAG2%'
+      }
+      else {
+        for(const auto lincenseChild : lincenseChilds) {
+          const auto& licensePath = lincenseChild->GetAttribute("name");
+          if(licensePath.empty()) {
+            LogMsg("M601", TAG("name"), TAG2("license")); // '%TAG%' missing on '%TAG2%'
+          }
+          else {
+            CheckLicenseFile(lincenseChild, licensePath);
+          }
+
+          const auto& title = lincenseChild->GetAttribute("title");
+          if(!title.length()) {
+            LogMsg("M601", TAG("title"), TAG2("license")); // '%TAG%' missing on '%TAG2%'
+          }
+
+          const auto& url = lincenseChild->GetAttribute("url");
+          if(!url.empty()) {
+            CheckLicenseFile(lincenseChild, url);
+          }
+        }
+      }
+    }
   }
-  else if(licPath.find('\\') != string::npos) {
-    if(XmlValueAdjuster::IsURL(licPath)) {
-      LogMsg("M370", URL(licPath));  // error : backslash are non permitted in URL
-    }
-    else {
-      LogMsg("M327", PATH(licPath)); // error : backslash are not recommended
-    }
+
+  if(!bLicFound) {
+    LogMsg("M603"); // no license information found
   }
 
   CheckFiles& checkFiles = fileVisitor.GetCheckFiles();

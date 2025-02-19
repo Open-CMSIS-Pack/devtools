@@ -419,24 +419,39 @@ TEST_F(PackChkIntegTests, CheckPackLicense) {
   argv[2] = (char*)"--disable-validation";
 
   PackChk packChk;
-  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
+  EXPECT_EQ(1, packChk.Check(3, argv, nullptr));
 
   auto errMsgs = ErrLog::Get()->GetLogMessages();
-  bool bFound = false;
+  int M300_foundCnt = 0;
+  int M327_foundCnt = 0;
+  int M367_foundCnt = 0;
+  int M601_foundCnt = 0;
+  int M602_foundCnt = 0;
   for (const string& msg : errMsgs) {
     size_t s;
+    if ((s = msg.find("M300")) != string::npos) {
+      M300_foundCnt++;
+    }
     if ((s = msg.find("M327")) != string::npos) {
-      bFound = true;
-      break;
+      M327_foundCnt++;
+    }
+    if ((s = msg.find("M367")) != string::npos) {
+      M367_foundCnt++;
+    }
+    if ((s = msg.find("M601")) != string::npos) {
+      M601_foundCnt++;
+    }
+    if ((s = msg.find("M602")) != string::npos) {
+      M602_foundCnt++;
     }
   }
 
-  if (!bFound) {
-    FAIL() << "error: missing warning M327";
+  if (M300_foundCnt != 1 || M327_foundCnt != 1 || M367_foundCnt != 1 || M601_foundCnt != 1 || M602_foundCnt != 1) {
+    FAIL() << "error: missing license check warnings";
   }
 }
 
-// Validate license path
+// Validate CPU feature SON
 TEST_F(PackChkIntegTests, CheckFeatureSON) {
   const char* argv[3];
 

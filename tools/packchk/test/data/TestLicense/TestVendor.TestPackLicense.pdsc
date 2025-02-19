@@ -13,6 +13,22 @@
     </release>
   </releases>
 
+  <licenseSets>
+    <licenseSet id="all" default="true" gating="true">
+      <license name="./licenses/license1.txt" title="BSD-3 Clause License for components" spdx="BSD-3-Clause"/>
+      <license name="./licenses/license2.txt" title="MIT License for device support" spdx="MIT"/>
+    </licenseSet>
+    <licenseSet id="Implementation">
+    <license name="./licenses/myProprietaryLicense.txt" title="ProprietaryLicense" url="https://myvendor.com/licenses/myProprietaryLicense.html"/>
+    </licenseSet>
+    <licenseSet id="Implementation" default="true">
+    <license name="./licenses/myProprietaryLicense.txt" title="ProprietaryLicense" url="https://myvendor.com/licenses/myProprietaryLicense.html"/>
+    </licenseSet>
+    <licenseSet>
+    <license title="ProprietaryLicense" url="https://myvendor.com/licenses/myProprietaryLicense.html"/>
+    </licenseSet>
+  </licenseSets>
+
   <keywords>
     <keyword>TestPackLicense</keyword>
   </keywords>
@@ -25,7 +41,7 @@
   </conditions>
 
   <components>
-    <component Cclass="TestClass" Cgroup="TestGlobal" Cversion="1.0.0" condition="Test_Condition">
+    <component Cclass="TestClass" Cgroup="TestGlobal" Cversion="1.0.0" condition="Test_Condition" licenseSet="Implementation">
       <description>TestGlobal</description>
     </component>
   </components>
