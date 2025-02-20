@@ -240,8 +240,8 @@ const MsgTable PackChk::msgTable = {
   { "M605", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Required Dcore '%NAME%' feature '%NAME2%' not defined" } },
   { "M606", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
   { "M607", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Tag '%TAG%' does not allow wildcard specification: '%NAME%'" } },
-  { "M608", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
-  { "M609", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M608", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Memory '%NAME%' with '%ATTR%'='%VALUE%' must have '%ATTR2%'='%VALUE2%'" } },
+  { "M609", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Processor '%NAME%': Exact one memory with attribute \"startup=1\" must be configured, but found %NUM%" } },
   { "M610", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
 
 };
