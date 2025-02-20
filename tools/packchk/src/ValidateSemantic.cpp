@@ -194,43 +194,45 @@ bool ValidateSemantic::OutputDepResults(const RteDependencyResult& dependencyRes
  * @param device RteDeviceItem to run on
  * @return passed / failed
  */
-bool ValidateSemantic::CheckMemory(RteDeviceItem* device)
+bool ValidateSemantic::CheckMemories(RteDeviceItem* device)
 {
   string devName = device->GetName();
 
   list<RteDeviceProperty*> processors;
   device->GetEffectiveProcessors(processors);
-  for(auto proc : processors) {
-    const string& pName = proc->GetName();
+  for(auto processor : processors) {
+    const string& pName = processor->GetName();
     if(!pName.empty()) {
       devName += ":";
       devName += pName;
     }
 
-    LogMsg("M071", NAME(devName), proc->GetLineNumber());
+    LogMsg("M071", NAME(devName), processor->GetLineNumber());
 
-    const list<RteDeviceProperty*>& propGroup = device->GetEffectiveProperties("memory", pName);
-    if(propGroup.empty()) {
+    const list<RteDeviceProperty*>& memories = device->GetEffectiveProperties("memory", pName);
+    if(memories.empty()) {
       LogMsg("M312", TAG("memory"), NAME(device->GetName()), device->GetLineNumber());
       return false;
     }
 
-    map<const string, RteDeviceProperty*> propNameCheck;
-    for(auto prop : propGroup) {
-      const string& id = prop->GetEffectiveAttribute("id");
-      const string& name = prop->GetEffectiveAttribute("name");
-      const string& access = prop->GetEffectiveAttribute("access");
-      const string& start = prop->GetEffectiveAttribute("start");
-      const string& size = prop->GetEffectiveAttribute("size");
-      const string& pname = prop->GetEffectiveAttribute("pname");
-      int lineNo = prop->GetLineNumber();
+    map<const string, RteDeviceProperty*> memoryNameCheck;
+    list<RteDeviceProperty*> rxRegionWithStartup;
 
-      string key = name.empty() ? id : name;
+    for(auto memory : memories) {
+      int lineNo = memory->GetLineNumber();
+      const string& id = memory->GetEffectiveAttribute("id");
+      const string& name = memory->GetEffectiveAttribute("name");
+      const string& access = memory->GetEffectiveAttribute("access");
+      const string& start = memory->GetEffectiveAttribute("start");
+      const string& size = memory->GetEffectiveAttribute("size");
+      const string& pname = memory->GetEffectiveAttribute("pname");
+      const string& startup = memory->GetEffectiveAttribute("startup");
+
+      string memoryName = name.empty() ? id : name;
       if(!pname.empty()) {
-        key += ":" + pname;
+        memoryName += ":" + pname;
       }
-
-      LogMsg("M070", NAME(key), NAME2(devName), lineNo);                        // Checking Memory '%NAME%' for device '%NAME2%'
+      LogMsg("M070", NAME(memoryName), NAME2(devName), lineNo);                   // Checking Memory '%NAME%' for device '%NAME2%'
 
       if(id.empty()) {                                                          // new description, where 'name' is just a string and 'access' describes the permissions
         if(name.empty() && access.empty()) {
@@ -262,18 +264,31 @@ bool ValidateSemantic::CheckMemory(RteDeviceItem* device)
         LogMsg("M308", TAG("size"), TAG2("memory"), lineNo);                    // Attribute '%TAG%' missing
       }
 
-      if(!key.empty()) {
-        auto propNameCheckIt = propNameCheck.find(key);
-        if(propNameCheckIt != propNameCheck.end()) {
+      if(!memoryName.empty()) {
+        auto propNameCheckIt = memoryNameCheck.find(memoryName);
+        if(propNameCheckIt != memoryNameCheck.end()) {
           RteDeviceProperty* propFound = propNameCheckIt->second;
           if(propFound) {
-            LogMsg("M311", TAG("memory"), NAME(key), LINE(propFound->GetLineNumber()), lineNo);
+            LogMsg("M311", TAG("memory"), NAME(memoryName), LINE(propFound->GetLineNumber()), lineNo);
           }
         }
         else {
-          propNameCheck[key] = prop;
+          memoryNameCheck[memoryName] = memory;
         }
       }
+
+      // Check startup attribute
+     if(startup == "1") {
+        rxRegionWithStartup.push_back(memory);
+        if(access.find_first_of("x") == string::npos) {
+          LogMsg("M608", NAME(memoryName), ATTR("startup"), VALUE("1"), ATTR2("access"), VALUE2("x"), lineNo);
+        }
+      }
+    }
+
+    const int numOfMemories = rxRegionWithStartup.size();
+    if(!numOfMemories || numOfMemories > 1) {
+      LogMsg("M609", NAME(devName), NUM(numOfMemories), processor->GetLineNumber());
     }
   }
 
@@ -562,7 +577,6 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
   int lineNo = device->GetLineNumber();
 
   CheckForUnsupportedChars(mcuName, "Dname", lineNo);
-  CheckMemory(device);
 
   XmlItem deviceStartup;
   deviceStartup.SetAttribute("Cclass", "Device");
@@ -842,6 +856,7 @@ bool ValidateSemantic::TestMcuDependencies(RtePackage* pKg)
   pKg->GetEffectiveDeviceItems(devices);
   for(auto device : devices) {
     CheckDeviceDependencies(device, rteProject);
+    CheckMemories(device);
     CheckDeviceAttributes(device);
   }
 

@@ -1046,6 +1046,49 @@ TEST_F(PackChkIntegTests, CheckFileAttributeDeprecated) {
   }
 }
 
+// Validate invalid file path (file is directory)
+TEST_F(PackChkIntegTests, CheckMemoryAttributes) {
+  const char* argv[3];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/MemoryAttributes/TestVendor.MemoryAttributes.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(3, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M608_foundCnt = 0;
+  int M609_foundCnt = 0;
+  int M308_foundCnt = 0;
+  int M309_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M608")) != string::npos) {
+      M608_foundCnt++;
+    }
+    if ((s = msg.find("M609")) != string::npos) {
+      M609_foundCnt++;
+    }
+    if ((s = msg.find("M308")) != string::npos) {
+      M308_foundCnt++;
+    }
+    if ((s = msg.find("M309")) != string::npos) {
+      M309_foundCnt++;
+    }
+
+  }
+
+  if (M608_foundCnt != 2 || M609_foundCnt != 2 || M308_foundCnt != 3 || M309_foundCnt != 1) {
+    FAIL() << "error: missing message(s) on check device memories";
+  }
+}
+
+
 TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Pos) {
   const char* argv[7];
 
