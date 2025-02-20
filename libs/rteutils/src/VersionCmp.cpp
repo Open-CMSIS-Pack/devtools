@@ -16,6 +16,7 @@
 
 #include "AlnumCmp.h"
 #include "RteUtils.h"
+#include "RteConstants.h"
 
 #include <cstring>
 
@@ -209,6 +210,28 @@ std::string VersionCmp::Ceil(const std::string& v, bool bMinus)
 std::string VersionCmp::Floor(const std::string& v)
 {
   return RteUtils::GetPrefix(v, '.') + ".0.0";
+}
+
+
+std::string VersionCmp::ToSemVer(const std::string& v, bool returnZeroStringIfEmpty)
+{
+  if(v.empty()) {
+    return returnZeroStringIfEmpty? RteConstants::NULL_VERSION : v;
+  }
+  string version = RemoveVersionMeta(RteUtils::GetPrefix(v, '-'));
+  auto dot_count = std::count(version.begin(), version.end(), '.');
+  if(dot_count >= 2) {
+    return RemoveVersionMeta(v); // patch and minor is there
+  }
+
+  for(auto i = dot_count; i < 2; ++i) {
+    version += ".0";
+  }
+  string revision = RteUtils::GetSuffix(v, '-');
+  if(!revision.empty()) {
+    version += "-" + RemoveVersionMeta(revision);
+  }
+  return version;
 }
 
 

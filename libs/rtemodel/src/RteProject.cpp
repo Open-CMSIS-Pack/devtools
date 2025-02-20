@@ -681,8 +681,8 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteItem* f)
   string absPath = RteFsUtils::AbsolutePath(fi->GetAbsolutePath()).generic_string();
   string dir = RteUtils::ExtractFilePath(absPath, false);
   string name = RteUtils::ExtractFileName(absPath);
-  const string& baseVersion = fi->GetAttribute("version"); // explicitly check the file instance version
-  const string& updateVersion = f->GetVersionString();
+  const string baseVersion = VersionCmp::ToSemVer(fi->GetAttribute("version"), true); // explicitly check the file instance version
+  const string updateVersion = f->GetSemVer(true);
   string baseFile = RteUtils::AppendFileBaseVersion(absPath, baseVersion);
   if (!RteFsUtils::Exists(baseFile)) {
     // create base file if possible

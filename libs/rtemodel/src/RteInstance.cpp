@@ -939,10 +939,10 @@ string RteFileInstance::Backup(bool bDeleteExisting)
   string thisFile = GetAbsolutePath();
   string backupFile = RteFsUtils::BackupFile(thisFile, bDeleteExisting);
   // backup .base file if exists
-  string baseFile = RteUtils::AppendFileBaseVersion(thisFile, GetVersionString());
+  string baseFile = RteUtils::AppendFileBaseVersion(thisFile, GetSemVer(true));
   if (RteFsUtils::Exists(baseFile)) {
     // ensure the same backup number as this file
-    string baseBackupFile = RteUtils::AppendFileBaseVersion(backupFile, GetVersionString());
+    string baseBackupFile = RteUtils::AppendFileBaseVersion(backupFile, GetSemVer(true));
     RteFsUtils::CopyCheckFile(baseFile, baseBackupFile, false);
   }
   return backupFile;
@@ -972,7 +972,7 @@ bool RteFileInstance::Copy(RteItem* f, bool bMerge)
     RteProject* project = GetProject();
     if (project) {
       // we can use base file backup here, it should already exist
-      string baseFile = RteUtils::AppendFileBaseVersion(bak, GetVersionString());
+      string baseFile = RteUtils::AppendFileBaseVersion(bak, GetSemVer(true));
       project->MergeFiles(bak, dst, baseFile);
     }
   }

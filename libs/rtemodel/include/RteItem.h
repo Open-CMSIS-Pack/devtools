@@ -249,10 +249,17 @@ public:
   virtual std::string GetVendorName() const;
 
   /**
- * @brief determine value of attribute related to version
- * @return value of attribute related to version
-*/
+  * @brief determine value of attribute related to version
+  * @return value of attribute related to version
+ */
   virtual const std::string& GetVersionString() const;
+
+  /**
+  * @brief semantic version string of attribute related to version
+  * @param returnZeroStringIfEmpty returns "0.0.0" if version is empty
+  * @return value of attribute related to version in semantic version form with meta data removed
+ */
+  virtual const std::string GetSemVer(bool returnZeroStringIfEmpty = false) const;
 
   /**
  * @brief determine value of attribute related to API version
