@@ -2124,14 +2124,14 @@ bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
       continue;
     }
     // get base version
-    const string baseVersion = fi.second->GetVersionString();
+    const string baseVersion = fi.second->GetSemVer();
     if (!RteFsUtils::Exists(file + '.' + RteUtils::BASE_STRING + '@' + baseVersion)) {
       ProjMgrLogger::Get().Warn("file '" + file + ".base' not found; base version unknown", context.name);
       context.plmStatus[file] = PLM_STATUS_MISSING_BASE;
     } else {
       // get update version
       const RteItem* f = fi.second->GetFile(context.rteActiveTarget->GetName());
-      const string updateVersion = f ? f->GetVersionString() : "";
+      const string updateVersion = f ? f->GetSemVer() : "";
       if (baseVersion != updateVersion) {
         // parse and check each semantic version segment
         static const regex regEx = regex("(\\d+).(\\d+).(\\d+)");
@@ -2227,7 +2227,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
           const auto& scope = apiFile->GetAttribute("scope");
           const auto& language = apiFile->GetAttribute("language");
           const auto& select = apiFile->GetAttribute("select");
-          const auto& version = apiFile->GetVersionString();
+          const auto& version = apiFile->GetSemVer();
           context.apiFiles[apiId].push_back({ name, attr, category, language, scope, version, select });
         }
       }
@@ -2248,7 +2248,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       const auto& scope = componentFile->GetAttribute("scope");
       const auto& language = componentFile->GetAttribute("language");
       const auto& select = componentFile->GetAttribute("select");
-      const auto& version = componentFile->GetVersionString();
+      const auto& version = componentFile->GetSemVer();
       switch (RteFile::CategoryFromString(category)) {
       case RteFile::Category::GEN_SOURCE:
       case RteFile::Category::GEN_HEADER:
@@ -2281,7 +2281,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
           default:
             break;
           };
-          const auto& version = originalFile ? originalFile->GetVersionString() : "";
+          const auto& version = originalFile ? originalFile->GetSemVer() : "";
           context.componentFiles[componentId].push_back({ filename, "config", category, language, scope, version });
         }
       }
@@ -2304,7 +2304,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         default:
           continue;
         };
-        const auto& version = rteFile->GetVersionString();
+        const auto& version = rteFile->GetSemVer();
         const auto& attr = rteFile->GetAttribute("attr");
         const auto& language = rteFile->GetAttribute("language");
         const auto& scope = rteFile->GetAttribute("scope");
@@ -4885,10 +4885,10 @@ bool ProjMgrWorker::ListConfigFiles(vector<string>& configFiles) {
           const string absFile = fs::path(context.cproject->directory).append(fi.second->GetInstanceName()).generic_string();
           configEntry += "\n    - " + absFile;
           // get base version
-          const string baseVersion = fi.second->GetVersionString();
+          const string baseVersion = fi.second->GetSemVer();
           configEntry += " (base@" + baseVersion + ")";
           // get update version
-          const string updateVersion = fi.second->GetFile(context.rteActiveTarget->GetName())->GetVersionString();
+          const string updateVersion = fi.second->GetFile(context.rteActiveTarget->GetName())->GetSemVer();
           if (updateVersion != baseVersion) {
             configEntry += " (update@" + updateVersion + ")";
           }

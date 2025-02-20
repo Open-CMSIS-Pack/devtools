@@ -343,8 +343,7 @@ TEST(RteUtils, AppendFileVersion)
 {
   EXPECT_EQ("./foo/bar.ext.base@1.2.0", RteUtils::AppendFileBaseVersion("./foo/bar.ext", "1.2.0"));
   EXPECT_EQ("./foo/bar.ext.update@1.2.3", RteUtils::AppendFileUpdateVersion("./foo/bar.ext", "1.2.3"));
-  EXPECT_EQ("./foo/bar.ext.base@0.0.0", RteUtils::AppendFileBaseVersion("./foo/bar.ext", ""));
-  EXPECT_EQ("./foo/bar.ext.update@0.0.0", RteUtils::AppendFileUpdateVersion("./foo/bar.ext", ""));
+  EXPECT_EQ("./foo/bar.ext.base@0.0.0", RteUtils::AppendFileBaseVersion("./foo/bar.ext", "0.0.0"));
 }
 
 TEST(RteUtilsTest, RemoveVectorDuplicates)

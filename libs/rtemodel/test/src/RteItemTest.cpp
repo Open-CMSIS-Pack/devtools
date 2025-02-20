@@ -31,6 +31,8 @@ TEST(RteItemTest, GetComponentID_all_attributes) {
   RteItem item(attributes);
   item.SetTag("require");
 
+  EXPECT_EQ("9.9.9", item.GetSemVer());
+
   EXPECT_EQ("Class:Group(API)@1.1.1", item.GetApiID(true));
   EXPECT_EQ("Class:Group(API)", item.GetApiID(false));
 
@@ -59,6 +61,8 @@ TEST(RteItemTest, GetComponentID_reduced_attributes) {
   };
   RteItem item(attributes);
   item.SetTag("accept");
+
+  EXPECT_EQ("", item.GetSemVer());
   EXPECT_EQ("accept Vendor::Class:Group", item.GetDependencyExpressionID());
 
   EXPECT_EQ("Vendor::Class:Group", item.GetComponentID(true));
@@ -92,6 +96,14 @@ TEST(RteItemTest, ComponentAttributesFromId) {
   id = "Class:Group:&Variant";
   item.SetAttributesFomComponentId(id);
   EXPECT_EQ("Class:Group&Variant", item.GetComponentID(true));
+}
+
+TEST(RteItemTest, SemVer) {
+  RteItem item;
+  EXPECT_EQ("", item.GetSemVer());
+  EXPECT_EQ("0.0.0", item.GetSemVer(true));
+  item.SetAttribute("version", "1.0-b+m");
+  EXPECT_EQ("1.0.0-b", item.GetSemVer());
 }
 
 TEST(RteItemTest, PackageID) {

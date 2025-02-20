@@ -22,6 +22,7 @@
 #include "RteConstants.h"
 
 #include "RteFsUtils.h"
+#include "VersionCmp.h"
 #include "XMLTree.h"
 #include "CrossPlatformUtils.h"
 
@@ -434,6 +435,12 @@ const string& RteItem::GetVersionString() const
   if (!ver.empty())
     return ver;
   return GetAttribute("version");
+}
+
+
+const std::string RteItem::GetSemVer(bool returnZeroStringIfEmpty) const
+{
+  return VersionCmp::ToSemVer(GetVersionString(), returnZeroStringIfEmpty);
 }
 
 
