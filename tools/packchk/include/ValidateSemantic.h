@@ -34,7 +34,7 @@ public:
   bool TestComponentDependencies();
   bool TestApis();
   bool CheckForUnsupportedChars(const std::string& name, const std::string& tag, int lineNo);
-  bool CheckMemory(RteDeviceItem* device);
+  bool CheckMemories(RteDeviceItem* device);
   bool GatherCompilers(RtePackage* pKg);
   bool CheckDeviceDescription(RteDeviceItem* device, RteDeviceProperty* processorProperty);
   bool FindName(const std::string& name, const std::string& searchName, const std::string& searchExt);
