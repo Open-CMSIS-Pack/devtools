@@ -19,6 +19,8 @@ solution:
       compiler: AC6
     - type: AutoGenWarning
       compiler: AC6
+    - type: Missing
+      compiler: AC6
 
   target-types:
     - type: RteTest_ARMCM3

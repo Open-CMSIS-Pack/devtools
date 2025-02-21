@@ -2093,15 +2093,19 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
         ProjMgrLogger::Get().Warn("conflict: automatic linker script generation overrules specified script '" + context.linker.script + "'", context.name);
         context.linker.script.clear();
       }
-    }
-    else if (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty()) {
-      const auto& groups = context.rteActiveTarget->GetProjectGroups();
-      for (auto group : groups) {
-        for (auto file : group.second) {
-          if (file.second.m_cat == RteFile::Category::LINKER_SCRIPT) {
-            error_code ec;
-            context.linker.script = fs::relative(context.cproject->directory + "/" + file.first, context.directories.cprj, ec).generic_string();
-            break;
+    } else {
+      // check user specified linker script
+      CheckMissingLinkerScript(context);      
+      // search for linker script among selected component files
+      if (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty()) {
+        const auto& groups = context.rteActiveTarget->GetProjectGroups();
+        for (auto group : groups) {
+          for (auto file : group.second) {
+            if (file.second.m_cat == RteFile::Category::LINKER_SCRIPT) {
+              error_code ec;
+              context.linker.script = fs::relative(context.cproject->directory + "/" + file.first, context.directories.cprj, ec).generic_string();
+              break;
+            }
           }
         }
       }
@@ -5241,6 +5245,19 @@ bool ProjMgrWorker::CheckMissingFiles() {
     }
   }
   return !error;
+}
+
+void ProjMgrWorker::CheckMissingLinkerScript(ContextItem& context) {
+  // check linker script existence
+  if (!context.linker.script.empty()) {
+    string script = context.linker.script;
+    if (RteFsUtils::IsRelative(context.linker.script)) {
+      RteFsUtils::NormalizePath(script, context.directories.cprj);
+    }
+    if (!RteFsUtils::Exists(script)) {
+      m_missingFiles.insert({ script, FileNode() });
+    }
+  }
 }
 
 void ProjMgrWorker::CollectUnusedPacks() {
