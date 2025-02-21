@@ -208,12 +208,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
 
   // default debugger parameters from DFP and BSP
   DebuggerType defaultDebugger;
-  for (auto& [filename, fi] : context0->rteActiveProject->GetFileInstances()) {
-    if (fi->HasAttribute("configfile")) {
-      defaultDebugger.dbgconf = context0->cproject->directory + '/' + filename;
-      break;
-    }
-  }
+  defaultDebugger.dbgconf = context0->dbgconf.first;
   const auto& debugConfig = context0->devicePack ?
     context0->rteDevice->GetSingleEffectiveProperty("debugconfig", context0->deviceItem.pname) : nullptr;
   const auto& debugProbe = context0->boardPack ?
@@ -234,8 +229,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
       item.info = debugger.info;
       item.port = debugger.port.empty() ? defaultDebugger.port : debugger.port;
       item.clock = debugger.clock.empty() ? defaultDebugger.clock : RteUtils::StringToULL(debugger.clock);
-      item.dbgconf = debugger.dbgconf.empty() ? defaultDebugger.dbgconf : RteFsUtils::IsRelative(item.dbgconf) ?
-        context0->cproject->directory + '/' + debugger.dbgconf : debugger.dbgconf;
+      item.dbgconf = debugger.dbgconf.empty() ? defaultDebugger.dbgconf : debugger.dbgconf;
       m_runDebug.debuggers.push_back(item);
     }
   } else {

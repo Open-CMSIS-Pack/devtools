@@ -298,6 +298,7 @@ struct ContextTypesItem {
  *        vector of board books
  *        additional memory
  *        debuggers
+ *        default dbgconf
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -361,6 +362,7 @@ struct ContextItem {
   std::vector<BookItem> boardBooks;
   std::vector<MemoryItem> memory;
   std::vector<DebuggerItem> debuggers;
+  std::pair<std::string, RteFileInstance*> dbgconf;
 };
 
 /**
