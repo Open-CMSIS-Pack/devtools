@@ -833,6 +833,7 @@ protected:
 
   bool LoadPacks(ContextItem& context);
   bool CheckMissingPackRequirements(const std::string& contextName);
+  void CheckMissingLinkerScript(ContextItem& context);
   bool CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot);
   bool CheckBoardDeviceInLayer(const ContextItem& context, const ClayerItem& clayer);
   bool CheckCompiler(const std::vector<std::string>& forCompiler, const std::string& selectedCompiler);

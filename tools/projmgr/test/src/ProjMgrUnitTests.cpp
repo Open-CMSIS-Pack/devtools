@@ -4483,6 +4483,21 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions) {
     testinput_folder + "/TestSolution/LinkerOptions/ref/linker.Debug_GCC+RteTest_ARMCM3.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_MissingLinkerScript) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestSolution/LinkerOptions/linker.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"linker.Missing+RteTest_ARMCM3";
+  EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
+  const string& expected = "file '.*/TestSolution/LinkerOptions/unknown.sct' was not found";
+  const YAML::Node& cbuild = YAML::LoadFile(testoutput_folder + "/linker.cbuild-idx.yml");
+  EXPECT_TRUE(regex_search(cbuild["build-idx"]["cbuilds"][0]["messages"]["errors"][0].as<string>(), regex(expected)));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_LinkerOptions_Auto) {
   char* argv[8];
   const string& csolution = testinput_folder + "/TestSolution/LinkerOptions/linker.csolution.yml";

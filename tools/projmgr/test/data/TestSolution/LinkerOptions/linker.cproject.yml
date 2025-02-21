@@ -12,6 +12,8 @@ project:
        - LD_PP_GCC_CPROJECT_DEF0
        - LD_PP_GCC_CPROJECT_DEF1
       for-compiler: GCC
+    - script: ./unknown.sct
+      for-context: .Missing
 
   setups:
     - linker:
