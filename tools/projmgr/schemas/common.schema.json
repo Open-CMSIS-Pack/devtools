@@ -34,6 +34,50 @@
       },
       "additionalProperties": false
     },
+    "DebugConfigsType": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/DebugConfigType" }
+    },
+    "DebugConfigType": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "title": "file:",
+          "type": "string",
+          "description": "File name along with the path."
+        },
+        "base": {
+          "title": "base:",
+          "type": "string",
+          "description": "Current configuration file with version."
+        },
+        "status": {
+          "title": "status:",
+          "$ref": "#/definitions/PLMStatusType"
+        },
+        "version": {
+          "title": "version:",
+          "$ref": "#/definitions/VersionType"
+        },
+        "update": {
+          "title": "update:",
+          "type": "string",
+          "description": "New configuration file used for merge utility."
+        },
+        "debugger": {
+          "title": "debugger:",
+          "type": "array",
+          "description": "Associated debugger connections.",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      },
+      "required": [ "file" ],
+      "additionalProperties": false
+    },
     "ArrayOfContextMapAlternativeContext": {
       "type": "array",
       "uniqueItems": true,
@@ -1299,6 +1343,7 @@
         "device":            { "$ref": "#/definitions/DeviceType" },
         "device-pack":       { "$ref": "#/definitions/PackID" },
         "device-books":      { "$ref": "#/definitions/BooksType" },
+        "dbgconf":           { "$ref": "#/definitions/DebugConfigsType" },
         "processor":         { "$ref": "#/definitions/BuildProcessorType" },
         "packs":             { "$ref": "#/definitions/BuildPacksType" },
         "optimize":          { "$ref": "#/definitions/OptimizeType" },

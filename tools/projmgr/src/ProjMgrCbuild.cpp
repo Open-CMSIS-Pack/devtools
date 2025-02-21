@@ -38,6 +38,8 @@ private:
   void SetMiscNode(YAML::Node miscNode, const vector<MiscItem>& misc);
   void SetDefineNode(YAML::Node node, const vector<string>& vec);
   void SetBooksNode(YAML::Node node, const std::vector<BookItem>& books, const std::string& dir);
+  void SetDebugConfigNode(YAML::Node node, const ContextItem* context);
+  void SetPLMStatus(YAML::Node node, const ContextItem* context, const string& file);
   bool m_ignoreRteFileMissing;
 };
 
@@ -80,6 +82,7 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
     SetNodeValue(contextNode[YAML_DEVICE_PACK], context->devicePack->GetID());
   }
   SetBooksNode(contextNode[YAML_DEVICE_BOOKS], context->deviceBooks, context->directories.cbuild);
+  SetDebugConfigNode(contextNode[YAML_DBGCONF], context);
   SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
   SetPacksNode(contextNode[YAML_PACKS], context);
   SetControlsNode(contextNode, context, context->controls.processed);
@@ -152,6 +155,27 @@ void ProjMgrCbuild::SetComponentsNode(YAML::Node node, const ContextItem* contex
   }
 }
 
+void ProjMgrCbuild::SetDebugConfigNode(YAML::Node node, const ContextItem* context) {
+  map<string, StrVec> dbgconfList;
+  for (const auto& debugger : context->debuggers) {
+    string dbgconf = debugger.dbgconf.empty() ? context->dbgconf.first : debugger.dbgconf;
+    CollectionUtils::PushBackUniquely(dbgconfList[dbgconf], debugger.name);
+  }
+  if (dbgconfList.empty() && !context->dbgconf.first.empty()) {
+    dbgconfList[context->dbgconf.first];
+  }
+  for (const auto& [dbgconf, debuggers] : dbgconfList) {
+    YAML::Node fileNode;
+    SetNodeValue(fileNode[YAML_FILE], FormatPath(dbgconf, context->directories.cbuild));
+    if (dbgconf == context->dbgconf.first) {
+      SetNodeValue(fileNode[YAML_VERSION], context->dbgconf.second->GetSemVer(true));
+      SetPLMStatus(fileNode, context, dbgconf);
+    }
+    SetNodeValue(fileNode[YAML_DEBUGGER], debuggers);
+    node.push_back(fileNode);
+  }
+}
+
 void ProjMgrCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem* context, const string& componentId) {
   if (context->componentFiles.find(componentId) != context->componentFiles.end()) {
     for (const auto& [file, attr, category, language, scope, version, select] : context->componentFiles.at(componentId)) {
@@ -164,46 +188,50 @@ void ProjMgrCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem* co
       SetNodeValue(fileNode[YAML_VERSION], version);
       SetNodeValue(fileNode[YAML_SELECT], select);
       if (attr == "config") {
-        string directory = RteUtils::ExtractFilePath(file, false);
-        string name = RteUtils::ExtractFileName(file);
-
-        // lambda to get backup file with specified file filter
-        auto GetBackupFile = [&](const string& fileFilter) {
-          list<string> backupFiles;
-          RteFsUtils::GrepFileNames(backupFiles, directory, fileFilter + "@*");
-
-          // Return empty string if no backup files found
-          if (backupFiles.size() == 0) {
-            return RteUtils::EMPTY_STRING;
-          }
-
-          // Warn if multiple backup files are found
-          //This is a safeguard. however, this condition should never be triggered
-          if (backupFiles.size() > 1) {
-            ProjMgrLogger::Get().Warn(
-              "'" + directory + "' contains more than one '" + fileFilter + " file, PLM may fail");
-          }
-
-          return FormatPath(backupFiles.front().c_str(), context->directories.cbuild);
-        };
-
-        // Get base and update backup files
-        string baseFile = GetBackupFile(name + '.' + RteUtils::BASE_STRING);
-        string updateFile = GetBackupFile(name + '.' + RteUtils::UPDATE_STRING);
-
-        // Add nodes if both base and update files exist
-        if (!baseFile.empty() && !updateFile.empty()) {
-          SetNodeValue(fileNode[YAML_BASE], baseFile);
-          SetNodeValue(fileNode[YAML_UPDATE], updateFile);
-        }
-
-        // Add PLM Status
-        if (context->plmStatus.find(file) != context->plmStatus.end()) {
-          SetNodeValue(fileNode[YAML_STATUS], context->plmStatus.at(file));
-        }
+        SetPLMStatus(fileNode, context, file);
       }
       node.push_back(fileNode);
     }
+  }
+}
+
+void ProjMgrCbuild::SetPLMStatus(YAML::Node node, const ContextItem* context, const string& file) {
+  string directory = RteUtils::ExtractFilePath(file, false);
+  string name = RteUtils::ExtractFileName(file);
+
+  // lambda to get backup file with specified file filter
+  auto GetBackupFile = [&](const string& fileFilter) {
+    list<string> backupFiles;
+    RteFsUtils::GrepFileNames(backupFiles, directory, fileFilter + "@*");
+
+    // Return empty string if no backup files found
+    if (backupFiles.size() == 0) {
+      return RteUtils::EMPTY_STRING;
+    }
+
+    // Warn if multiple backup files are found
+    //This is a safeguard. however, this condition should never be triggered
+    if (backupFiles.size() > 1) {
+      ProjMgrLogger::Get().Warn(
+        "'" + directory + "' contains more than one '" + fileFilter + " file, PLM may fail");
+    }
+
+    return FormatPath(backupFiles.front().c_str(), context->directories.cbuild);
+  };
+
+  // Get base and update backup files
+  string baseFile = GetBackupFile(name + '.' + RteUtils::BASE_STRING);
+  string updateFile = GetBackupFile(name + '.' + RteUtils::UPDATE_STRING);
+
+  // Add nodes if both base and update files exist
+  if (!baseFile.empty() && !updateFile.empty()) {
+    SetNodeValue(node[YAML_BASE], baseFile);
+    SetNodeValue(node[YAML_UPDATE], updateFile);
+  }
+
+  // Add PLM Status
+  if (context->plmStatus.find(file) != context->plmStatus.end()) {
+    SetNodeValue(node[YAML_STATUS], context->plmStatus.at(file));
   }
 }
 

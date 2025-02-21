@@ -2124,14 +2124,14 @@ bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
       continue;
     }
     // get base version
-    const string baseVersion = fi.second->GetSemVer();
+    const string baseVersion = fi.second->GetSemVer(true);
     if (!RteFsUtils::Exists(file + '.' + RteUtils::BASE_STRING + '@' + baseVersion)) {
       ProjMgrLogger::Get().Warn("file '" + file + ".base' not found; base version unknown", context.name);
       context.plmStatus[file] = PLM_STATUS_MISSING_BASE;
     } else {
       // get update version
       const RteItem* f = fi.second->GetFile(context.rteActiveTarget->GetName());
-      const string updateVersion = f ? f->GetSemVer() : "";
+      const string updateVersion = f ? f->GetSemVer(true) : "";
       if (baseVersion != updateVersion) {
         // parse and check each semantic version segment
         static const regex regEx = regex("(\\d+).(\\d+).(\\d+)");
@@ -2474,9 +2474,21 @@ void ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
   const vector<DebuggerItem>& debuggers = m_parser->GetCsolution().debuggers;
   for (const auto& item : debuggers) {
     if (CheckContextFilters(item.type, context)) {
-      context.debuggers.push_back(item);
+      auto filtered = item;
+      if (!filtered.dbgconf.empty() && RteFsUtils::IsRelative(filtered.dbgconf)) {
+        RteFsUtils::NormalizePath(filtered.dbgconf, context.csolution->directory);
+      }
+      context.debuggers.push_back(filtered);
     }
-  }  
+  }
+  for (const auto& [filename, fi] : context.rteActiveProject->GetFileInstances()) {
+    if (fi->HasAttribute("configfile")) {
+      string dbgconf = filename;
+      RteFsUtils::NormalizePath(dbgconf, context.cproject->directory);
+      context.dbgconf = { dbgconf, fi };
+      break;
+    }
+  }
 }
 
 bool ProjMgrWorker::ProcessSolutionExecutes() {

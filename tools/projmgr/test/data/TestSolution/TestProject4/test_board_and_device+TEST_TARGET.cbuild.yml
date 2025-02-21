@@ -11,6 +11,9 @@ build:
   device-books:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
       title: Cortex-M0 Device Generic Users Guide
+  dbgconf:
+    - file: ../data/TestSolution/TestProject4/RTE/Device/RteTest_ARMCM0_Dual_cm0_core1/ARMCM.dbgconf
+      version: 0.0.2
   processor:
     fpu: off
     trustzone: non-secure

@@ -6654,9 +6654,13 @@ TEST_F(ProjMgrUnitTests, TestRunDebug) {
   EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW.cbuild-run.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW.cbuild-run.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW.cbuild.yml",
+    testinput_folder + "/TestRunDebug/ref/run-debug+TestHW.cbuild.yml");
 
   argv[7] = (char*)"+TestHW2";
   EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW2.cbuild-run.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW2.cbuild-run.yml");
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW2.cbuild.yml",
+    testinput_folder + "/TestRunDebug/ref/run-debug+TestHW2.cbuild.yml");
 }

@@ -1,67 +1,68 @@
 build:
-  generated-by: csolution version 0.0.0+g717ddf88
-  solution: ../data/TestSolution/DeviceAttributes/solution.csolution.yml
-  project: ../data/TestSolution/DeviceAttributes/mve/mve.cproject.yml
-  context: mve.Debug+mve-int
+  generated-by: csolution version 2.8.0
+  solution: ../data/TestRunDebug/run-debug.csolution.yml
+  project: ../data/TestRunDebug/run-debug.cproject.yml
+  context: run-debug+TestHW2
   compiler: AC6
-  device: ARM::RteTest_ARMCM0
+  board: Keil::RteTest-Test-board With.Memory:1.1.1
+  board-pack: ARM::RteTest_DFP@0.2.0
+  device: ARM::RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   device-books:
-    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
-      title: Cortex-M0 Device Generic Users Guide
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html
+      title: Cortex-M3 Device Generic Users Guide
   dbgconf:
-    - file: ../data/TestSolution/DeviceAttributes/mve/RTE/Device/RteTest_ARMCM0/ARMCM.dbgconf
+    - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM.dbgconf
       version: 0.0.2
   processor:
     fpu: off
-    mve: int
-    core: Cortex-M0
+    core: Cortex-M3
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   define:
-    - ARMCM0
+    - ARMCM3
     - _RTE_
   define-asm:
-    - ARMCM0
+    - ARMCM3
     - _RTE_
   add-path:
-    - ../data/TestSolution/DeviceAttributes/mve/RTE/_Debug_mve-int
-    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+    - ../data/TestRunDebug/RTE/_TestHW2
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   add-path-asm:
-    - ../data/TestSolution/DeviceAttributes/mve/RTE/_Debug_mve-int
-    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+    - ../data/TestRunDebug/RTE/_TestHW2
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
-    intdir: tmp/mve/mve-int/Debug
-    outdir: out/mve/mve-int/Debug
-    rtedir: ../data/TestSolution/DeviceAttributes/mve/RTE
+    intdir: tmp
+    outdir: out/run-debug/TestHW2
+    rtedir: ../data/TestRunDebug/RTE
   output:
     - type: elf
-      file: mve.axf
+      file: run-debug.axf
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
-      condition: ARMCM0 RteTest
+      condition: ARMCM3 RteTest
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: Startup
       files:
-        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include/ARMCM0.h
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include/ARMCM3.h
           category: header
           version: 2.0.3
         - file: https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
           category: doc
           version: 2.0.3
-        - file: ../data/TestSolution/DeviceAttributes/mve/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
+        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
           category: linkerScript
           attr: config
-          version: 1.0.0
-        - file: ../data/TestSolution/DeviceAttributes/mve/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c
+          version: 1.2.0
+        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
           category: sourceC
           attr: config
           version: 2.0.3
-        - file: ../data/TestSolution/DeviceAttributes/mve/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c
+        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
           category: sourceC
           attr: config
-          version: 1.0.0
+          version: 1.2.2
     - component: ARM::RteTest:CORE@0.1.1
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
@@ -80,9 +81,9 @@ build:
           category: doc
           version: 1.1.2
   linker:
-    script: ../data/TestSolution/DeviceAttributes/mve/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
+    script: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
   constructed-files:
-    - file: ../data/TestSolution/DeviceAttributes/mve/RTE/_Debug_mve-int/RTE_Components.h
+    - file: ../data/TestRunDebug/RTE/_TestHW2/RTE_Components.h
       category: header
   licenses:
     - license: <unknown>
