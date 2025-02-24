@@ -242,7 +242,7 @@ const MsgTable PackChk::msgTable = {
   { "M607", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Tag '%TAG%' does not allow wildcard specification: '%NAME%'" } },
   { "M608", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Memory '%NAME%' with '%ATTR%'='%VALUE%' must have '%ATTR2%'='%VALUE2%'" } },
   { "M609", { MsgLevel::LEVEL_WARNING,  CRLF_B, "Processor '%NAME%': Exact one memory with attribute \"startup=1\" must be configured, but found %NUM%" } },
-  { "M610", { MsgLevel::LEVEL_WARNING,  CRLF_B, "" } },
+  { "M610", { MsgLevel::LEVEL_WARNING,  CRLF_B, "File category '%CAT%': '%NAME%' redefined in component '%NAME2%', see Line %LINE%" } },
 
 };
 

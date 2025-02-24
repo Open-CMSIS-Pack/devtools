@@ -6,6 +6,7 @@
 #include "CheckComponents.h"
 #include "CheckFiles.h"
 
+#include "RteComponent.h"
 #include "RteModel.h"
 #include "RteUtils.h"
 #include "ErrLog.h"
@@ -21,8 +22,58 @@ using namespace std;
 VISIT_RESULT ComponentsVisitor::Visit(RteItem* item)
 {
   m_checkComponent.CheckComp(item);
+  m_checkComponent.CheckAllCompFiles(item);
 
   return VISIT_RESULT::CONTINUE_VISIT;
+}
+
+/**
+ * @brief Check all files of all component. Physically the same files should not be referenced by multiple components.
+ * @param item element to test
+ * @return passed / failed
+*/
+bool CheckComponent::CheckAllCompFiles(RteItem* component)
+{
+    bool ok = true;
+  if(!component) {
+    return ok;
+  }
+
+  int lineNo = component->GetLineNumber();
+  string tag = component->GetTag();
+  if(tag != "component") {
+    return true;
+  }
+
+  const auto& compName = component->GetID();
+  const auto files = component->GetGrandChildren("files");
+  for(const auto file : files) {
+    const auto& category = file->GetAttribute("category");
+    if(category == "library" ||
+       category == "object" ||
+       category == "source" ||
+       category == "sourceC" ||
+       category == "sourceCpp" ||
+       category == "sourceAsm" ||
+       category == "genSource") {
+      const auto key = file->GetName()
+        + ':' + file->GetConditionID()
+        + ':' + component->GetCvariantName()
+        + ':' + component->GetCbundleName()
+        + ':' + component->GetConditionID();
+
+      const auto foundIt = m_allFiles.find(key);
+      if(foundIt != m_allFiles.end()) {
+        const auto& foundFilename = foundIt->first;
+        const auto foundItem = foundIt->second;
+        LogMsg("M610", VAL("CAT", category), NAME(foundFilename), NAME2(compName), LINE(lineNo), foundItem->GetLineNumber());
+        continue;
+      }
+      m_allFiles[key] = file;
+    }
+  }
+
+  return ok;
 }
 
 /**
