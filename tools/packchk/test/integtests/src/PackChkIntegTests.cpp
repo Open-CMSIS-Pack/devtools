@@ -1088,6 +1088,33 @@ TEST_F(PackChkIntegTests, CheckMemoryAttributes) {
   }
 }
 
+TEST_F(PackChkIntegTests, CheckConcurrentComponentFiles) {
+  const char* argv[3];
+
+  string pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/ConcurrentComponentFiles/ARM.ConcurrentComponentFiles.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(3, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M610_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    if (msg.find("M610", 0) != string::npos) {
+      M610_foundCnt++;
+    }
+  }
+
+  if(M610_foundCnt != 1) {
+    FAIL() << "error: Missing message M610: concurrent files in component";
+  }
+}
+
 
 TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Pos) {
   const char* argv[7];
