@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  description: test description string
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+
+  projects:
+    - project: ./TestProject1/test1.cproject.yml
+
+  define:
+    - __SAME70Q21__
+    - __test__
+    - "Test 1"
+    - \"Test 3\"
+    - Test4
+    - KEY1: 1
+    - KEY2: "valid"
+    - KEY3: \"valid\"
+    - \"No_ending_escape_quotes
+    - Escape_quotes_in_\"middle\"
+    - \"Invalid_ending"\
+    - KEY4: \"No_ending_escape_quotes
+    - KEY5: \"sam.h\
+    - KEY6: Invalid_equal=character
+    - KEY7: Invalid_colon:character
+    - KEY8: \"Invalid_ending"\
+    - KEY9: No_Starting_escaped_quotes\"
+    - KEY10: \"Mixed_quotes"
+
+  define-asm:
+    - DEF_ASM_SOLUTION

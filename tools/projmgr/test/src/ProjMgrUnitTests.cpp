@@ -6679,3 +6679,39 @@ TEST_F(ProjMgrUnitTests, TestRunDebug) {
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW2.cbuild.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW2.cbuild.yml");
 }
+
+TEST_F(ProjMgrUnitTests, Test_Check_Define_Value_With_Quotes) {
+  StdStreamRedirect streamRedirect;
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestSolution/test_invalid_defines.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+
+  // Test1: Check schema error
+  string expected = "\
+.*test_invalid_defines.csolution.yml:33:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:34:7 - error csolution: schema check failed, verify syntax\n\
+";
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+  string errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_search(errStr, regex(expected)));
+
+  //Test2: Check Parsing errors
+  streamRedirect.ClearStringStreams();
+  expected = "\
+error csolution: invalid define: \\\"No_ending_escape_quotes, improper quotes\n\
+error csolution: invalid define: Escape_quotes_in_\\\"middle\\\", improper quotes\n\
+error csolution: invalid define: \\\"Invalid_ending\"\\, improper quotes\n\
+error csolution: invalid define: \\\"No_ending_escape_quotes, improper quotes\n\
+error csolution: invalid define: \\\"sam.h\\, improper quotes\n\
+error csolution: invalid define: \\\"Invalid_ending\"\\, improper quotes\n\
+error csolution: invalid define: No_Starting_escaped_quotes\\\", improper quotes\n\
+error csolution: invalid define: \\\"Mixed_quotes\", improper quotes\n\
+";
+  argv[5] = (char*)"-n";
+  EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(errStr, expected);
+}

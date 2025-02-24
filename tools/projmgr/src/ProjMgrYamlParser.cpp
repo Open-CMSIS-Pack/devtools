@@ -391,7 +391,43 @@ void ProjMgrYamlParser::ParseVector(const YAML::Node& parent, const string& key,
   }
 }
 
-void ProjMgrYamlParser::ParseDefine(const YAML::Node& defineNode, vector<string>& define) {
+bool ProjMgrYamlParser::ParseDefine(const YAML::Node& defineNode, vector<string>& define) {
+  auto ValidateDefineStr = [&](const std::string& defineValue) -> bool {
+    if (defineValue.empty()) {
+      return true;
+    }
+
+    const std::string escapedQuote = "\\\"";
+    int numQuotes = RteUtils::CountDelimiters(defineValue, "\"");
+    if (numQuotes == 0) {
+      return true;
+    }
+
+    bool isValid = true;
+    string errStr;
+    if (numQuotes == 2) {
+      if (defineValue.front() == '"') {
+        isValid = (defineValue.back() == '"');
+      }
+      else if (defineValue.substr(0, 2) == escapedQuote) {
+        isValid = (defineValue.substr(defineValue.size() - 2, 2) == escapedQuote);
+      }
+      else {
+        isValid = false;
+      }
+    }
+    else {
+      isValid = false;
+    }
+
+    if (!isValid) {
+      ProjMgrLogger::Get().Error("invalid define: " + defineValue + ", improper quotes");
+    }
+
+    return isValid;
+  };
+
+  bool success = true;
   if (defineNode.IsDefined() && defineNode.IsSequence()) {
     for (const auto& item : defineNode) {
       // accept map elements <string, string> or a string
@@ -402,15 +438,22 @@ void ProjMgrYamlParser::ParseDefine(const YAML::Node& defineNode, vector<string>
             if (YAML::IsNullString(element.second)) {
               element.second = "";
             }
-            define.push_back(element.first + "=" + element.second);
+            success = ValidateDefineStr(element.second);
+            if (success) {
+              define.push_back(element.first + "=" + element.second);
+            }
           }
         }
         else {
-          define.push_back(item.as<string>());
+          success = ValidateDefineStr(item.as<string>());
+          if (success) {
+            define.push_back(item.as<string>());
+          }
         }
       }
     }
   }
+  return success;
 }
 
 void ProjMgrYamlParser::ParseVectorOfStringPairs(const YAML::Node& parent, const string& key, vector<pair<string, string>>& value) {
@@ -869,7 +912,9 @@ bool ProjMgrYamlParser::ParseLinker(const YAML::Node& parent, const string& file
         return false;
       }
       linkerItem.autoGen = linkerEntry[YAML_AUTO].IsDefined();
-      ParseDefine(linkerEntry[YAML_DEFINE], linkerItem.defines);
+      if (!ParseDefine(linkerEntry[YAML_DEFINE], linkerItem.defines)) {
+        return false;
+      }
       ParseVectorOrString(linkerEntry, YAML_FORCOMPILER, linkerItem.forCompiler);
       ParsePortablePath(linkerEntry, file, YAML_REGIONS, linkerItem.regions);
       ParsePortablePath(linkerEntry, file, YAML_SCRIPT, linkerItem.script);
@@ -918,8 +963,12 @@ bool ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, const string& f
   }
   ParseProcessor(parent, buildType.processor);
   ParseMisc(parent, buildType.misc);
-  ParseDefine(parent[YAML_DEFINE], buildType.defines);
-  ParseDefine(parent[YAML_DEFINE_ASM], buildType.definesAsm);
+  if (!ParseDefine(parent[YAML_DEFINE], buildType.defines)) {
+    return false;
+  }
+  if (!ParseDefine(parent[YAML_DEFINE_ASM], buildType.definesAsm)) {
+    return false;
+  }
   ParseVector(parent, YAML_UNDEFINE, buildType.undefines);
   ParsePortablePaths(parent, file, YAML_ADDPATH, buildType.addpaths);
   ParsePortablePaths(parent, file, YAML_ADDPATH_ASM, buildType.addpathsAsm);
