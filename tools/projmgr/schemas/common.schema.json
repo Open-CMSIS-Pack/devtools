@@ -361,9 +361,19 @@
         "oneOf": [
           {
             "type": "object",
-            "properties": {
-              "key": { "type": "string" },
-              "value": { "type": ["number", "string"], "minLength": 1 }
+            "patternProperties": {
+              "^.*$": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^([^=:]+)$",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
             }
           },
           {
@@ -383,9 +393,19 @@
         "oneOf": [
           {
             "type": "object",
-            "properties": {
-              "key": { "type": "string" },
-              "value": { "type": ["number", "string"], "minLength": 1 }
+            "patternProperties": {
+              "^.*$": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^([^=:]+)$",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
             }
           },
           {
@@ -405,9 +425,19 @@
         "oneOf": [
           {
             "type": "object",
-            "properties": {
-              "key": { "type": "string" },
-              "value": { "type": ["number", "string"], "minLength": 1 }
+            "patternProperties": {
+              "^.*$": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^([^=:]+)$",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
             }
           },
           {
