@@ -6715,3 +6715,16 @@ error csolution: invalid define: \\\"Mixed_quotes\", improper quotes\n\
   errStr = streamRedirect.GetErrorString();
   EXPECT_EQ(errStr, expected);
 }
+
+TEST_F(ProjMgrUnitTests, ComponentVersions) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/ComponentSources/versions.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/versions.Debug+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/ComponentSources/ref/versions.Debug+RteTest_ARMCM3.cbuild.yml");
+}

@@ -2138,7 +2138,7 @@ bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
       const string updateVersion = f ? f->GetSemVer(true) : "";
       if (baseVersion != updateVersion) {
         // parse and check each semantic version segment
-        static const regex regEx = regex("(\\d+).(\\d+).(\\d+)");
+        static const regex regEx = regex("(\\d+).(\\d+).(\\d+(?:-.*)*)");
         smatch base, update;
         regex_match(baseVersion, base, regEx);
         regex_match(updateVersion, update, regEx);
@@ -4927,10 +4927,10 @@ bool ProjMgrWorker::ListConfigFiles(vector<string>& configFiles) {
           const string absFile = fs::path(context.cproject->directory).append(fi.second->GetInstanceName()).generic_string();
           configEntry += "\n    - " + absFile;
           // get base version
-          const string baseVersion = fi.second->GetSemVer();
+          const string baseVersion = fi.second->GetSemVer(true);
           configEntry += " (base@" + baseVersion + ")";
           // get update version
-          const string updateVersion = fi.second->GetFile(context.rteActiveTarget->GetName())->GetSemVer();
+          const string updateVersion = fi.second->GetFile(context.rteActiveTarget->GetName())->GetSemVer(true);
           if (updateVersion != baseVersion) {
             configEntry += " (update@" + updateVersion + ")";
           }
