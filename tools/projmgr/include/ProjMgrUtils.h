@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -286,6 +286,13 @@ public:
    * @return variable name or empty string
   */
   static const std::string GetVariableName(const std::string item);
+
+  /**
+   * @brief get file type from file extension
+   * @param input file
+   * @return file type or empty string
+  */
+  static const std::string FileTypeFromExtension(const std::string& file);
 
 protected:
   /**

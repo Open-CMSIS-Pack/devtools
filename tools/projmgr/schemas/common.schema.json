@@ -1105,6 +1105,7 @@
         "generators":      { "$ref": "#/definitions/GeneratorsOutputType" },
         "language-C":      { "$ref": "#/definitions/LanguageCType" },
         "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
+        "load":            { "$ref": "#/definitions/LoadsType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" },
         "optimize":        { "$ref": "#/definitions/OptimizeType" },
         "output-dirs":     { "$ref": "#/definitions/OutputDirectoriesType" },
@@ -2018,8 +2019,11 @@
     "RunFileType": {
       "type": "object",
       "properties": {
-        "file":  { "type": "string", "description": "File path." },
-        "type":  { "type": "string", "description": "File type." },
+        "file":  { "type": "string", "description": "Specifies the file name." },
+        "info":  { "type": "string", "description": "Brief description of the file." },
+        "type":  { "type": "string", "description": "Specifies the file type." },
+        "run":   { "type": "string", "description": "Additional command string for download or programming." },
+        "debug": { "type": "string", "description": "Additional command string for debug." },
         "pname": { "type": "string", "description": "Processor name." }
       },
       "additionalProperties": false
@@ -2044,7 +2048,7 @@
     },
     "DebugBlocksType": {
       "type": "array",
-      "uniqueItems": true,
+      "uniqueItems": false,
       "items": { "$ref": "#/definitions/DebugBlockType" }
     },
     "DebugBlockType": {
@@ -2110,6 +2114,26 @@
       },
       "additionalProperties": false,
       "required": ["name"]
+    },
+    "LoadsType": {
+      "description": "Specifies additional files to add to the output node.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/LoadType" }
+    },
+    "LoadType": {
+      "type": "object",
+      "properties": {
+        "file":            { "type": "string", "description": "Specifies the file name." },
+        "info":            { "type": "string", "description": "Brief description of the file." },
+        "type":            { "enum": [ "elf", "hex", "bin", "lib" ], "description": "Specifies an explicit file type." },
+        "run":             { "type": "string", "description": "Additional command string for download or programming." },
+        "debug":           { "type": "string", "description": "Additional command string for debug." },
+        "for-context":     { "$ref": "#/definitions/ForContext" },
+        "not-for-context": { "$ref": "#/definitions/NotForContext" }
+      },
+      "additionalProperties": false,
+      "required": ["file"]
     },
     "DebugVarsType": {
       "description": "Debug variables for debug sequences.",

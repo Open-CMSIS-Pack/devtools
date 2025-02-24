@@ -71,7 +71,10 @@ void ProjMgrCbuildRun::SetFilesNode(YAML::Node node, const std::vector<FilesType
   for (const auto& item : files) {
     YAML::Node fileNode;
     SetNodeValue(fileNode[YAML_FILE], FormatPath(item.file, m_directory));
+    SetNodeValue(fileNode[YAML_INFO], item.info);
     SetNodeValue(fileNode[YAML_TYPE], item.type);
+    SetNodeValue(fileNode[YAML_RUN], item.run);
+    SetNodeValue(fileNode[YAML_DEBUG], item.debug);
     SetNodeValue(fileNode[YAML_PNAME], item.pname);
     node.push_back(fileNode);
   }

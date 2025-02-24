@@ -438,6 +438,24 @@ struct DebuggerItem {
   TypeFilter type;
 };
 
+/**
+ * @brief load item containing
+ *        file specifies the file name
+ *        info brief description of the file
+ *        type specifies an explicit file type
+ *        run additional command string for download or programming
+ *        debug additional command string for debug
+ *        type filter
+*/
+struct LoadItem {
+  std::string file;
+  std::string info;
+  std::string type;
+  std::string run;
+  std::string debug;
+  TypeFilter typeFilter;
+};
+
 typedef std::vector<std::pair<std::string, BuildType>> BuildTypes;
 typedef std::vector<std::pair<std::string, TargetType>> TargetTypes;
 /**
@@ -458,7 +476,8 @@ typedef std::vector<std::pair<std::string, TargetType>> TargetTypes;
  *        cdefault enable switch,
  *        generator options,
  *        list of executes,
- *        list of debuggers
+ *        list of debuggers,
+ *        list of loads
 */
 struct CsolutionItem {
   std::string name;
@@ -479,6 +498,7 @@ struct CsolutionItem {
   CbuildPackItem cbuildPack;
   std::vector<ExecutesItem> executes;
   std::vector<DebuggerItem> debuggers;
+  std::vector<LoadItem> loads;
   std::vector<std::string> ymlOrderedBuildTypes;
   std::vector<std::string> ymlOrderedTargetTypes;
 };

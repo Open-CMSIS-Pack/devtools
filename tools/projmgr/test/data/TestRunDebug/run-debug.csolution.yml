@@ -32,3 +32,18 @@ solution:
       for-context: +TestHW
     - name: TestDebugger2
       for-context: +TestHW
+    - name: TestDebugger3
+      dbgconf: $OutDir(+TestHW)$/$Compiler$.dbgconf
+      for-context: +TestHW
+
+  load:
+    - file: customImage.bin
+      info: load image info
+      run: run cmd bin
+      debug: debug cmd bin
+    - file: customLibrary.x
+      type: lib
+      for-context: +TestHW2
+    - file: $elf(+TestHW)$
+      debug: debug cmd elf
+      for-context: +TestHW

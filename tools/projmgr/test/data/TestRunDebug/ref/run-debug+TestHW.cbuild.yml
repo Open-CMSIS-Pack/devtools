@@ -22,6 +22,9 @@ build:
       status: update suggested
       debugger:
         - TestDebugger2
+    - file: out/run-debug/TestHW/AC6.dbgconf
+      debugger:
+        - TestDebugger3
   processor:
     fpu: off
     core: Cortex-M4

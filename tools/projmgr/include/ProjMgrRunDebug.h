@@ -50,7 +50,10 @@ struct SystemResourcesType {
 */
 struct FilesType {
   std::string file;
+  std::string info;
   std::string type;
+  std::string run;
+  std::string debug;
   std::string pname;
 };
 
@@ -149,6 +152,7 @@ protected:
   void GetDebugSequenceBlock(const RteItem* item, DebugSequencesBlockType& block);
   void PushBackUniquely(std::vector<std::pair<const RteItem*, std::vector<std::string>>>& vec,
     const RteItem* item, const std::string pname);
+  FilesType SetLoadFromOutput(const ContextItem* context, OutputType output, const std::string type);
 };
 
 #endif  // PROJMGRRUNDEBUG_H

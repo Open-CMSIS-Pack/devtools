@@ -114,6 +114,9 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     if (!ParseDebugger(solutionNode, csolution.path, csolution.debuggers)) {
       return false;
     }
+    if (!ParseLoad(solutionNode, csolution.path, csolution.loads)) {
+      return false;
+    }
 
   } catch (YAML::Exception& e) {
    ProjMgrLogger::Get().Error(e.msg, "", input, e.mark.line + 1, e.mark.column + 1);
@@ -548,6 +551,30 @@ bool ProjMgrYamlParser::ParseDebugger(const YAML::Node& parent, const string& fi
         return false;
       }
       debbugers.push_back(debuggerItem);
+    }
+  }
+  return true;
+}
+
+bool ProjMgrYamlParser::ParseLoad(const YAML::Node& parent, const string& file, std::vector<LoadItem>& loads) {
+  if (parent[YAML_LOAD].IsDefined()) {
+    const YAML::Node& loadNode = parent[YAML_LOAD];
+    for (const auto& loadEntry : loadNode) {
+      LoadItem loadItem;
+      ParsePortablePath(loadEntry, file, YAML_FILE, loadItem.file);
+      map<const string, string&> loadChildren = {
+        {YAML_INFO, loadItem.info},
+        {YAML_TYPE, loadItem.type},
+        {YAML_RUN, loadItem.run},
+        {YAML_DEBUG, loadItem.debug},
+      };
+      for (const auto& item : loadChildren) {
+        ParseString(loadEntry, item.first, item.second);
+      }
+      if (!ParseTypeFilter(loadEntry, loadItem.typeFilter)) {
+        return false;
+      }
+      loads.push_back(loadItem);
     }
   }
   return true;
@@ -996,6 +1023,7 @@ const set<string> solutionKeys = {
   YAML_GENERATORS,
   YAML_EXECUTES,
   YAML_DEBUGGER,
+  YAML_LOAD,
 };
 
 const set<string> projectsKeys = {
