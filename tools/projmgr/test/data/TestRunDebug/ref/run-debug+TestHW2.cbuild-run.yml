@@ -17,7 +17,15 @@ cbuild-run:
       type: svd
   output:
     - file: out/run-debug/TestHW2/run-debug.axf
+      info: generate by run-debug+TestHW2
       type: elf
+    - file: ../data/TestRunDebug/customImage.bin
+      info: load image info
+      type: bin
+      run: run cmd bin
+      debug: debug cmd bin
+    - file: ../data/TestRunDebug/customLibrary.x
+      type: lib
   system-resources:
     memory:
       - name: IROM1

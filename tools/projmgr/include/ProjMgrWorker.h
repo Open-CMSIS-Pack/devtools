@@ -299,6 +299,7 @@ struct ContextTypesItem {
  *        additional memory
  *        debuggers
  *        default dbgconf
+ *        loads
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -363,6 +364,7 @@ struct ContextItem {
   std::vector<MemoryItem> memory;
   std::vector<DebuggerItem> debuggers;
   std::pair<std::string, RteFileInstance*> dbgconf;
+  std::vector<LoadItem> loads;
 };
 
 /**
@@ -856,7 +858,8 @@ protected:
   bool ProcessGpdsc(ContextItem& context);
   bool ProcessConfigFiles(ContextItem& context);
   bool ProcessComponentFiles(ContextItem& context);
-  void ProcessDebuggers(ContextItem& context);
+  bool ProcessDebuggers(ContextItem& context);
+  bool ProcessLoads(ContextItem& context);
   bool ProcessExecutes(ContextItem& context, bool solutionLevel = false);
   bool ProcessGroups(ContextItem& context);
   bool ProcessSequencesRelatives(ContextItem& context, bool rerun);

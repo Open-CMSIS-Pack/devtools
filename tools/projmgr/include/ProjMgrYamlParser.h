@@ -122,6 +122,7 @@ static constexpr const char* YAML_LANGUAGE_C = "language-C";
 static constexpr const char* YAML_LANGUAGE_CPP = "language-CPP";
 static constexpr const char* YAML_LAYER = "layer";
 static constexpr const char* YAML_LAYERS = "layers";
+static constexpr const char* YAML_LOAD = "load";
 static constexpr const char* YAML_LICENSE = "license";
 static constexpr const char* YAML_LICENSES = "licenses";
 static constexpr const char* YAML_LICENSE_AGREEMENT = "license-agreement";
@@ -291,6 +292,7 @@ protected:
   void ParseGenerators(const YAML::Node& parent, const std::string& file, GeneratorsItem& generators);
   void ParseExecutes(const YAML::Node& parent, const std::string& file, std::vector<ExecutesItem>& executes);
   bool ParseDebugger(const YAML::Node& parent, const std::string& file, std::vector<DebuggerItem>& debbugers);
+  bool ParseLoad(const YAML::Node& parent, const std::string& file, std::vector<LoadItem>& loads);
   void ParseConnections(const YAML::Node& parent, std::vector<ConnectItem>& connects);
   bool ParseTargetType(const YAML::Node& parent, const std::string& file, TargetType& targetType);
   bool ParseBuildTypes(const YAML::Node& parent, const std::string& file, BuildTypes& buildTypes);

@@ -170,14 +170,36 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
 
   // outputs
   for (const auto& context : contexts) {
-    auto output = context->outputTypes;
-    if (output.elf.on) {
-      RteFsUtils::NormalizePath(output.elf.filename, context->directories.cprj + '/' + context->directories.outdir);
-      m_runDebug.outputs.push_back({ output.elf.filename, RteConstants::OUTPUT_TYPE_ELF });
+    // populate load entries from context outputs
+    const map<const string, const OutputType> types = {
+      { RteConstants::OUTPUT_TYPE_ELF, context->outputTypes.elf },
+      { RteConstants::OUTPUT_TYPE_HEX, context->outputTypes.hex },
+      { RteConstants::OUTPUT_TYPE_BIN, context->outputTypes.bin },
+    };
+    for (const auto& [type, output] : types) {
+      const auto& load = SetLoadFromOutput(context, output, type);
+      if (!load.file.empty()) {
+        m_runDebug.outputs.push_back(load);
+      }
     }
-    if (output.hex.on) {
-      RteFsUtils::NormalizePath(output.hex.filename, context->directories.cprj + '/' + context->directories.outdir);
-      m_runDebug.outputs.push_back({ output.hex.filename, RteConstants::OUTPUT_TYPE_HEX });
+  }
+  for (const auto& context : contexts) {
+    // merge/insert user defined load nodes
+    for (const auto& item : context->loads) {
+      bool merged = false;
+      for (auto& output : m_runDebug.outputs) {
+        if (output.file == item.file) {
+          output.info = output.info.empty() ? item.info : output.info;
+          output.type = output.type.empty() ? item.type : output.type;
+          output.run = output.run.empty() ? item.run : output.run;
+          output.debug = output.debug.empty() ? item.debug : output.debug;
+          merged = true;
+          break;
+        }
+      }
+      if (!merged) {
+        m_runDebug.outputs.push_back({ item.file, item.info, item.type, item.run, item.debug });
+      }
     }
   }
 
@@ -237,6 +259,17 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   }
 
   return true;
+}
+
+FilesType ProjMgrRunDebug::SetLoadFromOutput(const ContextItem* context, OutputType output, const string type) {
+  FilesType load;
+  if (output.on) {
+    RteFsUtils::NormalizePath(output.filename, context->directories.cprj + '/' + context->directories.outdir);
+    load.file = output.filename;
+    load.info = "generate by " + context->name;
+    load.type = type;
+  }
+  return load;
 }
 
 void ProjMgrRunDebug::GetDebugSequenceBlock(const RteItem* item, DebugSequencesBlockType& block) {

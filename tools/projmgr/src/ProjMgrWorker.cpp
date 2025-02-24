@@ -2474,13 +2474,18 @@ bool ProjMgrWorker::ProcessExecutes(ContextItem& context, bool solutionLevel) {
   return true;
 }
 
-void ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
+bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
   const vector<DebuggerItem>& debuggers = m_parser->GetCsolution().debuggers;
   for (const auto& item : debuggers) {
     if (CheckContextFilters(item.type, context)) {
       auto filtered = item;
-      if (!filtered.dbgconf.empty() && RteFsUtils::IsRelative(filtered.dbgconf)) {
-        RteFsUtils::NormalizePath(filtered.dbgconf, context.csolution->directory);
+      if (!filtered.dbgconf.empty()) {
+        if (!ProcessSequenceRelative(context, filtered.dbgconf, context.csolution->directory)) {
+          return false;
+        }
+        if (RteFsUtils::IsRelative(filtered.dbgconf)) {
+          RteFsUtils::NormalizePath(filtered.dbgconf, context.directories.cprj);
+        }
       }
       context.debuggers.push_back(filtered);
     }
@@ -2493,6 +2498,26 @@ void ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
       break;
     }
   }
+return true;
+}
+
+bool ProjMgrWorker::ProcessLoads(ContextItem& context) {
+  const vector<LoadItem>& loads = m_parser->GetCsolution().loads;
+  for (auto item : loads) {
+    if (CheckContextFilters(item.typeFilter, context)) {
+      if (item.type.empty()) {
+        item.type = ProjMgrUtils::FileTypeFromExtension(item.file);
+      }
+      if (!ProcessSequenceRelative(context, item.file, context.csolution->directory)) {
+        return false;
+      }
+      if (RteFsUtils::IsRelative(item.file)) {
+        RteFsUtils::NormalizePath(item.file, context.directories.cprj);
+      }
+      context.loads.push_back(item);
+    }
+  }
+  return true;
 }
 
 bool ProjMgrWorker::ProcessSolutionExecutes() {
@@ -3737,7 +3762,8 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
       }
     }
   }
-  ProcessDebuggers(context);
+  ret &= ProcessDebuggers(context);
+  ret &= ProcessLoads(context);
   CheckMissingPackRequirements(context.name);
   return ret;
 }
