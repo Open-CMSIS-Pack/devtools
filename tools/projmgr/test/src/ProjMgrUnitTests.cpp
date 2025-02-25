@@ -115,22 +115,29 @@ TEST_F(ProjMgrUnitTests, Validate_Logger) {
     ProjMgrLogger::Get().Info("info-1 test message");
     ProjMgrLogger::Get().Info("info-2 test message", "", "test.info");
     ProjMgrLogger::Get().Info("info-3 test message", "", "test.info", 1, 1);
+    ProjMgrLogger::out() << "cout test message" << endl;
   };
 
+  auto& ss = ProjMgrLogger::Get().GetStringStream();
   // Test quite mode
   ProjMgrLogger::m_quiet = true;
   string expErrMsg = "error csolution: error-1 test message\n\
 test.err - error csolution: error-2 test message\n\
 test.err:1:1 - error csolution: error-3 test message\n";
-  string expOutMsg = "";
+  string expOutMsg = "cout test message\n";
 
   printLogMsgs();
   auto outStr = streamRedirect.GetOutString();
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_STREQ(outStr.c_str(), expOutMsg.c_str());
   EXPECT_STREQ(errStr.c_str(), expErrMsg.c_str());
+  EXPECT_TRUE(ss.str().empty());
+  EXPECT_EQ(ProjMgrLogger::Get().GetWarnsForContext().size(), 3);
+  EXPECT_EQ(ProjMgrLogger::Get().GetInfosForContext().size(), 3);
+  EXPECT_EQ(ProjMgrLogger::Get().GetErrorsForContext().size(), 3);
 
   // Test non-quite mode
+  ProjMgrLogger::Get().Clear();
   ProjMgrLogger::m_quiet = false;
   streamRedirect.ClearStringStreams();
   expErrMsg = "debug csolution: debug-1 test message\n\
@@ -142,13 +149,43 @@ test.err - error csolution: error-2 test message\n\
 test.err:1:1 - error csolution: error-3 test message\n";
   expOutMsg = "info csolution: info-1 test message\n\
 test.info - info csolution: info-2 test message\n\
-test.info:1:1 - info csolution: info-3 test message\n";
+test.info:1:1 - info csolution: info-3 test message\n\
+cout test message\n";
 
   printLogMsgs();
   outStr = streamRedirect.GetOutString();
   errStr = streamRedirect.GetErrorString();
   EXPECT_STREQ(outStr.c_str(), expOutMsg.c_str());
   EXPECT_STREQ(errStr.c_str(), expErrMsg.c_str());
+  EXPECT_EQ(ProjMgrLogger::Get().GetWarnsForContext().size(), 3);
+  EXPECT_EQ(ProjMgrLogger::Get().GetInfosForContext().size(), 3);
+  EXPECT_EQ(ProjMgrLogger::Get().GetErrorsForContext().size(), 3);
+  EXPECT_TRUE(ss.str().empty());
+
+  // Test silent mode
+  ProjMgrLogger::Get().Clear();
+  ProjMgrLogger::m_silent = true;
+  streamRedirect.ClearStringStreams();
+  expErrMsg = "";
+  expOutMsg = "";
+
+  printLogMsgs();
+  outStr = streamRedirect.GetOutString();
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(outStr.c_str(), expOutMsg.c_str());
+  EXPECT_STREQ(errStr.c_str(), expErrMsg.c_str());
+  EXPECT_STREQ(ss.str().c_str(), "cout test message\n");
+  EXPECT_EQ(ProjMgrLogger::Get().GetWarnsForContext().size(), 3);
+  EXPECT_EQ(ProjMgrLogger::Get().GetInfosForContext().size(), 3);
+  EXPECT_EQ(ProjMgrLogger::Get().GetErrorsForContext().size(), 3);
+
+  ProjMgrLogger::Get().Clear();
+  EXPECT_EQ(ProjMgrLogger::Get().GetWarnsForContext().size(), 0);
+  EXPECT_EQ(ProjMgrLogger::Get().GetInfosForContext().size(), 0);
+  EXPECT_EQ(ProjMgrLogger::Get().GetErrorsForContext().size(), 0);
+  EXPECT_TRUE(ss.str().empty());
+  // return mode to normal to avoid affecting other tests
+  ProjMgrLogger::m_silent = false;
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_EmptyOptions) {
