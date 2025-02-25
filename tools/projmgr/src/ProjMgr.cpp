@@ -90,8 +90,8 @@ bool ProjMgr::PrintUsage(
   string signature = string("csolution: Project Manager ") + VERSION_STRING + string(" ") + COPYRIGHT_NOTICE;
   if (cmd.empty() && subCmd.empty()) {
     // print main help
-    cout << signature << endl;
-    cout << USAGE << endl;
+    ProjMgrLogger::out() << signature << endl;
+    ProjMgrLogger::out() << USAGE << endl;
     return true;
   }
 
@@ -102,7 +102,7 @@ bool ProjMgr::PrintUsage(
   }
 
   // print command help
-  cout << signature << endl;
+  ProjMgrLogger::out() << signature << endl;
   auto [optionalArg, cmdOptions] = cmdOptionsDict.at(filter);
 
   string program = ORIGINAL_FILENAME + string(" ") + cmd +
@@ -123,12 +123,12 @@ bool ProjMgr::PrintUsage(
     options.custom_help(RteUtils::EMPTY_STRING);
   }
 
-  cout << options.help() << endl;
+  ProjMgrLogger::out() << options.help() << endl;
   return true;
 }
 
 void ProjMgr::ShowVersion(void) {
-  cout << ORIGINAL_FILENAME << " " << VERSION_STRING << " " << COPYRIGHT_NOTICE << endl;
+  ProjMgrLogger::out() << ORIGINAL_FILENAME << " " << VERSION_STRING << " " << COPYRIGHT_NOTICE << endl;
 }
 
 int ProjMgr::ParseCommandLine(int argc, char** argv) {
@@ -733,7 +733,7 @@ bool ProjMgr::RunListPacks(void) {
   vector<string> packs;
   bool ret = m_worker.ListPacks(packs, m_missingPacks, m_filter);
   for (const auto& pack : packs) {
-    cout << pack << endl;
+    ProjMgrLogger::out() << pack << endl;
   }
   return ret;
 }
@@ -757,7 +757,7 @@ bool ProjMgr::RunListBoards(void) {
     return false;
   }
   for (const auto& device : boards) {
-    cout << device << endl;
+    ProjMgrLogger::out() << device << endl;
   }
   return true;
 }
@@ -781,7 +781,7 @@ bool ProjMgr::RunListDevices(void) {
     return false;
   }
   for (const auto& device : devices) {
-    cout << device << endl;
+    ProjMgrLogger::out() << device << endl;
   }
   return true;
 }
@@ -806,7 +806,7 @@ bool ProjMgr::RunListComponents(void) {
   }
 
   for (const auto& component : components) {
-    cout << component << endl;
+    ProjMgrLogger::out() << component << endl;
   }
   return true;
 }
@@ -829,7 +829,7 @@ bool ProjMgr::RunListConfigs() {
   }
 
   for (const auto& configFile : configFiles) {
-    cout << configFile << endl;
+    ProjMgrLogger::out() << configFile << endl;
   }
   return true;
 }
@@ -852,7 +852,7 @@ bool ProjMgr::RunListDependencies(void) {
   }
 
   for (const auto& dependency : dependencies) {
-    cout << dependency << endl;
+    ProjMgrLogger::out() << dependency << endl;
   }
   return true;
 }
@@ -868,7 +868,7 @@ bool ProjMgr::RunListContexts(void) {
     return false;
   }
   for (const auto& context : contexts) {
-    cout << context << endl;
+    ProjMgrLogger::out() << context << endl;
   }
   return true;
 }
@@ -891,7 +891,7 @@ bool ProjMgr::RunListGenerators(void) {
   }
 
   for (const auto& generator : generators) {
-    cout << generator << endl;
+    ProjMgrLogger::out() << generator << endl;
   }
   return true;
 }
@@ -930,7 +930,7 @@ bool ProjMgr::RunListLayers(void) {
 
   if (!m_updateIdx) {
     for (const auto& layer : layers) {
-      cout << layer << endl;
+      ProjMgrLogger::out() << layer << endl;
     }
   }
 
@@ -986,7 +986,7 @@ bool ProjMgr::RunCodeGenerator(void) {
       return false;
     }
   }
-  
+
   if (m_worker.HasToolchainErrors()) {
     return false;
   }
@@ -1027,7 +1027,7 @@ bool ProjMgr::RunListToolchains(void) {
     toolchainsSet.insert(toolchainEntry);
   }
   for (const auto& toolchainEntry : toolchainsSet) {
-    cout << toolchainEntry;
+    ProjMgrLogger::out() << toolchainEntry;
   }
   // If the worker has toolchain errors, set the success flag to false
   if (m_worker.HasToolchainErrors()) {
@@ -1040,11 +1040,11 @@ bool ProjMgr::RunListEnvironment(void) {
   string notFound = "<Not Found>";
   EnvironmentList env;
   m_worker.ListEnvironment(env);
-  cout << "CMSIS_PACK_ROOT=" << (env.cmsis_pack_root.empty() ? notFound : env.cmsis_pack_root) << endl;
-  cout << "CMSIS_COMPILER_ROOT=" << (env.cmsis_compiler_root.empty() ? notFound : env.cmsis_compiler_root) << endl;
+  ProjMgrLogger::out() << "CMSIS_PACK_ROOT=" << (env.cmsis_pack_root.empty() ? notFound : env.cmsis_pack_root) << endl;
+  ProjMgrLogger::out() << "CMSIS_COMPILER_ROOT=" << (env.cmsis_compiler_root.empty() ? notFound : env.cmsis_compiler_root) << endl;
   CrossPlatformUtils::REG_STATUS status = CrossPlatformUtils::GetLongPathRegStatus();
   if (status != CrossPlatformUtils::REG_STATUS::NOT_SUPPORTED) {
-    cout << "Long pathname support=" <<
+    ProjMgrLogger::out() << "Long pathname support=" <<
       (status == CrossPlatformUtils::REG_STATUS::ENABLED ? "enabled" : "disabled") << endl;
   }
   return true;

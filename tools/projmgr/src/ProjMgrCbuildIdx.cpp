@@ -142,7 +142,7 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
       }
 
       // errors, warnings and info messages
-      const vector<pair<StrVecMap&, const char*>> messages = {
+      const vector<pair<const StrVecMap&, const char*>> messages = {
         { ProjMgrLogger::Get().GetErrors(), YAML_ERRORS },
         { ProjMgrLogger::Get().GetWarns(), YAML_WARNINGS },
         { ProjMgrLogger::Get().GetInfos(), YAML_INFO },
