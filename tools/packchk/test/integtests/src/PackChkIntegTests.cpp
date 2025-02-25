@@ -942,7 +942,7 @@ TEST_F(PackChkIntegTests, CheckSchemaValidation) {
   }
 }
 
-// Validate invalid file path (file is directory)
+// Validate mounted and compatible board devices
 TEST_F(PackChkIntegTests, CheckBoardMountedCompatibleDevices) {
   const char* argv[5];
 
@@ -989,6 +989,46 @@ TEST_F(PackChkIntegTests, CheckBoardMountedCompatibleDevices) {
 
   if (M308_foundCnt != 2 || M318_foundCnt != 2 || M319_foundCnt != 2 || M346_foundCnt != 3 || M607_foundCnt != 1) {
     FAIL() << "error: missing message(s) on check mounted and compatible devices";
+  }
+}
+
+TEST_F(PackChkIntegTests, CheckBoardMountedCompatibleDevices2) {
+  const char* argv[9];
+
+  const string& pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/RteTestBoard/ARM.RteTestBoard.pdsc";
+  const string& pdscFileAdd1 = PackChkIntegTestEnv::globaltestdata_dir +
+    "/packs/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
+  const string& pdscFileAdd2 = PackChkIntegTestEnv::globaltestdata_dir +
+    "/packs/ARM/RteTest_DFP/0.2.0/ARM.RteTest_DFP.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFileAdd1));
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFileAdd1));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"-i";
+  argv[3] = (char*)pdscFileAdd1.c_str();
+  argv[4] = (char*)"-i";
+  argv[5] = (char*)pdscFileAdd2.c_str();
+  argv[6] = (char*)"--disable-validation";
+  argv[7] = (char*)"-x";
+  argv[8] = (char*)"!M611";
+
+  PackChk packChk;
+  EXPECT_EQ(0, packChk.Check(9, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M611_foundCnt = 0;
+  for (const string& msg : errMsgs) {
+    size_t s;
+    if ((s = msg.find("M611")) != string::npos) {
+      M611_foundCnt++;
+    }
+  }
+
+  if (M611_foundCnt != 1) {
+    FAIL() << "error: missing message(s) on check mounted devices: multiple devices found";
   }
 }
 
