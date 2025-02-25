@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <name>RteTestBoard</name>
+  <description>Testing packages listing</description>
+  <vendor>ARM</vendor>
+
+  <releases>
+    <release version="0.1.0" date="2022-03-11">
+      Initial version
+    </release>
+  </releases>
+
+  <requirements>
+    <packages>
+      <package vendor="ARM" name="RteTest_DFP" version="0.1.1:0.2.0"/>
+    </packages>
+  </requirements>
+  
+  <boards>
+    <board name="RteTest board listing" vendor="Keil" revision="Rev.C">
+      <description>uVision Simulator</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_FP"/>
+      <algorithm name="Board/Flash/BoargAlgo1.FLM" start="0x00000000" size="0x00040000" default="1"/>
+      <algorithm name="Board/Flash/BoargAlgo2.FLM" start="0x00000000" size="0x00020000" default="0"/>
+      <memory name="BoardFLASH" access="rx" start="0x30000000" size="0x00040000" startup="1" default="1"/>
+      <memory name="BoardRAM" access="rwx" start="0x40000000" size="0x00020000" uninit="1" default="1"/>
+    </board>
+    <board name="RteTest NoMCU board" vendor="Keil">
+      <description>No device board</description>
+      <mountedDevice Dvendor="NO_VENDOR:0" Dname="NO_MCU"/>
+      <memory name="BoardFLASH" access="rx" start="0x30000000" size="0x00040000" startup="1" default="1"/>
+      <memory name="BoardRAM" access="rwx" start="0x40000000" size="0x00020000" uninit="1" default="1"/>
+    </board>
+    <board name="RteTest CM4 board" vendor="Keil" revision="Rev.C">
+      <description>uVision Simulator</description>
+      <book category="overview" name="https://www.keil.arm.com/boards/" title="Development boards for application prototyping"/>
+      <book category="other" name="Documents/README.md" title="Guide" public="true"/>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
+      <algorithm name="Board/Flash/BoargAlgo1.FLM" start="0x00000000" size="0x00040000" default="1"/>
+      <algorithm name="Board/Flash/BoargAlgo2.FLM" start="0x00000000" size="0x00020000" default="0"/>
+      <memory name="BoardFLASH" access="rx" start="0x30000000" size="0x00040000" startup="1" default="1"/>
+      <memory name="BoardRAM" access="rwx" start="0x40000000" size="0x00020000" default="1"/>
+    </board>
+  </boards>
+
+</package>

@@ -1697,11 +1697,7 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
 
     map<string, RteItem*> mountedDeviceIndex;
     for(auto mountedDevice : mountedDevices) {
-      if(!mountedDevice) {
-        continue;
-      }
       lineNo = mountedDevice->GetLineNumber();
-
       const auto& devIdx = mountedDevice->GetAttribute("deviceIndex");
       auto foundDevIdxIt = mountedDeviceIndex.find(devIdx);
       if(foundDevIdxIt != mountedDeviceIndex.end()) {
@@ -1740,6 +1736,16 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
         continue;
       }
 
+      if(devices.size() > 1) {
+        LogMsg("M100", lineNo);
+      }
+
+      for(const auto device : devices) {
+        if(device->GetDeviceItemCount() > 0) {
+          LogMsg("M611", VENDOR(dvendor), MCU(dname), lineNo);
+        }
+      }
+
       RteDevice* foundDevice = *devices.begin();
       const string foundDName = foundDevice->GetName();
       const string foundDVendor = foundDevice->GetVendorString();
@@ -1750,12 +1756,7 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
         LogMsg("M381", VENDOR(dvendor), MCU(dname), VENDOR2(foundDVendor), MCU2(foundDName), LINE(lNo), board->GetLineNumber());
       }
 
-      if(devices.empty()) {
-        LogMsg("M346", VAL("BOARD", boardName), VAL("DEVICE", dname), lineNo);
-      }
-      else {
-        LogMsg("M010");
-      }
+      LogMsg("M010");
     }
 
     // ------------  compatible devices  ------------------
