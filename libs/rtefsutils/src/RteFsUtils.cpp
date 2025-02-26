@@ -549,10 +549,6 @@ fs::path RteFsUtils::AbsolutePath(const std::string& path) {
       return fs::absolute(path);
     }
     catch (fs::filesystem_error const& e) {
-      std::cout << "runtime_error: " << e.what() << std::endl;
-    }
-    catch (...) {
-      std::cout << "non-standard exception occurred" << std::endl;
     }
   }
   return fs::path();
@@ -886,7 +882,7 @@ bool RteFsUtils::FindFileWithPattern(const std::string& searchDir,
     }
   }
   catch (const std::exception& e) {
-    std::cout << "error: " << e.what() << std::endl;
+    // do nothing, anyway it is false
   }
   return false; // No matching file found
 }

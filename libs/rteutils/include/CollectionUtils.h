@@ -32,6 +32,23 @@ typename M::mapped_type get_or_default(const M& m, const typename M::key_type& k
 }
 
 /**
+ * @brief Returns reference to value stored in a map for a given key or default value reference if no entry is found
+ * @param M template parameter representing a map
+ * @param m a key-value map
+ * @param k key to search for
+ * @param v default value
+ * @return stored value if found, default value otherwise
+*/
+template<typename M>
+typename M::mapped_type const& get_or_default_const_ref(const M& m, const typename M::key_type& k, const typename M::mapped_type& v) {
+    auto itr = m.find(k);
+    if (itr != m.end()) {
+        return itr->second;
+    }
+    return v;
+}
+
+/**
  * @brief Returns value stored in a map for a given key or nullptr
  * @tparam M template parameter representing a map with the value of pointer type
  * @param m a key-value map with a value of pointer type
