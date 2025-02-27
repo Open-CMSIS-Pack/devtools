@@ -30,6 +30,7 @@ CheckFilesVisitor::CheckFilesVisitor(const string& packagePath, const string& pa
 */
 CheckFilesVisitor::~CheckFilesVisitor()
 {
+  m_checkFiles.CheckAttrConfigFiles();
 }
 
 /**
@@ -43,6 +44,7 @@ VISIT_RESULT CheckFilesVisitor::Visit(RteItem* item)
   m_checkFiles.CheckUrls(item);
   m_checkFiles.CheckDeprecated(item);
   m_checkFiles.CheckDescription(item);
+  m_checkFiles.GatherIncPathVsAttrConfig(item);
 
   return VISIT_RESULT::CONTINUE_VISIT;
 }
@@ -896,3 +898,57 @@ bool CheckFiles::CheckFileExtension(RteItem* item)
 
   return ok;
 }
+
+
+bool CheckFiles::GatherIncPathVsAttrConfig(RteItem* item)
+{
+  const auto file = dynamic_cast<RteFile*>(item);
+  if(!file) {
+    return true;
+  }
+
+  if(file->IsTemplate()) {    // ignore
+    return true;
+  }
+
+  const auto category = file->GetCategory();
+
+  if(file->IsConfig()) {
+    const auto path = file->GetOriginalAbsolutePath();
+    m_attrConfigFiles[path] = file;
+    return true;
+  }
+
+  if(category == RteFile::Category::HEADER) {
+    const auto incPath = file->GetIncludePath();
+    m_includePaths[incPath] = file;
+    return true;
+  }
+
+  if(category == RteFile::Category::INCLUDE) {
+    const auto incPath = file->GetOriginalAbsolutePath();
+    m_includePaths[incPath] = file;
+    return true;
+  }
+
+
+  return true;
+}
+
+bool CheckFiles::CheckAttrConfigFiles()
+{
+  bool bOk = true;
+
+  for(const auto& [path, item] : m_attrConfigFiles) {
+      const auto lineNo = item->GetLineNumber();
+      const auto incPathFound = m_includePaths.find(RteUtils::ExtractFilePath(path, false));
+      if(incPathFound != m_includePaths.end()) {
+        const auto itemFound = incPathFound->second;
+        LogMsg("M357", NAME(item->GetName()), LINE(itemFound->GetLineNumber()), lineNo);
+        bOk = false;
+      }
+  }
+
+  return bOk;
+}
+
