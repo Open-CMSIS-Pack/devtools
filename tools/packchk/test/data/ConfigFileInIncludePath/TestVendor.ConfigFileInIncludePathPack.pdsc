@@ -58,9 +58,16 @@ The TestSubFamily is ...
       <description>System Startup for STMicroelectronics STM32F1xx device series</description>
       <files>
         <file category="include" name="Files/"/>
-        <file category="source"  name="Files/header1.h" attr="config" version="1.0.0" condition="Test ARMCC"/>
-        <file category="header"  name="Header/header1.h" version="1.0.0" condition="Test ARMCC"/>
+        <file category="source"  name="Files/header1.h"  attr="config" version="1.0.0" condition="Test ARMCC"/>
+        <file category="header"  name="Header/header1.h"               version="1.0.0" condition="Test ARMCC"/>
         <file category="header"  name="Header/header2.h" attr="config" version="1.0.0" condition="Test ARMCC"/>
+      </files>
+    </component>
+
+    <component Cclass="Device" Cgroup="TestComponent" Cversion="1.0.0" condition="TestDevices">
+      <description>System Startup for STMicroelectronics STM32F1xx device series</description>
+      <files>
+        <file category="header"  name="Header/header3.h" attr="config" version="1.0.0" condition="Test ARMCC"/>
       </files>
     </component>
   </components>

@@ -49,10 +49,14 @@ public:
   bool GetFileName(RteItem* item, std::string& filename, FileType& fileType) const;
   bool ToUpper(std::string& text);
   std::string GetFullFilename(const std::string& fileName);
+  bool GatherIncPathVsAttrConfig(RteItem* item);
+  bool CheckAttrConfigFiles();
 
 private:
   std::string m_packagePath;
   std::string m_packageName;
+  std::map<std::string, RteItem*> m_includePaths;
+  std::map<std::string, RteItem*> m_attrConfigFiles;
 };
 
 class CheckFilesVisitor : public RteVisitor

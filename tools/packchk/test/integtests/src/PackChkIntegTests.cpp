@@ -863,7 +863,7 @@ TEST_F(PackChkIntegTests, CheckConfigFileInIncludePath) {
     }
   }
 
-  if (M357_foundCnt != 2) {
+  if (M357_foundCnt != 5) {
     FAIL() << "error: missing message M357";
   }
 }
