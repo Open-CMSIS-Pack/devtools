@@ -122,15 +122,16 @@ const map <SvdTypes::CpuType, CpuTypeFeature> SvdTypes::cpuTypeName = {
   { SvdTypes::CpuType::CM23     , {"CM23"               , "ARM Cortex-M23"    ,  0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1,     1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 240 } },
   { SvdTypes::CpuType::CM35     , {"CM35"               , "ARM Cortex-M35"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 480 } },
   { SvdTypes::CpuType::CM35P    , {"CM35P"              , "ARM Cortex-M35P"   ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 480 } },
+  { SvdTypes::CpuType::CM52     , {"CM52"               , "ARM Cortex-M52"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } }, // MVE: 0, not generated atm
+  { SvdTypes::CpuType::CM55     , {"CM55"               , "ARM Cortex-M55"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } }, // MVE: 0, not generated atm
+  { SvdTypes::CpuType::CM85     , {"CM85"               , "ARM Cortex-M85"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } }, // MVE: 0, not generated atm
   { SvdTypes::CpuType::V8MML    , {"ARMV8MML"           , "ARM ARMV8MML"      ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 480 } },
   { SvdTypes::CpuType::V8MBL    , {"ARMV8MBL"           , "ARM ARMV8MBL"      ,  0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1,     1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 240 } },
   { SvdTypes::CpuType::V81MML   , {"ARMV81MML"          , "ARM ARMV81MML"     ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } },
-  { SvdTypes::CpuType::CM55     , {"CM55"               , "ARM Cortex-M55"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } }, // MVE: 0, not generated atm
-  { SvdTypes::CpuType::CM85     , {"CM85"               , "ARM Cortex-M85"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } }, // MVE: 0, not generated atm
 
   // Arm China
   { SvdTypes::CpuType::SMC1     , {"SMC1"               , "ARM China Star-MC1",  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 480 } },  // ~ M33
-  { SvdTypes::CpuType::CM52     , {"CM52"               , "ARM Cortex-M52"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } }, // MVE: 0, not generated atm
+  { SvdTypes::CpuType::SMC2     , {"SMC1"               , "ARM China Star-MC2",  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } },
 
   // SVDConv not supported
   { SvdTypes::CpuType::CA5      , {"CA5"                , "ARM Cortex-A5"     ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
