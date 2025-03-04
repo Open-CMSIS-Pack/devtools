@@ -21,15 +21,16 @@
   CPUTYPE(CM33             , "CM33"     )
   CPUTYPE(CM35             , "CM35"     )
   CPUTYPE(CM35P            , "CM35P"    )
+  CPUTYPE(CM52             , "CM52"     )
+  CPUTYPE(CM55             , "CM55"     )
+  CPUTYPE(CM85             , "CM85"     )
   CPUTYPE(V8MML            , "ARMV8MML" )
   CPUTYPE(V8MBL            , "ARMV8MBL" )
   CPUTYPE(V81MML           , "ARMV81MML")
-  CPUTYPE(CM55             , "CM55"     )
-  CPUTYPE(CM85             , "CM85"     )
   
   // China
   CPUTYPE(SMC1             , "SMC1"     )
-  CPUTYPE(CM52             , "CM52"     )
+  CPUTYPE(SMC2             , "SMC2"     )
 
   // Types not supported by SVDConv
   CPUTYPE(CA5              , "CA5"      )
