@@ -369,7 +369,7 @@ bool SvdPeripheral::CopyItem(SvdItem *from)
   if(alternate        == "")                      { SetAlternate           (pFrom->GetAlternate           ()); }
   if(prependToName    == "")                      { SetPrependToName       (pFrom->GetPrependToName       ()); }
   if(appendToName     == "")                      { SetAppendToName        (pFrom->GetAppendToName        ()); }
-  if(disableCondition == nullptr)                 { SetDisableCondition    (pFrom->GetDisableCondition    ()); }  // TODO: Add a copy mechanism?
+  if(disableCondition == nullptr)                 { CopyDisableCondition    (pFrom->GetDisableCondition    ()); }  // TODO: Add a copy mechanism?
   if(address          == 0 )                      { SetAddress             (pFrom->GetAddress             ()); }
   if(resetValue       == 0 )                      { SetResetValue          (pFrom->GetResetValue          ()); }
   if(resetMask        == 0 )                      { SetResetMask           (pFrom->GetResetMask           ()); }
@@ -427,6 +427,17 @@ bool SvdPeripheral::CalculateMaxPaddingWidth()
   SetBitWidth(maxWidth);
 
   return true;
+}
+
+bool SvdPeripheral::CopyDisableCondition(SvdCExpression* from)
+{
+  if(!from) {
+    return true;
+  }
+
+  m_disableCondition = new SvdCExpression(*from);
+
+  return true; 
 }
 
 bool SvdPeripheral::Calculate()

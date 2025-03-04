@@ -157,3 +157,14 @@ TEST_F(SvdConvIntegTests, CheckSauNumRegions_Errors) {
     FAIL() << "Occurrences of M219, M364 are wrong.";
   }
 }
+
+// Validate NameHasBrackets
+TEST_F(SvdConvIntegTests, CheckAccViolationDisableCond) {
+  const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/accViolationDisableCond/accViolationDisableCond.xml";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+
+  SvdConv svdConv;
+  EXPECT_EQ(1, svdConv.Check(args, args, nullptr));
+}
