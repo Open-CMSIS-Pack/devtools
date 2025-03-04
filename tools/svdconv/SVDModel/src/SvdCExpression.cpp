@@ -52,7 +52,7 @@ bool SvdCExpression::LinkSymbols(SvdItem* item, const SvdCExpressionParser::Toke
   }
 
   m_symbolsList.clear();
-  Symbols_t symbol;
+  Symbols symbol;
   string errText;
 
   for(const auto& token : tokens) {
