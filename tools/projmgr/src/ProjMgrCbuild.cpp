@@ -159,7 +159,9 @@ void ProjMgrCbuild::SetDebugConfigNode(YAML::Node node, const ContextItem* conte
   map<string, StrVec> dbgconfList;
   for (const auto& debugger : context->debuggers) {
     string dbgconf = debugger.dbgconf.empty() ? context->dbgconf.first : debugger.dbgconf;
-    CollectionUtils::PushBackUniquely(dbgconfList[dbgconf], debugger.name);
+    if (!dbgconf.empty()) {
+      CollectionUtils::PushBackUniquely(dbgconfList[dbgconf], debugger.name);
+    }
   }
   if (dbgconfList.empty() && !context->dbgconf.first.empty()) {
     dbgconfList[context->dbgconf.first];
