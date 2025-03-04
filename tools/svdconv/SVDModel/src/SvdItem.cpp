@@ -235,7 +235,7 @@ bool SvdItem::ProcessXmlElement(XMLTreeElement* xmlElement)
 	}
   else if(tag == "protection") {
     const auto svdLevel = GetSvdLevel();
-    if(svdLevel == L_Device || svdLevel == L_Peripheral || svdLevel == L_Register || svdLevel == L_Cluster) {
+    if(svdLevel == L_Device || svdLevel == L_Peripheral || svdLevel == L_Register || svdLevel == L_Cluster || svdLevel == L_AddressBlock) {
       if(!SvdUtils::ConvertProtectionStringType (value, m_protection, xmlElement->GetLineNumber())) {
         SvdUtils::CheckParseError(tag, value, xmlElement->GetLineNumber());
       }
