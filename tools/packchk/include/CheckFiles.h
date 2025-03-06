@@ -51,6 +51,11 @@ public:
   std::string GetFullFilename(const std::string& fileName);
   bool GatherIncPathVsAttrConfig(RteItem* item);
   bool CheckAttrConfigFiles();
+  bool CheckCSolutionEntries(RteItem* item);
+  bool CheckCsolutionLayer(RteItem* item);
+  bool CheckCsolutionTemplate(RteItem* item);
+  bool CheckForTag(RteItem* item, const std::list<std::string>& searchAttributes);
+
 
 private:
   std::string m_packagePath;
