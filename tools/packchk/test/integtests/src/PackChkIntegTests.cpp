@@ -1155,6 +1155,53 @@ TEST_F(PackChkIntegTests, CheckConcurrentComponentFiles) {
   }
 }
 
+TEST_F(PackChkIntegTests, CheckCsolutionTag) {
+  const char* argv[3];
+
+  string pdscFile = PackChkIntegTestEnv::localtestdata_dir +
+    "/CsolutionTag/TestVendor.CsolutionTag.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+  argv[2] = (char*)"--disable-validation";
+
+  PackChk packChk;
+  EXPECT_EQ(1, packChk.Check(3, argv, nullptr));
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  int M110_foundCnt = 0;
+  int M500_foundCnt = 0;
+  int M601_foundCnt = 0;
+  int M323_foundCnt = 0;
+  int M326_foundCnt = 0;
+  int M332_foundCnt = 0;
+
+  for (const string& msg : errMsgs) {
+    if (msg.find("M110", 0) != string::npos) {
+      M110_foundCnt++;
+    }
+    if (msg.find("M500", 0) != string::npos) {
+      M500_foundCnt++;
+    }
+    if (msg.find("M601", 0) != string::npos) {
+      M601_foundCnt++;
+    }
+    if (msg.find("M323", 0) != string::npos) {
+      M323_foundCnt++;
+    }
+    if (msg.find("M326", 0) != string::npos) {
+      M326_foundCnt++;
+    }
+    if (msg.find("M332", 0) != string::npos) {
+      M332_foundCnt++;
+    }
+  }
+
+  if(M110_foundCnt != 1 || M500_foundCnt != 2 || M601_foundCnt != 7 || M323_foundCnt != 2 || M326_foundCnt != 2 || M332_foundCnt != 2 ) {
+    FAIL() << "error: Missing messages testing <csolution> tag";
+  }
+}
 
 TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Pos) {
   const char* argv[7];
