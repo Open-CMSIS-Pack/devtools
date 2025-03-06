@@ -2005,7 +2005,7 @@
       "type": "string"
     },
     "MemoryType": {
-      "title": "memory:",
+      "title": "memory:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#memory",
       "description": "Additional memory available",
       "type": "array",
       "uniqueItems": true,
@@ -2126,6 +2126,7 @@
       "required": ["name"]
     },
     "DebuggersType": {
+      "title": "debugger:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#debugger",
       "description": "Connection information to debuggers.",
       "type": "array",
       "uniqueItems": true,
@@ -2146,6 +2147,7 @@
       "required": ["name"]
     },
     "LoadsType": {
+      "title": "load:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#load",
       "description": "Specifies additional files to add to the output node.",
       "type": "array",
       "uniqueItems": true,
