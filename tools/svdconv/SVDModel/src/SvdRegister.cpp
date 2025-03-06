@@ -695,7 +695,13 @@ bool SvdRegister::CheckItem()
     Invalidate();
   }
 
-  const auto maxRegValue = ((uint64_t)1 << regWidth) -1;
+  // Officially supported register size 1..32 bits. Unofficial "support" (and max value) for 64 bits.
+  uint64_t maxRegValue = 0;
+  if(regWidth < 64) {
+    maxRegValue = (uint64_t)0x1 << regWidth;
+  }
+  maxRegValue -= 1;
+
   if(resetValue > maxRegValue) {
     LogMsg("M382", LEVEL("Register"), NAME(name), NAME2("Reset Value"), HEXNUM(resetValue), NUM(regWidth), lineNo);
     SetResetValue(0);

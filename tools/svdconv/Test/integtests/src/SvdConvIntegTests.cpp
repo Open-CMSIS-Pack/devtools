@@ -158,7 +158,6 @@ TEST_F(SvdConvIntegTests, CheckSauNumRegions_Errors) {
   }
 }
 
-// Validate NameHasBrackets
 TEST_F(SvdConvIntegTests, CheckAccViolationDisableCond) {
   const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/accViolationDisableCond/accViolationDisableCond.xml";
   ASSERT_TRUE(RteFsUtils::Exists(inFile));
@@ -168,3 +167,39 @@ TEST_F(SvdConvIntegTests, CheckAccViolationDisableCond) {
   SvdConv svdConv;
   EXPECT_EQ(1, svdConv.Check(args, args, nullptr));
 }
+
+TEST_F(SvdConvIntegTests, CheckResetMask) {
+  const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/ResetMask/ResetMask.svd";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+
+  SvdConv svdConv;
+  EXPECT_EQ(1, svdConv.Check(args, args, nullptr));
+
+  struct {
+    int M318 = 0;
+    int M351 = 0;
+    int M356 = 0;
+  } cnt;
+
+  auto errMsgs = ErrLog::Get()->GetLogMessages();
+  for (const string& msg : errMsgs) {
+    size_t s;
+
+    if ((s = msg.find("M318", 0)) != string::npos) {
+      cnt.M318++;
+    }
+    if ((s = msg.find("M351", 0)) != string::npos) {
+      cnt.M351++;
+    }
+    if ((s = msg.find("M356", 0)) != string::npos) {
+      cnt.M356++;
+    }
+  }
+
+  if(cnt.M318 != 2 || cnt.M351 != 1 || cnt.M356 != 1) {
+    FAIL() << "Occurrences of M318, M351, M356 are wrong.";
+  }
+}
+
