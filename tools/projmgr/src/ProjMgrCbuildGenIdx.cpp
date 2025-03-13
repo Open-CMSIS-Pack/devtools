@@ -28,8 +28,16 @@ ProjMgrCbuildGenIdx::ProjMgrCbuildGenIdx(YAML::Node node, const vector<ContextIt
   YAML::Node generatorNode;
   SetNodeValue(generatorNode[YAML_ID], generator.id);
   SetNodeValue(generatorNode[YAML_OUTPUT], FormatPath(gendir, output));
-  SetNodeValue(generatorNode[YAML_DEVICE], context->deviceItem.name);
-  SetNodeValue(generatorNode[YAML_BOARD], context->board);
+  if (!context->deviceItem.name.empty()) {
+    const auto& device = context->deviceItem.vendor + "::" + context->deviceItem.name +
+      (context->deviceItem.pname.empty() ? "" : ":" + context->deviceItem.pname);
+    SetNodeValue(generatorNode[YAML_DEVICE], device);
+  }
+  if (!context->boardItem.name.empty()) {
+    const auto& board = context->boardItem.vendor + "::" + context->boardItem.name +
+      (context->boardItem.revision.empty() ? "" : ":" + context->boardItem.revision);
+    SetNodeValue(generatorNode[YAML_BOARD], board);
+  }
   SetNodeValue(generatorNode[YAML_PROJECT_TYPE], type);
   for (const auto& sibling : siblings) {
     YAML::Node cbuildGenNode;
