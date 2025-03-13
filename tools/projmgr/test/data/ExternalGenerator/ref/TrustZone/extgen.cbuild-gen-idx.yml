@@ -3,7 +3,7 @@ build-gen-idx:
   generators:
     - id: RteTestExternalGenerator
       output: ${DEVTOOLS(data)}/ExternalGenerator/generated/CM0
-      device: RteTestGen_ARMCM0
+      device: ARM::RteTestGen_ARMCM0
       project-type: trustzone
       cbuild-gens:
         - cbuild-gen: ${DEVTOOLS(data)}/ExternalGenerator/tmp/ns.Debug+CM0.cbuild-gen.yml
