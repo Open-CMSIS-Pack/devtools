@@ -29,12 +29,14 @@ cbuild-run:
   system-resources:
     memory:
       - name: IROM1
+        access: rx
         start: 0x00000000
         size: 0x00040000
         default: true
         startup: true
         from-pack: ARM::RteTest_DFP@0.2.0
       - name: IRAM1
+        access: rw
         start: 0x20000000
         size: 0x00020000
         default: true

@@ -153,6 +153,7 @@ protected:
   void PushBackUniquely(std::vector<std::pair<const RteItem*, std::vector<std::string>>>& vec,
     const RteItem* item, const std::string pname);
   FilesType SetLoadFromOutput(const ContextItem* context, OutputType output, const std::string type);
+  std::string GetAccessAttributes(const RteItem* mem);
 };
 
 #endif  // PROJMGRRUNDEBUG_H

@@ -127,7 +127,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   for (const auto& [memory, pname] : memories) {
     MemoryType item;
     item.name = memory->GetName();
-    item.access = memory->GetAccess();
+    item.access = GetAccessAttributes(memory);
     item.alias = memory->GetAlias();
     item.start = memory->GetAttributeAsULL("start");
     item.size = memory->GetAttributeAsULL("size");
@@ -314,4 +314,14 @@ void ProjMgrRunDebug::PushBackUniquely(vector<pair<const RteItem*, vector<string
     }
   }
   vec.push_back({ item, { pname } });
+}
+
+string ProjMgrRunDebug::GetAccessAttributes(const RteItem* mem)
+{
+  string access = mem->GetAccess();
+  if (access.empty()) {
+    RteItem m = *mem;
+    access = string(m.IsReadAccess() ? "r" : "") + (m.IsWriteAccess() ? "w" : "") + (m.IsExecuteAccess() ? "x" : "");
+  }
+  return access;
 }
