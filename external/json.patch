@@ -1,5 +1,15 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b93c6e47..11448a52 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.1)
++cmake_minimum_required(VERSION 3.10)
+ 
+ ##
+ ## PROJECT
 diff --git a/include/nlohmann/detail/exceptions.hpp b/include/nlohmann/detail/exceptions.hpp
-index b4b180496..597f835d8 100644
+index b4b18049..597f835d 100644
 --- a/include/nlohmann/detail/exceptions.hpp
 +++ b/include/nlohmann/detail/exceptions.hpp
 @@ -127,9 +127,8 @@ class parse_error : public exception
@@ -41,7 +51,7 @@ index b4b180496..597f835d8 100644
  
  /// @brief exception indicating errors with iterators
 diff --git a/single_include/nlohmann/json.hpp b/single_include/nlohmann/json.hpp
-index 92308c557..479aad4a5 100644
+index 92308c55..479aad4a 100644
 --- a/single_include/nlohmann/json.hpp
 +++ b/single_include/nlohmann/json.hpp
 @@ -2912,9 +2912,8 @@ class parse_error : public exception

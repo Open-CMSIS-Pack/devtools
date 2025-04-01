@@ -1,7 +1,13 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index e6aff61..fa90bc0 100644
+index e6aff61..8826dae 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.2)
++cmake_minimum_required(VERSION 3.10)
+ 
+ option(JSON_VALIDATOR_BUILD_TESTS    "Build tests"    ON)
+ option(JSON_VALIDATOR_BUILD_EXAMPLES "Build examples" ON)
 @@ -132,9 +132,9 @@ set(INSTALL_CMAKE_DIR "lib/cmake/${PROJECT_NAME}")
  set(INSTALL_CMAKEDIR_ROOT share/cmake)
  
@@ -16,7 +22,7 @@ index e6aff61..fa90bc0 100644
  include(CMakePackageConfigHelpers)
  write_basic_package_version_file(
 diff --git a/src/json-validator.cpp b/src/json-validator.cpp
-index 0beb613..0a9122b 100644
+index 0beb613..4f3213f 100644
 --- a/src/json-validator.cpp
 +++ b/src/json-validator.cpp
 @@ -218,12 +218,16 @@ public:
