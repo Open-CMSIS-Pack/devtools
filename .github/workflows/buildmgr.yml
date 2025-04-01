@@ -196,7 +196,7 @@ jobs:
   create_installer:
     needs: [ setup, build, docs ]
     # Debian package generation in ubuntu 22.04 produces incompatible metadata
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
       - name: Harden Runner
