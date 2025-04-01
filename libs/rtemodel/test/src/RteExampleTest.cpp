@@ -86,6 +86,7 @@ TEST_F(RteExampleTest, TestExamplePaths) {
 
   RteExample *preIncludeExample = nullptr;
   RteExample *preIncludeEnvFolderExample = nullptr;
+
   for (auto exampleIt = exampleList.begin(); exampleIt != exampleList.end(); exampleIt++) {
     RteExample *example = dynamic_cast<RteExample*>(*exampleIt);
     if (example == nullptr) {

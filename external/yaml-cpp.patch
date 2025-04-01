@@ -1,3 +1,14 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 46dc180..b746ac1 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ # 3.5 is actually available almost everywhere, but this a good minimum
+-cmake_minimum_required(VERSION 3.4)
++cmake_minimum_required(VERSION 3.5)
+ 
+ # enable MSVC_RUNTIME_LIBRARY target property
+ # see https://cmake.org/cmake/help/latest/policy/CMP0091.html
 diff --git a/include/yaml-cpp/emittermanip.h b/include/yaml-cpp/emittermanip.h
 index 976d149..ba73a48 100644
 --- a/include/yaml-cpp/emittermanip.h
@@ -66,7 +77,7 @@ index 07cf81a..ed7d9cd 100644
    void convert_sequence_to_map(const shared_memory_holder& pMemory);
  
 diff --git a/src/emitter.cpp b/src/emitter.cpp
-index 4d48307..d4485be 100644
+index 4d48307..a188cca 100644
 --- a/src/emitter.cpp
 +++ b/src/emitter.cpp
 @@ -721,7 +721,7 @@ Emitter& Emitter::Write(const std::string& str) {
@@ -167,6 +178,3 @@ index 9d0c790..37355aa 100644
 +
  }  // namespace
  }  // namespace YAML
--- 
-2.34.1.windows.1
-
