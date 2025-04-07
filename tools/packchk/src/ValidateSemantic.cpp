@@ -277,11 +277,13 @@ bool ValidateSemantic::CheckMemories(RteDeviceItem* device)
         }
       }
 
-      // Check startup attribute
+     // Check startup attribute
      if(startup == "1") {
         rxRegionWithStartup.push_back(memory);
-        if(access.find_first_of("x") == string::npos) {
-          LogMsg("M608", NAME(memoryName), ATTR("startup"), VALUE("1"), ATTR2("access"), VALUE2("x"), lineNo);
+        if(id.find("IROM") != 0 && id.find("IRAM") != 0) {  // no deprecated IRAM / IROM which have eXecute implicitly set
+          if(access.find_first_of("x") == string::npos) {
+            LogMsg("M608", NAME(memoryName), ATTR("startup"), VALUE("1"), ATTR2("access"), VALUE2("x"), lineNo);
+          }
         }
       }
     }
