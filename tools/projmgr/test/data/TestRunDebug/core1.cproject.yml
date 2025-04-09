@@ -2,8 +2,4 @@
 
 project:
 
-  components:
-    - component: Startup
-    - component: CORE
-    - component: RteTest:scvd
-      for-context: +TestHW2
+  device: :cm0_core1

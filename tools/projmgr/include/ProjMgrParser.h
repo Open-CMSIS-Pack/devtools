@@ -424,7 +424,7 @@ struct CdefaultItem {
  * @brief debugger item containing
  *        name of debug configuration
  *        brief description
- *        debug port (jtag or swd)
+ *        debug protocol (jtag or swd)
  *        debug clock speed
  *        debug configuration file
  *        type filter
@@ -432,7 +432,7 @@ struct CdefaultItem {
 struct DebuggerItem {
   std::string name;
   std::string info;
-  std::string port;
+  std::string protocol;
   std::string clock;
   std::string dbgconf;
   TypeFilter type;

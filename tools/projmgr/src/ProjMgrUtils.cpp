@@ -434,9 +434,9 @@ bool ProjMgrUtils::ContainsIncompatiblePack(const std::list<RtePackage*>& packs,
   return incompatible;
 }
 
-const string ProjMgrUtils::ULLToHex(const unsigned long long number) {
+const string ProjMgrUtils::ULLToHex(const unsigned long long number, int width) {
   stringstream ss;
-  ss << "0x" << hex << setfill('0') << uppercase << setw(8) << number;
+  ss << "0x" << hex << setfill('0') << uppercase << setw(width) << number;
   return ss.str();
 }
 

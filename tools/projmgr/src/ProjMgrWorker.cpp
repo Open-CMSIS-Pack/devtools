@@ -2808,7 +2808,9 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
 
   // Additional memory
   for (auto& item : context.memory) {
-    RteFsUtils::NormalizePath(item.algorithm, context.csolution->directory);
+    if (!item.algorithm.empty()) {
+      RteFsUtils::NormalizePath(item.algorithm, context.csolution->directory);
+    }
   }
 
   // Optimize

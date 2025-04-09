@@ -26,6 +26,10 @@ protected:
   void SetDebugVarsNode(YAML::Node node, const DebugVarsType& debugVars);
   void SetDebugSequencesNode(YAML::Node node, const std::vector<DebugSequencesType>& algorithms);
   void SetDebugSequencesBlockNode(YAML::Node node, const std::vector<DebugSequencesBlockType>& blocks);
+  void SetDebugTopologyNode(YAML::Node node, const DebugTopologyType& topology);
+  void SetProcessorsNode(YAML::Node node, const std::vector<ProcessorType>& processors);
+  void SetDebugPortsNode(YAML::Node node, const std::vector<DebugPortType>& debugPorts);
+  void SetAccessPortsNode(YAML::Node node, const std::vector<AccessPortType>& accessPorts);
 };
 
 ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
@@ -34,35 +38,29 @@ ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
   SetNodeValue(node[YAML_SOLUTION], FormatPath(debugRun.solution, directory));
   SetNodeValue(node[YAML_TARGETTYPE], debugRun.targetType);
   SetNodeValue(node[YAML_COMPILER], debugRun.compiler);
-  SetNodeValue(node[YAML_DEVICE], debugRun.device);
-  SetNodeValue(node[YAML_DEVICE_PACK], debugRun.devicePack);
   SetNodeValue(node[YAML_BOARD], debugRun.board);
   SetNodeValue(node[YAML_BOARD_PACK], debugRun.boardPack);
-  SetProgrammingNode(node[YAML_PROGRAMMING], debugRun.algorithms);
-  SetFilesNode(node[YAML_SYSTEM_DESCRIPTIONS], debugRun.systemDescriptions);
+  SetNodeValue(node[YAML_DEVICE], debugRun.device);
+  SetNodeValue(node[YAML_DEVICE_PACK], debugRun.devicePack);
   SetFilesNode(node[YAML_OUTPUT], debugRun.outputs);
   SetResourcesNode(node[YAML_SYSTEM_RESOURCES], debugRun.systemResources);
+  SetFilesNode(node[YAML_SYSTEM_DESCRIPTIONS], debugRun.systemDescriptions);
   SetDebuggersNode(node[YAML_DEBUGGER], debugRun.debuggers);
   SetDebugVarsNode(node[YAML_DEBUG_VARS], debugRun.debugVars);
   SetDebugSequencesNode(node[YAML_DEBUG_SEQUENCES], debugRun.debugSequences);
+  SetProgrammingNode(node[YAML_PROGRAMMING], debugRun.algorithms);
+  SetDebugTopologyNode(node[YAML_DEBUG_TOPOLOGY], debugRun.debugTopology);
 };
 
 void ProjMgrCbuildRun::SetProgrammingNode(YAML::Node node, const std::vector<AlgorithmType>& algorithms) {
   for (const auto& item : algorithms) {
     YAML::Node algorithmNode;
     SetNodeValue(algorithmNode[YAML_ALGORITHM], FormatPath(item.algorithm, m_directory));
-    if (item.size > 0) {
-      SetNodeValue(algorithmNode[YAML_START], ProjMgrUtils::ULLToHex(item.start));
-      SetNodeValue(algorithmNode[YAML_SIZE], ProjMgrUtils::ULLToHex(item.size));
-    }
-    if (item.ramSize > 0) {
-      SetNodeValue(algorithmNode[YAML_RAM_START], ProjMgrUtils::ULLToHex(item.ramStart));
-      SetNodeValue(algorithmNode[YAML_RAM_SIZE], ProjMgrUtils::ULLToHex(item.ramSize));
-    }
-    if (item.bDefault) {
-      algorithmNode[YAML_DEFAULT] = true;
-    }
-    SetNodeValue(algorithmNode[YAML_PNAME], item.pname);
+    SetNodeValue(algorithmNode[YAML_START], ProjMgrUtils::ULLToHex(item.start));
+    SetNodeValue(algorithmNode[YAML_SIZE], ProjMgrUtils::ULLToHex(item.size));
+    SetNodeValue(algorithmNode[YAML_RAM_START], ProjMgrUtils::ULLToHex(item.ram.start));
+    SetNodeValue(algorithmNode[YAML_RAM_SIZE], ProjMgrUtils::ULLToHex(item.ram.size));
+    SetNodeValue(algorithmNode[YAML_PNAME], item.ram.pname);
     node.push_back(algorithmNode);
   }
 }
@@ -85,20 +83,9 @@ void ProjMgrCbuildRun::SetResourcesNode(YAML::Node node, const SystemResourcesTy
     YAML::Node memoryNode;
     SetNodeValue(memoryNode[YAML_NAME], item.name);
     SetNodeValue(memoryNode[YAML_ACCESS], item.access);
-    if (item.size > 0) {
-      SetNodeValue(memoryNode[YAML_START], ProjMgrUtils::ULLToHex(item.start));
-      SetNodeValue(memoryNode[YAML_SIZE], ProjMgrUtils::ULLToHex(item.size));
-    }
-    if (item.bDefault) {
-      memoryNode[YAML_DEFAULT] = true;
-    }
-    if (item.bStartup) {
-      memoryNode[YAML_STARTUP] = true;
-    }
+    SetNodeValue(memoryNode[YAML_START], ProjMgrUtils::ULLToHex(item.start));
+    SetNodeValue(memoryNode[YAML_SIZE], ProjMgrUtils::ULLToHex(item.size));
     SetNodeValue(memoryNode[YAML_PNAME], item.pname);
-    if (item.bUninit) {
-      memoryNode[YAML_UNINIT] = true;
-    }
     SetNodeValue(memoryNode[YAML_ALIAS], item.alias);
     SetNodeValue(memoryNode[YAML_FROM_PACK], item.fromPack);
     node[YAML_MEMORY].push_back(memoryNode);
@@ -110,7 +97,7 @@ void ProjMgrCbuildRun::SetDebuggersNode(YAML::Node node, const std::vector<Debug
     YAML::Node debuggerNode;
     SetNodeValue(debuggerNode[YAML_NAME], item.name);
     SetNodeValue(debuggerNode[YAML_INFO], item.info);
-    SetNodeValue(debuggerNode[YAML_PORT], item.port);
+    SetNodeValue(debuggerNode[YAML_PROTOCOL], item.protocol);
     debuggerNode[YAML_CLOCK] = item.clock;
     SetNodeValue(debuggerNode[YAML_DBGCONF], FormatPath(item.dbgconf, m_directory));
     node.push_back(debuggerNode);
@@ -136,12 +123,15 @@ void ProjMgrCbuildRun::SetDebugSequencesNode(YAML::Node node, const std::vector<
 
 void ProjMgrCbuildRun::SetDebugSequencesBlockNode(YAML::Node node, const std::vector<DebugSequencesBlockType>& blocks) {
   for (const auto& block : blocks) {
+    if (block.execute.empty() && block.blocks.empty()) {
+      continue;
+    }
     YAML::Node blockNode;
     SetNodeValue(blockNode[YAML_INFO], block.info);
     SetNodeValue(blockNode[YAML_IF], block.control_if);
     SetNodeValue(blockNode[YAML_WHILE], block.control_while);
-    if (!block.timeout.empty()) {
-      blockNode[YAML_TIMEOUT] = RteUtils::StringToULL(block.timeout);
+    if (block.timeout.has_value()) {
+      blockNode[YAML_TIMEOUT] = block.timeout.value();
     }
     if (block.bAtomic) {
       blockNode[YAML_ATOMIC] = YAML::Null;
@@ -151,6 +141,71 @@ void ProjMgrCbuildRun::SetDebugSequencesBlockNode(YAML::Node node, const std::ve
     }
     SetDebugSequencesBlockNode(blockNode[YAML_BLOCKS], block.blocks);
     node.push_back(blockNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetDebugTopologyNode(YAML::Node node, const DebugTopologyType& topology) {
+  SetDebugPortsNode(node[YAML_DEBUGPORTS], topology.debugPorts);
+  SetProcessorsNode(node[YAML_PROCESSORS], topology.processors);
+  if (topology.swj.has_value()) {
+    node[YAML_SWJ] = topology.swj.value();
+  }
+  if (topology.dormant.has_value()) {
+    node[YAML_DORMANT] = topology.dormant.value();
+  }
+  if (!topology.sdf.empty()) {
+    SetNodeValue(node[YAML_SDF], FormatPath(topology.sdf, m_directory));
+  }
+}
+
+void ProjMgrCbuildRun::SetDebugPortsNode(YAML::Node node, const vector<DebugPortType>& debugPorts) {
+  for (const auto& dp : debugPorts) {
+    YAML::Node dpNode;
+    dpNode[YAML_DPID] = dp.dpid;
+    if (dp.jtagTapIndex.has_value()) {
+      dpNode[YAML_JTAG][YAML_TAPINDEX] = dp.jtagTapIndex.value();
+    }
+    if (dp.swdTargetSel.has_value()) {
+      dpNode[YAML_SWD][YAML_TARGETSEL] = dp.swdTargetSel.value();
+    }
+    SetAccessPortsNode(dpNode[YAML_ACCESSPORTS], dp.accessPorts);
+    node.push_back(dpNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetAccessPortsNode(YAML::Node node, const vector<AccessPortType>& accessPorts) {
+  for (const auto& ap : accessPorts) {
+    YAML::Node apNode;
+    apNode[YAML_APID] = ap.apid;
+    if (ap.index.has_value()) {
+      apNode[YAML_INDEX] = ap.index.value();
+    }
+    if (ap.address.has_value()) {
+      SetNodeValue(apNode[YAML_ADDRESS], ProjMgrUtils::ULLToHex(ap.address.value()));
+    }
+    if (ap.hprot.has_value()) {
+      SetNodeValue(apNode[YAML_HPROT], ProjMgrUtils::ULLToHex(ap.hprot.value(), 1));
+    }
+    if (ap.sprot.has_value()) {
+      SetNodeValue(apNode[YAML_SPROT], ProjMgrUtils::ULLToHex(ap.sprot.value(), 1));
+    }
+    SetAccessPortsNode(apNode[YAML_ACCESSPORTS], ap.accessPorts);
+    node.push_back(apNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetProcessorsNode(YAML::Node node, const vector<ProcessorType>& processors) {
+  for (const auto& processor : processors) {
+    if (processor.pname.empty() && processor.resetSequence.empty() && !processor.apid.has_value()) {
+      continue;
+    }
+    YAML::Node processorNode;
+    SetNodeValue(processorNode[YAML_PNAME], processor.pname);
+    if (processor.apid.has_value()) {
+      processorNode[YAML_APID] = processor.apid.value();
+    }
+    SetNodeValue(processorNode[YAML_RESET_SEQUENCE], processor.resetSequence);
+    node.push_back(processorNode);
   }
 }
 

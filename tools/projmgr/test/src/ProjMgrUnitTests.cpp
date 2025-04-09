@@ -6717,6 +6717,21 @@ TEST_F(ProjMgrUnitTests, TestRunDebug) {
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW2.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, TestRunDebugMulticore) {
+  char* argv[8];
+  const string& csolution = testinput_folder + "/TestRunDebug/run-debug.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--context-set";
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"--context";
+  argv[7] = (char*)"+TestHW3";
+  EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW3.cbuild-run.yml",
+    testinput_folder + "/TestRunDebug/ref/run-debug+TestHW3.cbuild-run.yml");
+}
+
 TEST_F(ProjMgrUnitTests, Test_Check_Define_Value_With_Quotes) {
   StdStreamRedirect streamRedirect;
   char* argv[6];
