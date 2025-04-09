@@ -16,9 +16,16 @@ solution:
           algorithm: CustomAlgo.flm
     - type: TestHW2
       board: RteTest-Test-board With.Memory
+    - type: TestHW3
+      device: RteTest_ARMCM0_Dual
 
   projects:
     - project: run-debug.cproject.yml
+      for-context: [+TestHW, +TestHW2]
+    - project: core0.cproject.yml
+      for-context: +TestHW3
+    - project: core1.cproject.yml
+      for-context: +TestHW3
 
   packs:
     - pack: ARM::RteTest_DFP
@@ -26,7 +33,7 @@ solution:
   debugger:
     - name: TestDebugger1
       info: Info for TestDebugger1
-      port: jtag
+      protocol: jtag
       clock: 20000000
       dbgconf: RTE/Device/RteTest1/RteTest1.dbgconf
       for-context: +TestHW

@@ -1,20 +1,12 @@
 cbuild-run:
-  generated-by: csolution version 2.8.0
+  generated-by: csolution version 2.9.0
   solution: ../data/TestRunDebug/run-debug.csolution.yml
   target-type: TestHW2
   compiler: AC6
-  device: ARM::RteTest_ARMCM3
-  device-pack: ARM::RteTest_DFP@0.2.0
   board: Keil::RteTest-Test-board With.Memory:1.1.1
   board-pack: ARM::RteTest_DFP@0.2.0
-  programming:
-    - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/FAMILY.FLM
-      start: 0x00000000
-      size: 0x00040000
-      default: true
-  system-descriptions:
-    - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM3.svd
-      type: svd
+  device: ARM::RteTest_ARMCM3
+  device-pack: ARM::RteTest_DFP@0.2.0
   output:
     - file: out/run-debug/TestHW2/run-debug.axf
       info: generate by run-debug+TestHW2
@@ -32,15 +24,11 @@ cbuild-run:
         access: rx
         start: 0x00000000
         size: 0x00040000
-        default: true
-        startup: true
         from-pack: ARM::RteTest_DFP@0.2.0
       - name: IRAM1
-        access: rw
+        access: rwx
         start: 0x20000000
         size: 0x00020000
-        default: true
-        uninit: true
         from-pack: ARM::RteTest_DFP@0.2.0
       - name: RAM-External
         access: rwx
@@ -52,9 +40,14 @@ cbuild-run:
         start: 0x70000000
         size: 0x04000000
         from-pack: ARM::RteTest_DFP@0.2.0
+  system-descriptions:
+    - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM3.svd
+      type: svd
+    - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Components/RteTest.scvd
+      type: scvd
   debugger:
     - name: CMSIS-DAP
-      port: swd
+      protocol: swd
       clock: 30000000
       dbgconf: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM.dbgconf
   debug-vars:
@@ -121,3 +114,21 @@ cbuild-run:
             WriteDP(DP_SELECT, 0x00000000);
             // Power Down Debug port
             WriteDP(DP_CTRL_STAT, 0x00000000);
+  programming:
+    - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/FAMILY.FLM
+      start: 0x00000000
+      size: 0x00040000
+      ram-start: 0x20000000
+      ram-size: 0x00020000
+  debug-topology:
+    debugports:
+      - dpid: 0
+        accessports:
+          - apid: 2
+            index: 20
+            HPROT: 0x2
+            SPROT: 0x1
+          - apid: 4
+            address: 0x00400000
+            HPROT: 0xF
+            SPROT: 0x0

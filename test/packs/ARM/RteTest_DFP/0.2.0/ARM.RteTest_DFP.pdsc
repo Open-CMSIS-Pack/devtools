@@ -133,6 +133,11 @@
         <processor Pname="cm0_core0" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000" />
         <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
         <compile header="Device/ARM/ARMCM0/Include/ARMCM0.h" define="ARMCM0"/>
+        <memory name="FLASH_DUAL" access="rx" start="0x00000000" size="0x00080000" startup="1" default="1" Pname="cm0_core0"/>
+        <memory name="SRAM_DUAL"  access="rwx" start="0x80000000" size="0x00020000" uninit="1" default="1" Pname="cm0_core1"/>
+        <debug defaultResetSequence="ResetSystem0" Pname="cm0_core0"/> 
+        <debug defaultResetSequence="ResetSystem1" Pname="cm0_core1"/> 
+        <algorithm name="Device/ARM/Flash/CortexM4Dual.FLM" start="0x000A0000" size="0x00020000" RAMstart="0x000C0000" RAMsize="0x00040000" Pname="cm0_core1"/>
       </device>
       <device Dname="RteTest_ARMCM0_Single">
         <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
@@ -151,6 +156,9 @@
         RteTest ARM Cortex M3 is a clone description from ARM.CMSIS pack.
       </description>
       <debug svd="Device/ARM/SVD/ARMCM3.svd"/>  <!-- SVD files do not contain any peripheral -->
+      <accessportV1 __apid="2" index="20" HPROT="0x2" SPROT="1"/>
+      <accessportV2 __apid="4" address="0x00400000" HPROT="0xF" SPROT="0"/>
+
       <memory id="IROM1" start="0x00000000" size="0x00040000" startup="1" default="1"/>
       <memory id="IRAM1" start="0x20000000" size="0x00020000" uninit="1" default="1"/>
 
@@ -166,13 +174,23 @@
       <description>
         RteTest ARM Cortex M4 is a clone description from ARM.CMSIS pack.
       </description>
-      <debugconfig default="jtag" clock="40000000"/>
+      <debugconfig default="jtag" clock="40000000" swj="0" dormant="1" sdf="Device/ARM/Debug/ARMCM4.sdf"/>
+      <debugport __dp="0">
+        <jtag tapindex="7"/> 
+      </debugport>
+      <debugport __dp="1">
+        <swd targetsel="8"/>
+      </debugport>
       <debugvars configfile="Device/ARM/Debug/ARMCM4.dbgconf" version="0.2.1" >
         __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
         __var TraceClk_Pin   = 0x00040003;   // PE2
         __var TraceD0_Pin    = 0x00040003;   // PE4
       </debugvars>
       <debug svd="Device/ARM/SVD/ARMCM4.svd"/>  <!-- SVD files do not contain any peripheral -->
+      <accessportV1 __apid="1" index="10"/>
+      <accessportV2 __apid="2" address="0x00200000"/>
+      <accessportV2 __apid="3" address="0x00300000" parent="2"/>
+
       <memory name="FLASH" access="rx" start="0x00000000" size="0x00040000" startup="1" default="1"/>
       <memory name="SRAM"  access="rwx" start="0x20000000" size="0x00020000" uninit="1" default="1"/>
       <algorithm name="Device/ARM/Flash/CortexM4SubFamily.FLM" start="0x00000000" size="0x00040000" default="1"/>
@@ -432,6 +450,13 @@
       <description>Dependency on device</description>
       <files>
         <file attr="config" category="sourceC" name="Components/DeviceDependency.c" />
+      </files>
+    </component>
+
+    <component Cclass="RteTest" Cgroup="scvd" Cversion="1.1.1" condition="ARMCM3 RteTest">
+    <description>scvd test</description>
+      <files>
+        <file category="other"  name="Components/RteTest.scvd"/>
       </files>
     </component>
 
