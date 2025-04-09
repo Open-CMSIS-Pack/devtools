@@ -153,7 +153,9 @@ void ProjMgrCbuildRun::SetDebugTopologyNode(YAML::Node node, const DebugTopology
   if (topology.dormant.has_value()) {
     node[YAML_DORMANT] = topology.dormant.value();
   }
-  SetNodeValue(node[YAML_SDF], FormatPath(topology.sdf, m_directory));
+  if (!topology.sdf.empty()) {
+    SetNodeValue(node[YAML_SDF], FormatPath(topology.sdf, m_directory));
+  }
 }
 
 void ProjMgrCbuildRun::SetDebugPortsNode(YAML::Node node, const vector<DebugPortType>& debugPorts) {
