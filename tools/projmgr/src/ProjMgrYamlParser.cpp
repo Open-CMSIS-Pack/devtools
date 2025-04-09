@@ -587,7 +587,7 @@ bool ProjMgrYamlParser::ParseDebugger(const YAML::Node& parent, const string& fi
       DebuggerItem debuggerItem;
       ParseString(debuggerEntry, YAML_NAME, debuggerItem.name);
       ParseString(debuggerEntry, YAML_INFO, debuggerItem.info);
-      ParseString(debuggerEntry, YAML_PORT, debuggerItem.port);
+      ParseString(debuggerEntry, YAML_PROTOCOL, debuggerItem.protocol);
       ParseNumber(debuggerEntry, file, YAML_CLOCK, debuggerItem.clock);
       ParsePortablePath(debuggerEntry, file, YAML_DBGCONF, debuggerItem.dbgconf);
       if (!ParseTypeFilter(debuggerEntry, debuggerItem.type)) {

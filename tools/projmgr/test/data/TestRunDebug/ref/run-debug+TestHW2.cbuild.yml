@@ -72,6 +72,14 @@ build:
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
           category: doc
           version: 0.1.1
+    - component: ARM::RteTest:scvd@1.1.1
+      condition: ARMCM3 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: RteTest:scvd
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Components/RteTest.scvd
+          category: other
+          version: 1.1.1
   apis:
     - api: RteTest:CORE@1.1.2
       from-pack: ARM::RteTest_DFP@0.2.0
@@ -93,4 +101,5 @@ build:
       components:
         - component: ARM::Device:Startup&RteTest Startup@2.0.3
         - component: ARM::RteTest:CORE@0.1.1
+        - component: ARM::RteTest:scvd@1.1.1
         - component: RteTest:CORE(API)

@@ -9,6 +9,15 @@
 
 #include "ProjMgrWorker.h"
 
+ /**
+  * @brief ram type
+ */
+struct RamType {
+  unsigned long long start = 0;
+  unsigned long long size = 0;
+  std::string pname;
+};
+
 /**
   * @brief programming algorithm types
  */
@@ -16,10 +25,7 @@ struct AlgorithmType {
   std::string algorithm;
   unsigned long long start = 0;
   unsigned long long size = 0;
-  unsigned long long ramStart = 0;
-  unsigned long long ramSize = 0;
-  bool bDefault = false;
-  std::string pname;
+  RamType ram;
 };
 
 /**
@@ -32,9 +38,6 @@ struct MemoryType {
   std::string fromPack;
   unsigned long long start = 0;
   unsigned long long size = 0;
-  bool bDefault = false;
-  bool bStartup = false;
-  bool bUninit = false;
   std::string pname;
 };
 
@@ -65,7 +68,7 @@ struct DebugSequencesBlockType {
   std::string execute;
   std::string control_if;
   std::string control_while;
-  std::string timeout;
+  std::optional<unsigned int>timeout;
   bool bAtomic = false;
   std::vector<DebugSequencesBlockType> blocks;
 };
@@ -93,9 +96,60 @@ struct DebugVarsType {
 struct DebuggerType {
   std::string name;
   std::string info;
-  std::string port;
+  std::string protocol;
   unsigned long long clock = 0;
   std::string dbgconf;
+};
+
+/**
+ * @brief punit type
+*/
+struct PunitType {
+  std::optional<unsigned int> punit;
+  std::optional<unsigned long long> address;
+};
+
+/**
+ * @brief processor type
+*/
+struct ProcessorType {
+  std::string pname;
+  std::vector<PunitType> punits;
+  std::optional<unsigned int> apid;
+  std::string resetSequence;
+};
+
+/**
+ * @brief access port type
+*/
+struct AccessPortType {
+  unsigned int apid;
+  std::optional<unsigned int> index;
+  std::optional<unsigned long long> address;
+  std::optional<unsigned int> hprot;
+  std::optional<unsigned int> sprot;
+  std::vector<AccessPortType> accessPorts;
+};
+
+/**
+ * @brief debug port type
+*/
+struct DebugPortType {
+  unsigned int dpid;
+  std::optional<unsigned int> jtagTapIndex;
+  std::optional<unsigned int> swdTargetSel;
+  std::vector<AccessPortType> accessPorts;
+};
+
+/**
+ * @brief debug topology type
+*/
+struct DebugTopologyType {
+  std::vector<DebugPortType> debugPorts;
+  std::vector<ProcessorType> processors;
+  std::optional<bool> swj;
+  std::optional<bool> dormant;
+  std::string sdf;
 };
 
  /**
@@ -117,6 +171,7 @@ struct RunDebugType {
   std::vector<DebuggerType> debuggers;
   DebugVarsType debugVars;
   std::vector<DebugSequencesType> debugSequences;
+  DebugTopologyType debugTopology;
 };
 
 /**
@@ -154,6 +209,9 @@ protected:
     const RteItem* item, const std::string pname);
   FilesType SetLoadFromOutput(const ContextItem* context, OutputType output, const std::string type);
   std::string GetAccessAttributes(const RteItem* mem);
+  void SetAccessPorts(std::vector<AccessPortType>& parent, const std::map<unsigned int,
+    std::vector<AccessPortType>>& childrenMap);
+  void SetProtNodes(const RteDeviceProperty* item, AccessPortType& ap);
 };
 
 #endif  // PROJMGRRUNDEBUG_H

@@ -781,7 +781,7 @@ bool RteItem::IsExecuteAccess()
 {
   const string& id = GetAttribute("id");
   if (!id.empty()) {
-    return id.find("IROM") == 0;
+    return id.find("IROM") == 0 || id.find("IRAM") == 0;
   }
   const string& access = GetAccess();
   return access.find('x') != string::npos;

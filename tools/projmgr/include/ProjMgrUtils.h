@@ -276,9 +276,10 @@ public:
   /**
    * @brief convert ULL to hex string
    * @param unsigned long long number
+   * @param width of hexadecimal string, default 8 digits
    * @return hexadecimal string
   */
-  static const std::string ULLToHex(unsigned long long number);
+  static const std::string ULLToHex(unsigned long long number, int width = 8);
 
   /**
    * @brief get variable name

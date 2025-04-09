@@ -2000,7 +2000,7 @@
       "additionalProperties": false
     },
     "MemoryAccessType": {
-      "description": "Memory access permission.",
+      "description": "Access attribute string for the memory.",
       "pattern": "^[rwxpsnc]+$",
       "type": "string"
     },
@@ -2014,16 +2014,18 @@
     "MemoryItem": {
       "type": "object",
       "properties": {
-        "name":     { "title": "name:", "type": "string", "description": "Memory identifier." },
+        "name":     { "title": "name:", "type": "string", "description": "Identifier of the memory." },
         "access":   { "title": "access:", "$ref": "#/definitions/MemoryAccessType" },
-        "algorithm":{ "title": "algorithm:", "type": "string", "description": "Programming algorithm." },
-        "start":    { "title": "start:", "type": "number", "description": "Memory start address." },
-        "size":     { "title": "size:", "type": "number", "description": "Memory size." }
+        "start":    { "title": "start:", "type": "number", "description": "Base address of the memory." },
+        "size":     { "title": "size:", "type": "number", "description": "Size of the memory." },
+        "algorithm":{ "title": "algorithm:", "type": "string", "description": "Programming algorithm for download." }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": ["name", "access", "start", "size"]
     },
     "ProgrammingType": {
-      "description": "Flash programming algorithms",
+      "title": "programming:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#programming",
+      "description": "Algorithms for flash download.",
       "type": "array",
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/AlgorithmType" }
@@ -2031,15 +2033,15 @@
     "AlgorithmType": {
       "type": "object",
       "properties": {
-        "algorithm":{ "type": "string", "description": "Programming algorithm." },
-        "start":    { "type": "number", "description": "Memory start address." },
-        "size":     { "type": "number", "description": "Memory size." },
-        "ram-start":{ "type": "number", "description": "RAM Memory start address." },
-        "ram-size": { "type": "number", "description": "RAM Memory size." },
-        "default":  { "type": "boolean", "description": "Default memory." },
-        "pname":    { "type": "string", "description": "Processor name." }
+        "algorithm":{ "type": "string", "description": "Programming algorithm file including the path." },
+        "start":    { "type": "number", "description": "Start address of memory covered by the programming algorithm." },
+        "size":     { "type": "number", "description": "Size of memory covered by the programming algorithm." },
+        "ram-start":{ "type": "number", "description": "Start address of RAM where the algorithm will be executed from." },
+        "ram-size": { "type": "number", "description": "Maximum size of RAM available for executing the programming algorithm." },
+        "pname":    { "type": "string", "description": "Specifies the processor for the execution of the algorithm." }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": ["algorithm", "start", "size", "ram-start", "ram-size"]
     },
     "RunFilesType": {
       "type": "array",
@@ -2050,16 +2052,18 @@
       "type": "object",
       "properties": {
         "file":  { "type": "string", "description": "Specifies the file name." },
-        "info":  { "type": "string", "description": "Brief description of the file." },
         "type":  { "type": "string", "description": "Specifies the file type." },
+        "info":  { "type": "string", "description": "Brief description of the file." },
         "run":   { "type": "string", "description": "Additional command string for download or programming." },
         "debug": { "type": "string", "description": "Additional command string for debug." },
         "pname": { "type": "string", "description": "Processor name." }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": ["file", "type"]
     },
     "DebugSequencesType": {
-      "description": "Debug sequences for the target.",
+      "title": "system-resources:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#debug-sequences",
+      "description": "Tool actions for debugging, tracing, or programming.",
       "type": "array",
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/DebugSequenceType" }
@@ -2071,7 +2075,7 @@
         "name":    { "type": "string", "description": "Name of the sequence." },
         "info":    { "type": "string", "description": "Descriptive text to display for example for error diagnostics." },
         "blocks":  { "$ref": "#/definitions/DebugBlocksType" },
-        "pname":   { "type": "string", "description": "Executes sequence only for connection to processor; Default is executed for all connections." }
+        "pname":   { "type": "string", "description": "Executes sequence only for the specified processor; default is for all processors." }
       },
       "additionalProperties": false,
       "required": ["name"]
@@ -2096,7 +2100,8 @@
       "additionalProperties": false
     },
     "SystemResourcesType": {
-      "description": "Resources of a target system.",
+      "title": "system-resources:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#system-resources",
+      "description": "List of the system resources available in target.",
       "type": "object",
       "properties": {
         "memory": { "$ref": "#/definitions/SystemMemoriesType" }
@@ -2115,19 +2120,16 @@
         "access":    { "$ref": "#/definitions/MemoryAccessType" },
         "start":     { "type": "number", "description": "Base address of the memory." },
         "size":      { "type": "number", "description": "Size of the memory." },
-        "default":   { "type": "boolean", "description": "Memory is always accessible (used for algorithm when no ram-start is specified)." },
-        "startup":   { "type": "boolean", "description": "Default startup code location (vector table)." },
-        "pname":     { "type": "string", "description": "Only accessible by a specific processor." },
-        "uninit":    { "type": "boolean", "description": "Memory content must not be altered." },
+        "pname":     { "type": "string", "description": "Only accessible by the specified processor." },
         "alias":     { "type": "string", "description": "Name of identical memory exposed at different address." },
         "from-pack": { "$ref": "#/definitions/PackID" }
       },
       "additionalProperties": false,
-      "required": ["name"]
+      "required": ["name", "access", "start", "size"]
     },
     "DebuggersType": {
       "title": "debugger:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#debugger",
-      "description": "Connection information to debuggers.",
+      "description": "Configuration information for the debug connection.",
       "type": "array",
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/DebuggerType" }
@@ -2136,9 +2138,9 @@
       "type": "object",
       "properties": {
         "name":            { "type": "string", "description": "Identifies the debug configuration." },
-        "info":            { "type": "string", "description": "Brief description of the connection." },
-        "port":            { "enum": [ "jtag", "swd" ], "description": "Selected debug port (jtag or swd)." },
-        "clock":           { "type": "number", "description": "Selected debug clock speed." },
+        "info":            { "type": "string", "description": "Brief description of the debugger configuration." },
+        "protocol":        { "enum": [ "jtag", "swd" ], "description": "Selected debug protocol (jtag or swd)." },
+        "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
@@ -2168,6 +2170,7 @@
       "required": ["file"]
     },
     "DebugVarsType": {
+      "title": "debug-vars:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#debug-vars",
       "description": "Debug variables for debug sequences.",
       "type": "object",
       "properties": {
@@ -2176,27 +2179,112 @@
       "additionalProperties": false,
       "required": ["vars"]
     },
+    "DebugPortsType": {
+      "description": "Describes the CoreSight debug ports of the device and its capabilities.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/DebugPortType" }
+    },
+    "DebugPortType": {
+      "type": "object",
+      "properties": {
+        "dpid": { "type": "number", "description": "Unique ID of this debug port." },
+        "jtag": { "type": "object", "properties": {
+          "tapindex": { "type": "number", "description": "TAP index in the JTAG scan chain of this device from TDI to TDO (default 0)." }}},
+        "swd": { "type": "object", "properties": {
+          "targetsel": { "type": "number", "description": "SWD multi-drop target selection." }}},
+        "accessports": { "$ref": "#/definitions/AccessPortsType" }
+      },
+      "additionalProperties": false,
+      "required": ["dpid"]
+    },
+    "AccessPortsType": {
+      "description": "List of CoreSight access ports (APv1/APv2) (mandatory for multi-processor devices).",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/AccessPortType" }
+    },
+    "AccessPortType": {
+      "type": "object",
+      "properties": {
+        "apid":        { "type": "number", "description": "Unique ID of this access port." },
+        "index":       { "type": "number", "description": "The index to select this access port (APv1) for a target access." },
+        "address":     { "type": "number", "description": "The address to select this access port (APv2) in its parent's address space for a target access." },
+        "HPROT":       { "type": "number", "description": "Value for HPROT (AHB Protection Control) bits." },
+        "SPROT":       { "type": "number", "description": "Value for SPROT (Secure Protection Control) bit." },
+        "accessports": { "$ref": "#/definitions/AccessPortsType" }
+      },
+      "additionalProperties": false,
+      "required": ["apid"]
+    },
+    "DebugProcessorsType": {
+      "description": "Map of pname identifiers to access port IDs (mandatory for multi-processor devices).",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/DebugProcessorType" }
+    },
+    "DebugProcessorType": {
+      "type": "object",
+      "properties": {
+        "pname":            { "type": "string", "description": "Processor identifier." },
+        "punits":           { "$ref": "#/definitions/DebugPunitsType" },
+        "apid":             { "type": "number", "description": "Access port ID to use for this processor." },
+        "reset-sequence":   { "type": "string", "description": "Name of debug sequence for reset operation" }
+      },
+      "additionalProperties": false,
+      "required": ["pname"]
+    },
+    "DebugPunitsType": {
+      "description": "Specifies processor units in a symmetric multi-processor core (MPCore).",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/DebugPunitType" }
+    },
+    "DebugPunitType": {
+      "type": "object",
+      "properties": {
+        "punit":   { "type": "number", "description": "Specifies a specific processor unit of a symmetric MPCore." },
+        "address": { "type": "number", "description": "Specifies the base address of the CPU debug block." }
+      },
+      "additionalProperties": false,
+      "required": ["punit", "address"]
+    },
+    "DebugTopologyType": {
+      "title": "debug-topology:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#debug-topology",
+      "description": "Properties of the system hardware for debug functionality.",
+      "type": "object",
+      "properties": {
+        "debugports": { "$ref": "#/definitions/DebugPortsType" },
+        "processors": { "$ref": "#/definitions/DebugProcessorsType" },
+        "swj":        { "type": "boolean", "description": "Device allows switching between Serial Wire Debug (SWD) and JTAG protocols (true or false)." },
+        "dormant":    { "type": "boolean", "description": "Device requires the dormant state to switch debug protocols (true or false)." },
+        "sdf":        { "type": "string", "description": "System Description File (*.sdf) specified in the DFP." }
+      },
+      "additionalProperties": false
+    },
     "RunDebugDescType": {
       "description": "This section describes generated contents",
       "type": "object",
       "properties": {
-        "generated-by":        { "type": "string", "description": "Tool name along with version information used to generate this file." },
-        "solution":            { "type": "string", "description": "Solution path." },
-        "target-type":         { "type": "string", "description": "Target type." },
-        "compiler":            { "type": "string", "description": "Selection of compiler used." },
+        "generated-by":        { "type": "string", "description": "Tool name that generated this file." },
+        "solution":            { "type": "string", "description": "Name of the `*.csolution.yml` file." },
+        "target-type":         { "type": "string", "description": "Name of the target-type that was selected." },
+        "compiler":            { "type": "string", "description": "Compiler toolchain used for code generation." },
         "board":               { "$ref": "#/definitions/BoardType" },
-        "device":              { "$ref": "#/definitions/DeviceType" },
         "board-pack":          { "$ref": "#/definitions/PackID" },
+        "device":              { "$ref": "#/definitions/DeviceType" },
         "device-pack":         { "$ref": "#/definitions/PackID" },
-        "programming":         { "$ref": "#/definitions/ProgrammingType" },
-        "system-descriptions": { "$ref": "#/definitions/RunFilesType", "description": "System description files." },
-        "output":              { "$ref": "#/definitions/RunFilesType", "description": "Application image files." },
+        "output":              { "$ref": "#/definitions/RunFilesType", "description": "List of the image (ELF, HEX, BIN) files generated." },
         "system-resources":    { "$ref": "#/definitions/SystemResourcesType" },
+        "system-descriptions": { "$ref": "#/definitions/RunFilesType", "description": "System description files." },
         "debugger":            { "$ref": "#/definitions/DebuggersType" },
         "debug-vars":          { "$ref": "#/definitions/DebugVarsType" },
-        "debug-sequences":     { "$ref": "#/definitions/DebugSequencesType" }
+        "debug-sequences":     { "$ref": "#/definitions/DebugSequencesType" },
+        "programming":         { "$ref": "#/definitions/ProgrammingType" },
+        "debug-topology":      { "$ref": "#/definitions/DebugTopologyType" }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": ["output", "debugger"]
     }
   }
 }

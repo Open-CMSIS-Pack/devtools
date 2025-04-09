@@ -6,6 +6,7 @@
 
 #include "ProjMgrRunDebug.h"
 #include "ProjMgrWorker.h"
+#include "ProjMgrLogger.h"
 #include "ProjMgrYamlEmitter.h"
 #include "RteFsUtils.h"
 
@@ -17,7 +18,7 @@ using namespace std;
   * @brief default debugger parameters
  */
 static constexpr const char* DEBUGGER_NAME_DEFAULT = "<default>";
-static constexpr const char* DEBUGGER_PORT_DEFAULT = "swd";
+static constexpr const char* DEBUGGER_PROTOCOL_DEFAULT = "swd";
 static unsigned long long DEBUGGER_CLOCK_DEFAULT = 10000000;
 
 ProjMgrRunDebug::ProjMgrRunDebug(void) {
@@ -88,18 +89,44 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
     }
   }
 
+  // default ramstart/size: use the first memory with default=1 and rwx attribute
+  // if not found, use ramstart/size from other algorithm in DFP
+  RamType defaultRam;
+  for (const auto& [memory, _] : memories) {
+    if (memory->GetAttributeAsBool("default") && GetAccessAttributes(memory).find("rwx") == 0) {
+      defaultRam.start = memory->GetAttributeAsULL("start");
+      defaultRam.size = memory->GetAttributeAsULL("size");
+      defaultRam.pname = memory->GetProcessorName();
+      break;
+    }
+  }
+  if (defaultRam.size == 0) {    
+    for (const auto& [algorithm, _] : algorithms) {
+      if (algorithm->HasAttribute("RAMsize")) {
+        defaultRam.start = algorithm->GetAttributeAsULL("RAMstart");
+        defaultRam.size = algorithm->GetAttributeAsULL("RAMsize");
+        defaultRam.pname = algorithm->GetProcessorName();
+        break;
+      }
+    }
+    if (defaultRam.size == 0) {
+      ProjMgrLogger::Get().Error("no default rwx memory nor algorithm with ramstart/size was found");
+      return false;
+    }
+  }
+
   // board collections
   if (context0->boardPack) {
     m_runDebug.boardPack = context0->boardPack->GetPackageID(true);
     Collection<RteItem*> boardAlgorithms;
     context0->rteBoard->GetChildrenByTag("algorithm", boardAlgorithms);
     for (const auto& boardAlgorithm : boardAlgorithms) {
-      PushBackUniquely(algorithms, boardAlgorithm, boardAlgorithm->GetAttribute("Pname"));
+      PushBackUniquely(algorithms, boardAlgorithm, boardAlgorithm->GetProcessorName());
     }
     Collection<RteItem*> boardMemories;
     context0->rteBoard->GetChildrenByTag("memory", boardMemories);
     for (const auto& boardMemory : boardMemories) {
-      PushBackUniquely(memories, boardMemory, boardMemory->GetAttribute("Pname"));
+      PushBackUniquely(memories, boardMemory, boardMemory->GetProcessorName());
     }
   }
 
@@ -111,31 +138,33 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   }
 
   // set device/board programming algorithms
-  for (const auto& [algorithm, pname] : algorithms) {
+  for (const auto& [algorithm, _] : algorithms) {
     AlgorithmType item;
     item.algorithm = algorithm->GetOriginalAbsolutePath();
     item.start = algorithm->GetAttributeAsULL("start");
     item.size = algorithm->GetAttributeAsULL("size");
-    item.ramStart = algorithm->GetAttributeAsULL("RAMstart");
-    item.ramSize = algorithm->GetAttributeAsULL("RAMsize");
-    item.bDefault = algorithm->GetAttributeAsBool("default");
-    item.pname = pname.size() == 1 ? pname.front() : "";
+    if (algorithm->HasAttribute("RAMsize")) {
+      item.ram.start = algorithm->GetAttributeAsULL("RAMstart");
+      item.ram.size = algorithm->GetAttributeAsULL("RAMsize");
+      item.ram.pname = algorithm->GetProcessorName();
+    } else {
+      item.ram.start = defaultRam.start;
+      item.ram.size = defaultRam.size;
+      item.ram.pname = defaultRam.pname;
+    }
     m_runDebug.algorithms.push_back(item);
   }
 
   // set device/board memories
-  for (const auto& [memory, pname] : memories) {
+  for (const auto& [memory, _] : memories) {
     MemoryType item;
     item.name = memory->GetName();
     item.access = GetAccessAttributes(memory);
     item.alias = memory->GetAlias();
     item.start = memory->GetAttributeAsULL("start");
     item.size = memory->GetAttributeAsULL("size");
-    item.bDefault = memory->GetAttributeAsBool("default");
-    item.bStartup = memory->GetAttributeAsBool("startup");
-    item.bUninit = memory->GetAttributeAsBool("uninit");
     item.fromPack = memory->GetPackageID(true);
-    item.pname = pname.size() == 1 ? pname.front() : "";
+    item.pname = memory->GetProcessorName();
     m_runDebug.systemResources.memories.push_back(item);
   }
 
@@ -152,18 +181,30 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
       algoItem.algorithm = memory.algorithm;
       algoItem.start = memItem.start;
       algoItem.size = memItem.size;
+      algoItem.ram.start = defaultRam.start;
+      algoItem.ram.size = defaultRam.size;
+      algoItem.ram.pname = defaultRam.pname;
       m_runDebug.algorithms.push_back(algoItem);
     }
   }
 
   // system descriptions
-  for (const auto& [debug, pname] : debugs) {
+  for (const auto& [debug, _] : debugs) {
     const auto& svd = debug->GetAttribute("svd");
     if (!svd.empty()) {
       FilesType item;
       item.file = debug->GetAbsolutePackagePath() + svd;
       item.type = "svd";
-      item.pname = pname.size() == 1 ? pname.front() : "";
+      item.pname = debug->GetProcessorName();
+      m_runDebug.systemDescriptions.push_back(item);
+    }
+  }
+  for (const auto& context : contexts) {
+    const auto& scvdFiles = context->rteActiveTarget->GetScvdFiles();
+    for (const auto& [scvdFile, _] : scvdFiles) {
+      FilesType item;
+      item.file = scvdFile;
+      item.type = "scvd";
       m_runDebug.systemDescriptions.push_back(item);
     }
   }
@@ -215,7 +256,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   }
 
   // debug sequences
-  for (const auto& [debugSequence, pname] : debugSequences) {
+  for (const auto& [debugSequence, _] : debugSequences) {
     DebugSequencesType sequence;
     sequence.name = debugSequence->GetName();
     sequence.info = debugSequence->GetAttribute("info");
@@ -224,7 +265,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
       GetDebugSequenceBlock(debugSequenceBlock, block);
       sequence.blocks.push_back(block);
     }
-    sequence.pname = pname.size() == 1 ? pname.front() : "";
+    sequence.pname = debugSequence->GetProcessorName();
     m_runDebug.debugSequences.push_back(sequence);
   }
 
@@ -236,9 +277,9 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   const auto& debugProbe = context0->boardPack ?
     context0->rteBoard->GetItemByTag("debugProbe") : nullptr;
   defaultDebugger.name = debugProbe ? debugProbe->GetName() : DEBUGGER_NAME_DEFAULT;
-  const auto& boardPort = debugProbe ? debugProbe->GetAttribute("debugLink") : "";
-  const auto& devicePort = debugConfig ? debugConfig->GetAttribute("default") : "";
-  defaultDebugger.port = !boardPort.empty() ? boardPort : !devicePort.empty() ? devicePort : DEBUGGER_PORT_DEFAULT;
+  const auto& boardProtocol = debugProbe ? debugProbe->GetAttribute("debugLink") : "";
+  const auto& deviceProtocol = debugConfig ? debugConfig->GetAttribute("default") : "";
+  defaultDebugger.protocol = !boardProtocol.empty() ? boardProtocol : !deviceProtocol.empty() ? deviceProtocol : DEBUGGER_PROTOCOL_DEFAULT;
   const auto& boardClock = debugProbe ? debugProbe->GetAttributeAsULL("debugClock") : 0;
   const auto& deviceClock = debugConfig ? debugConfig->GetAttributeAsULL("clock") : 0;
   defaultDebugger.clock = boardClock > 0 ? boardClock : deviceClock > 0 ? deviceClock : DEBUGGER_CLOCK_DEFAULT;
@@ -249,7 +290,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
       DebuggerType item;
       item.name = debugger.name.empty() ? defaultDebugger.name : debugger.name;
       item.info = debugger.info;
-      item.port = debugger.port.empty() ? defaultDebugger.port : debugger.port;
+      item.protocol = debugger.protocol.empty() ? defaultDebugger.protocol : debugger.protocol;
       item.clock = debugger.clock.empty() ? defaultDebugger.clock : RteUtils::StringToULL(debugger.clock);
       item.dbgconf = debugger.dbgconf.empty() ? defaultDebugger.dbgconf : debugger.dbgconf;
       m_runDebug.debuggers.push_back(item);
@@ -258,7 +299,113 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
     m_runDebug.debuggers.push_back(defaultDebugger);
   }
 
+  // debug topology
+  if (debugConfig) {
+    if (debugConfig->HasAttribute("dormant")) {
+      m_runDebug.debugTopology.dormant = debugConfig->GetAttributeAsBool("dormant", false);
+    }
+    if (debugConfig->HasAttribute("swj")) {
+      m_runDebug.debugTopology.swj = debugConfig->GetAttributeAsBool("swj", true);
+    }
+    const auto sdf = debugConfig->GetAttribute("sdf");
+    if (!sdf.empty()) {
+      m_runDebug.debugTopology.sdf = debugConfig->GetAbsolutePackagePath() + sdf;
+    }
+  }
+  for (const auto& [pname, context] : pnames) {
+    ProcessorType processor;
+    processor.pname = pname;
+    const auto& debug = context->rteDevice->GetSingleEffectiveProperty("debug", pname);
+    if (debug) {
+      if (debug->HasAttribute("__apid")) {
+        processor.apid = debug->GetAttributeAsInt("__apid");
+      }
+      processor.resetSequence = debug->GetAttribute("defaultResetSequence");
+      // 'punits': placeholder for future expansion
+      processor.punits.clear();
+    }
+    m_runDebug.debugTopology.processors.push_back(processor);
+  }
+
+  map<unsigned int, vector<AccessPortType>> accessPortsMap;
+  map<unsigned int, vector<AccessPortType>> accessPortsChildrenMap;
+  const auto& accessPortsV1 = context0->rteDevice->GetEffectiveProperties("accessportV1", context0->deviceItem.pname);
+  const auto& accessPortsV2 = context0->rteDevice->GetEffectiveProperties("accessportV2", context0->deviceItem.pname);
+  const auto& debugPorts = context0->rteDevice->GetEffectiveProperties("debugport", context0->deviceItem.pname);
+  const auto& defaultDp = debugPorts.empty() ? 0 : debugPorts.front()->GetAttributeAsInt("__dp");
+
+  for (const auto& accessPortV1 : accessPortsV1) {
+    AccessPortType ap;
+    ap.apid = accessPortV1->GetAttributeAsInt("__apid");
+    if (accessPortV1->HasAttribute("index")) {
+      ap.index = accessPortV1->GetAttributeAsInt("index");
+    }
+    SetProtNodes(accessPortV1, ap);
+    auto dp = accessPortV1->GetAttributeAsInt("__dp", defaultDp);
+    accessPortsMap[dp].push_back(ap);
+  }
+  for (const auto& accessPortV2 : accessPortsV2) {
+    AccessPortType ap;
+    ap.apid = accessPortV2->GetAttributeAsInt("__apid");
+    if (accessPortV2->HasAttribute("address")) {
+      ap.address = accessPortV2->GetAttributeAsULL("address");
+    }
+    SetProtNodes(accessPortV2, ap);
+    if (accessPortV2->HasAttribute("parent")) {
+      auto parent = accessPortV2->GetAttributeAsInt("parent");
+      accessPortsChildrenMap[parent].push_back(ap);
+    } else {
+      auto dp = accessPortV2->GetAttributeAsInt("__dp", defaultDp);
+      accessPortsMap[dp].push_back(ap);
+    }
+  }
+  if (debugPorts.empty() && !accessPortsMap.empty()) {
+    // default debug port
+    m_runDebug.debugTopology.debugPorts.push_back({0});
+  }
+  for (const auto& debugPort : debugPorts) {
+    DebugPortType dp;
+    dp.dpid = debugPort->GetAttributeAsInt("__dp");
+    auto jtag = debugPort->GetFirstChild("jtag");
+    if (jtag && jtag->HasAttribute("tapindex")) {
+      dp.jtagTapIndex = jtag->GetAttributeAsInt("tapindex");
+    }
+    auto swd = debugPort->GetFirstChild("swd");
+    if (swd && swd->HasAttribute("targetsel")) {
+      dp.swdTargetSel = swd->GetAttributeAsInt("targetsel");
+    }
+    // add debug port to debug topology
+    m_runDebug.debugTopology.debugPorts.push_back(dp);
+  }
+  for (auto& dp : m_runDebug.debugTopology.debugPorts) {
+    // set first level access ports
+    if (accessPortsMap.find(dp.dpid) != accessPortsMap.end()) {
+      dp.accessPorts = accessPortsMap.at(dp.dpid);
+    }
+    // add nested children access ports
+    SetAccessPorts(dp.accessPorts, accessPortsChildrenMap);
+  }
+
   return true;
+}
+
+void ProjMgrRunDebug::SetAccessPorts(vector<AccessPortType>& parent, const map<unsigned int, vector<AccessPortType>>& childrenMap) {
+  // set access ports children recursively
+  for (auto& ap : parent) {
+    if (childrenMap.find(ap.apid) != childrenMap.end()) {
+      ap.accessPorts = childrenMap.at(ap.apid);
+      SetAccessPorts(ap.accessPorts, childrenMap);
+    }
+  }
+}
+
+void ProjMgrRunDebug::SetProtNodes(const RteDeviceProperty* item, AccessPortType& ap) {
+  if (item->HasAttribute("HPROT")) {
+    ap.hprot = item->GetAttributeAsInt("HPROT");
+  }
+  if (item->HasAttribute("SPROT")) {
+    ap.sprot = item->GetAttributeAsInt("SPROT");
+  }
 }
 
 FilesType ProjMgrRunDebug::SetLoadFromOutput(const ContextItem* context, OutputType output, const string type) {
@@ -288,7 +435,9 @@ void ProjMgrRunDebug::GetDebugSequenceBlock(const RteItem* item, DebugSequencesB
     block.info = item->GetAttribute("info");
     block.control_if = item->GetAttribute("if");
     block.control_while = item->GetAttribute("while");
-    block.timeout = item->GetAttribute("timeout");
+    if (item->HasAttribute("timeout")) {
+      block.timeout = item->GetAttributeAsInt("timeout");
+    }
   }
 
   const auto& children = item->GetChildren();
