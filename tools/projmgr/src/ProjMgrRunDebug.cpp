@@ -199,14 +199,17 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
       m_runDebug.systemDescriptions.push_back(item);
     }
   }
+  StrVec scvdFiles;
   for (const auto& context : contexts) {
-    const auto& scvdFiles = context->rteActiveTarget->GetScvdFiles();
-    for (const auto& [scvdFile, _] : scvdFiles) {
-      FilesType item;
-      item.file = scvdFile;
-      item.type = "scvd";
-      m_runDebug.systemDescriptions.push_back(item);
+    for (const auto& [scvdFile, _] : context->rteActiveTarget->GetScvdFiles()) {
+      CollectionUtils::PushBackUniquely(scvdFiles, scvdFile);
     }
+  }
+  for (const auto& scvdFile : scvdFiles) {
+    FilesType item;
+    item.file = scvdFile;
+    item.type = "scvd";
+    m_runDebug.systemDescriptions.push_back(item);
   }
 
   // outputs
