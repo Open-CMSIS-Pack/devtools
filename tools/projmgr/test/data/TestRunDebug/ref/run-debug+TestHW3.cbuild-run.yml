@@ -9,9 +9,11 @@ cbuild-run:
     - file: out/core0/TestHW3/core0.axf
       info: generate by core0+TestHW3
       type: elf
+      pname: cm0_core0
     - file: out/core1/TestHW3/core1.axf
       info: generate by core1+TestHW3
       type: elf
+      pname: cm0_core1
     - file: ../data/TestRunDebug/customImage.bin
       info: load image info
       type: bin
@@ -126,8 +128,19 @@ cbuild-run:
       ram-start: 0x20000000
       ram-size: 0x00020000
   debug-topology:
+    debugports:
+      - dpid: 0
+        accessports:
+          - apid: 0
+            index: 0
+      - dpid: 1
+        accessports:
+          - apid: 1
+            index: 0
     processors:
       - pname: cm0_core0
+        apid: 0
         reset-sequence: ResetSystem0
       - pname: cm0_core1
+        apid: 1
         reset-sequence: ResetSystem1

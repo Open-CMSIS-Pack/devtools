@@ -56,33 +56,30 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   // debug sequences
   vector<pair<const RteItem*, vector<string>>> debugSequences;
 
-  // processor names
-  map<string, ContextItem*> pnames;
-  for (const auto& context : contexts) {
-    pnames.emplace(context->deviceItem.pname, context);
-  }
+  // all processors
+  const auto& pnames = context0->rteDevice->GetProcessors();
 
   // device collections
-  for (const auto& [pname, context] : pnames) {
-    if (context->devicePack) {
-      m_runDebug.devicePack = context->devicePack->GetPackageID(true);
-      const auto& deviceAlgorithms = context->rteDevice->GetEffectiveProperties("algorithm", pname);
+  for (const auto& [pname, _] : pnames) {
+    if (context0->devicePack) {
+      m_runDebug.devicePack = context0->devicePack->GetPackageID(true);
+      const auto& deviceAlgorithms = context0->rteDevice->GetEffectiveProperties("algorithm", pname);
       for (const auto& deviceAlgorithm : deviceAlgorithms) {
         PushBackUniquely(algorithms, deviceAlgorithm, pname);
       }
-      const auto& deviceMemories = context->rteDevice->GetEffectiveProperties("memory", pname);
+      const auto& deviceMemories = context0->rteDevice->GetEffectiveProperties("memory", pname);
       for (const auto& deviceMemory : deviceMemories) {
         PushBackUniquely(memories, deviceMemory, pname);
       }
-      const auto& deviceDebugs = context->rteDevice->GetEffectiveProperties("debug", pname);
+      const auto& deviceDebugs = context0->rteDevice->GetEffectiveProperties("debug", pname);
       for (const auto& deviceDebug : deviceDebugs) {
         PushBackUniquely(debugs, deviceDebug, pname);
       }
-      const auto& deviceDebugVars = context->rteDevice->GetEffectiveProperties("debugvars", pname);
+      const auto& deviceDebugVars = context0->rteDevice->GetEffectiveProperties("debugvars", pname);
       for (const auto& deviceDebugVar : deviceDebugVars) {
         PushBackUniquely(debugvars, deviceDebugVar, pname);
       }
-      const auto& deviceDebugSequences = context->rteDevice->GetEffectiveProperties("sequence", pname);
+      const auto& deviceDebugSequences = context0->rteDevice->GetEffectiveProperties("sequence", pname);
       for (const auto& deviceDebugSequence : deviceDebugSequences) {
         PushBackUniquely(debugSequences, deviceDebugSequence, pname);
       }
@@ -315,13 +312,36 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
       m_runDebug.debugTopology.sdf = debugConfig->GetAbsolutePackagePath() + sdf;
     }
   }
-  for (const auto& [pname, context] : pnames) {
+
+  // debug and access ports collections
+  map<unsigned int, vector<AccessPortType>> accessPortsMap;
+  map<unsigned int, vector<AccessPortType>> accessPortsChildrenMap;
+  const auto& accessPortsV1 = context0->rteDevice->GetEffectiveProperties("accessportV1", context0->deviceItem.pname);
+  const auto& accessPortsV2 = context0->rteDevice->GetEffectiveProperties("accessportV2", context0->deviceItem.pname);
+  const auto& debugPorts = context0->rteDevice->GetEffectiveProperties("debugport", context0->deviceItem.pname);
+  const auto& defaultDp = debugPorts.empty() ? 0 : debugPorts.front()->GetAttributeAsInt("__dp");
+  unsigned int uniqueApId = 0;
+
+  // iterate over pnames
+  for (const auto& [pname, _] : pnames) {
     ProcessorType processor;
     processor.pname = pname;
-    const auto& debug = context->rteDevice->GetSingleEffectiveProperty("debug", pname);
+    const auto& debug = context0->rteDevice->GetSingleEffectiveProperty("debug", pname);
     if (debug) {
       if (debug->HasAttribute("__apid")) {
         processor.apid = debug->GetAttributeAsInt("__apid");
+      }
+      // access ports from 'debug' property with non-default attributes
+      if ((accessPortsV1.empty() && accessPortsV2.empty()) &&
+        (!debug->GetProcessorName().empty() || debug->HasAttribute("__dp") || debug->HasAttribute("__ap"))) {
+        // use a sequential unique ap id
+        processor.apid = uniqueApId++;
+        // add ap to access port map
+        AccessPortType ap;
+        auto dp = debug->GetAttributeAsInt("__dp", defaultDp);
+        ap.index = debug->GetAttributeAsInt("__ap", 0);
+        ap.apid = processor.apid.value();
+        accessPortsMap[dp].push_back(ap);
       }
       processor.resetSequence = debug->GetAttribute("defaultResetSequence");
       // 'punits': placeholder for future expansion
@@ -329,14 +349,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
     }
     m_runDebug.debugTopology.processors.push_back(processor);
   }
-
-  map<unsigned int, vector<AccessPortType>> accessPortsMap;
-  map<unsigned int, vector<AccessPortType>> accessPortsChildrenMap;
-  const auto& accessPortsV1 = context0->rteDevice->GetEffectiveProperties("accessportV1", context0->deviceItem.pname);
-  const auto& accessPortsV2 = context0->rteDevice->GetEffectiveProperties("accessportV2", context0->deviceItem.pname);
-  const auto& debugPorts = context0->rteDevice->GetEffectiveProperties("debugport", context0->deviceItem.pname);
-  const auto& defaultDp = debugPorts.empty() ? 0 : debugPorts.front()->GetAttributeAsInt("__dp");
-
+  // APv1
   for (const auto& accessPortV1 : accessPortsV1) {
     AccessPortType ap;
     ap.apid = accessPortV1->GetAttributeAsInt("__apid");
@@ -347,6 +360,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
     auto dp = accessPortV1->GetAttributeAsInt("__dp", defaultDp);
     accessPortsMap[dp].push_back(ap);
   }
+  // APv2
   for (const auto& accessPortV2 : accessPortsV2) {
     AccessPortType ap;
     ap.apid = accessPortV2->GetAttributeAsInt("__apid");
@@ -362,6 +376,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
       accessPortsMap[dp].push_back(ap);
     }
   }
+  // construct debug ports tree
   if (debugPorts.empty() && !accessPortsMap.empty()) {
     // default debug port
     m_runDebug.debugTopology.debugPorts.push_back({0});
@@ -418,6 +433,7 @@ FilesType ProjMgrRunDebug::SetLoadFromOutput(const ContextItem* context, OutputT
     load.file = output.filename;
     load.info = "generate by " + context->name;
     load.type = type;
+    load.pname = context->deviceItem.pname;
   }
   return load;
 }
