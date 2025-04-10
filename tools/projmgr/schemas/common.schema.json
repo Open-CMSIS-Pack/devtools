@@ -2231,8 +2231,7 @@
         "apid":             { "type": "number", "description": "Access port ID to use for this processor." },
         "reset-sequence":   { "type": "string", "description": "Name of debug sequence for reset operation" }
       },
-      "additionalProperties": false,
-      "required": ["pname"]
+      "additionalProperties": false
     },
     "DebugPunitsType": {
       "description": "Specifies processor units in a symmetric multi-processor core (MPCore).",
