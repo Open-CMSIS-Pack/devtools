@@ -2212,10 +2212,29 @@
         "address":     { "type": "number", "description": "The address to select this access port (APv2) in its parent's address space for a target access." },
         "HPROT":       { "type": "number", "description": "Value for HPROT (AHB Protection Control) bits." },
         "SPROT":       { "type": "number", "description": "Value for SPROT (Secure Protection Control) bit." },
+        "datapatch":   { "$ref": "#/definitions/DatapatchesType" },
         "accessports": { "$ref": "#/definitions/AccessPortsType" }
       },
       "additionalProperties": false,
       "required": ["apid"]
+    },
+    "DatapatchesType": {
+      "description": "List of patch values a debugger shall apply when reading from the device.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/DatapatchType" }
+    },
+    "DatapatchType": {
+      "type": "object",
+      "properties": {
+        "address": { "type": "number", "description": "Address for which to apply the patch." },
+        "value":   { "type": "number", "description": "Value to overwrite from device (for example in a ROM table)." },
+        "mask":    { "type": "number", "description": "The bits to patch. Default: complete value is replaced." },
+        "type":    { "type": "string", "description": "Type of data access to patch. Default is Mem." },
+        "info":    { "type": "string", "description": "Descriptive text for diagnostics messages." }
+      },
+      "additionalProperties": false,
+      "required": ["address", "value"]
     },
     "DebugProcessorsType": {
       "description": "Map of pname identifiers to access port IDs (mandatory for multi-processor devices).",

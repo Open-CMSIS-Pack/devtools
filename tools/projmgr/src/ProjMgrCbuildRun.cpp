@@ -30,6 +30,7 @@ protected:
   void SetProcessorsNode(YAML::Node node, const std::vector<ProcessorType>& processors);
   void SetDebugPortsNode(YAML::Node node, const std::vector<DebugPortType>& debugPorts);
   void SetAccessPortsNode(YAML::Node node, const std::vector<AccessPortType>& accessPorts);
+  void SetDatapatchNode(YAML::Node node, const std::vector<DatapatchType>& datapatch);
 };
 
 ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
@@ -189,8 +190,23 @@ void ProjMgrCbuildRun::SetAccessPortsNode(YAML::Node node, const vector<AccessPo
     if (ap.sprot.has_value()) {
       SetNodeValue(apNode[YAML_SPROT], ProjMgrUtils::ULLToHex(ap.sprot.value(), 1));
     }
+    SetDatapatchNode(apNode[YAML_DATAPATCH], ap.datapatch);
     SetAccessPortsNode(apNode[YAML_ACCESSPORTS], ap.accessPorts);
     node.push_back(apNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetDatapatchNode(YAML::Node node, const vector<DatapatchType>& datapatch) {
+  for (const auto& patch : datapatch) {
+    YAML::Node patchNode;
+    SetNodeValue(patchNode[YAML_ADDRESS], ProjMgrUtils::ULLToHex(patch.address));
+    SetNodeValue(patchNode[YAML_VALUE], ProjMgrUtils::ULLToHex(patch.value));
+    if (patch.mask.has_value()) {
+      SetNodeValue(patchNode[YAML_MASK], ProjMgrUtils::ULLToHex(patch.mask.value()));
+    }
+    SetNodeValue(patchNode[YAML_TYPE], patch.type);
+    SetNodeValue(patchNode[YAML_INFO], patch.info);
+    node.push_back(patchNode);
   }
 }
 

@@ -120,6 +120,18 @@ struct ProcessorType {
 };
 
 /**
+ * @brief datapatch type
+*/
+struct DatapatchType {
+  unsigned int apid;
+  unsigned long long address;
+  unsigned long long value;
+  std::optional<unsigned long long> mask;
+  std::string type;
+  std::string info;
+};
+
+/**
  * @brief access port type
 */
 struct AccessPortType {
@@ -128,6 +140,7 @@ struct AccessPortType {
   std::optional<unsigned long long> address;
   std::optional<unsigned int> hprot;
   std::optional<unsigned int> sprot;
+  std::vector<DatapatchType> datapatch;
   std::vector<AccessPortType> accessPorts;
 };
 

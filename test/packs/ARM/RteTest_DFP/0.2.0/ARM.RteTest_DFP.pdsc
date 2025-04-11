@@ -29,6 +29,8 @@
         RteTest ARM M Device Family
       </description>
       <algorithm name="Device/ARM/Flash/FAMILY.FLM" start="0x00000000" size="0x00040000"  default="1"/>
+      <algorithm name="Device/ARM/Flash/NonDefaultAlgo.FLM" start="0x00000000" size="0x00010000"/>
+      <algorithm name="Device/ARM/Flash/IARAlgo.FLM" start="0x00000000" size="0x00020000" default="1" style="IAR"/>
       <debugvars configfile="Device/ARM/Debug/ARMCM.dbgconf" version="0.0.2">
         __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
         __var TraceClk_Pin   = 0x00040002;   // PE2
@@ -138,8 +140,11 @@
         <debugport __dp="0"/>
         <debugport __dp="1"/>
         <debug defaultResetSequence="ResetSystem0" Pname="cm0_core0" __dp="0" __ap="0"/>
-        <debug defaultResetSequence="ResetSystem1" Pname="cm0_core1" __dp="1" __ap="0"/>
-        <algorithm name="Device/ARM/Flash/CortexM4Dual.FLM" start="0x000A0000" size="0x00020000" RAMstart="0x000C0000" RAMsize="0x00040000" Pname="cm0_core1"/>
+        <debug defaultResetSequence="ResetSystem1" Pname="cm0_core1" __dp="1" __ap="0">
+          <datapatch  __dp="0" address="0xE0040FCC" value="0x11" info="DEVTYPE"/>
+          <datapatch  __dp="0" __ap="0" address="0xE0040FF0" value="0x0D" info="CIDR0"/>
+        </debug>
+        <algorithm name="Device/ARM/Flash/CortexM4Dual.FLM" start="0x000A0000" size="0x00020000" RAMstart="0x000C0000" RAMsize="0x00040000" Pname="cm0_core1" default="1"/>
       </device>
       <device Dname="RteTest_ARMCM0_Single">
         <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
@@ -157,7 +162,9 @@
       <description>
         RteTest ARM Cortex M3 is a clone description from ARM.CMSIS pack.
       </description>
-      <debug svd="Device/ARM/SVD/ARMCM3.svd"/>  <!-- SVD files do not contain any peripheral -->
+      <debug svd="Device/ARM/SVD/ARMCM3.svd">  <!-- SVD files do not contain any peripheral -->
+        <datapatch __apid="4" address="0xE0040FF4" value="0x90" mask="0xFF" info="CIDR1"/>
+      </debug>
       <accessportV1 __apid="2" index="20" HPROT="0x2" SPROT="1"/>
       <accessportV2 __apid="4" address="0x00400000" HPROT="0xF" SPROT="0"/>
 
@@ -204,7 +211,7 @@
 
       <variant Dvariant="RteTest_ARMCM4_NOFP">
         <processor Dfpu="NO_FPU"/>
-        <algorithm name="Device/ARM/Flash/CortexM4Device.FLM" start="0x00000000" size="0x00020000" default="0"/>
+        <algorithm name="Device/ARM/Flash/CortexM4Device.FLM" start="0x00000000" size="0x00020000" default="1"/>
       </variant>
 
       <variant Dvariant="RteTest_ARMCM4_FP">

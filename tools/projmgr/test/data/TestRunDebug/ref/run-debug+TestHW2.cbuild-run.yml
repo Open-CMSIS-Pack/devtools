@@ -132,3 +132,8 @@ cbuild-run:
             address: 0x00400000
             HPROT: 0xF
             SPROT: 0x0
+            datapatch:
+              - address: 0xE0040FF4
+                value: 0x00000090
+                mask: 0x000000FF
+                info: CIDR1
