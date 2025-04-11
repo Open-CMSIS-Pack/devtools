@@ -136,6 +136,15 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
 
   // set device/board programming algorithms
   for (const auto& [algorithm, _] : algorithms) {
+    if (!algorithm->GetAttributeAsBool("default")) {
+      continue;
+    }
+    if (algorithm->HasAttribute("style")) {
+      const auto& style = algorithm->GetAttribute("style");
+      if (style != "Keil" && style != "CMSIS") {
+        continue;
+      }
+    }  
     AlgorithmType item;
     item.algorithm = algorithm->GetOriginalAbsolutePath();
     item.start = algorithm->GetAttributeAsULL("start");
@@ -316,43 +325,85 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   // debug and access ports collections
   map<unsigned int, vector<AccessPortType>> accessPortsMap;
   map<unsigned int, vector<AccessPortType>> accessPortsChildrenMap;
+  map<unsigned int, vector<DatapatchType>> datapatchById;
+  map<unsigned int, map<unsigned int, vector<DatapatchType>>> datapatchByIndex;
   const auto& accessPortsV1 = context0->rteDevice->GetEffectiveProperties("accessportV1", context0->deviceItem.pname);
   const auto& accessPortsV2 = context0->rteDevice->GetEffectiveProperties("accessportV2", context0->deviceItem.pname);
   const auto& debugPorts = context0->rteDevice->GetEffectiveProperties("debugport", context0->deviceItem.pname);
   const auto& defaultDp = debugPorts.empty() ? 0 : debugPorts.front()->GetAttributeAsInt("__dp");
-  unsigned int uniqueApId = 0;
 
-  // iterate over pnames
+  // datapatches
+  for (const auto& [debug, _] : debugs) {
+    Collection<RteItem*> datapatches;
+    debug->GetChildrenByTag("datapatch", datapatches);
+    for (const auto& datapatch : datapatches) {
+      DatapatchType patch;
+      patch.address = datapatch->GetAttributeAsULL("address");
+      patch.value = datapatch->GetAttributeAsULL("value");
+      if (datapatch->HasAttribute("mask")) {
+        patch.mask = datapatch->GetAttributeAsULL("mask");
+      }
+      patch.type = datapatch->GetAttribute("type");
+      patch.info = datapatch->GetAttribute("info");
+      if (datapatch->HasAttribute("__apid")) {
+        datapatchById[datapatch->GetAttributeAsInt("__apid")].push_back(patch);
+      } else {
+        const auto& dp = datapatch->GetAttributeAsInt("__dp", defaultDp);
+        const auto& apIndex = datapatch->GetAttributeAsInt("__ap", debug->GetAttributeAsInt("__ap", 0));
+        datapatchByIndex[dp][apIndex].push_back(patch);
+      }
+    }
+  }
+  // access ports from 'debug' property (legacy support)
+  map<string, unsigned int> processorApMap;
+  if (accessPortsV1.empty() && accessPortsV2.empty()) {
+    unsigned int uniqueApId = 0;
+    for (const auto& [debug, scope] : debugs) {
+      if (scope.size() == 1) {
+        const auto& pname = scope.front();
+        if (pname.empty() && datapatchByIndex.empty() && !debug->HasAttribute("__dp") && !debug->HasAttribute("__ap")) {
+          // unnamed core with default attributes, skip further access port discovering
+          break;
+        }
+        // use a sequential unique ap id
+        const auto& apid = uniqueApId++;
+        // add ap node to access port map
+        AccessPortType ap;
+        const auto& dp = debug->GetAttributeAsInt("__dp", defaultDp);
+        ap.index = debug->GetAttributeAsInt("__ap", 0);
+        ap.apid = apid;
+        ap.datapatch = datapatchByIndex[dp][ap.index.value()];
+        accessPortsMap[dp].push_back(ap);
+        // add apid to processor map
+        processorApMap[pname] = apid;
+      }
+    }
+  }
+  // processors
   for (const auto& [pname, _] : pnames) {
     ProcessorType processor;
     processor.pname = pname;
-    const auto& debug = context0->rteDevice->GetSingleEffectiveProperty("debug", pname);
-    if (debug) {
-      if (debug->HasAttribute("__apid")) {
-        processor.apid = debug->GetAttributeAsInt("__apid");
+    for (const auto& [debug, scope] : debugs) {
+      if (scope.size() == 1 && scope.front() == pname) {
+        if (debug->HasAttribute("__apid")) {
+          processor.apid = debug->GetAttributeAsInt("__apid");
+        }
+        processor.resetSequence = debug->GetAttribute("defaultResetSequence");
       }
-      // access ports from 'debug' property with non-default attributes
-      if ((accessPortsV1.empty() && accessPortsV2.empty()) &&
-        (!debug->GetProcessorName().empty() || debug->HasAttribute("__dp") || debug->HasAttribute("__ap"))) {
-        // use a sequential unique ap id
-        processor.apid = uniqueApId++;
-        // add ap to access port map
-        AccessPortType ap;
-        auto dp = debug->GetAttributeAsInt("__dp", defaultDp);
-        ap.index = debug->GetAttributeAsInt("__ap", 0);
-        ap.apid = processor.apid.value();
-        accessPortsMap[dp].push_back(ap);
-      }
-      processor.resetSequence = debug->GetAttribute("defaultResetSequence");
-      // 'punits': placeholder for future expansion
-      processor.punits.clear();
     }
+    // legacy apid
+    if (!processor.apid.has_value() && processorApMap.find(pname) != processorApMap.end()) {
+      processor.apid = processorApMap.at(pname);
+    }
+    // 'punits': placeholder for future expansion
+    processor.punits.clear();
     m_runDebug.debugTopology.processors.push_back(processor);
   }
   // APv1
   for (const auto& accessPortV1 : accessPortsV1) {
     AccessPortType ap;
     ap.apid = accessPortV1->GetAttributeAsInt("__apid");
+    ap.datapatch = datapatchById[ap.apid];
     if (accessPortV1->HasAttribute("index")) {
       ap.index = accessPortV1->GetAttributeAsInt("index");
     }
@@ -364,6 +415,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   for (const auto& accessPortV2 : accessPortsV2) {
     AccessPortType ap;
     ap.apid = accessPortV2->GetAttributeAsInt("__apid");
+    ap.datapatch = datapatchById[ap.apid];
     if (accessPortV2->HasAttribute("address")) {
       ap.address = accessPortV2->GetAttributeAsULL("address");
     }

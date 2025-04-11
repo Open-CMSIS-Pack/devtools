@@ -133,6 +133,13 @@ cbuild-run:
         accessports:
           - apid: 0
             index: 0
+            datapatch:
+              - address: 0xE0040FCC
+                value: 0x00000011
+                info: DEVTYPE
+              - address: 0xE0040FF0
+                value: 0x0000000D
+                info: CIDR0
       - dpid: 1
         accessports:
           - apid: 1
