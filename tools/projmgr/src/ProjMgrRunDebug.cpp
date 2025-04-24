@@ -18,8 +18,6 @@ using namespace std;
   * @brief default debugger parameters
  */
 static constexpr const char* DEBUGGER_NAME_DEFAULT = "<default>";
-static constexpr const char* DEBUGGER_PROTOCOL_DEFAULT = "swd";
-static unsigned long long DEBUGGER_CLOCK_DEFAULT = 10000000;
 
 ProjMgrRunDebug::ProjMgrRunDebug(void) {
   // Reserved
@@ -288,10 +286,12 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   defaultDebugger.name = debugProbe ? debugProbe->GetName() : DEBUGGER_NAME_DEFAULT;
   const auto& boardProtocol = debugProbe ? debugProbe->GetAttribute("debugLink") : "";
   const auto& deviceProtocol = debugConfig ? debugConfig->GetAttribute("default") : "";
-  defaultDebugger.protocol = !boardProtocol.empty() ? boardProtocol : !deviceProtocol.empty() ? deviceProtocol : DEBUGGER_PROTOCOL_DEFAULT;
-  const auto& boardClock = debugProbe ? debugProbe->GetAttributeAsULL("debugClock") : 0;
-  const auto& deviceClock = debugConfig ? debugConfig->GetAttributeAsULL("clock") : 0;
-  defaultDebugger.clock = boardClock > 0 ? boardClock : deviceClock > 0 ? deviceClock : DEBUGGER_CLOCK_DEFAULT;
+  defaultDebugger.protocol = !boardProtocol.empty() ? boardProtocol : deviceProtocol;
+  if (debugProbe && debugProbe->HasAttribute("debugClock")) {
+    defaultDebugger.clock = debugProbe->GetAttributeAsULL("debugClock");
+  } else if (debugConfig && debugConfig->HasAttribute("clock")) {
+    defaultDebugger.clock = debugConfig->GetAttributeAsULL("clock");
+  }
 
   // user defined debugger parameters
   if (context0->debuggers.size() > 0) {
