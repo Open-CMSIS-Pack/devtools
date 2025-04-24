@@ -80,6 +80,8 @@
               Message(2, "Incorrect ID! Abort connection.");
             </block>
           </control>
+          <control while="(ReadDP(DP_CTRL_STAT) &amp; 0xA0000000) != 0xA0000000" timeout="1000000"/>
+          <block/>
         </sequence>
 
         <!-- default DebugPortStop extended with Option Byte Loading capability -->

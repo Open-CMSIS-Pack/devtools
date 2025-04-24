@@ -88,6 +88,8 @@ cbuild-run:
           execute: |
             Query(0, "Incorrect ID! Abort connection", 1);
             Message(2, "Incorrect ID! Abort connection.");
+        - while: (ReadDP(DP_CTRL_STAT) & 0xA0000000) != 0xA0000000
+          timeout: 1000000
     - name: DebugPortStop
       blocks:
         - execute: |
