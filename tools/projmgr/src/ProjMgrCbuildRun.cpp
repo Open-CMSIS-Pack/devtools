@@ -124,7 +124,7 @@ void ProjMgrCbuildRun::SetDebugSequencesNode(YAML::Node node, const std::vector<
 
 void ProjMgrCbuildRun::SetDebugSequencesBlockNode(YAML::Node node, const std::vector<DebugSequencesBlockType>& blocks) {
   for (const auto& block : blocks) {
-    if (block.execute.empty() && block.blocks.empty()) {
+    if (block.execute.empty() && block.blocks.empty() && block.control_if.empty() && block.control_while.empty()) {
       continue;
     }
     YAML::Node blockNode;
