@@ -97,7 +97,7 @@ struct DebuggerType {
   std::string name;
   std::string info;
   std::string protocol;
-  unsigned long long clock = 0;
+  std::optional<unsigned long long> clock;
   std::string dbgconf;
 };
 

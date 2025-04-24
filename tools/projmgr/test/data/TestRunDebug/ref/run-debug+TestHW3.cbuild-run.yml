@@ -48,8 +48,6 @@ cbuild-run:
       type: svd
   debugger:
     - name: <default>
-      protocol: swd
-      clock: 10000000
       dbgconf: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM0_Dual_cm0_core0/ARMCM.dbgconf
   debug-vars:
     vars: |

@@ -99,7 +99,9 @@ void ProjMgrCbuildRun::SetDebuggersNode(YAML::Node node, const std::vector<Debug
     SetNodeValue(debuggerNode[YAML_NAME], item.name);
     SetNodeValue(debuggerNode[YAML_INFO], item.info);
     SetNodeValue(debuggerNode[YAML_PROTOCOL], item.protocol);
-    debuggerNode[YAML_CLOCK] = item.clock;
+    if (item.clock.has_value()) {
+      debuggerNode[YAML_CLOCK] = item.clock.value();
+    }
     SetNodeValue(debuggerNode[YAML_DBGCONF], FormatPath(item.dbgconf, m_directory));
     node.push_back(debuggerNode);
   }
