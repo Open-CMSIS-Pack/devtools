@@ -2,6 +2,7 @@ cbuild-run:
   generated-by: csolution version 2.9.0
   solution: ../data/TestRunDebug/run-debug.csolution.yml
   target-type: TestHW3
+  target-set: <default>
   compiler: AC6
   device: ARM::RteTest_ARMCM0_Dual
   device-pack: ARM::RteTest_DFP@0.2.0
@@ -14,11 +15,6 @@ cbuild-run:
       info: generate by core1+TestHW3
       type: elf
       pname: cm0_core1
-    - file: ../data/TestRunDebug/customImage.bin
-      info: load image info
-      type: bin
-      run: run cmd bin
-      debug: debug cmd bin
   system-resources:
     memory:
       - name: FLASH_DUAL
@@ -47,8 +43,9 @@ cbuild-run:
     - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM0.svd
       type: svd
   debugger:
-    - name: <default>
-      dbgconf: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM0_Dual_cm0_core0/ARMCM.dbgconf
+    name: CMSIS-DAP
+    dbgconf: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM0_Dual_cm0_core0/ARMCM.dbgconf
+    start-pname: cm0_core1
   debug-vars:
     vars: |
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY

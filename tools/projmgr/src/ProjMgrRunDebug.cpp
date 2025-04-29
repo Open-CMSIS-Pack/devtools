@@ -34,6 +34,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   m_runDebug.solutionName = context0->csolution->name;
   m_runDebug.solution = context0->csolution->path;
   m_runDebug.targetType = context0->type.target;
+  m_runDebug.targetSet = context0->targetSet;
   m_runDebug.compiler = context0->compiler;
   if (!context0->device.empty()) {
     m_runDebug.device = context0->deviceItem.vendor + "::" + context0->deviceItem.name;
@@ -231,23 +232,22 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
       }
     }
   }
-  for (const auto& context : contexts) {
-    // merge/insert user defined load nodes
-    for (const auto& item : context->loads) {
-      bool merged = false;
-      for (auto& output : m_runDebug.outputs) {
-        if (output.file == item.file) {
-          output.info = output.info.empty() ? item.info : output.info;
-          output.type = output.type.empty() ? item.type : output.type;
-          output.run = output.run.empty() ? item.run : output.run;
-          output.debug = output.debug.empty() ? item.debug : output.debug;
-          merged = true;
-          break;
-        }
+
+  // merge/insert target-set image nodes
+  for (const auto& item : context0->images) {
+    bool merged = false;
+    for (auto& output : m_runDebug.outputs) {
+      if (output.file == item.image) {
+        output.info = output.info.empty() ? item.info : output.info;
+        output.type = output.type.empty() ? item.type : output.type;
+        output.load = output.load.empty() ? item.load : output.load;
+        output.offset = output.offset.empty() ? item.offset : output.offset;
+        merged = true;
+        break;
       }
-      if (!merged) {
-        m_runDebug.outputs.push_back({ item.file, item.info, item.type, item.run, item.debug });
-      }
+    }
+    if (!merged) {
+      m_runDebug.outputs.push_back({ item.image, item.info, item.type, item.load, item.offset });
     }
   }
 
@@ -294,18 +294,19 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
   }
 
   // user defined debugger parameters
-  if (context0->debuggers.size() > 0) {
-    for (const auto& debugger : context0->debuggers) {
-      DebuggerType item;
-      item.name = debugger.name.empty() ? defaultDebugger.name : debugger.name;
-      item.info = debugger.info;
-      item.protocol = debugger.protocol.empty() ? defaultDebugger.protocol : debugger.protocol;
-      item.clock = debugger.clock.empty() ? defaultDebugger.clock : RteUtils::StringToULL(debugger.clock);
-      item.dbgconf = debugger.dbgconf.empty() ? defaultDebugger.dbgconf : debugger.dbgconf;
-      m_runDebug.debuggers.push_back(item);
+  if (!context0->debugger.name.empty()) {
+    m_runDebug.debugger = context0->debugger;
+    if (m_runDebug.debugger.protocol.empty()) {
+      m_runDebug.debugger.protocol = defaultDebugger.protocol;
+    }
+    if (!m_runDebug.debugger.clock.has_value()) {
+      m_runDebug.debugger.clock = defaultDebugger.clock;
+    }
+    if (m_runDebug.debugger.dbgconf.empty()) {
+      m_runDebug.debugger.dbgconf = defaultDebugger.dbgconf;
     }
   } else {
-    m_runDebug.debuggers.push_back(defaultDebugger);
+    m_runDebug.debugger = defaultDebugger;
   }
 
   // debug topology

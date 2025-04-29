@@ -6,6 +6,10 @@ add_executable(ProjMgrUnitTests src/ProjMgrUnitTests.cpp src/ProjMgrTestEnv.cpp
 set_property(TARGET ProjMgrUnitTests PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+if(MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+endif()
+
 target_link_libraries(ProjMgrUnitTests PUBLIC projmgrlib gtest_main)
 target_include_directories(ProjMgrUnitTests PUBLIC ../include ./src)
 

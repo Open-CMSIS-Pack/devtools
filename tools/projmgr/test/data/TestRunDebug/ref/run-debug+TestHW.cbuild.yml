@@ -13,18 +13,7 @@ build:
       title: Cortex-M4 Device Generic Users Guide
   dbgconf:
     - file: ../data/TestRunDebug/RTE/Device/RteTest1/RteTest1.dbgconf
-      debugger:
-        - TestDebugger1
-    - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/ARMCM4.dbgconf
-      version: 0.2.0
-      base: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/ARMCM4.dbgconf.base@0.2.0
-      update: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/ARMCM4.dbgconf.update@0.2.1
-      status: update suggested
-      debugger:
-        - TestDebugger2
-    - file: out/run-debug/TestHW/AC6.dbgconf
-      debugger:
-        - TestDebugger3
+      debugger: TestDebugger1
   processor:
     fpu: off
     core: Cortex-M4

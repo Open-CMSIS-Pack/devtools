@@ -127,6 +127,54 @@ struct MemoryItem {
 };
 
 /**
+ * @brief debugger item containing
+ *        name of debug configuration
+ *        debug protocol (jtag or swd)
+ *        debug clock speed
+ *        debug configuration file
+ *        start pname
+*/
+struct DebuggerItem {
+  std::string name;
+  std::string protocol;
+  std::string clock;
+  std::string dbgconf;
+  std::string startPname;
+};
+
+/**
+ * @brief target set image containing
+ *        project context
+ *        image file
+ *        info brief description
+ *        type specifies an explicit file type
+ *        load mode
+ *        load offset
+*/
+struct ImageItem {
+  std::string context;
+  std::string image;
+  std::string info;
+  std::string type;
+  std::string load;
+  std::string offset;
+};
+
+/**
+ * @brief target set containing
+ *        set name (default unnamed),
+ *        info string,
+ *        target set images,
+ *        debugger configuration
+*/
+struct TargetSetItem {
+  std::string set;
+  std::string info;
+  std::vector<ImageItem> images;
+  DebuggerItem debugger;
+};
+
+/**
  * @brief build types containing
  *        toolchain,
  *        optimization level,
@@ -168,12 +216,14 @@ struct BuildType {
  *        platform board,
  *        platform device,
  *        additional memory,
+ *        target set,
  *        build options
 */
 struct TargetType {
   std::string board;
   std::string device;
   std::vector<MemoryItem> memory;
+  std::vector<TargetSetItem> targetSet;  
   BuildType build;
 };
 
@@ -420,42 +470,6 @@ struct CdefaultItem {
   std::vector<MiscItem> misc;
 };
 
-/**
- * @brief debugger item containing
- *        name of debug configuration
- *        brief description
- *        debug protocol (jtag or swd)
- *        debug clock speed
- *        debug configuration file
- *        type filter
-*/
-struct DebuggerItem {
-  std::string name;
-  std::string info;
-  std::string protocol;
-  std::string clock;
-  std::string dbgconf;
-  TypeFilter type;
-};
-
-/**
- * @brief load item containing
- *        file specifies the file name
- *        info brief description of the file
- *        type specifies an explicit file type
- *        run additional command string for download or programming
- *        debug additional command string for debug
- *        type filter
-*/
-struct LoadItem {
-  std::string file;
-  std::string info;
-  std::string type;
-  std::string run;
-  std::string debug;
-  TypeFilter typeFilter;
-};
-
 typedef std::vector<std::pair<std::string, BuildType>> BuildTypes;
 typedef std::vector<std::pair<std::string, TargetType>> TargetTypes;
 /**
@@ -476,8 +490,6 @@ typedef std::vector<std::pair<std::string, TargetType>> TargetTypes;
  *        cdefault enable switch,
  *        generator options,
  *        list of executes,
- *        list of debuggers,
- *        list of loads
 */
 struct CsolutionItem {
   std::string name;
@@ -497,8 +509,6 @@ struct CsolutionItem {
   GeneratorsItem generators;
   CbuildPackItem cbuildPack;
   std::vector<ExecutesItem> executes;
-  std::vector<DebuggerItem> debuggers;
-  std::vector<LoadItem> loads;
   std::vector<std::string> ymlOrderedBuildTypes;
   std::vector<std::string> ymlOrderedTargetTypes;
 };

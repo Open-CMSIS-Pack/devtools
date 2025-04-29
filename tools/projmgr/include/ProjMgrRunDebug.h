@@ -55,8 +55,8 @@ struct FilesType {
   std::string file;
   std::string info;
   std::string type;
-  std::string run;
-  std::string debug;
+  std::string load;
+  std::string offset;  
   std::string pname;
 };
 
@@ -88,17 +88,6 @@ struct DebugSequencesType {
 */
 struct DebugVarsType {
   std::string vars;
-};
-
-/**
- * @brief debugger type
-*/
-struct DebuggerType {
-  std::string name;
-  std::string info;
-  std::string protocol;
-  std::optional<unsigned long long> clock;
-  std::string dbgconf;
 };
 
 /**
@@ -172,6 +161,7 @@ struct RunDebugType {
   std::string solution;
   std::string solutionName;
   std::string targetType;
+  std::string targetSet;
   std::string compiler;
   std::string board;
   std::string boardPack;
@@ -181,7 +171,7 @@ struct RunDebugType {
   std::vector<FilesType> outputs;
   std::vector<FilesType> systemDescriptions;
   SystemResourcesType systemResources;
-  std::vector<DebuggerType> debuggers;
+  DebuggerType debugger;
   DebugVarsType debugVars;
   std::vector<DebugSequencesType> debugSequences;
   DebugTopologyType debugTopology;

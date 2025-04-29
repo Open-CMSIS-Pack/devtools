@@ -243,6 +243,24 @@ struct ContextTypesItem {
 };
 
 /**
+ * @brief debugger type
+ *        name of debug configuration
+ *        brief description
+ *        debug protocol (jtag or swd)
+ *        debug clock speed
+ *        debug configuration file
+ *        start pname
+*/
+struct DebuggerType {
+  std::string name;
+  std::string info;
+  std::string protocol;
+  std::optional<unsigned long long> clock;
+  std::string dbgconf;
+  std::string startPname;
+};
+
+/**
  * @brief project context item containing
  *        pointer to csolution,
  *        pointer to cproject,
@@ -297,9 +315,10 @@ struct ContextTypesItem {
  *        vector of device books
  *        vector of board books
  *        additional memory
- *        debuggers
+ *        debugger
  *        default dbgconf
- *        loads
+ *        images
+ *        selected target-set
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -362,9 +381,10 @@ struct ContextItem {
   std::vector<BookItem> deviceBooks;
   std::vector<BookItem> boardBooks;
   std::vector<MemoryItem> memory;
-  std::vector<DebuggerItem> debuggers;
+  DebuggerType debugger;
   std::pair<std::string, RteFileInstance*> dbgconf;
-  std::vector<LoadItem> loads;
+  std::vector<ImageItem> images;
+  std::string targetSet;
 };
 
 /**
@@ -485,6 +505,14 @@ public:
    * @return true if executed successfully
   */
   bool ListContexts(std::vector<std::string>& contexts, const std::string& filter = RteUtils::EMPTY_STRING, const bool ymlOrder = false);
+
+  /**
+   * @brief list target-sets
+   * @param reference to list of target-sets
+   * @param filter words to filter results
+   * @return true if executed successfully
+  */
+  bool ListTargetSets(std::vector<std::string>& targetSets, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list generators of a given context
@@ -662,12 +690,14 @@ public:
   /**
    * @brief parse context selection
    * @param contexts pattern (wildcards are allowed)
-   * @param context replacement pattern (wildcards are allowed)
+   * @param check cbuildset flag (default false)
+   * @param active target-set (default empty)
    * @return true if executed successfully
   */
   bool ParseContextSelection(
     const std::vector<std::string>& contextSelection,
-    const bool checkCbuildSet = false);
+    const bool checkCbuildSet = false,
+    const std::string activeTargetSet = std::string());
 
   /**
    * @brief get the list of selected contexts
@@ -832,6 +862,8 @@ protected:
   StrVec m_selectableCompilers;
   bool m_undefCompiler = false;
   std::map<std::string, FileNode> m_missingFiles;
+  std::string m_activeTargetType;
+  TargetSetItem m_activeTargetSet;
 
   bool LoadPacks(ContextItem& context);
   bool CheckMissingPackRequirements(const std::string& contextName);
@@ -859,7 +891,7 @@ protected:
   bool ProcessConfigFiles(ContextItem& context);
   bool ProcessComponentFiles(ContextItem& context);
   bool ProcessDebuggers(ContextItem& context);
-  bool ProcessLoads(ContextItem& context);
+  bool ProcessImages(ContextItem& context);
   bool ProcessExecutes(ContextItem& context, bool solutionLevel = false);
   bool ProcessGroups(ContextItem& context);
   bool ProcessSequencesRelatives(ContextItem& context, bool rerun);
@@ -941,6 +973,8 @@ protected:
   StrVec CollectSelectableCompilers();
   void ProcessTmpDir(std::string& tmpdir, const std::string& base);
   bool IsCreatedByExecute(const std::string file, const std::string dir);
+  bool ParseTargetSetContextSelection(const std::string& activeTargetSet);
+  bool GetActiveTargetSet(const std::string& activeTargetSet);
 };
 
 #endif  // PROJMGRWORKER_H

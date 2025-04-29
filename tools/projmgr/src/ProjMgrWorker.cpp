@@ -2475,20 +2475,25 @@ bool ProjMgrWorker::ProcessExecutes(ContextItem& context, bool solutionLevel) {
 }
 
 bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
-  const vector<DebuggerItem>& debuggers = m_parser->GetCsolution().debuggers;
-  for (const auto& item : debuggers) {
-    if (CheckContextFilters(item.type, context)) {
-      auto filtered = item;
-      if (!filtered.dbgconf.empty()) {
-        if (!ProcessSequenceRelative(context, filtered.dbgconf, context.csolution->directory)) {
-          return false;
-        }
-        if (RteFsUtils::IsRelative(filtered.dbgconf)) {
-          RteFsUtils::NormalizePath(filtered.dbgconf, context.directories.cprj);
-        }
-      }
-      context.debuggers.push_back(filtered);
+  context.targetSet = m_activeTargetType.empty() ? "" :
+    m_activeTargetSet.set.empty() ? "<default>" : m_activeTargetSet.set;
+  if (!m_activeTargetSet.debugger.name.empty()) {
+    context.debugger.name = m_activeTargetSet.debugger.name;
+    context.debugger.info = m_activeTargetSet.info;
+    if (!m_activeTargetSet.debugger.clock.empty()) {
+      context.debugger.clock = RteUtils::StringToULL(m_activeTargetSet.debugger.clock);
     }
+    context.debugger.protocol = m_activeTargetSet.debugger.protocol;
+    if (!m_activeTargetSet.debugger.dbgconf.empty()) {
+      context.debugger.dbgconf = m_activeTargetSet.debugger.dbgconf;
+      if (!ProcessSequenceRelative(context, context.debugger.dbgconf, context.csolution->directory)) {
+        return false;
+      }
+      if (RteFsUtils::IsRelative(context.debugger.dbgconf)) {
+        RteFsUtils::NormalizePath(context.debugger.dbgconf, context.directories.cprj);
+      }
+    }
+    context.debugger.startPname = m_activeTargetSet.debugger.startPname;
   }
   for (const auto& [filename, fi] : context.rteActiveProject->GetFileInstances()) {
     if (fi->HasAttribute("configfile")) {
@@ -2498,23 +2503,23 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
       break;
     }
   }
-return true;
+  return true;
 }
 
-bool ProjMgrWorker::ProcessLoads(ContextItem& context) {
-  const vector<LoadItem>& loads = m_parser->GetCsolution().loads;
-  for (auto item : loads) {
-    if (CheckContextFilters(item.typeFilter, context)) {
+bool ProjMgrWorker::ProcessImages(ContextItem& context) {
+  const vector<ImageItem>& images = m_activeTargetSet.images;
+  for (auto item : images) {
+    if (!item.image.empty()) {
       if (item.type.empty()) {
-        item.type = ProjMgrUtils::FileTypeFromExtension(item.file);
+        item.type = ProjMgrUtils::FileTypeFromExtension(item.image);
       }
-      if (!ProcessSequenceRelative(context, item.file, context.csolution->directory)) {
+      if (!ProcessSequenceRelative(context, item.image, context.csolution->directory)) {
         return false;
       }
-      if (RteFsUtils::IsRelative(item.file)) {
-        RteFsUtils::NormalizePath(item.file, context.directories.cprj);
+      if (RteFsUtils::IsRelative(item.image)) {
+        RteFsUtils::NormalizePath(item.image, context.directories.cprj);
       }
-      context.loads.push_back(item);
+      context.images.push_back(item);
     }
   }
   return true;
@@ -3765,7 +3770,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
     }
   }
   ret &= ProcessDebuggers(context);
-  ret &= ProcessLoads(context);
+  ret &= ProcessImages(context);
   CheckMissingPackRequirements(context.name);
   return ret;
 }
@@ -4088,6 +4093,32 @@ bool ProjMgrWorker::ListContexts(vector<string>& contexts, const string& filter,
   if (!ymlOrder) {
     std::sort(contexts.begin(), contexts.end());
   }
+  return true;
+}
+
+bool ProjMgrWorker::ListTargetSets(vector<string>& targetSets, const string& filter) {
+  if (m_contexts.empty()) {
+    return false;
+  }
+  vector<string> targetSetsVec;
+
+  for (const auto& [name, type] : m_parser->GetCsolution().targetTypes) {
+    for (const auto& item : type.targetSet) {
+      targetSetsVec.push_back(name + (item.set.empty() ? "" : '@' + item.set));
+    }
+  }
+
+  if (!filter.empty()) {
+    vector<string> filteredTargetSets;
+    RteUtils::ApplyFilter(targetSetsVec, RteUtils::SplitStringToSet(filter), filteredTargetSets);
+    if (filteredTargetSets.empty()) {
+      ProjMgrLogger::Get().Error("no target-set was found with filter '" + filter + "'");
+      return false;
+    }
+    targetSetsVec = filteredTargetSets;
+  }
+  targetSets.assign(targetSetsVec.begin(), targetSetsVec.end());
+
   return true;
 }
 
@@ -4436,12 +4467,21 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
 }
 
 bool ProjMgrWorker::ParseContextSelection(
-  const vector<string>& contextSelection, const bool checkCbuildSet)
+  const vector<string>& contextSelection, const bool checkCbuildSet, const string activeTargetSet)
 {
   vector<string> ymlOrderedContexts;
   ListContexts(ymlOrderedContexts, RteUtils::EMPTY_STRING, true);
 
-  if (!checkCbuildSet) {
+  if (checkCbuildSet && !activeTargetSet.empty()) {
+    ProjMgrLogger::Get().Error("invalid arguments: '-a' option cannot be used in combination with '-S'");
+    return false;
+  }
+  else if (!activeTargetSet.empty()) {
+    if (!ParseTargetSetContextSelection(activeTargetSet)) {
+      return false;
+    }
+  }
+  else if (!checkCbuildSet) {
     // selected all contexts to process, when contextSelection is empty
     // otherwise process contexts from contextSelection
     const auto& filterError = ProjMgrUtils::GetSelectedContexts(
@@ -5301,4 +5341,54 @@ void ProjMgrWorker::CollectUnusedPacks() {
       }
     }
   }
+}
+
+bool ProjMgrWorker::ParseTargetSetContextSelection(const string& activeTargetSet) {
+  // get project-contexts from active target-set
+  if (!GetActiveTargetSet(activeTargetSet)) {
+    return false;
+  }
+  m_selectedContexts.clear();
+  const auto& targetType = '+' + m_activeTargetType;
+  for (const auto& item : m_activeTargetSet.images) {
+    if (!item.context.empty()) {
+      m_selectedContexts.push_back(item.context + targetType);
+    }
+  }
+  if (m_selectedContexts.empty()) {
+    // when target-set is missing under target-types the default value is the first project with first build-type
+    vector<string> contexts;
+    ListContexts(contexts, targetType, true);
+    m_selectedContexts.push_back(contexts.front());
+  } else {
+    // validate context selection
+    if (!ValidateContexts(m_selectedContexts, false)) {
+      return false;
+    }   
+  }
+  return true;
+}
+
+bool ProjMgrWorker::GetActiveTargetSet(const string& activeTargetSet) {
+  const auto& targetType = RteUtils::GetPrefix(activeTargetSet, '@');
+  const auto& targetSet = RteUtils::GetSuffix(activeTargetSet, '@');
+  bool targetSetFound = false;
+  for (const auto& [name, type] : m_parser->GetCsolution().targetTypes) {
+    if (name == targetType) {
+      for (const auto& item : type.targetSet) {
+        if (item.set == targetSet) {
+          m_activeTargetSet = item;
+          targetSetFound = true;
+          break;
+        }
+      }
+      m_activeTargetType = targetType;
+      break;
+    }
+  }
+  if (m_activeTargetType.empty() || !targetSetFound) {
+    ProjMgrLogger::Get().Error("'" + activeTargetSet + "' is not selectable as active target-set");
+    return false;
+  }
+  return true;
 }

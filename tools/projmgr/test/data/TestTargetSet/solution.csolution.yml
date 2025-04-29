@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  compiler: AC6
+
+  target-types:
+    - type: Type1
+      device: RteTest_ARMCM4_NOFP
+      target-set:
+        - set: #unnamed default
+        - set: Custom2
+        - set: Custom3
+          images:
+            - project-context: UnknownContext
+    - type: Type2
+      board: RteTest-Test-board With.Memory
+      target-set:
+        - set: Default2
+
+  projects:
+    - project: project.cproject.yml
+
+  packs:
+    - pack: ARM::RteTest_DFP

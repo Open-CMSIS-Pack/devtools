@@ -68,11 +68,8 @@
         },
         "debugger": {
           "title": "debugger:",
-          "type": "array",
-          "description": "Associated debugger connections.",
-          "uniqueItems": true,
-          "minItems": 1,
-          "items": { "type": "string" }
+          "type": "string",
+          "description": "Associated debugger connections."
         }
       },
       "required": [ "file" ],
@@ -589,6 +586,7 @@
         "memory":       { "$ref": "#/definitions/MemoryType" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
         "processor":    { "$ref": "#/definitions/ProcessorType" },
+        "target-set":   { "$ref": "#/definitions/TargetSetsType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "variables":    { "$ref": "#/definitions/VariablesType" },
         "warnings":     { "$ref": "#/definitions/WarningsType" }
@@ -1122,7 +1120,6 @@
           "description": "The tool required to build this csolution project."
         },
         "debug":           { "$ref": "#/definitions/DebugType" },
-        "debugger":        { "$ref": "#/definitions/DebuggersType" },
         "define":          { "$ref": "#/definitions/DefinesType" },
         "define-asm":      { "$ref": "#/definitions/DefinesAsmType" },
         "del-path":        { "$ref": "#/definitions/DelpathsType" },
@@ -1135,7 +1132,6 @@
         "generators":      { "$ref": "#/definitions/GeneratorsOutputType" },
         "language-C":      { "$ref": "#/definitions/LanguageCType" },
         "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
-        "load":            { "$ref": "#/definitions/LoadsType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" },
         "optimize":        { "$ref": "#/definitions/OptimizeType" },
         "output-dirs":     { "$ref": "#/definitions/OutputDirectoriesType" },
@@ -2043,20 +2039,40 @@
       "additionalProperties": false,
       "required": ["algorithm", "start", "size", "ram-start", "ram-size"]
     },
-    "RunFilesType": {
+    "RunOutputFilesType": {
+      "title": "output:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#output",
+      "description": "List of the image (ELF, HEX, BIN) files generated.",
       "type": "array",
       "uniqueItems": true,
-      "items": { "$ref": "#/definitions/RunFileType" }
+      "items": { "$ref": "#/definitions/RunOutputFileType" }
     },
-    "RunFileType": {
+    "RunOutputFileType": {
+      "type": "object",
+      "properties": {
+        "file":        { "type": "string", "description": "Specifies the file name." },
+        "type":        { "type": "string", "description": "Specifies the file type." },
+        "info":        { "type": "string", "description": "Brief description of the file." },
+        "load":        { "$ref": "#/definitions/TargetSetLoadType" },
+        "load-offset": { "type": "number", "description": "Offset applied to the binary content when loading the file." },
+        "pname":       { "type": "string", "description": "Image belongs to processor in a multi-core system." }
+      },
+      "additionalProperties": false,
+      "required": ["file", "type"]
+    },
+    "RunSystemFilesType": {
+      "title": "output:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#system-descriptions",
+      "description": "List of description files for peripherals and software components.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/RunSystemFileType" }
+    },
+    "RunSystemFileType": {
       "type": "object",
       "properties": {
         "file":  { "type": "string", "description": "Specifies the file name." },
         "type":  { "type": "string", "description": "Specifies the file type." },
         "info":  { "type": "string", "description": "Brief description of the file." },
-        "run":   { "type": "string", "description": "Additional command string for download or programming." },
-        "debug": { "type": "string", "description": "Additional command string for debug." },
-        "pname": { "type": "string", "description": "Processor name." }
+        "pname": { "type": "string", "description": "Image belongs to processor in a multi-core system." }
       },
       "additionalProperties": false,
       "required": ["file", "type"]
@@ -2127,47 +2143,50 @@
       "additionalProperties": false,
       "required": ["name", "access", "start", "size"]
     },
-    "DebuggersType": {
-      "title": "debugger:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#debugger",
-      "description": "Configuration information for the debug connection.",
-      "type": "array",
-      "uniqueItems": true,
-      "items": { "$ref": "#/definitions/DebuggerType" }
-    },
     "DebuggerType": {
+      "title": "debugger:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#debugger",
+      "description": "Configuration information for the debug connection.",
       "type": "object",
       "properties": {
         "name":            { "type": "string", "description": "Identifies the debug configuration." },
-        "info":            { "type": "string", "description": "Brief description of the debugger configuration." },
+        "info":            { "type": "string", "description": "Brief description from target-set." },
         "protocol":        { "enum": [ "jtag", "swd" ], "description": "Selected debug protocol (jtag or swd)." },
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
-        "for-context":     { "$ref": "#/definitions/ForContext" },
-        "not-for-context": { "$ref": "#/definitions/NotForContext" }
+        "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
+        "gdbserver":       { "$ref": "#/definitions/GdbServerType" }
       },
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": ["name"]
     },
-    "LoadsType": {
-      "title": "load:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#load",
-      "description": "Specifies additional files to add to the output node.",
-      "type": "array",
-      "uniqueItems": true,
-      "items": { "$ref": "#/definitions/LoadType" }
-    },
-    "LoadType": {
+    "GdbServerType": {
+      "title": "gdbserver:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#gdbserver",
+      "description": "Information for GDB server option of debugger.",
       "type": "object",
       "properties": {
-        "file":            { "type": "string", "description": "Specifies the file name." },
-        "info":            { "type": "string", "description": "Brief description of the file." },
-        "type":            { "enum": [ "elf", "hex", "bin", "lib" ], "description": "Specifies an explicit file type." },
-        "run":             { "type": "string", "description": "Additional command string for download or programming." },
-        "debug":           { "type": "string", "description": "Additional command string for debug." },
-        "for-context":     { "$ref": "#/definitions/ForContext" },
-        "not-for-context": { "$ref": "#/definitions/NotForContext" }
+        "core":     { "$ref": "#/definitions/GdbCoresType" },
+        "terminal": { "type": "string", "description": "Terminal port of the GDB server." },
+        "trace":    { "type": "string", "description": "Trace port of the GDB server." }
       },
       "additionalProperties": false,
-      "required": ["file"]
+      "required": ["core"]
+    },
+    "GdbCoresType": {
+      "description": "List of the processor cores along with GDB port number.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/GdbCoreType" }
+    },
+    "GdbCoreType": {
+      "type": "object",
+      "properties": {
+        "port":  { "type": "number", "description": "Port number of processor." },
+        "pname": { "type": "string", "description": "Processor name of the processor (only required for multi-core systems)." },
+        "start": { "type": "null", "description": "Identifies the start or primary processor. Only one processor can have the start: node." },
+        "punit": { "type": "number", "description": "Identifies the procssor core in a SMP system." }
+      },
+      "additionalProperties": false,
+      "required": ["port"]
     },
     "DebugVarsType": {
       "title": "debug-vars:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#debug-vars",
@@ -2287,15 +2306,16 @@
         "generated-by":        { "type": "string", "description": "Tool name that generated this file." },
         "solution":            { "type": "string", "description": "Name of the `*.csolution.yml` file." },
         "target-type":         { "type": "string", "description": "Name of the target-type that was selected." },
+        "target-set":          { "type": "string", "description": "Name of the target-set that was selected." },
         "compiler":            { "type": "string", "description": "Compiler toolchain used for code generation." },
         "board":               { "$ref": "#/definitions/BoardType" },
         "board-pack":          { "$ref": "#/definitions/PackID" },
         "device":              { "$ref": "#/definitions/DeviceType" },
         "device-pack":         { "$ref": "#/definitions/PackID" },
-        "output":              { "$ref": "#/definitions/RunFilesType", "description": "List of the image (ELF, HEX, BIN) files generated." },
+        "output":              { "$ref": "#/definitions/RunOutputFilesType" },
         "system-resources":    { "$ref": "#/definitions/SystemResourcesType" },
-        "system-descriptions": { "$ref": "#/definitions/RunFilesType", "description": "System description files." },
-        "debugger":            { "$ref": "#/definitions/DebuggersType" },
+        "system-descriptions": { "$ref": "#/definitions/RunSystemFilesType" },
+        "debugger":            { "$ref": "#/definitions/DebuggerType" },
         "debug-vars":          { "$ref": "#/definitions/DebugVarsType" },
         "debug-sequences":     { "$ref": "#/definitions/DebugSequencesType" },
         "programming":         { "$ref": "#/definitions/ProgrammingType" },
@@ -2303,6 +2323,62 @@
       },
       "additionalProperties": false,
       "required": ["output", "debugger"]
+    },
+    "TargetSetsType": {
+      "title": "target-set:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#target-set",
+      "description": "One or more target-set configurations for projects, images, and debugger.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/TargetSetType" }
+    },
+    "TargetSetType": {
+      "type": "object",
+      "properties": {
+        "set":      { "type": ["string", "null"], "description": "Start of a configuration, optional with name. The default set is unnamed." },
+        "info":     { "type": "string", "description": "Brief description of the configuration." },
+        "images":   { "$ref": "#/definitions/TargetSetImagesType" },
+        "debugger": { "$ref": "#/definitions/TargetSetDebuggerType" }
+      },
+      "additionalProperties": false,
+      "required": ["set"]
+    },
+    "TargetSetImagesType": {
+      "title": "images:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#target-set-images",
+      "description": "List of images that belong to this set.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/TargetSetImageType" }
+    },
+    "TargetSetImageType": {
+      "type": "object",
+      "properties": {
+        "project-context": { "type": "string", "description": "Project context in the format 'project-name.build-type'." },
+        "image":           { "type": "string", "description": "Base filename of the image (without path)." },
+        "info":            { "type": "string", "description": "Brief description of the file." },
+        "type":            { "enum": [ "elf", "hex", "bin", "lib" ], "description": "Specifies an explicit file type." },
+        "load":            { "$ref": "#/definitions/TargetSetLoadType" },
+        "load-offset":     { "type": "number", "description": "Offset applied to the binary content when loading the file." }
+      },
+      "additionalProperties": false
+    },
+    "TargetSetDebuggerType": {
+      "title": "optimize:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#debugger",
+      "description": "Debugger configuration for this set.",
+      "type": "object",
+      "properties": {
+        "name":            { "type": "string", "description": "Identifies the debug adapter." },
+        "protocol":        { "enum": [ "jtag", "swd" ], "description": "Selected debug protocol (jtag or swd)." },
+        "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
+        "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
+        "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." }
+      },
+      "additionalProperties": true,
+      "required": ["name"]
+    },
+    "TargetSetLoadType": {
+      "title": "optimize:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#load",
+      "description": "Specifies the load mode for the project output or image file.",
+      "enum": [ "image+symbols", "symbols", "image", "none" ]
     }
   }
 }
