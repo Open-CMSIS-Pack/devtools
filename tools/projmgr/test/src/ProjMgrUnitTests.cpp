@@ -4204,6 +4204,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
+  argv[2] = (char*)"target-sets";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+
+  argv[1] = (char*)"list";
   argv[2] = (char*)"generators";
   argv[3] = (char*)"-h";
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
@@ -6694,23 +6699,22 @@ TEST_F(ProjMgrUnitTests, InvalidContextSet) {
 }
 
 TEST_F(ProjMgrUnitTests, TestRunDebug) {
-  char* argv[8];
+  char* argv[7];
   const string& csolution = testinput_folder + "/TestRunDebug/run-debug.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
-  argv[3] = (char*)"--context-set";
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)testoutput_folder.c_str();
-  argv[6] = (char*)"--context";
-  argv[7] = (char*)"+TestHW";
-  EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"--active";
+  argv[6] = (char*)"TestHW";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW.cbuild-run.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW.cbuild-run.yml");
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW.cbuild.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW.cbuild.yml");
 
-  argv[7] = (char*)"+TestHW2";
-  EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
+  argv[6] = (char*)"TestHW2";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW2.cbuild-run.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW2.cbuild-run.yml");
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW2.cbuild.yml",
@@ -6718,16 +6722,15 @@ TEST_F(ProjMgrUnitTests, TestRunDebug) {
 }
 
 TEST_F(ProjMgrUnitTests, TestRunDebugMulticore) {
-  char* argv[8];
+  char* argv[7];
   const string& csolution = testinput_folder + "/TestRunDebug/run-debug.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
-  argv[3] = (char*)"--context-set";
-  argv[4] = (char*)"-o";
-  argv[5] = (char*)testoutput_folder.c_str();
-  argv[6] = (char*)"--context";
-  argv[7] = (char*)"+TestHW3";
-  EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"--active";
+  argv[6] = (char*)"TestHW3";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW3.cbuild-run.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW3.cbuild-run.yml");
 }
@@ -6779,4 +6782,76 @@ TEST_F(ProjMgrUnitTests, ComponentVersions) {
 
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/versions.Debug+RteTest_ARMCM3.cbuild.yml",
     testinput_folder + "/TestSolution/ComponentSources/ref/versions.Debug+RteTest_ARMCM3.cbuild.yml");
+}
+
+TEST_F(ProjMgrUnitTests, ListTargetSets) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestTargetSet/solution.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"target-sets";
+  argv[3] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "Type1\nType1@Custom2\nType1@Custom3\nType2@Default2\n");
+
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"--filter";
+  argv[5] = (char*)"Type2";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+
+  outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "Type2@Default2\n");
+
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"--filter";
+  argv[5] = (char*)"Unknown";
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(errStr.find("no target-set was found with filter 'Unknown'") != string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestTargetSet/solution.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"convert";
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"Type1@Custom2";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuildRun1 = YAML::LoadFile(testinput_folder + "/TestTargetSet/solution+Type1.cbuild-run.yml");
+  EXPECT_EQ("Custom2", cbuildRun1["cbuild-run"]["target-set"].as<string>());
+
+  argv[4] = (char*)"Type1";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuildRun2 = YAML::LoadFile(testinput_folder + "/TestTargetSet/solution+Type1.cbuild-run.yml");
+  EXPECT_EQ("<default>", cbuildRun2["cbuild-run"]["target-set"].as<string>());
+
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"Type1@Unknown";
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(errStr.c_str(), "error csolution: 'Type1@Unknown' is not selectable as active target-set\n");
+
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"Type2";
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(errStr.c_str(), "error csolution: 'Type2' is not selectable as active target-set\n");
+
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"Type1";
+  argv[5] = (char*)"--context-set";
+  EXPECT_EQ(1, RunProjMgr(6, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(errStr.c_str(), "error csolution: invalid arguments: '-a' option cannot be used in combination with '-S'\n");
+
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"Type1@Custom3";
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(errStr.c_str(), "error csolution: unknown selected context(s):\n  UnknownContext+Type1\n");
 }

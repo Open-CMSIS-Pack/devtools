@@ -111,12 +111,6 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     csolution.enableCdefault = solutionNode[YAML_CDEFAULT].IsDefined();
     ParseGenerators(solutionNode, csolution.path, csolution.generators);
     ParseExecutes(solutionNode, csolution.path, csolution.executes);
-    if (!ParseDebugger(solutionNode, csolution.path, csolution.debuggers)) {
-      return false;
-    }
-    if (!ParseLoad(solutionNode, csolution.path, csolution.loads)) {
-      return false;
-    }
 
   } catch (YAML::Exception& e) {
    ProjMgrLogger::Get().Error(e.msg, "", input, e.mark.line + 1, e.mark.column + 1);
@@ -580,47 +574,15 @@ void ProjMgrYamlParser::ParseExecutes(const YAML::Node& parent, const string& fi
   }
 }
 
-bool ProjMgrYamlParser::ParseDebugger(const YAML::Node& parent, const string& file, std::vector<DebuggerItem>& debbugers) {
+void ProjMgrYamlParser::ParseDebugger(const YAML::Node& parent, const string& file, DebuggerItem& debugger) {
   if (parent[YAML_DEBUGGER].IsDefined()) {
     const YAML::Node& debuggerNode = parent[YAML_DEBUGGER];
-    for (const auto& debuggerEntry : debuggerNode) {
-      DebuggerItem debuggerItem;
-      ParseString(debuggerEntry, YAML_NAME, debuggerItem.name);
-      ParseString(debuggerEntry, YAML_INFO, debuggerItem.info);
-      ParseString(debuggerEntry, YAML_PROTOCOL, debuggerItem.protocol);
-      ParseNumber(debuggerEntry, file, YAML_CLOCK, debuggerItem.clock);
-      ParsePortablePath(debuggerEntry, file, YAML_DBGCONF, debuggerItem.dbgconf);
-      if (!ParseTypeFilter(debuggerEntry, debuggerItem.type)) {
-        return false;
-      }
-      debbugers.push_back(debuggerItem);
-    }
+    ParseString(debuggerNode, YAML_NAME, debugger.name);
+    ParseString(debuggerNode, YAML_PROTOCOL, debugger.protocol);
+    ParseNumber(debuggerNode, file, YAML_CLOCK, debugger.clock);
+    ParsePortablePath(debuggerNode, file, YAML_DBGCONF, debugger.dbgconf);
+    ParseString(debuggerNode, YAML_START_PNAME, debugger.startPname);
   }
-  return true;
-}
-
-bool ProjMgrYamlParser::ParseLoad(const YAML::Node& parent, const string& file, std::vector<LoadItem>& loads) {
-  if (parent[YAML_LOAD].IsDefined()) {
-    const YAML::Node& loadNode = parent[YAML_LOAD];
-    for (const auto& loadEntry : loadNode) {
-      LoadItem loadItem;
-      ParsePortablePath(loadEntry, file, YAML_FILE, loadItem.file);
-      map<const string, string&> loadChildren = {
-        {YAML_INFO, loadItem.info},
-        {YAML_TYPE, loadItem.type},
-        {YAML_RUN, loadItem.run},
-        {YAML_DEBUG, loadItem.debug},
-      };
-      for (const auto& item : loadChildren) {
-        ParseString(loadEntry, item.first, item.second);
-      }
-      if (!ParseTypeFilter(loadEntry, loadItem.typeFilter)) {
-        return false;
-      }
-      loads.push_back(loadItem);
-    }
-  }
-  return true;
 }
 
 void ProjMgrYamlParser::ParseRte(const YAML::Node& parent, string& rteBaseDir) {
@@ -1033,7 +995,39 @@ bool ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, const string& 
     }
   }
 
+  ParseTargetSet(parent, file, targetType.targetSet);
+
   return ParseBuildType(parent, file, targetType.build);
+}
+
+void ProjMgrYamlParser::ParseTargetSet(const YAML::Node& parent, const string& file, std::vector<TargetSetItem>& targetSets) {
+  if (parent[YAML_TARGET_SET].IsDefined()) {
+    const YAML::Node& targetSetNode = parent[YAML_TARGET_SET];
+    for (const auto& targetSetEntry : targetSetNode) {
+      TargetSetItem targetSet;
+      ParseString(targetSetEntry, YAML_SET, targetSet.set);
+      ParseString(targetSetEntry, YAML_INFO, targetSet.info);
+      ParseDebugger(targetSetEntry, file, targetSet.debugger);
+      ParseImages(targetSetEntry, file, targetSet.images);
+      targetSets.push_back(targetSet);
+    }
+  }
+}
+
+void ProjMgrYamlParser::ParseImages(const YAML::Node& parent, const string& file, std::vector<ImageItem>& images) {
+  if (parent[YAML_IMAGES].IsDefined()) {
+    const YAML::Node& imagesNode = parent[YAML_IMAGES];
+    for (const auto& imagesEntry : imagesNode) {
+      ImageItem imageItem;
+      ParseString(imagesEntry, YAML_PROJECT_CONTEXT, imageItem.context);
+      ParsePortablePath(imagesEntry, file, YAML_IMAGE, imageItem.image);
+      ParseString(imagesEntry, YAML_INFO, imageItem.info);
+      ParseString(imagesEntry, YAML_TYPE, imageItem.type);
+      ParseString(imagesEntry, YAML_LOAD, imageItem.load);
+      ParseNumber(imagesEntry, file, YAML_LOAD_OFFSET, imageItem.offset);
+      images.push_back(imageItem);
+    }
+  }
 }
 
 // Validation Maps
@@ -1071,8 +1065,6 @@ const set<string> solutionKeys = {
   YAML_CDEFAULT,
   YAML_GENERATORS,
   YAML_EXECUTES,
-  YAML_DEBUGGER,
-  YAML_LOAD,
 };
 
 const set<string> projectsKeys = {
@@ -1195,6 +1187,7 @@ const set<string> targetTypeKeys = {
   YAML_MISC,
   YAML_VARIABLES,
   YAML_CONTEXT_MAP,
+  YAML_TARGET_SET,
 };
 
 const set<string> buildTypeKeys = {

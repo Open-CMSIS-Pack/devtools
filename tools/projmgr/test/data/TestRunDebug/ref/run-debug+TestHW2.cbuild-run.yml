@@ -2,6 +2,7 @@ cbuild-run:
   generated-by: csolution version 2.9.0
   solution: ../data/TestRunDebug/run-debug.csolution.yml
   target-type: TestHW2
+  target-set: <default>
   compiler: AC6
   board: Keil::RteTest-Test-board With.Memory:1.1.1
   board-pack: ARM::RteTest_DFP@0.2.0
@@ -11,11 +12,6 @@ cbuild-run:
     - file: out/run-debug/TestHW2/run-debug.axf
       info: generate by run-debug+TestHW2
       type: elf
-    - file: ../data/TestRunDebug/customImage.bin
-      info: load image info
-      type: bin
-      run: run cmd bin
-      debug: debug cmd bin
     - file: ../data/TestRunDebug/customLibrary.x
       type: lib
   system-resources:
@@ -46,10 +42,10 @@ cbuild-run:
     - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Components/RteTest.scvd
       type: scvd
   debugger:
-    - name: CMSIS-DAP
-      protocol: swd
-      clock: 30000000
-      dbgconf: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM.dbgconf
+    name: CMSIS-DAP
+    protocol: swd
+    clock: 30000000
+    dbgconf: out/run-debug/TestHW2/AC6.dbgconf
   debug-vars:
     vars: |
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY

@@ -33,10 +33,12 @@ Commands:\n\
   list generators               Print list of code generators of a given context\n\
   list layers                   Print list of available, referenced and compatible layers\n\
   list packs                    Print list of used packs from the pack repository\n\
+  list target-sets              Print list of target-sets in a <name>.csolution.yml\n\
   list toolchains               Print list of supported toolchains\n\
   run                           Run code generator\n\
   update-rte                    Create/update configuration files and validate solution\n\n\
 Options:\n\
+  -a, --active arg              Select active target-set: <target-type>[@<set>]\n\
   -c, --context arg [...]       Input context names [<project-name>][.<build-type>][+<target-type>]\n\
   -d, --debug                   Enable debug messages\n\
   -D, --dry-run                 Enable dry-run\n\
@@ -162,23 +164,25 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option updateIdx("update-idx", "Update cbuild-idx file with layer info", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option quiet("q,quiet", "Run silently, printing only error messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option cbuildgen("cbuildgen", "Generate legacy *.cprj files", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option activeTargetSet("a,active", "Select active target-set: <target-type>[@<set>]", cxxopts::value<string>());
 
   // command options dictionary
   map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
     // command, optional args, options
-    {"update-rte",        { false, {context, contextSet, debug, load, quiet, schemaCheck, toolchain, verbose, frozenPacks}}},
-    {"convert",           { false, {context, contextSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, outputAlt, toolchain, verbose, frozenPacks, cbuildgen}}},
-    {"run",               { false, {context, contextSet, debug, generator, load, quiet, schemaCheck, verbose, dryRun}}},
-    {"list packs",        { true,  {context, contextSet, debug, filter, load, missing, quiet, schemaCheck, toolchain, verbose, relativePaths}}},
-    {"list boards",       { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list devices",      { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list configs",      { false, {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list components",   { true,  {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list dependencies", { false, {context, contextSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"update-rte",        { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose, frozenPacks}}},
+    {"convert",           { false, {context, contextSet, activeTargetSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, outputAlt, toolchain, verbose, frozenPacks, cbuildgen}}},
+    {"run",               { false, {context, contextSet, activeTargetSet, debug, generator, load, quiet, schemaCheck, verbose, dryRun}}},
+    {"list packs",        { true,  {context, contextSet, activeTargetSet, debug, filter, load, missing, quiet, schemaCheck, toolchain, verbose, relativePaths}}},
+    {"list boards",       { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list devices",      { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list configs",      { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list components",   { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list dependencies", { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list contexts",     { false, {debug, filter, quiet, schemaCheck, verbose, ymlOrder}}},
-    {"list generators",   { false, {context, contextSet, debug, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list layers",       { false, {context, contextSet, debug, load, clayerSearchPath, quiet, schemaCheck, toolchain, verbose, updateIdx}}},
-    {"list toolchains",   { false, {context, contextSet, debug, quiet, toolchain, verbose}}},
+    {"list target-sets",  { false, {debug, filter, quiet, schemaCheck, verbose}}},
+    {"list generators",   { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list layers",       { false, {context, contextSet, activeTargetSet, debug, load, clayerSearchPath, quiet, schemaCheck, toolchain, verbose, updateIdx}}},
+    {"list toolchains",   { false, {context, contextSet, activeTargetSet, debug, quiet, toolchain, verbose}}},
     {"list environment",  { true,  {}}},
   };
 
@@ -188,7 +192,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
       solution, context, contextSet, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output, outputAlt,
       help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder,
-      relativePaths, frozenPacks, updateIdx, quiet, cbuildgen
+      relativePaths, frozenPacks, updateIdx, quiet, cbuildgen, activeTargetSet
     });
     options.parse_positional({ "positional" });
 
@@ -249,6 +253,9 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
       m_csolutionFile = RteFsUtils::MakePathCanonical(m_csolutionFile);
       m_rootDir = RteUtils::ExtractFilePath(m_csolutionFile, false);
       m_worker.SetRootDir(m_rootDir);
+    }
+    if (parseResult.count("active")) {
+      m_activeTargetSet = parseResult["active"].as<string>();
     }
     if (parseResult.count("context")) {
       m_context = parseResult["context"].as<vector<string>>();
@@ -358,6 +365,10 @@ int ProjMgr::ProcessCommands() {
       }
     } else if (m_args == "contexts") {
       if (!RunListContexts()) {
+        return ErrorCode::ERROR;
+      }
+    } else if (m_args == "target-sets") {
+      if (!RunListTargetSets()) {
         return ErrorCode::ERROR;
       }
     } else if (m_args == "generators") {
@@ -525,7 +536,8 @@ bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
   }
 
   // Generate cbuild-run file
-  if (previousResult && m_contextSet && !m_processedContexts.empty()) {
+  if (previousResult && !m_processedContexts.empty() &&
+    (m_contextSet || !m_activeTargetSet.empty())) {
     if (!m_runDebug.CollectSettings(m_processedContexts)) {
       result = false;
     }
@@ -548,7 +560,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
 
 bool ProjMgr::ParseAndValidateContexts() {
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextSet)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextSet, m_activeTargetSet)) {
     return false;
   }
 
@@ -873,6 +885,22 @@ bool ProjMgr::RunListContexts(void) {
   return true;
 }
 
+bool ProjMgr::RunListTargetSets(void) {
+  // Parse all input files and create contexts
+  if (!PopulateContexts()) {
+    return false;
+  }
+  vector<string> targetSets;
+  if (!m_worker.ListTargetSets(targetSets, m_filter)) {
+    ProjMgrLogger::Get().Error("processing target-sets list failed");
+    return false;
+  }
+  for (const auto& targetSet : targetSets) {
+    ProjMgrLogger::out() << targetSet << endl;
+  }
+  return true;
+}
+
 bool ProjMgr::RunListGenerators(void) {
   // Parse all input files and create contexts
   if (!PopulateContexts()) {
@@ -972,7 +1000,7 @@ bool ProjMgr::RunCodeGenerator(void) {
     return false;
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, (m_context.size() == 0) && m_contextSet)) {
+  if (!m_worker.ParseContextSelection(m_context, (m_context.size() == 0) && m_contextSet, m_activeTargetSet)) {
     return false;
   }
   if (m_extGenerator.IsGlobalGenerator(m_codeGenerator)) {

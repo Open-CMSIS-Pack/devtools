@@ -156,24 +156,15 @@ void ProjMgrCbuild::SetComponentsNode(YAML::Node node, const ContextItem* contex
 }
 
 void ProjMgrCbuild::SetDebugConfigNode(YAML::Node node, const ContextItem* context) {
-  map<string, StrVec> dbgconfList;
-  for (const auto& debugger : context->debuggers) {
-    string dbgconf = debugger.dbgconf.empty() ? context->dbgconf.first : debugger.dbgconf;
-    if (!dbgconf.empty()) {
-      CollectionUtils::PushBackUniquely(dbgconfList[dbgconf], debugger.name);
-    }
-  }
-  if (dbgconfList.empty() && !context->dbgconf.first.empty()) {
-    dbgconfList[context->dbgconf.first];
-  }
-  for (const auto& [dbgconf, debuggers] : dbgconfList) {
+  string dbgconf = context->debugger.dbgconf.empty() ? context->dbgconf.first : context->debugger.dbgconf;
+  if (!dbgconf.empty()) {
     YAML::Node fileNode;
     SetNodeValue(fileNode[YAML_FILE], FormatPath(dbgconf, context->directories.cbuild));
     if (dbgconf == context->dbgconf.first) {
       SetNodeValue(fileNode[YAML_VERSION], context->dbgconf.second->GetSemVer(true));
       SetPLMStatus(fileNode, context, dbgconf);
     }
-    SetNodeValue(fileNode[YAML_DEBUGGER], debuggers);
+    SetNodeValue(fileNode[YAML_DEBUGGER], context->debugger.name);
     node.push_back(fileNode);
   }
 }

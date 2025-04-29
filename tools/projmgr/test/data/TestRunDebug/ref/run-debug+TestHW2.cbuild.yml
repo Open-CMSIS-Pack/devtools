@@ -12,8 +12,8 @@ build:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html
       title: Cortex-M3 Device Generic Users Guide
   dbgconf:
-    - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM.dbgconf
-      version: 0.0.2
+    - file: out/run-debug/TestHW2/AC6.dbgconf
+      debugger: CMSIS-DAP
   processor:
     fpu: off
     core: Cortex-M3

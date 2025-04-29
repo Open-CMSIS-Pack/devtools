@@ -22,7 +22,7 @@ protected:
   void SetProgrammingNode(YAML::Node node, const std::vector<AlgorithmType>& algorithms);
   void SetFilesNode(YAML::Node node, const std::vector<FilesType>& outputs);
   void SetResourcesNode(YAML::Node node, const SystemResourcesType& systemResources);
-  void SetDebuggersNode(YAML::Node node, const std::vector<DebuggerType>& debuggers);
+  void SetDebuggerNode(YAML::Node node, const DebuggerType& debugger);
   void SetDebugVarsNode(YAML::Node node, const DebugVarsType& debugVars);
   void SetDebugSequencesNode(YAML::Node node, const std::vector<DebugSequencesType>& algorithms);
   void SetDebugSequencesBlockNode(YAML::Node node, const std::vector<DebugSequencesBlockType>& blocks);
@@ -38,6 +38,7 @@ ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
   SetNodeValue(node[YAML_SOLUTION], FormatPath(debugRun.solution, directory));
   SetNodeValue(node[YAML_TARGETTYPE], debugRun.targetType);
+  SetNodeValue(node[YAML_TARGET_SET], debugRun.targetSet);
   SetNodeValue(node[YAML_COMPILER], debugRun.compiler);
   SetNodeValue(node[YAML_BOARD], debugRun.board);
   SetNodeValue(node[YAML_BOARD_PACK], debugRun.boardPack);
@@ -46,7 +47,7 @@ ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
   SetFilesNode(node[YAML_OUTPUT], debugRun.outputs);
   SetResourcesNode(node[YAML_SYSTEM_RESOURCES], debugRun.systemResources);
   SetFilesNode(node[YAML_SYSTEM_DESCRIPTIONS], debugRun.systemDescriptions);
-  SetDebuggersNode(node[YAML_DEBUGGER], debugRun.debuggers);
+  SetDebuggerNode(node[YAML_DEBUGGER], debugRun.debugger);
   SetDebugVarsNode(node[YAML_DEBUG_VARS], debugRun.debugVars);
   SetDebugSequencesNode(node[YAML_DEBUG_SEQUENCES], debugRun.debugSequences);
   SetProgrammingNode(node[YAML_PROGRAMMING], debugRun.algorithms);
@@ -72,8 +73,10 @@ void ProjMgrCbuildRun::SetFilesNode(YAML::Node node, const std::vector<FilesType
     SetNodeValue(fileNode[YAML_FILE], FormatPath(item.file, m_directory));
     SetNodeValue(fileNode[YAML_INFO], item.info);
     SetNodeValue(fileNode[YAML_TYPE], item.type);
-    SetNodeValue(fileNode[YAML_RUN], item.run);
-    SetNodeValue(fileNode[YAML_DEBUG], item.debug);
+    SetNodeValue(fileNode[YAML_LOAD], item.load);
+    if (!item.offset.empty()) {
+      fileNode[YAML_LOAD_OFFSET] = ProjMgrUtils::ULLToHex(RteUtils::StringToULL(item.offset));
+    }
     SetNodeValue(fileNode[YAML_PNAME], item.pname);
     node.push_back(fileNode);
   }
@@ -93,17 +96,16 @@ void ProjMgrCbuildRun::SetResourcesNode(YAML::Node node, const SystemResourcesTy
   }
 }
 
-void ProjMgrCbuildRun::SetDebuggersNode(YAML::Node node, const std::vector<DebuggerType>& debuggers) {
-  for (const auto& item : debuggers) {
-    YAML::Node debuggerNode;
-    SetNodeValue(debuggerNode[YAML_NAME], item.name);
-    SetNodeValue(debuggerNode[YAML_INFO], item.info);
-    SetNodeValue(debuggerNode[YAML_PROTOCOL], item.protocol);
-    if (item.clock.has_value()) {
-      debuggerNode[YAML_CLOCK] = item.clock.value();
+void ProjMgrCbuildRun::SetDebuggerNode(YAML::Node node, const DebuggerType& debugger) {
+  if (!debugger.name.empty()) {
+    SetNodeValue(node[YAML_NAME], debugger.name);
+    SetNodeValue(node[YAML_INFO], debugger.info);
+    SetNodeValue(node[YAML_PROTOCOL], debugger.protocol);
+    if (debugger.clock.has_value()) {
+      node[YAML_CLOCK] = debugger.clock.value();
     }
-    SetNodeValue(debuggerNode[YAML_DBGCONF], FormatPath(item.dbgconf, m_directory));
-    node.push_back(debuggerNode);
+    SetNodeValue(node[YAML_DBGCONF], FormatPath(debugger.dbgconf, m_directory));
+    SetNodeValue(node[YAML_START_PNAME], debugger.startPname);
   }
 }
 
