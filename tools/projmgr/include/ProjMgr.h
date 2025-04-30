@@ -122,7 +122,14 @@ protected:
    * @brief get cmsis-toolbox version from manifest file
    * @return version as string
   */
-  std::string GetToolboxVersion(const std::string& manifestFilePath);
+  const std::string GetToolboxVersion(const std::string& manifestFilePath);
+
+  /**
+   * @brief get debug adapters file path
+   * @return file path or empty string if it does not exist
+  */
+  const std::string GetDebugAdaptersFile(void);
+
 protected:
   ProjMgrParser m_parser;
   ProjMgrExtGenerator m_extGenerator;

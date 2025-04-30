@@ -164,7 +164,6 @@ void ProjMgrCbuild::SetDebugConfigNode(YAML::Node node, const ContextItem* conte
       SetNodeValue(fileNode[YAML_VERSION], context->dbgconf.second->GetSemVer(true));
       SetPLMStatus(fileNode, context, dbgconf);
     }
-    SetNodeValue(fileNode[YAML_DEBUGGER], context->debugger.name);
     node.push_back(fileNode);
   }
 }

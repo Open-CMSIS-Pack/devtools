@@ -1,0 +1,39 @@
+debug-adapters:
+  - name: "CMSIS-DAP@pyOCD"
+    alias-name: ["CMSIS-DAP", "DAP-Link"]     # alternative names that map to this debug adapter
+    template: CMSIS-DAP-pyOCD.adapter.json    # template file
+    gdbserver:                                # add gdbserver: node under debugger: in cbuild-run.yml
+    defaults:                                 # default values to use when nowhere specified
+      port: 3333                              # default value of first gdbserver port
+      protocol: swd
+      clock: 10000000
+
+  - name: "ULINKplus"
+    template: CMSIS-DAP-pyOCD.adapter.json    # template file (initally same as CMSIS-DAP@pyOCD)
+    gdbserver:                                # add gdbserver: node under debugger: in cbuild-run.yml
+    defaults:                                 # default values to use when nowhere specified
+      port: 3333                              # default value of first gdbserver port
+      protocol: swd
+      clock: 10000000
+
+  - name: "ST-Link@pyOCD"
+    alias-name: ["ST-LINK"]                   # alternative names that map to this debug adapter
+    template: STLink-pyOCD.adapter.json       # template file
+    gdbserver:                                # add gdbserver: node under debugger: in cbuild-run.yml
+    defaults:                                 # default values to use when nowhere specified
+      port: 3333                              # default value of first gdbserver port
+      protocol: swd
+      clock: 10000000
+
+  - name: "JLink Server"
+    template: jlink.adapter.json              # template file
+    gdbserver:                                # add gdbserver: node under debugger: in cbuild-run.yml
+    defaults:                                 # default values to use when nowhere specified
+      port: 3333                              # default value of first gdbserver port
+      protocol: swd
+
+  - name: "AVH-FVP"
+    template: FVP.adapter.json                # template file
+
+  - name: "Keil uVision"
+    template: uVision.adapter.json            # template file

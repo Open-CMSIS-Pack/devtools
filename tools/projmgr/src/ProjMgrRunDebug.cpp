@@ -17,7 +17,7 @@ using namespace std;
 /**
   * @brief default debugger parameters
  */
-static constexpr const char* DEBUGGER_NAME_DEFAULT = "<default>";
+static constexpr const char* DEBUGGER_NAME_DEFAULT = "CMSIS-DAP";
 
 ProjMgrRunDebug::ProjMgrRunDebug(void) {
   // Reserved
@@ -27,7 +27,7 @@ ProjMgrRunDebug::~ProjMgrRunDebug(void) {
   // Reserved
 }
 
-bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
+bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, const DebugAdaptersItem& adapters) {
 
   // get target settings
   const auto& context0 = contexts.front();
@@ -309,6 +309,30 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts) {
     m_runDebug.debugger = defaultDebugger;
   }
 
+  // add info from debug-adapters
+  if (!adapters.empty()) {
+    DebugAdapterItem adapter;
+    if (GetDebugAdapter(m_runDebug.debugger.name, adapters, adapter)) {
+      m_runDebug.debugger.name = adapter.name;
+      if (adapter.gdbserver) {
+        unsigned long long port = adapter.defaults.port.empty() ? 0 : RteUtils::StringToULL(adapter.defaults.port);
+        for (const auto& [pname, _] : pnames) {
+          GdbCoreItem item;
+          item.port = port++;
+          item.pname = pname;
+          item.start = !pname.empty() && (pname == m_runDebug.debugger.startPname);
+          m_runDebug.debugger.gdbserver.core.push_back(item);
+        }
+      }
+      if (m_runDebug.debugger.protocol.empty()) {
+        m_runDebug.debugger.protocol = adapter.defaults.protocol;
+      }
+      if (!m_runDebug.debugger.clock.has_value() && !adapter.defaults.clock.empty()) {
+        m_runDebug.debugger.clock = RteUtils::StringToULL(adapter.defaults.clock);
+      }
+    }
+  }
+
   // debug topology
   if (debugConfig) {
     if (debugConfig->HasAttribute("dormant")) {
@@ -537,7 +561,7 @@ void ProjMgrRunDebug::PushBackUniquely(vector<pair<const RteItem*, vector<string
   vec.push_back({ item, { pname } });
 }
 
-string ProjMgrRunDebug::GetAccessAttributes(const RteItem* mem)
+const string ProjMgrRunDebug::GetAccessAttributes(const RteItem* mem)
 {
   string access = mem->GetAccess();
   if (access.empty()) {
@@ -545,4 +569,14 @@ string ProjMgrRunDebug::GetAccessAttributes(const RteItem* mem)
     access = string(m.IsReadAccess() ? "r" : "") + (m.IsWriteAccess() ? "w" : "") + (m.IsExecuteAccess() ? "x" : "");
   }
   return access;
+}
+
+bool ProjMgrRunDebug::GetDebugAdapter(const string& name, const DebugAdaptersItem& adapters, DebugAdapterItem& match) {
+  for (const auto& adapter : adapters) {
+    if (name == adapter.name || find(adapter.alias.begin(), adapter.alias.end(), name) != adapter.alias.end()) {
+      match = adapter;
+      return true;
+    }
+  }
+  return false;
 }

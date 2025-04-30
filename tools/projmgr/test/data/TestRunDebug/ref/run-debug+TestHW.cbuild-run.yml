@@ -37,11 +37,14 @@ cbuild-run:
     - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM4.svd
       type: svd
   debugger:
-    name: TestDebugger1
+    name: ST-Link@pyOCD
     info: Info target-set
     protocol: jtag
     clock: 20000000
     dbgconf: ../data/TestRunDebug/RTE/Device/RteTest1/RteTest1.dbgconf
+    gdbserver:
+      core:
+        - port: 3333
   debug-vars:
     vars: |
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY

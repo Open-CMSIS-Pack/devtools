@@ -65,11 +65,6 @@
           "title": "update:",
           "type": "string",
           "description": "New configuration file used for merge utility."
-        },
-        "debugger": {
-          "title": "debugger:",
-          "type": "string",
-          "description": "Associated debugger connections."
         }
       },
       "required": [ "file" ],
@@ -2359,7 +2354,11 @@
         "load":            { "$ref": "#/definitions/TargetSetLoadType" },
         "load-offset":     { "type": "number", "description": "Offset applied to the binary content when loading the file." }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "oneOf": [
+        { "required": ["project-context"], "not": {"required": ["image"]} },
+        { "required": ["image"], "not": {"required": ["project-context"]} }
+      ]
     },
     "TargetSetDebuggerType": {
       "title": "optimize:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#debugger",
@@ -2379,6 +2378,35 @@
       "title": "optimize:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#load",
       "description": "Specifies the load mode for the project output or image file.",
       "enum": [ "image+symbols", "symbols", "image", "none" ]
+    },
+    "DebugAdaptersDescType": {
+      "title": "debug-adapters:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/build-operation/#debug-adapter-integration",
+      "description": "Contains the list of supported debug adapters.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/DebugAdapterDescType" }
+    },
+    "DebugAdapterDescType": {
+      "type": "object",
+      "properties": {
+        "name":       { "type": "string", "description": "Debugger adapter name." },
+        "alias-name": { "type": "array",  "items": { "type": "string"}, "description": "List of names (in input node or BSP) that map to this debug adapter." },
+        "template":   { "type": "string", "description": "Used only by the VS Code CMSIS Solution extension for configuration." },
+        "gdbserver":  { "type": "null", "description": "Add the gdbserver: node in the cbuild-run.yml file." },
+        "defaults":   { "$ref": "#/definitions/DebugAdaptersDefaultsType" }
+      },
+      "additionalProperties": false,
+      "required": ["name"]
+    },
+    "DebugAdaptersDefaultsType": {
+      "description": "List of default options to use when not specified in the target-set: node.",
+      "type": "object",
+      "properties": {
+        "port":     { "type": "number", "description": "Port number." },
+        "protocol": { "enum": [ "jtag", "swd" ], "description": "Selected debug protocol (jtag or swd)." },
+        "clock":    { "type": "number", "description": "Selected debug clock speed (in Hz)." }
+      },
+      "additionalProperties": false
     }
   }
 }

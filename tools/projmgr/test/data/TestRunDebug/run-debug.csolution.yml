@@ -18,7 +18,7 @@ solution:
         - set:
           info: Info target-set
           debugger:
-            name: TestDebugger1
+            name: ST-LINK
             protocol: jtag
             clock: 20000000
             dbgconf: RTE/Device/RteTest1/RteTest1.dbgconf

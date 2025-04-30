@@ -43,9 +43,18 @@ cbuild-run:
     - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM0.svd
       type: svd
   debugger:
-    name: CMSIS-DAP
+    name: CMSIS-DAP@pyOCD
+    protocol: swd
+    clock: 10000000
     dbgconf: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM0_Dual_cm0_core0/ARMCM.dbgconf
     start-pname: cm0_core1
+    gdbserver:
+      core:
+        - port: 3333
+          pname: cm0_core0
+        - port: 3334
+          pname: cm0_core1
+          start: 
   debug-vars:
     vars: |
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
