@@ -218,6 +218,8 @@ protected:
   bool GetDebugAdapter(const std::string& name, const DebugAdaptersItem& adapters, DebugAdapterItem& match);
   void CollectDebuggerSettings(const ContextItem& context, const DebugAdaptersItem& adapters,
     const std::map<std::string, RteDeviceProperty*>& pnames);
+  void CollectDebugTopology(const ContextItem& context, std::vector<std::pair<const RteItem*, std::vector<std::string>>> debugs,
+    const std::map<std::string, RteDeviceProperty*>& pnames);
 };
 
 #endif  // PROJMGRRUNDEBUG_H
