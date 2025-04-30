@@ -13,7 +13,6 @@ build:
       title: Cortex-M3 Device Generic Users Guide
   dbgconf:
     - file: out/run-debug/TestHW2/AC6.dbgconf
-      debugger: CMSIS-DAP
   processor:
     fpu: off
     core: Cortex-M3

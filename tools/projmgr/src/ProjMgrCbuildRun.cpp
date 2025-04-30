@@ -31,6 +31,7 @@ protected:
   void SetDebugPortsNode(YAML::Node node, const std::vector<DebugPortType>& debugPorts);
   void SetAccessPortsNode(YAML::Node node, const std::vector<AccessPortType>& accessPorts);
   void SetDatapatchNode(YAML::Node node, const std::vector<DatapatchType>& datapatch);
+  void SetGdbServerNode(YAML::Node node, const GdbServerItem& gdbserver);
 };
 
 ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
@@ -106,6 +107,19 @@ void ProjMgrCbuildRun::SetDebuggerNode(YAML::Node node, const DebuggerType& debu
     }
     SetNodeValue(node[YAML_DBGCONF], FormatPath(debugger.dbgconf, m_directory));
     SetNodeValue(node[YAML_START_PNAME], debugger.startPname);
+    SetGdbServerNode(node[YAML_GDBSERVER], debugger.gdbserver);
+  }
+}
+
+void ProjMgrCbuildRun::SetGdbServerNode(YAML::Node node, const GdbServerItem& gdbserver) {
+  for (const auto& item : gdbserver.core) {
+    YAML::Node coreNode;
+    coreNode[YAML_PORT] = item.port;
+    SetNodeValue(coreNode[YAML_PNAME], item.pname);
+    if (item.start) {
+      coreNode[YAML_START] = YAML::Null;
+    }
+    node[YAML_CORE].push_back(coreNode);
   }
 }
 

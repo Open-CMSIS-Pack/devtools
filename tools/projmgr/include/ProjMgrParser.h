@@ -596,6 +596,39 @@ struct CbuildSetItem {
   std::string compiler;
 };
 
+/**
+ * @brief debug-adapter defaults item containing
+ *        port number of processor
+ *        debug protocol(jtag or swd)
+ *        debug clock speed
+*/
+struct DebugAdapterDefaultsItem {
+  std::string port;
+  std::string protocol;
+  std::string clock;
+};
+
+/**
+ * @brief debug-adapter item containing
+ *        name
+ *        list of alias
+ *        template
+ *        gdbserver
+ *        defaults
+*/
+struct DebugAdapterItem {
+  std::string name;
+  std::vector<std::string> alias;
+  std::string templateFile;
+  bool gdbserver = false;
+  DebugAdapterDefaultsItem defaults;
+};
+
+/**
+ * @brief debug-adapters item containing
+ *        list of debug-adapters
+*/
+typedef std::vector<DebugAdapterItem> DebugAdaptersItem;
 
 /**
  * @brief projmgr parser class for public interfacing
@@ -657,6 +690,13 @@ public:
   bool ParseCbuildSet(const std::string& input, bool checkSchema);
 
   /**
+   * @brief parse debug-adapters file
+   * @param checkSchema false to skip schema validation
+   * @param input path to *.debug-adapters.yml file
+  */
+  bool ParseDebugAdapters(const std::string& input, bool checkSchema);
+
+  /**
    * @brief get cdefault
    * @return cdefault item
   */
@@ -692,10 +732,17 @@ public:
   */
   CbuildSetItem& GetCbuildSetItem(void);
 
+  /**
+   * @brief get debug adapters
+   * @return debug adapters list
+  */
+  DebugAdaptersItem& GetDebugAdaptersItem(void);
+
 protected:
   CdefaultItem m_cdefault;
   CsolutionItem m_csolution;
   CbuildSetItem m_cbuildSet;
+  DebugAdaptersItem m_debugAdapters;
   std::map<std::string, CprojectItem> m_cprojects;
   std::map<std::string, ClayerItem> m_clayers;
   std::map<std::string, ClayerItem> m_genericClayers;

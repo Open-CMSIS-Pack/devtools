@@ -243,6 +243,26 @@ struct ContextTypesItem {
 };
 
 /**
+ * @brief gdb core item containing
+ *        port number of processor
+ *        processor name
+ *        primary processor
+*/
+struct GdbCoreItem {
+  unsigned long long port;
+  std::string pname;
+  bool start = false;
+};
+
+/**
+ * @brief gdb server item containing
+ *        list of the gdb core items
+*/
+struct GdbServerItem {
+  std::vector<GdbCoreItem> core;
+};
+
+/**
  * @brief debugger type
  *        name of debug configuration
  *        brief description
@@ -250,6 +270,7 @@ struct ContextTypesItem {
  *        debug clock speed
  *        debug configuration file
  *        start pname
+ *        gdbserver
 */
 struct DebuggerType {
   std::string name;
@@ -258,6 +279,7 @@ struct DebuggerType {
   std::optional<unsigned long long> clock;
   std::string dbgconf;
   std::string startPname;
+  GdbServerItem gdbserver;
 };
 
 /**

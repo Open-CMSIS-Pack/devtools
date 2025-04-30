@@ -538,7 +538,13 @@ bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
   // Generate cbuild-run file
   if (previousResult && !m_processedContexts.empty() &&
     (m_contextSet || !m_activeTargetSet.empty())) {
-    if (!m_runDebug.CollectSettings(m_processedContexts)) {
+    const auto& debugAdapters = GetDebugAdaptersFile();
+    if (!debugAdapters.empty()) {
+      if (!m_parser.ParseDebugAdapters(debugAdapters, m_checkSchema)) {
+        return false;
+      }
+    }
+    if (!m_runDebug.CollectSettings(m_processedContexts, m_parser.GetDebugAdaptersItem())) {
       result = false;
     }
     if (!m_emitter.GenerateCbuildRun(m_runDebug.Get())) {
@@ -1127,7 +1133,7 @@ bool ProjMgr::ValidateCreatedFor(const string& createdFor) {
   return true;
 }
 
-string ProjMgr::GetToolboxVersion(const string& toolboxDir) {
+const string ProjMgr::GetToolboxVersion(const string& toolboxDir) {
   // Find file non recursively under given search directory
   string manifestFilePattern = "manifest_(\\d+\\.\\d+\\.\\d+)(.*).yml";
   string manifestFile;
@@ -1142,4 +1148,14 @@ string ProjMgr::GetToolboxVersion(const string& toolboxDir) {
   smatch matchResult;
   regex_match(manifestFile, matchResult, regEx);
   return matchResult[1].str();
+}
+
+const string ProjMgr::GetDebugAdaptersFile(void) {
+  error_code ec;
+  const string exePath = RteUtils::ExtractFilePath(CrossPlatformUtils::GetExecutablePath(ec), true);
+  const string debugAdapterFile = fs::path(exePath).parent_path().parent_path().append("etc/debug-adapters.yml").generic_string();
+  if (RteFsUtils::Exists(debugAdapterFile)) {
+    return debugAdapterFile;
+  }
+  return RteUtils::EMPTY_STRING;
 }

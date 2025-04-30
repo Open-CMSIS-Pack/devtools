@@ -13,7 +13,6 @@ build:
       title: Cortex-M4 Device Generic Users Guide
   dbgconf:
     - file: ../data/TestRunDebug/RTE/Device/RteTest1/RteTest1.dbgconf
-      debugger: TestDebugger1
   processor:
     fpu: off
     core: Cortex-M4

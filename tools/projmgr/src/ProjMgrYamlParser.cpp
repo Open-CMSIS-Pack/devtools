@@ -305,6 +305,34 @@ bool ProjMgrYamlParser::ParseCbuildSet(const string& input, CbuildSetItem& cbuil
   return true;
 }
 
+bool ProjMgrYamlParser::ParseDebugAdapters(const string& input, DebugAdaptersItem& adapters, bool checkSchema) {
+  try {
+    // Validate file schema
+    if (checkSchema &&
+      !ProjMgrYamlSchemaChecker().Validate(input)) {
+      return false;
+    }
+    const YAML::Node& root = YAML::LoadFile(input);
+    const string debugAdaptersPath = RteFsUtils::MakePathCanonical(input);
+
+    const YAML::Node& adaptersNode = root[YAML_DEBUG_ADAPTERS];
+    for (const auto& adaptersEntry : adaptersNode) {
+      DebugAdapterItem adapter;
+      ParseString(adaptersEntry, YAML_NAME, adapter.name);
+      ParseVector(adaptersEntry, YAML_ALIAS_NAME, adapter.alias);
+      ParseString(adaptersEntry, YAML_TEMPLATE, adapter.templateFile);
+      adapter.gdbserver = adaptersEntry[YAML_GDBSERVER].IsDefined();
+      ParseDebugDefaults(adaptersEntry, debugAdaptersPath, adapter.defaults);
+      adapters.push_back(adapter);
+    }
+  }
+  catch (YAML::Exception& e) {
+    ProjMgrLogger::Get().Error(e.msg, "", input, e.mark.line + 1, e.mark.column + 1);
+    return false;
+  }
+  return true;
+}
+
 // EnsurePortability checks the presence of backslash, case inconsistency and absolute path
 void ProjMgrYamlParser::EnsurePortability(const string& file, const YAML::Mark& mark, const string& key, string& value) {
   if (value.find('\\') != string::npos) {
@@ -589,6 +617,15 @@ void ProjMgrYamlParser::ParseRte(const YAML::Node& parent, string& rteBaseDir) {
   if (parent[YAML_RTE].IsDefined()) {
     const YAML::Node& rteNode = parent[YAML_RTE];
     ParseString(rteNode, YAML_BASE_DIR, rteBaseDir);
+  }
+}
+
+void ProjMgrYamlParser::ParseDebugDefaults(const YAML::Node& parent, const string& file, DebugAdapterDefaultsItem& defaults) {
+  if (parent[YAML_DEFAULTS].IsDefined()) {
+    const YAML::Node& defaultsNode = parent[YAML_DEFAULTS];
+    ParseNumber(defaultsNode, file, YAML_PORT, defaults.port);
+    ParseString(defaultsNode, YAML_PROTOCOL, defaults.protocol);
+    ParseNumber(defaultsNode, file, YAML_CLOCK, defaults.clock);
   }
 }
 

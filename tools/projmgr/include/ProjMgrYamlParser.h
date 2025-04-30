@@ -17,6 +17,7 @@ static constexpr const char* YAML_ACCESS = "access";
 static constexpr const char* YAML_ACCESSPORTS = "accessports";
 static constexpr const char* YAML_ALGORITHM = "algorithm";
 static constexpr const char* YAML_ALIAS = "alias";
+static constexpr const char* YAML_ALIAS_NAME = "alias-name";
 static constexpr const char* YAML_ADDPATH = "add-path";
 static constexpr const char* YAML_ADDPATH_ASM = "add-path-asm";
 static constexpr const char* YAML_ADDRESS = "address";
@@ -78,6 +79,7 @@ static constexpr const char* YAML_CREATED_BY = "created-by";
 static constexpr const char* YAML_CREATED_FOR = "created-for";
 static constexpr const char* YAML_DATAPATCH = "datapatch";
 static constexpr const char* YAML_DEBUG = "debug";
+static constexpr const char* YAML_DEBUG_ADAPTERS = "debug-adapters";
 static constexpr const char* YAML_DEBUG_SEQUENCES = "debug-sequences";
 static constexpr const char* YAML_DEBUG_VARS = "debug-vars";
 static constexpr const char* YAML_DEBUG_TOPOLOGY = "debug-topology";
@@ -85,6 +87,7 @@ static constexpr const char* YAML_DEBUGGER = "debugger";
 static constexpr const char* YAML_DEBUGPORTS = "debugports";
 static constexpr const char* YAML_DBGCONF = "dbgconf";
 static constexpr const char* YAML_DEFAULT = "default";
+static constexpr const char* YAML_DEFAULTS = "defaults";
 static constexpr const char* YAML_DEFINE = "define";
 static constexpr const char* YAML_DEFINE_ASM = "define-asm";
 static constexpr const char* YAML_DELPATH = "del-path";
@@ -111,6 +114,7 @@ static constexpr const char* YAML_FORCONTEXT = "for-context";
 static constexpr const char* YAML_FORDEVICE = "for-device";
 static constexpr const char* YAML_FORPROJECTPART = "for-project-part";
 static constexpr const char* YAML_FPU = "fpu";
+static constexpr const char* YAML_GDBSERVER = "gdbserver";
 static constexpr const char* YAML_GENERATED_BY = "generated-by";
 static constexpr const char* YAML_GENERATOR = "generator";
 static constexpr const char* YAML_GENERATORS = "generators";
@@ -175,6 +179,7 @@ static constexpr const char* YAML_PACKS_MISSING = "packs-missing";
 static constexpr const char* YAML_PACKS_UNUSED = "packs-unused";
 static constexpr const char* YAML_PATH = "path";
 static constexpr const char* YAML_PNAME = "pname";
+static constexpr const char* YAML_PORT = "port";
 static constexpr const char* YAML_PUNITS = "punits";
 static constexpr const char* YAML_PUNIT = "punit";
 static constexpr const char* YAML_PROCESSORS = "processors";
@@ -223,6 +228,7 @@ static constexpr const char* YAML_TARGETSEL = "targetsel";
 static constexpr const char* YAML_TARGET_SET = "target-set";
 static constexpr const char* YAML_TARGETTYPE = "target-type";
 static constexpr const char* YAML_TARGETTYPES = "target-types";
+static constexpr const char* YAML_TEMPLATE = "template";
 static constexpr const char* YAML_TIMEOUT = "timeout";
 static constexpr const char* YAML_TRUSTZONE = "trustzone";
 static constexpr const char* YAML_TITLE = "title";
@@ -298,6 +304,14 @@ public:
   */
   bool ParseCbuildSet(const std::string& input, CbuildSetItem& cbuildSet, bool checkSchema);
 
+  /**
+   * @brief parse debug-adapters file
+   * @param input path to debug-adapters.yml file
+   * @param reference to store parsed debug-adapters item
+   * @param checkSchema false to skip schema validation
+   * @return true if executed successfully
+  */
+  bool ParseDebugAdapters(const std::string& input, DebugAdaptersItem& adapters, bool checkSchema);
 
 protected:
   bool ParseCbuildPack(const std::string& input, CbuildPackItem& cbuildPack, bool checkSchema);
@@ -336,6 +350,7 @@ protected:
   bool ParseTypePair(std::vector<std::string>& vec, std::vector<TypePair>& typeVec);
   bool ParseLinker(const YAML::Node& parent, const std::string& file, std::vector<LinkerItem>& linker);
   void ParseRte(const YAML::Node& parent, std::string& rteBaseDir);
+  void ParseDebugDefaults(const YAML::Node& parent, const std::string& file, DebugAdapterDefaultsItem& defaults);
   bool GetTypes(const std::string& type, std::string& buildType, std::string& targetType, std::string& pattern);
   bool ValidateCdefault(const std::string& input, const YAML::Node& root);
   bool ValidateCsolution(const std::string& input, const YAML::Node& root);

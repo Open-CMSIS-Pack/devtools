@@ -203,7 +203,7 @@ public:
    * @param vector of selected contexts
    * @return true if executed successfully
   */
-  bool CollectSettings(const std::vector<ContextItem*>& contexts);
+  bool CollectSettings(const std::vector<ContextItem*>& contexts, const DebugAdaptersItem& adapters);
 
 protected:
   RunDebugType m_runDebug;
@@ -211,10 +211,15 @@ protected:
   void PushBackUniquely(std::vector<std::pair<const RteItem*, std::vector<std::string>>>& vec,
     const RteItem* item, const std::string pname);
   FilesType SetLoadFromOutput(const ContextItem* context, OutputType output, const std::string type);
-  std::string GetAccessAttributes(const RteItem* mem);
+  const std::string GetAccessAttributes(const RteItem* mem);
   void SetAccessPorts(std::vector<AccessPortType>& parent, const std::map<unsigned int,
     std::vector<AccessPortType>>& childrenMap);
   void SetProtNodes(const RteDeviceProperty* item, AccessPortType& ap);
+  bool GetDebugAdapter(const std::string& name, const DebugAdaptersItem& adapters, DebugAdapterItem& match);
+  void CollectDebuggerSettings(const ContextItem& context, const DebugAdaptersItem& adapters,
+    const std::map<std::string, RteDeviceProperty*>& pnames);
+  void CollectDebugTopology(const ContextItem& context, std::vector<std::pair<const RteItem*, std::vector<std::string>>> debugs,
+    const std::map<std::string, RteDeviceProperty*>& pnames);
 };
 
 #endif  // PROJMGRRUNDEBUG_H

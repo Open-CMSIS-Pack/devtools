@@ -90,6 +90,7 @@ void ProjMgrTestEnv::SetUp() {
   }
   RteFsUtils::CreateDirectories(etc_folder);
   fs::copy(fs::path(schema_folder), fs::path(etc_folder), fs::copy_options::recursive, ec);
+  fs::copy(fs::path(templates_folder), fs::path(etc_folder), fs::copy_options::recursive, ec);
 
   //copy test input data
   if (RteFsUtils::Exists(testinput_folder)) {
