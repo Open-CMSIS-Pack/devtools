@@ -276,64 +276,12 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
     m_runDebug.debugSequences.push_back(sequence);
   }
 
-  // default debugger parameters from DFP and BSP
-  DebuggerType defaultDebugger;
-  defaultDebugger.dbgconf = context0->dbgconf.first;
-  const auto& debugConfig = context0->devicePack ?
-    context0->rteDevice->GetSingleEffectiveProperty("debugconfig", context0->deviceItem.pname) : nullptr;
-  const auto& debugProbe = context0->boardPack ?
-    context0->rteBoard->GetItemByTag("debugProbe") : nullptr;
-  defaultDebugger.name = debugProbe ? debugProbe->GetName() : DEBUGGER_NAME_DEFAULT;
-  const auto& boardProtocol = debugProbe ? debugProbe->GetAttribute("debugLink") : "";
-  const auto& deviceProtocol = debugConfig ? debugConfig->GetAttribute("default") : "";
-  defaultDebugger.protocol = !boardProtocol.empty() ? boardProtocol : deviceProtocol;
-  if (debugProbe && debugProbe->HasAttribute("debugClock")) {
-    defaultDebugger.clock = debugProbe->GetAttributeAsULL("debugClock");
-  } else if (debugConfig && debugConfig->HasAttribute("clock")) {
-    defaultDebugger.clock = debugConfig->GetAttributeAsULL("clock");
-  }
-
-  // user defined debugger parameters
-  if (!context0->debugger.name.empty()) {
-    m_runDebug.debugger = context0->debugger;
-    if (m_runDebug.debugger.protocol.empty()) {
-      m_runDebug.debugger.protocol = defaultDebugger.protocol;
-    }
-    if (!m_runDebug.debugger.clock.has_value()) {
-      m_runDebug.debugger.clock = defaultDebugger.clock;
-    }
-    if (m_runDebug.debugger.dbgconf.empty()) {
-      m_runDebug.debugger.dbgconf = defaultDebugger.dbgconf;
-    }
-  } else {
-    m_runDebug.debugger = defaultDebugger;
-  }
-
-  // add info from debug-adapters
-  if (!adapters.empty()) {
-    DebugAdapterItem adapter;
-    if (GetDebugAdapter(m_runDebug.debugger.name, adapters, adapter)) {
-      m_runDebug.debugger.name = adapter.name;
-      if (adapter.gdbserver) {
-        unsigned long long port = adapter.defaults.port.empty() ? 0 : RteUtils::StringToULL(adapter.defaults.port);
-        for (const auto& [pname, _] : pnames) {
-          GdbCoreItem item;
-          item.port = port++;
-          item.pname = pname;
-          item.start = !pname.empty() && (pname == m_runDebug.debugger.startPname);
-          m_runDebug.debugger.gdbserver.core.push_back(item);
-        }
-      }
-      if (m_runDebug.debugger.protocol.empty()) {
-        m_runDebug.debugger.protocol = adapter.defaults.protocol;
-      }
-      if (!m_runDebug.debugger.clock.has_value() && !adapter.defaults.clock.empty()) {
-        m_runDebug.debugger.clock = RteUtils::StringToULL(adapter.defaults.clock);
-      }
-    }
-  }
+  // debugger settings
+  CollectDebuggerSettings(*context0, adapters, pnames);
 
   // debug topology
+  const auto& debugConfig = context0->devicePack ?
+    context0->rteDevice->GetSingleEffectiveProperty("debugconfig", context0->deviceItem.pname) : nullptr;
   if (debugConfig) {
     if (debugConfig->HasAttribute("dormant")) {
       m_runDebug.debugTopology.dormant = debugConfig->GetAttributeAsBool("dormant", false);
@@ -579,4 +527,64 @@ bool ProjMgrRunDebug::GetDebugAdapter(const string& name, const DebugAdaptersIte
     }
   }
   return false;
+}
+
+void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const DebugAdaptersItem& adapters,
+  const std::map<std::string, RteDeviceProperty*>& pnames) {
+  // default debugger parameters from DFP and BSP
+  DebuggerType defaultDebugger;
+  defaultDebugger.dbgconf = context.dbgconf.first;
+  const auto& debugConfig = context.devicePack ?
+    context.rteDevice->GetSingleEffectiveProperty("debugconfig", context.deviceItem.pname) : nullptr;
+  const auto& debugProbe = context.boardPack ?
+    context.rteBoard->GetItemByTag("debugProbe") : nullptr;
+  defaultDebugger.name = debugProbe ? debugProbe->GetName() : DEBUGGER_NAME_DEFAULT;
+  const auto& boardProtocol = debugProbe ? debugProbe->GetAttribute("debugLink") : "";
+  const auto& deviceProtocol = debugConfig ? debugConfig->GetAttribute("default") : "";
+  defaultDebugger.protocol = !boardProtocol.empty() ? boardProtocol : deviceProtocol;
+  if (debugProbe && debugProbe->HasAttribute("debugClock")) {
+    defaultDebugger.clock = debugProbe->GetAttributeAsULL("debugClock");
+  } else if (debugConfig && debugConfig->HasAttribute("clock")) {
+    defaultDebugger.clock = debugConfig->GetAttributeAsULL("clock");
+  }
+
+  // user defined debugger parameters
+  if (!context.debugger.name.empty()) {
+    m_runDebug.debugger = context.debugger;
+    if (m_runDebug.debugger.protocol.empty()) {
+      m_runDebug.debugger.protocol = defaultDebugger.protocol;
+    }
+    if (!m_runDebug.debugger.clock.has_value()) {
+      m_runDebug.debugger.clock = defaultDebugger.clock;
+    }
+    if (m_runDebug.debugger.dbgconf.empty()) {
+      m_runDebug.debugger.dbgconf = defaultDebugger.dbgconf;
+    }
+  } else {
+    m_runDebug.debugger = defaultDebugger;
+  }
+
+  // add info from debug-adapters
+  if (!adapters.empty()) {
+    DebugAdapterItem adapter;
+    if (GetDebugAdapter(m_runDebug.debugger.name, adapters, adapter)) {
+      m_runDebug.debugger.name = adapter.name;
+      if (adapter.gdbserver) {
+        unsigned long long port = adapter.defaults.port.empty() ? 0 : RteUtils::StringToULL(adapter.defaults.port);
+        for (const auto& [pname, _] : pnames) {
+          GdbCoreItem item;
+          item.port = port++;
+          item.pname = pname;
+          item.start = !pname.empty() && (pname == m_runDebug.debugger.startPname);
+          m_runDebug.debugger.gdbserver.core.push_back(item);
+        }
+      }
+      if (m_runDebug.debugger.protocol.empty()) {
+        m_runDebug.debugger.protocol = adapter.defaults.protocol;
+      }
+      if (!m_runDebug.debugger.clock.has_value() && !adapter.defaults.clock.empty()) {
+        m_runDebug.debugger.clock = RteUtils::StringToULL(adapter.defaults.clock);
+      }
+    }
+  }
 }

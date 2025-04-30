@@ -216,6 +216,8 @@ protected:
     std::vector<AccessPortType>>& childrenMap);
   void SetProtNodes(const RteDeviceProperty* item, AccessPortType& ap);
   bool GetDebugAdapter(const std::string& name, const DebugAdaptersItem& adapters, DebugAdapterItem& match);
+  void CollectDebuggerSettings(const ContextItem& context, const DebugAdaptersItem& adapters,
+    const std::map<std::string, RteDeviceProperty*>& pnames);
 };
 
 #endif  // PROJMGRRUNDEBUG_H
