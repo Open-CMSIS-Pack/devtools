@@ -51,6 +51,11 @@ recommend this tutorial as a starting point. In order to build `packchk` and
 run related tests. Please employ the sequence of steps mentioned
 [here](../../README.md).
 
+> [!NOTE]
+> For the schema check, `packchk` searches for a `PACK.xsd` file in
+> `./, ../etc/, ../../etc/` relative to `cmsis-toolbox/bin`. Alternatively, use
+> `--xsd` to specify the location of the schema file.
+
 ### Usage Examples
 
 Run `packchk` on the package description file called `MyVendor.MyPack.pdsc`.
