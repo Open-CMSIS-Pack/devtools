@@ -40,7 +40,6 @@ default:
       C:
         - -std=gnu11
       Link:
-        - -lcrt0
         - -Wl,-print-memory-usage
         - -Wl,--gc-sections
 
