@@ -390,6 +390,13 @@
         <file category="header" attr="template" name="Template/template.h" select="dummy template file"/>
       </files>
     </component>
+
+    <component Cclass="RteTest" Cgroup="TestVersion" Cversion="1.8-dev1">
+      <description>Component version without patch number and with pre-release suffix</description>
+      <files>
+        <file category="header" name="Include/Config/ConfigInclude.h" attr="config"/>
+      </files>
+    </component>
   </components>
 
   <examples>

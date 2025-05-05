@@ -87,6 +87,13 @@ public:
   */
   static std::string Floor(const std::string& v);
 
+  /**
+   * @brief ensure string is in semver format with 0 patch if missing (1.1.1->1.1.1; 1.2 -> 1.1.0; 1.3-b -> 1.3.0-b ; 1 -> 1.0.0)
+   * @param v version string
+   * @param returnZeroStringIfEmpty returns "0.0.0" if version is empty
+   * @return string with minor and patch set to 0 if missing and optionally remove meta data
+  */
+  static std::string ToSemVer(const std::string& v, bool returnZeroStringIfEmpty = false);
 
   /**
    * @brief compare string to return mode constant

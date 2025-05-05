@@ -90,6 +90,8 @@ public:
   bool                    CalcDisableCondition        ();
   bool                    AddToMap                    (SvdEnum *enu, std::map<std::string, SvdEnum*> &map);
   bool                    CalculateMaxPaddingWidth    ();
+  bool                    CopyDisableCondition        ( SvdCExpression*     disableCondition);
+
 
   const std::string&      GetVersion                  () { return m_version;          }
   const std::string&      GetGroupName                () { return m_groupName;        }
@@ -110,7 +112,6 @@ public:
   bool                    SetAlternate                ( const std::string&  alternate       )  { m_alternate        = alternate       ;  return true; }
   bool                    SetPrependToName            ( const std::string&  prependToName   )  { m_prependToName    = prependToName   ;  return true; }
   bool                    SetAppendToName             ( const std::string&  appendToName    )  { m_appendToName     = appendToName    ;  return true; }
-  bool                    SetDisableCondition         ( SvdCExpression*     disableCondition)  { m_disableCondition = disableCondition;  return true; }
   bool                    SetAddress                  ( uint64_t            address         )  { m_address.u64      = address         ;  m_address.bValid = true; return true; }
   bool                    SetResetValue               ( uint64_t            resetValue      )  { m_resetValue       = resetValue      ;  return true; }
   bool                    SetResetMask                ( uint64_t            resetMask       )  { m_resetMask        = resetMask       ;  return true; }

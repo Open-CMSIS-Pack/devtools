@@ -1,0 +1,104 @@
+build:
+  generated-by: csolution version 2.8.0
+  solution: ../data/TestRunDebug/run-debug.csolution.yml
+  project: ../data/TestRunDebug/run-debug.cproject.yml
+  context: run-debug+TestHW2
+  compiler: AC6
+  board: Keil::RteTest-Test-board With.Memory:1.1.1
+  board-pack: ARM::RteTest_DFP@0.2.0
+  device: ARM::RteTest_ARMCM3
+  device-pack: ARM::RteTest_DFP@0.2.0
+  device-books:
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html
+      title: Cortex-M3 Device Generic Users Guide
+  dbgconf:
+    - file: out/run-debug/TestHW2/AC6.dbgconf
+  processor:
+    fpu: off
+    core: Cortex-M3
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  define:
+    - ARMCM3
+    - _RTE_
+  define-asm:
+    - ARMCM3
+    - _RTE_
+  add-path:
+    - ../data/TestRunDebug/RTE/_TestHW2
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  add-path-asm:
+    - ../data/TestRunDebug/RTE/_TestHW2
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
+  output-dirs:
+    intdir: tmp
+    outdir: out/run-debug/TestHW2
+    rtedir: ../data/TestRunDebug/RTE
+  output:
+    - type: elf
+      file: run-debug.axf
+  components:
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM3 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Startup
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include/ARMCM3.h
+          category: header
+          version: 2.0.3
+        - file: https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
+          category: doc
+          version: 2.0.3
+        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
+          category: linkerScript
+          attr: config
+          version: 1.2.0
+        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 2.0.3
+        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 1.2.2
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: CORE
+      implements: RteTest:CORE@1.1.2
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
+          category: doc
+          version: 0.1.1
+    - component: ARM::RteTest:scvd@1.1.1
+      condition: ARMCM3 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: RteTest:scvd
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Components/RteTest.scvd
+          category: other
+          version: 1.1.1
+  apis:
+    - api: RteTest:CORE@1.1.2
+      from-pack: ARM::RteTest_DFP@0.2.0
+      implemented-by: ARM::RteTest:CORE@0.1.1
+      files:
+        - file: https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_apis_pg.html
+          category: doc
+          version: 1.1.2
+  linker:
+    script: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
+  constructed-files:
+    - file: ../data/TestRunDebug/RTE/_TestHW2/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ARM::Device:Startup&RteTest Startup@2.0.3
+        - component: ARM::RteTest:CORE@0.1.1
+        - component: ARM::RteTest:scvd@1.1.1
+        - component: RteTest:CORE(API)

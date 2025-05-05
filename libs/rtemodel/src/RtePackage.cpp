@@ -160,7 +160,7 @@ string RtePackage::DisplayNameFromId(const string& id)
 
 string RtePackage::VersionFromId(const string& id)
 {
-  return VersionCmp::RemoveVersionMeta(RteUtils::GetSuffix(id, RteConstants::PREFIX_PACK_VERSION_CHAR));
+  return VersionCmp::ToSemVer(RteUtils::GetSuffix(id, RteConstants::PREFIX_PACK_VERSION_CHAR));
 }
 
 string RtePackage::ReleaseVersionFromId(const string& id)
@@ -754,7 +754,7 @@ string RtePackage::GetPackageIDfromAttributes(const XmlItem& attr, bool withVers
 {
   const auto& vendor = attr.GetAttribute("vendor");
   const string version = withVersion ?
-    VersionCmp::RemoveVersionMeta(attr.GetAttribute("version")) : EMPTY_STRING;
+    VersionCmp::ToSemVer(attr.GetAttribute("version")) : EMPTY_STRING;
 
   return ComposePackageID(vendor, attr.GetAttribute("name"), version, useDots);
 }
@@ -777,7 +777,7 @@ string RtePackage::GetPackagePath(bool withVersion) const
   path += GetName();
   path += "/";
   if (withVersion && !GetVersionString().empty()) {
-    path += VersionCmp::RemoveVersionMeta(GetVersionString());
+    path += GetSemVer();
     path += "/";
   }
   return path;
@@ -848,7 +848,7 @@ string RtePackageInfo::GetPackagePath(bool withVersion) const
     return path;
   }
   if (withVersion && !GetVersionString().empty()) {
-    path += VersionCmp::RemoveVersionMeta(GetVersionString()) + "/";
+    path += GetSemVer() + "/";
   }
   return path;
 }

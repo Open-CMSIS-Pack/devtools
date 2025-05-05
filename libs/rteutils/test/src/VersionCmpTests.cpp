@@ -34,7 +34,28 @@ TEST(VersionCmpTest, CeilFloor) {
 }
 
 
+TEST(VersionCmpTest, ToSemVer) {
+  EXPECT_EQ(VersionCmp::ToSemVer(""), "");
+  EXPECT_EQ(VersionCmp::ToSemVer("", true), "0.0.0");
+
+  EXPECT_EQ(VersionCmp::ToSemVer("2.3"), "2.3.0");
+  EXPECT_EQ(VersionCmp::ToSemVer("2.3-b"), "2.3.0-b");
+  EXPECT_EQ(VersionCmp::ToSemVer("2.3+m"), "2.3.0");
+  EXPECT_EQ(VersionCmp::ToSemVer("2.3-b+m"), "2.3.0-b");
+
+  EXPECT_EQ(VersionCmp::ToSemVer("2"), "2.0.0");
+  EXPECT_EQ(VersionCmp::ToSemVer("2.3.0-b"), "2.3.0-b");
+  EXPECT_EQ(VersionCmp::ToSemVer("2.3-b"), "2.3.0-b");
+  EXPECT_EQ(VersionCmp::ToSemVer("2-b"), "2.0.0-b");
+  EXPECT_EQ(VersionCmp::ToSemVer("2-b"), "2.0.0-b");
+}
+
+
 TEST(VersionCmpTest, VersionCompare) {
+  EXPECT_EQ( 0, VersionCmp::Compare("1", "1.0.0"));
+  EXPECT_EQ( 0, VersionCmp::Compare("1.0", "1.0.0"));
+  EXPECT_EQ( 0, VersionCmp::Compare("1.0.", "1.0.0"));
+
   EXPECT_EQ( -1, VersionCmp::Compare("6.5.0-a", "6.5.0", true));
   EXPECT_EQ(  0, VersionCmp::Compare("6.5.0-a", "6.5.0-A", true));
   EXPECT_EQ(  0, VersionCmp::Compare("6.5.0+b", "6.5.0+A", true));

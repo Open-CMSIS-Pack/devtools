@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -127,6 +127,54 @@ struct MemoryItem {
 };
 
 /**
+ * @brief debugger item containing
+ *        name of debug configuration
+ *        debug protocol (jtag or swd)
+ *        debug clock speed
+ *        debug configuration file
+ *        start pname
+*/
+struct DebuggerItem {
+  std::string name;
+  std::string protocol;
+  std::string clock;
+  std::string dbgconf;
+  std::string startPname;
+};
+
+/**
+ * @brief target set image containing
+ *        project context
+ *        image file
+ *        info brief description
+ *        type specifies an explicit file type
+ *        load mode
+ *        load offset
+*/
+struct ImageItem {
+  std::string context;
+  std::string image;
+  std::string info;
+  std::string type;
+  std::string load;
+  std::string offset;
+};
+
+/**
+ * @brief target set containing
+ *        set name (default unnamed),
+ *        info string,
+ *        target set images,
+ *        debugger configuration
+*/
+struct TargetSetItem {
+  std::string set;
+  std::string info;
+  std::vector<ImageItem> images;
+  DebuggerItem debugger;
+};
+
+/**
  * @brief build types containing
  *        toolchain,
  *        optimization level,
@@ -168,12 +216,14 @@ struct BuildType {
  *        platform board,
  *        platform device,
  *        additional memory,
+ *        target set,
  *        build options
 */
 struct TargetType {
   std::string board;
   std::string device;
   std::vector<MemoryItem> memory;
+  std::vector<TargetSetItem> targetSet;  
   BuildType build;
 };
 
@@ -439,7 +489,7 @@ typedef std::vector<std::pair<std::string, TargetType>> TargetTypes;
  *        list of packs,
  *        cdefault enable switch,
  *        generator options,
- *        list of executes
+ *        list of executes,
 */
 struct CsolutionItem {
   std::string name;
@@ -546,6 +596,39 @@ struct CbuildSetItem {
   std::string compiler;
 };
 
+/**
+ * @brief debug-adapter defaults item containing
+ *        port number of processor
+ *        debug protocol(jtag or swd)
+ *        debug clock speed
+*/
+struct DebugAdapterDefaultsItem {
+  std::string port;
+  std::string protocol;
+  std::string clock;
+};
+
+/**
+ * @brief debug-adapter item containing
+ *        name
+ *        list of alias
+ *        template
+ *        gdbserver
+ *        defaults
+*/
+struct DebugAdapterItem {
+  std::string name;
+  std::vector<std::string> alias;
+  std::string templateFile;
+  bool gdbserver = false;
+  DebugAdapterDefaultsItem defaults;
+};
+
+/**
+ * @brief debug-adapters item containing
+ *        list of debug-adapters
+*/
+typedef std::vector<DebugAdapterItem> DebugAdaptersItem;
 
 /**
  * @brief projmgr parser class for public interfacing
@@ -607,6 +690,13 @@ public:
   bool ParseCbuildSet(const std::string& input, bool checkSchema);
 
   /**
+   * @brief parse debug-adapters file
+   * @param checkSchema false to skip schema validation
+   * @param input path to *.debug-adapters.yml file
+  */
+  bool ParseDebugAdapters(const std::string& input, bool checkSchema);
+
+  /**
    * @brief get cdefault
    * @return cdefault item
   */
@@ -642,10 +732,17 @@ public:
   */
   CbuildSetItem& GetCbuildSetItem(void);
 
+  /**
+   * @brief get debug adapters
+   * @return debug adapters list
+  */
+  DebugAdaptersItem& GetDebugAdaptersItem(void);
+
 protected:
   CdefaultItem m_cdefault;
   CsolutionItem m_csolution;
   CbuildSetItem m_cbuildSet;
+  DebugAdaptersItem m_debugAdapters;
   std::map<std::string, CprojectItem> m_cprojects;
   std::map<std::string, ClayerItem> m_clayers;
   std::map<std::string, ClayerItem> m_genericClayers;

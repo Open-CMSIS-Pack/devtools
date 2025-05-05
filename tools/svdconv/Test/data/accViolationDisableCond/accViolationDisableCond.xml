@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<device xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd" schemaVersion="1.3">
+  <name>test</name>
+  <version>1.0</version>
+  <description>Test_Example device</description>
+  <addressUnitBits>8</addressUnitBits>
+  <width>32</width>
+  <peripherals>
+    <peripheral>
+      <name>PeripheralA</name>
+      <disableCondition>0 == 0</disableCondition>
+      <baseAddress>0x40004000</baseAddress>
+      <addressBlock>
+        <offset>0x0</offset>
+        <size>0x1000</size>
+        <usage>registers</usage>
+      </addressBlock>
+      <registers>
+        <register>
+          <name>RegisterA</name>
+          <addressOffset>0x0</addressOffset>
+        </register>
+      </registers>
+    </peripheral>
+    <peripheral derivedFrom="PeripheralA">
+      <name>PeripheralB</name>
+      <baseAddress>0x40002000</baseAddress>
+    </peripheral>
+  </peripherals>
+</device>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.4" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>TestVendor</vendor>
+  <url>https://www.testurl.com/pack/</url>
+  <name>CsolutionTag</name>
+  <description>CsolutionTag</description>
+  <license>License.txt</license>
+
+  <releases>
+    <release version="0.0.1" date="2025-03-05">>
+      Initial release of CsolutionTag.
+    </release>
+  </releases>
+
+  <keywords>
+    <keyword>TestInvalidPack</keyword>
+  </keywords>
+
+  <conditions>
+    <condition id="Test_Condition">
+      <description>Test Device</description>
+      <require Dvendor="ARM:82"/>
+    </condition>
+  </conditions>
+
+  <components>
+    <component Cclass="TestClass" Cgroup="TestGlobal" Cversion="1.0.0" condition="Test_Condition">
+      <description>TestGlobal</description>
+      <files>
+        <file category="source" name="Files/test1.c"/>
+        <file category="TestGlobal" name="Files/header1.h"/>
+      </files>
+    </component>
+  </components>
+
+  <csolution> 
+    <clayer type="Board" path="boards/myboard/cmsis/layers/baremetal"  file="Board.clayer.yml" copy-to="Board/myboard" condition="Test_Condition"/>
+    <clayer copy-to="Board/myboard" condition="Not_Exist"/>
+    <clayer type="Board" path="boards/myboard/cmsis/layers/baremetal"  file="NotExist.clayer.yml" copy-to="Board/myboard" condition="Test_Condition"/>
+    <clayer type="Board" path="/boards/myboard/cmsis/layers/baremetal"  file="Board.clayer.yml" copy-to="Board/myboard" condition="Test_Condition"/>
+
+    <template name="Simple Device project" path="boards/myboard/cmsis/templates/Device/Simple" file="Simple.csolution.yml" condition="Test_Condition">
+      <description>Single-core project with no TrustZone </description>
+    </template>
+    <template condition="Not_Exist">
+    </template>
+    <template name="Simple Device project" path="boards/myboard/cmsis/templates/Device/Simple" file="NotExist.csolution.yml" condition="Test_Condition">
+      <description>Single-core project with no TrustZone </description>
+    </template>
+    <template name="Simple Device project" path="/boards/myboard/cmsis/templates/Device/Simple" file="Simple.csolution.yml" condition="Test_Condition">
+      <description>Single-core project with no TrustZone </description>
+    </template>
+  </csolution> 
+
+</package>

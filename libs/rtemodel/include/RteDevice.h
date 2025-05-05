@@ -66,6 +66,12 @@ public:
   */
    const std::string& GetVendorString() const override { return GetEffectiveAttribute("Dvendor"); }
 
+   /**
+   * @brief any item associated with a device is device-dependent
+   * @return true
+  */
+   bool IsDeviceDependent() const override { return true; }
+
   /**
    * @brief obtain for all effectively defined attributes of this device element. That is collection of all attributes defined in this element and in parent elements.
    * @param attributes reference to XmlItem to fill
@@ -657,12 +663,24 @@ public:
   */
   RteDeviceDebugVars(RteItem* parent) : RteDeviceProperty(parent) {};
 
+  /**
+   * @brief returns name of the debug config file
+  */
+  const std::string& GetName() const override { return GetAttribute("configfile"); }
+
+   /**
+   * @brief returns true to indicate that associated configuration file is a config one and should be copied in project's RTE directory
+   * @return true
+  */
+  bool IsConfig() const override { return true; }
+
+
 protected:
   /**
    * @brief construct unique debugvars property ID
    * @return ID string
   */
-   std::string ConstructID() override { return RteDeviceProperty::ConstructID() + std::string(":") + GetProcessorName(); }
+   std::string ConstructID() override { return GetTag() + std::string(":") + GetProcessorName(); }
 };
 
 
@@ -1132,9 +1150,9 @@ class RteDevice : public RteDeviceItem
 public:
   /**
    * @brief constructor
-   * @param parent pointer to parent RteDeviceItem
+   * @param parent pointer to parent RteItem (usually RteDeviceItem)
   */
-  RteDevice(RteDeviceItem* parent) : RteDeviceItem(parent) {};
+  RteDevice(RteItem* parent) : RteDeviceItem(parent) {};
 
 public:
   /**

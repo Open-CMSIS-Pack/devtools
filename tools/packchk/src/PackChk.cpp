@@ -101,7 +101,7 @@ bool PackChk::CheckPackage()
 
   // Add PDSC files to check (currently limited to one)
   const string& pdscFile = m_packOptions.GetPdscFullpath();
-  if(!createModel.AddPdsc(pdscFile, m_packOptions.GetIgnoreOtherPdscFiles())) {
+  if(!createModel.AddPdsc(pdscFile, m_packOptions.GetIgnoreOtherPdscFiles(), true)) {
     return false;
   }
 
@@ -175,16 +175,10 @@ bool PackChk::CheckPackage()
 int PackChk::Check(int argc, const char* argv[], const char* envp[])
 {
   const string header = m_packOptions.GetHeader();
-  LogMsg("M001", TXT(header));
+  cout << header << endl;
 
   ParseOptions parseOptions(m_packOptions);
   ParseOptions::Result result = parseOptions.Parse(argc, argv);
-
-  // Add date and time to log file
-  if(!m_packOptions.GetLogPath().empty()) {
-    string dateTime = m_packOptions.GetCurrentDateTime();
-    LogMsg("M002", TXT("Log created on "), TXT2(dateTime));
-  }
 
   switch(result) {
     case ParseOptions::Result::Ok:
@@ -192,12 +186,13 @@ int PackChk::Check(int argc, const char* argv[], const char* envp[])
     case ParseOptions::Result::ExitNoError:
       return 0;
     case ParseOptions::Result::Error:
-      if(!ErrLog::Get()->GetErrCnt()) {
-        LogMsg("M105");
-      }
       return 1;
   }
 
+  if(m_packOptions.GetLogPath() != "") {
+    LogMsg("M001", TXT(header));
+  }
+  
   bool bOk = CheckPackage();
 
   if(ErrLog::Get()->GetErrCnt() || !bOk) {

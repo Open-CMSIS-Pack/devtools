@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -553,14 +553,16 @@ void RteProject::AddComponentFiles(RteComponentInstance* ci, RteTarget* target)
 }
 
 
-RteFileInstance* RteProject::AddFileInstance(RteComponentInstance* ci, RteFile* f, int index, RteTarget* target)
+RteFileInstance* RteProject::AddFileInstance(RteComponentInstance* ci, RteItem* f, int index, RteTarget* target)
 {
   if (!f || !f->IsConfig())
     return NULL;
 
   string deviceName = target->GetFullDeviceName();
   string id = f->GetInstancePathName(deviceName, index, GetRteFolder(ci));
-  target->AddComponentInstanceForFile(id, ci);
+  if(ci) {
+    target->AddComponentInstanceForFile(id, ci);
+  }
 
   string savedVersion = "0.0.0"; // unknown version
 
@@ -576,7 +578,7 @@ RteFileInstance* RteProject::AddFileInstance(RteComponentInstance* ci, RteFile* 
   return fi;
 }
 
-bool RteProject::UpdateFileToNewVersion(RteFileInstance* fi, RteFile* f, bool bMerge)
+bool RteProject::UpdateFileToNewVersion(RteFileInstance* fi, RteItem* f, bool bMerge)
 {
   if (!fi || !f) {
     return false;
@@ -588,7 +590,7 @@ bool RteProject::UpdateFileToNewVersion(RteFileInstance* fi, RteFile* f, bool bM
   return false;
 }
 
-void RteProject::InitFileInstance(RteFileInstance* fi, RteFile* f, int index, RteTarget* target, const string& savedVersion, const string& rteFolder)
+void RteProject::InitFileInstance(RteFileInstance* fi, RteItem* f, int index, RteTarget* target, const string& savedVersion, const string& rteFolder)
 {
   string deviceName = target->GetFullDeviceName();
   const string& targetName = target->GetName();
@@ -611,7 +613,7 @@ void RteProject::WriteInstanceFiles(const std::string& targetName)
     if (fi->IsRemoved() || fi->GetTargetCount() == 0) {
       RemoveFileInstance(fileID);
     } else if (fi->IsUsedByTarget(targetName)){
-      RteFile* f = fi->GetFile(targetName);
+      auto f = fi->GetFile(targetName);
       if (f && !RteFsUtils::Exists(fi->GetAbsolutePath())) {
         UpdateFileInstance(fi, f, false, false);
       }
@@ -619,7 +621,7 @@ void RteProject::WriteInstanceFiles(const std::string& targetName)
     }
   }
 }
-bool RteProject::UpdateFileInstance(RteFileInstance* fi, RteFile* f, bool bMerge, bool bUpdateComponent)
+bool RteProject::UpdateFileInstance(RteFileInstance* fi, RteItem* f, bool bMerge, bool bUpdateComponent)
 {
   if (!ShouldUpdateRte())
     return true;
@@ -667,7 +669,7 @@ void RteProject::UpdateFileInstanceVersion(RteFileInstance* fi, const string& sa
 }
 
 
-void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
+void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteItem* f)
 {
   if (!ShouldUpdateRte())
     return;
@@ -679,8 +681,8 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteFile* f)
   string absPath = RteFsUtils::AbsolutePath(fi->GetAbsolutePath()).generic_string();
   string dir = RteUtils::ExtractFilePath(absPath, false);
   string name = RteUtils::ExtractFileName(absPath);
-  const string& baseVersion = fi->GetAttribute("version"); // explicitly check the file instance version
-  const string& updateVersion = f->GetVersionString();
+  const string baseVersion = VersionCmp::ToSemVer(fi->GetAttribute("version"), true); // explicitly check the file instance version
+  const string updateVersion = f->GetSemVer(true);
   string baseFile = RteUtils::AppendFileBaseVersion(absPath, baseVersion);
   if (!RteFsUtils::Exists(baseFile)) {
     // create base file if possible
@@ -1004,13 +1006,11 @@ void RteProject::Update()
     }
   }
 
-
   UpdateClasses();
   ResolveComponents(false);
   UpdateModel();
 
   // update/remove files
-  map<RteFileInstance*, RteFile*>::iterator itfu;
   for (auto itf = m_files.begin(); itf != m_files.end();)
   {
     auto itcurrent = itf++;
@@ -1033,7 +1033,7 @@ void RteProject::Update()
                 continue; // leave available until missing is resolved
 
                 // check if component has the file for given target (resolved component can have another set of files, even config ones)
-              RteFile *f = target->GetFile(fi, c, GetRteFolder());
+              auto f = target->GetFile(fi, c, GetRteFolder());
               if (f) {
                 continue;
               }
@@ -1052,15 +1052,14 @@ void RteProject::Update()
 
   // add files
   m_forcedFiles.clear();
-  for (auto itt = m_targets.begin(); itt != m_targets.end(); ++itt) {
-    RteTarget* target = itt->second;
-    for (auto itc = m_components.begin(); itc != m_components.end(); ++itc) {
-      RteComponentInstance* ci = itc->second;
+  for (auto [_, target] :  m_targets) {
+    for (auto [id, ci ] : m_components) {
       AddComponentFiles(ci, target);
     }
   }
 
   CollectSettings();
+
   // copy files and create headers if update is enabled
   UpdateRte();
 }
@@ -1090,9 +1089,6 @@ void RteProject::UpdateRte() {
 }
 
 void RteProject::GenerateRteHeaders() {
-  if (!ShouldUpdateRte())
-    return;
-
   // generate header files for all targets
   for (auto itt : m_targets) {
     RteTarget* target = itt.second;
@@ -1355,11 +1351,6 @@ void RteProject::CollectSettings(const string& targetName)
   }
   t->CollectClassDocs();
 
-  // collect copied files and sources
-  for (auto [_,fi] : m_files) {
-    t->AddFileInstance(fi);
-  }
-
   // add generator headers and include paths
 
   for (auto [_, gi] : m_gpdscInfos) {
@@ -1414,6 +1405,14 @@ void RteProject::CollectSettings(const string& targetName)
     d = m_globalModel->GetDevice(fullDeviceName, vendor);
   }
   t->AddDeviceProperties(d, processorName);
+  // add dbgconf file
+  auto debugVars = t->GetDeviceDebugVars();
+  AddFileInstance(nullptr, debugVars, 0, t);
+
+  // collect copied files and sources
+  for (auto [_,fi] : m_files) {
+    t->AddFileInstance(fi);
+  }
 }
 
 RteItem::ConditionResult RteProject::ResolveComponents(bool bFindReplacementForActiveTarget)
@@ -2391,7 +2390,9 @@ void RteProject::CreateXmlTreeElementContent(XMLTreeElement* parentElement) cons
   map<string, RteFileInstance*>::const_iterator itf;
   for (itf = m_files.begin(); itf != m_files.end(); ++itf) {
     RteFileInstance* fi = itf->second;
-    fi->CreateXmlTreeElement(e);
+    if(!fi->GetProjectGroupName().empty()) {
+      fi->CreateXmlTreeElement(e);
+    }
   }
 }
 

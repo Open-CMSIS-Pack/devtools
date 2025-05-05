@@ -21,10 +21,12 @@ public:
   bool CheckComp(RteItem* item);
   bool ConditionRefToDevice(RteItem* item);
   bool TestSubConditions(RteCondition* cond);
+  bool CheckAllCompFiles(RteItem* item);
 
 private:
   std::string m_packagePath;
   RteGlobalModel& m_rteModel;
+    std::map<std::string, RteItem*> m_allFiles;
 };
 
 class ComponentsVisitor : public RteVisitor

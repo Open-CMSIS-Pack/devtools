@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.2" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>Keil</vendor>
+  <url>http://www.keil.com/pack/</url>
+  <name>FM0plus_DFP</name>
+  <description>Cypress FM0+ Series Device Support</description>
+
+  <releases>
+    <release version="1.2.0" date="2019-05-28">
+      Updated Device Vendor: changed from Spansion to Cypress.
+    </release>
+    <release version="1.1.0" date="2014-09-02">
+      Updated device support files.
+    </release>
+    <release version="1.0.0">
+      First Release version of FM0+ Device Family Pack.
+    </release>
+  </releases>
+
+  <keywords>
+    <!-- keywords for indexing -->
+    <keyword>Cypress</keyword>
+    <keyword>Device Support</keyword>
+    <keyword>Device Family Package Cypress</keyword>
+    <keyword>FM0+</keyword>
+    <keyword>S6E1A1</keyword>
+  </keywords>
+
+  <devices>
+    <!-- generated, do not modify this section! -->
+
+    <family Dfamily="FM0+ Series" Dvendor="Cypress:19">
+      <processor Dcore="Cortex-M0+" DcoreVersion="r0p1"/>
+      <book    name="Documents/DUI0662B_cortex_m0p_r0p1_dgug.pdf"           title="Cortex-M0+ Generic User Guide"/>
+
+        <description>
+        The FM0+ family, which is based on the ARM Cortex-M0+ core, is designed for industrial and cost-sensitive
+		applications with low power requirements such as white goods, sensors, meters, HMI systems and power tools.
+        The family, which operates at 40MHz, has a run-mode current of 70µA/MHz and an RTC mode current of 0.7µA.
+		</description>
+
+        <feature type="VCC"           n="2.7"     m="5.5"/>
+        <feature type="DMA"           n="2"                   name="DMA Controller"/>
+        <feature type="MPSerial"      n="3"                   name="Multi-function Serial Interface(UART/CSIO/I2C)"/>
+        <feature type="TimerOther"    n="4"                   name="Base Timer(PWC/Reload timer/PWM/PPG)"/>
+        <feature type="TimerOther"    n="1"                   name="Multi-function Timer"/>
+        <feature type="TimerOther"    n="1"                   name="Quadrature Position/Revolution Counter (QPRC)"/>
+        <feature type="TimerOther"    n="1"                   name="Dual Timer"/>
+        <feature type="RTC"           n="1"                   name="RTC"/>
+        <feature type="TimerOther"    n="1"                   name="Watch Counter"/>
+        <feature type="WDT"           n="2"                   name="Watchdog Timer"/>
+        <feature type="ExtInt"        n="8"                   name="External Interrupts"/>
+        <feature type="ClockOther"    n="1"                   name="CSV (Clock Supervisor)"/>
+        <feature type="PowerOther"    n="2"                   name="LVD (Low-voltage Detection)"/>
+        <feature type="CoreOther"     n="1"                   name="Unique ID"/>
+        <feature type="IntRC"         n="4000000"             name="Built-in CR (High-speed)"/>
+        <feature type="IntRC"         n="100000"              name="Built-in CR (Low-speed)"/>
+
+
+      <!-- ******************************  S6E1A11B0A  ***************************** -->
+      <device Dname="S6E1A11B0A">
+        <processor Dfpu="0" Dmpu="0" Dendian="Little-endian" Dclock="40000000"/>
+        <compile header="Device/Include/S6E1A1/s6e1a1.h"  define="S6E1A11B0A"/>
+        <debug      svd="SVD/S6E1A1.svd"/>
+        <memory     id="IROM1"                      start="0x00000000"  size="0xE000"     startup="1"   default="1"/>
+        <memory     id="IRAM1"                      start="0x20000000"  size="0x1800"     init   ="0"   default="1"/>
+        <algorithm  name="Flash/S6E1A11X0A.FLM"     start="0x00000000"  size="0xE000"                   default="1"/>
+        <book       name="Documents/S6E1A1_DS710-00001-E.pdf"  title="S6E1A1 Series Data Sheet"/>
+
+        <feature type="ADC"           n="5"       m="12"     name="12bit Analog to Digital Converter"/>
+        <feature type="IOs"           n="23"                 name="General Purpose I/O pins"/>
+        <feature type="QFN"           n="32"                 name="QFN Package"/>
+        <feature type="QFP"           n="32"                 name="QFP Package"/>
+      </device>
+
+
+      <!-- ******************************  S6E1A11C0A  ***************************** -->
+      <device Dname="S6E1A11C0A">
+        <processor Dfpu="0" Dmpu="0" Dendian="Little-endian" Dclock="40000000"/>
+        <compile header="Device/Include/S6E1A1/s6e1a1.h"  define="S6E1A11C0A"/>
+        <debug      svd="SVD/S6E1A1.svd"/>
+        <memory     id="IROM1"                      start="0x00000000"  size="0xE000"     startup="1"   default="1"/>
+        <memory     id="IRAM1"                      start="0x20000000"  size="0x1800"     init   ="0"   default="1"/>
+        <algorithm  name="Flash/S6E1A11X0A.FLM"     start="0x00000000"  size="0xE000"                   default="1"/>
+        <book       name="Documents/S6E1A1_DS710-00001-E.pdf"  title="S6E1A1 Series Data Sheet"/>
+
+        <feature type="ADC"           n="8"       m="12"     name="12bit Analog to Digital Converter"/>
+        <feature type="IOs"           n="37"                 name="General Purpose I/O pins"/>
+        <feature type="QFN"           n="48"                 name="QFN Package"/>
+        <feature type="QFP"           n="48"                 name="QFP Package"/>
+        <feature type="QFP"           n="52"                 name="QFP Package"/>
+      </device>
+
+
+      <!-- ******************************  S6E1A12B0A  ***************************** -->
+      <device Dname="S6E1A12B0A">
+        <processor Dfpu="0" Dmpu="0" Dendian="Little-endian" Dclock="40000000"/>
+        <compile header="Device/Include/S6E1A1/s6e1a1.h"  define="S6E1A12B0A"/>
+        <debug      svd="SVD/S6E1A1.svd"/>
+        <memory     id="IROM1"                      start="0x00000000"  size="0x16000"    startup="1"   default="1"/>
+        <memory     id="IRAM1"                      start="0x20000000"  size="0x1800"     init   ="0"   default="1"/>
+        <algorithm  name="Flash/S6E1A12X0A.FLM"     start="0x00000000"  size="0x16000"                  default="1"/>
+        <book       name="Documents/S6E1A1_DS710-00001-E.pdf"  title="S6E1A1 Series Data Sheet"/>
+
+        <feature type="ADC"           n="5"       m="12"     name="12bit Analog to Digital Converter"/>
+        <feature type="IOs"           n="23"                 name="General Purpose I/O pins"/>
+        <feature type="QFN"           n="32"                 name="QFN Package"/>
+      </device>
+
+
+      <!-- ******************************  S6E1A12C0A  ***************************** -->
+      <device Dname="S6E1A12C0A">
+        <processor Dfpu="0" Dmpu="0" Dendian="Little-endian" Dclock="40000000"/>
+        <compile header="Device/Include/S6E1A1/s6e1a1.h"  define="S6E1A12C0A"/>
+        <debug      svd="SVD/S6E1A1.svd"/>
+        <memory     id="IROM1"                      start="0x00000000"  size="0x16000"    startup="1"   default="1"/>
+        <memory     id="IRAM1"                      start="0x20000000"  size="0x1800"     init   ="0"   default="1"/>
+        <algorithm  name="Flash/S6E1A12X0A.FLM"     start="0x00000000"  size="0x16000"                  default="1"/>
+        <book       name="Documents/S6E1A1_DS710-00001-E.pdf"  title="S6E1A1 Series Data Sheet"/>
+
+        <feature type="ADC"           n="8"       m="12"     name="12bit Analog to Digital Converter"/>
+        <feature type="IOs"           n="37"                 name="General Purpose I/O pins"/>
+        <feature type="QFN"           n="48"                 name="QFN Package"/>
+        <feature type="QFP"           n="48"                 name="QFP Package"/>
+        <feature type="QFP"           n="52"                 name="QFP Package"/>
+      </device>
+
+    </family>
+  </devices>
+
+  <conditions>
+    <!-- Compiler Conditions -->
+    <condition id="Compiler ARMCC">
+      <require Tcompiler="ARMCC"/>
+    </condition>
+
+    <!-- Device Conditions -->
+    <condition id="S6E1A1">
+      <description>Cypress S6E1A1 Device</description>
+      <require Dvendor="Cypress:19" Dname="S6E1A1[12][BC]0A"/>
+    </condition>
+
+    <!-- Device + CMSIS Conditions -->
+    <condition id="S6E1A1 CMSIS">
+      <description>Cypress S6E1A1 Device and CMSIS-CORE</description>
+      <require condition="S6E1A1"/>
+      <require Cclass="CMSIS" Cgroup="CORE"/>
+    </condition>
+  </conditions>
+
+  <components>
+    <component Cclass="Device" Cgroup="Startup" Cversion="1.0.0" condition="S6E1A1 CMSIS">
+      <description>System Startup for Cypress S6E1A1 device series</description>
+      <files>
+        <!-- include folder / file -->
+        <file category="include" name="Device/Include/S6E1A1/"/>
+        <file category="header"  name="Device/Include/S6E1A1/s6e1a1.h"/>
+        <!-- startup / system file -->
+        <file category="sourceAsm" name="Device/Source/S6E1A1/ARM/startup_s6e1a1.s" attr="config" version="1.0.0" condition="Compiler ARMCC"/>
+        <file category="sourceC"   name="Device/Source/S6E1A1/system_s6e1a1.c"      attr="config" version="1.0.0"/>
+        <file category="header"    name="Device/Source/S6E1A1/system_s6e1a1.h"      attr="config" version="1.0.0"/>
+      </files>
+    </component>
+  </components>
+
+</package>

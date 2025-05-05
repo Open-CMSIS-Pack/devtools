@@ -3,12 +3,15 @@
 solution:
   target-types:
     - type: TEST_TARGET
+      device: RteTest_ARMCM0
 
   projects:
     - project: ./setup-test.cproject.yml
-  
+
   build-types:
     - type: Build_AC6
       compiler: AC6
     - type: Build_GCC
+      compiler: GCC
+    - type: AbsolutePath
       compiler: GCC

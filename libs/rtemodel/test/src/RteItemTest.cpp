@@ -7,9 +7,12 @@
 #include "RteModelTestConfig.h"
 
 #include "RteItem.h"
+#include "RteComponent.h"
 #include "RteCondition.h"
+#include "RteDevice.h"
 #include "RteFile.h"
 #include "RtePackage.h"
+#include "RteFsUtils.h"
 #include <map>
 using namespace std;
 
@@ -27,6 +30,8 @@ TEST(RteItemTest, GetComponentID_all_attributes) {
   };
   RteItem item(attributes);
   item.SetTag("require");
+
+  EXPECT_EQ("9.9.9", item.GetSemVer());
 
   EXPECT_EQ("Class:Group(API)@1.1.1", item.GetApiID(true));
   EXPECT_EQ("Class:Group(API)", item.GetApiID(false));
@@ -56,6 +61,8 @@ TEST(RteItemTest, GetComponentID_reduced_attributes) {
   };
   RteItem item(attributes);
   item.SetTag("accept");
+
+  EXPECT_EQ("", item.GetSemVer());
   EXPECT_EQ("accept Vendor::Class:Group", item.GetDependencyExpressionID());
 
   EXPECT_EQ("Vendor::Class:Group", item.GetComponentID(true));
@@ -89,6 +96,14 @@ TEST(RteItemTest, ComponentAttributesFromId) {
   id = "Class:Group:&Variant";
   item.SetAttributesFomComponentId(id);
   EXPECT_EQ("Class:Group&Variant", item.GetComponentID(true));
+}
+
+TEST(RteItemTest, SemVer) {
+  RteItem item;
+  EXPECT_EQ("", item.GetSemVer());
+  EXPECT_EQ("0.0.0", item.GetSemVer(true));
+  item.SetAttribute("version", "1.0-b+m");
+  EXPECT_EQ("1.0.0-b", item.GetSemVer());
 }
 
 TEST(RteItemTest, PackageID) {
@@ -128,6 +143,8 @@ TEST(RteItemTest, PackageID) {
   pack.AddAttribute("url", "https://www.keil.com/pack/");
   EXPECT_EQ(RtePackage::GetPackageFileNameFromAttributes(pack, true, ".pack"), "Vendor.Name.1.2.3-alpha.pack");
   EXPECT_EQ(RtePackage::GetPackageFileNameFromAttributes(pack, false, ".pdsc"), "Vendor.Name.pdsc");
+  EXPECT_EQ(pack.GetPackagePath(), "Vendor/Name/1.2.3-alpha/");
+  EXPECT_EQ(pack.GetPackagePath(false), "Vendor/Name/");
   EXPECT_EQ(pack.GetDownloadUrl(false, ".pack"), "https://www.keil.com/pack/Vendor.Name.pack");
 }
 
@@ -169,4 +186,52 @@ TEST(RteItemTest, GetHierarchicalGroupName) {
 
   EXPECT_EQ(g4->GetHierarchicalGroupName(), "G0:G1:G3");
 }
+
+TEST(RteItemTest, GetInstancePathName) {
+  RteItem packInfo;
+  packInfo.AddAttribute("name", "Name");
+  packInfo.AddAttribute("vendor", "Vendor");
+  packInfo.AddAttribute("version", "1.2.3");
+
+  RtePackage pack(nullptr, packInfo.GetAttributes());
+  string packFileName = "TestCmsisPackRoot/" + pack.GetPackagePath() + RtePackage::GetPackageFileNameFromAttributes(pack, false, ".pdsc");
+  pack.SetRootFileName(packFileName);
+  EXPECT_EQ(pack.GetPackageFileName(), packFileName);
+  string cmsisPackRoot = RteFsUtils::MakePathCanonical(pack.GetAbsolutePackagePath());
+
+  RteItem* rteItem = new RteItem("test", &pack);
+  rteItem->SetAttribute("name", "MyDir/MyFile.ext");
+
+  auto instanceFile = rteItem->GetInstancePathName("MyDevice", 0, "RTEdir");
+  EXPECT_EQ(instanceFile, cmsisPackRoot + "MyDir/MyFile.ext");
+  rteItem->SetAttribute("attr", "config");
+  instanceFile = rteItem->GetInstancePathName("MyDevice", 1, "RTEdir");
+  EXPECT_EQ(instanceFile, "RTEdir/MyFile.ext");
+
+  // add items directly to pack, for our tests it does not matter
+  RteComponent* c = new RteComponent(&pack);
+  c->SetAttribute("Cclass", "Device");
+  c->SetAttribute("Cgroup", "Startup");
+  RteItem* fileItem = c->CreateChild("files")->CreateChild("file", "./MyDir/MyFile.c");
+  instanceFile = fileItem->GetInstancePathName("MyDevice", 0, "RTEdir");
+  EXPECT_EQ(instanceFile, cmsisPackRoot + "MyDir/MyFile.c");
+
+  // test config file
+  fileItem->SetAttribute("attr", "config");
+  instanceFile = fileItem->GetInstancePathName("MyDevice", 0, "RTEdir");
+  EXPECT_EQ(instanceFile, "RTEdir/Device/MyDevice/MyFile.c");
+
+  // check config file with instance index
+  c->SetAttribute("maxInstances", 2);
+  instanceFile = fileItem->GetInstancePathName("MyDevice", 0, "RTEdir");
+  EXPECT_EQ(instanceFile, "RTEdir/Device/MyDevice/MyFile_0.c");
+
+  RteDevice* device = new RteDevice(&pack);
+  device->SetAttribute("Dname", "MyDevice");
+  RteItem* debugVars = device->CreateChild("debugvars");
+  debugVars->SetAttribute("configfile", "MyDir/MyConfig.dbgconf");
+  instanceFile = debugVars->GetInstancePathName("MyDevice", 0, "RTEdir");
+  EXPECT_EQ(instanceFile, "RTEdir/Device/MyDevice/MyConfig.dbgconf");
+}
+
 // end of RteItemTest.cpp

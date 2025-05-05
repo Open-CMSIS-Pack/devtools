@@ -14,9 +14,50 @@ solution:
           name: CustomMemory
           access: rwx
           algorithm: CustomAlgo.flm
+      target-set:
+        - set:
+          info: Info target-set
+          debugger:
+            name: ST-LINK
+            protocol: jtag
+            clock: 20000000
+            dbgconf: RTE/Device/RteTest1/RteTest1.dbgconf
+          images:
+            - project-context: run-debug
+            - image: customImage.bin
+              info: load image info
+              load-offset: 0x00001000
+            - image: $elf()$
+              load: symbols
+    - type: TestHW2
+      board: RteTest-Test-board With.Memory
+      target-set:
+        - set:
+          debugger:
+            name: CMSIS-DAP
+            dbgconf: $OutDir()$/$Compiler$.dbgconf
+          images:
+            - project-context: run-debug
+            - image: customLibrary.x
+              type: lib
+    - type: TestHW3
+      target-set:
+        - set:
+          images:
+            - project-context: core0
+            - project-context: core1
+          debugger:
+            name: CMSIS-DAP
+            start-pname: cm0_core1
+      device: RteTest_ARMCM0_Dual
 
   projects:
     - project: run-debug.cproject.yml
+      for-context: [+TestHW, +TestHW2]
+    - project: core0.cproject.yml
+      for-context: +TestHW3
+    - project: core1.cproject.yml
+      for-context: +TestHW3
 
   packs:
     - pack: ARM::RteTest_DFP

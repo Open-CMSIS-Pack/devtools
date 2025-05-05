@@ -194,43 +194,45 @@ bool ValidateSemantic::OutputDepResults(const RteDependencyResult& dependencyRes
  * @param device RteDeviceItem to run on
  * @return passed / failed
  */
-bool ValidateSemantic::CheckMemory(RteDeviceItem* device)
+bool ValidateSemantic::CheckMemories(RteDeviceItem* device)
 {
   string devName = device->GetName();
 
   list<RteDeviceProperty*> processors;
   device->GetEffectiveProcessors(processors);
-  for(auto proc : processors) {
-    const string& pName = proc->GetName();
+  for(auto processor : processors) {
+    const string& pName = processor->GetName();
     if(!pName.empty()) {
       devName += ":";
       devName += pName;
     }
 
-    LogMsg("M071", NAME(devName), proc->GetLineNumber());
+    LogMsg("M071", NAME(devName), processor->GetLineNumber());
 
-    const list<RteDeviceProperty*>& propGroup = device->GetEffectiveProperties("memory", pName);
-    if(propGroup.empty()) {
+    const list<RteDeviceProperty*>& memories = device->GetEffectiveProperties("memory", pName);
+    if(memories.empty()) {
       LogMsg("M312", TAG("memory"), NAME(device->GetName()), device->GetLineNumber());
       return false;
     }
 
-    map<const string, RteDeviceProperty*> propNameCheck;
-    for(auto prop : propGroup) {
-      const string& id = prop->GetEffectiveAttribute("id");
-      const string& name = prop->GetEffectiveAttribute("name");
-      const string& access = prop->GetEffectiveAttribute("access");
-      const string& start = prop->GetEffectiveAttribute("start");
-      const string& size = prop->GetEffectiveAttribute("size");
-      const string& pname = prop->GetEffectiveAttribute("pname");
-      int lineNo = prop->GetLineNumber();
+    map<const string, RteDeviceProperty*> memoryNameCheck;
+    list<RteDeviceProperty*> rxRegionWithStartup;
 
-      string key = name.empty() ? id : name;
+    for(auto memory : memories) {
+      int lineNo = memory->GetLineNumber();
+      const string& id = memory->GetEffectiveAttribute("id");
+      const string& name = memory->GetEffectiveAttribute("name");
+      const string& access = memory->GetEffectiveAttribute("access");
+      const string& start = memory->GetEffectiveAttribute("start");
+      const string& size = memory->GetEffectiveAttribute("size");
+      const string& pname = memory->GetEffectiveAttribute("pname");
+      const string& startup = memory->GetEffectiveAttribute("startup");
+
+      string memoryName = name.empty() ? id : name;
       if(!pname.empty()) {
-        key += ":" + pname;
+        memoryName += ":" + pname;
       }
-
-      LogMsg("M070", NAME(key), NAME2(devName), lineNo);                        // Checking Memory '%NAME%' for device '%NAME2%'
+      LogMsg("M070", NAME(memoryName), NAME2(devName), lineNo);                   // Checking Memory '%NAME%' for device '%NAME2%'
 
       if(id.empty()) {                                                          // new description, where 'name' is just a string and 'access' describes the permissions
         if(name.empty() && access.empty()) {
@@ -262,18 +264,33 @@ bool ValidateSemantic::CheckMemory(RteDeviceItem* device)
         LogMsg("M308", TAG("size"), TAG2("memory"), lineNo);                    // Attribute '%TAG%' missing
       }
 
-      if(!key.empty()) {
-        auto propNameCheckIt = propNameCheck.find(key);
-        if(propNameCheckIt != propNameCheck.end()) {
+      if(!memoryName.empty()) {
+        auto propNameCheckIt = memoryNameCheck.find(memoryName);
+        if(propNameCheckIt != memoryNameCheck.end()) {
           RteDeviceProperty* propFound = propNameCheckIt->second;
           if(propFound) {
-            LogMsg("M311", TAG("memory"), NAME(key), LINE(propFound->GetLineNumber()), lineNo);
+            LogMsg("M311", TAG("memory"), NAME(memoryName), LINE(propFound->GetLineNumber()), lineNo);
           }
         }
         else {
-          propNameCheck[key] = prop;
+          memoryNameCheck[memoryName] = memory;
         }
       }
+
+     // Check startup attribute
+     if(startup == "1") {
+        rxRegionWithStartup.push_back(memory);
+        if(id.find("IROM") != 0 && id.find("IRAM") != 0) {  // no deprecated IRAM / IROM which have eXecute implicitly set
+          if(access.find_first_of("x") == string::npos) {
+            LogMsg("M608", NAME(memoryName), ATTR("startup"), VALUE("1"), ATTR2("access"), VALUE2("x"), lineNo);
+          }
+        }
+      }
+    }
+
+    const int numOfMemories = rxRegionWithStartup.size();
+    if(!numOfMemories || numOfMemories > 1) {
+      LogMsg("M609", NAME(devName), NUM(numOfMemories), processor->GetLineNumber());
     }
   }
 
@@ -364,7 +381,7 @@ bool ValidateSemantic::UpdateRte(RteTarget* target, RteProject* rteProject, RteC
   RteComponentAggregate* cmsisComp = target->GetComponentAggregate("ARM::CMSIS.CORE");
   target->SelectComponent(cmsisComp, 1, true);
   target->SelectComponent(component, 1, true, true);
-  rteProject->CollectSettings();
+  rteProject->Apply();
   target->CollectFilteredFiles();
   target->EvaluateComponentDependencies();
 
@@ -450,6 +467,100 @@ bool ValidateSemantic::FindFileFromList(const string& systemHeader, const set<Rt
   return false;
 }
 
+bool ValidateSemantic::FileIsHeader(const std::string& name)
+{
+  return RteFsUtils::FileCategoryFromExtension(name) == "header";
+}
+
+/**
+ * @brief Check device attributes. Tests if all attributes like Dtz, Ddsp, ... are set
+ * @param device RteDeviceItem to run on
+ * @return passed / failed
+ */
+
+const map<string, list<string>> processorFeaturesMap = {
+//{ "ARMV81MML"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M0"   , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M0+"  , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M1"   , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M3"   , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M4"   , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M7"   , { "Dfpu", "Dmpu",        "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M23"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M33"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M35P" , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M52"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M55"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M85"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  { "Star-MC1"    , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  { "SC000"       , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "SC300"       , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "ARMV8MBL"    , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "ARMV8MML"    , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
+  { "ARMV81MML"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  /* Currently unchecked
+  { "Cortex-R4"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-R5"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-R7"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-R8"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A5"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A7"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A8"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A9"   , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A15"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A17"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A32"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A35"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A53"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A57"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A72"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-A73"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve", "Dcdecp", "Dpacbti", "Dendian", "Dclock","DcoreVersion" } },
+  */
+};
+
+const list<string> processorMulticoreFeaturesList = {
+  "Pname",
+};
+
+bool ValidateSemantic::CheckDeviceAttributes(RteDeviceItem *device)
+{
+  if(!device) {
+    return true;
+  }
+
+  bool bOk = false;
+  int lineNo = device->GetLineNumber();
+  const auto processors = device->GetProcessors();
+  for(const auto& [core, processor] : processors) {
+    const auto& Dcore = processor->GetAttribute("Dcore");
+    const auto& processorFeatures = processorFeaturesMap.find(Dcore);
+    if(processorFeatures == processorFeaturesMap.end()) {
+      LogMsg("M604", NAME(Dcore), lineNo); // Dcore not found in list for feature check
+      return true;
+    }
+
+    const auto& features = processorFeatures->second;
+    for(const auto& feature : features) {
+      if(processor->GetEffectiveAttribute(feature) == "") {
+        LogMsg("M605", NAME(Dcore), NAME2(feature), lineNo); // Required processor feature '%NAME%' not found.
+        bOk = false;
+      }
+    }
+
+    // Test dependant features (if one is found, all the others must be present as well)
+    if(processors.size() > 1) {
+      for(const auto& requiredMulticoreFeature : processorMulticoreFeaturesList) {
+        if(processor->GetEffectiveAttribute(requiredMulticoreFeature) == "") {
+          LogMsg("M605", NAME(Dcore), NAME2(requiredMulticoreFeature), lineNo); // Required processor feature '%NAME%' not found.
+          bOk = false;
+        }
+      }
+    }
+  }
+
+  return bOk;
+}
+
 /**
  * @brief Check device dependencies. Tests if all dependencies are solved and a minimum
  *        on support files and configuration has been defined
@@ -468,7 +579,6 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
   int lineNo = device->GetLineNumber();
 
   CheckForUnsupportedChars(mcuName, "Dname", lineNo);
-  CheckMemory(device);
 
   XmlItem deviceStartup;
   deviceStartup.SetAttribute("Cclass", "Device");
@@ -526,6 +636,7 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
 
         for(auto aggregate : startupComponents) {
           ErrLog::Get()->SetFileName(aggregate->GetPackage()->GetPackageFileName());
+          string targetPath = RteUtils::ExtractFilePath(aggregate->GetPackage()->GetPackageFileName(), false);
 
           for(auto &[componentKey, componentMap] : aggregate->GetAllComponents()) {
             int foundSystemC = 0, foundStartup = 0;
@@ -568,6 +679,15 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
                     continue;
                   }
                   const string& attribute = file->GetAttribute("attr");
+
+                  if(attribute == "config" && FileIsHeader(fileName)) {
+                    const string& fullFileName = targetPath + "/" + file->GetName();
+                    const string hPath = RteUtils::ExtractFilePath(fullFileName, false);
+                    const auto incPathFound = incPaths.find(hPath);
+                    if(incPathFound != incPaths.end()) {
+                      LogMsg("M357", NAME(file->GetName()), file->GetLineNumber());
+                    }
+                  }
 
                   if(FindName(fileName, "system_", ".c")) {
                     foundSystemC++;
@@ -633,6 +753,23 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
 
                     if(attribute != "config") {
                       LogMsg("M377", NAME(fileName), TYP(category), lineNo);
+                    }
+                  }
+                }
+
+                if(category == "header") {
+                  string fileName = RteUtils::BackSlashesToSlashes(RteUtils::ExtractFileName(file->GetName()));
+                  if(fileName.empty()) {
+                    continue;
+                  }
+                  const string& attribute = file->GetAttribute("attr");
+
+                  if(attribute == "config") {
+                    const string& fullFileName = targetPath + "/" + file->GetName();
+                    const string hPath = RteUtils::ExtractFilePath(fullFileName, false);
+                    const auto incPathFound = incPaths.find(hPath);
+                    if(incPathFound != incPaths.end()) {
+                      LogMsg("M357", NAME(file->GetName()), file->GetLineNumber());
                     }
                   }
                 }
@@ -721,6 +858,8 @@ bool ValidateSemantic::TestMcuDependencies(RtePackage* pKg)
   pKg->GetEffectiveDeviceItems(devices);
   for(auto device : devices) {
     CheckDeviceDependencies(device, rteProject);
+    CheckMemories(device);
+    CheckDeviceAttributes(device);
   }
 
   model.DeleteProject(1);

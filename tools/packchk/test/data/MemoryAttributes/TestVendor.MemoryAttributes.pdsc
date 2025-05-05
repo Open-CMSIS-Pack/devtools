@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.1" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>TestVendor</vendor>
+  <url>http://www.keil.com/pack/</url>
+  <name>MemoryAttributes</name>
+  <description>Test Memory Attributes</description>
+
+  <releases>
+    <release version="1.0.0" date="2025-02-20">
+      First Release version of Test Memory Attributes.
+    </release>
+  </releases>
+
+  <keywords>
+  <!-- keywords for indexing -->
+    <keyword>ARM</keyword>
+  </keywords>
+  
+  <conditions>
+    <condition id="TestDevices">
+      <description>Test devices</description>
+      <require Dvendor="ARM:82" Dname="Test*"/>
+    </condition>
+    <condition id="Test ARMCC">
+      <description>filter for STM32F1xx Value Line Low Density Device and the ARM compiler</description>
+      <require condition="TestDevices"/>
+      <require Tcompiler="ARMCC"/>
+    </condition>
+  </conditions>
+
+
+  <devices>
+    <family Dfamily="TestFamily" Dvendor="ARM:82">
+      <algorithm name="Flash/ARMCMx_512.FLM"  start="0x00000000" size="0x00040000" default="1"/>
+
+      <!-- ******************************  TestSubFamily  ****************************** -->
+      <subFamily DsubFamily="TestSubFamily">
+        <compile header="Files/TestDevices.h"  define="TESTDEVICES"/>
+
+        <description>
+The TestSubFamily is ...
+        </description>
+
+        <!-- *************************  TestDeviceOk, old IDs  ************************ -->
+        <device Dname="TestDeviceOkOldIDs">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Ddsp="NO_DSP" Dendian="Little-endian" Dclock="204000000"/>
+          <memory    id="IROM1"                            start="0x08000000" size="0x00010000" default="1" startup="1"/>
+          <memory    id="IROM2"                            start="0x09000000" size="0x00010000" default="0" />
+          <memory    id="IRAM1"                            start="0x10000000" size="0x00010000" default="1" />
+          <memory    id="IRAM2"                            start="0x20000000" size="0x00010000" default="0" />
+        </device>
+
+        <!-- ******************************  TestDeviceOk  ***************************** -->
+        <device Dname="TestDeviceOk">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Ddsp="NO_DSP" Dendian="Little-endian" Dclock="204000000"/>
+          <memory    name="Flash"      access="rx"           start="0x08000000" size="0x00080000" default="1" startup="1" />
+          <memory    name="IRAM1"      access="rwx"          start="0x10000000" size="0x00010000" default="1" />
+          <memory    name="IRAM2"      access="rwx"          start="0x20000000" size="0x00010000" default="0" />
+        </device>
+
+        <!-- ******************************  TestDeviceNOk  ***************************** -->
+        <device Dname="TestDeviceNOk">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Ddsp="NO_DSP" Dendian="Little-endian" Dclock="204000000"/>
+          <memory    name="Flash"      access="rx"           start="0x08000000" size="0x00080000" default="1" startup="1" />
+          <memory    name="Flash2"     access="rx"           start="0x09000000" size="0x00080000" default="1" startup="1" />
+          <memory    name="IRAM1"      access="rwx"          start="0x10000000" size="0x00010000" default="1" />
+          <memory    name="IRAM2"      access="rwx"          start="0x20000000" size="0x00010000" default="0" />
+        </device>
+
+        <!-- ******************************  TestDeviceNOk2  ***************************** -->
+        <device Dname="TestDeviceNOk2">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Ddsp="NO_DSP" Dendian="Little-endian" Dclock="204000000"/>
+          <memory    name="Flash"      access="rw"           start="0x08000000" size="0x00080000" default="1" startup="1" />
+          <memory    name="IRAM1"      access="rwx"          start="0x10000000" size="0x00010000" default="1" />
+          <memory    name="IRAM2"      access="rwx"          start="0x20000000" size="0x00010000" default="0" />
+        </device>
+
+        <!-- ******************************  TestDeviceNOk3  ***************************** -->
+        <device Dname="TestDeviceNOk3">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Ddsp="NO_DSP" Dendian="Little-endian" Dclock="204000000"/>
+          <memory    name="Flash"      access="rwx"          start="0x08000000" size="0x00080000" default="1" startup="0" />
+          <memory    name="IRAM1"      access="rwx"          start="0x10000000" size="0x00010000" default="1" />
+          <memory    name="IRAM2"      access="rwx"          start="0x20000000" size="0x00010000" default="0" />
+        </device>
+
+        <!-- ******************************  TestDeviceNOk4  ***************************** -->
+        <device Dname="TestDeviceNOk4">
+          <processor Dcore="Cortex-M4"  DcoreVersion="r0p1" Dfpu="SP_FPU" Dmpu="MPU" Ddsp="NO_DSP" Dendian="Little-endian" Dclock="204000000"/>
+          <memory    name="Flash"                            start="0x08000000" size="0x00080000" default="1" startup="1" />
+          <memory    name="IRAM1"      access="rwx"                             size="0x00010000" default="1" />
+          <memory    name="IRAM2"      access="rwx"                                               default="0" />
+        </device>
+
+      </subFamily>
+    </family>
+  </devices>
+
+  <components>
+    <component Cclass="Device" Cgroup="Startup" Cversion="1.0.0" condition="TestDevices">
+      <description>System Startup for STMicroelectronics STM32F1xx device series</description>
+      <files>
+        <file category="include" name="Files/"/>
+        <file category="source"  name="Files/startup_Test.s"     attr="config" version="1.0.0" condition="Test ARMCC"/>
+        <file category="source"  name="Files/system_Test.c"      attr="config" version="1.0.0" />
+      </files>
+    </component>
+  </components>
+
+</package>

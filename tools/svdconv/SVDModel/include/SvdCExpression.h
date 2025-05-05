@@ -24,13 +24,13 @@ public:
 
   virtual bool CheckItem();
 
-  class Symbols_t {
+  class Symbols {
   public:
     SvdCExpressionParser::token_s token;
     SvdItem* svdItem;
     std::list<std::string> searchname;
 
-    Symbols_t() {
+    Symbols() {
       clear();
     }
     void clear() {
@@ -40,7 +40,7 @@ public:
       token.type = SvdCExpressionParser::xme_what;
     }
   };
-  using SymbolsList = std::list<Symbols_t>;
+  using SymbolsList = std::list<Symbols>;
 
   using RegList = std::map<std::string, SvdItem*>;
 

@@ -52,7 +52,7 @@
 
 // <h> RAM Configuration
 // =======================
-// <h> __RAM0 (is rw memory: IRAM2 from DFP)
+// <h> __RAM0 (is rwx memory: IRAM2 from DFP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region. Default: 0x82000000
 //   <i> Contains uninitialized RAM, Stack, and Heap
@@ -62,7 +62,7 @@
 #define __RAM0_SIZE 0x00020000
 // </h>
 
-// <h> __RAM1 (is rw memory: IRAM1 from DFP)
+// <h> __RAM1 (is rwx memory: IRAM1 from DFP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region. Default: 0x81000000
 #define __RAM1_BASE 0x81000000
@@ -71,7 +71,7 @@
 #define __RAM1_SIZE 0x00020000
 // </h>
 
-// <h> __RAM2 (is rw memory: IRAM3 from DFP)
+// <h> __RAM2 (is rwx memory: IRAM3 from DFP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region. Default: 0x83000000
 #define __RAM2_BASE 0x83000000
@@ -80,7 +80,7 @@
 #define __RAM2_SIZE 0x00020000
 // </h>
 
-// <h> __RAM3 (is rw memory: IRAM4+IRAM5 from DFP)
+// <h> __RAM3 (is rwx memory: IRAM4+IRAM5 from DFP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region. Default: 0x84000000
 #define __RAM3_BASE 0x84000000

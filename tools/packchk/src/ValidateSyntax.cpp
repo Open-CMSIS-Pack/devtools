@@ -152,6 +152,27 @@ bool ValidateSyntax::CheckAllFiles(RtePackage* pKg)
   return(true);
 }
 
+bool ValidateSyntax::CheckLicenseFile(RteItem* item, const string& path) {
+  bool bOk = false;
+  const auto lineNo = item->GetLineNumber();
+
+  if(!path.empty()) {
+    if(XmlValueAdjuster::IsAbsolute(path)) {
+      LogMsg("M326", PATH(path), lineNo);   // error : absolute paths are not permitted
+    }
+    else if(path.find('\\') != string::npos) {
+      if(XmlValueAdjuster::IsURL(path)) {
+        LogMsg("M370", URL(path), lineNo);  // error : backslash are non permitted in URL
+      }
+      else {
+        LogMsg("M327", PATH(path), lineNo); // error : backslash are not recommended
+      }
+    }
+  }
+
+  return bOk;
+}
+
 /**
  * @brief check (for) license file
  * @param pKg package under test
@@ -160,21 +181,80 @@ bool ValidateSyntax::CheckAllFiles(RtePackage* pKg)
  */
 bool ValidateSyntax::CheckLicense(RtePackage* pKg, CheckFilesVisitor& fileVisitor)
 {
+  bool bLicFound = false;
   const string& licPath = pKg->GetItemValue("license");
-  if(licPath.empty()) {
-    return true;
+  if(!licPath.empty()) {
+    bLicFound = true;
+    CheckLicenseFile(pKg, licPath);
   }
 
-  if(XmlValueAdjuster::IsAbsolute(licPath)) {
-    LogMsg("M326", PATH(licPath));   // error : absolute paths are not permitted
+  const auto licenseSets = pKg->GetLicenseSets();
+  if(licenseSets) {
+    const auto& children = licenseSets->GetChildren();
+    if(children.empty()) {
+      LogMsg("M601", TAG("licenseSet"), TAG2("licenseSets")); // license set must be defined if <licenseSets> 
+    }
+
+    map<string, RteItem*> licenseSetIds;
+    RteItem* defaultLicenseSet = nullptr;
+
+    for(const auto& child : children) {
+      bLicFound = true;
+      const auto& id = child->GetID();
+      if(id.empty()) {
+        LogMsg("M308", TAG("id"), TAG2("licenseSet")); // Attribute '%TAG%' missing on '%TAG2%'
+        continue;
+      }
+
+      const auto& found = licenseSetIds.find(id);
+      if(found != licenseSetIds.end()) {
+        const auto& foundId = found->first;
+        const auto foundChild = found->second;
+        LogMsg("M367", TYP("id"), NAME(foundId), LINE(foundChild->GetLineNumber()), child->GetLineNumber()); // Redefined %TYPE% '%NAME%' found, see Line %LINE%
+      }
+      else {
+        licenseSetIds[id] = child;
+      }
+
+      if(child->GetAttribute("default") == "1") {
+        if(defaultLicenseSet) {
+          LogMsg("M602", VAL("ATTR", "default")); // Attribute '%ATTR%' already set, see Line %LINE%
+        }
+        else {
+          defaultLicenseSet = child;
+        }
+      }
+
+      const auto& lincenseChilds = child->GetChildren();
+      if(lincenseChilds.empty()) {
+        LogMsg("M601", TAG("license"), TAG2("licenseSet")); // '%TAG%' missing on '%TAG2%'
+      }
+      else {
+        for(const auto lincenseChild : lincenseChilds) {
+          const auto& licensePath = lincenseChild->GetAttribute("name");
+          if(licensePath.empty()) {
+            LogMsg("M601", TAG("name"), TAG2("license")); // '%TAG%' missing on '%TAG2%'
+          }
+          else {
+            CheckLicenseFile(lincenseChild, licensePath);
+          }
+
+          const auto& title = lincenseChild->GetAttribute("title");
+          if(!title.length()) {
+            LogMsg("M601", TAG("title"), TAG2("license")); // '%TAG%' missing on '%TAG2%'
+          }
+
+          const auto& url = lincenseChild->GetAttribute("url");
+          if(!url.empty()) {
+            CheckLicenseFile(lincenseChild, url);
+          }
+        }
+      }
+    }
   }
-  else if(licPath.find('\\') != string::npos) {
-    if(XmlValueAdjuster::IsURL(licPath)) {
-      LogMsg("M370", URL(licPath));  // error : backslash are non permitted in URL
-    }
-    else {
-      LogMsg("M327", PATH(licPath)); // error : backslash are not recommended
-    }
+
+  if(!bLicFound) {
+    LogMsg("M603"); // no license information found
   }
 
   CheckFiles& checkFiles = fileVisitor.GetCheckFiles();
@@ -238,6 +318,19 @@ bool ValidateSyntax::CheckInfo(RtePackage* pKg)
     LogMsg("M306");
     bInfoComplete = false;
   }
+
+  // Check for <description overview="MyPack.md" ...
+  const auto packDescription = pKg->GetFirstChild("description");
+  if(packDescription) {
+    const auto overview = packDescription->GetAttribute("overview"); 
+    if(!overview.empty()) {
+      const auto ext = RteUtils::ExtractFileExtension(overview);
+      if(ext != "md") {
+        LogMsg("M337", VAL("CAT", "overview"), EXT(ext), PATH(overview), MSG(", should be .md"));
+      }
+    }
+  }
+
 
   string pdscRef = pKg->GetAttribute("vendor") + "." + pKg->GetName();
   const string& pdscPkg = RteUtils::ExtractFileBaseName(fileName);
@@ -1496,8 +1589,8 @@ bool ValidateSyntax::CheckAddBoard(RteBoard* board)
   const string& name = board->GetID();
 
   bool ok = false;
-  auto it = boardsFound.find(name);
-  if(it != boardsFound.end()) {         // board already exists
+  auto it = m_boardsFound.find(name);
+  if(it != m_boardsFound.end()) {         // board already exists
     RteBoard* board2 = it->second;
     int lineNo2 = board2->GetLineNumber();
     const string& path = board2->GetPackage()->GetPackageFileName();
@@ -1506,7 +1599,7 @@ bool ValidateSyntax::CheckAddBoard(RteBoard* board)
     ok = false;
   }
   else {
-    boardsFound[name] = board;
+    m_boardsFound[name] = board;
   }
 
   return ok;
@@ -1602,33 +1695,55 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
       LogMsg("M375", VAL("BOARD", boardName));
     }
 
-    for(auto mountItem : mountedDevices) {
-      RteItem* dev = dynamic_cast<RteItem*>(mountItem);
-      if(!dev) {
-        continue;
+    map<string, RteItem*> mountedDeviceIndex;
+    for(auto mountedDevice : mountedDevices) {
+      lineNo = mountedDevice->GetLineNumber();
+      const auto& devIdx = mountedDevice->GetAttribute("deviceIndex");
+      auto foundDevIdxIt = mountedDeviceIndex.find(devIdx);
+      if(foundDevIdxIt != mountedDeviceIndex.end()) {
+        const RteItem* foundDev = foundDevIdxIt->second;
+        LogMsg("M319", TAG("deviceIndex"), NAME(devIdx), TAG2("Dname"), NAME2(foundDev->GetDeviceName()), LINE(foundDev->GetLineNumber()), lineNo);
+      }
+      else {
+        mountedDeviceIndex[devIdx] = mountedDevice;
       }
 
-      const string& dvendor = dev->GetAttribute("Dvendor");
-      string dname = dev->GetAttribute("Dname");
-      lineNo = dev->GetLineNumber();
+      const string& dvendor = mountedDevice->GetAttribute("Dvendor");
+      if(dvendor.empty()) {
+        LogMsg("M308", TAG("Dvendor"), TAG2(mountedDevice->GetTag()), lineNo);
+      }
+
+      string dname = mountedDevice->GetAttribute("Dname");
       if(dname.empty()) {
-        dname = dev->GetAttribute("DsubFamily");
-
-        if(dname.empty()) {
-          dname = dev->GetAttribute("Dfamily");
-        }
-
-        if(dname.empty()) {
-          continue;
-        }
+        LogMsg("M308", TAG("Dname"), TAG2(mountedDevice->GetTag()), lineNo);
       }
 
       LogMsg("M060", VAL("BOARD", boardName), VAL("DEVICE", dname));
 
+      if(dname.empty() || dname.empty()) {
+        continue;
+      }
+
+      if(dname.find_first_of("*?[]") != string::npos) {
+        LogMsg("M607", TAG("Dname"), NAME(dname), lineNo);
+        continue;
+      }
+
       list<RteDevice*> devices;
       GetModel().GetDevices(devices, dname, dvendor);
       if(devices.empty()) {
+        LogMsg("M346", VAL("BOARD", boardName), VAL("DEVICE", dname), lineNo);
         continue;
+      }
+
+      if(devices.size() > 1) {
+        LogMsg("M100", lineNo);
+      }
+
+      for(const auto device : devices) {
+        if(device->GetDeviceItemCount() > 0) {
+          LogMsg("M611", VENDOR(dvendor), MCU(dname), lineNo);
+        }
       }
 
       RteDevice* foundDevice = *devices.begin();
@@ -1641,26 +1756,33 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
         LogMsg("M381", VENDOR(dvendor), MCU(dname), VENDOR2(foundDVendor), MCU2(foundDName), LINE(lNo), board->GetLineNumber());
       }
 
-      if(devices.empty()) {
-        LogMsg("M346", VAL("BOARD", boardName), VAL("DEVICE", dname), lineNo);
-      }
-      else {
-        LogMsg("M010");
-      }
+      LogMsg("M010");
     }
 
     // ------------  compatible devices  ------------------
     Collection<RteItem*> compatibleDevices;
     board->GetCompatibleDevices(compatibleDevices);
 
-    for(auto device : compatibleDevices) {
-      if(!device) {
+    for(auto compatibleDevice : compatibleDevices) {
+      if(!compatibleDevice) {
         continue;
       }
 
-      const string& dvendor = device->GetAttribute("Dvendor");
-      string dname = device->GetAttribute("Dname");
+      const auto& dfamily = compatibleDevice->GetAttribute("Dfamily");
+      if(!dfamily.empty()) {
+        LogMsg("M318", TAG(compatibleDevice->GetTag()), TAG2("Dfamily"), compatibleDevice->GetLineNumber());
+      }
+
+      const auto& dsubfamily = compatibleDevice->GetAttribute("DsubFamily");
+      if(!dsubfamily.empty()) {
+        LogMsg("M318", TAG(compatibleDevice->GetTag()), TAG2("DsubFamily"), compatibleDevice->GetLineNumber());
+      }
+
+      const auto& dvendor = compatibleDevice->GetAttribute("Dvendor");
+
+      const auto& dname = compatibleDevice->GetAttribute("Dname");    
       if(dname.empty()) {
+        LogMsg("M368", NAME(compatibleDevice->GetTag()), MSG(", no 'Dname' could be calculated"), compatibleDevice->GetLineNumber());
         continue;
       }
 
@@ -1669,7 +1791,7 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
       list<RteDevice*> devices;
       GetModel().GetDevices(devices, dname, dvendor);
       if(devices.empty()) {
-        LogMsg("M346", VAL("BOARD", boardName), VAL("DEVICE", dname), device->GetLineNumber());
+        LogMsg("M346", VAL("BOARD", boardName), VAL("DEVICE", dname), compatibleDevice->GetLineNumber());
         continue;
       }
 

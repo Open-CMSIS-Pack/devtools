@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -73,6 +73,7 @@ RteTarget::RteTarget(RteItem* parent, RteModel* filteredModel, const string& nam
   m_effectiveDevicePackage(0),
   m_deviceStartupComponent(0),
   m_device(0),
+  m_deviceDebugVars(0),
   m_deviceEnvironment(0),
   m_bDestroy(false)
 {
@@ -543,8 +544,9 @@ void RteTarget::ClearCollections()
   m_PreIncludeFiles.clear();
   m_PreIncludeGlobal.clear();
   m_PreIncludeLocal.clear();
-  m_deviceStartupComponent = NULL;
-  m_deviceEnvironment = 0;
+  m_deviceStartupComponent = nullptr;
+  m_deviceDebugVars = nullptr;
+  m_deviceEnvironment = nullptr;
 
   m_defines.clear();
   m_algos.clear();
@@ -575,7 +577,6 @@ void RteTarget::ProcessAttributes() // called from SetAttributes(), AddAttribute
   string fullDeviceName = GetFullDeviceName();
 
   m_device = model->GetDevice(fullDeviceName, vendor);
-
   if (!m_device) {
     return;
   }
@@ -596,6 +597,8 @@ void RteTarget::ProcessAttributes() // called from SetAttributes(), AddAttribute
     }
     SetBoard(model->FindBoard(bname));
   }
+
+  AddDeviceProperties(m_device, GetProcessorName());
 };
 
 void RteTarget::AddBoadProperties(RteDeviceItem* device, const string& processorName) {
@@ -678,10 +681,12 @@ void RteTarget::AddDeviceProperties(RteDeviceItem* d, const string& processorNam
         }
       } else if (propType == "algorithm") {
         AddAlgorithm(p, d);
-      } else if (propType == "environment") {
-        if (p->GetName() == "uv") {
+      } else if(propType == "environment") {
+        if(p->GetName() == "uv") {
           m_deviceEnvironment = p;
         }
+      } else if(propType == "debugvars") {
+        m_deviceDebugVars = p;
       }
     }
   }
@@ -831,11 +836,13 @@ void RteTarget::AddFileInstance(RteFileInstance* fi)
         AddIncludePath(incPath, fi->GetLanguage());
       }
     }
-    AddFile(effectivePathName, cat, fi->GetHeaderComment(), c, fi->GetFile(GetName()));
+    AddFile(effectivePathName, cat, fi->GetHeaderComment(), c, dynamic_cast<RteFile*>(fi->GetFile(GetName())));
   }
   string groupName = fi->GetProjectGroupName();
-  AddProjectGroup(groupName);
-  m_projectGroups[groupName][id] = RteFileInfo(fi->GetCategory(), ci, fi);
+  if(!groupName.empty()) {
+    AddProjectGroup(groupName);
+    m_projectGroups[groupName][id] = RteFileInfo(fi->GetCategory(), ci, fi);
+  }
 }
 
 void RteTarget::AddFile(RteFile* f, RteComponentInstance* ci)
@@ -1125,8 +1132,9 @@ const RteFileInfo* RteTarget::GetFileInfo(const string& groupName, const string&
 
 void RteTarget::AddProjectGroup(const string& groupName)
 {
-  if (!HasProjectGroup(groupName))
+  if(!groupName.empty() && !HasProjectGroup(groupName)) {
     m_projectGroups[groupName] = EMPTY_STRING_TO_INSTANCE_MAP;
+  }
 }
 
 
@@ -1410,7 +1418,7 @@ const set<RteFile*>& RteTarget::GetFilteredFiles(RteComponent* c) const
   return EMPTY_FILE_SET;
 }
 
-RteFile* RteTarget::GetFile(const string& name, RteComponent* c) const
+RteItem* RteTarget::GetFile(const string& name, RteComponent* c) const
 {
   // returns file if it is filtered for given target
   const set<RteFile*>& filteredFiles = GetFilteredFiles(c);
@@ -1448,25 +1456,30 @@ const std::string& RteTarget::GetRteFolder(const RteComponentInstance* ci) const
   return GetRteFolder();
 }
 
-RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c) const
+RteItem* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c) const
 {
   return GetFile(fi, c, GetRteFolder());
 }
 
 
-RteFile* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c, const std::string& rteFolder) const
+RteItem* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c, const std::string& rteFolder) const
 {
-  if (!fi) {
+  if(!fi) {
     return nullptr;
   }
-  const set<RteFile*>& filteredFiles = GetFilteredFiles(c);
   const string& deviceName = GetFullDeviceName();
-  int index = fi->GetInstanceIndex();
   const string& instanceName = fi->GetInstanceName();
-  for (auto itf = filteredFiles.begin(); itf != filteredFiles.end(); ++itf) {
-    RteFile* f = *itf;
-    if (f && f->GetInstancePathName(deviceName, index, rteFolder) == instanceName) {
-      return f;
+  if(c) { // a component file
+    int index = fi->GetInstanceIndex();
+    for(auto f : GetFilteredFiles(c)) {
+      if(f && f->GetInstancePathName(deviceName, index, rteFolder) == instanceName) {
+        return f;
+      }
+    }
+  } else {
+    auto debugVars = GetDeviceDebugVars();
+    if(debugVars && debugVars->GetInstancePathName(deviceName, 0, rteFolder) == instanceName) {
+      return debugVars;
     }
   }
   return nullptr;
@@ -1991,12 +2004,11 @@ bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& co
   }
   // construct head comment
   ostringstream  oss;
+  RteCallback* callback = GetCallback();
+  if (!callback) {
+    return false;
+  }
   if (!bRegionsHeader) {
-    RteCallback* callback = GetCallback();
-    if (!callback) {
-      return false;
-    }
-
     bool foundToolInfo = false;
     auto kernel = callback->GetRteKernel();
     if (kernel) {
@@ -2050,8 +2062,10 @@ bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& co
   }
 
   // file does not exist or its content is different
-  RteFsUtils::CopyBufferToFile(headerFile, oss.str(), false); // write file
-
+  if (RteFsUtils::CopyBufferToFile(headerFile, oss.str(), false) // write file
+    && !GetProject()->ShouldUpdateRte() && !bRegionsHeader) {
+    callback->OutputMessage("Constructed file " + headerFile + " was recreated");
+  }
   return true;
 }
 // End of RteTarget.cpp

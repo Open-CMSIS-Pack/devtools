@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -30,6 +30,7 @@ CheckFilesVisitor::CheckFilesVisitor(const string& packagePath, const string& pa
 */
 CheckFilesVisitor::~CheckFilesVisitor()
 {
+  m_checkFiles.CheckAttrConfigFiles();
 }
 
 /**
@@ -40,6 +41,12 @@ CheckFilesVisitor::~CheckFilesVisitor()
 VISIT_RESULT CheckFilesVisitor::Visit(RteItem* item)
 {
   m_checkFiles.CheckFile(item);
+  m_checkFiles.CheckUrls(item);
+  m_checkFiles.CheckDeprecated(item);
+  m_checkFiles.CheckDescription(item);
+  m_checkFiles.GatherIncPathVsAttrConfig(item);
+  m_checkFiles.CheckCSolutionEntries(item);
+
 
   return VISIT_RESULT::CONTINUE_VISIT;
 }
@@ -126,7 +133,7 @@ bool CheckFiles::GetFileName(RteItem* item, std::string& filename, FileType& fil
     return true;
   }
   else if(tag == "debugvars") {
-    filename = item->GetAttribute("configfile");
+    filename = item->GetName();
     return true;
   }
   else if(tag == "environment") {
@@ -148,6 +155,12 @@ bool CheckFiles::GetFileName(RteItem* item, std::string& filename, FileType& fil
     filename = item->GetText();
     return true;
   }
+  else if(tag == "description") {
+    filename = item->GetAttribute("overview");
+    if(filename.length()) {
+      return true;
+    }
+  }
 
   return false;
 }
@@ -162,6 +175,93 @@ bool CheckFiles::ToUpper(string& text)
   std::transform(text.begin(), text.end(), text.begin(), ::toupper);
 
   return true;
+}
+
+/**
+ * @brief check deprecated aspects of an RTE item
+ * @param item RteItem item to check
+ * @return passed / failed
+*/
+bool CheckFiles::CheckDeprecated(RteItem* item)
+{
+  if(!item || item->GetTag() == "package") {
+    return true;
+  }
+
+  bool bOk = true;
+  const auto lineNo = item->GetLineNumber();
+
+  const auto& tag = item->GetTag();
+  if(tag == "file") {
+    if(item->GetAttribute("attr") == "copy") {
+      LogMsg("M600", VAL("ATTR", "copy"), TAG(tag), lineNo);
+      bOk = false;
+    }
+  }
+
+  return bOk;
+}
+
+/**
+ * @brief check aspects of an RTE url item
+ * @param item RteItem item to check
+ * @return passed / failed
+*/
+bool CheckFiles::CheckDescription(RteItem* item)
+{
+  if(!item) {
+    return true;
+  }
+
+  const auto& tag = item->GetTag();
+  const auto lineNo = item->GetLineNumber();
+  if(tag == "description") {
+    const auto& text = item->GetText();
+
+    for(auto c : text) {
+      if(c < 0x20 || c > 0x7e) {
+        LogMsg("M388", NAME(text), lineNo);
+        break;
+      }
+    }
+
+    if(text.length() > 128) {
+      LogMsg("M387", TAG(tag), lineNo);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * @brief check aspects of an RTE url item
+ * @param item RteItem item to check
+ * @return passed / failed
+*/
+bool CheckFiles::CheckUrls(RteItem* item)
+{
+  if(!item || item->GetTag() == "package") {
+    return true;
+  }
+
+  bool bOk = true;
+  const auto lineNo = item->GetLineNumber();
+  
+  if(item->GetText().find("http://", 0) != string::npos) {
+    LogMsg("M300", TAG(item->GetTag()), URL("https://"), lineNo);
+    bOk = false;
+  }
+    
+  const auto& attributes = item->GetAttributes();
+  for(const auto& [attr, text] : attributes) {
+    if(text.find("http://", 0) != string::npos) {
+      LogMsg("M300", TAG(attr), URL("https://"), lineNo);
+    bOk = false;
+    }
+  }
+
+  return bOk;
 }
 
 /**
@@ -323,6 +423,11 @@ bool CheckFiles::CheckFileExists(const string& fileName, int lineNo, bool associ
 
   string checkPath = GetFullFilename(fileName);
 
+  if(XmlValueAdjuster::IsAbsolute(fileName)) {
+    LogMsg("M326", PATH(fileName), lineNo);   // error : absolute paths are not permitted
+    return false;
+  }
+
   bool ok = true;
   if(!RteFsUtils::Exists(checkPath)) {
     if(associated) {
@@ -435,7 +540,7 @@ bool CheckFiles::CheckCaseSense(const string& fileName, int lineNo)
     }
     else {
       string errMsg = string("file/folder \"") + seg + "\" not found";
-      LogMsg("M103", VAL("REF", errMsg));
+      LogMsg("M103", VAL("REF", errMsg), lineNo);
       return false;
     }
   }
@@ -787,7 +892,7 @@ bool CheckFiles::CheckFileExtension(RteItem* item)
       }
     }
     else if(category == "sourceCpp") {
-      if(_stricmp(extension.c_str(), "cpp")) {
+      if(_stricmp(extension.c_str(), "cpp") && _stricmp(extension.c_str(), "cc") && _stricmp(extension.c_str(), "cxx")) {
         LogMsg("M337", VAL("CAT", category), PATH(name), EXT(extension), lineNo);
         ok = false;
       }
@@ -799,4 +904,154 @@ bool CheckFiles::CheckFileExtension(RteItem* item)
   }
 
   return ok;
+}
+
+bool CheckFiles::GatherIncPathVsAttrConfig(RteItem* item)
+{
+  const auto file = dynamic_cast<RteFile*>(item);
+  if(!file) {
+    return true;
+  }
+
+  if(file->IsTemplate()) {    // ignore
+    return true;
+  }
+
+  const auto category = file->GetCategory();
+
+  if(file->IsConfig()) {
+    const auto path = file->GetOriginalAbsolutePath();
+    m_attrConfigFiles[path] = file;
+    return true;
+  }
+
+  if(category == RteFile::Category::HEADER) {
+    const auto incPath = file->GetIncludePath();
+    m_includePaths[incPath] = file;
+    return true;
+  }
+
+  if(category == RteFile::Category::INCLUDE) {
+    const auto incPath = file->GetOriginalAbsolutePath();
+    m_includePaths[incPath] = file;
+    return true;
+  }
+
+
+  return true;
+}
+
+bool CheckFiles::CheckAttrConfigFiles()
+{
+  bool bOk = true;
+
+  for(const auto& [path, item] : m_attrConfigFiles) {
+      const auto lineNo = item->GetLineNumber();
+      const auto incPathFound = m_includePaths.find(RteUtils::ExtractFilePath(path, false));
+      if(incPathFound != m_includePaths.end()) {
+        const auto itemFound = incPathFound->second;
+        LogMsg("M357", NAME(item->GetName()), LINE(itemFound->GetLineNumber()), lineNo);
+        bOk = false;
+      }
+  }
+
+  return bOk;
+}
+
+bool CheckFiles::CheckCSolutionEntries(RteItem* item)
+{
+  if(item->GetTag() != "csolution") {
+    return true;
+  }
+
+  bool bOk = true;
+  const auto lineNo = item->GetLineNumber();
+
+  const auto& children = item->GetChildren();
+  if(children.empty()) {
+    LogMsg("M100", lineNo); // No entries for %TAG% found
+    return false;
+  }
+
+  for(const auto& child : children) {
+    const auto& tag = child->GetTag();
+    if(tag == "clayer") {
+      CheckCsolutionLayer(child);
+    }
+    else if(tag == "template") {
+      CheckCsolutionTemplate(child);
+    }
+  }
+
+  return bOk;
+}
+
+bool CheckFiles::CheckForTag(RteItem* item, const list<string>& searchAttributes)
+{
+  const auto lineNo = item->GetLineNumber();
+  const auto& tag = item->GetTag();
+  bool bOk = true;
+
+  for(const auto& searchAttr : searchAttributes) {
+    if(item->GetAttribute(searchAttr) == "") {
+      LogMsg("M601", TAG(searchAttr), TAG2(tag), lineNo);   // '%TAG%' missing on '%TAG2%'
+      bOk = false;
+    }
+  }
+
+  return bOk;
+}
+
+bool CheckFiles::CheckCsolutionLayer(RteItem* item)
+{
+  CheckForTag(item, list<string>({"type", "path", "file"}));
+
+  const auto lineNo = item->GetLineNumber();
+  const auto& path = item->GetAttribute("path");
+  const auto& file = item->GetAttribute("file");
+
+  if(!path.empty() && !file.empty()) {
+    const auto fileName = path + "/" + file;
+    CheckForSpaces(fileName, lineNo);
+    if(CheckFileExists(fileName, lineNo)) {
+      CheckCaseSense(fileName, lineNo);
+      CheckFileIsInPack(fileName, lineNo);
+    }
+  }
+
+
+  return true;
+}
+
+bool CheckFiles::CheckCsolutionTemplate(RteItem* item)
+{
+  CheckForTag(item, list<string>({"name", "path", "file"}));
+
+  const auto lineNo = item->GetLineNumber();
+  const auto& tag = item->GetTag();
+  const auto& children = item->GetChildren();
+  const auto& path = item->GetAttribute("path");
+  const auto& file = item->GetAttribute("file");
+
+  if(!path.empty() && !file.empty()) {
+    const auto fileName = path + "/" + file;
+    CheckForSpaces(fileName, lineNo);
+    if(CheckFileExists(fileName, lineNo)) {
+      CheckCaseSense(fileName, lineNo);
+      CheckFileIsInPack(fileName, lineNo);
+    }
+  }
+
+  bool bFound = false;
+  for(const auto child : children) {
+    if(child->GetTag() == "description") {
+      bFound = true;
+    }
+  }
+
+  if(!bFound) {
+    LogMsg("M601", TAG("description"), TAG2(tag), lineNo);   // '%TAG%' missing on '%TAG2%'
+  }
+
+  return bFound;
 }

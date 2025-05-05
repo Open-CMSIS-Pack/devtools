@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -30,6 +30,9 @@ public:
   void SetPackagePath(const std::string& packagePath);
   const std::string& GetPackagePath() const;
   bool CheckFile(RteItem* item);
+  bool CheckUrls(RteItem* item);
+  bool CheckDeprecated(RteItem* item);
+  bool CheckDescription(RteItem* item);
   bool CheckFileExists(const std::string& fileName, int lineNo, bool associated = false);
   bool CheckCaseSense(const std::string& fileName, int lineNo);
   bool CheckFileIsInPack(const std::string& fileName, int lineNo);
@@ -46,11 +49,19 @@ public:
   bool GetFileName(RteItem* item, std::string& filename, FileType& fileType) const;
   bool ToUpper(std::string& text);
   std::string GetFullFilename(const std::string& fileName);
-  bool CheckPath(const std::string& fileName, int lineNo);
+  bool GatherIncPathVsAttrConfig(RteItem* item);
+  bool CheckAttrConfigFiles();
+  bool CheckCSolutionEntries(RteItem* item);
+  bool CheckCsolutionLayer(RteItem* item);
+  bool CheckCsolutionTemplate(RteItem* item);
+  bool CheckForTag(RteItem* item, const std::list<std::string>& searchAttributes);
+
 
 private:
   std::string m_packagePath;
   std::string m_packageName;
+  std::map<std::string, RteItem*> m_includePaths;
+  std::map<std::string, RteItem*> m_attrConfigFiles;
 };
 
 class CheckFilesVisitor : public RteVisitor

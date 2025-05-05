@@ -328,7 +328,7 @@ string RteUtils::ExtractFileExtension(const string& fileName, bool withDot)
 
 string RteUtils::AppendFileVersion(const std::string& fileName, const string& version, const string& versionPrefix)
 {
-  return fileName + '.' + versionPrefix + '@' + version;
+  return fileName + '.' + versionPrefix + '@' + (!version.empty() ? version : RteConstants::NULL_VERSION);
 }
 
 string RteUtils::AppendFileBaseVersion(const std::string& fileName, const std::string& version)

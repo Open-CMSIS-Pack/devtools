@@ -54,6 +54,11 @@ bool ProjMgrParser::ParseCbuildSet(const string& input, bool checkSchema) {
   return ProjMgrYamlParser().ParseCbuildSet(input, m_cbuildSet, checkSchema);
 }
 
+bool ProjMgrParser::ParseDebugAdapters(const string& input, bool checkSchema) {
+  // Parse debug-adapters file
+  return ProjMgrYamlParser().ParseDebugAdapters(input, m_debugAdapters, checkSchema);
+}
+
 CdefaultItem& ProjMgrParser::GetCdefault(void) {
   return m_cdefault;
 }
@@ -76,6 +81,10 @@ map<string, ClayerItem>& ProjMgrParser::GetGenericClayers(void) {
 
 CbuildSetItem& ProjMgrParser::GetCbuildSetItem(void) {
   return m_cbuildSet;
+}
+
+DebugAdaptersItem& ProjMgrParser::GetDebugAdaptersItem(void) {
+  return m_debugAdapters;
 }
 
 // end of ProjMgrParser.cpp

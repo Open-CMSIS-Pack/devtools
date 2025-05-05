@@ -434,9 +434,9 @@ bool ProjMgrUtils::ContainsIncompatiblePack(const std::list<RtePackage*>& packs,
   return incompatible;
 }
 
-const string ProjMgrUtils::ULLToHex(const unsigned long long number) {
+const string ProjMgrUtils::ULLToHex(const unsigned long long number, int width) {
   stringstream ss;
-  ss << "0x" << hex << setfill('0') << uppercase << setw(8) << number;
+  ss << "0x" << hex << setfill('0') << uppercase << setw(width) << number;
   return ss.str();
 }
 
@@ -445,6 +445,22 @@ const string ProjMgrUtils::GetVariableName(const string item) {
   regex_match(item, sm, regex(".*\\$(.*)\\$.*"));
   if (sm.size() >= 2) {
     return sm[1];
+  }
+  return RteUtils::EMPTY_STRING;
+}
+
+const string ProjMgrUtils::FileTypeFromExtension(const string& file) {
+  static const map<string, vector<string>> FILE_TYPE = {
+    { RteConstants::OUTPUT_TYPE_LIB, {".lib", ".a"} },
+    { RteConstants::OUTPUT_TYPE_ELF, {".elf", ".axf"} },
+    { RteConstants::OUTPUT_TYPE_HEX, {".hex", ".h386"} },
+    { RteConstants::OUTPUT_TYPE_BIN, {".bin" } },
+  };
+  fs::path ext((fs::path(file)).extension());
+  for (const auto& category : FILE_TYPE) {
+    if (find(category.second.begin(), category.second.end(), ext) != category.second.end()) {
+      return category.first;
+    }
   }
   return RteUtils::EMPTY_STRING;
 }

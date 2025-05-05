@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -243,6 +243,46 @@ struct ContextTypesItem {
 };
 
 /**
+ * @brief gdb core item containing
+ *        port number of processor
+ *        processor name
+ *        primary processor
+*/
+struct GdbCoreItem {
+  unsigned long long port;
+  std::string pname;
+  bool start = false;
+};
+
+/**
+ * @brief gdb server item containing
+ *        list of the gdb core items
+*/
+struct GdbServerItem {
+  std::vector<GdbCoreItem> core;
+};
+
+/**
+ * @brief debugger type
+ *        name of debug configuration
+ *        brief description
+ *        debug protocol (jtag or swd)
+ *        debug clock speed
+ *        debug configuration file
+ *        start pname
+ *        gdbserver
+*/
+struct DebuggerType {
+  std::string name;
+  std::string info;
+  std::string protocol;
+  std::optional<unsigned long long> clock;
+  std::string dbgconf;
+  std::string startPname;
+  GdbServerItem gdbserver;
+};
+
+/**
  * @brief project context item containing
  *        pointer to csolution,
  *        pointer to cproject,
@@ -297,6 +337,10 @@ struct ContextTypesItem {
  *        vector of device books
  *        vector of board books
  *        additional memory
+ *        debugger
+ *        default dbgconf
+ *        images
+ *        selected target-set
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -359,6 +403,10 @@ struct ContextItem {
   std::vector<BookItem> deviceBooks;
   std::vector<BookItem> boardBooks;
   std::vector<MemoryItem> memory;
+  DebuggerType debugger;
+  std::pair<std::string, RteFileInstance*> dbgconf;
+  std::vector<ImageItem> images;
+  std::string targetSet;
 };
 
 /**
@@ -479,6 +527,14 @@ public:
    * @return true if executed successfully
   */
   bool ListContexts(std::vector<std::string>& contexts, const std::string& filter = RteUtils::EMPTY_STRING, const bool ymlOrder = false);
+
+  /**
+   * @brief list target-sets
+   * @param reference to list of target-sets
+   * @param filter words to filter results
+   * @return true if executed successfully
+  */
+  bool ListTargetSets(std::vector<std::string>& targetSets, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list generators of a given context
@@ -656,12 +712,14 @@ public:
   /**
    * @brief parse context selection
    * @param contexts pattern (wildcards are allowed)
-   * @param context replacement pattern (wildcards are allowed)
+   * @param check cbuildset flag (default false)
+   * @param active target-set (default empty)
    * @return true if executed successfully
   */
   bool ParseContextSelection(
     const std::vector<std::string>& contextSelection,
-    const bool checkCbuildSet = false);
+    const bool checkCbuildSet = false,
+    const std::string activeTargetSet = std::string());
 
   /**
    * @brief get the list of selected contexts
@@ -782,6 +840,12 @@ public:
   */
   void CollectUnusedPacks();
 
+  /**
+   * @brief check rte errors
+   * @return true if there is no error
+  */
+  bool CheckRteErrors(void);
+
 protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrKernel* m_kernel = nullptr;
@@ -820,11 +884,13 @@ protected:
   StrVec m_selectableCompilers;
   bool m_undefCompiler = false;
   std::map<std::string, FileNode> m_missingFiles;
+  std::string m_activeTargetType;
+  TargetSetItem m_activeTargetSet;
 
   bool LoadPacks(ContextItem& context);
   bool CheckMissingPackRequirements(const std::string& contextName);
+  void CheckMissingLinkerScript(ContextItem& context);
   bool CollectRequiredPdscFiles(ContextItem& context, const std::string& packRoot);
-  bool CheckRteErrors(void);
   bool CheckBoardDeviceInLayer(const ContextItem& context, const ClayerItem& clayer);
   bool CheckCompiler(const std::vector<std::string>& forCompiler, const std::string& selectedCompiler);
   bool CheckType(const TypeFilter& typeFilter, const std::vector<TypePair>& typeVec);
@@ -846,6 +912,8 @@ protected:
   bool ProcessGpdsc(ContextItem& context);
   bool ProcessConfigFiles(ContextItem& context);
   bool ProcessComponentFiles(ContextItem& context);
+  bool ProcessDebuggers(ContextItem& context);
+  bool ProcessImages(ContextItem& context);
   bool ProcessExecutes(ContextItem& context, bool solutionLevel = false);
   bool ProcessGroups(ContextItem& context);
   bool ProcessSequencesRelatives(ContextItem& context, bool rerun);
@@ -892,6 +960,7 @@ protected:
     std::vector<ConnectPtrVec>& combinations, const ConnectPtrVec& previous = ConnectPtrVec());
   void PushBackUniquely(ConnectionsCollectionVec& vec, const ConnectionsCollection& value);
   void PushBackUniquely(std::vector<ToolchainItem>& vec, const ToolchainItem& value);
+  void GetRegisteredToolchainEnvVars(void);
   void GetRegisteredToolchains(void);
   bool GetLatestToolchain(ToolchainItem& toolchain);
   bool GetToolchainConfig(const std::string& name, const std::string& version, std::string& configPath, std::string& selectedConfigVersion);
@@ -926,6 +995,8 @@ protected:
   StrVec CollectSelectableCompilers();
   void ProcessTmpDir(std::string& tmpdir, const std::string& base);
   bool IsCreatedByExecute(const std::string file, const std::string dir);
+  bool ParseTargetSetContextSelection(const std::string& activeTargetSet);
+  bool GetActiveTargetSet(const std::string& activeTargetSet);
 };
 
 #endif  // PROJMGRWORKER_H

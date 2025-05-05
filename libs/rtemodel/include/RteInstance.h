@@ -1406,25 +1406,25 @@ public:
 public:
   /**
    * @brief initialize the file instance
-   * @param f pointer to the original RteFile
+   * @param f pointer to the original RteItem, represents RteFile or an item associated with a file
    * @param deviceName device name used in the target
    * @param instanceIndex instance index, can be > 0  for multi-instance components
    * @param rteFolder the "RTE" folder path used for placing files
   */
-  void Init(RteFile* f, const std::string& deviceName, int instanceIndex, const std::string& rteFolder);
+  void Init(RteItem* f, const std::string& deviceName, int instanceIndex, const std::string& rteFolder);
 
   /**
    * @brief update file instance
-   * @param f pointer to the original RteFile
+   * @param f pointer to the original RteFile or RteItem representing afile
    * @param bUpdateComponent update information about component this file belongs to
   */
-  void Update(RteFile* f, bool bUpdateComponent);
+  void Update(RteItem* f, bool bUpdateComponent);
 
   /**
    * @brief check if this file is a config one
    * @return true if "attr" attribute value is "config"
   */
-  bool IsConfig() const;
+  bool IsConfig() const override;
 
   /**
    * @brief check if a new version of a config file is available (for specified target)
@@ -1539,17 +1539,17 @@ public:
    * rteFolder is taken from target's parent project
    * @param targetName target name to resolve file
    * @param
-   * @return pointer to RteFile if resolved, nullptr otherwise
+   * @return pointer to RteFile as RteItem if resolved, nullptr otherwise
   */
-  RteFile* GetFile(const std::string& targetName) const;
+  RteItem* GetFile(const std::string& targetName) const;
 
   /**
    * @brief copy a config file from pack location to the designated project directory
-   * @param f pointer to RteFile to copy
+   * @param f pointer to RteFile (or RteItem representing a file) to copy
    * @param bMerge flag indicating to merge it to the existing one (if exists), otherwise overwrite
    * @return true is successful
   */
-  bool Copy(RteFile* f, bool bMerge);
+  bool Copy(RteItem* f, bool bMerge);
 
 public:
 

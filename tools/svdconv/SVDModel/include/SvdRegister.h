@@ -6,6 +6,7 @@
 #ifndef SvdRegister_H
 #define SvdRegister_H
 
+#include "SvdItem.h"
 #include "SvdTypes.h"
 
 

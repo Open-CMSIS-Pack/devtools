@@ -102,10 +102,13 @@ struct MessageEntry {
 #define TAG2(tag)         VAL("TAG2",     tag)
 #define TAG3(tag)         VAL("TAG3",     tag)
 #define VALUE(val)        VAL("VALUE",    val)
+#define VALUE2(val)       VAL("VALUE2",   val)
 #define ACCESS2(acc)      VAL("ACCESS2",  acc)
 #define ACCESS(acc)       VAL("ACCESS",   acc)
 #define USAGE2(usage)     VAL("USAGE2",   usage)
 #define USAGE(usage)      VAL("USAGE",    usage)
+#define ATTR(val)         VAL("ATTR",     val)
+#define ATTR2(val)        VAL("ATTR2",    val)
 #define CHR(c)            VAL("CHAR",     c)
 #define RELEASEDATE(date) VAL("RELEASEDATE", date)
 #define RELEASEVER(ver)   VAL("RELEASEVER", ver)
@@ -195,6 +198,16 @@ public:
       theErrLog = new ErrLog();
     }
     return theErrLog;
+  }
+
+  /**
+   * @brief singleton operation: destroys global application object
+  */
+  static void Destroy() {
+    if (theErrLog) {
+      delete theErrLog;
+      theErrLog = nullptr;
+    }
   }
 
 public:
@@ -517,7 +530,6 @@ private:
     ~ErrLogDestroyer() { ErrLog::Destroy(); }
   };
 
-  static void  Destroy() { delete theErrLog; theErrLog = nullptr; }
   static ErrLogDestroyer theErrLogDestroyer;
   static ErrLog* theErrLog;  // the application-wide ErrLog Object
 

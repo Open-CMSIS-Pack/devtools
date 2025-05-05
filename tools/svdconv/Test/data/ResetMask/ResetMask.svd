@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<device xmlns:xsi="http://www.w3.org/2001/XMLSchema" schemaVersion="0">
+  <vendor>TestVendor</vendor>
+  <vendorID>Arm</vendorID>
+  <name>ResetMask</name>
+  <series>TEST</series>
+  <version>100</version>
+  <description>Default</description>
+  <licenseText>Test case</licenseText>
+  <cpu>
+    <name>other</name>
+    <revision>r0p0</revision>
+    <endian>little</endian>
+    <mpuPresent>true</mpuPresent>
+    <fpuPresent>true</fpuPresent>
+    <nvicPrioBits>4</nvicPrioBits>
+    <vendorSystickConfig>true</vendorSystickConfig>
+  </cpu>
+  <addressUnitBits>8</addressUnitBits>
+  <width>8</width>
+  <peripherals>
+    <peripheral>
+      <name>RESET_MASK</name>
+      <version>100</version>
+      <description>RESET MASK</description>
+      <groupName>RESET_MASK</groupName>
+      <baseAddress>0</baseAddress>
+      <addressBlock>
+        <offset>0</offset>
+        <size>12</size>
+        <usage>registers</usage>
+      </addressBlock>
+      <registers>
+        <register>
+          <name>TIMER</name>
+          <description>Timer TestReg</description>
+          <addressOffset>0</addressOffset>
+          <size>64</size>
+          <resetValue>0</resetValue>
+          <resetMask>0xFFFFFFFFFFFFFFFF</resetMask>
+          <fields>
+            <field>
+              <name>TIMER</name>
+              <description>System timer bits.</description>
+              <lsb>0</lsb>
+              <msb>63</msb>
+              <access>read-write</access>
+            </field>
+          </fields>
+        </register>
+        <register>
+          <name>TIMER2</name>
+          <description>Timer TestReg</description>
+          <addressOffset>0</addressOffset>
+          <size>65</size>
+          <resetValue>0</resetValue>
+          <resetMask>0xFFFFFFFFFFFFFFFF</resetMask>
+          <fields>
+            <field>
+              <name>TIMER</name>
+              <description>System timer bits.</description>
+              <lsb>0</lsb>
+              <msb>63</msb>
+              <access>read-write</access>
+            </field>
+          </fields>
+        </register>
+        <register>
+          <name>TestRegister</name>
+          <description>TestRegister</description>
+          <addressOffset>8</addressOffset>
+          <size>32</size>
+          <resetValue>0</resetValue>
+          <resetMask>4294967295</resetMask>
+          <fields>
+            <field>
+              <name>TestBitfield</name>
+              <description>TestBitfield</description>
+              <lsb>0</lsb>
+              <msb>31</msb>
+              <access>read-write</access>
+              <modifiedWriteValues>oneToClear</modifiedWriteValues>
+            </field>
+          </fields>
+        </register>
+      </registers>
+    </peripheral>
+  </peripherals>
+</device>

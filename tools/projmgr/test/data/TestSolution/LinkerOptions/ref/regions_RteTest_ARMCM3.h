@@ -51,7 +51,7 @@
 
 // <h> RAM Configuration
 // =======================
-// <h> __RAM0 (is rw memory: IRAM1 from DFP)
+// <h> __RAM0 (is rwx memory: IRAM1 from DFP)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region. Default: 0x20000000
 //   <i> Contains uninitialized RAM, Stack, and Heap

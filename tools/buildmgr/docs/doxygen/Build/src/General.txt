@@ -57,6 +57,14 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.8.0</td>
+    <td>Release notes:
+      - added CLANG_TI support for TI Arm Clang compiler
+      - updated cbuild2cmake utility v0.9.6
+      - updated cbuild utility v2.8.0
+      - updated cpackget utility v2.1.6
+      - updated csolution utility v2.8.0
+    </td>
     <td>2.7.0</td>
     <td>Release notes:
       - extended 'language-C' and 'language-CPP' supported values

@@ -63,6 +63,7 @@ private:
   bool CheckRequirements(RtePackage* pKg);
   bool CheckRequirements_Packages(RteItem* requirement);
   bool CheckLicense(RtePackage* pKg, CheckFilesVisitor& fileVisitor);
+  bool CheckLicenseFile(RteItem* item, const std::string& path);
   bool CheckFeatureDevice(RteDeviceProperty* prop, const std::string& devName);
   bool CheckFeatureBoard(RteItem* prop, const std::string& boardName);
   bool CheckDeviceProperties(RtePackage* pKg);
@@ -88,7 +89,7 @@ private:
   std::map<std::string, std::list<RteDeviceItem*> > m_allItems;
   std::map<std::string, std::list<RteDeviceItem*> > m_allDevices;
   std::string m_pdscFullpath;
-  std::map<std::string, RteBoard*> boardsFound;
+  std::map<std::string, RteBoard*> m_boardsFound;
 
   FEATURE_TABLE m_featureTableDevice;
   FEATURE_TABLE m_featureTableBoard;

@@ -122,7 +122,14 @@ protected:
    * @brief get cmsis-toolbox version from manifest file
    * @return version as string
   */
-  std::string GetToolboxVersion(const std::string& manifestFilePath);
+  const std::string GetToolboxVersion(const std::string& manifestFilePath);
+
+  /**
+   * @brief get debug adapters file path
+   * @return file path or empty string if it does not exist
+  */
+  const std::string GetDebugAdaptersFile(void);
+
 protected:
   ProjMgrParser m_parser;
   ProjMgrExtGenerator m_extGenerator;
@@ -145,6 +152,7 @@ protected:
   std::string m_clayerSearchPath;
   std::string m_export;
   std::string m_selectedToolchain;
+  std::string m_activeTargetSet;
   bool m_checkSchema;
   bool m_missingPacks;
   bool m_updateRteFiles;
@@ -172,6 +180,7 @@ protected:
   bool RunListConfigs();
   bool RunListDependencies();
   bool RunListContexts();
+  bool RunListTargetSets();
   bool RunListGenerators();
   bool RunListLayers();
   bool RunListToolchains();

@@ -5,3 +5,5 @@ project:
   components:
     - component: Startup
     - component: CORE
+    - component: RteTest:scvd
+      for-context: +TestHW2

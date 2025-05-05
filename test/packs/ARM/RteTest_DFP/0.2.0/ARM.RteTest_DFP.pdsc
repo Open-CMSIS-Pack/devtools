@@ -29,7 +29,14 @@
         RteTest ARM M Device Family
       </description>
       <algorithm name="Device/ARM/Flash/FAMILY.FLM" start="0x00000000" size="0x00040000"  default="1"/>
-
+      <algorithm name="Device/ARM/Flash/NonDefaultAlgo.FLM" start="0x00000000" size="0x00010000"/>
+      <algorithm name="Device/ARM/Flash/IARAlgo.FLM" start="0x00000000" size="0x00020000" default="1" style="IAR"/>
+      <debugvars configfile="Device/ARM/Debug/ARMCM.dbgconf" version="0.0.2">
+        __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
+        __var TraceClk_Pin   = 0x00040002;   // PE2
+        __var TraceD0_Pin    = 0x00040003;   // PE3
+        __var TraceD1_Pin    = 0x00040004;   // PE4
+      </debugvars>
       <sequences>
         <!-- Override for Pre-Defined Sequences -->
         <sequence name="DebugDeviceUnlock">
@@ -73,6 +80,8 @@
               Message(2, "Incorrect ID! Abort connection.");
             </block>
           </control>
+          <control while="(ReadDP(DP_CTRL_STAT) &amp; 0xA0000000) != 0xA0000000" timeout="1000000"/>
+          <block/>
         </sequence>
 
         <!-- default DebugPortStop extended with Option Byte Loading capability -->
@@ -128,6 +137,16 @@
         <processor Pname="cm0_core0" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000" />
         <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
         <compile header="Device/ARM/ARMCM0/Include/ARMCM0.h" define="ARMCM0"/>
+        <memory name="FLASH_DUAL" access="rx" start="0x00000000" size="0x00080000" startup="1" default="1" Pname="cm0_core0"/>
+        <memory name="SRAM_DUAL"  access="rwx" start="0x80000000" size="0x00020000" uninit="1" default="1" Pname="cm0_core1"/>
+        <debugport __dp="0"/>
+        <debugport __dp="1"/>
+        <debug defaultResetSequence="ResetSystem0" Pname="cm0_core0" __dp="0" __ap="0"/>
+        <debug defaultResetSequence="ResetSystem1" Pname="cm0_core1" __dp="1" __ap="0">
+          <datapatch  __dp="0" address="0xE0040FCC" value="0x11" info="DEVTYPE"/>
+          <datapatch  __dp="0" __ap="0" address="0xE0040FF0" value="0x0D" info="CIDR0"/>
+        </debug>
+        <algorithm name="Device/ARM/Flash/CortexM4Dual.FLM" start="0x000A0000" size="0x00020000" RAMstart="0x000C0000" RAMsize="0x00040000" Pname="cm0_core1" default="1"/>
       </device>
       <device Dname="RteTest_ARMCM0_Single">
         <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
@@ -145,7 +164,12 @@
       <description>
         RteTest ARM Cortex M3 is a clone description from ARM.CMSIS pack.
       </description>
-      <debug svd="Device/ARM/SVD/ARMCM3.svd"/>  <!-- SVD files do not contain any peripheral -->
+      <debug svd="Device/ARM/SVD/ARMCM3.svd">  <!-- SVD files do not contain any peripheral -->
+        <datapatch __apid="4" address="0xE0040FF4" value="0x90" mask="0xFF" info="CIDR1"/>
+      </debug>
+      <accessportV1 __apid="2" index="20" HPROT="0x2" SPROT="1"/>
+      <accessportV2 __apid="4" address="0x00400000" HPROT="0xF" SPROT="0"/>
+
       <memory id="IROM1" start="0x00000000" size="0x00040000" startup="1" default="1"/>
       <memory id="IRAM1" start="0x20000000" size="0x00020000" uninit="1" default="1"/>
 
@@ -161,7 +185,23 @@
       <description>
         RteTest ARM Cortex M4 is a clone description from ARM.CMSIS pack.
       </description>
+      <debugconfig default="jtag" clock="40000000" swj="0" dormant="1" sdf="Device/ARM/Debug/ARMCM4.sdf"/>
+      <debugport __dp="0">
+        <jtag tapindex="7"/> 
+      </debugport>
+      <debugport __dp="1">
+        <swd targetsel="8"/>
+      </debugport>
+      <debugvars configfile="Device/ARM/Debug/ARMCM4.dbgconf" version="0.2.1" >
+        __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
+        __var TraceClk_Pin   = 0x00040003;   // PE2
+        __var TraceD0_Pin    = 0x00040003;   // PE4
+      </debugvars>
       <debug svd="Device/ARM/SVD/ARMCM4.svd"/>  <!-- SVD files do not contain any peripheral -->
+      <accessportV1 __apid="1" index="10"/>
+      <accessportV2 __apid="2" address="0x00200000"/>
+      <accessportV2 __apid="3" address="0x00300000" parent="2"/>
+
       <memory name="FLASH" access="rx" start="0x00000000" size="0x00040000" startup="1" default="1"/>
       <memory name="SRAM"  access="rwx" start="0x20000000" size="0x00020000" uninit="1" default="1"/>
       <algorithm name="Device/ARM/Flash/CortexM4SubFamily.FLM" start="0x00000000" size="0x00040000" default="1"/>
@@ -173,7 +213,7 @@
 
       <variant Dvariant="RteTest_ARMCM4_NOFP">
         <processor Dfpu="NO_FPU"/>
-        <algorithm name="Device/ARM/Flash/CortexM4Device.FLM" start="0x00000000" size="0x00020000" default="0"/>
+        <algorithm name="Device/ARM/Flash/CortexM4Device.FLM" start="0x00000000" size="0x00020000" default="1"/>
       </variant>
 
       <variant Dvariant="RteTest_ARMCM4_FP">
@@ -424,6 +464,13 @@
       </files>
     </component>
 
+    <component Cclass="RteTest" Cgroup="scvd" Cversion="1.1.1" condition="ARMCM3 RteTest">
+    <description>scvd test</description>
+      <files>
+        <file category="other"  name="Components/RteTest.scvd"/>
+      </files>
+    </component>
+
   </components>
 
   <boards>
@@ -448,6 +495,7 @@
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
       <memory name="RAM-External"   access="rwx" start="0x90000000" size="0x00800000"/>
       <memory name="Flash-External" access="rx"  start="0x70000000" size="0x04000000"/>
+      <debugProbe debugClock="30000000" debugLink="swd" name="CMSIS-DAP"/>
     </board>
     <board name="RteTest Test board no mounted device" vendor="Keil" revision="2.2.2">
       <description>uVision Simulator</description>

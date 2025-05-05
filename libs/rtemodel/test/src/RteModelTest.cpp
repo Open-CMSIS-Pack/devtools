@@ -472,6 +472,13 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   EXPECT_EQ(fi->GetInfoString(activeTarget->GetName()),
     "RTE/Device/RteTest_ARMCM3/system_ARMCM3.c@1.0.1 (update@1.2.2) from ARM::Device:Startup&RteTest Startup@2.0.3");
 
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM.dbgconf.base@0.0.2"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM.dbgconf"));
+  fi = activeCprjProject->GetFileInstance("RTE/Device/RteTest_ARMCM3/ARMCM.dbgconf");
+  ASSERT_NE(fi, nullptr);
+  EXPECT_EQ(fi->GetInfoString(activeTarget->GetName()),
+    "RTE/Device/RteTest_ARMCM3/ARMCM.dbgconf@0.0.2 (up to date)");
+
   RtePackageMap usedPacks;
   activeCprjProject->GetUsedPacks(usedPacks, activeTarget->GetName());
   EXPECT_EQ(usedPacks.size(), 2);
@@ -592,7 +599,7 @@ TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
   // additionally test support for RTE folder with spaces
   // take existing file instance
   // use its file to create path with another RTE directory
-  RteFile* f = fi ? fi->GetFile(loadedCprjProject->GetActiveTargetName()) : nullptr ;
+  RteItem* f = fi ? fi->GetFile(loadedCprjProject->GetActiveTargetName()) : nullptr ;
   ASSERT_NE(f, nullptr);
   const string& deviceName = loadedCprjProject->GetActiveTarget()->GetDeviceName();
   string pathName = f->GetInstancePathName(deviceName, 0 , "RTE With Spaces");
@@ -706,7 +713,7 @@ TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
   fi = loadedCprjProject->GetFileInstance("CONFIG_FOLDER/Device/RteTest_ARMCM3/system_ARMCM3.c");
   EXPECT_TRUE(fi && fi->GetVersionString() == "1.0.1");
   const string& targetName = loadedCprjProject->GetActiveTargetName();
-  RteFile* f = fi->GetFile(targetName);
+  auto f = fi->GetFile(targetName);
   EXPECT_TRUE(loadedCprjProject->UpdateFileToNewVersion(fi, f, true));
   EXPECT_TRUE(fi && fi->GetVersionString() == "1.2.2");
   // check if backups and new version files have been created
@@ -863,7 +870,7 @@ TEST_F(RteModelPrjTest, RteNoComponents)
   const string rteDir = RteUtils::ExtractFilePath(RteTestM3NoComponents_cprj, true) + rteFolder;
   const string targetFolder = "/_Target_1/";
   const string rteComp = rteDir + targetFolder + "RTE_Components.h";
-  EXPECT_FALSE(RteFsUtils::Exists(rteDir));
+  EXPECT_TRUE(RteFsUtils::Exists(rteDir)); // due to dbgconf file
   EXPECT_FALSE(RteFsUtils::Exists(rteComp));
 }
 
@@ -1143,6 +1150,15 @@ TEST_F(RteModelPrjTest, LoadCprjM4) {
   EXPECT_EQ((fs::status(deviceDir + "startup_ARMCM4.c.base@2.0.3", ec).permissions() & write_mask), fs::perms::none);
 
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "system_ARMCM4.c.update@1.2.2"));
+
+  // dbgcfg
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM4.dbgconf.base@0.1.0"));
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM4.dbgconf.update@0.2.1"));
+
+  auto fi = activeCprjProject->GetFileInstance("RTE/Device/RteTest_ARMCM4_FP/ARMCM4.dbgconf");
+  ASSERT_NE(fi, nullptr);
+  EXPECT_EQ(fi->GetInfoString(activeTarget->GetName()),
+    "RTE/Device/RteTest_ARMCM4_FP/ARMCM4.dbgconf@0.1.0 (update@0.2.1)");
 
   // test regions_h
   string regionsFile = deviceDir + "regions_RteTest_ARMCM4_FP.h";

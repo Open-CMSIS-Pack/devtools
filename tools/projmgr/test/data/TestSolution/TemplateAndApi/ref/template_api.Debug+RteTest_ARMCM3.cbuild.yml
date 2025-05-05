@@ -9,6 +9,9 @@ build:
   device-books:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html
       title: Cortex-M3 Device Generic Users Guide
+  dbgconf:
+    - file: ../data/TestSolution/TemplateAndApi/RTE/Device/RteTest_ARMCM3/ARMCM.dbgconf
+      version: 0.0.2
   processor:
     fpu: off
     core: Cortex-M3

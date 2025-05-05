@@ -12,7 +12,7 @@ build-idx:
       messages:
         errors:
           - "required pack: ARM::Missing_DFP@0.0.9 not installed"
-          - "specified device 'RteTest_ARMCM0' was not found among the installed packs.\nuse 'cpackget' utility to install software packs."
+          - "specified device 'RteTest_ARMCM0' not found in the installed packs. Use:\n  cpackget add Vendor::PackName"
           - processing context 'project+CM0' failed
         info:
           - missing_pack.cbuild-pack.yml - file skipped

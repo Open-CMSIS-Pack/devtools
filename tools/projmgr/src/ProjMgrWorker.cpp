@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1312,8 +1312,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context, BoardOrDevice process) {
     if (!matchedDevice) {
       string msg = "specified device '" +
         (deviceItem.vendor.empty() ? "" : deviceItem.vendor + "::") + deviceItem.name +
-        "' was not found among the installed packs.";
-      msg += "\nuse \'cpackget\' utility to install software packs.";
+        "' not found in the installed packs. Use:\n  cpackget add Vendor::PackName";
       ProjMgrLogger::Get().Error(msg, context.name);
       return false;
     }
@@ -1724,7 +1723,7 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
 
   context.toolchain = GetToolchain(context.compiler);
 
-  GetRegisteredToolchains();
+  GetRegisteredToolchainEnvVars();
   if (!m_regToolchainsEnvVars.empty()) {
     // check if the required environment variable is set
     auto itr = std::find_if(m_regToolchainsEnvVars.begin(), m_regToolchainsEnvVars.end(), [&context](const auto& item) {
@@ -1980,7 +1979,7 @@ RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentIte
     // Free text
     matchedComponents = filteredComponents;
   }
- 
+
   if (matchedComponents.empty()) {
     // Check for default variant if requested variant is empty
     for (const auto& [id, component] : filteredComponents) {
@@ -2094,15 +2093,19 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
         ProjMgrLogger::Get().Warn("conflict: automatic linker script generation overrules specified script '" + context.linker.script + "'", context.name);
         context.linker.script.clear();
       }
-    }
-    else if (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty()) {
-      const auto& groups = context.rteActiveTarget->GetProjectGroups();
-      for (auto group : groups) {
-        for (auto file : group.second) {
-          if (file.second.m_cat == RteFile::Category::LINKER_SCRIPT) {
-            error_code ec;
-            context.linker.script = fs::relative(context.cproject->directory + "/" + file.first, context.directories.cprj, ec).generic_string();
-            break;
+    } else {
+      // check user specified linker script
+      CheckMissingLinkerScript(context);      
+      // search for linker script among selected component files
+      if (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty()) {
+        const auto& groups = context.rteActiveTarget->GetProjectGroups();
+        for (auto group : groups) {
+          for (auto file : group.second) {
+            if (file.second.m_cat == RteFile::Category::LINKER_SCRIPT) {
+              error_code ec;
+              context.linker.script = fs::relative(context.cproject->directory + "/" + file.first, context.directories.cprj, ec).generic_string();
+              break;
+            }
           }
         }
       }
@@ -2125,17 +2128,17 @@ bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
       continue;
     }
     // get base version
-    const string baseVersion = fi.second->GetVersionString();
+    const string baseVersion = fi.second->GetSemVer(true);
     if (!RteFsUtils::Exists(file + '.' + RteUtils::BASE_STRING + '@' + baseVersion)) {
       ProjMgrLogger::Get().Warn("file '" + file + ".base' not found; base version unknown", context.name);
       context.plmStatus[file] = PLM_STATUS_MISSING_BASE;
     } else {
       // get update version
-      const RteFile* f = fi.second->GetFile(context.rteActiveTarget->GetName());
-      const string updateVersion = f ? f->GetVersionString() : "";
+      const RteItem* f = fi.second->GetFile(context.rteActiveTarget->GetName());
+      const string updateVersion = f ? f->GetSemVer(true) : "";
       if (baseVersion != updateVersion) {
         // parse and check each semantic version segment
-        static const regex regEx = regex("(\\d+).(\\d+).(\\d+)");
+        static const regex regEx = regex("(\\d+).(\\d+).(\\d+(?:-.*)*)");
         smatch base, update;
         regex_match(baseVersion, base, regEx);
         regex_match(updateVersion, update, regEx);
@@ -2228,7 +2231,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
           const auto& scope = apiFile->GetAttribute("scope");
           const auto& language = apiFile->GetAttribute("language");
           const auto& select = apiFile->GetAttribute("select");
-          const auto& version = apiFile->GetVersionString();
+          const auto& version = apiFile->GetSemVer();
           context.apiFiles[apiId].push_back({ name, attr, category, language, scope, version, select });
         }
       }
@@ -2249,7 +2252,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       const auto& scope = componentFile->GetAttribute("scope");
       const auto& language = componentFile->GetAttribute("language");
       const auto& select = componentFile->GetAttribute("select");
-      const auto& version = componentFile->GetVersionString();
+      const auto& version = componentFile->GetSemVer();
       switch (RteFile::CategoryFromString(category)) {
       case RteFile::Category::GEN_SOURCE:
       case RteFile::Category::GEN_HEADER:
@@ -2282,7 +2285,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
           default:
             break;
           };
-          const auto& version = originalFile ? originalFile->GetVersionString() : "";
+          const auto& version = originalFile ? originalFile->GetSemVer() : "";
           context.componentFiles[componentId].push_back({ filename, "config", category, language, scope, version });
         }
       }
@@ -2305,7 +2308,7 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         default:
           continue;
         };
-        const auto& version = rteFile->GetVersionString();
+        const auto& version = rteFile->GetSemVer();
         const auto& attr = rteFile->GetAttribute("attr");
         const auto& language = rteFile->GetAttribute("language");
         const auto& scope = rteFile->GetAttribute("scope");
@@ -2467,7 +2470,58 @@ bool ProjMgrWorker::ProcessExecutes(ContextItem& context, bool solutionLevel) {
         return false;
       }
     }
-  }  
+  }
+  return true;
+}
+
+bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
+  context.targetSet = m_activeTargetType.empty() ? "" :
+    m_activeTargetSet.set.empty() ? "<default>" : m_activeTargetSet.set;
+  if (!m_activeTargetSet.debugger.name.empty()) {
+    context.debugger.name = m_activeTargetSet.debugger.name;
+    context.debugger.info = m_activeTargetSet.info;
+    if (!m_activeTargetSet.debugger.clock.empty()) {
+      context.debugger.clock = RteUtils::StringToULL(m_activeTargetSet.debugger.clock);
+    }
+    context.debugger.protocol = m_activeTargetSet.debugger.protocol;
+    if (!m_activeTargetSet.debugger.dbgconf.empty()) {
+      context.debugger.dbgconf = m_activeTargetSet.debugger.dbgconf;
+      if (!ProcessSequenceRelative(context, context.debugger.dbgconf, context.csolution->directory)) {
+        return false;
+      }
+      if (RteFsUtils::IsRelative(context.debugger.dbgconf)) {
+        RteFsUtils::NormalizePath(context.debugger.dbgconf, context.directories.cprj);
+      }
+    }
+    context.debugger.startPname = m_activeTargetSet.debugger.startPname;
+  }
+  for (const auto& [filename, fi] : context.rteActiveProject->GetFileInstances()) {
+    if (fi->HasAttribute("configfile")) {
+      string dbgconf = filename;
+      RteFsUtils::NormalizePath(dbgconf, context.cproject->directory);
+      context.dbgconf = { dbgconf, fi };
+      break;
+    }
+  }
+  return true;
+}
+
+bool ProjMgrWorker::ProcessImages(ContextItem& context) {
+  const vector<ImageItem>& images = m_activeTargetSet.images;
+  for (auto item : images) {
+    if (!item.image.empty()) {
+      if (item.type.empty()) {
+        item.type = ProjMgrUtils::FileTypeFromExtension(item.image);
+      }
+      if (!ProcessSequenceRelative(context, item.image, context.csolution->directory)) {
+        return false;
+      }
+      if (RteFsUtils::IsRelative(item.image)) {
+        RteFsUtils::NormalizePath(item.image, context.directories.cprj);
+      }
+      context.images.push_back(item);
+    }
+  }
   return true;
 }
 
@@ -2759,7 +2813,9 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
 
   // Additional memory
   for (auto& item : context.memory) {
-    RteFsUtils::NormalizePath(item.algorithm, context.csolution->directory);
+    if (!item.algorithm.empty()) {
+      RteFsUtils::NormalizePath(item.algorithm, context.csolution->directory);
+    }
   }
 
   // Optimize
@@ -3363,7 +3419,10 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
     // adjust relative path according to the given reference
     if (!fs::equivalent(outDir, ref, ec)) {
       const string absPath = RteFsUtils::MakePathCanonical(fs::path(item).is_relative() ? ref + "/" + item : item);
-      item = RteFsUtils::RelativePath(absPath, outDir, withHeadingDot);
+      const string relPath = RteFsUtils::RelativePath(absPath, outDir, withHeadingDot);
+      if (!relPath.empty()) {
+        item = relPath;
+      }
     }
   }
   return true;
@@ -3486,7 +3545,7 @@ bool ProjMgrWorker::CheckBoardDeviceInLayer(const ContextItem& context, const Cl
     BoardItem forBoard, board;
     GetBoardItem(clayer.forBoard, forBoard);
     GetBoardItem(context.board, board);
-    if ((!forBoard.name.empty() && (forBoard.name != board.name)) || 
+    if ((!forBoard.name.empty() && (forBoard.name != board.name)) ||
         (!forBoard.vendor.empty()   && !board.vendor.empty()   && (forBoard.vendor != board.vendor)) ||
         (!forBoard.revision.empty() && !board.revision.empty() && (forBoard.revision != board.revision))) {
       return false;
@@ -3496,7 +3555,7 @@ bool ProjMgrWorker::CheckBoardDeviceInLayer(const ContextItem& context, const Cl
     DeviceItem forDevice, device;
     GetDeviceItem(clayer.forDevice, forDevice);
     GetDeviceItem(context.device, device);
-    if ((!forDevice.name.empty() && (forDevice.name != device.name)) || 
+    if ((!forDevice.name.empty() && (forDevice.name != device.name)) ||
         (!forDevice.vendor.empty() && !device.vendor.empty() && (forDevice.vendor != device.vendor)) ||
         (!forDevice.pname.empty()  && !device.pname.empty()  && (forDevice.pname != device.pname))) {
       return false;
@@ -3710,6 +3769,8 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
       }
     }
   }
+  ret &= ProcessDebuggers(context);
+  ret &= ProcessImages(context);
   CheckMissingPackRequirements(context.name);
   return ret;
 }
@@ -4032,6 +4093,32 @@ bool ProjMgrWorker::ListContexts(vector<string>& contexts, const string& filter,
   if (!ymlOrder) {
     std::sort(contexts.begin(), contexts.end());
   }
+  return true;
+}
+
+bool ProjMgrWorker::ListTargetSets(vector<string>& targetSets, const string& filter) {
+  if (m_contexts.empty()) {
+    return false;
+  }
+  vector<string> targetSetsVec;
+
+  for (const auto& [name, type] : m_parser->GetCsolution().targetTypes) {
+    for (const auto& item : type.targetSet) {
+      targetSetsVec.push_back(name + (item.set.empty() ? "" : '@' + item.set));
+    }
+  }
+
+  if (!filter.empty()) {
+    vector<string> filteredTargetSets;
+    RteUtils::ApplyFilter(targetSetsVec, RteUtils::SplitStringToSet(filter), filteredTargetSets);
+    if (filteredTargetSets.empty()) {
+      ProjMgrLogger::Get().Error("no target-set was found with filter '" + filter + "'");
+      return false;
+    }
+    targetSetsVec = filteredTargetSets;
+  }
+  targetSets.assign(targetSetsVec.begin(), targetSetsVec.end());
+
   return true;
 }
 
@@ -4380,12 +4467,21 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
 }
 
 bool ProjMgrWorker::ParseContextSelection(
-  const vector<string>& contextSelection, const bool checkCbuildSet)
+  const vector<string>& contextSelection, const bool checkCbuildSet, const string activeTargetSet)
 {
   vector<string> ymlOrderedContexts;
   ListContexts(ymlOrderedContexts, RteUtils::EMPTY_STRING, true);
 
-  if (!checkCbuildSet) {
+  if (checkCbuildSet && !activeTargetSet.empty()) {
+    ProjMgrLogger::Get().Error("invalid arguments: '-a' option cannot be used in combination with '-S'");
+    return false;
+  }
+  else if (!activeTargetSet.empty()) {
+    if (!ParseTargetSetContextSelection(activeTargetSet)) {
+      return false;
+    }
+  }
+  else if (!checkCbuildSet) {
     // selected all contexts to process, when contextSelection is empty
     // otherwise process contexts from contextSelection
     const auto& filterError = ProjMgrUtils::GetSelectedContexts(
@@ -4478,18 +4574,21 @@ bool ProjMgrWorker::IsContextSelected(const string& context) {
 }
 
 bool ProjMgrWorker::ListToolchains(vector<ToolchainItem>& toolchains) {
+  // If list toolchains command is fired
+  if (m_selectedContexts[0].empty()) {
+    // list registered toolchains
+    GetRegisteredToolchains();
+    if (m_toolchains.empty()) {
+      return false;
+    }
+    toolchains = m_toolchains;
+    return true;
+  }
+
   bool allSupported = true;
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
-    if (selectedContext.empty()) {
-      // list registered toolchains
-      GetRegisteredToolchains();
-      if (m_toolchains.empty()) {
-        return false;
-      }
-      toolchains = m_toolchains;
-      return true;
-    }
+
     // list required toolchains for selected contexts
     if (!LoadPacks(context)) {
       return false;
@@ -4513,10 +4612,7 @@ bool ProjMgrWorker::ListEnvironment(EnvironmentList& env) {
   return true;
 }
 
-void ProjMgrWorker::GetRegisteredToolchains(void) {
-  if (!m_toolchains.empty()) {
-    return;
-  }
+void ProjMgrWorker::GetRegisteredToolchainEnvVars(void) {
   // extract toolchain info from environment variables
   static const regex regEx = regex("(\\w+)_TOOLCHAIN_(\\d+)_(\\d+)_(\\d+)=(.*)");
   for (const auto& envVar : m_envVars) {
@@ -4528,6 +4624,17 @@ void ProjMgrWorker::GetRegisteredToolchains(void) {
       m_regToolchainsEnvVars[sm[1]][string(sm[2]) + '.' + string(sm[3]) + '.' + string(sm[4])] = sm[5];
     }
   }
+
+  if (m_regToolchainsEnvVars.empty()) {
+    m_toolchainErrors[MessageType::Warning].insert("no compiler registered. Add path to compiler 'bin' directory with environment variable <name>_TOOLCHAIN_<major>_<minor>_<patch>. <name> is one of AC6, GCC, IAR, CLANG");
+  }
+}
+
+void ProjMgrWorker::GetRegisteredToolchains(void) {
+  if (!m_toolchains.empty()) {
+    return;
+  }
+  GetRegisteredToolchainEnvVars();
   // iterate over registered toolchains
   for (const auto& [toolchainName, toolchainVersions] : m_regToolchainsEnvVars) {
     for (const auto& [toolchainVersion, toolchainRoot] : toolchainVersions) {
@@ -4539,10 +4646,6 @@ void ProjMgrWorker::GetRegisteredToolchains(void) {
         }
       }
     }
-  }
-
-  if (m_regToolchainsEnvVars.empty()) {
-    m_toolchainErrors[MessageType::Warning].insert("no compiler registered. Add path to compiler 'bin' directory with environment variable <name>_TOOLCHAIN_<major>_<minor>_<patch>. <name> is one of AC6, GCC, IAR, CLANG");
   }
 }
 
@@ -4866,10 +4969,10 @@ bool ProjMgrWorker::ListConfigFiles(vector<string>& configFiles) {
           const string absFile = fs::path(context.cproject->directory).append(fi.second->GetInstanceName()).generic_string();
           configEntry += "\n    - " + absFile;
           // get base version
-          const string baseVersion = fi.second->GetVersionString();
+          const string baseVersion = fi.second->GetSemVer(true);
           configEntry += " (base@" + baseVersion + ")";
           // get update version
-          const string updateVersion = fi.second->GetFile(context.rteActiveTarget->GetName())->GetVersionString();
+          const string updateVersion = fi.second->GetFile(context.rteActiveTarget->GetName())->GetSemVer(true);
           if (updateVersion != baseVersion) {
             configEntry += " (update@" + updateVersion + ")";
           }
@@ -5212,6 +5315,19 @@ bool ProjMgrWorker::CheckMissingFiles() {
   return !error;
 }
 
+void ProjMgrWorker::CheckMissingLinkerScript(ContextItem& context) {
+  // check linker script existence
+  if (!context.linker.script.empty()) {
+    string script = context.linker.script;
+    if (RteFsUtils::IsRelative(context.linker.script)) {
+      RteFsUtils::NormalizePath(script, context.directories.cprj);
+    }
+    if (!RteFsUtils::Exists(script)) {
+      m_missingFiles.insert({ script, FileNode() });
+    }
+  }
+}
+
 void ProjMgrWorker::CollectUnusedPacks() {
   for (const auto& contextName : m_selectedContexts) {
     auto& context = m_contexts[contextName];
@@ -5225,4 +5341,54 @@ void ProjMgrWorker::CollectUnusedPacks() {
       }
     }
   }
+}
+
+bool ProjMgrWorker::ParseTargetSetContextSelection(const string& activeTargetSet) {
+  // get project-contexts from active target-set
+  if (!GetActiveTargetSet(activeTargetSet)) {
+    return false;
+  }
+  m_selectedContexts.clear();
+  const auto& targetType = '+' + m_activeTargetType;
+  for (const auto& item : m_activeTargetSet.images) {
+    if (!item.context.empty()) {
+      m_selectedContexts.push_back(item.context + targetType);
+    }
+  }
+  if (m_selectedContexts.empty()) {
+    // when target-set is missing under target-types the default value is the first project with first build-type
+    vector<string> contexts;
+    ListContexts(contexts, targetType, true);
+    m_selectedContexts.push_back(contexts.front());
+  } else {
+    // validate context selection
+    if (!ValidateContexts(m_selectedContexts, false)) {
+      return false;
+    }   
+  }
+  return true;
+}
+
+bool ProjMgrWorker::GetActiveTargetSet(const string& activeTargetSet) {
+  const auto& targetType = RteUtils::GetPrefix(activeTargetSet, '@');
+  const auto& targetSet = RteUtils::GetSuffix(activeTargetSet, '@');
+  bool targetSetFound = false;
+  for (const auto& [name, type] : m_parser->GetCsolution().targetTypes) {
+    if (name == targetType) {
+      for (const auto& item : type.targetSet) {
+        if (item.set == targetSet) {
+          m_activeTargetSet = item;
+          targetSetFound = true;
+          break;
+        }
+      }
+      m_activeTargetType = targetType;
+      break;
+    }
+  }
+  if (m_activeTargetType.empty() || !targetSetFound) {
+    ProjMgrLogger::Get().Error("'" + activeTargetSet + "' is not selectable as active target-set");
+    return false;
+  }
+  return true;
 }

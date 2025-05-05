@@ -91,7 +91,7 @@ bool CreateModel::PrintPdscFiles(std::list<std::string>& pdscFiles)
  * @param bSkipCheckForOtherPdsc skip check if there are other PDSC files in package
  * @return passed / failed
  */
-bool CreateModel::AddPdsc(const string& pdscFile, bool bSkipCheckForOtherPdsc /* = false */)
+bool CreateModel::AddPdsc(const string& pdscFile, bool bSkipCheckForOtherPdsc /* = false */, bool validatePdsc /* = false */)
 {
   if(pdscFile.empty()) {
     LogMsg("M202");
@@ -116,7 +116,7 @@ bool CreateModel::AddPdsc(const string& pdscFile, bool bSkipCheckForOtherPdsc /*
     }
   }
 
-  if(m_validatePdsc) {
+  if(m_validatePdsc && validatePdsc) {
     if(!XmlChecker::Validate(pdscFile, m_schemaFile)) {
       ; // continue checking
     }

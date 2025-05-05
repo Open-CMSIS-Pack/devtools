@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -38,6 +38,8 @@ private:
   void SetMiscNode(YAML::Node miscNode, const vector<MiscItem>& misc);
   void SetDefineNode(YAML::Node node, const vector<string>& vec);
   void SetBooksNode(YAML::Node node, const std::vector<BookItem>& books, const std::string& dir);
+  void SetDebugConfigNode(YAML::Node node, const ContextItem* context);
+  void SetPLMStatus(YAML::Node node, const ContextItem* context, const string& file);
   bool m_ignoreRteFileMissing;
 };
 
@@ -80,6 +82,7 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
     SetNodeValue(contextNode[YAML_DEVICE_PACK], context->devicePack->GetID());
   }
   SetBooksNode(contextNode[YAML_DEVICE_BOOKS], context->deviceBooks, context->directories.cbuild);
+  SetDebugConfigNode(contextNode[YAML_DBGCONF], context);
   SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
   SetPacksNode(contextNode[YAML_PACKS], context);
   SetControlsNode(contextNode, context, context->controls.processed);
@@ -91,15 +94,14 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
   }
   SetDefineNode(contextNode[YAML_DEFINE], defines);
   SetDefineNode(contextNode[YAML_DEFINE_ASM], defines);
-  vector<string> includes;
   if (context->rteActiveTarget != nullptr) {
     for (auto include : context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_NONE)) {
       RteFsUtils::NormalizePath(include, context->cproject->directory);
-      CollectionUtils::PushBackUniquely(includes, FormatPath(include, context->directories.cbuild));
+      include = FormatPath(include, context->directories.cbuild);
+      SetNodeValueUniquely(contextNode[YAML_ADDPATH], include);
+      SetNodeValueUniquely(contextNode[YAML_ADDPATH_ASM], include);
     }
   }
-  SetNodeValue(contextNode[YAML_ADDPATH], includes);
-  SetNodeValue(contextNode[YAML_ADDPATH_ASM], includes);
   SetOutputDirsNode(contextNode[YAML_OUTPUTDIRS], context);
   SetOutputNode(contextNode[YAML_OUTPUT], context);
   SetComponentsNode(contextNode[YAML_COMPONENTS], context);
@@ -153,6 +155,19 @@ void ProjMgrCbuild::SetComponentsNode(YAML::Node node, const ContextItem* contex
   }
 }
 
+void ProjMgrCbuild::SetDebugConfigNode(YAML::Node node, const ContextItem* context) {
+  string dbgconf = context->debugger.dbgconf.empty() ? context->dbgconf.first : context->debugger.dbgconf;
+  if (!dbgconf.empty()) {
+    YAML::Node fileNode;
+    SetNodeValue(fileNode[YAML_FILE], FormatPath(dbgconf, context->directories.cbuild));
+    if (dbgconf == context->dbgconf.first) {
+      SetNodeValue(fileNode[YAML_VERSION], context->dbgconf.second->GetSemVer(true));
+      SetPLMStatus(fileNode, context, dbgconf);
+    }
+    node.push_back(fileNode);
+  }
+}
+
 void ProjMgrCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem* context, const string& componentId) {
   if (context->componentFiles.find(componentId) != context->componentFiles.end()) {
     for (const auto& [file, attr, category, language, scope, version, select] : context->componentFiles.at(componentId)) {
@@ -165,46 +180,50 @@ void ProjMgrCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem* co
       SetNodeValue(fileNode[YAML_VERSION], version);
       SetNodeValue(fileNode[YAML_SELECT], select);
       if (attr == "config") {
-        string directory = RteUtils::ExtractFilePath(file, false);
-        string name = RteUtils::ExtractFileName(file);
-
-        // lambda to get backup file with specified file filter
-        auto GetBackupFile = [&](const string& fileFilter) {
-          list<string> backupFiles;
-          RteFsUtils::GrepFileNames(backupFiles, directory, fileFilter + "@*");
-
-          // Return empty string if no backup files found
-          if (backupFiles.size() == 0) {
-            return RteUtils::EMPTY_STRING;
-          }
-
-          // Warn if multiple backup files are found
-          //This is a safeguard. however, this condition should never be triggered
-          if (backupFiles.size() > 1) {
-            ProjMgrLogger::Get().Warn(
-              "'" + directory + "' contains more than one '" + fileFilter + " file, PLM may fail");
-          }
-
-          return FormatPath(backupFiles.front().c_str(), context->directories.cbuild);
-        };
-
-        // Get base and update backup files
-        string baseFile = GetBackupFile(name + '.' + RteUtils::BASE_STRING);
-        string updateFile = GetBackupFile(name + '.' + RteUtils::UPDATE_STRING);
-
-        // Add nodes if both base and update files exist
-        if (!baseFile.empty() && !updateFile.empty()) {
-          SetNodeValue(fileNode[YAML_BASE], baseFile);
-          SetNodeValue(fileNode[YAML_UPDATE], updateFile);
-        }
-
-        // Add PLM Status
-        if (context->plmStatus.find(file) != context->plmStatus.end()) {
-          SetNodeValue(fileNode[YAML_STATUS], context->plmStatus.at(file));
-        }
+        SetPLMStatus(fileNode, context, file);
       }
       node.push_back(fileNode);
     }
+  }
+}
+
+void ProjMgrCbuild::SetPLMStatus(YAML::Node node, const ContextItem* context, const string& file) {
+  string directory = RteUtils::ExtractFilePath(file, false);
+  string name = RteUtils::ExtractFileName(file);
+
+  // lambda to get backup file with specified file filter
+  auto GetBackupFile = [&](const string& fileFilter) {
+    list<string> backupFiles;
+    RteFsUtils::GrepFileNames(backupFiles, directory, fileFilter + "@*");
+
+    // Return empty string if no backup files found
+    if (backupFiles.size() == 0) {
+      return RteUtils::EMPTY_STRING;
+    }
+
+    // Warn if multiple backup files are found
+    //This is a safeguard. however, this condition should never be triggered
+    if (backupFiles.size() > 1) {
+      ProjMgrLogger::Get().Warn(
+        "'" + directory + "' contains more than one '" + fileFilter + " file, PLM may fail");
+    }
+
+    return FormatPath(backupFiles.front().c_str(), context->directories.cbuild);
+  };
+
+  // Get base and update backup files
+  string baseFile = GetBackupFile(name + '.' + RteUtils::BASE_STRING);
+  string updateFile = GetBackupFile(name + '.' + RteUtils::UPDATE_STRING);
+
+  // Add nodes if both base and update files exist
+  if (!baseFile.empty() && !updateFile.empty()) {
+    SetNodeValue(node[YAML_BASE], baseFile);
+    SetNodeValue(node[YAML_UPDATE], updateFile);
+  }
+
+  // Add PLM Status
+  if (context->plmStatus.find(file) != context->plmStatus.end()) {
+    SetNodeValue(node[YAML_STATUS], context->plmStatus.at(file));
   }
 }
 
@@ -447,15 +466,15 @@ void ProjMgrCbuild::SetControlsNode(YAML::Node node, const ContextItem* context,
   SetNodeValue(node[YAML_UNDEFINE], controls.undefines);
   for (auto addpath : controls.addpaths) {
     RteFsUtils::NormalizePath(addpath, context->directories.cprj);
-    node[YAML_ADDPATH].push_back(FormatPath(addpath, context->directories.cbuild));
+    SetNodeValueUniquely(node[YAML_ADDPATH], FormatPath(addpath, context->directories.cbuild));
   }
   for (auto addpath : controls.addpathsAsm) {
     RteFsUtils::NormalizePath(addpath, context->directories.cprj);
-    node[YAML_ADDPATH_ASM].push_back(FormatPath(addpath, context->directories.cbuild));
+    SetNodeValueUniquely(node[YAML_ADDPATH_ASM], FormatPath(addpath, context->directories.cbuild));
   }
   for (auto delpath : controls.delpaths) {
     RteFsUtils::NormalizePath(delpath, context->directories.cprj);
-    node[YAML_DELPATH].push_back(FormatPath(delpath, context->directories.cbuild));
+    SetNodeValueUniquely(node[YAML_DELPATH], FormatPath(delpath, context->directories.cbuild));
   }
 }
 
