@@ -42,10 +42,10 @@
 // <h> __ROM3 (unused)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
-#define __ROM3_BASE 0
+#define __ROM3_BASE 0x0
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region.
-#define __ROM3_SIZE 0
+#define __ROM3_SIZE 0x0
 // </h>
 
 // </h>
@@ -83,10 +83,10 @@
 // <h> __RAM3 (unused)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
-#define __RAM3_BASE 0
+#define __RAM3_BASE 0x0
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region.
-#define __RAM3_SIZE 0
+#define __RAM3_SIZE 0x0
 // </h>
 
 // </h>
