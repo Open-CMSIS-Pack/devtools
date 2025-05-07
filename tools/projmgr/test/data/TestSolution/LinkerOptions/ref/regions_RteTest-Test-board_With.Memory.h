@@ -24,28 +24,28 @@
 // <h> __ROM1 (unused)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
-#define __ROM1_BASE 0
+#define __ROM1_BASE 0x0
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region.
-#define __ROM1_SIZE 0
+#define __ROM1_SIZE 0x0
 // </h>
 
 // <h> __ROM2 (unused)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
-#define __ROM2_BASE 0
+#define __ROM2_BASE 0x0
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region.
-#define __ROM2_SIZE 0
+#define __ROM2_SIZE 0x0
 // </h>
 
 // <h> __ROM3 (unused)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
-#define __ROM3_BASE 0
+#define __ROM3_BASE 0x0
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region.
-#define __ROM3_SIZE 0
+#define __ROM3_SIZE 0x0
 // </h>
 
 // </h>
@@ -65,28 +65,28 @@
 // <h> __RAM1 (unused)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
-#define __RAM1_BASE 0
+#define __RAM1_BASE 0x0
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region.
-#define __RAM1_SIZE 0
+#define __RAM1_SIZE 0x0
 // </h>
 
 // <h> __RAM2 (unused)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
-#define __RAM2_BASE 0
+#define __RAM2_BASE 0x0
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region.
-#define __RAM2_SIZE 0
+#define __RAM2_SIZE 0x0
 // </h>
 
 // <h> __RAM3 (unused)
 //   <o> Base address <0x0-0xFFFFFFFF:8>
 //   <i> Defines base address of memory region.
-#define __RAM3_BASE 0
+#define __RAM3_BASE 0x0
 //   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>
 //   <i> Defines size of memory region.
-#define __RAM3_SIZE 0
+#define __RAM3_SIZE 0x0
 // </h>
 
 // </h>
