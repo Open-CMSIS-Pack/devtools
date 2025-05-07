@@ -674,6 +674,15 @@ public:
   */
   bool IsConfig() const override { return true; }
 
+   /**
+   * @brief construct full path including filename for a file that should be used when adding file to a project
+   * @param target pointer to RteTarget object for which path needs to be calculated
+   * @param instanceIndex file index for components with multiple instantiation (ignored for this override).
+   * @param rteFolder the "RTE" folder path used for placing files (ignored for this override)
+   * @return full project-relative path including filename and extension
+  */
+  std::string GetInstancePathName(const RteTarget* target, int instanceIndex, const std::string& rteFolder) const override;
+
 
 protected:
   /**

@@ -12,6 +12,8 @@
 #include "RteDevice.h"
 #include "RteFile.h"
 #include "RtePackage.h"
+#include "RteProject.h"
+#include "RteTarget.h"
 #include "RteFsUtils.h"
 #include <map>
 using namespace std;
@@ -199,13 +201,21 @@ TEST(RteItemTest, GetInstancePathName) {
   EXPECT_EQ(pack.GetPackageFileName(), packFileName);
   string cmsisPackRoot = RteFsUtils::MakePathCanonical(pack.GetAbsolutePackagePath());
 
+  RteModel globalModel;
+  globalModel.SetRootFileName("MySolDir/MySolName.csolution.yml");
+
+  RteProject testProject;
+  testProject.SetModel(&globalModel);
+
+  RteTarget* testTarget = new RteTarget(&testProject, nullptr, "MyTarget", {{"Dname", "MyDevice"}});
+
   RteItem* rteItem = new RteItem("test", &pack);
   rteItem->SetAttribute("name", "MyDir/MyFile.ext");
 
-  auto instanceFile = rteItem->GetInstancePathName("MyDevice", 0, "RTEdir");
+  auto instanceFile = rteItem->GetInstancePathName(testTarget, 0, "RTEdir");
   EXPECT_EQ(instanceFile, cmsisPackRoot + "MyDir/MyFile.ext");
   rteItem->SetAttribute("attr", "config");
-  instanceFile = rteItem->GetInstancePathName("MyDevice", 1, "RTEdir");
+  instanceFile = rteItem->GetInstancePathName(testTarget, 1, "RTEdir");
   EXPECT_EQ(instanceFile, "RTEdir/MyFile.ext");
 
   // add items directly to pack, for our tests it does not matter
@@ -213,25 +223,25 @@ TEST(RteItemTest, GetInstancePathName) {
   c->SetAttribute("Cclass", "Device");
   c->SetAttribute("Cgroup", "Startup");
   RteItem* fileItem = c->CreateChild("files")->CreateChild("file", "./MyDir/MyFile.c");
-  instanceFile = fileItem->GetInstancePathName("MyDevice", 0, "RTEdir");
+  instanceFile = fileItem->GetInstancePathName(testTarget, 0, "RTEdir");
   EXPECT_EQ(instanceFile, cmsisPackRoot + "MyDir/MyFile.c");
 
   // test config file
   fileItem->SetAttribute("attr", "config");
-  instanceFile = fileItem->GetInstancePathName("MyDevice", 0, "RTEdir");
+  instanceFile = fileItem->GetInstancePathName(testTarget, 0, "RTEdir");
   EXPECT_EQ(instanceFile, "RTEdir/Device/MyDevice/MyFile.c");
 
   // check config file with instance index
   c->SetAttribute("maxInstances", 2);
-  instanceFile = fileItem->GetInstancePathName("MyDevice", 0, "RTEdir");
+  instanceFile = fileItem->GetInstancePathName(testTarget, 0, "RTEdir");
   EXPECT_EQ(instanceFile, "RTEdir/Device/MyDevice/MyFile_0.c");
 
   RteDevice* device = new RteDevice(&pack);
   device->SetAttribute("Dname", "MyDevice");
   RteItem* debugVars = device->CreateChild("debugvars");
   debugVars->SetAttribute("configfile", "MyDir/MyConfig.dbgconf");
-  instanceFile = debugVars->GetInstancePathName("MyDevice", 0, "RTEdir");
-  EXPECT_EQ(instanceFile, "RTEdir/Device/MyDevice/MyConfig.dbgconf");
+  instanceFile = debugVars->GetInstancePathName(testTarget, 0, "RTEdir");
+  EXPECT_EQ(instanceFile, "MySolDir/.cmsis/MySolName+MyTarget.dbgconf");
 }
 
 // end of RteItemTest.cpp

@@ -659,9 +659,9 @@ RteFileInstance::RteFileInstance(RteItem* parent) :
   m_tag = "file";
 }
 
-void RteFileInstance::Init(RteItem* f, const string& deviceName, int instanceIndex, const string& rteFolder)
+void RteFileInstance::Init(RteItem* f, const RteTarget* target, int instanceIndex, const string& rteFolder)
 {
-  m_instanceName = f->GetInstancePathName(deviceName, instanceIndex, rteFolder);
+  m_instanceName = f->GetInstancePathName(target, instanceIndex, rteFolder);
   m_instanceIndex = instanceIndex;
   m_fileName = RteUtils::ExtractFileName(m_instanceName);
   m_bRemoved = false;
@@ -901,15 +901,16 @@ string RteFileInstance::GetHeaderComment() const
 
 string RteFileInstance::GetAbsolutePath() const
 {
-  string s;
-  if (IsConfig()) {
+  if(IsConfig()) {
     RteProject* project = GetProject();
-    if (project && !project->GetProjectPath().empty())
-      s = project->GetProjectPath() + m_instanceName;
-  } else {
-    s = GetOriginalAbsolutePath();
+    string projectPath = project ? project->GetProjectPath() : EMPTY_STRING;
+    if(projectPath.empty() || !RteFsUtils::IsRelative(m_instanceName)) {
+      return m_instanceName;
+    } else {
+      return project->GetProjectPath() + m_instanceName;
+    }
   }
-  return s;
+  return GetOriginalAbsolutePath();
 }
 
 RteItem* RteFileInstance::GetFile(const string& targetName) const

@@ -1407,11 +1407,11 @@ public:
   /**
    * @brief initialize the file instance
    * @param f pointer to the original RteItem, represents RteFile or an item associated with a file
-   * @param deviceName device name used in the target
+   * @param target to obtain device name or expand sequences
    * @param instanceIndex instance index, can be > 0  for multi-instance components
    * @param rteFolder the "RTE" folder path used for placing files
   */
-  void Init(RteItem* f, const std::string& deviceName, int instanceIndex, const std::string& rteFolder);
+  void Init(RteItem* f, const RteTarget* target, int instanceIndex, const std::string& rteFolder);
 
   /**
    * @brief update file instance

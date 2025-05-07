@@ -10,7 +10,7 @@ build:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
       title: Cortex-M0 Device Generic Users Guide
   dbgconf:
-    - file: ../../data/TestDefault/RTE/Device/RteTest_ARMCM0/ARMCM.dbgconf
+    - file: ../../data/TestDefault/.cmsis/empty+TEST_TARGET.dbgconf
       version: 0.0.0
   processor:
     fpu: off

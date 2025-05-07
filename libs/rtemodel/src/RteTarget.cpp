@@ -103,7 +103,9 @@ void RteTarget::Clear()
   ClearFilteredComponents();
   ClearCollections();
   ClearMissingPacks();
-  m_filteredModel->Clear();
+  if(m_filteredModel) {
+    m_filteredModel->Clear();
+  }
   m_filterContext->Clear();
   m_dependencySolver->Clear();
   m_bTargetSupported = false;
@@ -131,7 +133,11 @@ std::string RteTarget::ExpandAccessSequences(const std::string& src) const
   const string& compiler = GetAttribute("Tcompiler");
   attributes.AddAttribute(RteConstants::AS_COMPILER, (compiler == "ARMCC") ? "AC6" : compiler);
   // target name as target type
-  attributes.AddAttribute(RteConstants::AS_TARGET_TYPE, GetName());
+  string targetType = RteUtils::GetSuffix(GetName(), '+');
+  if(targetType.empty()) {
+    targetType = GetName();
+  }
+  attributes.AddAttribute(RteConstants::AS_TARGET_TYPE, targetType);
   attributes.AddAttribute(RteConstants::AS_BUILD_TYPE, RteUtils::EMPTY_STRING);
 
   // project and solution
@@ -140,10 +146,17 @@ std::string RteTarget::ExpandAccessSequences(const std::string& src) const
   attributes.AddAttribute(RteConstants::AS_PROJECT, projectName);
   string projectDir = RteUtils::RemoveTrailingBackslash(project->GetProjectPath());
 
+  string solutionName;
+  string solutionDir;
   RteModel* globalModel = GetModel();
-  string solutionDir = globalModel->GetRootFilePath(false); // solution filename
+  solutionName = RteUtils::ExtractFileBaseName( // removes .csolution
+    RteUtils::ExtractFileBaseName(globalModel->GetRootFileName())  // removes .yml
+  );
+  solutionDir = globalModel->GetRootFilePath(false);
+
   if(solutionDir.empty()) {
     solutionDir = projectDir;
+    solutionName = projectName;
     projectDir = ".";
   } else {
     projectDir = RteFsUtils::RelativePath(projectDir, solutionDir);
@@ -153,6 +166,7 @@ std::string RteTarget::ExpandAccessSequences(const std::string& src) const
   attributes.AddAttribute(RteConstants::AS_PROJECT_DIR_BR, projectDir);
   attributes.AddAttribute(RteConstants::AS_SOLUTION_DIR, solutionDir);
   attributes.AddAttribute(RteConstants::AS_SOLUTION_DIR_BR, solutionDir);
+  attributes.AddAttribute(RteConstants::AS_SOLUTION, solutionName);
 
   return RteUtils::ExpandAccessSequences(src, attributes.GetAttributes());
 }
@@ -752,7 +766,6 @@ void RteTarget::CollectComponentSettings(RteComponentInstance* ci)
   const set<RteFile*>& files = GetFilteredFiles(c);
   if (files.empty())
     return;
-  string deviceName = GetFullDeviceName();
   const string& rteFolder = GetRteFolder(ci);
   for (auto itf = files.begin(); itf != files.end(); ++itf) {
     RteFile* f = *itf;
@@ -760,7 +773,7 @@ void RteTarget::CollectComponentSettings(RteComponentInstance* ci)
       continue;
     if (f->IsConfig()) {
       for (int i = 0; i < count; i++) {
-        string id = f->GetInstancePathName(deviceName, i, rteFolder);
+        string id = f->GetInstancePathName(this, i, rteFolder);
         AddComponentInstanceForFile(id, ci);
       }
       continue;
@@ -1467,18 +1480,17 @@ RteItem* RteTarget::GetFile(const RteFileInstance* fi, RteComponent* c, const st
   if(!fi) {
     return nullptr;
   }
-  const string& deviceName = GetFullDeviceName();
   const string& instanceName = fi->GetInstanceName();
   if(c) { // a component file
     int index = fi->GetInstanceIndex();
     for(auto f : GetFilteredFiles(c)) {
-      if(f && f->GetInstancePathName(deviceName, index, rteFolder) == instanceName) {
+      if(f && f->GetInstancePathName(this, index, rteFolder) == instanceName) {
         return f;
       }
     }
   } else {
     auto debugVars = GetDeviceDebugVars();
-    if(debugVars && debugVars->GetInstancePathName(deviceName, 0, rteFolder) == instanceName) {
+    if(debugVars && debugVars->GetInstancePathName(this, 0, rteFolder) == instanceName) {
       return debugVars;
     }
   }

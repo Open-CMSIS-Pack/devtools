@@ -618,6 +618,12 @@ public:
   void SetRootDir(const std::string& rootDir);
 
   /**
+   * @brief set csolution file
+   * @param reference to absolute csolution.yml filename
+  */
+  void SetCsolutionFile(const std::string& csolutionFile);
+
+  /**
    * @brief set check schema
    * @param boolean check schema
   */
@@ -868,6 +874,7 @@ protected:
   std::string m_compilerRoot;
   std::string m_selectedToolchain;
   std::string m_rootDir;
+  std::string m_csolutionFile;
   LoadPacksPolicy m_loadPacksPolicy;
   ContextTypesItem m_types;
   bool m_checkSchema;

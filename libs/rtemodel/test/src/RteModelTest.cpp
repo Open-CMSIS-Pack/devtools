@@ -601,8 +601,7 @@ TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
   // use its file to create path with another RTE directory
   RteItem* f = fi ? fi->GetFile(loadedCprjProject->GetActiveTargetName()) : nullptr ;
   ASSERT_NE(f, nullptr);
-  const string& deviceName = loadedCprjProject->GetActiveTarget()->GetDeviceName();
-  string pathName = f->GetInstancePathName(deviceName, 0 , "RTE With Spaces");
+  string pathName = f->GetInstancePathName(activeTarget, 0 , "RTE With Spaces");
   EXPECT_EQ(pathName, "RTE With Spaces/Device/RteTest_ARMCM3/system_ARMCM3.c");
 }
 
