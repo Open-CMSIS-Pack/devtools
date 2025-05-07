@@ -247,6 +247,10 @@ void ProjMgrWorker::SetRootDir(const std::string& rootDir) {
   m_rootDir = rootDir;
 }
 
+void ProjMgrWorker::SetCsolutionFile(const std::string& csolutionFile) {
+  m_csolutionFile = csolutionFile;
+}
+
 void ProjMgrWorker::SetSelectedToolchain(const std::string& selectedToolchain) {
   m_selectedToolchain = selectedToolchain;
 }
@@ -406,6 +410,7 @@ bool ProjMgrWorker::InitializeModel() {
   }
   m_kernel->SetCmsisPackRoot(m_packRoot);
   m_model->SetCallback(m_kernel->GetCallback());
+  m_model->SetRootFileName(m_csolutionFile);
   return m_kernel->Init();
 }
 
@@ -2095,7 +2100,7 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
       }
     } else {
       // check user specified linker script
-      CheckMissingLinkerScript(context);      
+      CheckMissingLinkerScript(context);
       // search for linker script among selected component files
       if (context.linker.script.empty() && context.linker.regions.empty() && context.linker.defines.empty()) {
         const auto& groups = context.rteActiveTarget->GetProjectGroups();
@@ -5364,7 +5369,7 @@ bool ProjMgrWorker::ParseTargetSetContextSelection(const string& activeTargetSet
     // validate context selection
     if (!ValidateContexts(m_selectedContexts, false)) {
       return false;
-    }   
+    }
   }
   return true;
 }

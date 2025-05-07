@@ -251,6 +251,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
         return ErrorCode::ERROR;
       }
       m_csolutionFile = RteFsUtils::MakePathCanonical(m_csolutionFile);
+      m_worker.SetCsolutionFile(m_csolutionFile);
       m_rootDir = RteUtils::ExtractFilePath(m_csolutionFile, false);
       m_worker.SetRootDir(m_rootDir);
     }

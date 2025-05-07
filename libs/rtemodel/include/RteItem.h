@@ -532,14 +532,14 @@ public:
 
   /**
    * @brief construct full path including filename for a file that should be used when adding file to a project
-   * @param deviceName name of device used in the project
+   * @param target pointer to RteTarget object for which path needs to be calculated
    * @param instanceIndex file index for components with multiple instantiation
    * Gets appended as a string to the base filename before extension if its value >= 0
    * Value of < 0 indicates that parent component can have only one instance
    * @param rteFolder the "RTE" folder path used for placing files
    * @return full project-relative path including filename and extension
   */
-  virtual std::string GetInstancePathName(const std::string& deviceName, int instanceIndex, const std::string& rteFolder) const;
+  virtual std::string GetInstancePathName(const RteTarget* target, int instanceIndex, const std::string& rteFolder) const;
 
   /**
    * @brief check if item provides data matching OS this code is built for: Linux, Windows or Mac OS

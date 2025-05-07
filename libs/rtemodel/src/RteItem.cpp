@@ -842,11 +842,12 @@ string RteItem::GetOriginalAbsolutePath(const string& name) const
   return RteFsUtils::MakePathCanonical(absPath);
 }
 
-string RteItem::GetInstancePathName(const string& deviceName, int instanceIndex, const string& rteFolder) const
+string RteItem::GetInstancePathName(const RteTarget* target, int instanceIndex, const string& rteFolder) const
 {
-  if(IsConfig()) {
+  if(target && IsConfig()) {
     // construct RTE/Device/Dname/fileName.ext
     string pathName = rteFolder + "/";
+     auto deviceName = target->GetFullDeviceName();
     if(!deviceName.empty() && IsDeviceDependent()) {
       pathName += "Device/";
       string device = WildCards::ToX(deviceName);

@@ -558,8 +558,7 @@ RteFileInstance* RteProject::AddFileInstance(RteComponentInstance* ci, RteItem* 
   if (!f || !f->IsConfig())
     return NULL;
 
-  string deviceName = target->GetFullDeviceName();
-  string id = f->GetInstancePathName(deviceName, index, GetRteFolder(ci));
+  string id = f->GetInstancePathName(target, index, GetRteFolder(ci));
   if(ci) {
     target->AddComponentInstanceForFile(id, ci);
   }
@@ -592,10 +591,9 @@ bool RteProject::UpdateFileToNewVersion(RteFileInstance* fi, RteItem* f, bool bM
 
 void RteProject::InitFileInstance(RteFileInstance* fi, RteItem* f, int index, RteTarget* target, const string& savedVersion, const string& rteFolder)
 {
-  string deviceName = target->GetFullDeviceName();
   const string& targetName = target->GetName();
 
-  fi->Init(f, deviceName, index, rteFolder);
+  fi->Init(f, target, index, rteFolder);
   fi->Update(f, false);
   fi->AddTargetInfo(targetName); // set/update supported targets
   fi->SetRemoved(false);
@@ -1073,7 +1071,7 @@ void RteProject::UpdateRte() {
   }
   // add forced copy files
   for(auto f : m_forcedFiles) {
-    string dst = GetProjectPath() + f->GetInstancePathName(EMPTY_STRING, 0, GetRteFolder());
+    string dst = GetProjectPath() + f->GetInstancePathName(nullptr, 0, GetRteFolder());
     if(RteFsUtils::Exists(dst))
       continue;
     string src = f->GetOriginalAbsolutePath();

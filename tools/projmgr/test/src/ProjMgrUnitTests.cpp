@@ -4806,7 +4806,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_UpdateRte) {
   const string expected = "\
 info csolution: config files for each component:\n\
   :\n\
-    - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM.dbgconf \\(base@0.0.2\\)\n\
+    - .*/TestSolution/.cmsis/test\\+CM0.dbgconf \\(base@0.0.2\\)\n\
   ARM::Device:Startup&RteTest Startup@2.0.3:\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct \\(base@1.0.0\\)\n\
     - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c \\(base@2.0.1\\) \\(update@2.0.3\\)\n\
@@ -4830,7 +4830,7 @@ info csolution: config files for each component:\n\
 
   outStr = streamRedirect.GetOutString();
   const string expected1 =
- "../TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM.dbgconf@0.0.2 (up to date)\n"
+ "../.cmsis/test+CM0.dbgconf@0.0.2 (up to date)\n"
  "../TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct@1.0.0 (up to date) from ARM::Device:Startup&RteTest Startup@2.0.3\n"\
  "../TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c@2.0.1 (update@2.0.3) from ARM::Device:Startup&RteTest Startup@2.0.3\n"\
  "../TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c@1.0.0 (up to date) from ARM::Device:Startup&RteTest Startup@2.0.3\n";

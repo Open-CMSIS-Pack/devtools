@@ -10,7 +10,7 @@ build:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
       title: Cortex-M0 Device Generic Users Guide
   dbgconf:
-    - file: ../data/TestSolution/DeviceAttributes/branch-protection/RTE/Device/RteTest_ARMCM0/ARMCM.dbgconf
+    - file: ../data/TestSolution/DeviceAttributes/.cmsis/solution+bti-signret.dbgconf
       version: 0.0.2
   processor:
     branch-protection: bti-signret

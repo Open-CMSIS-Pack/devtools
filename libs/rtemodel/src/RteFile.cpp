@@ -208,7 +208,7 @@ void RteFile::GetAbsoluteSourcePaths(set<string>& paths) const
 }
 
 
-string RteFile::GetInstancePathName(const string& deviceName, int instanceIndex, const string& rteFolder) const
+string RteFile::GetInstancePathName(const RteTarget* target, int instanceIndex, const string& rteFolder) const
 {
   string pathName;
   RteComponent* c = GetComponent();
@@ -218,6 +218,7 @@ string RteFile::GetInstancePathName(const string& deviceName, int instanceIndex,
     bool bForcedCopy = IsForcedCopy();
     if (bConfig || bTemplate || bForcedCopy) {
       if (bConfig || bForcedCopy) {
+        auto deviceName = target ? target->GetFullDeviceName() : EMPTY_STRING;
         // replace all ' ' with '_' in class name, the generated path should not contain spaces
         pathName += rteFolder + "/" + RteUtils::SpacesToUnderscore(c->GetCclassName()) + "/";
         if (!bForcedCopy && !deviceName.empty() && c->IsDeviceDependent()) {

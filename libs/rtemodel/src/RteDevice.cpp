@@ -362,6 +362,23 @@ RteDeviceProperty* RteDeviceTrace::CreateProperty(const string& tag)
   return new RteDeviceProperty(this);
 }
 
+///
+string RteDeviceDebugVars::GetInstancePathName(const RteTarget* target, int instanceIndex, const string& rteFolder) const
+{
+  if(target) {
+    auto solutionfile = target->GetModel()->GetRootFileName();
+    auto solutionfileExt = RteUtils::ExtractFileExtension(solutionfile);
+    if(solutionfileExt == "yml" || solutionfileExt == "yaml") {
+      return target->ExpandAccessSequences("$SolutionDir()$/.cmsis/$Solution$+$TargetType$.dbgconf");
+    } else {
+      return RteItem::GetInstancePathName(target, instanceIndex, rteFolder);
+    }
+  }
+  // return absolute path in pack repo
+   return GetOriginalAbsolutePath();
+}
+
+
 /////////////////
 // Flash info
 
