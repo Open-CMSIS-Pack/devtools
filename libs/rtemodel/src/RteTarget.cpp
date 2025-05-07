@@ -1781,10 +1781,10 @@ std::string RteTarget::GenerateMemoryRegionContent(const std::vector<RteItem*> m
   if (id == "__RAM0") {
     oss << "//   <i> Contains uninitialized RAM, Stack, and Heap" << RteUtils::LF_STRING;
   }
-  oss << "#define " << id << "_BASE " << (unused ? "0" : start) << RteUtils::LF_STRING;
+  oss << "#define " << id << "_BASE " << (unused ? "0x0" : start) << RteUtils::LF_STRING;
   oss << "//   <o> Region size [bytes] <0x0-0xFFFFFFFF:8>" << RteUtils::LF_STRING;
   oss << "//   <i> Defines size of memory region." << (unused ? "" : " Default: " + size) << RteUtils::LF_STRING;
-  oss << "#define " << id << "_SIZE " << (unused ? "0" : size) << RteUtils::LF_STRING;
+  oss << "#define " << id << "_SIZE " << (unused ? "0x0" : size) << RteUtils::LF_STRING;
   oss << "// </h>" << RteUtils::LF_STRING;
   oss << RteUtils::LF_STRING;
   return oss.str();
