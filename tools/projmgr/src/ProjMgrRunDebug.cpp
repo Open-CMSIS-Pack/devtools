@@ -18,6 +18,10 @@ using namespace std;
   * @brief default debugger parameters
  */
 static constexpr const char* DEBUGGER_NAME_DEFAULT = "CMSIS-DAP";
+static constexpr const char* LOAD_IMAGE_SYMBOLS = "image+symbols";
+static constexpr const char* LOAD_IMAGE = "image";
+static constexpr const char* LOAD_SYMBOLS = "symbols";
+static constexpr const char* LOAD_NONE = "none";
 
 ProjMgrRunDebug::ProjMgrRunDebug(void) {
   // Reserved
@@ -219,36 +223,23 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
 
   // outputs
   for (const auto& context : contexts) {
-    // populate load entries from context outputs
-    const map<const string, const OutputType> types = {
-      { RteConstants::OUTPUT_TYPE_ELF, context->outputTypes.elf },
-      { RteConstants::OUTPUT_TYPE_HEX, context->outputTypes.hex },
-      { RteConstants::OUTPUT_TYPE_BIN, context->outputTypes.bin },
-    };
-    for (const auto& [type, output] : types) {
-      const auto& load = SetLoadFromOutput(context, output, type);
-      if (!load.file.empty()) {
-        m_runDebug.outputs.push_back(load);
-      }
-    }
+    // populate image entries from context outputs
+    AddGeneratedImages(context);
   }
 
-  // merge/insert target-set image nodes
-  for (const auto& item : context0->images) {
-    bool merged = false;
-    for (auto& output : m_runDebug.outputs) {
-      if (output.file == item.image) {
-        output.info = output.info.empty() ? item.info : output.info;
-        output.type = output.type.empty() ? item.type : output.type;
-        output.load = output.load.empty() ? item.load : output.load;
-        output.offset = output.offset.empty() ? item.offset : output.offset;
-        merged = true;
-        break;
-      }
+  // insert target-set image nodes
+  for (auto item : context0->images) {
+    if (item.type.empty()) {
+      item.type = ProjMgrUtils::FileTypeFromExtension(item.image);
     }
-    if (!merged) {
-      m_runDebug.outputs.push_back({ item.image, item.info, item.type, item.load, item.offset });
+    if (item.load.empty()) {
+      // files with 'type: elf' get 'load: image+symbols'
+      // files with 'type: lib' get 'load: none'
+      // all other file types get 'load: image'
+      item.load = item.type == RteConstants::OUTPUT_TYPE_ELF ? LOAD_IMAGE_SYMBOLS :
+        item.type == RteConstants::OUTPUT_TYPE_LIB ? LOAD_NONE : LOAD_IMAGE;
     }
+    m_runDebug.outputs.push_back({ item.image, item.info, item.type, item.load, item.offset });
   }
 
   // debug vars
@@ -330,11 +321,10 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
       if (adapter.gdbserver) {
         unsigned long long port = adapter.defaults.port.empty() ? 0 : RteUtils::StringToULL(adapter.defaults.port);
         for (const auto& [pname, _] : pnames) {
-          GdbCoreItem item;
+          GdbServerItem item;
           item.port = port++;
           item.pname = pname;
-          item.start = !pname.empty() && (pname == m_runDebug.debugger.startPname);
-          m_runDebug.debugger.gdbserver.core.push_back(item);
+          m_runDebug.debugger.gdbserver.push_back(item);
         }
       }
       if (m_runDebug.debugger.protocol.empty()) {
@@ -344,6 +334,11 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
         m_runDebug.debugger.clock = RteUtils::StringToULL(adapter.defaults.clock);
       }
     }
+  }
+
+  // primary processor
+  if (m_runDebug.debugger.startPname.empty()) {
+    m_runDebug.debugger.startPname = context.deviceItem.pname;
   }
 }
 
@@ -519,16 +514,42 @@ void ProjMgrRunDebug::SetProtNodes(const RteDeviceProperty* item, AccessPortType
   }
 }
 
-FilesType ProjMgrRunDebug::SetLoadFromOutput(const ContextItem* context, OutputType output, const string type) {
-  FilesType load;
-  if (output.on) {
-    RteFsUtils::NormalizePath(output.filename, context->directories.cprj + '/' + context->directories.outdir);
-    load.file = output.filename;
-    load.info = "generate by " + context->name;
-    load.type = type;
-    load.pname = context->deviceItem.pname;
+void ProjMgrRunDebug::AddGeneratedImage(const ContextItem* context, const string& filename, const string& type, const string& load) {
+  string file = filename;
+  RteFsUtils::NormalizePath(file, context->directories.cprj + '/' + context->directories.outdir);
+  if (!file.empty()) {
+    FilesType image;
+    image.file = file;
+    image.info = "generate by " + context->name;
+    image.type = type;
+    image.load = load;
+    image.pname = context->deviceItem.pname;
+    image.offset = type == RteConstants::OUTPUT_TYPE_BIN ? context->loadOffset : RteUtils::EMPTY_STRING;
+    m_runDebug.outputs.push_back(image);
   }
-  return load;
+}
+
+void ProjMgrRunDebug::AddGeneratedImages(const ContextItem* context) {
+  /*
+  For 'compiler: AC6':
+    - When only a file with 'type: elf' is generated, the file gets 'load: image+symbols'
+    - When a file with 'type: elf' and a file with 'type: hex' is generated, the 'type: elf' file gets 'load: symbols' and the 'type: hex' file gets 'load: image'
+    - All other file types get 'load: none'
+  For any other compiler:
+    - Files with 'type: elf' get 'load: image+symbols'
+    - All other file types get 'load: none'
+  */
+  if (context->outputTypes.elf.on) {
+    AddGeneratedImage(context, context->outputTypes.elf.filename, RteConstants::OUTPUT_TYPE_ELF,
+      context->compiler == "AC6" && context->outputTypes.hex.on ? LOAD_SYMBOLS : LOAD_IMAGE_SYMBOLS);
+  }
+  if (context->outputTypes.hex.on) {
+    AddGeneratedImage(context, context->outputTypes.hex.filename, RteConstants::OUTPUT_TYPE_HEX,
+      context->compiler == "AC6" ? LOAD_IMAGE : LOAD_NONE);
+  }
+  if (context->outputTypes.bin.on) {
+    AddGeneratedImage(context, context->outputTypes.bin.filename, RteConstants::OUTPUT_TYPE_BIN, LOAD_NONE);
+  }
 }
 
 void ProjMgrRunDebug::GetDebugSequenceBlock(const RteItem* item, DebugSequencesBlockType& block) {

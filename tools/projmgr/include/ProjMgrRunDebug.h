@@ -210,7 +210,8 @@ protected:
   void GetDebugSequenceBlock(const RteItem* item, DebugSequencesBlockType& block);
   void PushBackUniquely(std::vector<std::pair<const RteItem*, std::vector<std::string>>>& vec,
     const RteItem* item, const std::string pname);
-  FilesType SetLoadFromOutput(const ContextItem* context, OutputType output, const std::string type);
+  void AddGeneratedImage(const ContextItem* context, const std::string& filename, const std::string& type, const std::string& load);
+  void AddGeneratedImages(const ContextItem* context);
   const std::string GetAccessAttributes(const RteItem* mem);
   void SetAccessPorts(std::vector<AccessPortType>& parent, const std::map<unsigned int,
     std::vector<AccessPortType>>& childrenMap);

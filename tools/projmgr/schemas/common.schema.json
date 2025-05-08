@@ -2048,11 +2048,11 @@
         "type":        { "type": "string", "description": "Specifies the file type." },
         "info":        { "type": "string", "description": "Brief description of the file." },
         "load":        { "$ref": "#/definitions/TargetSetLoadType" },
-        "load-offset": { "type": "number", "description": "Offset applied to the binary content when loading the file." },
+        "load-offset": { "type": "number", "description": "Offset applied in *.csolution.yml when loading the image file." },
         "pname":       { "type": "string", "description": "Image belongs to processor in a multi-core system." }
       },
       "additionalProperties": false,
-      "required": ["file", "type"]
+      "required": ["file", "type", "load"]
     },
     "RunSystemFilesType": {
       "title": "output:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#system-descriptions",
@@ -2149,35 +2149,25 @@
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
-        "gdbserver":       { "$ref": "#/definitions/GdbServerType" }
+        "gdbserver":       { "$ref": "#/definitions/GdbServersType" },
+        "terminal":        { "type": "string", "description": "Terminal port of the debugger." },
+        "trace":           { "type": "string", "description": "Trace port of the debugger." }
       },
       "additionalProperties": true,
       "required": ["name"]
     },
-    "GdbServerType": {
+    "GdbServersType": {
       "title": "gdbserver:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#gdbserver",
       "description": "Information for GDB server option of debugger.",
-      "type": "object",
-      "properties": {
-        "core":     { "$ref": "#/definitions/GdbCoresType" },
-        "terminal": { "type": "string", "description": "Terminal port of the GDB server." },
-        "trace":    { "type": "string", "description": "Trace port of the GDB server." }
-      },
-      "additionalProperties": false,
-      "required": ["core"]
-    },
-    "GdbCoresType": {
-      "description": "List of the processor cores along with GDB port number.",
       "type": "array",
       "uniqueItems": true,
-      "items": { "$ref": "#/definitions/GdbCoreType" }
+      "items": { "$ref": "#/definitions/GdbServerType" }
     },
-    "GdbCoreType": {
+    "GdbServerType": {
       "type": "object",
       "properties": {
         "port":  { "type": "number", "description": "Port number of processor." },
         "pname": { "type": "string", "description": "Processor name of the processor (only required for multi-core systems)." },
-        "start": { "type": "null", "description": "Identifies the start or primary processor. Only one processor can have the start: node." },
         "punit": { "type": "number", "description": "Identifies the procssor core in a SMP system." }
       },
       "additionalProperties": false,
@@ -2347,16 +2337,16 @@
     "TargetSetImageType": {
       "type": "object",
       "properties": {
-        "project-context": { "type": "string", "description": "Project context in the format 'project-name.build-type'." },
-        "image":           { "type": "string", "description": "Base filename of the image (without path)." },
-        "info":            { "type": "string", "description": "Brief description of the file." },
-        "type":            { "enum": [ "elf", "hex", "bin", "lib" ], "description": "Specifies an explicit file type." },
+        "project-context": { "type": "string", "description": "Project output with optional build-type: '<project_name>[.buid_type]'." },
+        "image":           { "type": "string", "description": "Additional image file to load." },
+        "info":            { "type": "string", "description": "Brief description of the image file." },
+        "type":            { "enum": [ "elf", "hex", "bin", "lib" ], "description": "Specifies an explicit image type." },
         "load":            { "$ref": "#/definitions/TargetSetLoadType" },
-        "load-offset":     { "type": "number", "description": "Offset applied to the binary content when loading the file." }
+        "load-offset":     { "type": "number", "description": "Offset applied to the binary content when loading the image file." }
       },
       "additionalProperties": false,
       "oneOf": [
-        { "required": ["project-context"], "not": {"required": ["image"]} },
+        { "required": ["project-context"], "not": {"required": ["image", "load", "type"]} },
         { "required": ["image"], "not": {"required": ["project-context"]} }
       ]
     },
