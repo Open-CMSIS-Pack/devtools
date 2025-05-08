@@ -2515,9 +2515,6 @@ bool ProjMgrWorker::ProcessImages(ContextItem& context) {
   const vector<ImageItem>& images = m_activeTargetSet.images;
   for (auto item : images) {
     if (!item.image.empty()) {
-      if (item.type.empty()) {
-        item.type = ProjMgrUtils::FileTypeFromExtension(item.image);
-      }
       if (!ProcessSequenceRelative(context, item.image, context.csolution->directory)) {
         return false;
       }
@@ -2525,6 +2522,9 @@ bool ProjMgrWorker::ProcessImages(ContextItem& context) {
         RteFsUtils::NormalizePath(item.image, context.directories.cprj);
       }
       context.images.push_back(item);
+    }
+    else if (item.context == context.cproject->name + (context.type.build.empty() ? "" : '.' + context.type.build)) {
+      context.loadOffset = item.offset;
     }
   }
   return true;

@@ -243,23 +243,13 @@ struct ContextTypesItem {
 };
 
 /**
- * @brief gdb core item containing
+ * @brief gdb server item containing
  *        port number of processor
  *        processor name
- *        primary processor
-*/
-struct GdbCoreItem {
-  unsigned long long port;
-  std::string pname;
-  bool start = false;
-};
-
-/**
- * @brief gdb server item containing
- *        list of the gdb core items
 */
 struct GdbServerItem {
-  std::vector<GdbCoreItem> core;
+  unsigned long long port;
+  std::string pname;
 };
 
 /**
@@ -270,7 +260,7 @@ struct GdbServerItem {
  *        debug clock speed
  *        debug configuration file
  *        start pname
- *        gdbserver
+ *        list of gdbserver items
 */
 struct DebuggerType {
   std::string name;
@@ -279,7 +269,7 @@ struct DebuggerType {
   std::optional<unsigned long long> clock;
   std::string dbgconf;
   std::string startPname;
-  GdbServerItem gdbserver;
+  std::vector<GdbServerItem> gdbserver;
 };
 
 /**
@@ -341,6 +331,7 @@ struct DebuggerType {
  *        default dbgconf
  *        images
  *        selected target-set
+ *        load offset for generated binary
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -407,6 +398,7 @@ struct ContextItem {
   std::pair<std::string, RteFileInstance*> dbgconf;
   std::vector<ImageItem> images;
   std::string targetSet;
+  std::string loadOffset;
 };
 
 /**

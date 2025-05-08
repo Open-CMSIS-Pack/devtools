@@ -36,8 +36,12 @@ build:
     outdir: out/run-debug/TestHW2
     rtedir: ../data/TestRunDebug/RTE
   output:
+    - type: bin
+      file: run-debug.bin
     - type: elf
       file: run-debug.axf
+    - type: hex
+      file: run-debug.hex
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM3 RteTest

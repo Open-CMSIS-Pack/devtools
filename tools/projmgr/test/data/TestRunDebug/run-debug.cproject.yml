@@ -7,3 +7,6 @@ project:
     - component: CORE
     - component: RteTest:scvd
       for-context: +TestHW2
+
+  output:
+    type: [hex, bin]

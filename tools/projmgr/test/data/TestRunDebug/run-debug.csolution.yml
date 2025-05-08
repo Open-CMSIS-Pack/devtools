@@ -24,11 +24,10 @@ solution:
             dbgconf: RTE/Device/RteTest1/RteTest1.dbgconf
           images:
             - project-context: run-debug
+              load-offset: 0x0000A000
             - image: customImage.bin
               info: load image info
               load-offset: 0x00001000
-            - image: $elf()$
-              load: symbols
     - type: TestHW2
       board: RteTest-Test-board With.Memory
       target-set:

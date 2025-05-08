@@ -10,10 +10,12 @@ cbuild-run:
     - file: out/core0/TestHW3/core0.axf
       info: generate by core0+TestHW3
       type: elf
+      load: image+symbols
       pname: cm0_core0
     - file: out/core1/TestHW3/core1.axf
       info: generate by core1+TestHW3
       type: elf
+      load: image+symbols
       pname: cm0_core1
   system-resources:
     memory:
@@ -49,12 +51,10 @@ cbuild-run:
     dbgconf: ../data/TestRunDebug/.cmsis/run-debug+TestHW3.dbgconf
     start-pname: cm0_core1
     gdbserver:
-      core:
-        - port: 3333
-          pname: cm0_core0
-        - port: 3334
-          pname: cm0_core1
-          start: 
+      - port: 3333
+        pname: cm0_core0
+      - port: 3334
+        pname: cm0_core1
   debug-vars:
     vars: |
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY

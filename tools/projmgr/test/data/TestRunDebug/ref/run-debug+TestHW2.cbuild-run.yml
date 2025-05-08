@@ -12,8 +12,18 @@ cbuild-run:
     - file: out/run-debug/TestHW2/run-debug.axf
       info: generate by run-debug+TestHW2
       type: elf
+      load: symbols
+    - file: out/run-debug/TestHW2/run-debug.hex
+      info: generate by run-debug+TestHW2
+      type: hex
+      load: image
+    - file: out/run-debug/TestHW2/run-debug.bin
+      info: generate by run-debug+TestHW2
+      type: bin
+      load: none
     - file: ../data/TestRunDebug/customLibrary.x
       type: lib
+      load: none
   system-resources:
     memory:
       - name: IROM1
@@ -47,8 +57,7 @@ cbuild-run:
     clock: 30000000
     dbgconf: out/run-debug/TestHW2/AC6.dbgconf
     gdbserver:
-      core:
-        - port: 3333
+      - port: 3333
   debug-vars:
     vars: |
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
