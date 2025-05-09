@@ -960,6 +960,7 @@ bool ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, const string& f
   for (const auto& item : buildChildren) {
     ParseString(parent, item.first, item.second);
   }
+  buildType.lto = parent[YAML_LINK_TIME_OPTIMIZE].IsDefined();
   ParseProcessor(parent, buildType.processor);
   ParseMisc(parent, buildType.misc);
   if (!ParseDefine(parent[YAML_DEFINE], buildType.defines)) {
@@ -1089,6 +1090,7 @@ const set<string> solutionKeys = {
   YAML_WARNINGS,
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
+  YAML_LINK_TIME_OPTIMIZE,
   YAML_DEFINE,
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
@@ -1123,6 +1125,7 @@ const set<string> projectKeys = {
   YAML_WARNINGS,
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
+  YAML_LINK_TIME_OPTIMIZE,
   YAML_DEFINE,
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
@@ -1152,6 +1155,7 @@ const set<string> setupKeys = {
   YAML_WARNINGS,
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
+  YAML_LINK_TIME_OPTIMIZE,
   YAML_DEFINE,
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
@@ -1178,6 +1182,7 @@ const set<string> layerKeys = {
   YAML_WARNINGS,
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
+  YAML_LINK_TIME_OPTIMIZE,
   YAML_DEFINE,
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
@@ -1215,6 +1220,7 @@ const set<string> targetTypeKeys = {
   YAML_WARNINGS,
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
+  YAML_LINK_TIME_OPTIMIZE,
   YAML_DEFINE,
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
@@ -1236,6 +1242,7 @@ const set<string> buildTypeKeys = {
   YAML_WARNINGS,
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
+  YAML_LINK_TIME_OPTIMIZE,
   YAML_DEFINE,
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
@@ -1317,6 +1324,7 @@ const set<string> componentsKeys = {
   YAML_WARNINGS,
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
+  YAML_LINK_TIME_OPTIMIZE,
   YAML_DEFINE,
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
@@ -1366,6 +1374,7 @@ const set<string> groupsKeys = {
   YAML_WARNINGS,
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
+  YAML_LINK_TIME_OPTIMIZE,
   YAML_DEFINE,
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,
@@ -1387,6 +1396,7 @@ const set<string> filesKeys = {
   YAML_WARNINGS,
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
+  YAML_LINK_TIME_OPTIMIZE,
   YAML_DEFINE,
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,

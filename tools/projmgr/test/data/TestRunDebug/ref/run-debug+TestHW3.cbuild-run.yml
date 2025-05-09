@@ -52,9 +52,9 @@ cbuild-run:
     start-pname: cm0_core1
     gdbserver:
       - port: 3333
-        pname: cm0_core0
-      - port: 3334
         pname: cm0_core1
+      - port: 3334
+        pname: cm0_core0
   debug-vars:
     vars: |
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
