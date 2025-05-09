@@ -460,6 +460,9 @@ void ProjMgrCbuild::SetControlsNode(YAML::Node node, const ContextItem* context,
   SetNodeValue(node[YAML_WARNINGS], controls.warnings);
   SetNodeValue(node[YAML_LANGUAGE_C], controls.languageC);
   SetNodeValue(node[YAML_LANGUAGE_CPP], controls.languageCpp);
+  if (controls.lto) {
+    node[YAML_LINK_TIME_OPTIMIZE] = true;
+  }
   SetMiscNode(node[YAML_MISC], controls.misc);
   SetDefineNode(node[YAML_DEFINE], controls.defines);
   SetDefineNode(node[YAML_DEFINE_ASM], controls.definesAsm);

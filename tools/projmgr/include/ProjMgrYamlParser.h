@@ -146,6 +146,7 @@ static constexpr const char* YAML_LICENSE = "license";
 static constexpr const char* YAML_LICENSES = "licenses";
 static constexpr const char* YAML_LICENSE_AGREEMENT = "license-agreement";
 static constexpr const char* YAML_LINKER = "linker";
+static constexpr const char* YAML_LINK_TIME_OPTIMIZE = "link-time-optimize";
 static constexpr const char* YAML_MAP = "map";
 static constexpr const char* YAML_MASK = "mask";
 static constexpr const char* YAML_MEMORY = "memory";
