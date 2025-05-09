@@ -313,6 +313,11 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
     m_runDebug.debugger = defaultDebugger;
   }
 
+  // primary processor: pname of first cproject
+  if (m_runDebug.debugger.startPname.empty()) {
+    m_runDebug.debugger.startPname = context.deviceItem.pname;
+  }
+
   // add info from debug-adapters
   if (!adapters.empty()) {
     DebugAdapterItem adapter;
@@ -320,11 +325,13 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
       m_runDebug.debugger.name = adapter.name;
       if (adapter.gdbserver) {
         unsigned long long port = adapter.defaults.port.empty() ? 0 : RteUtils::StringToULL(adapter.defaults.port);
+        // add primary processor port first
+        m_runDebug.debugger.gdbserver.push_back({ port, m_runDebug.debugger.startPname });
         for (const auto& [pname, _] : pnames) {
-          GdbServerItem item;
-          item.port = port++;
-          item.pname = pname;
-          m_runDebug.debugger.gdbserver.push_back(item);
+          // add ports for other processors
+          if (pname != m_runDebug.debugger.startPname) {
+            m_runDebug.debugger.gdbserver.push_back({ ++port, pname });
+          }
         }
       }
       if (m_runDebug.debugger.protocol.empty()) {
@@ -334,11 +341,6 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
         m_runDebug.debugger.clock = RteUtils::StringToULL(adapter.defaults.clock);
       }
     }
-  }
-
-  // primary processor
-  if (m_runDebug.debugger.startPname.empty()) {
-    m_runDebug.debugger.startPname = context.deviceItem.pname;
   }
 }
 
@@ -418,6 +420,7 @@ void ProjMgrRunDebug::CollectDebugTopology(const ContextItem& context, const vec
     }
   }
   // processors
+  map<unsigned int, ProcessorType> processorMap;
   for (const auto& [pname, _] : pnames) {
     ProcessorType processor;
     processor.pname = pname;
@@ -435,6 +438,12 @@ void ProjMgrRunDebug::CollectDebugTopology(const ContextItem& context, const vec
     }
     // 'punits': placeholder for future expansion
     processor.punits.clear();
+    // add processors according to apid order
+    if (processor.apid.has_value()) {
+      processorMap[processor.apid.value()] = processor;
+    }
+  }
+  for (const auto& [_, processor] : processorMap) {
     m_runDebug.debugTopology.processors.push_back(processor);
   }
   // APv1
