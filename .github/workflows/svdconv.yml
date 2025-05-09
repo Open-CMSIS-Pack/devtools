@@ -79,6 +79,47 @@ jobs:
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
+      - name: Install strip tools
+        if: |
+          github.event_name == 'release' &&
+          matrix.arch == 'arm64' &&
+          startsWith(matrix.runs_on, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install binutils-aarch64-linux-gnu
+
+      # Run only for release events on macOS or Ubuntu runners
+      - name: Strip and bundle svdconv release binary
+        if: |
+          github.event_name == 'release' &&
+          (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu'))
+        working-directory: build/tools/svdconv/SVDConv
+        run: |
+          mkdir -p svdconv_release_bin
+
+          # Extract the binary tarball into the release directory
+          tar -xvf svdconv-*-${{ matrix.target }}-${{ matrix.arch }}.tbz2 -C svdconv_release_bin
+
+          # Construct the path to the extracted binary
+          binary_path="./svdconv_release_bin/${{ matrix.binary }}"      
+          echo "Stripping binary at: $binary_path"
+
+          # Use appropriate strip tool based on architecture and target
+          if [[ "${{ matrix.arch }}" == "arm64" && "${{ matrix.target }}" == "linux" ]]; then
+            aarch64-linux-gnu-strip "$binary_path"
+          else
+            strip "$binary_path"
+          fi
+
+          # Temporarily rename the original archive
+          original_filename=$(find . -maxdepth 1 -type f -name "svdconv-*-${{ matrix.target }}-${{ matrix.arch }}.tbz2" | head -n 1)
+          mv "$original_filename" ./temp.tbz2
+
+          # Repack the modified binary into a new tarball
+          output_name=$(basename "$original_filename")
+          echo "Repacking into: $output_name"
+          tar -cjf "$output_name" -C svdconv_release_bin .
+
       - name: Attach svdconv binary to release
         if: ${{ github.event_name == 'release' }}
         uses: svenstaro/upload-release-action@04733e069f2d7f7f0b4aebc4fbdbce8613b03ccd # v2

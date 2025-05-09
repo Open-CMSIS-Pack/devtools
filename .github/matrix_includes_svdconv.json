@@ -3,36 +3,42 @@
         "runs_on":"macos-13",
         "target":"darwin",
         "arch": "amd64",
-        "runOn": "publicRepo"
+        "runOn": "publicRepo",
+        "binary": "svdconv"
     },
     {
         "runs_on":"macos-14",
         "target":"darwin",
         "arch": "arm64",
-        "runOn": "publicRepo"
+        "runOn": "publicRepo",
+        "binary": "svdconv"
     },
     {
         "runs_on":"ubuntu-22.04",
         "target":"linux",
         "arch": "amd64",
-        "runOn": "always"
+        "runOn": "always",
+        "binary": "svdconv"
     },
     {
         "runs_on":"ubuntu-22.04",
         "target":"linux",
         "arch": "arm64",
-        "runOn": "always"
+        "runOn": "always",
+        "binary": "svdconv"
     },
     {
         "runs_on":"windows-2019",
         "target":"windows",
         "arch": "amd64",
-        "runOn": "always"
+        "runOn": "always",
+        "binary": "svdconv.exe"
     },
     {
         "runs_on":"windows-2019",
         "target":"windows",
         "arch": "arm64",
-        "runOn": "always"
+        "runOn": "always",
+        "binary": "svdconv.exe"
     }
 ]

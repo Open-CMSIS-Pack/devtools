@@ -80,6 +80,15 @@ jobs:
           target: projmgr
           arch: ${{ matrix.arch }}
 
+      - name: Strip projmgr release binary
+        if: |
+          github.event_name == 'release' &&
+          (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu'))
+        run: |
+          binary_path="./build/tools/projmgr/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}"      
+          echo "Stripping binary at: $binary_path"
+          strip "$binary_path"
+
       - name: Archive projmgr
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
