@@ -37,6 +37,9 @@
         __var TraceD0_Pin    = 0x00040003;   // PE3
         __var TraceD1_Pin    = 0x00040004;   // PE4
       </debugvars>
+      <debug>
+        <datapatch address="0x1000FFFF" value="0xCC" info="Family level datapatch"/>
+      </debug>
       <sequences>
         <!-- Override for Pre-Defined Sequences -->
         <sequence name="DebugDeviceUnlock">

@@ -146,6 +146,9 @@ cbuild-run:
               - address: 0xE0040FF0
                 value: 0x0000000D
                 info: CIDR0
+              - address: 0x1000FFFF
+                value: 0x000000CC
+                info: Family level datapatch
       - dpid: 1
         accessports:
           - apid: 1
