@@ -374,23 +374,24 @@ void ProjMgrRunDebug::CollectDebugTopology(const ContextItem& context, const vec
 
   // datapatches
   for (const auto& [debug, _] : debugs) {
-    Collection<RteItem*> datapatches;
-    debug->GetChildrenByTag("datapatch", datapatches);
-    for (const auto& datapatch : datapatches) {
-      DatapatchType patch;
-      patch.address = datapatch->GetAttributeAsULL("address");
-      patch.value = datapatch->GetAttributeAsULL("value");
-      if (datapatch->HasAttribute("mask")) {
-        patch.mask = datapatch->GetAttributeAsULL("mask");
-      }
-      patch.type = datapatch->GetAttribute("type");
-      patch.info = datapatch->GetAttribute("info");
-      if (datapatch->HasAttribute("__apid")) {
-        datapatchById[datapatch->GetAttributeAsInt("__apid")].push_back(patch);
-      } else {
-        const auto& dp = datapatch->GetAttributeAsInt("__dp", defaultDp);
-        const auto& apIndex = datapatch->GetAttributeAsInt("__ap", debug->GetAttributeAsInt("__ap", 0));
-        datapatchByIndex[dp][apIndex].push_back(patch);
+    const RteDevicePropertyGroup* properties = dynamic_cast<const RteDeviceDebug*>(debug);
+    for (const auto& datapatch : properties->GetEffectiveContent()) {
+      if (datapatch->GetTag() == "datapatch") {
+        DatapatchType patch;
+        patch.address = datapatch->GetAttributeAsULL("address");
+        patch.value = datapatch->GetAttributeAsULL("value");
+        if (datapatch->HasAttribute("mask")) {
+          patch.mask = datapatch->GetAttributeAsULL("mask");
+        }
+        patch.type = datapatch->GetAttribute("type");
+        patch.info = datapatch->GetAttribute("info");
+        if (datapatch->HasAttribute("__apid")) {
+          datapatchById[datapatch->GetAttributeAsInt("__apid")].push_back(patch);
+        } else {
+          const auto& dp = datapatch->GetAttributeAsInt("__dp", defaultDp);
+          const auto& apIndex = datapatch->GetAttributeAsInt("__ap", debug->GetAttributeAsInt("__ap", 0));
+          datapatchByIndex[dp][apIndex].push_back(patch);
+        }
       }
     }
   }
