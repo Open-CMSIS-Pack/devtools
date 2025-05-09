@@ -2923,6 +2923,19 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
     error |= true;
   }
 
+  // Link Time Optimize
+  context.controls.processed.lto =
+    context.controls.cproject.lto ||
+    context.controls.csolution.lto ||
+    context.controls.target.lto ||
+    context.controls.build.lto;
+  for (auto& setup : context.controls.setups) {
+    context.controls.processed.lto |= setup.lto;
+  }
+  for (auto& [_, clayer] : context.controls.clayers) {
+    context.controls.processed.lto |= clayer.lto;
+  }
+
   // Misc
   vector<vector<MiscItem>*> miscVec = {
     &context.controls.cproject.misc,

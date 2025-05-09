@@ -199,6 +199,7 @@ struct BuildType {
   std::string warnings;
   std::string languageC;
   std::string languageCpp;
+  bool lto = false;
   std::vector<std::string> defines;
   std::vector<std::string> definesAsm;
   std::vector<std::string> undefines;

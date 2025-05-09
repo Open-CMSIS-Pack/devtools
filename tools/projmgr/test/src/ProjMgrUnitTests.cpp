@@ -6855,3 +6855,15 @@ TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   errStr = streamRedirect.GetErrorString();
   EXPECT_STREQ(errStr.c_str(), "error csolution: unknown selected context(s):\n  UnknownContext+Type1\n");
 }
+
+TEST_F(ProjMgrUnitTests, LinkTimeOptimize) {
+  char* argv[3];
+  const string& csolution = testinput_folder + "/TestLTO/solution.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
+  const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestLTO/project+CM0.cbuild.yml");
+  EXPECT_TRUE(cbuild["build"]["link-time-optimize"].IsDefined());
+  EXPECT_TRUE(cbuild["build"]["components"][0]["link-time-optimize"].IsDefined());
+  EXPECT_TRUE(cbuild["build"]["groups"][0]["files"][0]["link-time-optimize"].IsDefined());
+}
