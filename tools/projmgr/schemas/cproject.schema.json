@@ -1,10 +1,10 @@
 {
   "$comment": "For documentation refer to https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#project",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.8.0/tools/projmgr/schemas/cproject.schema.json",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.9.0/tools/projmgr/schemas/cproject.schema.json",
   "title": "CMSIS Project",
   "description": "Source files and pre-configured components of a sub-project that builds independently.",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "type": "object",
   "properties": {
     "project": {
