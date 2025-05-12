@@ -57,6 +57,15 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.9.0</td>
+    <td>Release notes:
+      - added `link-time-optimize` compiler and linker flags
+      - updated cbridge utility v0.9.15
+      - updated cbuild2cmake utility v0.9.7
+      - updated cbuild utility v2.9.0
+      - updated cpackget utility v2.1.7
+      - updated csolution utility v2.9.0
+    </td>
     <td>2.8.0</td>
     <td>Release notes:
       - added CLANG_TI support for TI Arm Clang compiler

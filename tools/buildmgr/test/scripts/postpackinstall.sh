@@ -42,7 +42,7 @@ fi
 # Set environment variables
 source ${testoutdir}/cbuild/etc/setup
 
-packs=("$CMSIS_PACK_ROOT/.Download/Keil.BulbBoard_BSP.1.1.0.pack" "$CMSIS_PACK_ROOT/.Download/Keil.FM0plus_DFP.1.2.0.pack")
+packs=("$CMSIS_PACK_ROOT/Keil/BulbBoard_BSP/1.1.0/Keil.BulbBoard_BSP.pdsc" "$CMSIS_PACK_ROOT/Keil/FM0plus_DFP/1.2.0/Keil.FM0plus_DFP.pdsc")
 
 errcnt=0
 for pack in ${packs[@]}
