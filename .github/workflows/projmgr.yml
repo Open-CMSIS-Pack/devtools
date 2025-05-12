@@ -80,6 +80,15 @@ jobs:
           target: projmgr
           arch: ${{ matrix.arch }}
 
+      - name: Install strip tools
+        if: |
+          github.event_name == 'release' &&
+          matrix.arch == 'arm64' &&
+          startsWith(matrix.runs_on, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install binutils-aarch64-linux-gnu
+
       - name: Strip projmgr release binary
         if: |
           github.event_name == 'release' &&
@@ -87,7 +96,12 @@ jobs:
         run: |
           binary_path="./build/tools/projmgr/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}"      
           echo "Stripping binary at: $binary_path"
-          strip "$binary_path"
+          # Use appropriate strip tool based on architecture and target
+          if [[ "${{ matrix.arch }}" == "arm64" && "${{ matrix.target }}" == "linux" ]]; then
+            aarch64-linux-gnu-strip "$binary_path"
+          else
+            strip "$binary_path"
+          fi
 
       - name: Archive projmgr
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
