@@ -7,6 +7,11 @@ dump_cmake_project_version()
 
 configure_file(src/ProductInfo.h.in ProductInfo.h)
 
+file(DOWNLOAD
+  https://raw.githubusercontent.com/Open-CMSIS-Pack/debug-adapter-registry/refs/heads/main/registry/debug-adapters.yml
+  ${CMAKE_CURRENT_SOURCE_DIR}/templates/debug-adapters.yml
+)
+
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT projmgr)
 
 # projmgr library
