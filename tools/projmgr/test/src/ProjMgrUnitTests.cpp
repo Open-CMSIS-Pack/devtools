@@ -4126,7 +4126,7 @@ TEST_F(ProjMgrUnitTests, OutputDirsAbsolutePath) {
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"--cbuildgen";
-  EXPECT_EQ(CrossPlatformUtils::GetHostType() == "win" ? 1 : 0, RunProjMgr(5, argv, m_envp));
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
 
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_search(errStr, regex("warning csolution: absolute path .* is not portable, use relative path instead")));
