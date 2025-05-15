@@ -17,6 +17,6 @@ solution:
     - project: ./TestProject1/test1.cproject.yml
 
   output-dirs:
-    cprjdir: C:/$Compiler$
+    cprjdir: \\non_existing_cmsis/$Compiler$
     intdir: /$Compiler$
     tmpdir: /root
