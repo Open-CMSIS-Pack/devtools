@@ -2345,7 +2345,7 @@
       "required": ["set"]
     },
     "TargetSetImagesType": {
-      "title": "images:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#target-set-images",
+      "title": "images:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#images",
       "description": "List of images that belong to this set.",
       "type": "array",
       "uniqueItems": true,
