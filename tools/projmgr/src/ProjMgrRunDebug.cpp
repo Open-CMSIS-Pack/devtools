@@ -620,9 +620,13 @@ const string ProjMgrRunDebug::GetAccessAttributes(const RteItem* mem)
 
 bool ProjMgrRunDebug::GetDebugAdapter(const string& name, const DebugAdaptersItem& adapters, DebugAdapterItem& match) {
   for (const auto& adapter : adapters) {
-    if (name == adapter.name || find(adapter.alias.begin(), adapter.alias.end(), name) != adapter.alias.end()) {
-      match = adapter;
-      return true;
+    auto aliases = adapter.alias;
+    aliases.push_back(adapter.name);
+    for (const auto& alias : aliases) {
+      if (RteUtils::EqualNoCase(name, alias)) {
+        match = adapter;
+        return true;
+      }
     }
   }
   return false;
