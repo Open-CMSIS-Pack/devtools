@@ -47,6 +47,13 @@
       <subFamily DsubFamily="MyDevice">
         <device Dname="MyDeviceM0">
           <processor Dfpu="0" Dmpu="0" Dendian="Little-endian" Dclock="24000000"/>
+          <environment name="microchip">
+            <mchp:extension xmlns:mchp="http://crownking/pack-device-microchip-extension"
+                            schemaVersion="1.0"
+                            xsi:schemaLocation="http://crownking/pack-device-microchip-extension PACK.DEVICE.MICROCHIP.EXTENSION.xsd"><!--https://schemas.microchip.com/com/microchip/packs/extensions/mchp/1.0/PACK.DEVICE.MICROCHIP.EXTENSION.xsd-->
+               <mchp:prerequisite component="MPLAB X IDE" version="[5.10-"/>
+            </mchp:extension>
+         </environment>
         </device>
       </subFamily>
     </family>

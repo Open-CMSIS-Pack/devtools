@@ -241,7 +241,7 @@ bool CheckFiles::CheckDescription(RteItem* item)
 */
 bool CheckFiles::CheckUrls(RteItem* item)
 {
-  if(!item || item->GetTag() == "package") {
+  if(!item || item->GetTag() == "package" || item->GetTag().find(":", 0) != string::npos) {
     return true;
   }
 
@@ -255,6 +255,9 @@ bool CheckFiles::CheckUrls(RteItem* item)
     
   const auto& attributes = item->GetAttributes();
   for(const auto& [attr, text] : attributes) {
+    if(attr.find(":", 0) != string::npos) {
+      continue;
+    }
     if(text.find("http://", 0) != string::npos) {
       LogMsg("M300", TAG(attr), URL("https://"), lineNo);
     bOk = false;
