@@ -40,6 +40,10 @@ CheckFilesVisitor::~CheckFilesVisitor()
 */
 VISIT_RESULT CheckFilesVisitor::Visit(RteItem* item)
 {
+  const string& tag = item->GetTag();
+  if(tag == "environment") {
+    return VISIT_RESULT::SKIP_CHILDREN;
+  }
   m_checkFiles.CheckFile(item);
   m_checkFiles.CheckUrls(item);
   m_checkFiles.CheckDeprecated(item);
