@@ -26,6 +26,19 @@ TEST(XmlTreeTest, GetAttribute) {
   e.AddAttribute("zeroTen", "010");
   e.AddAttribute("minusOne", "-1");
 
+  XMLTreeElement another;
+  EXPECT_FALSE(another.AssignAttribute("unknown",e));
+  EXPECT_FALSE(another.HasAttribute("unknown"));
+  EXPECT_TRUE(another.SetAttribute("unknown", "unknown"));
+  EXPECT_TRUE(another.AssignAttribute("unknown",e));
+  EXPECT_FALSE(another.HasAttribute("unknown"));
+
+  EXPECT_TRUE(another.AssignAttribute("ten",e));
+  EXPECT_TRUE(another.HasAttribute("ten"));
+  EXPECT_FALSE(another.AssignAttribute("ten",e)); // already assigned
+  EXPECT_TRUE(another.SetAttribute("ten","010"));
+  EXPECT_TRUE(another.AssignAttribute("ten",e));
+
   EXPECT_EQ(e.GetAttribute("unknown").empty(), true);
   EXPECT_EQ(e.GetAttribute("string"), "strVal");
   EXPECT_EQ(e.GetAttribute("empty").empty(), true);

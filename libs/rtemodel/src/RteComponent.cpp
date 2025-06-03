@@ -20,6 +20,7 @@
 #include "RteInstance.h"
 #include "RteProject.h"
 #include "RteGenerator.h"
+#include "RteConstants.h"
 
 #include "XMLTree.h"
 
@@ -608,6 +609,7 @@ void RteComponentAggregate::SetComponentInstance(RteComponentInstance* ci, int c
   RteItem* ei = ci->GetEffectiveItem(targetName);
   m_selectedVariant = ei->GetCvariantName();
   m_selectedVersion = ei->GetVersionString();
+  AssignAttribute("layer", *ci);
 
   if (m_components.empty()) {
     if (c) {
@@ -1625,8 +1627,9 @@ string RteComponentGroup::GetTaxonomyDescriptionID() const
   string id;
   if (m_parent)
     id = m_parent->GetTaxonomyDescriptionID();
-  if (!id.empty())
-    id += ".";
+  if(!id.empty()) {
+    id += RteConstants::PREFIX_CGROUP;
+  }
   id += GetName();
   return id;
 }

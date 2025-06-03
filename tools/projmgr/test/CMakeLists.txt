@@ -1,5 +1,5 @@
 add_executable(ProjMgrUnitTests src/ProjMgrUnitTests.cpp src/ProjMgrTestEnv.cpp
-  src/ProjMgrWorkerUnitTests.cpp src/ProjMgrGeneratorUnitTests.cpp
+  src/ProjMgrWorkerUnitTests.cpp src/ProjMgrGeneratorUnitTests.cpp src/ProjMgrRpcTests.cpp
   src/ProjMgrSchemaCheckerUnitTests.cpp src/ProjMgrUtilsUnitTests.cpp
   src/ProjMgrYamlParserUnitTest.cpp src/ProjMgrTestEnv.h)
 

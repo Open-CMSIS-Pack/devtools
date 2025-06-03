@@ -205,6 +205,10 @@ public:
   */
   bool CollectSettings(const std::vector<ContextItem*>& contexts, const DebugAdaptersItem& adapters);
 
+  void Clear() {
+    m_runDebug = {};
+  }
+
 protected:
   RunDebugType m_runDebug;
   void GetDebugSequenceBlock(const RteItem* item, DebugSequencesBlockType& block);

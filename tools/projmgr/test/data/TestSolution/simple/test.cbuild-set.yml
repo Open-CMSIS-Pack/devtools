@@ -1,0 +1,4 @@
+cbuild-set:
+  generated-by: vscode-cmsis-csolution version 1.50.1-24-gaf492fc
+  contexts:
+    - context: project.Debug+TEST_TARGET

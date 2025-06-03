@@ -728,6 +728,7 @@ void ProjMgrYamlParser::ParsePacks(const YAML::Node& parent, const string& file,
     const YAML::Node& packNode = parent[YAML_PACKS];
     for (const auto& packEntry : packNode) {
       PackItem packItem;
+      packItem.origin = file;
       ParseString(packEntry, YAML_PACK, packItem.pack);
       ParsePortablePath(packEntry, file, YAML_PATH, packItem.path);
       ParseTypeFilter(packEntry, packItem.type);

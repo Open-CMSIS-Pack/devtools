@@ -101,6 +101,10 @@ public:
   */
   ClayerItem* GetGeneratorImport(const std::string& contextId, bool& success);
 
+  void Clear() {
+    m_usedGenerators.clear();
+  }
+
 protected:
   ProjMgrParser* m_parser = nullptr;
   GeneratorContextVecMap m_usedGenerators;

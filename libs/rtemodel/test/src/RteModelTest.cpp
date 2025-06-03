@@ -1127,6 +1127,12 @@ TEST_F(RteModelPrjTest, LoadCprjM4) {
   EXPECT_EQ(allLayerDescriptors.size(), 10);
   auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
   EXPECT_EQ(filteredLayerDescriptors.size(), 10);
+  ca = activeTarget->GetComponentAggregate("ARM::Device:Startup");
+  ASSERT_NE(ca, nullptr);
+  EXPECT_EQ(ca->GetAttribute("layer"), "LayerOne");
+  ci = ca->GetComponentInstance();
+  EXPECT_EQ(ci->GetAttribute("layer"), "LayerOne");
+  ASSERT_NE(ci, nullptr);
 
   const string projDir = RteUtils::ExtractFilePath(RteTestM4_cprj, true);
   const string rteDir = projDir + "RTE/";
