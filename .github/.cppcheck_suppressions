@@ -3,3 +3,4 @@
 unusedFunction:libs/xmltree/src/XMLTree.cpp:47
 unusedFunction:libs/xmlschemachecker/src/XmlErrorHandler.cpp:27
 unusedFunction:libs/xmlschemachecker/src/XmlErrorHandler.cpp:32
+unusedFunction:tools/projmgr/src/ProjMgrRpcServer.cpp

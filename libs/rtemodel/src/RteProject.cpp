@@ -832,6 +832,8 @@ bool RteProject::Apply()
           }
         }
         ci = AddComponent(c, count, target, ci);
+        ci->AssignAttribute("layer", *a);
+
         // add API if any
         RteApi* api = c->GetApi(target, true);
         if (api) {

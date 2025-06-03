@@ -1,0 +1,20 @@
+build-idx:
+  generated-by: csolution version 2.8.0
+  csolution: test.csolution.yml
+  tmpdir: tmp
+  cprojects:
+    - cproject: project.cproject.yml
+  cbuilds:
+    - cbuild: project.Debug+TEST_TARGET.cbuild.yml
+      project: project
+      configuration: .Debug+TEST_TARGET
+      errors: true
+      messages:
+        errors:
+          - "no component was found with identifier 'ARM::Device:Startup'\n  did you mean 'Device:Startup&RteTest Startup'?"
+          - processing context 'project.Debug+TEST_TARGET' failed
+        warnings:
+          - "project.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
+        info:
+          - test.cbuild-pack.yml - file is already up-to-date
+          - project.Debug+TEST_TARGET.cbuild.yml - file is already up-to-date

@@ -528,8 +528,10 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   EXPECT_FALSE(ValidateContext(context));
   ASSERT_EQ(expected.size(), context.validationResults.size());
   map<string, set<string>> dependenciesMap;
-  for (const auto& [result, component, dependencies, _] : context.validationResults) {
-    dependenciesMap[component] = dependencies;
+  for (const auto& validation : context.validationResults) {
+    for (const auto& condition : validation.conditions) {
+      dependenciesMap[validation.id].insert(condition.expression);
+    }
   }
   for (const auto& [expectedComponent, expectedDependencies] : expected) {
     EXPECT_TRUE(dependenciesMap.find(expectedComponent) != dependenciesMap.end());

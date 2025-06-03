@@ -36,6 +36,7 @@ Commands:\n\
   list target-sets              Print list of target-sets in a <name>.csolution.yml\n\
   list toolchains               Print list of supported toolchains\n\
   run                           Run code generator\n\
+  rpc                           Run remote procedure call server\n\
   update-rte                    Create/update configuration files and validate solution\n\n\
 Options:\n\
   -a, --active arg              Select active target-set: <target-type>[@<set>]\n\
@@ -65,6 +66,7 @@ ProjMgr::ProjMgr() :
   m_extGenerator(&m_parser),
   m_worker(&m_parser, &m_extGenerator),
   m_emitter(&m_parser, &m_worker),
+  m_rpcServer(*this),
   m_checkSchema(false),
   m_missingPacks(false),
   m_updateRteFiles(true),
@@ -164,6 +166,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option updateIdx("update-idx", "Update cbuild-idx file with layer info", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option quiet("q,quiet", "Run silently, printing only error messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option cbuildgen("cbuildgen", "Generate legacy *.cprj files", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option contentLength("content-length", "Prepend 'Content-Length' header to JSON RPC requests and responses", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option activeTargetSet("a,active", "Select active target-set: <target-type>[@<set>]", cxxopts::value<string>());
 
   // command options dictionary
@@ -184,6 +187,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"list layers",       { false, {context, contextSet, activeTargetSet, debug, load, clayerSearchPath, quiet, schemaCheck, toolchain, verbose, updateIdx}}},
     {"list toolchains",   { false, {context, contextSet, activeTargetSet, debug, quiet, toolchain, verbose}}},
     {"list environment",  { true,  {}}},
+    {"rpc",               { true,  {contentLength}}},
   };
 
   try {
@@ -192,7 +196,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
       solution, context, contextSet, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output, outputAlt,
       help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder,
-      relativePaths, frozenPacks, updateIdx, quiet, cbuildgen, activeTargetSet
+      relativePaths, frozenPacks, updateIdx, quiet, cbuildgen, contentLength, activeTargetSet
     });
     options.parse_positional({ "positional" });
 
@@ -219,6 +223,8 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     m_cbuildgen = parseResult.count("cbuildgen");
     m_worker.SetCbuild2Cmake(!m_cbuildgen);
     ProjMgrLogger::m_quiet = parseResult.count("quiet");
+    m_rpcServer.SetContentLengthHeader(parseResult.count("content-length"));
+    m_rpcServer.SetDebug(m_debug);
 
     vector<string> positionalArguments;
     if (parseResult.count("positional")) {
@@ -415,6 +421,12 @@ int ProjMgr::ProcessCommands() {
     if (!RunCodeGenerator()) {
       return ErrorCode::ERROR;
     }
+  } else if (m_command == "rpc") {
+    // Launch 'rpc' server over stdin/stdout
+    ProjMgrLogger::m_silent = true;
+    if (!m_rpcServer.Run()) {
+      return ErrorCode::ERROR;
+    }
   } else {
     ProjMgrLogger::Get().Error("<command> was not found");
     return ErrorCode::ERROR;
@@ -607,31 +619,8 @@ bool ProjMgr::Configure() {
     ProjMgrLogger::Get().Error(errMsg);
   }
 
-  // Get context pointers
-  map<string, ContextItem>* contexts = nullptr;
-  m_worker.GetContexts(contexts);
-
-  vector<string> orderedContexts;
-  m_worker.GetYmlOrderedContexts(orderedContexts);
-
   // Process contexts
-  bool error = false;
-  m_allContexts.clear();
-  m_processedContexts.clear();
-  m_failedContext.clear();
-  for (auto& contextName : orderedContexts) {
-    auto& contextItem = (*contexts)[contextName];
-    m_allContexts.push_back(&contextItem);
-    if (!m_worker.IsContextSelected(contextName)) {
-      continue;
-    }
-    if (!m_worker.ProcessContext(contextItem, true, true, false)) {
-      ProjMgrLogger::Get().Error("processing context '" + contextName + "' failed", contextName);
-      m_failedContext.insert(contextItem.name);
-      error = true;
-    }
-    m_processedContexts.push_back(&contextItem);
-  }
+  bool error = !ProcessContexts();
 
   if (m_worker.HasToolchainErrors()) {
     error = true;
@@ -670,6 +659,35 @@ bool ProjMgr::Configure() {
   }
 
   return !error;
+}
+
+bool ProjMgr::ProcessContexts() {
+  // Get context pointers
+  map<string, ContextItem>* contexts = nullptr;
+  m_worker.GetContexts(contexts);
+
+  vector<string> orderedContexts;
+  m_worker.GetYmlOrderedContexts(orderedContexts);
+
+  // Process contexts
+  bool success = true;
+  m_allContexts.clear();
+  m_processedContexts.clear();
+  m_failedContext.clear();
+  for (auto& contextName : orderedContexts) {
+    auto& contextItem = (*contexts)[contextName];
+    m_allContexts.push_back(&contextItem);
+    if (!m_worker.IsContextSelected(contextName)) {
+      continue;
+    }
+    if (!m_worker.ProcessContext(contextItem, true, true, false)) {
+      ProjMgrLogger::Get().Error("processing context '" + contextName + "' failed", contextName);
+      m_failedContext.insert(contextItem.name);
+      success = false;
+    }
+    m_processedContexts.push_back(&contextItem);
+  }
+  return success;
 }
 
 bool ProjMgr::UpdateRte() {
@@ -1149,6 +1167,33 @@ const string ProjMgr::GetToolboxVersion(const string& toolboxDir) {
   smatch matchResult;
   regex_match(manifestFile, matchResult, regEx);
   return matchResult[1].str();
+}
+
+bool ProjMgr::LoadSolution(const std::string& csolution) {
+  if (!m_csolutionFile.empty()) {
+    m_parser.Clear();
+    m_extGenerator.Clear();
+    m_worker.Clear();
+    m_runDebug.Clear();
+    ProjMgrLogger::Get().Clear();
+  }
+
+  m_csolutionFile = csolution;
+  m_rootDir = RteUtils::ExtractFilePath(m_csolutionFile, false);
+
+  m_contextSet = true;
+  m_updateRteFiles = false;
+
+  if (!PopulateContexts()) {
+    return false;
+  }
+  if (!ParseAndValidateContexts()) {
+    return false;
+  }
+  if (!ProcessContexts()) {
+    return false;
+  }
+  return true;
 }
 
 const string ProjMgr::GetDebugAdaptersFile(void) {

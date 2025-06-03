@@ -62,9 +62,12 @@ bool XmlItem::AddAttribute(const string& name, const string& value, bool insertE
       return true;
     }
   }
-  if (insertEmpty || !value.empty())
+
+  if(insertEmpty || !value.empty()) {
     m_attributes[name] = value;
-  return true;
+    return true;
+  }
+  return false;
 }
 
 bool XmlItem::SetAttribute(const char* name, const char* value)
@@ -102,6 +105,10 @@ bool XmlItem::SetAttributes(const map<string, string>& attributes)
 bool XmlItem::SetAttributes(const XmlItem& attributes)
 {
   return SetAttributes(attributes.GetAttributes());
+}
+
+bool XmlItem::AssignAttribute(const std::string& name, const XmlItem& from) {
+  return AddAttribute(name, from.GetAttribute(name), false);
 }
 
 bool XmlItem::RemoveAttribute(const std::string& name)

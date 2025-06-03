@@ -160,10 +160,18 @@ public:
 
   /**
    * @brief replace instance attributes with the given ones
-   * @param attributes given instance of XmlItem
+   * @param attributes instance of XmlItem containing attributes to assign
    * @return true if attributes are set
   */
   bool SetAttributes(const XmlItem &attributes);
+
+  /**
+   * @brief assign specified attribute value from supplied object to this one
+   * @param name attribute name
+   * @param from instance of XmlItem to get value from
+   * @return true if attribute is changed
+  */
+  bool AssignAttribute(const std::string& name, const XmlItem &from);
 
   /**
    * @brief remove attribute

@@ -75,11 +75,13 @@ struct MiscItem {
  *        pack name
  *        pack path
  *        type filter
+ *        origin file
 */
 struct PackItem {
   std::string pack;
   std::string path;
   TypeFilter type;
+  std::string origin;
 };
 
 /**
@@ -733,6 +735,14 @@ public:
   */
   CbuildSetItem& GetCbuildSetItem(void);
 
+  void Clear() {
+    m_cdefault = {};
+    m_csolution = {};
+    m_cbuildSet = {};
+    m_cprojects.clear();
+    m_clayers.clear();
+    m_genericClayers.clear();
+  }
   /**
    * @brief get debug adapters
    * @return debug adapters list

@@ -29,3 +29,6 @@
 	path = external/xerces-c
 	url = https://github.com/apache/xerces-c.git
 	ignore = dirty
+[submodule "external/json-rpc-cxx"]
+	path = external/json-rpc-cxx
+	url = https://github.com/jsonrpcx/json-rpc-cxx.git
