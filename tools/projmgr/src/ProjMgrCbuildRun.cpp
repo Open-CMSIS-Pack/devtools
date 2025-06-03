@@ -105,7 +105,9 @@ void ProjMgrCbuildRun::SetDebuggerNode(YAML::Node node, const DebuggerType& debu
     if (debugger.clock.has_value()) {
       node[YAML_CLOCK] = debugger.clock.value();
     }
-    SetNodeValue(node[YAML_DBGCONF], FormatPath(debugger.dbgconf, m_directory));
+    if (!debugger.dbgconf.empty()) {
+      SetNodeValue(node[YAML_DBGCONF], FormatPath(debugger.dbgconf, m_directory));
+    }
     SetNodeValue(node[YAML_START_PNAME], debugger.startPname);
     SetGdbServerNode(node[YAML_GDBSERVER], debugger.gdbserver);
   }

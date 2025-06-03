@@ -1405,7 +1405,9 @@ void RteProject::CollectSettings(const string& targetName)
   t->AddDeviceProperties(d, processorName);
   // add dbgconf file
   auto debugVars = t->GetDeviceDebugVars();
-  AddFileInstance(nullptr, debugVars, 0, t);
+  if (debugVars && debugVars->HasAttribute("configfile")) {
+    AddFileInstance(nullptr, debugVars, 0, t);
+  }
 
   // collect copied files and sources
   for (auto [_,fi] : m_files) {

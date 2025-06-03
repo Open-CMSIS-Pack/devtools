@@ -6721,6 +6721,23 @@ TEST_F(ProjMgrUnitTests, TestRunDebug) {
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW2.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, TestNoDbgconf) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestRunDebug/no-dbgconf.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"--active";
+  argv[6] = (char*)"ARMCM3";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+
+  const YAML::Node& cbuild = YAML::LoadFile(testoutput_folder + "/run-debug+ARMCM3.cbuild.yml");
+  EXPECT_FALSE(cbuild["build"]["dbgconf"].IsDefined());
+  const YAML::Node& cbuildrun = YAML::LoadFile(testoutput_folder + "/no-dbgconf+ARMCM3.cbuild-run.yml");
+  EXPECT_FALSE(cbuildrun["cbuild-run"]["debugger"]["dbgconf"].IsDefined());
+}
+
 TEST_F(ProjMgrUnitTests, TestRunDebugMulticore) {
   char* argv[7];
   const string& csolution = testinput_folder + "/TestRunDebug/run-debug.csolution.yml";
