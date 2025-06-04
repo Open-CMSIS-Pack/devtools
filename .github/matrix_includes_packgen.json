@@ -29,14 +29,14 @@
         "runOn": "always"
     },
     {
-        "runs_on":"windows-2019",
+        "runs_on":"windows-2022",
         "target":"windows",
         "arch": "amd64",
         "binary": "packgen.exe",
         "runOn": "always"
     },
     {
-        "runs_on":"windows-2019",
+        "runs_on":"windows-2022",
         "target":"windows",
         "arch": "arm64",
         "binary": "packgen.exe",
