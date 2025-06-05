@@ -16,7 +16,6 @@
 #include <regex>
 
 using namespace std;
-using namespace jsonrpccxx;
 
 static constexpr const char* CONTENT_LENGTH_HEADER = "Content-Length:";
 
@@ -72,20 +71,20 @@ public:
     m_manager(server.GetManager()),
     m_worker(server.GetManager().GetWorker()) {}
 
-  const string GetVersion(void);
-  const bool Shutdown(void);
-  const bool Apply(const string& context);
-  const bool LoadPacks(void);
-  const bool LoadSolution(const string& solution);
-  const Args::UsedItems GetUsedItems(const string& context);
-  const Args::PacksInfo GetPacksInfo(const string& context);
-  const Args::CtRoot GetComponentsTree(const string& context, bool all);
-  const bool SelectComponent(const string& context, const string& aggregateId, int count);
-  const bool SelectVariant(const string& context, const string& aggregateId, const string& variantName);
-  const bool SelectVersion(const string& context, const string& aggregateId, const string& version);
-  const bool SelectBundle(const string& context, const string& className, const string& bundleName);
-  const Args::Results ValidateComponents(const string& context);
-  const Args::LogMessages GetLogMessages(void);
+  string GetVersion(void);
+  bool Shutdown(void);
+  bool Apply(const string& context);
+  bool LoadPacks(void);
+  bool LoadSolution(const string& solution);
+  RpcArgs::UsedItems GetUsedItems(const string& context);
+  RpcArgs::PacksInfo GetPacksInfo(const string& context);
+  RpcArgs::CtRoot GetComponentsTree(const string& context, const bool& all);
+  bool SelectComponent(const string& context, const string& aggregateId, int count);
+  bool SelectVariant(const string& context, const string& aggregateId, const string& variantName);
+  bool SelectVersion(const string& context, const string& aggregateId, const string& version);
+  bool SelectBundle(const string& context, const string& className, const string& bundleName);
+  RpcArgs::Results ValidateComponents(const string& context);
+  RpcArgs::LogMessages GetLogMessages(void);
 
 protected:
   enum Exception
@@ -111,7 +110,7 @@ protected:
   const ContextItem& GetContext(const string& context) const;
   RteTarget* GetActiveTarget(const string& context) const;
   RteComponentAggregate* GetComponentAggregate(const string& context, const string& id) const;
-  const bool SelectVariantOrVersion(const string& context, const string& id, const string& value, bool bVariant);
+  bool SelectVariantOrVersion(const string& context, const string& id, const string& value, bool bVariant);
 };
 
 bool ProjMgrRpcServer::Run(void) {
@@ -182,16 +181,16 @@ RteComponentAggregate* RpcHandler::GetComponentAggregate(const string& context, 
   return rteAggregate;
 }
 
-const string RpcHandler::GetVersion(void) {
+string RpcHandler::GetVersion(void) {
   return VERSION_STRING;
 }
 
-const bool RpcHandler::Shutdown(void) {
+bool RpcHandler::Shutdown(void) {
   m_server.SetShutdown(true);
   return true;
 }
 
-const bool RpcHandler::Apply(const string& context) {
+bool RpcHandler::Apply(const string& context) {
 
   auto rteProject = GetActiveTarget(context)->GetProject();
   if(rteProject) {
@@ -200,15 +199,15 @@ const bool RpcHandler::Apply(const string& context) {
   return false;
 }
 
-const Args::UsedItems RpcHandler::GetUsedItems(const string& context) {
+RpcArgs::UsedItems RpcHandler::GetUsedItems(const string& context) {
 
-  Args::UsedItems usedItems;
+  RpcArgs::UsedItems usedItems;
   RpcDataCollector dc(GetActiveTarget(context));
   dc.CollectUsedItems(usedItems);
   return usedItems;
 }
 
-const bool RpcHandler::LoadPacks(void) {
+bool RpcHandler::LoadPacks(void) {
   m_packsLoaded = m_worker.LoadPacks(m_globalContext);
   if (!m_packsLoaded) {
     throw JsonRpcException(PACKS_LOADING_FAIL, "packs failed to load");
@@ -216,7 +215,7 @@ const bool RpcHandler::LoadPacks(void) {
   return true;
 }
 
-const bool RpcHandler::LoadSolution(const string& solution) {
+bool RpcHandler::LoadSolution(const string& solution) {
   if (!m_packsLoaded) {
     throw JsonRpcException(PACKS_NOT_LOADED, "packs must be loaded before proceeding");
   }
@@ -231,7 +230,7 @@ const bool RpcHandler::LoadSolution(const string& solution) {
   return true;
 }
 
-const Args::PacksInfo RpcHandler::GetPacksInfo(const string& context) {
+RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context) {
   const auto contextItem = GetContext(context);
 
   map<string, vector<string>> packRefs;
@@ -242,9 +241,9 @@ const Args::PacksInfo RpcHandler::GetPacksInfo(const string& context) {
     }
   }
 
-  Args::PacksInfo packsInfo;
+  RpcArgs::PacksInfo packsInfo;
   for (auto& [pack, packItem] : m_globalContext.rteActiveTarget->GetFilteredModel()->GetPackages()) {
-    Args::Pack p;
+    RpcArgs::Pack p;
     p.id = packItem->GetPackageID(true);
     const auto& description = packItem->GetDescription();
     if (!description.empty()) {
@@ -267,8 +266,8 @@ const Args::PacksInfo RpcHandler::GetPacksInfo(const string& context) {
   return packsInfo;
 }
 
-const Args::CtRoot RpcHandler::GetComponentsTree(const string& context, bool all) {
-  Args::CtRoot ctRoot;
+RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool& all) {
+  RpcArgs::CtRoot ctRoot;
   RteTarget* rteTarget = GetActiveTarget(context);
   // store selected components, not aggregates: they will be destroyed
   map<RteComponent*, int> selectedComponents;
@@ -308,7 +307,7 @@ const Args::CtRoot RpcHandler::GetComponentsTree(const string& context, bool all
   return ctRoot;
 }
 
-const bool RpcHandler::SelectComponent(const string& context, const string& id, int count) {
+bool RpcHandler::SelectComponent(const string& context, const string& id, int count) {
 // first try full component ID
   RteComponent* rteComponent = GetContext(context).rteActiveTarget->GetComponent(id);
   if(rteComponent) {
@@ -317,15 +316,15 @@ const bool RpcHandler::SelectComponent(const string& context, const string& id, 
   return GetActiveTarget(context)->SelectComponent(GetComponentAggregate(context, id), count, true);
 }
 
-const bool RpcHandler::SelectVariant(const string& context, const string& id, const string& variant) {
+bool RpcHandler::SelectVariant(const string& context, const string& id, const string& variant) {
   return SelectVariantOrVersion(context, id, variant, true);
 }
 
-const bool RpcHandler::SelectVersion(const string& context, const string& id, const string& version) {
+bool RpcHandler::SelectVersion(const string& context, const string& id, const string& version) {
   return SelectVariantOrVersion(context, id, version, false);
 }
 
-const bool RpcHandler::SelectVariantOrVersion(const string& context, const string& id, const string& value, bool bVariant) {
+bool RpcHandler::SelectVariantOrVersion(const string& context, const string& id, const string& value, bool bVariant) {
   RteComponentAggregate* rteAggregate = GetComponentAggregate(context, id);
 
   auto& selectedValue = bVariant ? rteAggregate->GetSelectedVariant() : rteAggregate->GetSelectedVersion();
@@ -352,7 +351,7 @@ const bool RpcHandler::SelectVariantOrVersion(const string& context, const strin
 
 
 
-const bool RpcHandler::SelectBundle(const string& context, const string& className, const string& bundleName) {
+bool RpcHandler::SelectBundle(const string& context, const string& className, const string& bundleName) {
   RteTarget* rteTarget = GetActiveTarget(context);
   RteComponentClass* rteClass = rteTarget->GetComponentClass(className);
   if(!rteClass) {
@@ -364,26 +363,26 @@ const bool RpcHandler::SelectBundle(const string& context, const string& classNa
 }
 
 
-const Args::Results RpcHandler::ValidateComponents(const string& context) {
+RpcArgs::Results RpcHandler::ValidateComponents(const string& context) {
   auto contextItem = GetContext(context);
 
   if (!m_worker.CheckRteErrors()) {
     throw JsonRpcException(RTE_MODEL_ERROR, "rte model reported error");
   }
 
-  Args::Results results;
+  RpcArgs::Results results;
   if (!m_worker.ValidateContext(contextItem)) {
-    results.validation = vector<Args::Result>{};
+    results.validation = vector<RpcArgs::Result>{};
     for (const auto& validation : contextItem.validationResults) {
-      Args::Result r;
+      RpcArgs::Result r;
       r.result = RteItem::ConditionResultToString(validation.result);
       r.id = validation.id;
       if (!validation.aggregates.empty()) {
         r.aggregates = vector<string>(validation.aggregates.begin(), validation.aggregates.end());
       }
       if (!validation.conditions.empty()) {
-        Args::Condition c;
-        r.conditions = vector<Args::Condition>{};
+        RpcArgs::Condition c;
+        r.conditions = vector<RpcArgs::Condition>{};
         for (const auto& condition : validation.conditions) {
           c.expression = condition.expression;
           if (!condition.aggregates.empty()) {
@@ -398,7 +397,7 @@ const Args::Results RpcHandler::ValidateComponents(const string& context) {
   return results;
 }
 
-const Args::LogMessages RpcHandler::GetLogMessages(void) {
+RpcArgs::LogMessages RpcHandler::GetLogMessages(void) {
   StrVec infoVec;
   for (const auto& [_, info] : ProjMgrLogger::Get().GetInfos()) {
     for (const auto& msg : info) {
@@ -417,7 +416,7 @@ const Args::LogMessages RpcHandler::GetLogMessages(void) {
       CollectionUtils::PushBackUniquely(warningsVec, msg);
     }
   }
-  Args::LogMessages messages;
+  RpcArgs::LogMessages messages;
   if (!infoVec.empty()) {
     messages.info = infoVec;
   }
