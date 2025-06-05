@@ -7,12 +7,14 @@ solution:
       compiler: AC6
       variables:
         - VariableName: FirstValue
+        - copied-from: /buildtype/test.yml
 
   target-types:
     - type: TargetType
       device: RteTest_ARMCM0
       variables:
         - VariableName: SecondValue
+        - copied-from: /targettype/test.yml
 
   projects:
     - project: variables-redefinition.cproject.yml
