@@ -486,10 +486,15 @@ void ProjMgrYamlParser::ParseVectorOfStringPairs(const YAML::Node& parent, const
         if (item.IsMap()) {
           const auto& elements = item.as<map<string, string>>();
           for (auto element : elements) {
-            if (YAML::IsNullString(element.second)) {
-              element.second = "";
+            // skip parsing variable named "copied-from"
+            // This is a special case used by the CMSIS csolution extension
+            // and may involve redefinitions
+            if (element.first != "copied-from") {
+              if (YAML::IsNullString(element.second)) {
+                element.second = "";
+              }
+              value.push_back(element);
             }
-            value.push_back(element);
           }
         } else {
           value.push_back(make_pair(item.as<string>(), ""));
