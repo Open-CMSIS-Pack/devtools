@@ -47,6 +47,13 @@
       <subFamily DsubFamily="MyDevice">
         <device Dname="MyDeviceM0">
           <processor Dfpu="0" Dmpu="0" Dendian="Little-endian" Dclock="24000000"/>
+          <environment name="test_env">
+            <e:extension xmlns:e="http://example.com"
+                            schemaVersion="1.0"
+                            xsi:schemaLocation="http://example.com example.xsd">
+               <e:element value="test"/>
+            </e:extension>
+         </environment>
         </device>
       </subFamily>
     </family>

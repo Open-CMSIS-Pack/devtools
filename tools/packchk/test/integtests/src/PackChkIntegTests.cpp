@@ -806,7 +806,7 @@ TEST_F(PackChkIntegTests, CheckUrlForHttp) {
   }
 
   if (M300_foundCnt != 8) {
-    FAIL() << "error: missing message M300";
+    FAIL() << "error: missing number of M300, found " << M300_foundCnt;
   }
 }
 
