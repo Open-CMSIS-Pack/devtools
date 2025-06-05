@@ -28,14 +28,14 @@
         "binary": "svdconv"
     },
     {
-        "runs_on":"windows-2019",
+        "runs_on":"windows-2022",
         "target":"windows",
         "arch": "amd64",
         "runOn": "always",
         "binary": "svdconv.exe"
     },
     {
-        "runs_on":"windows-2019",
+        "runs_on":"windows-2022",
         "target":"windows",
         "arch": "arm64",
         "runOn": "always",
