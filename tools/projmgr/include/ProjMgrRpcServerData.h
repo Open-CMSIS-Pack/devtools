@@ -6,7 +6,7 @@
 #ifndef PROJMGRRPCSERVERDATA_H
 #define PROJMGRRPCSERVERDATA_H
 
-#include <RpcInterface.h>
+#include "RpcInterface.h"
 
 using namespace std;
 
@@ -23,19 +23,19 @@ public:
 
   RteTarget* GetTarget() const { return m_target; }
 
-  void CollectCtClasses(Args::CtRoot& ctRoot) const;
-  void CollectUsedItems(Args::UsedItems& usedItems) const;
+  void CollectCtClasses(RpcArgs::CtRoot& ctRoot) const;
+  void CollectUsedItems(RpcArgs::UsedItems& usedItems) const;
 
-  Args::Component FromRteComponent(const RteComponent* rteComponent) const;
-  Args::ComponentInstance FromComponentInstance(const RteComponentInstance* rteCi) const;
+  RpcArgs::Component FromRteComponent(const RteComponent* rteComponent) const;
+  RpcArgs::ComponentInstance FromComponentInstance(const RteComponentInstance* rteCi) const;
   RteItem* GetTaxonomyItem(const RteComponentGroup* rteGroup) const;
 
 protected:
 
-  void CollectCtBundles(Args::CtClass& ctClass, RteComponentGroup* rteClass) const;
-  void CollectCtChildren(Args::CtTreeItem& parent, RteComponentGroup* rteGroup, const string& bundleName) const;
-  void CollectCtAggregates(Args::CtTreeItem& parent, RteComponentGroup* rteGroup, const string& bundleName) const;
-  void CollectCtVariants(Args::CtAggregate& ctAggregate, RteComponentAggregate* rteAggregate) const;
+  void CollectCtBundles(RpcArgs::CtClass& ctClass, RteComponentGroup* rteClass) const;
+  void CollectCtChildren(RpcArgs::CtTreeItem& parent, RteComponentGroup* rteGroup, const string& bundleName) const;
+  void CollectCtAggregates(RpcArgs::CtTreeItem& parent, RteComponentGroup* rteGroup, const string& bundleName) const;
+  void CollectCtVariants(RpcArgs::CtAggregate& ctAggregate, RteComponentAggregate* rteAggregate) const;
 
 private:
   RteTarget* m_target;

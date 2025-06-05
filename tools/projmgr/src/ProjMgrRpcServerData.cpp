@@ -15,7 +15,7 @@
 
 #include "CollectionUtils.h"
 
-using namespace Args;
+using namespace RpcArgs;
 
 template <typename T>
 T FromRteItem(const string& id, RteItem* rteItem) {
@@ -37,10 +37,10 @@ RpcDataCollector::RpcDataCollector(RteTarget* t) :
 {
 }
 
-Args::Component RpcDataCollector::FromRteComponent(const RteComponent* rteComponent) const{
-    Args::Component c;
+RpcArgs::Component RpcDataCollector::FromRteComponent(const RteComponent* rteComponent) const{
+    RpcArgs::Component c;
     c.id = rteComponent->GetComponentID(true);
-    c.fromPack = rteComponent->GetPackageID(true);
+    c.pack = rteComponent->GetPackageID(true);
     const auto& description = rteComponent->GetDescription();
     if (!description.empty()) {
       c.description = description;
@@ -59,7 +59,7 @@ Args::Component RpcDataCollector::FromRteComponent(const RteComponent* rteCompon
     return c;
 }
 
-Args::ComponentInstance RpcDataCollector::FromComponentInstance(const RteComponentInstance* rteCi) const {
+RpcArgs::ComponentInstance RpcDataCollector::FromComponentInstance(const RteComponentInstance* rteCi) const {
   ComponentInstance ci;
   if(rteCi) {
     ci.id = rteCi->GetDisplayName();
@@ -85,7 +85,7 @@ RteItem* RpcDataCollector::GetTaxonomyItem(const RteComponentGroup* rteGroup) co
   return nullptr;
 }
 
-void RpcDataCollector::CollectUsedItems(Args::UsedItems& usedItems) const {
+void RpcDataCollector::CollectUsedItems(RpcArgs::UsedItems& usedItems) const {
 
   auto rteProject = m_target ? m_target->GetProject() : nullptr;
   if(!rteProject) {
@@ -105,7 +105,7 @@ void RpcDataCollector::CollectUsedItems(Args::UsedItems& usedItems) const {
 }
 
 
-void RpcDataCollector::CollectCtClasses(Args::CtRoot& root) const {
+void RpcDataCollector::CollectCtClasses(RpcArgs::CtRoot& root) const {
 
   auto classContainer = m_target ? m_target->GetClasses() : nullptr;
   if(!classContainer) {
@@ -113,7 +113,7 @@ void RpcDataCollector::CollectCtClasses(Args::CtRoot& root) const {
   }
 
   for(auto [name, rteClass] : classContainer->GetGroups()) {
-    Args::CtClass ctClass;
+    RpcArgs::CtClass ctClass;
     ctClass.name = name;
     auto activeBundle = rteClass->GetSelectedBundleName();
     ctClass.activeBundle = activeBundle;
@@ -126,7 +126,7 @@ void RpcDataCollector::CollectCtClasses(Args::CtRoot& root) const {
   }
 }
 
-void RpcDataCollector::CollectCtBundles(Args::CtClass& ctClass, RteComponentGroup* rteClass) const {
+void RpcDataCollector::CollectCtBundles(RpcArgs::CtClass& ctClass, RteComponentGroup* rteClass) const {
   for(auto [bundleName, bundleId] : rteClass->GetBundleNames()) {
     m_target->GetFilteredBundles();
     CtBundle ctBundle;
@@ -141,7 +141,7 @@ void RpcDataCollector::CollectCtBundles(Args::CtClass& ctClass, RteComponentGrou
   }
 }
 
-void RpcDataCollector::CollectCtChildren(Args::CtTreeItem& parent, RteComponentGroup* parentRteGroup, const string& bundleName) const
+void RpcDataCollector::CollectCtChildren(RpcArgs::CtTreeItem& parent, RteComponentGroup* parentRteGroup, const string& bundleName) const
 {
   // collect aggregates to this level
   CollectCtAggregates(parent, parentRteGroup, bundleName);
@@ -149,7 +149,7 @@ void RpcDataCollector::CollectCtChildren(Args::CtTreeItem& parent, RteComponentG
   if(rteGroups.empty()) {
     return;
   }
-  vector<CtGroup> groups;
+  vector<CtGroup> cgroups;
   for(auto [name, rteGroup] : rteGroups) {
     if(!rteGroup->HasBundleName(bundleName)) {
       continue;
@@ -168,12 +168,12 @@ void RpcDataCollector::CollectCtChildren(Args::CtTreeItem& parent, RteComponentG
     CollectCtChildren(g, rteGroup, bundleName);
     CollectCtAggregates(g, rteGroup,bundleName);
     // add to parent collection
-    groups.push_back(g);
+    cgroups.push_back(g);
   }
-  parent.groups = groups;
+  parent.cgroups = cgroups;
 }
 
-void RpcDataCollector::CollectCtAggregates(Args::CtTreeItem& parent, RteComponentGroup* parentRteGroup, const string& bundleName) const
+void RpcDataCollector::CollectCtAggregates(RpcArgs::CtTreeItem& parent, RteComponentGroup* parentRteGroup, const string& bundleName) const
 {
   // aggregates
   vector<CtAggregate> aggregates;
@@ -208,7 +208,7 @@ void RpcDataCollector::CollectCtAggregates(Args::CtTreeItem& parent, RteComponen
   }
 }
 
-void RpcDataCollector::CollectCtVariants(Args::CtAggregate& ctAggregate, RteComponentAggregate* rteAggregate) const
+void RpcDataCollector::CollectCtVariants(RpcArgs::CtAggregate& ctAggregate, RteComponentAggregate* rteAggregate) const
 {
   for(auto& variantName : rteAggregate->GetVariants()) {
     CtVariant v;

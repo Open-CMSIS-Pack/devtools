@@ -12,6 +12,15 @@ file(DOWNLOAD
   ${CMAKE_CURRENT_SOURCE_DIR}/templates/debug-adapters.yml
 )
 
+# rpc interface
+include(FetchContent)
+FetchContent_Declare(
+  rpc-interface
+  URL https://github.com/Open-CMSIS-Pack/csolution-rpc/releases/download/v0.0.1/csolution-rpc.zip
+  URL_HASH SHA256=e5e6528ace7cf9b31a24ef268f9d86a9810d3a84c0e4e166dfe2c745e734524a
+)
+FetchContent_MakeAvailable(rpc-interface)
+
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT projmgr)
 
 # projmgr library
@@ -30,13 +39,16 @@ SET(PROJMGR_HEADER_FILES ProjMgr.h ProjMgrKernel.h ProjMgrCallback.h
   ProjMgrYamlEmitter.h ProjMgrUtils.h ProjMgrExtGenerator.h
   ProjMgrCbuildBase.h ProjMgrRunDebug.h
   ProjMgrRpcServer.h ProjMgrRpcServerData.h
-  RpcInterface.h
 )
 
 list(TRANSFORM PROJMGR_SOURCE_FILES PREPEND src/)
 list(TRANSFORM PROJMGR_HEADER_FILES PREPEND include/)
 
-add_library(projmgrlib OBJECT ${PROJMGR_SOURCE_FILES} ${PROJMGR_HEADER_FILES})
+add_library(projmgrlib OBJECT
+  ${PROJMGR_SOURCE_FILES}
+  ${PROJMGR_HEADER_FILES}
+  ${rpc-interface_SOURCE_DIR}/RpcInterface.h
+)
 target_link_libraries(projmgrlib
   PUBLIC
   CrossPlatform RteFsUtils RteUtils XmlTree XmlTreeSlim XmlReader
@@ -45,6 +57,7 @@ target_link_libraries(projmgrlib
 target_include_directories(projmgrlib PUBLIC include ${PROJECT_BINARY_DIR}
   ${CMAKE_SOURCE_DIR}/external/json
   ${CMAKE_SOURCE_DIR}/external/json-rpc-cxx/include
+  ${rpc-interface_SOURCE_DIR}
 )
 
 if(SWIG_LIBS)
