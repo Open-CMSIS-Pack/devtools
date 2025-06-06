@@ -79,7 +79,7 @@ public:
   RpcArgs::UsedItems GetUsedItems(const string& context);
   RpcArgs::PacksInfo GetPacksInfo(const string& context);
   RpcArgs::CtRoot GetComponentsTree(const string& context, const bool& all);
-  bool SelectComponent(const string& context, const string& aggregateId, int count);
+  bool SelectComponent(const string& context, const string& aggregateId, const int& count);
   bool SelectVariant(const string& context, const string& aggregateId, const string& variantName);
   bool SelectVersion(const string& context, const string& aggregateId, const string& version);
   bool SelectBundle(const string& context, const string& className, const string& bundleName);
@@ -307,7 +307,7 @@ RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool&
   return ctRoot;
 }
 
-bool RpcHandler::SelectComponent(const string& context, const string& id, int count) {
+bool RpcHandler::SelectComponent(const string& context, const string& id, const int& count) {
 // first try full component ID
   RteComponent* rteComponent = GetContext(context).rteActiveTarget->GetComponent(id);
   if(rteComponent) {
