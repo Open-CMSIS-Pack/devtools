@@ -10,12 +10,17 @@ cbuild-run:
     - file: out/core0/TestHW3/core0.axf
       info: generate by core0+TestHW3
       type: elf
-      load: image+symbols
+      load: none
       pname: cm0_core0
     - file: out/core1/TestHW3/core1.axf
       info: generate by core1+TestHW3
       type: elf
-      load: image+symbols
+      load: none
+      pname: cm0_core1
+    - file: out/core1/TestHW3/core1.bin
+      info: generate by core1+TestHW3
+      type: bin
+      load: image
       pname: cm0_core1
   system-resources:
     memory:

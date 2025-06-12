@@ -2363,7 +2363,7 @@
       },
       "additionalProperties": false,
       "oneOf": [
-        { "required": ["project-context"], "not": {"required": ["image", "load", "type"]} },
+        { "required": ["project-context"], "not": {"required": ["image"]} },
         { "required": ["image"], "not": {"required": ["project-context"]} }
       ]
     },
