@@ -6,3 +6,4 @@ project:
     - layer: $VarTargetLayer$
     - layer: $VarSolution$
     - layer: $VarSolutionDir$
+    - layer: $SolutionDir()$/variables/solutionDir2.clayer.yml

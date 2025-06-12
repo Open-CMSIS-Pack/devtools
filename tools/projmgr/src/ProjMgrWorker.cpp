@@ -203,7 +203,9 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
       if (!variable.empty()) {
         context.layerVariables[clayer.type] = variable;
       }
-      string clayerFile = RteUtils::ExpandAccessSequences(clayer.layer, context.variables);
+      auto variables = context.variables;
+      variables[RteConstants::AS_SOLUTION_DIR_BR] = context.csolution->directory;
+      string clayerFile = RteUtils::ExpandAccessSequences(clayer.layer, variables);
       if (clayerFile.empty()) {
         continue;
       }

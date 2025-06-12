@@ -9,6 +9,7 @@ build-idx:
         - clayer: ../data/TestLayers/$VarTargetLayer$
         - clayer: ../data/TestLayers/$VarSolution$
         - clayer: ../data/TestLayers/$VarSolutionDir$
+        - clayer: ../data/TestLayers/$SolutionDir()$/variables/solutionDir2.clayer.yml
   cbuilds:
     - cbuild: variables.BuildType1+TargetType1.cbuild.yml
       project: variables
@@ -17,6 +18,7 @@ build-idx:
         - clayer: ../data/TestLayers/variables/app.clayer.yml
         - clayer: ../data/TestLayers/variables/build1.clayer.yml
         - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
+        - clayer: ../data/TestLayers/variables/solutionDir2.clayer.yml
         - clayer: ../data/TestLayers/variables/target1.clayer.yml
       messages:
         info:
@@ -29,6 +31,7 @@ build-idx:
         - clayer: ../data/TestLayers/variables/app.clayer.yml
         - clayer: ../data/TestLayers/variables/build1.clayer.yml
         - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
+        - clayer: ../data/TestLayers/variables/solutionDir2.clayer.yml
         - clayer: ../data/TestLayers/variables/target2.clayer.yml
       messages:
         info:
@@ -41,6 +44,7 @@ build-idx:
         - clayer: ../data/TestLayers/variables/app.clayer.yml
         - clayer: ../data/TestLayers/variables/build2.clayer.yml
         - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
+        - clayer: ../data/TestLayers/variables/solutionDir2.clayer.yml
         - clayer: ../data/TestLayers/variables/target1.clayer.yml
       messages:
         info:
@@ -53,6 +57,7 @@ build-idx:
         - clayer: ../data/TestLayers/variables/app.clayer.yml
         - clayer: ../data/TestLayers/variables/build2.clayer.yml
         - clayer: ../data/TestLayers/variables/solutionDir.clayer.yml
+        - clayer: ../data/TestLayers/variables/solutionDir2.clayer.yml
         - clayer: ../data/TestLayers/variables/target2.clayer.yml
       messages:
         info:
