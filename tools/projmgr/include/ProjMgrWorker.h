@@ -359,6 +359,7 @@ struct DebuggerType {
  *        images
  *        selected target-set
  *        load offset for generated binary
+ *        load modes
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -426,6 +427,7 @@ struct ContextItem {
   std::vector<ImageItem> images;
   std::string targetSet;
   std::string loadOffset;
+  StrMap loadMode;
 };
 
 /**

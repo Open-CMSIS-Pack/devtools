@@ -44,7 +44,13 @@ solution:
         - set:
           images:
             - project-context: core0
+              load: none
             - project-context: core1
+              type: elf
+              load: none
+            - project-context: core1
+              type: bin
+              load: image
           debugger:
             name: CMSIS-DAP
             start-pname: cm0_core1
