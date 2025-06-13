@@ -57,6 +57,13 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.10.0</td>
+    <td>Release notes:
+      - updated cbridge utility v0.9.16
+      - updated cbuild utility v2.10.0
+      - updated cpackget utility v2.1.8
+      - updated csolution utility v2.10.0
+    </td>
     <td>2.9.0</td>
     <td>Release notes:
       - added `link-time-optimize` compiler and linker flags
