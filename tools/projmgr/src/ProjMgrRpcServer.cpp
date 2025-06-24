@@ -208,7 +208,9 @@ RpcArgs::UsedItems RpcHandler::GetUsedItems(const string& context) {
 }
 
 bool RpcHandler::LoadPacks(void) {
+  m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
   m_packsLoaded = m_worker.LoadPacks(m_globalContext);
+  m_worker.SetLoadPacksPolicy(LoadPacksPolicy::DEFAULT);
   if (!m_packsLoaded) {
     throw JsonRpcException(PACKS_LOADING_FAIL, "packs failed to load");
   }
