@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -31,12 +31,14 @@ public:
   std::string GetOutString();
   std::string GetErrorString();
   void ClearStringStreams();
+  void SetInString(const std::string& inStr);
 
 private:
   std::stringstream m_outbuffer;
   std::stringstream m_cerrbuffer;
   std::streambuf*   m_stdoutStreamBuf;
   std::streambuf*   m_stdcerrStreamBuf;
+  std::istringstream m_inputBuffer;
 };
 
 class TempSwitchCwd {

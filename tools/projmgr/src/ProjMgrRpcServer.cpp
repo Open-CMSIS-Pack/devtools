@@ -138,9 +138,10 @@ bool ProjMgrRpcServer::Run(void) {
 
     // Send response
     if (m_contextLength) {
-      cout << CONTENT_LENGTH_HEADER << response.size() << std::endl << std::endl;
+      cout << CONTENT_LENGTH_HEADER << response.size() << std::endl << std::endl << response << std::flush;
+    } else {
+      cout << response << std::endl;
     }
-    cout << response << std::flush;
 
     if (m_debug) {
       log << response << std::endl;

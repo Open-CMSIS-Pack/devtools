@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  compiler: AC6
+
+  target-types:
+    - type: TestHW
+      device: RteTest_ARMCM4_NOFP
+
+  projects:
+    - project: minimal.cproject.yml
+
+  packs:
+    - pack: ARM::RteTest_DFP
