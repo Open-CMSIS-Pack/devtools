@@ -705,6 +705,12 @@ public:
   void SetUpCommand(bool isSetup);
 
   /**
+   * @brief set flag when running in rpc mode
+   * @param boolean rpcMode
+  */
+  void RpcMode(bool rpcMode);
+
+  /**
    * @brief set yaml emitter
    * @param pointer to yaml emitter
   */
@@ -961,6 +967,7 @@ protected:
   bool m_relativePaths;
   bool m_cbuild2cmake;
   bool m_isSetupCommand;
+  bool m_rpcMode = false;
   std::set<std::string> m_undefLayerVars;
   StrMap m_packMetadata;
   std::map<std::string, ExecutesItem> m_executes;

@@ -298,6 +298,10 @@ void ProjMgrWorker::SetUpCommand(bool isSetup) {
   m_isSetupCommand = isSetup;
 }
 
+void ProjMgrWorker::RpcMode(bool rpcMode) {
+  m_rpcMode = rpcMode;
+}
+
 void ProjMgrWorker::SetEmitter(ProjMgrYamlEmitter* emitter) {
   m_emitter = emitter;
 }
@@ -1917,6 +1921,11 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 
   if (!CheckRteErrors()) {
     return false;
+  }
+
+  // tolerate component selection errors when in rpc mode
+  if (m_rpcMode) {
+    error = false;
   }
 
   return !error;

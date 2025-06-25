@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -42,6 +42,11 @@ std::string StdStreamRedirect::GetErrorString() {
 void StdStreamRedirect::ClearStringStreams() {
   m_outbuffer.str(string());
   m_cerrbuffer.str(string());
+}
+
+void StdStreamRedirect::SetInString(const std::string& inStr) {
+  m_inputBuffer = std::istringstream(inStr);
+  std::cin.rdbuf(m_inputBuffer.rdbuf());
 }
 
 StdStreamRedirect::~StdStreamRedirect() {

@@ -424,6 +424,7 @@ int ProjMgr::ProcessCommands() {
   } else if (m_command == "rpc") {
     // Launch 'rpc' server over stdin/stdout
     ProjMgrLogger::m_silent = true;
+    m_worker.RpcMode(true);
     if (!m_rpcServer.Run()) {
       return ErrorCode::ERROR;
     }
