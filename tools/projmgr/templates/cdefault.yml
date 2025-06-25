@@ -13,7 +13,7 @@ default:
         - -masm=auto
       Link:
         - --entry=Reset_Handler
-        - --info summarysizes
+        - --info=summarysizes
         - --summary_stderr
         - --diag_suppress=L6314W
 
