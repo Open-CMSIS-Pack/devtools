@@ -287,8 +287,10 @@ RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool&
     auto& contextItem = GetContext(context);
     // use pack ID's from context
     set<string> packIds;
-    for(auto [id, pack] : contextItem.packages) {
-      packIds.insert(id);
+    for(const auto& [_, packs] : contextItem.userInputToResolvedPackIdMap) {
+      for (const auto& id : packs) {
+        packIds.insert(id);
+      }
     }
     packFilter.SetSelectedPackages(packIds);
   }
