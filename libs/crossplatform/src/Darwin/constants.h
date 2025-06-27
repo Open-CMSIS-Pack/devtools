@@ -12,5 +12,6 @@ constexpr const char* USER_PROFILE   = "HOME";
 constexpr const char* PACK_ROOT_DIR  = "/arm/packs";
 constexpr const char* CACHE_DIR      = "/.cache";
 constexpr const char* HOST_TYPE      = "mac";
+constexpr const char* CRLF           = "\r\n";
 
 #endif // CROSSPLATFORM_CONSTANTS_H

@@ -12,5 +12,6 @@ constexpr const char* USER_PROFILE   = "";
 constexpr const char* PACK_ROOT_DIR  = "";
 constexpr const char* CACHE_DIR      = "";
 constexpr const char* HOST_TYPE      = "";
+constexpr const char* CRLF           = "";
 
 #endif // CROSSPLATFORM_CONSTANTS_H

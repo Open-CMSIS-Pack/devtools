@@ -9,6 +9,8 @@
 #include "ProjMgrLogger.h"
 #include "ProjMgr.h"
 #include "ProductInfo.h"
+
+#include "CrossPlatformUtils.h"
 #include <RteFsUtils.h>
 
 #include <fstream>
@@ -31,9 +33,12 @@ const string ProjMgrRpcServer::GetRequestFromStdinWithLength(void) {
   string line;
   int contentLength = 0;
   const string& header = CONTENT_LENGTH_HEADER;
-  while (getline(cin, line) && !line.empty() && !cin.fail()) {
+  while (getline(cin, line) && !cin.fail()) {
     if (line.find(header) == 0) {
       contentLength = RteUtils::StringToInt(line.substr(header.length()), 0);
+    }
+    if (line.empty() || line.front() == '\r' || line.front() == '\n') {
+      break;
     }
   }
   string request(contentLength, '\0');
@@ -138,7 +143,9 @@ bool ProjMgrRpcServer::Run(void) {
 
     // Send response
     if (m_contextLength) {
-      cout << CONTENT_LENGTH_HEADER << response.size() << std::endl << std::endl << response << std::flush;
+      // compliant to https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#baseProtocol
+      cout << CONTENT_LENGTH_HEADER << response.size() <<
+        CrossPlatformUtils::Crlf() << CrossPlatformUtils::Crlf() << response << std::flush;
     } else {
       cout << response << std::endl;
     }
