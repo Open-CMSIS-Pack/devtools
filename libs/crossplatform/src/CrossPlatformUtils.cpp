@@ -88,4 +88,10 @@ const std::pair<std::string, int> CrossPlatformUtils::ExecCommand(const std::str
   return std::make_pair(result, ret_code);
 }
 
+std::string CrossPlatformUtils::Crlf()
+{
+  static const std::string crlf = CRLF;
+  return crlf;
+}
+
 // end of CrossplatformUtils.cpp

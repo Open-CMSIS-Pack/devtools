@@ -108,6 +108,12 @@ public:
    * @return The umask value as a std::filesystem::perms type
   */
   static std::filesystem::perms GetCurrentUmask();
+
+  /**
+   * @brief Get CRLF line endings regardless of platform
+   * @return <CR><LF>
+  */
+  static std::string Crlf();
 };
 
 #endif  /* CROSSPLATFORM_UTILS_H */

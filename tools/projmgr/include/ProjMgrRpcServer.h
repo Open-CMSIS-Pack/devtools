@@ -56,13 +56,23 @@ public:
   */
   void SetContentLengthHeader(bool value) { m_contextLength = value; }
 
+  /**
+   * @brief get request from stdin with content length header
+   * @return string request
+  */
+  const std::string GetRequestFromStdinWithLength(void);
+
+  /**
+   * @brief get request from stdin
+   * @param string request
+  */
+  const std::string GetRequestFromStdin(void);
+
 protected:
   ProjMgr& m_manager;
   bool m_debug = false;
   bool m_shutdown = false;
   bool m_contextLength = false;
-  const std::string GetRequestFromStdinWithLength(void);
-  const std::string GetRequestFromStdin(void);
 };
 
 #endif  // PROJMGRRPCSERVER_H

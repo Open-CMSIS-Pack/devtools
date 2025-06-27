@@ -10,6 +10,7 @@
 #include "ProjMgrRpcServerData.h"
 #include "ProjMgrLogger.h"
 
+#include "CrossPlatformUtils.h"
 #include "ProductInfo.h"
 
 using namespace std;
@@ -20,6 +21,7 @@ protected:
   virtual ~ProjMgrRpcTests() {}
   string FormatRequest(const int id, const string& method, const json& params);
   vector<json> RunRpcMethods(const string& strIn);
+  string RunRpcMethodsWithContent(const string& strIn);
 };
 
 string ProjMgrRpcTests::FormatRequest(const int id, const string& method, const json& params = json()) {
@@ -47,12 +49,42 @@ vector<json> ProjMgrRpcTests::RunRpcMethods(const string& strIn) {
   return responses;
 }
 
+string ProjMgrRpcTests::RunRpcMethodsWithContent(const string& strIn) {
+  StdStreamRedirect streamRedirect;
+  streamRedirect.SetInString(strIn);
+  char* argv[] = { (char*)"csolution", (char*)"rpc", (char*)"--content-length" };
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+  return streamRedirect.GetOutString();
+}
+
+TEST_F(ProjMgrRpcTests, ContentLength) {
+  StdStreamRedirect streamRedirect;
+  ProjMgrRpcServer server(*this);
+  const auto& request = FormatRequest(1, "GetVersion");
+
+  auto requestWithHeader = "Content-Length:46\n\n" + request;
+  streamRedirect.SetInString(requestWithHeader);
+  auto parsedRequest = server.GetRequestFromStdinWithLength();
+  EXPECT_EQ(request, parsedRequest);
+
+  requestWithHeader = "Content-Length:46\r\n\r\n" + request;
+  streamRedirect.SetInString(requestWithHeader);
+  parsedRequest = server.GetRequestFromStdinWithLength();
+  EXPECT_EQ(request, parsedRequest);
+}
+
 TEST_F(ProjMgrRpcTests, RpcGetVersion) {
   const auto& requests = FormatRequest(1, "GetVersion");
   const auto& responses = RunRpcMethods(requests);
   EXPECT_EQ("2.0", responses[0]["jsonrpc"]);
   EXPECT_EQ(1, responses[0]["id"]);
   EXPECT_EQ(string(VERSION_STRING), responses[0]["result"]);
+}
+
+TEST_F(ProjMgrRpcTests, RpcGetVersionWithContent) {
+  const auto& requests = "Content-Length:46\n\n" + FormatRequest(1, "GetVersion");
+  const auto& responses = RunRpcMethodsWithContent(requests);
+  EXPECT_TRUE(responses.find(CrossPlatformUtils::Crlf() + CrossPlatformUtils::Crlf() + "{") != string::npos);
 }
 
 TEST_F(ProjMgrRpcTests, RpcLoadSolution) {
