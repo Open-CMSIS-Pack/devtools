@@ -112,6 +112,10 @@ protected:
   ContextItem m_globalContext;
   bool m_packsLoaded = false;
   bool m_solutionLoaded = false;
+  bool m_bUseAllPacks = false;
+
+  void StoreSelectedComponents(RteTarget* rteTarget, map<RteComponent*, int>& selectedComponents);
+  void UpdateFilter(const string& context, RteTarget* rteTarget, bool bAll); // returns true if changed
   const ContextItem& GetContext(const string& context) const;
   RteTarget* GetActiveTarget(const string& context) const;
   RteComponentAggregate* GetComponentAggregate(const string& context, const string& id) const;
@@ -276,11 +280,8 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context) {
   return packsInfo;
 }
 
-RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool& all) {
-  RpcArgs::CtRoot ctRoot;
-  RteTarget* rteTarget = GetActiveTarget(context);
-  // store selected components, not aggregates: they will be destroyed
-  map<RteComponent*, int> selectedComponents;
+void RpcHandler::StoreSelectedComponents(RteTarget* rteTarget, map<RteComponent*, int>& selectedComponents)
+{
   auto& selectedAggregates = rteTarget->CollectSelectedComponentAggregates();
   for(auto [aggregate, count] : selectedAggregates) {
     RteComponent* c = aggregate->GetComponent();
@@ -289,6 +290,17 @@ RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool&
       selectedComponents[c] = count;
     }
   }
+}
+
+void RpcHandler::UpdateFilter(const string& context, RteTarget* rteTarget, bool all) {
+  if(m_bUseAllPacks == all) {
+    return;
+  }
+  m_bUseAllPacks = all;
+  // store selected components, not aggregates: they will be destroyed
+  map<RteComponent*, int> selectedComponents;
+  StoreSelectedComponents(rteTarget, selectedComponents);
+
   RtePackageFilter packFilter;
   if(!all) {
     // construct and apply filter
@@ -300,7 +312,13 @@ RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool&
         packIds.insert(id);
       }
     }
+    // add new packs from current selection otherwise we will loose the selection
+    for(auto [c, _count] : selectedComponents) {
+      auto id = c->GetPackageID();
+      packIds.insert(id);
+    }
     packFilter.SetSelectedPackages(packIds);
+    packFilter.SetUseAllPacks(false);
   }
   // only update filter if differs from current state
   if(!packFilter.IsEqual(rteTarget->GetPackageFilter())) {
@@ -313,8 +331,14 @@ RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool&
     }
     rteTarget->EvaluateComponentDependencies();
   }
+}
+
+RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool& all) {
+  RteTarget* rteTarget = GetActiveTarget(context);
+  UpdateFilter(context, rteTarget, all);
 
   RpcDataCollector dc(rteTarget);
+  RpcArgs::CtRoot ctRoot;
   dc.CollectCtClasses(ctRoot);
   return ctRoot;
 }
