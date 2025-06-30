@@ -12,6 +12,9 @@
 
 #include "CrossPlatformUtils.h"
 #include "ProductInfo.h"
+#include "yaml-cpp/yaml.h"
+
+#include <fstream>
 
 using namespace std;
 
@@ -110,6 +113,74 @@ TEST_F(ProjMgrRpcTests, RpcLoadSolution_UnknownComponent) {
   EXPECT_TRUE(responses[1]["result"]);
   EXPECT_EQ("no component was found with identifier 'ARM::UNKNOWN:COMPONENT'",
     responses[2]["result"]["errors"][0]);
+}
+
+TEST_F(ProjMgrRpcTests, RpcValidateComponents) {
+  vector<string> contextList = {
+    "selectable+CM0",
+    "missing+CM0",
+    "conflict+CM0",
+    "incompatible+CM0",
+    "incompatible-variant+CM0",
+  };
+  YAML::Node cbuildset;
+  cbuildset["cbuild-set"]["generated-by"] = "ProjMrgUnitTests";
+  for (const auto& context : contextList) {
+    cbuildset["cbuild-set"]["contexts"].push_back(map<string, string>{ { "context", context } });
+  }
+  const string& cbuildsetPath = testinput_folder + "/Validation/dependencies.cbuild-set.yml";
+
+  ofstream cbuildsetFile;
+  cbuildsetFile.open(cbuildsetPath, fstream::trunc);
+  cbuildsetFile << cbuildset << std::endl;
+  cbuildsetFile.close();
+
+  const string& csolution = testinput_folder + "/Validation/dependencies.csolution.yml";
+  auto requests =
+    FormatRequest(1, "LoadPacks") +
+    FormatRequest(2, "LoadSolution", json({ { "solution", csolution } }));
+  int id = 3;
+  for (const auto& context : contextList) {
+    requests += FormatRequest(id++, "ValidateComponents", json({ { "context", context } }));
+  }
+
+  const auto& responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[0]["result"]);
+  EXPECT_TRUE(responses[1]["result"]);
+
+  // selectable
+  auto validation = responses[2]["result"]["validation"][0];
+  EXPECT_EQ("ARM::Device:Startup&RteTest Startup@2.0.3", validation["id"]);
+  EXPECT_EQ("SELECTABLE", validation["result"]);
+  EXPECT_EQ("require RteTest:CORE", validation["conditions"][0]["expression"]);
+  EXPECT_EQ("ARM::RteTest:CORE", validation["conditions"][0]["aggregates"][0]);
+
+  // missing
+  validation = responses[3]["result"]["validation"][0];
+  EXPECT_EQ("ARM::RteTest:Check:Missing@0.9.9", validation["id"]);
+  EXPECT_EQ("MISSING", validation["result"]);
+  EXPECT_EQ("require RteTest:Dependency:Missing", validation["conditions"][0]["expression"]);
+
+  // conflict
+  validation = responses[4]["result"]["validation"][0];
+  EXPECT_EQ("RteTest:ApiExclusive@1.0.0", validation["id"]);
+  EXPECT_EQ("CONFLICT", validation["result"]);
+  EXPECT_EQ("ARM::RteTest:ApiExclusive:S1", validation["aggregates"][0]);
+  EXPECT_EQ("ARM::RteTest:ApiExclusive:S2", validation["aggregates"][1]);
+
+  // incompatible
+  validation = responses[5]["result"]["validation"][0];
+  EXPECT_EQ("ARM::RteTest:Check:Incompatible@0.9.9", validation["id"]);
+  EXPECT_EQ("INCOMPATIBLE", validation["result"]);
+  EXPECT_EQ("deny RteTest:Dependency:Incompatible_component", validation["conditions"][0]["expression"]);
+  EXPECT_EQ("ARM::RteTest:Dependency:Incompatible_component", validation["conditions"][0]["aggregates"][0]);
+
+  // incompatible variant
+  validation = responses[6]["result"]["validation"][0];
+  EXPECT_EQ("ARM::RteTest:Check:IncompatibleVariant@0.9.9", validation["id"]);
+  EXPECT_EQ("INCOMPATIBLE_VARIANT", validation["result"]);
+  EXPECT_EQ("require RteTest:Dependency:Variant&Compatible", validation["conditions"][0]["expression"]);
+  EXPECT_EQ("ARM::RteTest:Dependency:Variant", validation["conditions"][0]["aggregates"][0]);
 }
 
 // end of ProjMgrRpcTests.cpp
