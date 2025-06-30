@@ -1,0 +1,143 @@
+cbuild-run:
+  generated-by: csolution version 0.0.0+gb7a0c7b1
+  solution: ../data/TestRunDebug/custom.csolution.yml
+  target-type: TestHW
+  target-set: <default>
+  compiler: AC6
+  device: ARM::RteTest_ARMCM4_NOFP
+  device-pack: ARM::RteTest_DFP@0.2.0
+  output:
+    - file: out/custom/TestHW/custom.axf
+      info: generate by custom+TestHW
+      type: elf
+      load: image+symbols
+  system-resources:
+    memory:
+      - name: FLASH
+        access: rx
+        start: 0x00000000
+        size: 0x00040000
+        from-pack: ARM::RteTest_DFP@0.2.0
+      - name: SRAM
+        access: rwx
+        start: 0x20000000
+        size: 0x00020000
+        from-pack: ARM::RteTest_DFP@0.2.0
+  system-descriptions:
+    - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM4.svd
+      type: svd
+  debugger:
+    name: Test Custom Adapter
+    protocol: jtag
+    clock: 40000000
+    dbgconf: ../data/TestRunDebug/.cmsis/custom+TestHW.dbgconf
+    custom-adapter-key: custom adapter value
+    custom-key-overwrite: custom value overwrite
+    custom-map:
+      adapter-key: adapter value
+      key: value
+    custom-array:
+      - adapter item
+      - value 1
+      - value 2
+    custom-key: custom value
+  debug-vars:
+    vars: |
+      __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
+      __var TraceClk_Pin   = 0x00040003;   // PE2
+      __var TraceD0_Pin    = 0x00040003;   // PE4
+  debug-sequences:
+    - name: DebugDeviceUnlock
+      blocks:
+        - execute: |
+            Sequence("CheckID");
+    - name: DebugCoreStart
+      blocks:
+        - execute: |
+            // Replication of Standard Functionality
+            Write32(0xE000EDF0, 0xA05F0001);                                        // Enable Core Debug via DHCSR
+        - info: DbgMCU registers
+          execute: |
+            // Device Specific Debug Setup
+            Write32(0x40021018, Read32(0x40021018) | 0x00400000);                   // Set RCC_APB2ENR.DBGMCUEN
+    - name: CheckID
+      blocks:
+        - execute: |
+            __var pidr1 = 0;
+            __var pidr2 = 0;
+            __var jep106id = 0;
+            __var ROMTableBase = 0;
+
+            __ap = 0;      // AHB-AP
+
+            ROMTableBase = ReadAP(0xF8) & ~0x3;
+
+            pidr1 = Read32(ROMTableBase + 0x0FE4);
+            pidr2 = Read32(ROMTableBase + 0x0FE8);
+            jep106id = ((pidr2 & 0x7) << 4 ) | ((pidr1 >> 4) & 0xF);
+        - if: jep106id != 0x20
+          execute: |
+            Query(0, "Incorrect ID! Abort connection", 1);
+            Message(2, "Incorrect ID! Abort connection.");
+        - while: (ReadDP(DP_CTRL_STAT) & 0xA0000000) != 0xA0000000
+          timeout: 1000000
+    - name: DebugPortStop
+      blocks:
+        - execute: |
+            __var connectionFlash = ( __connection & 0xF ) == 2 ;
+            __var FLASH_BASE = 0x40022000 ;
+            __var FLASH_CR = FLASH_BASE + 0x10 ;
+            __var OBL_LAUNCH_BIT = ( 1 << 13 ) ;
+            __var FLASH_CR_Value = 0 ;
+            __var DoDebugPortStop = 1 ;
+            __var DP_CTRL_STAT = 0x4 ;
+            __var DP_SELECT = 0x8 ;
+        - if: connectionFlash && DoDebugPortStop
+          execute: |
+            DoDebugPortStop = 0 ;
+            FLASH_CR_Value = Read32( FLASH_CR ) ;
+            __errorcontrol = 1 ;
+            // write OBL_LAUNCH bit (causes a reset)
+            Write32( FLASH_CR, FLASH_CR_Value | ( OBL_LAUNCH_BIT ) ) ;
+            __errorcontrol = 0 ;
+        - if: DoDebugPortStop
+          execute: |
+            // Switch to DP Register Bank 0
+            WriteDP(DP_SELECT, 0x00000000);
+            // Power Down Debug port
+            WriteDP(DP_CTRL_STAT, 0x00000000);
+  programming:
+    - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/CortexM4Device.FLM
+      start: 0x00000000
+      size: 0x00020000
+      ram-start: 0x20000000
+      ram-size: 0x00020000
+    - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/CortexM4SubFamily.FLM
+      start: 0x00000000
+      size: 0x00040000
+      ram-start: 0x20000000
+      ram-size: 0x00020000
+    - algorithm: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Flash/FAMILY.FLM
+      start: 0x00000000
+      size: 0x00040000
+      ram-start: 0x20000000
+      ram-size: 0x00020000
+  debug-topology:
+    debugports:
+      - dpid: 0
+        jtag:
+          tapindex: 7
+        accessports:
+          - apid: 1
+            index: 10
+          - apid: 2
+            address: 0x00200000
+            accessports:
+              - apid: 3
+                address: 0x00300000
+      - dpid: 1
+        swd:
+          targetsel: 8
+    swj: false
+    dormant: true
+    sdf: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Debug/ARMCM4.sdf

@@ -129,12 +129,25 @@ struct MemoryItem {
 };
 
 /**
+ * @brief custom item containing
+ *        scalar
+ *        array
+ *        map
+*/
+struct CustomItem {
+  std::string scalar;
+  std::vector<CustomItem> vec;
+  std::vector<std::pair<std::string, CustomItem>> map;
+};
+
+/**
  * @brief debugger item containing
  *        name of debug configuration
  *        debug protocol (jtag or swd)
  *        debug clock speed
  *        debug configuration file
  *        start pname
+ *        custom properties
 */
 struct DebuggerItem {
   std::string name;
@@ -142,6 +155,7 @@ struct DebuggerItem {
   std::string clock;
   std::string dbgconf;
   std::string startPname;
+  CustomItem custom;
 };
 
 /**
@@ -609,6 +623,7 @@ struct DebugAdapterDefaultsItem {
   std::string port;
   std::string protocol;
   std::string clock;
+  CustomItem custom;
 };
 
 /**

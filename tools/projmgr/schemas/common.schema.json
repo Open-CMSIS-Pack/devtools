@@ -2413,7 +2413,7 @@
         "protocol": { "enum": [ "jtag", "swd" ], "description": "Selected debug protocol (jtag or swd)." },
         "clock":    { "type": "number", "description": "Selected debug clock speed (in Hz)." }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     }
   }
 }

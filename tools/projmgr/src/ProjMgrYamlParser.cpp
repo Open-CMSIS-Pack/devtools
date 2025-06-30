@@ -615,6 +615,7 @@ void ProjMgrYamlParser::ParseDebugger(const YAML::Node& parent, const string& fi
     ParseNumber(debuggerNode, file, YAML_CLOCK, debugger.clock);
     ParsePortablePath(debuggerNode, file, YAML_DBGCONF, debugger.dbgconf);
     ParseString(debuggerNode, YAML_START_PNAME, debugger.startPname);
+    ParseCustom(debuggerNode, { YAML_NAME, YAML_PROTOCOL, YAML_CLOCK, YAML_DBGCONF, YAML_START_PNAME }, debugger.custom);
   }
 }
 
@@ -631,6 +632,7 @@ void ProjMgrYamlParser::ParseDebugDefaults(const YAML::Node& parent, const strin
     ParseNumber(defaultsNode, file, YAML_PORT, defaults.port);
     ParseString(defaultsNode, YAML_PROTOCOL, defaults.protocol);
     ParseNumber(defaultsNode, file, YAML_CLOCK, defaults.clock);
+    ParseCustom(defaultsNode, { YAML_PORT, YAML_PROTOCOL, YAML_CLOCK }, defaults.custom);
   }
 }
 
@@ -1071,6 +1073,34 @@ void ProjMgrYamlParser::ParseImages(const YAML::Node& parent, const string& file
       ParseNumber(imagesEntry, file, YAML_LOAD_OFFSET, imageItem.offset);
       images.push_back(imageItem);
     }
+  }
+}
+
+CustomItem ProjMgrYamlParser::GetCustomValue(const YAML::Node& node) {
+  CustomItem value;
+  if (node.IsScalar()) {
+    value.scalar = node.as<string>();
+  }
+  else if (node.IsSequence()) {
+    for (const auto& item : node) {
+      value.vec.push_back(GetCustomValue(item));
+    }
+  }
+  else if (node.IsMap()) {
+    for (const auto& item : node) {
+      value.map.push_back({ item.first.as<string>(), GetCustomValue(item.second) });
+    }
+  }
+  return value;
+}
+
+void ProjMgrYamlParser::ParseCustom(const YAML::Node& parent, const vector<string>& skip, CustomItem& custom) {
+  for (const auto& node : parent) {
+    const auto& key = node.first.as<string>();
+    if (find(skip.begin(), skip.end(), key) != skip.end()) {
+      continue;
+    }
+    custom.map.push_back({ key, GetCustomValue(node.second) });
   }
 }
 

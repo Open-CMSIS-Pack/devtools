@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  compiler: AC6
+
+  target-types:
+    - type: TestHW
+      device: RteTest_ARMCM4_NOFP
+      target-set:
+        - set:
+          debugger:
+            name: Test Custom Adapter
+            custom-key: custom value
+            custom-key-overwrite: custom value overwrite
+            custom-array:
+              - value 1
+              - value 2
+            custom-map:
+              key: value
+          images:
+            - project-context: custom
+
+  projects:
+    - project: custom.cproject.yml
+
+  packs:
+    - pack: ARM::RteTest_DFP

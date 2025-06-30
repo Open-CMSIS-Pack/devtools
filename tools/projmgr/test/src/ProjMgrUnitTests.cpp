@@ -6735,6 +6735,39 @@ TEST_F(ProjMgrUnitTests, TestRunDebug) {
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW2.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, TestRunDebugCustom) {
+  const string& debugAdaptersPath = etc_folder + "/debug-adapters.yml";
+  const string& backup = RteFsUtils::BackupFile(debugAdaptersPath);
+  YAML::Node debugAdapters = YAML::LoadFile(debugAdaptersPath);
+  YAML::Node testAdapter;
+  testAdapter["name"] = "Test Custom Adapter";
+  testAdapter["defaults"]["custom-adapter-key"] = "custom adapter value";
+  testAdapter["defaults"]["custom-key-overwrite"] = "custom adapter key overwrite";
+  testAdapter["defaults"]["custom-map"]["adapter-key"] = "adapter value";
+  testAdapter["defaults"]["custom-array"][0] = "adapter item";
+  debugAdapters["debug-adapters"].push_back(testAdapter);
+  ofstream debugAdaptersFile;
+  debugAdaptersFile.open(debugAdaptersPath, fstream::trunc);
+  debugAdaptersFile << debugAdapters << std::endl;
+  debugAdaptersFile.close();
+
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestRunDebug/custom.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"--active";
+  argv[6] = (char*)"TestHW";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/custom+TestHW.cbuild-run.yml",
+    testinput_folder + "/TestRunDebug/ref/custom+TestHW.cbuild-run.yml");
+
+  error_code ec;
+  fs::copy(fs::path(backup), fs::path(debugAdaptersPath), fs::copy_options::overwrite_existing, ec);
+  RteFsUtils::RemoveFile(backup);
+}
+
 TEST_F(ProjMgrUnitTests, TestNoDbgconf) {
   char* argv[7];
   const string& csolution = testinput_folder + "/TestRunDebug/no-dbgconf.csolution.yml";

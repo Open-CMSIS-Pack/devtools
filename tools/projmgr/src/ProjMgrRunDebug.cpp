@@ -340,8 +340,13 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
       if (!m_runDebug.debugger.clock.has_value() && !adapter.defaults.clock.empty()) {
         m_runDebug.debugger.clock = RteUtils::StringToULL(adapter.defaults.clock);
       }
+      // default custom options
+      m_runDebug.debugger.custom = adapter.defaults.custom;
     }
   }
+
+  // merge custom options
+  MergeCustomItems(context.debugger.custom, m_runDebug.debugger.custom);
 }
 
 void ProjMgrRunDebug::CollectDebugTopology(const ContextItem& context, const vector<pair<const RteItem*, vector<string>>> debugs,
@@ -631,4 +636,39 @@ bool ProjMgrRunDebug::GetDebugAdapter(const string& name, const DebugAdaptersIte
     }
   }
   return false;
+}
+
+void ProjMgrRunDebug::CustomVecPushBack(vector<CustomItem>& vec, const CustomItem& value) {
+  for (const auto& item : vec) {
+    if (item.scalar == value.scalar) {
+      return;
+    }
+  }
+  vec.push_back(value);
+}
+
+CustomItem& ProjMgrRunDebug::CustomMapFind(vector<pair<string, CustomItem>>& customMap, const string& key) {
+  for (auto& [k, v] : customMap) {
+    if (key == k) {
+      return v;
+    }
+  }
+  customMap.push_back({ key, CustomItem() });
+  return customMap.back().second;
+}
+
+void ProjMgrRunDebug::MergeCustomItems(const CustomItem& src, CustomItem& dst) {
+  if (!src.scalar.empty()) {
+    dst.scalar = src.scalar;
+  }
+  else if (!src.vec.empty()) {
+    for (const auto& item : src.vec) {
+      CustomVecPushBack(dst.vec, item);
+    }
+  }
+  else if (!src.map.empty()) {
+    for (const auto& [k, v] : src.map) {
+      MergeCustomItems(v, CustomMapFind(dst.map, k));
+    }
+  }
 }

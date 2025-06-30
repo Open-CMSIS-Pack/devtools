@@ -32,6 +32,8 @@ protected:
   void SetAccessPortsNode(YAML::Node node, const std::vector<AccessPortType>& accessPorts);
   void SetDatapatchNode(YAML::Node node, const std::vector<DatapatchType>& datapatch);
   void SetGdbServerNode(YAML::Node node, const std::vector<GdbServerItem>& gdbserver);
+  void SetCustomNodes(YAML::Node node, const CustomItem& debugger);
+  YAML::Node GetCustomNode(const CustomItem& value);
 };
 
 ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
@@ -110,6 +112,31 @@ void ProjMgrCbuildRun::SetDebuggerNode(YAML::Node node, const DebuggerType& debu
     }
     SetNodeValue(node[YAML_START_PNAME], debugger.startPname);
     SetGdbServerNode(node[YAML_GDBSERVER], debugger.gdbserver);
+    SetCustomNodes(node, debugger.custom);
+  }
+}
+
+YAML::Node ProjMgrCbuildRun::GetCustomNode(const CustomItem& value) {
+  YAML::Node node;
+  if (!value.scalar.empty()) {
+    node = value.scalar;
+  }
+  else if (!value.vec.empty()) {
+    for (const auto& item : value.vec) {
+      node.push_back(GetCustomNode(item));
+    }
+  }
+  else if (!value.map.empty()) {
+    for (const auto& [k, v] : value.map) {
+      node[k] = GetCustomNode(v);
+    }
+  }
+  return node;
+}
+
+void ProjMgrCbuildRun::SetCustomNodes(YAML::Node node, const CustomItem& custom) {
+  for (const auto& [key, value] : custom.map) {
+    node[key] = GetCustomNode(value);
   }
 }
 

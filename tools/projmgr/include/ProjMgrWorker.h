@@ -288,6 +288,7 @@ struct GdbServerItem {
  *        debug configuration file
  *        start pname
  *        list of gdbserver items
+ *        custom options
 */
 struct DebuggerType {
   std::string name;
@@ -297,6 +298,7 @@ struct DebuggerType {
   std::string dbgconf;
   std::string startPname;
   std::vector<GdbServerItem> gdbserver;
+  CustomItem custom;
 };
 
 /**
