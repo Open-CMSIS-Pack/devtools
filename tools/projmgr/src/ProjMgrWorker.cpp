@@ -2523,6 +2523,7 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
       }
     }
     context.debugger.startPname = m_activeTargetSet.debugger.startPname;
+    context.debugger.custom = m_activeTargetSet.debugger.custom;
   }
   for (const auto& [filename, fi] : context.rteActiveProject->GetFileInstances()) {
     if (fi->HasAttribute("configfile")) {

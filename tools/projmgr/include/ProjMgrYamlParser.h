@@ -352,6 +352,7 @@ protected:
   bool ParseLinker(const YAML::Node& parent, const std::string& file, std::vector<LinkerItem>& linker);
   void ParseRte(const YAML::Node& parent, std::string& rteBaseDir);
   void ParseDebugDefaults(const YAML::Node& parent, const std::string& file, DebugAdapterDefaultsItem& defaults);
+  void ParseCustom(const YAML::Node& parent, const std::vector<std::string>& skip, CustomItem& custom);
   bool GetTypes(const std::string& type, std::string& buildType, std::string& targetType, std::string& pattern);
   bool ValidateCdefault(const std::string& input, const YAML::Node& root);
   bool ValidateCsolution(const std::string& input, const YAML::Node& root);
@@ -365,6 +366,7 @@ protected:
   void ParsePortablePath(const YAML::Node& parent, const std::string& file, const std::string& key, std::string& value);
   void ParsePortablePaths(const YAML::Node& parent, const std::string& file, const std::string& key, std::vector<std::string>& value);
   void EnsurePortability(const std::string& file, const YAML::Mark& mark, const std::string& key, std::string& value);
+  CustomItem GetCustomValue(const YAML::Node& node);
 
 };
 
