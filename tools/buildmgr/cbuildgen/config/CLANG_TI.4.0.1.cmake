@@ -205,7 +205,7 @@ set (ELF2HEX -O ihex "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGE
 set (ELF2BIN -O binary "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGET_PROPERTY:${TARGET},SUFFIX>" "${OUT_DIR}/${BIN_FILE}")
 
 # Linker Map file generation
-set (LD_MAP -Wl,--map_file=${OUT_DIR}/${LD_MAP_FILE})
+set (LD_MAP -Wl,--map_file="${OUT_DIR}/${LD_MAP_FILE}")
 
 # Set CMake variables for toolchain initialization
 set(CMAKE_C_FLAGS_INIT "${CC_CPU}")
