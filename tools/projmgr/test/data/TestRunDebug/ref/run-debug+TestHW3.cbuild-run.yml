@@ -1,23 +1,23 @@
 cbuild-run:
-  generated-by: csolution version 2.9.0
-  solution: ../data/TestRunDebug/run-debug.csolution.yml
+  generated-by: csolution version 0.0.0
+  solution: ../../data/TestRunDebug/run-debug.csolution.yml
   target-type: TestHW3
   target-set: <default>
   compiler: AC6
   device: ARM::RteTest_ARMCM0_Dual
   device-pack: ARM::RteTest_DFP@0.2.0
   output:
-    - file: out/core0/TestHW3/core0.axf
+    - file: core0/TestHW3/core0.axf
       info: generate by core0+TestHW3
       type: elf
       load: none
       pname: cm0_core0
-    - file: out/core1/TestHW3/core1.axf
+    - file: core1/TestHW3/core1.axf
       info: generate by core1+TestHW3
       type: elf
       load: none
       pname: cm0_core1
-    - file: out/core1/TestHW3/core1.bin
+    - file: core1/TestHW3/core1.bin
       info: generate by core1+TestHW3
       type: bin
       load: image
@@ -53,7 +53,7 @@ cbuild-run:
     name: CMSIS-DAP@pyOCD
     protocol: swd
     clock: 10000000
-    dbgconf: ../data/TestRunDebug/.cmsis/run-debug+TestHW3.dbgconf
+    dbgconf: ../../data/TestRunDebug/.cmsis/run-debug+TestHW3.dbgconf
     start-pname: cm0_core1
     gdbserver:
       - port: 3333

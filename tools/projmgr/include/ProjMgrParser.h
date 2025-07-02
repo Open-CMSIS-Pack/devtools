@@ -252,6 +252,7 @@ struct TargetType {
  *        cbuild directory,
  *        cprj directory,
  *        rte directory,
+ *        output base directory
 */
 struct DirectoriesItem {
   std::string intdir;
@@ -260,6 +261,7 @@ struct DirectoriesItem {
   std::string cbuild;
   std::string cprj;
   std::string rte;
+  std::string outBaseDir;
 };
 
 /**

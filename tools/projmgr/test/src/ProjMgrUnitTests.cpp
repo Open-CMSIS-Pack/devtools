@@ -4158,9 +4158,9 @@ TEST_F(ProjMgrUnitTests, ProjectSetup) {
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
 
   // check generated cbuild.yml files
-  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build_AC6+TEST_TARGET.cbuild.yml",
+  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/out/setup-test/TEST_TARGET/Build_AC6/setup-test.Build_AC6+TEST_TARGET.cbuild.yml",
     testinput_folder + "/TestProjectSetup/ref/setup-test.Build_AC6+TEST_TARGET.cbuild.yml");
-  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/setup-test.Build_GCC+TEST_TARGET.cbuild.yml",
+  ProjMgrTestEnv:: CompareFile(testoutput_folder + "/out/setup-test/TEST_TARGET/Build_GCC/setup-test.Build_GCC+TEST_TARGET.cbuild.yml",
     testinput_folder + "/TestProjectSetup/ref/setup-test.Build_GCC+TEST_TARGET.cbuild.yml");
 
   if (CrossPlatformUtils::GetHostType() == "win") {
@@ -5471,7 +5471,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   argv[4] = (char*)"single-core.Debug+CM0";
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
 
-  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/single/single-core.Debug+CM0.cbuild.yml",
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/out/single-core/CM0/Debug/single-core.Debug+CM0.cbuild.yml",
     testinput_folder + "/ExternalGenerator/ref/SingleCore/single-core.Debug+CM0.cbuild.yml");
 
   RteFsUtils::RemoveFile(dstGlobalGenerator);
@@ -5664,7 +5664,7 @@ TEST_F(ProjMgrUnitTests, ExternalGeneratorBoard) {
   argv[2] = (char*)"convert";
   EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
 
-  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/single/single-core.Debug+Board.cbuild.yml",
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/out/single-core/Board/Debug/single-core.Debug+Board.cbuild.yml",
     testinput_folder + "/ExternalGenerator/ref/SingleCore/single-core.Debug+Board.cbuild.yml");
 
   RteFsUtils::RemoveFile(dstGlobalGenerator);
@@ -6347,7 +6347,7 @@ warning csolution: source modules added by multiple components, duplicate ignore
   string errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_search(errStr, regex(expected)));
 
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/components.Debug+RteTest_ARMCM3.cbuild.yml",
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/components/RteTest_ARMCM3/Debug/components.Debug+RteTest_ARMCM3.cbuild.yml",
     testinput_folder + "/TestSolution/ComponentSources/ref/components.Debug+RteTest_ARMCM3.cbuild.yml");
 }
 
@@ -6364,10 +6364,10 @@ TEST_F(ProjMgrUnitTests, AccessSequencesMixedBuildTypes) {
   argv[8] = (char*)"s.Debug";
   EXPECT_EQ(0, RunProjMgr(9, argv, m_envp));
 
-  const YAML::Node& cbuild1 = YAML::LoadFile(testoutput_folder + "/ns.Release+CM0.cbuild.yml");
-  EXPECT_EQ(cbuild1["build"]["groups"][0]["files"][0]["file"].as<string>(), "out/s/CM0/Debug/s_CMSE_Lib.o");
-  const YAML::Node& cbuild2 = YAML::LoadFile(testoutput_folder + "/ns.Release+CM3.cbuild.yml");
-  EXPECT_EQ(cbuild2["build"]["groups"][0]["files"][0]["file"].as<string>(), "out/s/CM3/Debug/s_CMSE_Lib.o");
+  const YAML::Node& cbuild1 = YAML::LoadFile(testoutput_folder + "/out/ns/CM0/Release/ns.Release+CM0.cbuild.yml");
+  EXPECT_EQ(cbuild1["build"]["groups"][0]["files"][0]["file"].as<string>(), "../../../s/CM0/Debug/s_CMSE_Lib.o");
+  const YAML::Node& cbuild2 = YAML::LoadFile(testoutput_folder + "/out/ns/CM3/Release/ns.Release+CM3.cbuild.yml");
+  EXPECT_EQ(cbuild2["build"]["groups"][0]["files"][0]["file"].as<string>(), "../../../s/CM3/Debug/s_CMSE_Lib.o");
 }
 
 TEST_F(ProjMgrUnitTests, ForContextRegex) {
@@ -6377,22 +6377,26 @@ TEST_F(ProjMgrUnitTests, ForContextRegex) {
   argv[2] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
 
-  const vector<string> expectedfiles = { "CM0.c", "CM3.c", "Debug_CM0_CM3.c", "Release.c", "Debug.c", "Debug_Release_CM0.c" };
-  const map<string, vector<bool>> testData = {
+  const vector<string> expectedfiles = {
+    "../../../../CM0.c", "../../../../CM3.c", "../../../../Debug_CM0_CM3.c",
+    "../../../../Release.c", "../../../../Debug.c", "../../../../Debug_Release_CM0.c"
+  };
+  const vector<tuple<string, string, vector<bool>>> testData = {
     // expected files: CM0.c | CM3.c | Debug_CM0_CM3.c | Release.c | Debug.c | Debug_Release_CM0.c
-    {".Debug+CM0",   { true  , false , true            , false     , true    , true             }},
-    {".Debug+CM3",   { false , true  , true            , false     , true    , false            }},
-    {".Release+CM0", { true  , false , false           , true      , false   , true             }},
-    {".Release+CM3", { false , true  , false           , true      , false   , false            }},
+    {"Debug", "CM0",   { true  , false , true            , false     , true    , true             }},
+    {"Debug", "CM3",   { false , true  , true            , false     , true    , false            }},
+    {"Release", "CM0", { true  , false , false           , true      , false   , true             }},
+    {"Release", "CM3", { false , true  , false           , true      , false   , false            }},
   };
 
-  for (const auto& [context, expected] : testData) {
-    const YAML::Node& node = YAML::LoadFile(testinput_folder + "/TestSolution/ForContextRegex/regex" + context + ".cbuild.yml");
+  for (const auto& [build, target, expected] : testData) {
+    const YAML::Node& node = YAML::LoadFile(testinput_folder +
+      "/TestSolution/ForContextRegex/out/regex/" + target + "/" + build + "/regex" + "." + build + "+" + target + ".cbuild.yml");
     const auto& files = node["build"]["groups"][0]["files"].as<vector<map<string, string>>>();
     int index = 0;
     for (const auto& expectedfile : expectedfiles) {
       EXPECT_EQ(expected[index++], ProjMgrTestEnv::IsFileInCbuildFilesList(files, expectedfile))
-        << "failed for context \"" << context << "\" and expected file \"" << expectedfile << "\"";
+        << "failed for context \"" << ("." + build + "+" + target) << "\" and expected file \"" << expectedfile << "\"";
     }
   }
 }
@@ -6553,41 +6557,44 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
 
   // --no-update-rte
   std::vector<std::tuple<std::string, int, std::string, std::string>> testDataVector1 = {
-    { ".BaseUnknown", 0, "warning csolution: file '.*/startup_ARMCM3.c.base' not found; base version unknown", "missing base"       },
-    { ".Patch",       0, "warning csolution: file '.*/startup_ARMCM3.c' update suggested; use --update-rte",   "update suggested"   },
-    { ".Minor",       0, "warning csolution: file '.*/startup_ARMCM3.c' update recommended; use --update-rte", "update recommended" },
-    { ".Major",       1, "error csolution: file '.*/startup_ARMCM3.c' update required; use --update-rte",      "update required"    },
-    { ".Missing",     1, "error csolution: file '.*/startup_ARMCM3.c' not found; use --update-rte",            "missing file"       },
+    { "BaseUnknown", 0, "warning csolution: file '.*/startup_ARMCM3.c.base' not found; base version unknown", "missing base"       },
+    { "Patch",       0, "warning csolution: file '.*/startup_ARMCM3.c' update suggested; use --update-rte",   "update suggested"   },
+    { "Minor",       0, "warning csolution: file '.*/startup_ARMCM3.c' update recommended; use --update-rte", "update recommended" },
+    { "Major",       1, "error csolution: file '.*/startup_ARMCM3.c' update required; use --update-rte",      "update required"    },
+    { "Missing",     1, "error csolution: file '.*/startup_ARMCM3.c' not found; use --update-rte",            "missing file"       },
   };
 
-  for (const auto& testData : testDataVector1) {
+  for (const auto& [build, errCode, errMsg, status] : testDataVector1) {
+    const string contextOption = "." + build;
     streamRedirect.ClearStringStreams();
     argv[3] = (char*)"--no-update-rte";
-    argv[4] = (char*)"-c";
-    argv[5] = (char*)get<0>(testData).c_str();
-    EXPECT_EQ(get<1>(testData), RunProjMgr(6, argv, m_envp));
+    argv[4] = (char*)"-c";    
+    argv[5] = (char*)contextOption.c_str();
+    EXPECT_EQ(errCode, RunProjMgr(6, argv, m_envp));
     auto errStr = streamRedirect.GetErrorString();
-    EXPECT_TRUE(regex_search(errStr, regex(get<2>(testData))));
-    const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestSolution/ConfigFilesUpdate/config" + get<0>(testData) + "+RteTest_ARMCM3.cbuild.yml");
-    EXPECT_EQ(get<3>(testData), cbuild["build"]["components"][0]["files"][3]["status"].as<string>());
+    EXPECT_TRUE(regex_search(errStr, regex(errMsg)));
+    const YAML::Node& cbuild = YAML::LoadFile(testinput_folder +
+      "/TestSolution/ConfigFilesUpdate/out/config/RteTest_ARMCM3/" + build + "/config." + build + "+RteTest_ARMCM3.cbuild.yml");
+    EXPECT_EQ(status, cbuild["build"]["components"][0]["files"][3]["status"].as<string>());
   }
 
   // --update-rte
   std::vector<std::tuple<std::string, int, std::string>> testDataVector2 = {
-    { ".BaseUnknown", 0, "" },
-    { ".Patch",       0, "warning csolution: file '.*/startup_ARMCM3.c' update suggested; merge content from update file, rename update file to base file and remove previous base file" },
-    { ".Minor",       0, "warning csolution: file '.*/startup_ARMCM3.c' update recommended; merge content from update file, rename update file to base file and remove previous base file" },
-    { ".Major",       1, "error csolution: file '.*/startup_ARMCM3.c' update required; merge content from update file, rename update file to base file and remove previous base file" },
-    { ".Missing",     0, "" },
+    { "BaseUnknown", 0, "" },
+    { "Patch",       0, "warning csolution: file '.*/startup_ARMCM3.c' update suggested; merge content from update file, rename update file to base file and remove previous base file" },
+    { "Minor",       0, "warning csolution: file '.*/startup_ARMCM3.c' update recommended; merge content from update file, rename update file to base file and remove previous base file" },
+    { "Major",       1, "error csolution: file '.*/startup_ARMCM3.c' update required; merge content from update file, rename update file to base file and remove previous base file" },
+    { "Missing",     0, "" },
   };
 
-  for (const auto& testData : testDataVector2) {
+  for (const auto& [build, errCode, errMsg] : testDataVector2) {
+    const string contextOption = "." + build;
     streamRedirect.ClearStringStreams();
     argv[3] = (char*)"-c";
-    argv[4] = (char*)get<0>(testData).c_str();
-    EXPECT_EQ(get<1>(testData), RunProjMgr(5, argv, m_envp));
+    argv[4] = (char*)contextOption.c_str();
+    EXPECT_EQ(errCode, RunProjMgr(5, argv, m_envp));
     auto errStr = streamRedirect.GetErrorString();
-    EXPECT_TRUE(regex_search(errStr, regex(get<2>(testData))));
+    EXPECT_TRUE(regex_search(errStr, regex(errMsg)));
   }
 }
 
@@ -6722,16 +6729,18 @@ TEST_F(ProjMgrUnitTests, TestRunDebug) {
   argv[5] = (char*)"--active";
   argv[6] = (char*)"TestHW";
   EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW.cbuild-run.yml",
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/run-debug+TestHW.cbuild-run.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW.cbuild-run.yml");
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW.cbuild.yml",
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/run-debug/TestHW/run-debug+TestHW.cbuild.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW.cbuild.yml");
+  const YAML::Node& cbuildIdx = YAML::LoadFile(testoutput_folder + "/run-debug.cbuild-idx.yml");
+  EXPECT_EQ("out/run-debug+TestHW.cbuild-run.yml", cbuildIdx["build-idx"]["cbuild-run"].as<string>());
 
   argv[6] = (char*)"TestHW2";
   EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW2.cbuild-run.yml",
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/run-debug+TestHW2.cbuild-run.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW2.cbuild-run.yml");
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW2.cbuild.yml",
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/run-debug/TestHW2/run-debug+TestHW2.cbuild.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW2.cbuild.yml");
 }
 
@@ -6760,7 +6769,7 @@ TEST_F(ProjMgrUnitTests, TestRunDebugCustom) {
   argv[5] = (char*)"--active";
   argv[6] = (char*)"TestHW";
   EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/custom+TestHW.cbuild-run.yml",
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/custom+TestHW.cbuild-run.yml",
     testinput_folder + "/TestRunDebug/ref/custom+TestHW.cbuild-run.yml");
 
   error_code ec;
@@ -6779,9 +6788,9 @@ TEST_F(ProjMgrUnitTests, TestNoDbgconf) {
   argv[6] = (char*)"ARMCM3";
   EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
 
-  const YAML::Node& cbuild = YAML::LoadFile(testoutput_folder + "/run-debug+ARMCM3.cbuild.yml");
+  const YAML::Node& cbuild = YAML::LoadFile(testoutput_folder + "/out/run-debug/ARMCM3/run-debug+ARMCM3.cbuild.yml");
   EXPECT_FALSE(cbuild["build"]["dbgconf"].IsDefined());
-  const YAML::Node& cbuildrun = YAML::LoadFile(testoutput_folder + "/no-dbgconf+ARMCM3.cbuild-run.yml");
+  const YAML::Node& cbuildrun = YAML::LoadFile(testoutput_folder + "/out/no-dbgconf+ARMCM3.cbuild-run.yml");
   EXPECT_FALSE(cbuildrun["cbuild-run"]["debugger"]["dbgconf"].IsDefined());
 }
 
@@ -6795,7 +6804,7 @@ TEST_F(ProjMgrUnitTests, TestRunDebugMulticore) {
   argv[5] = (char*)"--active";
   argv[6] = (char*)"TestHW3";
   EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/run-debug+TestHW3.cbuild-run.yml",
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/run-debug+TestHW3.cbuild-run.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW3.cbuild-run.yml");
 }
 
@@ -6844,7 +6853,7 @@ TEST_F(ProjMgrUnitTests, ComponentVersions) {
   argv[4] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
 
-  ProjMgrTestEnv::CompareFile(testoutput_folder + "/versions.Debug+RteTest_ARMCM3.cbuild.yml",
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/versions/RteTest_ARMCM3/Debug/versions.Debug+RteTest_ARMCM3.cbuild.yml",
     testinput_folder + "/TestSolution/ComponentSources/ref/versions.Debug+RteTest_ARMCM3.cbuild.yml");
 }
 
@@ -6886,12 +6895,12 @@ TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   argv[3] = (char*)"--active";
   argv[4] = (char*)"Type1@Custom2";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
-  const YAML::Node& cbuildRun1 = YAML::LoadFile(testinput_folder + "/TestTargetSet/solution+Type1.cbuild-run.yml");
+  const YAML::Node& cbuildRun1 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type1.cbuild-run.yml");
   EXPECT_EQ("Custom2", cbuildRun1["cbuild-run"]["target-set"].as<string>());
 
   argv[4] = (char*)"Type1";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
-  const YAML::Node& cbuildRun2 = YAML::LoadFile(testinput_folder + "/TestTargetSet/solution+Type1.cbuild-run.yml");
+  const YAML::Node& cbuildRun2 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type1.cbuild-run.yml");
   EXPECT_EQ("<default>", cbuildRun2["cbuild-run"]["target-set"].as<string>());
 
   streamRedirect.ClearStringStreams();
@@ -6926,7 +6935,7 @@ TEST_F(ProjMgrUnitTests, LinkTimeOptimize) {
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
-  const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestLTO/project+CM0.cbuild.yml");
+  const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestLTO/out/project/CM0/project+CM0.cbuild.yml");
   EXPECT_TRUE(cbuild["build"]["link-time-optimize"].IsDefined());
   EXPECT_TRUE(cbuild["build"]["components"][0]["link-time-optimize"].IsDefined());
   EXPECT_TRUE(cbuild["build"]["groups"][0]["files"][0]["link-time-optimize"].IsDefined());

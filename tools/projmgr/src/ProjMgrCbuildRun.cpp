@@ -272,9 +272,11 @@ void ProjMgrCbuildRun::SetProcessorsNode(YAML::Node node, const vector<Processor
 //-- ProjMgrYamlEmitter::GenerateCbuildRun --------------------------------------------------------
 bool ProjMgrYamlEmitter::GenerateCbuildRun(const RunDebugType& debugRun) {
   // generate cbuild-run.yml
-  const string& filename = m_outputDir + "/" + debugRun.solutionName + "+" +
-    debugRun.targetType + ".cbuild-run.yml";
+  m_cbuildRun = debugRun.cbuildRun;
+  RteFsUtils::NormalizePath(m_cbuildRun, m_outputDir);
+  const auto& cbuildRunDir = RteFsUtils::ParentPath(m_cbuildRun);
+
   YAML::Node rootNode;
-  ProjMgrCbuildRun cbuildRun(rootNode[YAML_CBUILD_RUN], debugRun, m_outputDir);
-  return WriteFile(rootNode, filename);
+  ProjMgrCbuildRun cbuildRun(rootNode[YAML_CBUILD_RUN], debugRun, cbuildRunDir);
+  return WriteFile(rootNode, m_cbuildRun);
 }

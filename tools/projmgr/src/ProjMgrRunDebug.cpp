@@ -39,6 +39,9 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   m_runDebug.solution = context0->csolution->path;
   m_runDebug.targetType = context0->type.target;
   m_runDebug.targetSet = context0->targetSet;
+  m_runDebug.cbuildRun = context0->directories.cprj + "/" + context0->directories.outBaseDir + "/" +
+    m_runDebug.solutionName + "+" + m_runDebug.targetType + ".cbuild-run.yml";
+
   m_runDebug.compiler = context0->compiler;
   if (!context0->device.empty()) {
     m_runDebug.device = context0->deviceItem.vendor + "::" + context0->deviceItem.name;

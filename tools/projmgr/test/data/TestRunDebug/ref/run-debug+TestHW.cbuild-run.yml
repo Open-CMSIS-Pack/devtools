@@ -1,6 +1,6 @@
 cbuild-run:
-  generated-by: csolution version 2.9.0
-  solution: ../data/TestRunDebug/run-debug.csolution.yml
+  generated-by: csolution version 0.0.0
+  solution: ../../data/TestRunDebug/run-debug.csolution.yml
   target-type: TestHW
   target-set: <default>
   compiler: AC6
@@ -9,20 +9,20 @@ cbuild-run:
   device: ARM::RteTest_ARMCM4_NOFP
   device-pack: ARM::RteTest_DFP@0.2.0
   output:
-    - file: out/run-debug/TestHW/run-debug.axf
+    - file: run-debug/TestHW/run-debug.axf
       info: generate by run-debug+TestHW
       type: elf
       load: symbols
-    - file: out/run-debug/TestHW/run-debug.hex
+    - file: run-debug/TestHW/run-debug.hex
       info: generate by run-debug+TestHW
       type: hex
       load: image
-    - file: out/run-debug/TestHW/run-debug.bin
+    - file: run-debug/TestHW/run-debug.bin
       info: generate by run-debug+TestHW
       type: bin
       load: none
       load-offset: 0x0000A000
-    - file: ../data/TestRunDebug/customImage.bin
+    - file: ../../data/TestRunDebug/customImage.bin
       info: load image info
       type: bin
       load: image
@@ -51,7 +51,7 @@ cbuild-run:
     info: Info target-set
     protocol: jtag
     clock: 20000000
-    dbgconf: ../data/TestRunDebug/RTE/Device/RteTest1/RteTest1.dbgconf
+    dbgconf: ../../data/TestRunDebug/RTE/Device/RteTest1/RteTest1.dbgconf
     gdbserver:
       - port: 3333
   debug-vars:
@@ -140,7 +140,7 @@ cbuild-run:
       size: 0x00020000
       ram-start: 0x20000000
       ram-size: 0x00020000
-    - algorithm: ../data/TestRunDebug/CustomAlgo.flm
+    - algorithm: ../../data/TestRunDebug/CustomAlgo.flm
       start: 0x80000000
       size: 0x00010000
       ram-start: 0x20000000

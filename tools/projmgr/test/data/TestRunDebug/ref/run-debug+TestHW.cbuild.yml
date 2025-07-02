@@ -1,7 +1,7 @@
 build:
-  generated-by: csolution version 2.8.0
-  solution: ../data/TestRunDebug/run-debug.csolution.yml
-  project: ../data/TestRunDebug/run-debug.cproject.yml
+  generated-by: csolution version 0.0.0
+  solution: ../../../../data/TestRunDebug/run-debug.csolution.yml
+  project: ../../../../data/TestRunDebug/run-debug.cproject.yml
   context: run-debug+TestHW
   compiler: AC6
   board: Keil::RteTest Test device variant:1.1.1
@@ -12,7 +12,7 @@ build:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0553a/index.html
       title: Cortex-M4 Device Generic Users Guide
   dbgconf:
-    - file: ../data/TestRunDebug/RTE/Device/RteTest1/RteTest1.dbgconf
+    - file: ../../../../data/TestRunDebug/RTE/Device/RteTest1/RteTest1.dbgconf
   processor:
     fpu: off
     core: Cortex-M4
@@ -26,15 +26,15 @@ build:
     - ARMCM4
     - _RTE_
   add-path:
-    - ../data/TestRunDebug/RTE/_TestHW
+    - ../../../../data/TestRunDebug/RTE/_TestHW
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM4/Include
   add-path-asm:
-    - ../data/TestRunDebug/RTE/_TestHW
+    - ../../../../data/TestRunDebug/RTE/_TestHW
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM4/Include
   output-dirs:
-    intdir: tmp
-    outdir: out/run-debug/TestHW
-    rtedir: ../data/TestRunDebug/RTE
+    intdir: ../../../tmp
+    outdir: .
+    rtedir: ../../../../data/TestRunDebug/RTE
   output:
     - type: bin
       file: run-debug.bin
@@ -54,15 +54,15 @@ build:
         - file: https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
           category: doc
           version: 2.0.3
-        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/ARMCM4_ac6.sct
+        - file: ../../../../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/ARMCM4_ac6.sct
           category: linkerScript
           attr: config
           version: 1.2.0
-        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/startup_ARMCM4.c
+        - file: ../../../../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/startup_ARMCM4.c
           category: sourceC
           attr: config
           version: 2.0.3
-        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/system_ARMCM4.c
+        - file: ../../../../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/system_ARMCM4.c
           category: sourceC
           attr: config
           version: 1.2.1
@@ -84,9 +84,9 @@ build:
           category: doc
           version: 1.1.2
   linker:
-    script: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/ARMCM4_ac6.sct
+    script: ../../../../data/TestRunDebug/RTE/Device/RteTest_ARMCM4_NOFP/ARMCM4_ac6.sct
   constructed-files:
-    - file: ../data/TestRunDebug/RTE/_TestHW/RTE_Components.h
+    - file: ../../../../data/TestRunDebug/RTE/_TestHW/RTE_Components.h
       category: header
   licenses:
     - license: <unknown>

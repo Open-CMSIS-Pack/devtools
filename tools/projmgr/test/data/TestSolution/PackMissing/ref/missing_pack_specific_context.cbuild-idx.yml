@@ -5,7 +5,7 @@ build-idx:
   cprojects:
     - cproject: ../data/TestSolution/PackMissing/project.cproject.yml
   cbuilds:
-    - cbuild: project+CM0.cbuild.yml
+    - cbuild: out/project/CM0/project+CM0.cbuild.yml
       project: project
       configuration: +CM0
       errors: true

@@ -1,7 +1,7 @@
 build:
-  generated-by: csolution version 2.8.0
-  solution: ../data/TestRunDebug/run-debug.csolution.yml
-  project: ../data/TestRunDebug/run-debug.cproject.yml
+  generated-by: csolution version 0.0.0+g3322183e
+  solution: ../../../../data/TestRunDebug/run-debug.csolution.yml
+  project: ../../../../data/TestRunDebug/run-debug.cproject.yml
   context: run-debug+TestHW2
   compiler: AC6
   board: Keil::RteTest-Test-board With.Memory:1.1.1
@@ -12,7 +12,7 @@ build:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html
       title: Cortex-M3 Device Generic Users Guide
   dbgconf:
-    - file: out/run-debug/TestHW2/AC6.dbgconf
+    - file: AC6.dbgconf
   processor:
     fpu: off
     core: Cortex-M3
@@ -26,15 +26,15 @@ build:
     - ARMCM3
     - _RTE_
   add-path:
-    - ../data/TestRunDebug/RTE/_TestHW2
+    - ../../../../data/TestRunDebug/RTE/_TestHW2
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   add-path-asm:
-    - ../data/TestRunDebug/RTE/_TestHW2
+    - ../../../../data/TestRunDebug/RTE/_TestHW2
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
-    intdir: tmp
-    outdir: out/run-debug/TestHW2
-    rtedir: ../data/TestRunDebug/RTE
+    intdir: ../../../tmp
+    outdir: .
+    rtedir: ../../../../data/TestRunDebug/RTE
   output:
     - type: bin
       file: run-debug.bin
@@ -54,15 +54,15 @@ build:
         - file: https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
           category: doc
           version: 2.0.3
-        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
+        - file: ../../../../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
           category: linkerScript
           attr: config
           version: 1.2.0
-        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
+        - file: ../../../../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
           category: sourceC
           attr: config
           version: 2.0.3
-        - file: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
+        - file: ../../../../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
           category: sourceC
           attr: config
           version: 1.2.2
@@ -92,9 +92,9 @@ build:
           category: doc
           version: 1.1.2
   linker:
-    script: ../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
+    script: ../../../../data/TestRunDebug/RTE/Device/RteTest_ARMCM3/ARMCM3_ac6.sct
   constructed-files:
-    - file: ../data/TestRunDebug/RTE/_TestHW2/RTE_Components.h
+    - file: ../../../../data/TestRunDebug/RTE/_TestHW2/RTE_Components.h
       category: header
   licenses:
     - license: <unknown>
