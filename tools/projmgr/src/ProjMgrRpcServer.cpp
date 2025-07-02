@@ -220,10 +220,13 @@ RpcArgs::UsedItems RpcHandler::GetUsedItems(const string& context) {
 }
 
 bool RpcHandler::LoadPacks(void) {
+  m_manager.Clear();
+  m_solutionLoaded = false;
+  m_worker.InitializeModel();
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
-  m_packsLoaded = m_worker.LoadPacks(m_globalContext);
+  m_packsLoaded = m_worker.LoadAllRelevantPacks();
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::DEFAULT);
-  if (!m_packsLoaded) {
+  if(!m_packsLoaded) {
     throw JsonRpcException(PACKS_LOADING_FAIL, "packs failed to load");
   }
   return true;
@@ -256,7 +259,7 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context) {
   }
 
   RpcArgs::PacksInfo packsInfo;
-  for (auto& [pack, packItem] : m_globalContext.rteActiveTarget->GetFilteredModel()->GetPackages()) {
+  for (auto& [pack, packItem] : contextItem.rteActiveTarget->GetFilteredModel()->GetPackages()) {
     RpcArgs::Pack p;
     p.id = packItem->GetPackageID(true);
     const auto& description = packItem->GetDescription();

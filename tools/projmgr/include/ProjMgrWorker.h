@@ -269,7 +269,7 @@ struct ValidationResult {
   std::vector<ValidationCondition> conditions;
 };
 
-/** 
+/**
  * @brief gdb server item containing
  *        port number of processor
  *        processor name
@@ -922,7 +922,7 @@ public:
     }
     m_contexts.clear();
     m_ymlOrderedContexts.clear();
-    m_contextsPtr->clear();
+    m_contexts.clear();
     m_contextErrMap.clear();
     m_selectedContexts.clear();
     m_outputDir.clear();
@@ -951,7 +951,6 @@ protected:
   std::map<std::string, StrMap> m_regToolchainsEnvVars;
   std::vector<std::string> m_ymlOrderedContexts;
   std::map<std::string, ContextItem> m_contexts;
-  std::map<std::string, ContextItem>* m_contextsPtr;
   std::map<std::string, std::set<std::string>> m_contextErrMap;
   std::vector<std::string> m_selectedContexts;
   std::string m_outputDir;
