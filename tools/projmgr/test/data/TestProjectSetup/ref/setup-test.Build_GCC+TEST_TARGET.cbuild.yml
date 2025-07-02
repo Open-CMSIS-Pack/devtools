@@ -1,7 +1,7 @@
 build:
-  generated-by: csolution version 2.8.0
-  solution: ../data/TestProjectSetup/setup-test.csolution.yml
-  project: ../data/TestProjectSetup/setup-test.cproject.yml
+  generated-by: csolution version 0.0.0
+  solution: ../../../../../data/TestProjectSetup/setup-test.csolution.yml
+  project: ../../../../../data/TestProjectSetup/setup-test.cproject.yml
   context: setup-test.Build_GCC+TEST_TARGET
   compiler: GCC
   device: ARM::RteTest_ARMCM0
@@ -10,7 +10,7 @@ build:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
       title: Cortex-M0 Device Generic Users Guide
   dbgconf:
-    - file: ../data/TestProjectSetup/.cmsis/setup-test+TEST_TARGET.dbgconf
+    - file: ../../../../../data/TestProjectSetup/.cmsis/setup-test+TEST_TARGET.dbgconf
       version: 0.0.2
   processor:
     fpu: off
@@ -37,17 +37,17 @@ build:
     - ARMCM0
     - _RTE_
   add-path:
-    - ../data/TestProjectSetup/setup/GCC
-    - ../data/TestProjectSetup/setup/common
+    - ../../../../../data/TestProjectSetup/setup/GCC
+    - ../../../../../data/TestProjectSetup/setup/common
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
-    - ../data/TestProjectSetup/RTE/_Build_GCC_TEST_TARGET
+    - ../../../../../data/TestProjectSetup/RTE/_Build_GCC_TEST_TARGET
   add-path-asm:
-    - ../data/TestProjectSetup/RTE/_Build_GCC_TEST_TARGET
+    - ../../../../../data/TestProjectSetup/RTE/_Build_GCC_TEST_TARGET
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
-    intdir: tmp
-    outdir: out/setup-test/TEST_TARGET/Build_GCC
-    rtedir: ../data/TestProjectSetup/RTE
+    intdir: ../../../../tmp
+    outdir: .
+    rtedir: ../../../../../data/TestProjectSetup/RTE
   output:
     - type: elf
       file: setup-test.elf
@@ -70,20 +70,20 @@ build:
           category: doc
           version: 1.1.2
   linker:
-    script: ../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/gcc_linker_script.ld.src
-    regions: ../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h
+    script: ../../../../../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/gcc_linker_script.ld.src
+    regions: ../../../../../data/TestProjectSetup/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h
   groups:
     - group: Generic Group
       files:
-        - file: ../data/TestProjectSetup/gcc.c
+        - file: ../../../../../data/TestProjectSetup/gcc.c
           category: sourceC
-        - file: ../data/TestProjectSetup/generic.c
+        - file: ../../../../../data/TestProjectSetup/generic.c
           category: sourceC
           misc:
             C:
               - -DMISC-FILE-GCC
   constructed-files:
-    - file: ../data/TestProjectSetup/RTE/_Build_GCC_TEST_TARGET/RTE_Components.h
+    - file: ../../../../../data/TestProjectSetup/RTE/_Build_GCC_TEST_TARGET/RTE_Components.h
       category: header
   licenses:
     - license: <unknown>

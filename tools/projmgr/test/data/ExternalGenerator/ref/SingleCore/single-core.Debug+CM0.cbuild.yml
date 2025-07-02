@@ -1,7 +1,7 @@
 build:
-  generated-by: csolution version 0.0.0+gf14e09a4
-  solution: ../extgen.csolution.yml
-  project: single-core.cproject.yml
+  generated-by: csolution version 0.0.0
+  solution: ../../../../extgen.csolution.yml
+  project: ../../../../single/single-core.cproject.yml
   context: single-core.Debug+CM0
   compiler: AC6
   device: ARM::RteTestGen_ARMCM0
@@ -18,19 +18,19 @@ build:
   define-asm:
     - _RTE_
   add-path:
-    - RTE/_Debug_CM0
-    - generated/RTE/RteTest
+    - ../../../../single/RTE/_Debug_CM0
+    - ../../../../single/generated/RTE/RteTest
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
   add-path-asm:
-    - RTE/_Debug_CM0
-    - generated/RTE/RteTest
+    - ../../../../single/RTE/_Debug_CM0
+    - ../../../../single/generated/RTE/RteTest
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
   output-dirs:
-    intdir: ../tmp
-    outdir: ../out/single-core/CM0/Debug
-    rtedir: RTE
+    intdir: ../../../../tmp
+    outdir: .
+    rtedir: ../../../../single/RTE
   output:
     - type: elf
       file: single-core.axf
@@ -51,12 +51,12 @@ build:
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include/Outside/OutsideInclude.h
           category: header
           version: 0.0.2
-        - file: generated/RTE/RteTest/Config/ConfigInclude.h
+        - file: ../../../../single/generated/RTE/RteTest/Config/ConfigInclude.h
           category: header
           attr: config
           version: 0.0.2
           status: missing base
-        - file: generated/RTE/RteTest/GlobalLevelConfig.h
+        - file: ../../../../single/generated/RTE/RteTest/GlobalLevelConfig.h
           category: preIncludeGlobal
           attr: config
           version: 0.0.2
@@ -65,23 +65,23 @@ build:
       selected-by: RteTestGenerator:Check Global Generator
       generator:
         id: RteTestExternalGenerator
-        path: generated/single-core.cgen.yml
+        path: ../../../../single/generated/single-core.cgen.yml
   linker:
-    script: RTE/Device/RteTestGen_ARMCM0/ac6_linker_script.sct.src
-    regions: RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
+    script: ../../../../single/RTE/Device/RteTestGen_ARMCM0/ac6_linker_script.sct.src
+    regions: ../../../../single/RTE/Device/RteTestGen_ARMCM0/regions_RteTestGen_ARMCM0.h
   groups:
     - group: sources
       files:
-        - file: main.c
+        - file: ../../../../single/main.c
           category: sourceC
     - group: generated sources
       files:
-        - file: generated/generated.c
+        - file: ../../../../single/generated/generated.c
           category: sourceC
   constructed-files:
-    - file: RTE/_Debug_CM0/Pre_Include_Global.h
+    - file: ../../../../single/RTE/_Debug_CM0/Pre_Include_Global.h
       category: preIncludeGlobal
-    - file: RTE/_Debug_CM0/RTE_Components.h
+    - file: ../../../../single/RTE/_Debug_CM0/RTE_Components.h
       category: header
   licenses:
     - license: <unknown>

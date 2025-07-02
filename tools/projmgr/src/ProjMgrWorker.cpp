@@ -122,16 +122,14 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
     context.precedences = false;
 
     // default directories
-    context.directories.cprj = m_outputDir.empty() ? context.cproject->directory : m_outputDir;
     context.directories.intdir = m_cbuild2cmake ? "tmp" :
-                                 "tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
-    context.directories.outdir = "out/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
+      "tmp/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
+    context.directories.outBaseDir = "out";
+    context.directories.outdir = context.directories.outBaseDir +
+      "/" + context.cproject->name + (type.target.empty() ? "" : "/" + type.target) + (type.build.empty() ? "" : "/" + type.build);
     context.directories.rte = "RTE";
 
     // customized directories
-    if (m_outputDir.empty() && !context.csolution->directories.cprj.empty()) {
-      context.directories.cprj = context.csolution->directories.cprj;
-    }
     if (!context.csolution->directories.intdir.empty()) {
       if (m_cbuild2cmake) {
         ProjMgrLogger::Get().Warn("customization of intermediate directory 'intdir' is ignored by the cbuild2cmake backend", context.name);
@@ -141,9 +139,30 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
     }
     if (!context.csolution->directories.outdir.empty()) {
       context.directories.outdir = context.csolution->directories.outdir;
+      // https://github.com/Open-CMSIS-Pack/devtools/issues/2057
+      // specified in csolution.yml with output-dirs, but $Project$, $TargetType$, and $BuildType$ are replaced by empty strings
+      context.directories.outBaseDir = RteUtils::ExpandAccessSequences(context.csolution->directories.outdir, {
+        { RteConstants::AS_PROJECT, RteUtils::EMPTY_STRING },
+        { RteConstants::AS_BUILD_TYPE, RteUtils::EMPTY_STRING },
+        { RteConstants::AS_TARGET_TYPE, RteUtils::EMPTY_STRING },
+      });
     }
     if (!context.cproject->rteBaseDir.empty()) {
       context.directories.rte = context.cproject->rteBaseDir;
+    }
+
+    // cbuild.yml / legacy cprj directory
+    if (m_cbuild2cmake) {
+      // cprj = cbuild location (outdir)
+      context.directories.cprj = context.directories.outdir;
+      RteFsUtils::NormalizePath(context.directories.cprj, m_outputDir);
+    } else {
+      // legacy cprj location
+      context.directories.cprj = m_outputDir.empty() ?
+        !context.csolution->directories.cprj.empty() ?
+        context.csolution->directories.cprj : // custom cprj
+        context.cproject->directory : // cproject directory
+        m_outputDir; // --output command line option
     }
 
     // context variables
@@ -3277,6 +3296,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem & context, bool rerun)
     }
     if (!ProcessSequenceRelative(context, context.directories.rte, context.cproject->directory) ||
       !ProcessSequenceRelative(context, context.directories.outdir, ref) ||
+      !ProcessSequenceRelative(context, context.directories.outBaseDir, ref) ||
       !ProcessSequenceRelative(context, context.directories.intdir, ref)) {
       return false;
     }
@@ -4960,7 +4980,8 @@ bool ProjMgrWorker::GetExtGeneratorOptions(ContextItem& context, const string& l
   if (options.path.empty()) {
     // from global register
     options.path = m_extGenerator->GetGlobalGenDir(options.id);
-    if (!ProcessSequenceRelative(context, options.path, layer.empty() ? context.cproject->directory : context.clayers.at(layer)->directory)) {
+    if (!options.path.empty() &&
+      !ProcessSequenceRelative(context, options.path, layer.empty() ? context.cproject->directory : context.clayers.at(layer)->directory)) {
       return false;
     }
   }

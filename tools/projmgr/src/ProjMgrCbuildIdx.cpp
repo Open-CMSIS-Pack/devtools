@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -18,7 +18,7 @@ class ProjMgrCbuildIdx : public ProjMgrCbuildBase {
 public:
   ProjMgrCbuildIdx(
     YAML::Node node, const vector<ContextItem*>& processedContexts,
-    ProjMgrParser* parser, ProjMgrWorker* worker, const string& directory, const set<string>& failedContexts,
+    ProjMgrParser* parser, ProjMgrWorker* worker, const string& directory, const string& cbuildRun, const set<string>& failedContexts,
     const map<string, ExecutesItem>& executes);
 private:
   void SetExecutesNode(YAML::Node node, const map<string, ExecutesItem>& executes, const string& base, const string& ref);
@@ -26,8 +26,8 @@ private:
 };
 
 ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
-  const vector<ContextItem*>& processedContexts, ProjMgrParser* parser, ProjMgrWorker* worker, const string& directory, const set<string>& failedContexts,
-  const map<string, ExecutesItem>& executes) : ProjMgrCbuildBase(false) {
+  const vector<ContextItem*>& processedContexts, ProjMgrParser* parser, ProjMgrWorker* worker, const string& directory, const string& cbuildRun,
+  const set<string>& failedContexts, const map<string, ExecutesItem>& executes) : ProjMgrCbuildBase(false) {
   error_code ec;
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
   if (processedContexts.size() > 0) {
@@ -37,6 +37,9 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
     SetNodeValue(node[YAML_CDEFAULT], FormatPath(parser->GetCdefault().path, directory));
   }
   SetNodeValue(node[YAML_CSOLUTION], FormatPath(parser->GetCsolution().path, directory));
+  if (!cbuildRun.empty()) {
+    SetNodeValue(node[YAML_CBUILD_RUN], FormatPath(cbuildRun, directory));
+  }
   SetNodeValue(node[YAML_OUTPUT_TMPDIR], FormatPath(parser->GetCsolution().directories.tmpdir, directory));
 
   // Generate layer info for each target
@@ -269,7 +272,7 @@ bool ProjMgrYamlEmitter::GenerateCbuildIndex(const vector<ContextItem*>& context
 
   YAML::Node rootNode;
   ProjMgrCbuildIdx cbuild(
-    rootNode[YAML_BUILD_IDX], contexts, m_parser, m_worker, m_outputDir, failedContexts, executes);
+    rootNode[YAML_BUILD_IDX], contexts, m_parser, m_worker, m_outputDir, m_cbuildRun, failedContexts, executes);
 
   // set rebuild flags
   if (NeedRebuild(filename, rootNode)) {

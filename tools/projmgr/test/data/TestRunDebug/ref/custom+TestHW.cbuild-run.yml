@@ -1,13 +1,13 @@
 cbuild-run:
-  generated-by: csolution version 0.0.0+gb7a0c7b1
-  solution: ../data/TestRunDebug/custom.csolution.yml
+  generated-by: csolution version 0.0.0
+  solution: ../../data/TestRunDebug/custom.csolution.yml
   target-type: TestHW
   target-set: <default>
   compiler: AC6
   device: ARM::RteTest_ARMCM4_NOFP
   device-pack: ARM::RteTest_DFP@0.2.0
   output:
-    - file: out/custom/TestHW/custom.axf
+    - file: custom/TestHW/custom.axf
       info: generate by custom+TestHW
       type: elf
       load: image+symbols
@@ -30,7 +30,7 @@ cbuild-run:
     name: Test Custom Adapter
     protocol: jtag
     clock: 40000000
-    dbgconf: ../data/TestRunDebug/.cmsis/custom+TestHW.dbgconf
+    dbgconf: ../../data/TestRunDebug/.cmsis/custom+TestHW.dbgconf
     custom-adapter-key: custom adapter value
     custom-key-overwrite: custom value overwrite
     custom-map:

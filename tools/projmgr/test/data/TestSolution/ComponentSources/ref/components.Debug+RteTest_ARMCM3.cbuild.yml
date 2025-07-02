@@ -1,7 +1,7 @@
 build:
-  generated-by: csolution version 0.0.0+g4e2c4c52
-  solution: ../data/TestSolution/ComponentSources/components.csolution.yml
-  project: ../data/TestSolution/ComponentSources/components.cproject.yml
+  generated-by: csolution version 0.0.0
+  solution: ../../../../../data/TestSolution/ComponentSources/components.csolution.yml
+  project: ../../../../../data/TestSolution/ComponentSources/components.cproject.yml
   context: components.Debug+RteTest_ARMCM3
   compiler: AC6
   device: ARM::RteTest_ARMCM3
@@ -10,7 +10,7 @@ build:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html
       title: Cortex-M3 Device Generic Users Guide
   dbgconf:
-    - file: ../data/TestSolution/ComponentSources/.cmsis/components+RteTest_ARMCM3.dbgconf
+    - file: ../../../../../data/TestSolution/ComponentSources/.cmsis/components+RteTest_ARMCM3.dbgconf
       version: 0.0.2
   processor:
     fpu: off
@@ -27,19 +27,19 @@ build:
     - ARMCM3
     - _RTE_
   add-path:
-    - ../data/TestSolution/ComponentSources/RTE/_Debug_RteTest_ARMCM3
+    - ../../../../../data/TestSolution/ComponentSources/RTE/_Debug_RteTest_ARMCM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/API
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include/Config
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   add-path-asm:
-    - ../data/TestSolution/ComponentSources/RTE/_Debug_RteTest_ARMCM3
+    - ../../../../../data/TestSolution/ComponentSources/RTE/_Debug_RteTest_ARMCM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/API
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include/Config
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
-    intdir: tmp
-    outdir: out/components/RteTest_ARMCM3/Debug
-    rtedir: ../data/TestSolution/ComponentSources/RTE
+    intdir: ../../../../tmp
+    outdir: .
+    rtedir: ../../../../../data/TestSolution/ComponentSources/RTE
   output:
     - type: elf
       file: components.axf
@@ -80,10 +80,10 @@ build:
           category: doc
           version: 1.0.0
   linker:
-    script: ../data/TestSolution/ComponentSources/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src
-    regions: ../data/TestSolution/ComponentSources/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
+    script: ../../../../../data/TestSolution/ComponentSources/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src
+    regions: ../../../../../data/TestSolution/ComponentSources/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
   constructed-files:
-    - file: ../data/TestSolution/ComponentSources/RTE/_Debug_RteTest_ARMCM3/RTE_Components.h
+    - file: ../../../../../data/TestSolution/ComponentSources/RTE/_Debug_RteTest_ARMCM3/RTE_Components.h
       category: header
   licenses:
     - license: <proprietary> Proprietary Test License

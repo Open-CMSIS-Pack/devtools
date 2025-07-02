@@ -162,6 +162,7 @@ struct RunDebugType {
   std::string solutionName;
   std::string targetType;
   std::string targetSet;
+  std::string cbuildRun;
   std::string compiler;
   std::string board;
   std::string boardPack;

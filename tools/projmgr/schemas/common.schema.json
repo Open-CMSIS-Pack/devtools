@@ -1206,6 +1206,7 @@
         "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file." },
         "cdefault": { "type": "string", "description": "Path to cdefault.yml file." },
         "csolution": { "type": "string", "description": "Path to csolution.yml file." },
+        "cbuild-run": { "type": "string", "description": "Path to cbuild-run.yml file." },
         "tmpdir": { "type": "string", "description": "Specifies the directory for the interim temporary files." },
         "cprojects": { "$ref": "#/definitions/BuildProjectsType" },
         "cbuilds": { "$ref": "#/definitions/BuildContextsType" },

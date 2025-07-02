@@ -1,12 +1,12 @@
 build-idx:
-  generated-by: csolution version 0.0.0+gdf212332
+  generated-by: csolution version 0.0.0
   cdefault: ${CMSIS_COMPILER_ROOT}/cdefault.yml
   csolution: ../data/TestSolution/Executes/solution.csolution.yml
   tmpdir: tmp
   cprojects:
     - cproject: ../data/TestSolution/Executes/project/project.cproject.yml
   cbuilds:
-    - cbuild: project.Debug+RteTest_ARMCM3.cbuild.yml
+    - cbuild: out/project/RteTest_ARMCM3/Debug/project.Debug+RteTest_ARMCM3.cbuild.yml
       project: project
       configuration: .Debug+RteTest_ARMCM3
       depends-on:
@@ -15,7 +15,7 @@ build-idx:
         info:
           - solution.cbuild-pack.yml - file generated successfully
           - project.Debug+RteTest_ARMCM3.cbuild.yml - file generated successfully
-    - cbuild: project.Release+RteTest_ARMCM3.cbuild.yml
+    - cbuild: out/project/RteTest_ARMCM3/Release/project.Release+RteTest_ARMCM3.cbuild.yml
       project: project
       configuration: .Release+RteTest_ARMCM3
       depends-on:

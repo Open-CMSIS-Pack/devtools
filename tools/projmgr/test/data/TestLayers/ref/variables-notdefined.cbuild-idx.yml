@@ -1,5 +1,5 @@
 build-idx:
-  generated-by: csolution version 0.0.0+gc0cd00f9
+  generated-by: csolution version 0.0.0
   csolution: ../data/TestLayers/variables-notdefined.csolution.yml
   tmpdir: tmp
   cprojects:
@@ -12,7 +12,7 @@ build-idx:
         - clayer: ../data/TestLayers/Layer2/layer2.clayer.yml
         - clayer: ../data/TestLayers/Layer3/layer3.clayer.yml
   cbuilds:
-    - cbuild: variables-notdefined.BuildType+TargetType.cbuild.yml
+    - cbuild: out/variables-notdefined/TargetType/BuildType/variables-notdefined.BuildType+TargetType.cbuild.yml
       project: variables-notdefined
       configuration: .BuildType+TargetType
       errors: true
@@ -23,7 +23,7 @@ build-idx:
           - variables-notdefined.csolution.yml - cproject.yml files should be placed in separate sub-directories
           - "testlayers.cproject.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
           - "layer1.clayer.yml - 'device: Dname' is deprecated at this level and accepted in *.csolution.yml only"
-    - cbuild: testlayers.BuildType+TargetType.cbuild.yml
+    - cbuild: out/testlayers/TargetType/BuildType/testlayers.BuildType+TargetType.cbuild.yml
       project: testlayers
       configuration: .BuildType+TargetType
       clayers:

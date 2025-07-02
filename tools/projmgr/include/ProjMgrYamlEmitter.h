@@ -107,6 +107,7 @@ protected:
   ProjMgrParser* m_parser = nullptr;
   ProjMgrWorker* m_worker = nullptr;
   std::string m_outputDir;
+  std::string m_cbuildRun;
   bool m_checkSchema;
 
   bool WriteFile(YAML::Node& rootNode, const std::string& filename, const std::string& context = std::string(), bool allowUpdate = true);

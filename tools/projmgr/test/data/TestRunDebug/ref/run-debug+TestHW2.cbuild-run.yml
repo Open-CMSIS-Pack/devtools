@@ -1,6 +1,6 @@
 cbuild-run:
-  generated-by: csolution version 2.9.0
-  solution: ../data/TestRunDebug/run-debug.csolution.yml
+  generated-by: csolution version 0.0.0
+  solution: ../../data/TestRunDebug/run-debug.csolution.yml
   target-type: TestHW2
   target-set: <default>
   compiler: AC6
@@ -9,19 +9,19 @@ cbuild-run:
   device: ARM::RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   output:
-    - file: out/run-debug/TestHW2/run-debug.axf
+    - file: run-debug/TestHW2/run-debug.axf
       info: generate by run-debug+TestHW2
       type: elf
       load: symbols
-    - file: out/run-debug/TestHW2/run-debug.hex
+    - file: run-debug/TestHW2/run-debug.hex
       info: generate by run-debug+TestHW2
       type: hex
       load: image
-    - file: out/run-debug/TestHW2/run-debug.bin
+    - file: run-debug/TestHW2/run-debug.bin
       info: generate by run-debug+TestHW2
       type: bin
       load: none
-    - file: ../data/TestRunDebug/customLibrary.x
+    - file: ../../data/TestRunDebug/customLibrary.x
       type: lib
       load: none
   system-resources:
@@ -55,7 +55,7 @@ cbuild-run:
     name: CMSIS-DAP@pyOCD
     protocol: swd
     clock: 30000000
-    dbgconf: out/run-debug/TestHW2/AC6.dbgconf
+    dbgconf: run-debug/TestHW2/AC6.dbgconf
     gdbserver:
       - port: 3333
   debug-vars:
