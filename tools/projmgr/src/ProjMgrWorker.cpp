@@ -229,8 +229,7 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
 }
 
 void ProjMgrWorker::GetContexts(map<string, ContextItem>* &contexts) {
-  m_contextsPtr = &m_contexts;
-  contexts = m_contextsPtr;
+  contexts = &m_contexts;
 }
 
 void ProjMgrWorker::GetYmlOrderedContexts(vector<string> &contexts) {

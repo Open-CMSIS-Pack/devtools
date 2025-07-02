@@ -1170,14 +1170,16 @@ const string ProjMgr::GetToolboxVersion(const string& toolboxDir) {
   return matchResult[1].str();
 }
 
+void ProjMgr::Clear() {
+  m_parser.Clear();
+  m_extGenerator.Clear();
+  m_worker.Clear();
+  m_runDebug.Clear();
+  ProjMgrLogger::Get().Clear();
+}
+
 bool ProjMgr::LoadSolution(const std::string& csolution) {
-  if (!m_csolutionFile.empty()) {
-    m_parser.Clear();
-    m_extGenerator.Clear();
-    m_worker.Clear();
-    m_runDebug.Clear();
-    ProjMgrLogger::Get().Clear();
-  }
+  Clear();
 
   m_csolutionFile = csolution;
   m_rootDir = RteUtils::ExtractFilePath(m_csolutionFile, false);

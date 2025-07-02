@@ -58,6 +58,11 @@ public:
   ProjMgrWorker& GetWorker() { return m_worker; };
 
   /**
+   * @brief clear internal structures and worker object
+  */
+  void Clear();
+
+  /**
    * @brief load solution
    * @param path to <solution>.csolution.yml file
    * @return processing status
