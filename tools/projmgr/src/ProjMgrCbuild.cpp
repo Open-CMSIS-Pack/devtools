@@ -129,10 +129,6 @@ void ProjMgrCbuild::SetComponentsNode(YAML::Node node, const ContextItem* contex
     if (api) {
       SetNodeValue(componentNode[YAML_IMPLEMENTS], api->ConstructComponentID(true));
     }
-    const string& rteDir = rteComponent->GetAttribute("rtedir");
-    if (!rteDir.empty()) {
-      SetNodeValue(componentNode[YAML_OUTPUT_RTEDIR], FormatPath(context->cproject->directory + "/" + rteDir, context->directories.cbuild));
-    }
     SetControlsNode(componentNode, context, componentItem->build);
     SetComponentFilesNode(componentNode[YAML_FILES], context, componentId);
     if (!component.generator.empty()) {
