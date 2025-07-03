@@ -91,6 +91,12 @@ elseif(CPU STREQUAL "Cortex-M35P")
   set(SUPPORTS_TZ  TRUE)
   set(SUPPORTS_DSP TRUE)
 
+elseif(CPU STREQUAL "Cortex-M52")
+  set(IAR_CPU      "Cortex-M52")
+  set(FPU_FLAGS    "none" "VFPv5_d16" "VFPv5_d16" "VFPv5_d16")
+  set(SUPPORTS_MVE TRUE)
+  set(SUPPORTS_TZ  TRUE)
+
 elseif(CPU STREQUAL "Cortex-M55")
   set(IAR_CPU      "Cortex-M55")
   set(FPU_FLAGS    "none" "VFPv5_d16" "VFPv5_d16" "VFPv5_d16")
