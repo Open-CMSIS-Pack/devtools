@@ -973,8 +973,9 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponentFilesEmpty) {
   InitializeTarget(context);
   RtePackage* pack = new RtePackage(NULL);
   RteComponent* c = new RteComponent(pack);
-  RteComponentInstance* ci = new RteComponentInstance(c);
+  RteComponentInstance* ci = new RteComponentInstance();
   ci->InitInstance(c);
+  ci->SetResolvedComponent(c, context.rteActiveTarget->GetName());
   ci->SetAttributes({ {"Cclass" , "Class"}, {"Cgroup" , "Group"} });
   context.components.insert({ "Class:Group", { ci } });
   EXPECT_TRUE(ProcessComponentFiles(context));

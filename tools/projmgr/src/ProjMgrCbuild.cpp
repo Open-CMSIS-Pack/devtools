@@ -121,7 +121,10 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
 
 void ProjMgrCbuild::SetComponentsNode(YAML::Node node, const ContextItem* context) {
   for (const auto& [componentId, component] : context->components) {
-    const RteComponent* rteComponent = component.instance->GetParent()->GetComponent();
+    const RteComponent* rteComponent = component.instance->GetComponent();
+    if(!rteComponent) {
+      continue;
+    }
     const ComponentItem* componentItem = component.item;
     YAML::Node componentNode;
     SetNodeValue(componentNode[YAML_COMPONENT], componentId);
