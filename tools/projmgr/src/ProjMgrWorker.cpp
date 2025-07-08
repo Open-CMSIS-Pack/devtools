@@ -1813,19 +1813,22 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       continue;
     }
     string hint;
-    RteComponent* matchedComponent = ProcessComponent(context, item, componentMap, hint);
+    RteComponentInstance* matchedComponentInstance = ProcessComponent(context, item, componentMap, hint);
+    RteComponent* matchedComponent = matchedComponentInstance->GetComponent();
     if (!matchedComponent) {
       // No match
       ProjMgrLogger::Get().Error("no component was found with identifier '" + item.component + "'" +
         (!hint.empty() ? "\n  did you mean '" + hint + "'?" : ""), context.name);
       error = true;
-      continue;
+      if(!m_rpcMode) {
+        delete matchedComponentInstance;
+        continue; // no need it unresolved instance in command line mode
+      }
     }
+    const auto componentId = matchedComponentInstance->GetComponentID(true);
+    auto aggCompId = matchedComponentInstance->GetComponentAggregateID();
 
     UpdateMisc(item.build.misc, context.toolchain.name);
-
-    const auto& componentId = matchedComponent->GetComponentID(true);
-    auto aggCompId = matchedComponent->GetComponentAggregateID();
 
     auto itr = std::find_if(processedComponents.begin(), processedComponents.end(), [aggCompId](const auto& pair) {
       return pair.first.compare(aggCompId) == 0;
@@ -1833,16 +1836,6 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     if (itr != processedComponents.end()) {
       // multiple variant of the same component found
       error = true;
-    }
-
-    // Init matched component instance
-    RteComponentInstance* matchedComponentInstance = new RteComponentInstance(matchedComponent);
-    matchedComponentInstance->InitInstance(matchedComponent);
-    if (!item.condition.empty()) {
-      auto ti = matchedComponentInstance->EnsureTargetInfo(context.rteActiveTarget->GetName());
-      ti->SetVersionMatchMode(VersionCmp::MatchMode::ENFORCED_VERSION);
-      matchedComponentInstance->AddAttribute("versionMatchMode",
-        VersionCmp::MatchModeToString(VersionCmp::MatchMode::ENFORCED_VERSION));
     }
 
     // Set layer's rtePath attribute
@@ -1853,36 +1846,6 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       matchedComponentInstance->AddAttribute("layer", layer);
     }
 
-    // Get generator
-    string generatorId = matchedComponent->GetGeneratorName();
-    RteGenerator* generator = matchedComponent->GetGenerator();
-    if (generator && !generator->IsExternal()) {
-      context.generators.insert({ generatorId, generator });
-      string genDir;
-      if (!GetGeneratorDir(generator, context, layer, genDir)) {
-        return false;
-      }
-      matchedComponentInstance->AddAttribute("gendir", genDir);
-      const string gpdsc = RteFsUtils::MakePathCanonical(generator->GetExpandedGpdsc(context.rteActiveTarget, genDir));
-      context.gpdscs.insert({ gpdsc, {componentId, generatorId, genDir} });
-      context.bootstrapComponents.insert({ componentId, { matchedComponentInstance, &item, generatorId } });
-    } else {
-      // Get external generator id
-      if (!generatorId.empty()) {
-        // check if required global generator is registered
-        if (!m_extGenerator->CheckGeneratorId(generatorId, componentId)) {
-          return false;
-        }
-        GeneratorOptionsItem options = { generatorId };
-        if (!GetExtGeneratorOptions(context, layer, options)) {
-          return false;
-        }
-        // keep track of used generators
-        m_extGenerator->AddUsedGenerator(options, context.name);
-        context.extGen[options.id] = options;
-      }
-    }
-
     // Component instances
     if (item.instances > matchedComponentInstance->GetMaxInstances()) {
       ProjMgrLogger::Get().Error("component '" + item.component + "' does not accept more than " +
@@ -1890,6 +1853,53 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       error = true;
     } else if (item.instances > 1) {
       matchedComponentInstance->AddAttribute("instances", to_string(item.instances));
+    }
+
+
+    // Get generator
+    string generatorId;
+    if(matchedComponent) {
+      generatorId = matchedComponent->GetGeneratorName();
+      RteGenerator* generator = matchedComponent->GetGenerator();
+      if(generator && !generator->IsExternal()) {
+        context.generators.insert({generatorId, generator});
+        string genDir;
+        if(!GetGeneratorDir(generator, context, layer, genDir)) {
+          return false;
+        }
+        matchedComponentInstance->AddAttribute("gendir", genDir);
+        const string gpdsc = RteFsUtils::MakePathCanonical(generator->GetExpandedGpdsc(context.rteActiveTarget, genDir));
+        context.gpdscs.insert({gpdsc, {componentId, generatorId, genDir}});
+        context.bootstrapComponents.insert({componentId, { matchedComponentInstance, &item, generatorId }});
+      } else {
+        // Get external generator id
+        if(!generatorId.empty()) {
+          // check if required global generator is registered
+          if(!m_extGenerator->CheckGeneratorId(generatorId, componentId)) {
+            return false;
+          }
+          GeneratorOptionsItem options = {generatorId};
+          if(!GetExtGeneratorOptions(context, layer, options)) {
+            return false;
+          }
+          // keep track of used generators
+          m_extGenerator->AddUsedGenerator(options, context.name);
+          context.extGen[options.id] = options;
+        }
+      }
+      const auto componentPackage = matchedComponent->GetPackage();
+      if(componentPackage) {
+        context.packages.insert({componentPackage->GetID(), componentPackage});
+      }
+      if(matchedComponent->HasApi(context.rteActiveTarget)) {
+        const auto& api = matchedComponent->GetApi(context.rteActiveTarget, false);
+        if(api) {
+          const auto& apiPackage = api->GetPackage();
+          if(apiPackage) {
+            context.packages.insert({apiPackage->GetID(), apiPackage});
+          }
+        }
+      }
     }
 
     // Insert matched component into context list
@@ -1903,20 +1913,6 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       it = processedComponents.find(aggCompId);
     }
     it->second.push_back(item.component);
-
-    const auto& componentPackage = matchedComponent->GetPackage();
-    if (componentPackage) {
-      context.packages.insert({ componentPackage->GetID(), componentPackage });
-    }
-    if (matchedComponent->HasApi(context.rteActiveTarget)) {
-      const auto& api = matchedComponent->GetApi(context.rteActiveTarget, false);
-      if (api) {
-        const auto& apiPackage = api->GetPackage();
-        if (apiPackage) {
-          context.packages.insert({ apiPackage->GetID(), apiPackage });
-        }
-      }
-    }
   }
 
   if (error) {
@@ -1934,37 +1930,53 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 
   // Add required components into RTE
   if (!AddRequiredComponents(context)) {
-    return false;
-  }
-
-  if (!CheckRteErrors()) {
-    return false;
+    error = true;
+  } else if (!CheckRteErrors()) {
+    error = true;
   }
 
   // tolerate component selection errors when in rpc mode
-  if (m_rpcMode) {
+  if (error && m_rpcMode) {
     error = false;
   }
 
   return !error;
 }
 
-RteComponent* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap, string& hint)
-{
-  if (!item.condition.empty()) {
-    RteComponentInstance ci(nullptr);
-    ci.SetTag("component");
 
-    ci.SetAttributesFomComponentId(item.component);
-    ci.AddAttribute("condition", item.condition);
-    auto ti = ci.EnsureTargetInfo(context.rteActiveTarget->GetName());
+RteComponentInstance* ProjMgrWorker::ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap, string& hint)
+{
+  RteComponentInstance* ci = new RteComponentInstance(nullptr);
+  ci->SetTag("component");
+  ci->SetAttributesFomComponentId(item.component);
+  ci->AddAttribute("id", item.component);
+  bool bEnforced = !item.condition.empty();
+  if(bEnforced) {
+    ci->AddAttribute("condition", item.condition);
+    ci->AddAttribute("versionMatchMode", VersionCmp::MatchModeToString(VersionCmp::MatchMode::ENFORCED_VERSION));
+    auto ti = ci->EnsureTargetInfo(context.rteActiveTarget->GetName());
     ti->SetVersionMatchMode(VersionCmp::MatchMode::ENFORCED_VERSION);
     RtePackageInstanceInfo packInfo(nullptr, item.fromPack);
-    ci.SetPackageAttributes(packInfo);
+    ci->SetPackageAttributes(packInfo);
+  }
+  auto c = ResolveComponent(ci, context, item, componentMap, hint);
+  if(c) {
+    ci->InitInstance(c);
+    ci->SetResolvedComponent(c, context.rteActiveTarget->GetName());
+  }
+  ci->ConstructID();
+  return ci;
+}
+
+RteComponent* ProjMgrWorker::ResolveComponent(RteComponentInstance* ci, ContextItem& context, ComponentItem& item, RteComponentMap& componentMap, string& hint)
+{
+
+  bool bEnforced = !item.condition.empty();
+  if(bEnforced) {
     list<RteComponent*> components;
-    RteComponent* enforced = context.rteActiveTarget->GetFilteredModel()->FindComponents(ci, components);
-    if (enforced) {
-      return enforced;
+    RteComponent* rteComponent = context.rteActiveTarget->GetFilteredModel()->FindComponents(*ci, components);
+    if(rteComponent) {
+      return rteComponent;
     }
   }
 
@@ -2261,7 +2273,10 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
   }
   // iterate over components
   for (const auto& [componentId, component] : context.components) {
-    RteComponent* rteComponent = component.instance->GetParent()->GetComponent();
+    RteComponent* rteComponent = component.instance->GetComponent();
+    if(!rteComponent) {
+      continue;
+    }
     // component based API files
     const auto& api = rteComponent->GetApi(context.rteActiveTarget, true);
     if (api) {
@@ -2341,8 +2356,8 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
     RteComponentInstance* rteBootstrapInstance = context.bootstrapComponents.find(componentId) != context.bootstrapComponents.end() ?
       context.bootstrapMap.find(componentId) != context.bootstrapMap.end() ? context.bootstrapComponents.at(context.bootstrapMap.at(componentId)).instance :
       context.bootstrapComponents.at(componentId).instance : nullptr;
-    if (rteBootstrapInstance != nullptr) {
-      RteComponent* rteBootstrapComponent = rteBootstrapInstance->GetParent()->GetComponent();
+     RteComponent* rteBootstrapComponent = rteBootstrapInstance ? rteBootstrapInstance->GetComponent() : nullptr;
+    if (rteBootstrapComponent != nullptr) {
       const auto& files = rteBootstrapComponent->GetFileContainer() ? rteBootstrapComponent->GetFileContainer()->GetChildren() : Collection<RteItem*>();
       for (const RteItem* rteFile : files) {
         const auto& category = rteFile->GetAttribute("category");
@@ -2408,7 +2423,7 @@ void ProjMgrWorker::ValidateComponentSources(ContextItem& context) {
         for (auto& file : files) {
           if (file.category.compare(0, 6, "source") == 0 && file.name == filename) {
             msg += "\n    - component: " + componentID;
-            msg += "\n      from-pack: " + context.components[componentID].instance->GetParent()->GetComponent()->GetPackageID();
+            msg += "\n      from-pack: " + context.components[componentID].instance->GetComponent()->GetPackageID();
             if (erase) {
               files.erase(it);
             } else {
@@ -2663,7 +2678,8 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
         } else if (gpdscComponent->GetTag() == "bundle") {
           components = gpdscComponent->GetChildren();
         }
-        for (const auto component : components) {
+        for (const auto c : components) {
+          auto component = c->GetComponent();
           if (bootstrap.instance->GetComponentID(false) == component->GetComponentID(false)) {
             if (VersionCmp::Compare(bootstrap.instance->GetVersionString(), component->GetVersionString()) > 0) {
               // bootstrap has greater version, do not replace it
@@ -2673,8 +2689,9 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
             }
           }
           const auto& componentId = component->GetComponentID(true);
-          RteComponentInstance* componentInstance = new RteComponentInstance(component);
+          RteComponentInstance* componentInstance = new RteComponentInstance();
           componentInstance->InitInstance(component);
+          componentInstance->SetResolvedComponent(component, context.rteActiveTarget->GetName());
           componentInstance->AddAttribute("gendir", bootstrap.instance->GetAttribute("gendir"));
           componentInstance->AddAttribute("rtedir", bootstrap.instance->GetAttribute("rtedir"));
           context.components[componentId] = { componentInstance, bootstrap.item, component->GetGeneratorName() };
@@ -2701,16 +2718,33 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
       }
     }
   }
-  if (!gpdscInfos.empty() && !context.gpdscs.empty()) {
+
+  bool error = false;
+  if(!gpdscInfos.empty() && !context.gpdscs.empty()) {
     // Update target with gpdsc model
-    if (!SetTargetAttributes(context, context.targetAttributes)) {
-      return false;
+    if(!SetTargetAttributes(context, context.targetAttributes)) {
+      error = true;
     }
     // Re-add required components into RTE
-    if (!AddRequiredComponents(context)) {
-      return false;
+    if(!AddRequiredComponents(context)) {
+      error = true;
     }
   }
+
+  if (!error && !CheckRteErrors()) {
+    error = true;
+  }
+
+  // tolerate component selection errors when in rpc mode
+  if (error && m_rpcMode) {
+    error = false;
+  }
+
+  return !error;
+
+
+
+
   return CheckRteErrors();
 }
 

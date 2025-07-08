@@ -998,7 +998,8 @@ protected:
   bool ProcessToolchain(ContextItem& context);
   bool ProcessPackages(ContextItem& context, const std::string& packRoot);
   bool ProcessComponents(ContextItem& context);
-  RteComponent* ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap, std::string& hint);
+  RteComponentInstance* ProcessComponent(ContextItem& context, ComponentItem& item, RteComponentMap& componentMap, std::string& hint);
+  RteComponent* ResolveComponent(RteComponentInstance* ci, ContextItem& context, ComponentItem& item, RteComponentMap& componentMap, std::string& hint);
   bool ProcessGpdsc(ContextItem& context);
   bool ProcessConfigFiles(ContextItem& context);
   bool ProcessComponentFiles(ContextItem& context);

@@ -242,7 +242,7 @@ void RteItemInstance::InitInstance(RteItem* item)
   if (!item)
     return;
   SetTag(item->GetTag());
-  SetAttributes(item->GetAttributes());
+  AddAttributes(item->GetAttributes(), true);
 }
 
 void RteItemInstance::Clear()
@@ -1567,10 +1567,14 @@ RteItem* RteComponentInstance::GetEffectiveItem(const string& targetName) const
 
 RteComponent* RteComponentInstance::GetResolvedComponent(const string& targetName) const
 {
-  auto it = m_resolvedComponents.find(targetName);
-  if (it != m_resolvedComponents.end())
+  auto it = m_resolvedComponents.begin();
+  if(!targetName.empty()) {
+    it = m_resolvedComponents.find(targetName);
+  }
+  if(it != m_resolvedComponents.end()) {
     return it->second;
-  return NULL;
+  }
+  return nullptr;
 }
 
 RteComponent* RteComponentInstance::GetPotentialComponent(const string& targetName) const

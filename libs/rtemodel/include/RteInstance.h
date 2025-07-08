@@ -440,7 +440,7 @@ public:
    * @brief get pointer to RteComponent
    * @return pointer to RteComponent, nullptr by default
   */
-   RteComponent* GetComponent() const override { return nullptr;}
+   RteComponent* GetComponent() const override { return GetComponent(EMPTY_STRING);}
 
   /**
    * @brief get resolved component, even if this item is not filtered by specified target
@@ -861,7 +861,7 @@ public:
    * @brief constructor
    * @param parent pointer to RteItem parent
   */
-  RteComponentInstance(RteItem* parent);
+  RteComponentInstance(RteItem* parent = 0);
 
   /**
    * @brief virtual destructor
@@ -1057,6 +1057,9 @@ public:
   */
   RteComponent* GetComponent(const std::string& targetName) const override
   { return GetResolvedComponent(targetName); }
+
+   using RteItemInstance::GetComponent; // returns first resolved
+
   /**
    * @brief get resolved component for specified target
    * @param targetName target name to resolve component
