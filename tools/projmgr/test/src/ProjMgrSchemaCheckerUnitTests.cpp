@@ -364,7 +364,7 @@ vector<ErrInfo> expectedErrPos = {
     {invalid_schema_Ex2, false, expectedErrPos },
     {invalid_schema_Ex3, false, expectedErrPos },
     {valid_schema_Ex4,   true,  vector<ErrInfo>{} },
-    {invalid_schema_Ex5, false, vector<ErrInfo>{ {1,1}, {1,1}} },
+    {invalid_schema_Ex5, false, vector<ErrInfo>{ {1,1}} },
     {invalid_schema_Ex6, false, vector<ErrInfo>{ {4,7}, {7,7}, {10,7}} },
     {invalid_schema_Ex7, false, vector<ErrInfo>{ {4,7}, {7,7}, {10,7}} },
     {valid_schema_Ex8, true, vector<ErrInfo>{} },

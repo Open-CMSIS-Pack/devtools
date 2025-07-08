@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  packs:
+    - pack: ARM::RteTest_DFP
+  
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0
+      target-set:
+        - set:
+          debugger:
+            name: CMSIS-DAP
+          images:
+            - image: ./images/image1.elf
+              load: symbols
+            - image: ./images/image2.hex
+              load: image
+            - image: ./images/image3.bin
+              load: none
+
+  executes:
+    - execute: Convert_Image1
+      run: ${CMAKE_COMMAND} -E echo "Simulate image conversion 1 > 2" && ${CMAKE_COMMAND} -E copy $input(0)$ $output(0)$
+      input:
+        - ./images/image1.elf
+      output:
+        - ./images/image2.hex
+
+    - execute: Convert_Image2
+      run: ${CMAKE_COMMAND} -E echo "Simulate image conversion 2 > 3" && ${CMAKE_COMMAND} -E copy $input(0)$ $output(0)$
+      input:
+        - ./images/image2.hex
+      output:
+        - ./images/image3.bin

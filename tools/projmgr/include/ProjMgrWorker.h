@@ -362,6 +362,7 @@ struct DebuggerType {
  *        selected target-set
  *        load offset for generated binary
  *        load modes
+ *        image only flag
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -430,6 +431,7 @@ struct ContextItem {
   std::string targetSet;
   std::string loadOffset;
   StrMap loadMode;
+  bool imageOnly = false;
 };
 
 /**
@@ -748,13 +750,11 @@ public:
    * @brief parse context selection
    * @param contexts pattern (wildcards are allowed)
    * @param check cbuildset flag (default false)
-   * @param active target-set (default empty)
    * @return true if executed successfully
   */
   bool ParseContextSelection(
     const std::vector<std::string>& contextSelection,
-    const bool checkCbuildSet = false,
-    const std::string activeTargetSet = std::string());
+    const bool checkCbuildSet = false);
 
   /**
    * @brief get the list of selected contexts
@@ -911,6 +911,18 @@ public:
   bool ValidateContext(ContextItem& context);
 
   /**
+   * @brief populate active target set 
+   * @param active target set command line option
+   * @return true if there is no error
+  */
+  bool PopulateActiveTargetSet(const std::string& activeTargetSet);
+
+  /**
+   * @brief add image-only context
+  */
+  void AddImageOnlyContext();
+
+  /**
    * @brief clear worker members for reloading a solution
    * @return true if there is no error
   */
@@ -978,6 +990,7 @@ protected:
   std::map<std::string, FileNode> m_missingFiles;
   std::string m_activeTargetType;
   TargetSetItem m_activeTargetSet;
+  CprojectItem m_imageOnly;
 
   bool CheckMissingPackRequirements(const std::string& contextName);
   void CheckMissingLinkerScript(ContextItem& context);
@@ -1084,8 +1097,7 @@ protected:
   void ProcessTmpDir(std::string& tmpdir, const std::string& base);
   bool IsCreatedByExecute(const std::string file, const std::string dir);
   bool CollectAllRequiredPdscFiles();
-  bool ParseTargetSetContextSelection(const std::string& activeTargetSet);
-  bool GetActiveTargetSet(const std::string& activeTargetSet);
+  bool ParseTargetSetContextSelection();
 };
 
 #endif  // PROJMGRWORKER_H

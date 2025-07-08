@@ -30,17 +30,23 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
   const set<string>& failedContexts, const map<string, ExecutesItem>& executes) : ProjMgrCbuildBase(false) {
   error_code ec;
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
-  if (processedContexts.size() > 0) {
-    SetNodeValue(node[YAML_DESCRIPTION], processedContexts[0]->csolution->description);
-  }
-  if (!parser->GetCdefault().path.empty()) {
-    SetNodeValue(node[YAML_CDEFAULT], FormatPath(parser->GetCdefault().path, directory));
+  if (!processedContexts.empty()) {
+    const auto& context = processedContexts.front();
+    SetNodeValue(node[YAML_DESCRIPTION], context->csolution->description);
+    if (!parser->GetCdefault().path.empty() && !context->imageOnly) {
+      SetNodeValue(node[YAML_CDEFAULT], FormatPath(parser->GetCdefault().path, directory));
+    }
   }
   SetNodeValue(node[YAML_CSOLUTION], FormatPath(parser->GetCsolution().path, directory));
   if (!cbuildRun.empty()) {
     SetNodeValue(node[YAML_CBUILD_RUN], FormatPath(cbuildRun, directory));
   }
   SetNodeValue(node[YAML_OUTPUT_TMPDIR], FormatPath(parser->GetCsolution().directories.tmpdir, directory));
+
+  // Image Only flag
+  if (!processedContexts.empty() && processedContexts.front()->imageOnly) {
+    node[YAML_IMAGE_ONLY] = true;
+  }
 
   // Generate layer info for each target
   vector<string> configTargets;
@@ -129,7 +135,9 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
       const string& relativeFilename = fs::relative(filename, directory, ec).generic_string();
       SetNodeValue(cbuildNode[YAML_CBUILD], relativeFilename);
       if (context->cproject) {
-        SetNodeValue(cbuildNode[YAML_PROJECT], context->cproject->name);
+        if (!context->imageOnly) {
+          SetNodeValue(cbuildNode[YAML_PROJECT], context->cproject->name);
+        }
         SetNodeValue(cbuildNode[YAML_CONFIGURATION],
           (context->type.build.empty() ? "" : ("." + context->type.build)) +
           "+" + context->type.target);

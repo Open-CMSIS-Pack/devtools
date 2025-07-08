@@ -1,0 +1,20 @@
+build:
+  generated-by: csolution version 0.0.0
+  solution: ../../../image-only.csolution.yml
+  context: image-only+CM0
+  device: ARM::RteTest_ARMCM0
+  device-pack: ARM::RteTest_DFP@0.2.0
+  device-books:
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
+      title: Cortex-M0 Device Generic Users Guide
+  dbgconf:
+    - file: ../../../.cmsis/image-only+CM0.dbgconf
+      version: 0.0.2
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  licenses:
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
