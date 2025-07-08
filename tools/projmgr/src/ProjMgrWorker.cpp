@@ -2680,6 +2680,9 @@ bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
         }
         for (const auto c : components) {
           auto component = c->GetComponent();
+          if(!component) {
+            continue;
+          }
           if (bootstrap.instance->GetComponentID(false) == component->GetComponentID(false)) {
             if (VersionCmp::Compare(bootstrap.instance->GetVersionString(), component->GetVersionString()) > 0) {
               // bootstrap has greater version, do not replace it
