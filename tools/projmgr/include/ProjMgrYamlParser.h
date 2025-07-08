@@ -128,6 +128,7 @@ static constexpr const char* YAML_ID = "id";
 static constexpr const char* YAML_IF = "if";
 static constexpr const char* YAML_IMAGES = "images";
 static constexpr const char* YAML_IMAGE = "image";
+static constexpr const char* YAML_IMAGE_ONLY = "image-only";
 static constexpr const char* YAML_IMPLEMENTED_BY = "implemented-by";
 static constexpr const char* YAML_IMPLEMENTS = "implements";
 static constexpr const char* YAML_INDEX = "index";

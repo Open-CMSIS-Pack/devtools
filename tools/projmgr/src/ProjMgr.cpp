@@ -470,6 +470,10 @@ bool ProjMgr::PopulateContexts(void) {
     }
     // Check cproject separate folders and unique names
     const StrVec& cprojects = m_parser.GetCsolution().cprojects;
+    if (m_activeTargetSet.empty() && cprojects.empty()) {
+      ProjMgrLogger::Get().Error("projects not found", "", m_csolutionFile);
+      return false;
+    }
     if (cprojects.size() > 1) {
       multiset<string> dirs;
       multiset<string> names;
@@ -526,6 +530,14 @@ bool ProjMgr::PopulateContexts(void) {
     }
   }
 
+  // Populate active target-set
+  if (!m_activeTargetSet.empty() && !m_worker.PopulateActiveTargetSet(m_activeTargetSet)) {
+    return false;
+  }
+
+  // Add image only context
+  m_worker.AddImageOnlyContext();
+
   // Retrieve all context types
   m_worker.RetrieveAllContextTypes();
 
@@ -580,7 +592,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
 
 bool ProjMgr::ParseAndValidateContexts() {
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, m_contextSet, m_activeTargetSet)) {
+  if (!m_worker.ParseContextSelection(m_context, m_contextSet)) {
     return false;
   }
 
@@ -1026,7 +1038,7 @@ bool ProjMgr::RunCodeGenerator(void) {
     return false;
   }
   // Parse context selection
-  if (!m_worker.ParseContextSelection(m_context, (m_context.size() == 0) && m_contextSet, m_activeTargetSet)) {
+  if (!m_worker.ParseContextSelection(m_context, (m_context.size() == 0) && m_contextSet)) {
     return false;
   }
   if (m_extGenerator.IsGlobalGenerator(m_codeGenerator)) {

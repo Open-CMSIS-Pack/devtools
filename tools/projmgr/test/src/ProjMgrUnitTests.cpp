@@ -6940,3 +6940,20 @@ TEST_F(ProjMgrUnitTests, LinkTimeOptimize) {
   EXPECT_TRUE(cbuild["build"]["components"][0]["link-time-optimize"].IsDefined());
   EXPECT_TRUE(cbuild["build"]["groups"][0]["files"][0]["link-time-optimize"].IsDefined());
 }
+
+TEST_F(ProjMgrUnitTests, ImageOnly) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/ImageOnly/image-only.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"CM0";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ImageOnly/image-only.cbuild-idx.yml",
+    testinput_folder + "/ImageOnly/ref/image-only.cbuild-idx.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ImageOnly/out/image-only/CM0/image-only+CM0.cbuild.yml",
+    testinput_folder + "/ImageOnly/ref/image-only+CM0.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ImageOnly/out/image-only+CM0.cbuild-run.yml",
+    testinput_folder + "/ImageOnly/ref/image-only+CM0.cbuild-run.yml");
+}

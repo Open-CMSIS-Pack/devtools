@@ -1152,7 +1152,7 @@
         "warnings":        { "$ref": "#/definitions/WarningsType" }
       },
       "additionalProperties": false,
-      "required": [ "target-types", "projects" ]
+      "required": [ "target-types" ]
     },
     "ProjectDescType": {
       "title": "project:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#project",
@@ -1208,6 +1208,7 @@
         "csolution": { "type": "string", "description": "Path to csolution.yml file." },
         "cbuild-run": { "type": "string", "description": "Path to cbuild-run.yml file." },
         "tmpdir": { "type": "string", "description": "Specifies the directory for the interim temporary files." },
+        "image-only": { "type": "boolean", "description": "Indicates image only solution." },
         "cprojects": { "$ref": "#/definitions/BuildProjectsType" },
         "cbuilds": { "$ref": "#/definitions/BuildContextsType" },
         "configurations": { "$ref": "#/definitions/BuildConfigurationsType" },
@@ -1219,7 +1220,7 @@
         "rebuild":  { "type": "boolean", "description": "Flag indicating intermediate files need to be cleaned before the next build." }
       },
       "additionalProperties": false,
-      "required": ["generated-by", "csolution", "cprojects"]
+      "required": ["generated-by", "csolution"]
     },
     "BuildProjectsType": {
       "title": "cprojects:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#cprojects",
@@ -1279,7 +1280,7 @@
         "messages": { "$ref": "#/definitions/MessagesType" }
       },
       "additionalProperties": false,
-      "required": ["cbuild", "project", "configuration"]
+      "required": ["cbuild", "configuration"]
     },
     "BuildConfigurationsType": {
       "type": "array",

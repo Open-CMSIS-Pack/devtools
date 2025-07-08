@@ -60,7 +60,9 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
     SetNodeValue(generatorNode[YAML_FROM_PACK], generatorPack);
   }
   SetNodeValue(contextNode[YAML_SOLUTION], FormatPath(context->csolution->path, context->directories.cbuild));
-  SetNodeValue(contextNode[YAML_PROJECT], FormatPath(context->cproject->path, context->directories.cbuild));
+  if (!context->cproject->path.empty()) {
+    SetNodeValue(contextNode[YAML_PROJECT], FormatPath(context->cproject->path, context->directories.cbuild));
+  }
   SetNodeValue(contextNode[YAML_CONTEXT], context->name);
   SetNodeValue(contextNode[YAML_COMPILER], context->toolchain.name +
     (context->toolchain.required.empty() || context->toolchain.required == ">=0.0.0" ? "" : '@' + context->toolchain.required));
@@ -83,33 +85,37 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
   }
   SetBooksNode(contextNode[YAML_DEVICE_BOOKS], context->deviceBooks, context->directories.cbuild);
   SetDebugConfigNode(contextNode[YAML_DBGCONF], context);
-  SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
+  if (!context->imageOnly) {
+    SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
+  }
   SetPacksNode(contextNode[YAML_PACKS], context);
-  SetControlsNode(contextNode, context, context->controls.processed);
-  vector<string> defines;
-  if (context->rteActiveTarget != nullptr) {
-    for (const auto& define : context->rteActiveTarget->GetDefines()) {
-      CollectionUtils::PushBackUniquely(defines, define);
+  if (!context->imageOnly) {
+    SetControlsNode(contextNode, context, context->controls.processed);
+    vector<string> defines;
+    if (context->rteActiveTarget != nullptr) {
+      for (const auto& define : context->rteActiveTarget->GetDefines()) {
+        CollectionUtils::PushBackUniquely(defines, define);
+      }
     }
-  }
-  SetDefineNode(contextNode[YAML_DEFINE], defines);
-  SetDefineNode(contextNode[YAML_DEFINE_ASM], defines);
-  if (context->rteActiveTarget != nullptr) {
-    for (auto include : context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_NONE)) {
-      RteFsUtils::NormalizePath(include, context->cproject->directory);
-      include = FormatPath(include, context->directories.cbuild);
-      SetNodeValueUniquely(contextNode[YAML_ADDPATH], include);
-      SetNodeValueUniquely(contextNode[YAML_ADDPATH_ASM], include);
+    SetDefineNode(contextNode[YAML_DEFINE], defines);
+    SetDefineNode(contextNode[YAML_DEFINE_ASM], defines);
+    if (context->rteActiveTarget != nullptr) {
+      for (auto include : context->rteActiveTarget->GetIncludePaths(RteFile::Language::LANGUAGE_NONE)) {
+        RteFsUtils::NormalizePath(include, context->cproject->directory);
+        include = FormatPath(include, context->directories.cbuild);
+        SetNodeValueUniquely(contextNode[YAML_ADDPATH], include);
+        SetNodeValueUniquely(contextNode[YAML_ADDPATH_ASM], include);
+      }
     }
+    SetOutputDirsNode(contextNode[YAML_OUTPUTDIRS], context);
+    SetOutputNode(contextNode[YAML_OUTPUT], context);
+    SetComponentsNode(contextNode[YAML_COMPONENTS], context);
+    SetApisNode(contextNode[YAML_APIS], context);
+    SetGeneratorsNode(contextNode[YAML_GENERATORS], context);
+    SetLinkerNode(contextNode[YAML_LINKER], context);
+    SetGroupsNode(contextNode[YAML_GROUPS], context, context->groups);
+    SetConstructedFilesNode(contextNode[YAML_CONSTRUCTEDFILES], context);
   }
-  SetOutputDirsNode(contextNode[YAML_OUTPUTDIRS], context);
-  SetOutputNode(contextNode[YAML_OUTPUT], context);
-  SetComponentsNode(contextNode[YAML_COMPONENTS], context);
-  SetApisNode(contextNode[YAML_APIS], context);
-  SetGeneratorsNode(contextNode[YAML_GENERATORS], context);
-  SetLinkerNode(contextNode[YAML_LINKER], context);
-  SetGroupsNode(contextNode[YAML_GROUPS], context, context->groups);
-  SetConstructedFilesNode(contextNode[YAML_CONSTRUCTEDFILES], context);
   SetLicenseInfoNode(contextNode[YAML_LICENSES], context);
 }
 

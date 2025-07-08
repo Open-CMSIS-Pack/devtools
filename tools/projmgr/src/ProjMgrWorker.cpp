@@ -64,6 +64,25 @@ ProjMgrWorker::~ProjMgrWorker(void) {
   }
 }
 
+void ProjMgrWorker::AddImageOnlyContext() {
+  if (!m_activeTargetSet.images.empty()) {
+    for (const auto& item : m_activeTargetSet.images) {
+      if (!item.context.empty()) {
+        return;
+      }
+    }
+    ContextDesc descriptor;
+    ContextItem context;
+    context.imageOnly = true;
+    context.csolution = &m_parser->GetCsolution();
+    const string name = context.csolution->name;
+    context.cproject = &m_imageOnly;
+    context.cproject->name = name;
+    context.cproject->directory = context.csolution->directory;
+    AddContext(descriptor, { "", m_activeTargetType }, context);
+  }
+}
+
 bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, const string& cprojectFile) {
   error_code ec;
   ContextItem context;
@@ -2134,7 +2153,7 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
     }
   }
   // Linker script
-  if (!context.outputTypes.lib.on) {
+  if (context.outputTypes.elf.on) {
     if (context.linker.autoGen) {
       if (!context.linker.script.empty()) {
         ProjMgrLogger::Get().Warn("conflict: automatic linker script generation overrules specified script '" + context.linker.script + "'", context.name);
@@ -2816,7 +2835,7 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
   if (!ProcessCompilerPrecedence(compiler, true)) {
     error |= true;
   }
-  if (!ProcessToolchain(context)) {
+  if (!context.imageOnly && !ProcessToolchain(context)) {
     error |= true;
   }
 
@@ -4540,17 +4559,17 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
 }
 
 bool ProjMgrWorker::ParseContextSelection(
-  const vector<string>& contextSelection, const bool checkCbuildSet, const string activeTargetSet)
+  const vector<string>& contextSelection, const bool checkCbuildSet)
 {
   vector<string> ymlOrderedContexts;
   ListContexts(ymlOrderedContexts, RteUtils::EMPTY_STRING, true);
 
-  if (checkCbuildSet && !activeTargetSet.empty()) {
+  if (checkCbuildSet && !m_activeTargetType.empty()) {
     ProjMgrLogger::Get().Error("invalid arguments: '-a' option cannot be used in combination with '-S'");
     return false;
   }
-  else if (!activeTargetSet.empty()) {
-    if (!ParseTargetSetContextSelection(activeTargetSet)) {
+  else if (!m_activeTargetType.empty()) {
+    if (!ParseTargetSetContextSelection()) {
       return false;
     }
   }
@@ -4917,7 +4936,7 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   }
 
   // default: elf
-  if (!context.outputTypes.lib.on && !context.outputTypes.elf.on) {
+  if (!context.outputTypes.lib.on && !context.outputTypes.elf.on && !context.imageOnly) {
     context.outputTypes.elf.on = true;
   }
 
@@ -5421,11 +5440,8 @@ void ProjMgrWorker::CollectUnusedPacks() {
   }
 }
 
-bool ProjMgrWorker::ParseTargetSetContextSelection(const string& activeTargetSet) {
+bool ProjMgrWorker::ParseTargetSetContextSelection() {
   // get project-contexts from active target-set
-  if (!GetActiveTargetSet(activeTargetSet)) {
-    return false;
-  }
   m_selectedContexts.clear();
   const auto& targetType = '+' + m_activeTargetType;
   for (const auto& item : m_activeTargetSet.images) {
@@ -5435,9 +5451,11 @@ bool ProjMgrWorker::ParseTargetSetContextSelection(const string& activeTargetSet
   }
   if (m_selectedContexts.empty()) {
     // when target-set is missing under target-types the default value is the first project with first build-type
+    // when the solution is image-only the processing is carried over a single context (+<target-type>)
     vector<string> contexts;
-    ListContexts(contexts, targetType, true);
-    m_selectedContexts.push_back(contexts.front());
+    if (ListContexts(contexts, targetType, true)) {
+      m_selectedContexts.push_back(contexts.front());
+    }
   } else {
     // validate context selection
     if (!ValidateContexts(m_selectedContexts, false)) {
@@ -5447,7 +5465,7 @@ bool ProjMgrWorker::ParseTargetSetContextSelection(const string& activeTargetSet
   return true;
 }
 
-bool ProjMgrWorker::GetActiveTargetSet(const string& activeTargetSet) {
+bool ProjMgrWorker::PopulateActiveTargetSet(const string& activeTargetSet) {
   const auto& targetType = RteUtils::GetPrefix(activeTargetSet, '@');
   const auto& targetSet = RteUtils::GetSuffix(activeTargetSet, '@');
   bool targetSetFound = false;

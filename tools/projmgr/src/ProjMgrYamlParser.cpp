@@ -90,11 +90,6 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
       return false;
     }
 
-    if (csolution.cprojects.size() == 0) {
-      ProjMgrLogger::Get().Error("projects not found", "", input);
-      return false;
-    }
-
     if (!ParseTargetTypes(solutionNode, csolution.path, csolution.targetTypes)) {
       ProjMgrLogger::Get().Error("target-types not found", "", input);
       return false;
