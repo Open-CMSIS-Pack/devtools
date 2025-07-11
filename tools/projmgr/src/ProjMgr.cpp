@@ -470,7 +470,7 @@ bool ProjMgr::PopulateContexts(void) {
     }
     // Check cproject separate folders and unique names
     const StrVec& cprojects = m_parser.GetCsolution().cprojects;
-    if (m_activeTargetSet.empty() && cprojects.empty()) {
+    if (!IsSolutionImageOnly() && cprojects.empty()) {
       ProjMgrLogger::Get().Error("projects not found", "", m_csolutionFile);
       return false;
     }
@@ -1219,4 +1219,22 @@ const string ProjMgr::GetDebugAdaptersFile(void) {
     return debugAdapterFile;
   }
   return RteUtils::EMPTY_STRING;
+}
+
+bool ProjMgr::IsSolutionImageOnly() {
+  // when the solution has only target-set images without project-contexts it is an 'image-only' solution
+  bool imageOnly = false;
+  for (const auto& [_, type] : m_parser.GetCsolution().targetTypes) {
+    for (const auto& targetSet : type.targetSet) {
+      if (!targetSet.images.empty()) {
+        imageOnly = true;
+        for (const auto& item : targetSet.images) {
+          if (!item.context.empty()) {
+            return false;
+          }
+        }
+      }
+    }
+  }
+  return imageOnly;
 }

@@ -4155,6 +4155,9 @@ bool ProjMgrWorker::ListConfigs(vector<string>& configFiles, const string& filte
 }
 
 bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string& filter) {
+  if (m_contexts.empty()) {
+    return false;
+  }
   RteCondition::SetVerboseFlags(m_verbose ? VERBOSE_DEPENDENCY : m_debug ? VERBOSE_FILTER | VERBOSE_DEPENDENCY : 0);
   set<string>dependenciesSet;
   for (const auto& selectedContext : m_selectedContexts) {
@@ -4226,9 +4229,6 @@ bool ProjMgrWorker::ListContexts(vector<string>& contexts, const string& filter,
 }
 
 bool ProjMgrWorker::ListTargetSets(vector<string>& targetSets, const string& filter) {
-  if (m_contexts.empty()) {
-    return false;
-  }
   vector<string> targetSetsVec;
 
   for (const auto& [name, type] : m_parser->GetCsolution().targetTypes) {
