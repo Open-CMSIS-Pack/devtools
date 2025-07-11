@@ -6886,6 +6886,19 @@ TEST_F(ProjMgrUnitTests, ListTargetSets) {
   EXPECT_TRUE(errStr.find("no target-set was found with filter 'Unknown'") != string::npos);
 }
 
+TEST_F(ProjMgrUnitTests, ListTargetSetsImageOnly) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/ImageOnly/image-only.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"target-sets";
+  argv[3] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "CM0\n");
+}
+
 TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   char* argv[6];
   StdStreamRedirect streamRedirect;

@@ -207,6 +207,7 @@ protected:
   bool UpdateRte();
   bool ParseAndValidateContexts();
   bool ProcessContexts();
+  bool IsSolutionImageOnly();
 };
 
 #endif  // PROJMGR_H
