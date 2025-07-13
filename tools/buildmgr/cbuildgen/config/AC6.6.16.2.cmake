@@ -757,3 +757,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeASM")
 # Set CMake flags for compiler identification
 set(CMAKE_C_FLAGS_INIT ${CC_CPU})
 set(CMAKE_CXX_FLAGS_INIT ${CXX_CPU})
+
+# Set CMake ASM flags for dependency rules generation
+set(CMAKE_DEPFILE_FLAGS_ASM "-MD -MT <DEP_TARGET> -MF <DEP_FILE>")
