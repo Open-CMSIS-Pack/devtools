@@ -1968,7 +1968,7 @@ RteComponentInstance* ProjMgrWorker::ProcessComponent(ContextItem& context, Comp
   RteComponentInstance* ci = new RteComponentInstance(nullptr);
   ci->SetTag("component");
   ci->SetAttributesFomComponentId(item.component);
-  ci->AddAttribute("id", item.component);
+  ci->AddAttribute("ymlID", item.component);
   bool bEnforced = !item.condition.empty();
   if(bEnforced) {
     ci->AddAttribute("condition", item.condition);
@@ -2628,11 +2628,13 @@ bool ProjMgrWorker::IsPreIncludeByTarget(const RteTarget* activeTarget, const st
   return false;
 }
 
-bool ProjMgrWorker::ValidateContext(ContextItem& context) {
+RteItem::ConditionResult ProjMgrWorker::ValidateContext(ContextItem& context) {
   context.validationResults.clear();
   map<const RteItem*, RteDependencyResult> results;
-  context.rteActiveTarget->GetDepsResult(results, context.rteActiveTarget);
-
+  auto depResult = context.rteActiveTarget->GetDepsResult(results, context.rteActiveTarget);
+  if(depResult >= RteItem::ConditionResult::FULFILLED) {
+    return depResult;
+  }
   for (const auto& [item, result] : results) {
     ValidationResult validation;
     validation.result = result.GetResult();
@@ -2654,11 +2656,7 @@ bool ProjMgrWorker::ValidateContext(ContextItem& context) {
 
     context.validationResults.push_back(validation);
   }
-
-  if (context.validationResults.empty()) {
-    return true;
-  }
-  return false;
+  return depResult;
 }
 
 bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
@@ -3881,7 +3879,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
     // TODO: Add uniquely identified missing dependencies to RTE Model
 
     // Get dependency validation results
-    if (!ValidateContext(context)) {
+    if (ValidateContext(context)  < RteItem::ConditionResult::FULFILLED ) {
       string msg = "dependency validation for context '" + context.name + "' failed:";
       set<string> results;
       FormatValidationResults(results, context);
@@ -4165,7 +4163,7 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
     if (!ProcessContext(context, true, false, false)) {
       return false;
     }
-    if (!ValidateContext(context)) {
+    if (ValidateContext(context)  < RteItem::ConditionResult::FULFILLED) {
       for (const auto& validation : context.validationResults) {
         if ((validation.result == RteItem::MISSING) || (validation.result == RteItem::SELECTABLE)) {
           for (const auto& condition : validation.conditions) {

@@ -908,10 +908,10 @@ public:
    * @param context item
    * @return true if there is no error
   */
-  bool ValidateContext(ContextItem& context);
+  RteItem::ConditionResult ValidateContext(ContextItem& context);
 
   /**
-   * @brief populate active target set 
+   * @brief populate active target set
    * @param active target set command line option
    * @return true if there is no error
   */

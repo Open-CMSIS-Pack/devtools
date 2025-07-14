@@ -82,6 +82,8 @@ TEST(RteItemTest, ComponentAttributesFromId) {
   RteItem item("component", nullptr);
   item.SetAttributesFomComponentId(id);
   EXPECT_EQ(id, item.GetComponentID(true));
+  EXPECT_EQ(item.GetAttribute("explicitVersion"), "@9.9.9");
+  EXPECT_TRUE(item.GetAttributeAsBool("explicitVendor"));
 
   id = "Class&Bundle:Group:Sub&Variant@9.9.9";
   item.SetAttributesFomComponentId(id);
@@ -98,6 +100,18 @@ TEST(RteItemTest, ComponentAttributesFromId) {
   id = "Class:Group:&Variant";
   item.SetAttributesFomComponentId(id);
   EXPECT_EQ("Class:Group&Variant", item.GetComponentID(true));
+
+  id = "Group:Sub";
+  item.SetAttributesFomComponentId(id);
+  EXPECT_EQ(id, item.GetComponentID(true));
+  EXPECT_TRUE(item.GetAttribute("explicitVersion").empty());
+  EXPECT_FALSE(item.GetAttributeAsBool("explicitVendor"));
+
+  id = "Group:Sub@^9.0.0";
+  item.SetAttributesFomComponentId(id);
+  EXPECT_EQ(id, item.GetComponentID(true));
+  EXPECT_EQ(item.GetAttribute("explicitVersion"),"@^9.0.0");
+  EXPECT_EQ(item.GetVersionString(),"^9.0.0");
 }
 
 TEST(RteItemTest, SemVer) {

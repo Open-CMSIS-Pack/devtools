@@ -525,7 +525,7 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDependencies) {
   EXPECT_TRUE(SetTargetAttributes(context, context.targetAttributes));
   EXPECT_TRUE(ProcessComponents(context));
   EXPECT_TRUE(ProcessGpdsc(context));
-  EXPECT_FALSE(ValidateContext(context));
+  EXPECT_FALSE(ValidateContext(context) >= RteItem::ConditionResult::FULFILLED);
   ASSERT_EQ(expected.size(), context.validationResults.size());
   map<string, set<string>> dependenciesMap;
   for (const auto& validation : context.validationResults) {

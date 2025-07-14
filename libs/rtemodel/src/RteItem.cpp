@@ -250,9 +250,13 @@ void RteItem::SetAttributesFomComponentId(const std::string& componentId)
   if (componentId.find(RteConstants::SUFFIX_CVENDOR) != string::npos) {
     string vendor = RteUtils::RemoveSuffixByString(id, RteConstants::SUFFIX_CVENDOR);
     AddAttribute("Cvendor", vendor);
+    SetAttribute("explicitVendor", true);
     id = RteUtils::RemovePrefixByString(componentId, RteConstants::SUFFIX_CVENDOR);
   }
-  AddAttribute("Cversion", RteUtils::GetSuffix(id, RteConstants::PREFIX_CVERSION_CHAR));
+  auto explicitVersion = RteUtils::GetSuffix(id, RteConstants::PREFIX_CVERSION_CHAR, true);
+  AddAttribute("explicitVersion", explicitVersion);
+  AddAttribute("Cversion", RteUtils::GetSuffix(explicitVersion, RteConstants::PREFIX_CVERSION_CHAR));
+
   id = RteUtils::GetPrefix(id, RteConstants::PREFIX_CVERSION_CHAR);
   list<string> segments;
   RteUtils::SplitString(segments, id, RteConstants::COLON_CHAR);
