@@ -50,19 +50,35 @@ public:
   */
   static int    GetSuffixAsInt(const std::string& s, char delimiter = ':');
   /**
-   * @brief determine string after a delimiter
+   * @brief Remove string prefix before delimiter
    * @param s string containing delimiter
    * @param delimiter string delimiter to look for
-   * @return return string after delimiter
+   * @return return string after delimiter, entire string if no delimiter found
   */
-  static std::string RemovePrefixByString(const std::string& s, const char* delimiter = ":");
+  static std::string StripPrefix(const std::string& s, const char* delimiter = ":");
   /**
-   * @brief determine string ahead of a delimiter
+   * @brief Remove string suffix after delimiter
    * @param s string containing delimiter
    * @param delimiter string delimiter to look for
-   * @return return string ahead of delimiter
+   * @return return string before of delimiter, entire string if no delimiter found
   */
-  static std::string RemoveSuffixByString(const std::string& s, const char* delimiter = ":");
+  static std::string StripSuffix(const std::string& s, const char* delimiter = ":");
+  /**
+   * @brief Extract string prefix before delimiter
+   * @param s string containing delimiter
+   * @param delimiter string delimiter to look for
+   * @param withDelimiter true if returned string should contain delimiter, otherwise false
+   * @return return string after delimiter, empty if no delimiter found
+  */
+  static std::string ExtractPrefix(const std::string& s, const char* delimiter = ":", bool withDelimiter = false);
+  /**
+   * @brief Extract string suffix after delimiter
+   * @param s string containing delimiter
+   * @param delimiter string delimiter to look for
+   * @param withDelimiter true if returned string should contain delimiter, otherwise false
+   * @return return string after delimiter, empty if no delimiter is found,
+  */
+  static std::string ExtractSuffix(const std::string& s, const char* delimiter = ":", bool withDelimiter = false);
   /**
    * @brief determine number of delimiters found in the string
    * @param s string containing delimiter(s)

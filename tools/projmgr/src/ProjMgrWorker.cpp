@@ -671,8 +671,8 @@ bool ProjMgrWorker::SetTargetAttributes(ContextItem& context, map<string, string
 void ProjMgrWorker::GetDeviceItem(const std::string& element, DeviceItem& device) const {
   string deviceInfoStr = element;
   if (!element.empty()) {
-    device.vendor = RteUtils::RemoveSuffixByString(deviceInfoStr, "::");
-    deviceInfoStr = RteUtils::RemovePrefixByString(deviceInfoStr, "::");
+    device.vendor = RteUtils::ExtractPrefix(deviceInfoStr, "::");
+    deviceInfoStr = RteUtils::StripPrefix(deviceInfoStr, "::");
     device.name  = RteUtils::GetPrefix(deviceInfoStr);
     device.pname = RteUtils::GetSuffix(deviceInfoStr);
   }
@@ -681,8 +681,8 @@ void ProjMgrWorker::GetDeviceItem(const std::string& element, DeviceItem& device
 void ProjMgrWorker::GetBoardItem(const std::string& element, BoardItem& board) const {
   string boardId = element;
   if (!boardId.empty()) {
-    board.vendor = RteUtils::RemoveSuffixByString(boardId, "::");
-    boardId = RteUtils::RemovePrefixByString(boardId, "::");
+    board.vendor = RteUtils::ExtractPrefix(boardId, "::");
+    boardId = RteUtils::StripPrefix(boardId, "::");
     board.name = RteUtils::GetPrefix(boardId);
     board.revision = RteUtils::GetSuffix(boardId);
   }
@@ -1671,7 +1671,7 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
       // Store specified pack metadata
       const auto& specifiedMetadata = RteUtils::GetSuffix(packageEntry.pack, '+');
       if (!specifiedMetadata.empty()) {
-        m_packMetadata[RteUtils::RemoveSuffixByString(packageEntry.pack, "+")] = specifiedMetadata;
+        m_packMetadata[RteUtils::ExtractPrefix(packageEntry.pack, "+")] = specifiedMetadata;
       }
       // System wide package
       vector<string> matchedPackIds = FindMatchingPackIdsInCbuildPack(packageEntry, resolvedPacks);
@@ -2044,7 +2044,7 @@ RteComponent* ProjMgrWorker::ResolveComponent(RteComponentInstance* ci, ContextI
   if (!freeText) {
     // Check required identifier mandatory fields
     string requiredComponentId = RteUtils::GetPrefix(
-      RteUtils::RemovePrefixByString(item.component, RteConstants::SUFFIX_CVENDOR),
+      RteUtils::StripPrefix(item.component, RteConstants::SUFFIX_CVENDOR),
       RteConstants::PREFIX_CVERSION_CHAR);
     for (const auto& [id, component] : filteredComponents) {
       // Get component id without vendor and version
@@ -4372,8 +4372,8 @@ bool ProjMgrWorker::ListLayers(vector<string>& layers, const string& clayerSearc
 ToolchainItem ProjMgrWorker::GetToolchain(const string& compiler) {
   ToolchainItem toolchain;
   if (compiler.find("@") != string::npos) {
-    toolchain.name = RteUtils::RemoveSuffixByString(compiler, "@");
-    toolchain.required = RteUtils::RemovePrefixByString(compiler, "@");
+    toolchain.name = RteUtils::ExtractPrefix(compiler, "@");
+    toolchain.required = RteUtils::StripPrefix(compiler, "@");
     if (toolchain.required.find(">=") != string::npos) {
       // minimum version
       toolchain.range = toolchain.required.substr(2);

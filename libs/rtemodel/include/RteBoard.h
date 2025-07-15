@@ -240,7 +240,7 @@ class BoardLessNoCase
 {
 public:
   bool operator()(const std::string& a, const std::string& b) const {
-    return AlnumCmp::CompareLen(RteUtils::RemovePrefixByString(a, "::"), RteUtils::RemovePrefixByString(b, "::"), false) < 0;
+    return AlnumCmp::CompareLen(RteUtils::StripPrefix(a, "::"), RteUtils::StripPrefix(b, "::"), false) < 0;
   }
 };
 /**

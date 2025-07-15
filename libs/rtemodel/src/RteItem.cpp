@@ -248,10 +248,10 @@ void RteItem::SetAttributesFomComponentId(const std::string& componentId)
   }
   string id = componentId;
   if (componentId.find(RteConstants::SUFFIX_CVENDOR) != string::npos) {
-    string vendor = RteUtils::RemoveSuffixByString(id, RteConstants::SUFFIX_CVENDOR);
+    string vendor = RteUtils::ExtractPrefix(id, RteConstants::SUFFIX_CVENDOR);
     AddAttribute("Cvendor", vendor);
     SetAttribute("explicitVendor", true);
-    id = RteUtils::RemovePrefixByString(componentId, RteConstants::SUFFIX_CVENDOR);
+    id = RteUtils::StripPrefix(componentId, RteConstants::SUFFIX_CVENDOR);
   }
   auto explicitVersion = RteUtils::GetSuffix(id, RteConstants::PREFIX_CVERSION_CHAR, true);
   AddAttribute("explicitVersion", explicitVersion);

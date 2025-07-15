@@ -313,9 +313,9 @@ const std::string VersionCmp::GetMatchingVersion(const std::string& filter,
   }
   else {
     VersionCmp::MatchMode mode = VersionCmp::MatchModeFromVersionString(filter);
-    string filterVersion = RteUtils::RemovePrefixByString(filter, PREFIX_VERSION);
+    string filterVersion = RteUtils::StripPrefix(filter, PREFIX_VERSION);
     if (mode == MatchMode::HIGHER_OR_EQUAL) {
-      filterVersion = RteUtils::RemovePrefixByString(filterVersion, HIGHER_OR_EQUAL_OPERATOR);
+      filterVersion = RteUtils::StripPrefix(filterVersion, HIGHER_OR_EQUAL_OPERATOR);
     }
     for (auto& version : availableVersions) {
       int result = VersionCmp::Compare(version, filterVersion, false);

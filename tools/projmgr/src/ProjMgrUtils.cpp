@@ -244,8 +244,8 @@ vector<string> ProjMgrUtils::GetFilteredContexts(
 bool ProjMgrUtils::ConvertToPackInfo(const string& packId, PackInfo& packInfo) {
   string packInfoStr = packId;
   if (packInfoStr.find("::") != string::npos) {
-    packInfo.vendor = RteUtils::RemoveSuffixByString(packInfoStr, "::");
-    packInfoStr = RteUtils::RemovePrefixByString(packInfoStr, "::");
+    packInfo.vendor = RteUtils::ExtractPrefix(packInfoStr, "::");
+    packInfoStr = RteUtils::StripPrefix(packInfoStr, "::");
     packInfo.name   = RteUtils::GetPrefix(packInfoStr, '@');
   } else {
     packInfo.vendor = RteUtils::GetPrefix(packInfoStr, '@');
@@ -305,15 +305,15 @@ string ProjMgrUtils::ConvertToVersionRange(const string& version) {
   if (!versionRange.empty()) {
     if (versionRange.find(HIGHER_OR_EQUAL_OPERATOR) != string::npos) {
       // Minimum version
-      versionRange = RteUtils::RemovePrefixByString(versionRange, HIGHER_OR_EQUAL_OPERATOR);
+      versionRange = RteUtils::StripPrefix(versionRange, HIGHER_OR_EQUAL_OPERATOR);
     } else if (versionRange.find(TILDE_OPERATOR) != string::npos) {
       // Equivalent version
-      versionRange = RteUtils::RemovePrefixByString(versionRange, TILDE_OPERATOR);
+      versionRange = RteUtils::StripPrefix(versionRange, TILDE_OPERATOR);
       SemVer semVer = GetSemVer(versionRange);
       versionRange = versionRange + ":" + to_string(semVer.major) + "." + to_string(semVer.minor + 1) + ".0-0";
     } else if (versionRange.find(CARET_OPERATOR) != string::npos) {
       // Compatible version
-      versionRange = RteUtils::RemovePrefixByString(versionRange, CARET_OPERATOR);
+      versionRange = RteUtils::StripPrefix(versionRange, CARET_OPERATOR);
       SemVer semVer = GetSemVer(versionRange);
       versionRange = versionRange + ":" + to_string(semVer.major + 1) + ".0.0-0";
     } else {
