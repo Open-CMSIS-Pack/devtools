@@ -571,7 +571,7 @@ void RteComponentAggregate::AddComponent(RteComponent* c)
     RtePackage* devicePack = GetTarget()->GetEffectiveDevicePackage();
     if (insertedPack == devicePack)
       return; // component from device pack is already installed
-    if (insertedPack && devicePack && pack != devicePack) {
+    if (insertedPack && devicePack && pack && pack != devicePack) {
       const string& packVersion = pack->GetVersionString();
       const string& insertedPackVersion = insertedPack->GetVersionString();
       if (VersionCmp::Compare(packVersion, insertedPackVersion) < 0)
@@ -610,6 +610,8 @@ void RteComponentAggregate::SetComponentInstance(RteComponentInstance* ci, int c
   m_selectedVariant = ei->GetCvariantName();
   m_selectedVersion = ei->GetVersionString();
   AssignAttribute("layer", *ci);
+  AssignAttribute("explicitVendor", *ci);
+  AssignAttribute("explicitVersion", *ci);
 
   if (m_components.empty()) {
     if (c) {

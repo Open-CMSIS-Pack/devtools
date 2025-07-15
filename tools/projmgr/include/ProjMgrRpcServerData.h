@@ -8,6 +8,8 @@
 
 #include "RpcInterface.h"
 
+#include <optional>
+
 using namespace std;
 
 class RteTarget;
@@ -30,8 +32,10 @@ public:
   RpcArgs::ComponentInstance FromComponentInstance(const RteComponentInstance* rteCi) const;
   RteItem* GetTaxonomyItem(const RteComponentGroup* rteGroup) const;
 
-protected:
+  std::optional<RpcArgs::Options> OptionsFromRteItem(const RteItem* item) const;
+  std::string ResultStringFromRteItem(const RteItem* item) const;
 
+protected:
   void CollectCtBundles(RpcArgs::CtClass& ctClass, RteComponentGroup* rteClass) const;
   void CollectCtChildren(RpcArgs::CtTreeItem& parent, RteComponentGroup* rteGroup, const string& bundleName) const;
   void CollectCtAggregates(RpcArgs::CtTreeItem& parent, RteComponentGroup* rteGroup, const string& bundleName) const;

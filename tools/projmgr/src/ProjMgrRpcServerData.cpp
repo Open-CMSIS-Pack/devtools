@@ -59,18 +59,63 @@ RpcArgs::Component RpcDataCollector::FromRteComponent(const RteComponent* rteCom
     return c;
 }
 
+std::optional<RpcArgs::Options> RpcDataCollector::OptionsFromRteItem(const RteItem* item) const {
+    if (!item) {
+        return std::nullopt;
+    }
+    Options opt;
+    bool bHasOpt = false;
+
+    if (item->HasAttribute("layer")) {
+        opt.layer = item->GetAttribute("layer");
+        bHasOpt = true;
+    }
+    if (item->HasAttribute("explicitVersion")) {
+        opt.explicitVersion = item->GetAttribute("explicitVersion");
+        bHasOpt = true;
+    }
+    if (item->GetAttributeAsBool("explicitVendor")) {
+        opt.explicitVendor = true;
+        bHasOpt = true;
+    }
+    if (bHasOpt) {
+        return opt;
+    }
+    return std::nullopt;
+}
+
+std::string RpcDataCollector::ResultStringFromRteItem(const RteItem* item) const {
+  string result;
+  RteTarget* rteTarget = GetTarget();
+  if(item && rteTarget) {
+    RteItem::ConditionResult res = item->GetConditionResult(rteTarget->GetDependencySolver());
+    if(res > RteItem::ConditionResult::UNDEFINED && res < RteItem::ConditionResult::FULFILLED) {
+      result = RteItem::ConditionResultToString(res);
+    }
+  }
+  return result;
+}
+
 RpcArgs::ComponentInstance RpcDataCollector::FromComponentInstance(const RteComponentInstance* rteCi) const {
   ComponentInstance ci;
   if(rteCi) {
-    ci.id = rteCi->GetDisplayName();
+    ci.id = rteCi->GetAttribute("ymlID");
     ci.selectedCount = rteCi->GetInstanceCount(m_target->GetName());
-    auto& layer = rteCi->GetAttribute("layer");
-    if(!layer.empty()) {
-      ci.layer = layer;
-    }
     auto rteComponent = rteCi->GetResolvedComponent(m_target->GetName());
     if(rteComponent) {
       ci.resolvedComponent = FromRteComponent(rteComponent);
+    }
+
+    auto& gen = rteCi->GetAttribute("generator");
+    if(!gen.empty()) {
+      ci.generator = gen;
+    }
+    if(rteCi->GetAttributeAsBool("generated") && !rteCi->GetAttributeAsBool("selectable")) {
+      ci.fixed = true;
+    }
+    auto opt = OptionsFromRteItem(rteCi);
+    if(opt) {
+      ci.options = opt;
     }
   }
   return ci;
@@ -86,14 +131,15 @@ RteItem* RpcDataCollector::GetTaxonomyItem(const RteComponentGroup* rteGroup) co
 }
 
 void RpcDataCollector::CollectUsedItems(RpcArgs::UsedItems& usedItems) const {
-
   auto rteProject = m_target ? m_target->GetProject() : nullptr;
   if(!rteProject) {
     return;
   }
 
   for(auto [_id, rteCi] : rteProject->GetComponentInstances()) {
-    usedItems.components.push_back(FromComponentInstance(rteCi));
+    if(!rteCi->IsApi()) {
+      usedItems.components.push_back(FromComponentInstance(rteCi));
+    }
   }
   RtePackageMap packs;
   rteProject->GetUsedPacks(packs, m_target->GetName());
@@ -120,6 +166,10 @@ void RpcDataCollector::CollectCtClasses(RpcArgs::CtRoot& root) const {
     auto taxonomyItem = GetTaxonomyItem(rteClass);
     if(taxonomyItem) {
       ctClass.taxonomy = FromRteItem<Taxonomy>(taxonomyItem->GetTaxonomyDescriptionID(), taxonomyItem);
+    }
+    auto res = ResultStringFromRteItem(rteClass);
+    if(!res.empty()) {
+      ctClass.result = res;
     }
     CollectCtBundles(ctClass, rteClass);
     root.classes.push_back(ctClass);
@@ -164,6 +214,10 @@ void RpcDataCollector::CollectCtChildren(RpcArgs::CtTreeItem& parent, RteCompone
     if(taxonomyItem) {
       g.taxonomy = FromRteItem<Taxonomy>(taxonomyItem->GetTaxonomyDescriptionID(), taxonomyItem);
     }
+    auto res = ResultStringFromRteItem(rteGroup);
+    if(!res.empty()) {
+      g.result = res;
+    }
     // subgroups
     CollectCtChildren(g, rteGroup, bundleName);
     CollectCtAggregates(g, rteGroup,bundleName);
@@ -193,11 +247,22 @@ void RpcDataCollector::CollectCtAggregates(RpcArgs::CtTreeItem& parent, RteCompo
     auto selectedCount = rteAggregate->IsSelected();
     if(selectedCount) {
       a.selectedCount = selectedCount;
+      auto res = ResultStringFromRteItem(rteAggregate);
+      if(!res.empty()) {
+        a.result = res;
+      }
     }
 
-    auto layer = rteAggregate->GetAttribute("layer");
-    if(!layer.empty()) {
-      a.layer = layer;
+    auto& gen = rteAggregate->GetAttribute("generator");
+    if(!gen.empty()) {
+      a.generator = gen;
+    }
+    if(rteAggregate->GetAttributeAsBool("generated") && !rteAggregate->GetAttributeAsBool("selectable")) {
+      a.fixed = true;
+    }
+    auto opt = OptionsFromRteItem(rteAggregate);
+    if(opt) {
+      a.options = opt;
     }
 
     CollectCtVariants(a, rteAggregate);

@@ -15,6 +15,7 @@
 #include "RteProject.h"
 
 #include "RteComponent.h"
+#include "RteConstants.h"
 #include "RteFile.h"
 #include "RteGenerator.h"
 #include "RteModel.h"
@@ -366,7 +367,7 @@ RteComponentInstance* RteProject::AddComponent(RteComponent* c, int instanceCoun
   if (!ci) {
     ci = new RteComponentInstance(this);
     AddItem(ci);
-    m_components[c->GetID()] = ci;
+    m_components[id] = ci;
     ci->Init(c);
     // check if we have previous aggregate with Excluded flag for the target
   }
@@ -832,7 +833,18 @@ bool RteProject::Apply()
           }
         }
         ci = AddComponent(c, count, target, ci);
-        ci->AssignAttribute("layer", *a);
+        // pass aggregate options and create ymlID attribute
+        if(!ci->IsApi()) {
+          ci->AssignAttribute("layer", *a);
+          ci->AssignAttribute("explicitVendor", *a);
+          ci->AssignAttribute("explicitVersion", *a);
+          string ymlID = RteUtils::GetPrefix(ci->GetID(), RteConstants::PREFIX_CVERSION_CHAR);
+          if(!a->GetAttributeAsBool("explicitVendor")) {
+            ymlID = RteUtils::RemovePrefixByString(ymlID, RteConstants::SUFFIX_CVENDOR);
+          }
+          ymlID += a->GetAttribute("explicitVersion");
+          ci->AddAttribute("ymlID", ymlID);
+        }
 
         // add API if any
         RteApi* api = c->GetApi(target, true);
