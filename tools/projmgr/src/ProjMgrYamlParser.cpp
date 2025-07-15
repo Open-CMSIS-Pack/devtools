@@ -57,7 +57,7 @@ bool ProjMgrYamlParser::ParseCdefault(const string& input,
 bool ProjMgrYamlParser::ParseCsolution(const string& input,
   CsolutionItem& csolution, bool checkSchema, bool frozenPacks) {
 
-  string cbuildPackFile = RteUtils::RemoveSuffixByString(input, ".csolution.yml") + ".cbuild-pack.yml";
+  string cbuildPackFile = RteUtils::ExtractPrefix(input, ".csolution.yml") + ".cbuild-pack.yml";
   if (fs::exists(cbuildPackFile)) {
     if (!ParseCbuildPack(cbuildPackFile, csolution.cbuildPack, checkSchema)) {
       return false;
@@ -1009,7 +1009,7 @@ bool ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, const string& 
     ParseString(parent, item.first, item.second);
   }
 
-  // Throw warning in case board or device name are set in *.cproject.yml or *.clayer.yml 
+  // Throw warning in case board or device name are set in *.cproject.yml or *.clayer.yml
   if (regex_match(file, regex(".*\\.(cproject|clayer)\\.(yml|yaml)"))) {
     for (const auto& [key, value] : targetChildren) {
       if (!value.empty()) {

@@ -224,7 +224,6 @@ TEST_F(ProjMgrRpcTests, RpcResolveComponents) {
     context
   };
   auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
-  int id = 3;
   requests += FormatRequest(3, "ValidateComponents", json({{ "context", context }}));
   requests += FormatRequest(4, "Resolve", json({{ "context", context }}));
   requests += FormatRequest(5, "ValidateComponents", json({{ "context", context }}));
@@ -256,7 +255,6 @@ TEST_F(ProjMgrRpcTests, RpcSelectComponent) {
   param["options"] = json::object();
 
   auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
-  int id = 3;
   requests += FormatRequest(3, "ValidateComponents", json({{ "context", context }}));
   requests += FormatRequest(4, "GetComponentsTree", json({{ "context", context }, {"all", false}}));
   requests += FormatRequest(5, "SelectComponent", param);
@@ -290,7 +288,6 @@ TEST_F(ProjMgrRpcTests, RpcSelectVariant) {
   param["variant"] = "Compatible";
 
   auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
-  int id = 3;
   requests += FormatRequest(3, "ValidateComponents", json({{ "context", context }}));
   requests += FormatRequest(4, "SelectVariant", param);
   requests += FormatRequest(5, "ValidateComponents", json({{ "context", context }}));
@@ -328,7 +325,6 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   RpcArgs::to_json(param["options"], opt);
 
   auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
-  int id = 3;
   requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
   requests += FormatRequest(4, "SelectComponent", param);
   requests += FormatRequest(5, "Apply", param);
@@ -352,7 +348,10 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   EXPECT_EQ(components[0]["id"], "Device:Startup&RteTest Startup");
   EXPECT_EQ(components[0]["resolvedComponent"]["id"], "ARM::Device:Startup&RteTest Startup@2.0.3");
 
-  EXPECT_EQ(components[1]["id"], "ARM::RteTest:CORE@>=0.1.0");
+  string id = components[1]["id"];
+  EXPECT_EQ(id, "ARM::RteTest:CORE@>=0.1.0");
+  EXPECT_EQ(RteUtils::ExtractPrefix(id, "::"), "ARM");
+  EXPECT_EQ(RteUtils::ExtractSuffix(id, "@", true), "@>=0.1.0");
   EXPECT_EQ(components[1]["resolvedComponent"]["id"], "ARM::RteTest:CORE@0.1.1");
   EXPECT_EQ(components[1]["options"]["layer"], "corelayer.yml");
   EXPECT_EQ(components[1]["options"]["explicitVersion"], "@>=0.1.0");

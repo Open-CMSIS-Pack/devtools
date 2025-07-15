@@ -79,7 +79,7 @@ protected:
 
   void RemoveCbuildSetFile(const string& csolutionFile) {
     string fileName = fs::path(csolutionFile).filename().generic_string();
-    fileName = RteUtils::RemoveSuffixByString(fileName, ".csolution.");
+    fileName = RteUtils::ExtractPrefix(fileName, ".csolution.");
     const string& cbuildSetFile = fs::path(csolutionFile).parent_path().generic_string() +
       "/" + fileName + ".cbuild-set.yml";
     if (RteFsUtils::Exists(cbuildSetFile)) {
@@ -6568,7 +6568,7 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
     const string contextOption = "." + build;
     streamRedirect.ClearStringStreams();
     argv[3] = (char*)"--no-update-rte";
-    argv[4] = (char*)"-c";    
+    argv[4] = (char*)"-c";
     argv[5] = (char*)contextOption.c_str();
     EXPECT_EQ(errCode, RunProjMgr(6, argv, m_envp));
     auto errStr = streamRedirect.GetErrorString();

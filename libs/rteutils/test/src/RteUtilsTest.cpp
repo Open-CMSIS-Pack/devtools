@@ -67,6 +67,7 @@ TEST(RteUtilsTest, EqualNoCase) {
 
 TEST(RteUtilsTest, GetPrefix) {
 
+  EXPECT_EQ(RteUtils::GetPrefix("prefix"), "prefix");
   EXPECT_EQ(RteUtils::GetPrefix("prefix:suffix"), "prefix");
   EXPECT_EQ(RteUtils::GetPrefix("prefix:suffix", '-'),"prefix:suffix");
   EXPECT_EQ(RteUtils::GetPrefix("prefix:suffix",':', true) , "prefix:");
@@ -78,6 +79,10 @@ TEST(RteUtilsTest, GetPrefix) {
 
 TEST(RteUtilsTest, GetSuffix) {
 
+  EXPECT_TRUE(RteUtils::GetSuffix("").empty());
+  EXPECT_TRUE(RteUtils::GetSuffix(":").empty());
+  EXPECT_TRUE(RteUtils::GetSuffix("prefix").empty());
+
   EXPECT_EQ(RteUtils::GetSuffix("prefix:suffix"), "suffix");
   EXPECT_TRUE(RteUtils::GetSuffix("prefix:suffix", '-').empty());
   EXPECT_EQ(RteUtils::GetSuffix("prefix:suffix", ':', true), ":suffix");
@@ -86,24 +91,63 @@ TEST(RteUtilsTest, GetSuffix) {
   EXPECT_EQ(RteUtils::GetSuffix("prefix-suffix", '-'), "suffix");
 }
 
-TEST(RteUtilsTest, RemoveSuffixByString) {
+TEST(RteUtilsTest, StripSuffix) {
+  EXPECT_EQ(RteUtils::StripSuffix("prefix:", nullptr), "prefix:");
+  EXPECT_TRUE(RteUtils::StripSuffix("").empty());
+  EXPECT_TRUE(RteUtils::StripSuffix(":suffix").empty());
+  EXPECT_EQ(RteUtils::StripSuffix("prefix:"), "prefix");
+  EXPECT_EQ(RteUtils::StripSuffix("prefix"), "prefix");
 
-  EXPECT_EQ(RteUtils::RemoveSuffixByString("prefix:suffix"), "prefix");
-  EXPECT_TRUE(RteUtils::RemoveSuffixByString("prefix:suffix", "-").empty());
-  EXPECT_EQ(RteUtils::RemoveSuffixByString("prefix::suffix", "::"), "prefix");
+  EXPECT_EQ(RteUtils::StripSuffix("prefix:suffix"), "prefix");
+  EXPECT_EQ(RteUtils::StripSuffix("prefix:suffix", "-"), "prefix:suffix");
+  EXPECT_EQ(RteUtils::StripSuffix("prefix::suffix", "::"), "prefix");
 
-  EXPECT_TRUE(RteUtils::RemoveSuffixByString("prefix-suffix").empty());
-  EXPECT_EQ(RteUtils::RemoveSuffixByString("prefix-suffix", "-"), "prefix");
+  EXPECT_EQ(RteUtils::StripSuffix("prefix-suffix"), "prefix-suffix");
+  EXPECT_EQ(RteUtils::StripSuffix("prefix-suffix", "-"), "prefix");
 }
 
-TEST(RteUtilsTest, RemovePrefixByString) {
+TEST(RteUtilsTest, StripPrefix) {
 
-  EXPECT_EQ(RteUtils::RemovePrefixByString("prefix:suffix"), "suffix");
-  EXPECT_EQ(RteUtils::RemovePrefixByString("prefix:suffix", "-"), "prefix:suffix");
-  EXPECT_EQ(RteUtils::RemovePrefixByString("prefix::suffix", "::"), "suffix");
+  EXPECT_EQ(RteUtils::StripSuffix(":suffix", nullptr), ":suffix");
+  EXPECT_EQ(RteUtils::StripPrefix("suffix"), "suffix");
+  EXPECT_EQ(RteUtils::StripPrefix("prefix:suffix"), "suffix");
+  EXPECT_EQ(RteUtils::StripPrefix(":suffix"), "suffix");
+  EXPECT_EQ(RteUtils::StripPrefix("prefix:suffix", "-"), "prefix:suffix");
+  EXPECT_EQ(RteUtils::StripPrefix("prefix::suffix", "::"), "suffix");
 
-  EXPECT_EQ(RteUtils::RemovePrefixByString("prefix-suffix"), "prefix-suffix");
-  EXPECT_EQ(RteUtils::RemovePrefixByString("prefix-suffix", "-"), "suffix");
+  EXPECT_EQ(RteUtils::StripPrefix("prefix-suffix"), "prefix-suffix");
+  EXPECT_EQ(RteUtils::StripPrefix("prefix-suffix", "-"), "suffix");
+}
+
+TEST(RteUtilsTest, ExtractPrefix) {
+  EXPECT_TRUE(RteUtils::ExtractPrefix("prefix:", nullptr).empty());
+  EXPECT_TRUE(RteUtils::ExtractPrefix("").empty());
+  EXPECT_TRUE(RteUtils::ExtractPrefix("suffix").empty());
+  EXPECT_TRUE(RteUtils::ExtractPrefix(":suffix").empty());
+  EXPECT_EQ(RteUtils::ExtractPrefix("prefix:"), "prefix");
+
+  EXPECT_EQ(RteUtils::ExtractPrefix("prefix:suffix"), "prefix");
+  EXPECT_EQ(RteUtils::ExtractPrefix(":suffix", ":", true), ":");
+  EXPECT_TRUE(RteUtils::ExtractPrefix("prefix:suffix", "-").empty());
+  EXPECT_EQ(RteUtils::ExtractPrefix("prefix::suffix", "::"), "prefix");
+  EXPECT_EQ(RteUtils::ExtractPrefix("prefix::suffix", "::", true), "prefix::");
+
+  EXPECT_TRUE(RteUtils::ExtractPrefix("prefix-suffix").empty());
+  EXPECT_EQ(RteUtils::ExtractPrefix("prefix-suffix", "-"), "prefix");
+}
+
+TEST(RteUtilsTest, ExtractSuffix) {
+  EXPECT_TRUE(RteUtils::ExtractSuffix(":suffix", nullptr).empty());
+  EXPECT_TRUE(RteUtils::ExtractSuffix("").empty());
+  EXPECT_TRUE(RteUtils::ExtractSuffix(":").empty());
+  EXPECT_TRUE(RteUtils::ExtractSuffix("prefix").empty());
+
+  EXPECT_EQ(RteUtils::ExtractSuffix("prefix:suffix"), "suffix");
+  EXPECT_TRUE(RteUtils::ExtractSuffix("prefix:suffix", "-").empty());
+  EXPECT_EQ(RteUtils::ExtractSuffix("prefix:suffix", ":", true), ":suffix");
+
+  EXPECT_TRUE(RteUtils::ExtractSuffix("prefix-suffix").empty());
+  EXPECT_EQ(RteUtils::ExtractSuffix("prefix-suffix", "-"), "suffix");
 }
 
 TEST(RteUtilsTest, ExtractFileExtension) {

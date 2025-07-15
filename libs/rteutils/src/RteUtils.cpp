@@ -69,33 +69,61 @@ int RteUtils::GetSuffixAsInt(const string& value, char delimiter)
   return stoi(s);
 }
 
-string RteUtils::RemovePrefixByString(const string& s, const char* delimiter)
+string RteUtils::StripPrefix(const string& s, const char* delimiter)
 {
+  if(!delimiter) {
+    return s;
+  }
   size_t            len = strlen(delimiter);
   string::size_type pos = s.find(delimiter);
-  if (pos == string::npos)
+  if(pos == string::npos) {
     return s;
-
+  }
   return s.substr(pos + len);
 }
 
-string RteUtils::RemoveSuffixByString(const string& s, const char* delimiter)
+string RteUtils::StripSuffix(const string& s, const char* delimiter)
 {
-  const char* cpos = strstr(s.c_str(), delimiter);
-  const char* pos;
-  if (cpos == 0) {
+  if(!delimiter) {
+    return s;
+  }
+  string::size_type pos = s.find(delimiter);
+  if(pos == string::npos) {
+    return s;
+  }
+  return s.substr(0, pos);
+}
+
+string RteUtils::ExtractPrefix(const string& s, const char* delimiter, bool withDelimiter)
+{
+  if(!delimiter) {
     return EMPTY_STRING;
   }
-  do {
-    pos = cpos;
-    cpos = strstr(cpos + 1, delimiter);
-  } while (cpos);
-  size_t cnt = pos - s.c_str();
-  if(cnt > 0 ) {
-    return s.substr(0, cnt);
+  string::size_type pos = s.find(delimiter);
+  if(pos == string::npos) {
+    return EMPTY_STRING;
   }
-  return EMPTY_STRING;
+  if(withDelimiter) {
+    pos += strlen(delimiter);
+  }
+  return s.substr(0, pos);
 }
+
+string RteUtils::ExtractSuffix(const string& s, const char* delimiter, bool withDelimiter)
+{
+  if(!delimiter) {
+    return EMPTY_STRING;
+  }
+  string::size_type pos = s.find(delimiter);
+  if(pos == string::npos) {
+    return EMPTY_STRING;
+  }
+  if(!withDelimiter) {
+    pos += strlen(delimiter);
+  }
+  return s.substr(pos);
+}
+
 
 int RteUtils::CountDelimiters(const string& s, const char* delimiter)
 {

@@ -840,7 +840,7 @@ bool RteProject::Apply()
           ci->AssignAttribute("explicitVersion", *a);
           string ymlID = RteUtils::GetPrefix(ci->GetID(), RteConstants::PREFIX_CVERSION_CHAR);
           if(!a->GetAttributeAsBool("explicitVendor")) {
-            ymlID = RteUtils::RemovePrefixByString(ymlID, RteConstants::SUFFIX_CVENDOR);
+            ymlID = RteUtils::StripPrefix(ymlID, RteConstants::SUFFIX_CVENDOR);
           }
           ymlID += a->GetAttribute("explicitVersion");
           ci->AddAttribute("ymlID", ymlID);

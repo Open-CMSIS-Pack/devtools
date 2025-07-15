@@ -209,7 +209,7 @@ string RtePackage::ReleaseIdFromId(const string& id)
 
 string RtePackage::VendorFromId(const string& id)
 {
-  return RteUtils::RemoveSuffixByString(id, RteConstants::SUFFIX_PACK_VENDOR);
+  return RteUtils::ExtractPrefix(id, RteConstants::SUFFIX_PACK_VENDOR);
 }
 
 string RtePackage::NameFromId(const string& id)
