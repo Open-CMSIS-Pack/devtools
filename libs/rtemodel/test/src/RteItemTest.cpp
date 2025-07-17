@@ -186,9 +186,11 @@ TEST(RteItemTest, GetYamlDeviceAttribute) {
 }
 
 TEST(RteItemTest, GetHierarchicalGroupName) {
-  unique_ptr<RteFileContainer> g0(new RteFileContainer(nullptr));
+  unique_ptr<RteFileContainer> files(new RteFileContainer(nullptr));
+  RteFileContainer* g0 = new RteFileContainer(files.get());
   g0->AddAttribute("group", "G0");
-  RteFileContainer* g1 = new RteFileContainer(g0.get());
+  files->AddChild(g0);
+  RteFileContainer* g1 = new RteFileContainer(g0);
   g1->AddAttribute("name", "G1");
   g0->AddChild(g1);
   RteFileContainer* g2 = new RteFileContainer(g1);   // no name
@@ -201,6 +203,8 @@ TEST(RteItemTest, GetHierarchicalGroupName) {
   g3->AddChild(g4);
 
   EXPECT_EQ(g4->GetHierarchicalGroupName(), "G0:G1:G3");
+  files->AddAttribute("name", "Files");
+  EXPECT_EQ(g4->GetHierarchicalGroupName(), "Files:G0:G1:G3");
 }
 
 TEST(RteItemTest, GetInstancePathName) {
