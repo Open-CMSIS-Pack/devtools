@@ -388,6 +388,8 @@ string RteFileContainer::GetHierarchicalGroupName() const
     string groupName = parentGroup->GetHierarchicalGroupName();
     if(!name.empty() && !groupName.empty()) {
       groupName += ":" + name;
+    } else {
+      groupName += name;
     }
     return groupName;
   }
