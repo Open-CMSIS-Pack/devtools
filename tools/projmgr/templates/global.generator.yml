@@ -13,5 +13,5 @@ generator:
     description: Global Registered Generator for Infineon Device Configuration tool
     download-url: https://softwaretools.infineon.com/tools/com.ifx.tb.tool.deviceconfigurator
     run: ../bin/launch-Infineon_Dev_Config
-    path: $SolutionDir()$/$Project$/RTE/Device_Configurator
+    path: $ProjectDir()$/RTE/Device_Configurator/$TargetType$
     
