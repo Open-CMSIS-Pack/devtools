@@ -280,6 +280,42 @@ struct GdbServerItem {
 };
 
 /**
+ * @brief example environment item containing
+ *        project file with extension
+ *        subdirectory to be copied
+*/
+struct EnvironmentItem {
+  std::string load;
+  std::string folder;
+};
+
+/**
+ * @brief example item containing
+ *        name of example
+ *        description
+ *        documentation
+ *        version
+ *        archive
+ *        map of environments
+ *        list of compatible boards
+ *        list of components
+ *        list of categories
+ *        list of keywords
+*/
+struct ExampleItem {
+  std::string name;
+  std::string description;
+  std::string doc;
+  std::string version;
+  std::string archive;
+  std::map<std::string, EnvironmentItem> environments;
+  std::vector<BoardItem> boards;
+  std::vector<std::string> components;
+  std::vector<std::string> categories;
+  std::vector<std::string> keywords;
+};
+
+/**
  * @brief debugger type
  *        name of debug configuration
  *        brief description
@@ -544,6 +580,14 @@ public:
    * @return true if executed successfully
   */
   bool ListDependencies(std::vector<std::string>& dependencies, const std::string& filter = RteUtils::EMPTY_STRING);
+
+  /**
+   * @brief list available examples
+   * @param reference to list of examples
+   * @param filter words to filter results
+   * @return true if executed successfully
+  */
+  bool ListExamples(std::vector<std::string>& examples, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list contexts
@@ -1099,6 +1143,9 @@ protected:
   bool IsCreatedByExecute(const std::string file, const std::string dir);
   bool CollectAllRequiredPdscFiles();
   bool ParseTargetSetContextSelection();
+  std::vector<ExampleItem> CollectExamples(ContextItem& context);
+  std::vector<RteBoard*> GetCompatibleBoards(ContextItem& context);
+  bool IsBoardListCompatible(const std::vector<RteBoard*> compatibleBoards, const Collection<RteItem*>& boards);
 };
 
 #endif  // PROJMGRWORKER_H

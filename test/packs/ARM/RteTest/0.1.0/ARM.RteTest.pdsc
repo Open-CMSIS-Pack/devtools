@@ -418,6 +418,8 @@
       </project>
       <attributes>
         <component Cclass="RteTest" Cgroup="GlobalLevel"/>
+        <category>Example Project</category>
+        <keyword>Getting Started</keyword>
       </attributes>
     </example>
   </examples>
