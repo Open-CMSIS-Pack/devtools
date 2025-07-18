@@ -30,6 +30,7 @@ Commands:\n\
   list dependencies             Print list of unresolved project dependencies\n\
   list devices                  Print list of available device names\n\
   list environment              Print list of environment configurations\n\
+  list examples                 Print list of examples\n\
   list generators               Print list of code generators of a given context\n\
   list layers                   Print list of available, referenced and compatible layers\n\
   list packs                    Print list of used packs from the pack repository\n\
@@ -181,6 +182,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"list configs",      { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list components",   { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list dependencies", { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list examples",     { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list contexts",     { false, {debug, filter, quiet, schemaCheck, verbose, ymlOrder}}},
     {"list target-sets",  { false, {debug, filter, quiet, schemaCheck, verbose}}},
     {"list generators",   { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose}}},
@@ -368,6 +370,10 @@ int ProjMgr::ProcessCommands() {
       }
     } else if (m_args == "dependencies") {
       if (!RunListDependencies()) {
+        return ErrorCode::ERROR;
+      }
+    } else if (m_args == "examples") {
+      if (!RunListExamples()) {
         return ErrorCode::ERROR;
       }
     } else if (m_args == "contexts") {
@@ -903,6 +909,31 @@ bool ProjMgr::RunListDependencies(void) {
 
   for (const auto& dependency : dependencies) {
     ProjMgrLogger::out() << dependency << endl;
+  }
+  return true;
+}
+
+bool ProjMgr::RunListExamples(void) {
+  if (!m_csolutionFile.empty()) {
+    // Parse all input files and create contexts
+    if (!PopulateContexts()) {
+      return false;
+    }
+  }
+
+  // Parse context selection
+  if (!ParseAndValidateContexts()) {
+    return false;
+  }
+
+  vector<string> examples;
+  if (!m_worker.ListExamples(examples, m_filter)) {
+    ProjMgrLogger::Get().Error("processing examples list failed");
+    return false;
+  }
+
+  for (const auto& example : examples) {
+    ProjMgrLogger::out() << example << endl;
   }
   return true;
 }

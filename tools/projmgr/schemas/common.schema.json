@@ -1724,7 +1724,7 @@
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "warnings":        { "$ref": "#/definitions/WarningsType" }
       },
-      "allOf": [
+      "oneOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" }
       ],
       "additionalProperties": false
@@ -1802,7 +1802,7 @@
         "not-for-context": { "$ref": "#/definitions/NotForContext" },
         "for-compiler":    { "$ref": "#/definitions/CompilersType" }
       },
-      "allOf": [
+      "oneOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" }
       ],
       "additionalProperties": false

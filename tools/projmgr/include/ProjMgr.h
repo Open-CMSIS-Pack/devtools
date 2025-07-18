@@ -192,6 +192,7 @@ protected:
   bool RunListComponents();
   bool RunListConfigs();
   bool RunListDependencies();
+  bool RunListExamples();
   bool RunListContexts();
   bool RunListTargetSets();
   bool RunListGenerators();

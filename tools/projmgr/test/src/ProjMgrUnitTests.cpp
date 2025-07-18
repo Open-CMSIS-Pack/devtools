@@ -6899,6 +6899,71 @@ TEST_F(ProjMgrUnitTests, ListTargetSetsImageOnly) {
   EXPECT_STREQ(outStr.c_str(), "CM0\n");
 }
 
+TEST_F(ProjMgrUnitTests, ListExamples) {
+  const string expected = "\
+PreInclude@1.0.0\n\
+  description: PreInclude Test Application\n\
+  doc: .*/ARM/RteTest/0.1.0/Examples/PreInclude/Abstract.txt\n\
+  environment: uv\n\
+    load: .*/ARM/RteTest/0.1.0/Examples/PreInclude/PreInclude.uvprojx\n\
+    folder: .*/ARM/RteTest/0.1.0/Examples/PreInclude\n\
+  boards:\n\
+    Keil::RteTest Dummy board\n\
+  components:\n\
+    RteTest:GlobalLevel\n\
+PreIncludeEnvFolder@1.0.0\n\
+  description: PreInclude Test Application with different folder description\n\
+  doc: .*/ARM/RteTest/0.1.0/Examples/PreInclude/Abstract.txt\n\
+  environment: uv\n\
+    load: .*/ARM/RteTest/0.1.0/Examples/PreInclude.uvprojx\n\
+    folder: .*/ARM/RteTest/0.1.0/Examples/PreInclude\n\
+  boards:\n\
+    Keil::RteTest Dummy board\n\
+  components:\n\
+    RteTest:GlobalLevel\n\
+  categories:\n\
+    Example Project\n\
+  keywords:\n\
+    Getting Started\n\
+";
+  char* argv[8];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/Examples/solution.csolution.yml";
+
+  // test with board
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"examples";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"--active";
+  argv[5] = (char*)"TestBoard";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex(expected)));
+
+  // test with compatible device
+  streamRedirect.ClearStringStreams();
+  argv[5] = (char*)"CM0_Dual";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex(expected)));
+
+  // test with filter option
+  streamRedirect.ClearStringStreams();
+  argv[6] = (char*)"--filter";
+  argv[7] = (char*)"Getting Started";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(outStr.find("PreIncludeEnvFolder@1.0.0") != string::npos);
+  EXPECT_TRUE(outStr.find("PreInclude@1.0.0") == string::npos);
+
+  // test with non-compatible device
+  streamRedirect.ClearStringStreams();
+  argv[5] = (char*)"CM0";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(outStr.empty());
+}
+
 TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
