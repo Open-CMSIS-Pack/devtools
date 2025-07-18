@@ -9,3 +9,9 @@ generator:
     download-url: https://www.nxp.com/configtools
     run: ../bin/launch-MCUXpressoConfigTools
     path: $SolutionDir()$/MCUXpressoConfig/$TargetType$
+  - id: InfineonDeviceConfigurator
+    description: Global Registered Generator for Infineon Device Configuration tool
+    download-url: https://softwaretools.infineon.com/tools/com.ifx.tb.tool.deviceconfigurator
+    base-dir: $SolutionDir()$/$Project$/RTE/Device_Configurator
+    run: ../bin/launch-Infineon_Dev_Config
+    path: $SolutionDir()$/$Project$/RTE/Device_Configurator
