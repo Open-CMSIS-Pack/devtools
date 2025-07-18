@@ -14,3 +14,4 @@ generator:
     download-url: https://softwaretools.infineon.com/tools/com.ifx.tb.tool.deviceconfigurator
     run: ../bin/launch-Infineon_Dev_Config
     path: $SolutionDir()$/$Project$/RTE/Device_Configurator
+    
