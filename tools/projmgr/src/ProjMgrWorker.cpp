@@ -4187,6 +4187,167 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
   return true;
 }
 
+vector<RteBoard*> ProjMgrWorker::GetCompatibleBoards(ContextItem& context) {
+  vector<RteBoard*> compatibleBoards;
+  if (!context.board.empty()) {
+    compatibleBoards.push_back(context.rteBoard);
+  } else if (!context.device.empty()) {
+    context.rteFilteredModel->GetCompatibleBoards(compatibleBoards, context.rteDevice);
+  }
+  return compatibleBoards;
+}
+
+bool ProjMgrWorker::IsBoardListCompatible(const vector<RteBoard*> compatibleBoards, const Collection<RteItem*>& boards) {
+  if (boards.empty() || compatibleBoards.empty()) {
+    return true;
+  }
+  for (const auto& board : boards) {
+    for (const auto& compatibleBoard : compatibleBoards) {
+      if ((compatibleBoard->GetVendorString() == board->GetVendorString()) &&
+        (compatibleBoard->GetName() == board->GetName())) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+std::vector<ExampleItem> ProjMgrWorker::CollectExamples(ContextItem& context) {
+  std::vector<ExampleItem> examples;
+  vector<const RteItem*> rteExamples;
+  const auto& packs = context.rteFilteredModel->GetPackages();
+  for (const auto& [_, pack] : packs) {
+    const RteItem* packExamples = pack->GetExamples();
+    if (packExamples) {
+      const Collection<RteItem*> items = packExamples->GetChildren();
+      for (const RteItem* item : items) {
+        if (item->GetTag() == "example") {
+          rteExamples.push_back(item);
+        }
+      }
+    }
+  }
+  const auto& compatibleBoards = GetCompatibleBoards(context);
+  for (const auto& rteExample : rteExamples) {
+    Collection<RteItem*> boards;
+    boards = rteExample->GetChildrenByTag("board", boards);
+    if (!IsBoardListCompatible(compatibleBoards, boards)) {
+      continue;
+    }
+    ExampleItem example;
+    example.name = rteExample->GetName();
+    example.description = rteExample->GetChildText("description");    
+    string folder = rteExample->GetFolderString();
+    RteFsUtils::NormalizePath(folder, rteExample->GetAbsolutePackagePath());
+    example.doc = rteExample->GetDocValue();
+    RteFsUtils::NormalizePath(example.doc, folder);
+    string archive = rteExample->GetAttribute("archive");
+    if (!archive.empty()) {
+      RteFsUtils::NormalizePath(archive, folder);
+      example.archive = archive;
+    }
+    for (const auto& board : boards) {
+      example.boards.push_back(BoardItem{ board->GetVendorString(), board->GetName() });
+    }
+    const auto& version = rteExample->GetVersionString();
+    if (!version.empty()) {
+      example.version = version;
+    }
+
+    Collection<RteItem*> environments;
+    environments = rteExample->GetChildrenByTag("environment", environments);
+    for (const auto& item : environments) {
+      string load = item->GetAttribute("load");
+      RteFsUtils::NormalizePath(load, folder);
+      const auto& name = item->GetName();
+      example.environments[name].load = load;
+      example.environments[name].folder = item->GetFolderString();
+      RteFsUtils::NormalizePath(example.environments[name].folder, folder);
+    }
+
+    Collection<RteItem*> components;
+    components = rteExample->GetChildrenByTag("component", components);
+    for (const auto& item : components) {
+      example.components.push_back(item->GetComponentID(true));
+    }
+
+    Collection<RteItem*> categories;
+    categories = rteExample->GetChildrenByTag("category", categories);
+    for (const auto& item : categories) {
+      example.categories.push_back(item->GetText());
+    }
+
+    Collection<RteItem*> keywords;
+    components = rteExample->GetChildrenByTag("keyword", keywords);
+    for (const auto& item : keywords) {
+      example.keywords.push_back(item->GetText());
+    }
+
+    examples.push_back(example);
+  } 
+  return examples;
+}
+
+bool ProjMgrWorker::ListExamples(vector<string>& examples, const string& filter) {
+  const auto& selectedContext = m_selectedContexts.front();
+  ContextItem& context = m_contexts[selectedContext];
+  if (!LoadPacks(context)) {
+    return false;
+  }
+  if (!selectedContext.empty()) {
+    if (!ProcessPrecedences(context, BoardOrDevice::Both)) {
+      return false;
+    }
+  }
+  if (!SetTargetAttributes(context, context.targetAttributes)) {
+    return false;
+  }
+
+  const auto& collectedExamples = CollectExamples(context);
+
+  for (const auto& exampleItem : collectedExamples) {
+    string example = exampleItem.name;
+    example += exampleItem.version.empty() ? "" : "@" + exampleItem.version;
+    example += "\n  description: " + exampleItem.description;
+    example += "\n  doc: " + exampleItem.doc;
+    if (!exampleItem.archive.empty()) {
+      example += "\n  archive: " + exampleItem.archive;
+    }
+    for (const auto& [name, environment] : exampleItem.environments) {
+      example += "\n  environment: " + name + "\n    load: " + environment.load;
+      example += "\n    folder: " + environment.folder;
+    }
+    if (!exampleItem.boards.empty()) {
+      example += "\n  boards:";
+      for (const auto& board : exampleItem.boards) {
+        example += "\n    " + board.vendor + "::" + board.name;
+      }
+    }
+    if (!exampleItem.components.empty()) {
+      example += "\n  components:";
+      for (const auto& component : exampleItem.components) {
+        example += "\n    " + component;
+      }
+    }
+    if (!exampleItem.categories.empty()) {
+      example += "\n  categories:";
+      for (const auto& category : exampleItem.categories) {
+        example += "\n    " + category;
+      }
+    }
+    if (!exampleItem.keywords.empty()) {
+      example += "\n  keywords:";
+      for (const auto& keyword : exampleItem.keywords) {
+        example += "\n    " + keyword;
+      }
+    }
+    if (filter.empty() || example.find(filter) != string::npos) {
+      examples.push_back(example);
+    }
+  }
+  return true;
+}
+
 bool ProjMgrWorker::FormatValidationResults(set<string>& results, const ContextItem& context) {
   for (const auto& validation : context.validationResults) {
     string resultStr = RteItem::ConditionResultToString(validation.result) + " " + validation.id;
