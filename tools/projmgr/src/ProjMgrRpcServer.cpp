@@ -194,7 +194,7 @@ RteComponentAggregate* RpcHandler::GetComponentAggregate(const string& context, 
 }
 
 RpcArgs::GetVersionResult RpcHandler::GetVersion(void) {
-  RpcArgs::GetVersionResult res = {true};
+  RpcArgs::GetVersionResult res = {{true}};
   res.message = string("Running ") + INTERNAL_NAME + " " + VERSION_STRING;
   res.version = VERSION_STRING;
   return res;
