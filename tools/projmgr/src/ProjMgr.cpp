@@ -31,6 +31,7 @@ Commands:\n\
   list devices                  Print list of available device names\n\
   list environment              Print list of environment configurations\n\
   list examples                 Print list of examples\n\
+  list templates                Print list of templates\n\
   list generators               Print list of code generators of a given context\n\
   list layers                   Print list of available, referenced and compatible layers\n\
   list packs                    Print list of used packs from the pack repository\n\
@@ -183,6 +184,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"list components",   { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list dependencies", { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list examples",     { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list templates",    { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list contexts",     { false, {debug, filter, quiet, schemaCheck, verbose, ymlOrder}}},
     {"list target-sets",  { false, {debug, filter, quiet, schemaCheck, verbose}}},
     {"list generators",   { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose}}},
@@ -374,6 +376,10 @@ int ProjMgr::ProcessCommands() {
       }
     } else if (m_args == "examples") {
       if (!RunListExamples()) {
+        return ErrorCode::ERROR;
+      }
+    } else if (m_args == "templates") {
+      if (!RunListTemplates()) {
         return ErrorCode::ERROR;
       }
     } else if (m_args == "contexts") {
@@ -934,6 +940,31 @@ bool ProjMgr::RunListExamples(void) {
 
   for (const auto& example : examples) {
     ProjMgrLogger::out() << example << endl;
+  }
+  return true;
+}
+
+bool ProjMgr::RunListTemplates(void) {
+  if (!m_csolutionFile.empty()) {
+    // Parse all input files and create contexts
+    if (!PopulateContexts()) {
+      return false;
+    }
+  }
+
+  // Parse context selection
+  if (!ParseAndValidateContexts()) {
+    return false;
+  }
+
+  vector<string> csolutionTemplates;
+  if (!m_worker.ListTemplates(csolutionTemplates, m_filter)) {
+    ProjMgrLogger::Get().Error("processing templates list failed");
+    return false;
+  }
+
+  for (const auto& csolutionTemplate : csolutionTemplates) {
+    ProjMgrLogger::out() << csolutionTemplate << endl;
   }
   return true;
 }
