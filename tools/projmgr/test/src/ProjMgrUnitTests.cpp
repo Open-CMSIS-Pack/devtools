@@ -6964,6 +6964,51 @@ PreIncludeEnvFolder@1.0.0\n\
   EXPECT_TRUE(outStr.empty());
 }
 
+
+TEST_F(ProjMgrUnitTests, ListTemplates) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+
+  // list all templates
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"templates";
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "\
+Board1Template (ARM::RteTest_DFP@0.2.0)\n\
+Board2 (ARM::RteTest_DFP@0.2.0)\n\
+Board3 (ARM::RteTest_DFP@0.2.0)\n\
+");
+
+  // test filter
+  argv[3] = (char*)"--filter";
+  argv[4] = (char*)"Board1";
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "\
+Board1Template (ARM::RteTest_DFP@0.2.0)\n\
+");
+
+  // list board's compatible template
+  const string& csolution = testinput_folder + "/Examples/solution.csolution.yml";
+  const string expected = 
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"--active";
+  argv[5] = (char*)"TestBoard";
+  argv[6] = (char*)"--verbose";
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Board3 \\(ARM::RteTest_DFP@0.2.0\\)\n\
+  description: \"Test board Template three\"\n\
+  path: .*/ARM/RteTest_DFP/0.2.0/Templates\n\
+  file: .*/ARM/RteTest_DFP/0.2.0/Templates/board3.csolution.yml\n\
+  copy-to: Template3\n\
+")));
+}
+
 TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   char* argv[6];
   StdStreamRedirect streamRedirect;

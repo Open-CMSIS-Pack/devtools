@@ -316,6 +316,24 @@ struct ExampleItem {
 };
 
 /**
+ * @brief template item containing
+ *        name of example
+ *        description
+ *        path to the directory that contains the template
+ *        path to the *.csolution.yml file
+ *        path to copy the template into
+ *        pack identifier
+*/
+struct TemplateItem {
+  std::string name;
+  std::string description;
+  std::string path;
+  std::string file;
+  std::string copyTo;
+  std::string pack;
+};
+
+/**
  * @brief debugger type
  *        name of debug configuration
  *        brief description
@@ -588,6 +606,14 @@ public:
    * @return true if executed successfully
   */
   bool ListExamples(std::vector<std::string>& examples, const std::string& filter = RteUtils::EMPTY_STRING);
+
+  /**
+   * @brief list available csolution templates
+   * @param reference to list of csolution templates
+   * @param filter words to filter results
+   * @return true if executed successfully
+  */
+  bool ListTemplates(std::vector<std::string>& templates, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list contexts
@@ -1146,6 +1172,7 @@ protected:
   std::vector<ExampleItem> CollectExamples(ContextItem& context);
   std::vector<RteBoard*> GetCompatibleBoards(ContextItem& context);
   bool IsBoardListCompatible(const std::vector<RteBoard*> compatibleBoards, const Collection<RteItem*>& boards);
+  std::vector<TemplateItem> CollectTemplates(ContextItem& context);
 };
 
 #endif  // PROJMGRWORKER_H

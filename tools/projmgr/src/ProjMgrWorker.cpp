@@ -4348,6 +4348,57 @@ bool ProjMgrWorker::ListExamples(vector<string>& examples, const string& filter)
   return true;
 }
 
+std::vector<TemplateItem> ProjMgrWorker::CollectTemplates(ContextItem& context) {
+  std::vector<TemplateItem> templates;
+  const auto& rteTemplates = context.rteFilteredModel->GetProjectDescriptors();
+  for (const auto& rteTemplate : rteTemplates) {
+    TemplateItem csolutionTemplate;
+    csolutionTemplate.name = rteTemplate->GetName();
+    csolutionTemplate.description = rteTemplate->GetDescription();
+    csolutionTemplate.pack = rteTemplate->GetPackageID(true);
+    csolutionTemplate.path = rteTemplate->GetPathString();
+    RteFsUtils::NormalizePath(csolutionTemplate.path, rteTemplate->GetAbsolutePackagePath());
+    csolutionTemplate.file = rteTemplate->GetFileString();
+    RteFsUtils::NormalizePath(csolutionTemplate.file, csolutionTemplate.path);
+    csolutionTemplate.copyTo = rteTemplate->GetCopyToString();
+    templates.push_back(csolutionTemplate);
+  }
+  return templates;
+}
+
+bool ProjMgrWorker::ListTemplates(vector<string>& templates, const string& filter) {
+  const auto& selectedContext = m_selectedContexts.front();
+  ContextItem& context = m_contexts[selectedContext];
+  if (!LoadPacks(context)) {
+    return false;
+  }
+  if (!selectedContext.empty()) {
+    if (!ProcessPrecedences(context, BoardOrDevice::Both)) {
+      return false;
+    }
+  }
+  if (!SetTargetAttributes(context, context.targetAttributes)) {
+    return false;
+  }
+  const auto& collectedTemplates = CollectTemplates(context);
+  for (const auto& templateItem : collectedTemplates) {
+    if (!filter.empty() && templateItem.name.find(filter) == string::npos) {
+      continue;
+    }
+    string templateStr = templateItem.name + " (" + templateItem.pack + ")";
+    if (m_verbose) {
+      templateStr += "\n  description: " + templateItem.description;
+      templateStr += "\n  path: " + templateItem.path;
+      templateStr += "\n  file: " + templateItem.file;
+      if (!templateItem.copyTo.empty()) {
+        templateStr += "\n  copy-to: " + templateItem.copyTo;
+      }
+    }
+    templates.push_back(templateStr);
+  }
+  return true;
+}
+
 bool ProjMgrWorker::FormatValidationResults(set<string>& results, const ContextItem& context) {
   for (const auto& validation : context.validationResults) {
     string resultStr = RteItem::ConditionResultToString(validation.result) + " " + validation.id;

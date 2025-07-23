@@ -567,7 +567,7 @@
     <template name="Board2" type="Board" file="Templates/board2.csolution.yml" condition="BoardTest2">
       <description>"Test board Template two"</description>
     </template>
-    <template name="Board3" type="Board" file="Templates/board3.csolution.yml" condition="BoardTest3">
+    <template name="Board3" type="Board" path="Templates" file="board3.csolution.yml" copy-to="Template3" condition="BoardTest3">
       <description>"Test board Template three"</description>
     </template>
     <clayer name="TestVariant" type="TestVariant" file="Layers/testvariant.clayer.yml">
