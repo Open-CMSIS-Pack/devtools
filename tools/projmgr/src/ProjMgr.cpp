@@ -27,6 +27,7 @@ Commands:\n\
   list configs                  Print list of configuration files\n\
   list contexts                 Print list of contexts in a <name>.csolution.yml\n\
   list components               Print list of available components\n\
+  list debuggers                Print list of debuggers from debug-adapters.yml\n\
   list dependencies             Print list of unresolved project dependencies\n\
   list devices                  Print list of available device names\n\
   list environment              Print list of environment configurations\n\
@@ -187,6 +188,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"list templates",    { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list contexts",     { false, {debug, filter, quiet, schemaCheck, verbose, ymlOrder}}},
     {"list target-sets",  { false, {debug, filter, quiet, schemaCheck, verbose}}},
+    {"list debuggers",    { false, {debug, filter, quiet, schemaCheck, verbose}}},
     {"list generators",   { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list layers",       { false, {context, contextSet, activeTargetSet, debug, load, clayerSearchPath, quiet, schemaCheck, toolchain, verbose, updateIdx}}},
     {"list toolchains",   { false, {context, contextSet, activeTargetSet, debug, quiet, toolchain, verbose}}},
@@ -388,6 +390,10 @@ int ProjMgr::ProcessCommands() {
       }
     } else if (m_args == "target-sets") {
       if (!RunListTargetSets()) {
+        return ErrorCode::ERROR;
+      }
+    } else if (m_args == "debuggers") {
+      if (!RunListDebuggers()) {
         return ErrorCode::ERROR;
       }
     } else if (m_args == "generators") {
@@ -997,6 +1003,35 @@ bool ProjMgr::RunListTargetSets(void) {
   }
   for (const auto& targetSet : targetSets) {
     ProjMgrLogger::out() << targetSet << endl;
+  }
+  return true;
+}
+
+bool ProjMgr::RunListDebuggers(void) {
+  vector<string> debuggers;
+  const auto& debugAdapters = GetDebugAdaptersFile();
+  if (debugAdapters.empty()) {
+    ProjMgrLogger::Get().Error("debug-adapters.yml file not found");
+    return false;
+  }
+  if (!m_parser.ParseDebugAdapters(debugAdapters, m_checkSchema)) {
+    return false;
+  }
+  const auto& adapters = m_parser.GetDebugAdaptersItem();
+  for (const auto& adapter : adapters) {
+    string debugger = adapter.name;
+    if (m_verbose) {
+      for (const auto& alias : adapter.alias) {
+        debugger += "\n  " + alias;
+      }
+    }
+    if (!m_filter.empty() && debugger.find(m_filter) == string::npos) {
+      continue;
+    }
+    debuggers.push_back(debugger);
+  }
+  for (const auto& debugger : debuggers) {
+    ProjMgrLogger::out() << debugger << endl;
   }
   return true;
 }

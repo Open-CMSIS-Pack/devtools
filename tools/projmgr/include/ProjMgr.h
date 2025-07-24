@@ -196,6 +196,7 @@ protected:
   bool RunListTemplates();
   bool RunListContexts();
   bool RunListTargetSets();
+  bool RunListDebuggers();
   bool RunListGenerators();
   bool RunListLayers();
   bool RunListToolchains();
