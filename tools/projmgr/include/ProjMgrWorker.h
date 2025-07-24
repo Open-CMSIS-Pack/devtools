@@ -301,6 +301,7 @@ struct EnvironmentItem {
  *        list of components
  *        list of categories
  *        list of keywords
+ *        pack identifier
 */
 struct ExampleItem {
   std::string name;
@@ -313,6 +314,7 @@ struct ExampleItem {
   std::vector<std::string> components;
   std::vector<std::string> categories;
   std::vector<std::string> keywords;
+  std::string pack;
 };
 
 /**
@@ -1171,7 +1173,7 @@ protected:
   bool ParseTargetSetContextSelection();
   std::vector<ExampleItem> CollectExamples(ContextItem& context);
   std::vector<RteBoard*> GetCompatibleBoards(ContextItem& context);
-  bool IsBoardListCompatible(const std::vector<RteBoard*> compatibleBoards, const Collection<RteItem*>& boards);
+  bool IsBoardListCompatible(const ContextItem& context, const std::vector<RteBoard*> compatibleBoards, const Collection<RteItem*>& boards);
   std::vector<TemplateItem> CollectTemplates(ContextItem& context);
 };
 

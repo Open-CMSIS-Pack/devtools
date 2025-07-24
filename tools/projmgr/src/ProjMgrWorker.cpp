@@ -4197,9 +4197,21 @@ vector<RteBoard*> ProjMgrWorker::GetCompatibleBoards(ContextItem& context) {
   return compatibleBoards;
 }
 
-bool ProjMgrWorker::IsBoardListCompatible(const vector<RteBoard*> compatibleBoards, const Collection<RteItem*>& boards) {
-  if (boards.empty() || compatibleBoards.empty()) {
+bool ProjMgrWorker::IsBoardListCompatible(const ContextItem& context, const vector<RteBoard*> compatibleBoards, const Collection<RteItem*>& boards) {
+  if (compatibleBoards.empty()) {
+    // no board/device is selected
     return true;
+  }
+  if (boards.empty() && !context.board.empty()) {
+    // example without boards = reference application (hardware agnostic example)
+    // ref app requires at least a clayer type "board" for the selected board
+    const auto& clayers = context.rteFilteredModel->GetLayerDescriptors();
+    for (const auto& clayer : clayers) {
+      if (RteUtils::EqualNoCase(clayer->GetTypeString(), "board")) {
+        return true;
+      }
+    }
+    return false;
   }
   for (const auto& board : boards) {
     for (const auto& compatibleBoard : compatibleBoards) {
@@ -4231,12 +4243,13 @@ std::vector<ExampleItem> ProjMgrWorker::CollectExamples(ContextItem& context) {
   for (const auto& rteExample : rteExamples) {
     Collection<RteItem*> boards;
     boards = rteExample->GetChildrenByTag("board", boards);
-    if (!IsBoardListCompatible(compatibleBoards, boards)) {
+    if (!IsBoardListCompatible(context, compatibleBoards, boards)) {
       continue;
     }
     ExampleItem example;
     example.name = rteExample->GetName();
-    example.description = rteExample->GetChildText("description");    
+    example.description = rteExample->GetDescription();
+    example.pack = rteExample->GetPackageID(true);
     string folder = rteExample->GetFolderString();
     RteFsUtils::NormalizePath(folder, rteExample->GetAbsolutePackagePath());
     example.doc = rteExample->GetDocValue();
@@ -4306,44 +4319,31 @@ bool ProjMgrWorker::ListExamples(vector<string>& examples, const string& filter)
   const auto& collectedExamples = CollectExamples(context);
 
   for (const auto& exampleItem : collectedExamples) {
-    string example = exampleItem.name;
+    if (!filter.empty() && exampleItem.name.find(filter) == string::npos) {
+      continue;
+    }
+    string example = exampleItem.boards.empty() ? "Reference Application: " : "";
+    example += exampleItem.name;
     example += exampleItem.version.empty() ? "" : "@" + exampleItem.version;
-    example += "\n  description: " + exampleItem.description;
-    example += "\n  doc: " + exampleItem.doc;
-    if (!exampleItem.archive.empty()) {
-      example += "\n  archive: " + exampleItem.archive;
-    }
-    for (const auto& [name, environment] : exampleItem.environments) {
-      example += "\n  environment: " + name + "\n    load: " + environment.load;
-      example += "\n    folder: " + environment.folder;
-    }
-    if (!exampleItem.boards.empty()) {
-      example += "\n  boards:";
-      for (const auto& board : exampleItem.boards) {
-        example += "\n    " + board.vendor + "::" + board.name;
+    example += " (" + exampleItem.pack + ")";
+    if (m_verbose) {
+      example += "\n  description: " + exampleItem.description;
+      example += "\n  doc: " + exampleItem.doc;
+      if (!exampleItem.archive.empty()) {
+        example += "\n  archive: " + exampleItem.archive;
+      }
+      for (const auto& [name, environment] : exampleItem.environments) {
+        example += "\n  environment: " + name + "\n    load: " + environment.load;
+        example += "\n    folder: " + environment.folder;
+      }
+      if (!exampleItem.boards.empty()) {
+        example += "\n  boards:";
+        for (const auto& board : exampleItem.boards) {
+          example += "\n    " + board.vendor + "::" + board.name;
+        }
       }
     }
-    if (!exampleItem.components.empty()) {
-      example += "\n  components:";
-      for (const auto& component : exampleItem.components) {
-        example += "\n    " + component;
-      }
-    }
-    if (!exampleItem.categories.empty()) {
-      example += "\n  categories:";
-      for (const auto& category : exampleItem.categories) {
-        example += "\n    " + category;
-      }
-    }
-    if (!exampleItem.keywords.empty()) {
-      example += "\n  keywords:";
-      for (const auto& keyword : exampleItem.keywords) {
-        example += "\n    " + keyword;
-      }
-    }
-    if (filter.empty() || example.find(filter) != string::npos) {
-      examples.push_back(example);
-    }
+    examples.push_back(example);
   }
   return true;
 }
