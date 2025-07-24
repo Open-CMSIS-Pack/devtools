@@ -7085,3 +7085,41 @@ TEST_F(ProjMgrUnitTests, ImageOnly) {
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ImageOnly/out/image-only+CM0.cbuild-run.yml",
     testinput_folder + "/ImageOnly/ref/image-only+CM0.cbuild-run.yml");
 }
+
+TEST_F(ProjMgrUnitTests, ListDebuggers) {
+  char* argv[6];
+  StdStreamRedirect streamRedirect;
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"debuggers";
+  EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+CMSIS-DAP@pyOCD\n\
+ULINKplus@pyOCD\n\
+MCU-Link@pyOCD\n\
+Nu-Link@pyOCD\n\
+PICkit@pyOCD\n\
+KitProg3@pyOCD\n\
+RPiDebugProbe@pyOCD\n\
+ST-Link@pyOCD\n\
+JLink Server\n\
+CMSIS-DAP@Arm-Debugger\n\
+ST-Link@Arm-Debugger\n\
+AVH-FVP\n\
+Keil uVision\n\
+")));
+
+  streamRedirect.ClearStringStreams();
+  argv[3] = (char*)"--verbose";
+  argv[4] = (char*)"--filter";
+  argv[5] = (char*)"CMSIS-DAP";
+  EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+CMSIS-DAP@pyOCD\n\
+  CMSIS-DAP\n\
+  DAP-Link\n\
+CMSIS-DAP@Arm-Debugger\n\
+  CMSIS-DAP@armdbg\n\
+")));
+}
