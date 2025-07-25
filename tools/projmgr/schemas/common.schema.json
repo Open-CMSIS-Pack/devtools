@@ -550,6 +550,11 @@
       "type": "integer",
       "description": "Allows to use multiple instances of component configuration files instead of default 1."
     },
+    "MaxInstancesType": {
+      "title": "maxInstances:",
+      "type": "integer",
+      "description": "Maximum allowed instances of a component in a project. Default is 1 for one instance."
+    },
     "TargetTypes": {
       "title": "target-types:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#target-types",
       "type": "array",
@@ -1657,7 +1662,8 @@
         "files":        { "$ref": "#/definitions/FilesType" },
         "generator":    { "$ref": "#/definitions/ComponentGeneratorType" },
         "from-pack":    { "$ref": "#/definitions/PackID" },
-        "instances":    { "$ref": "#/definitions/InstancesType" }
+        "instances":    { "$ref": "#/definitions/InstancesType" },
+        "maxInstances": { "$ref": "#/definitions/MaxInstancesType" }
       },
       "additionalProperties": false
     },

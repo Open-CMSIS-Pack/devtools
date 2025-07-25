@@ -131,6 +131,9 @@ void ProjMgrCbuild::SetComponentsNode(YAML::Node node, const ContextItem* contex
     if (component.item->instances > 1) {
       SetNodeValue(componentNode[YAML_INSTANCES], to_string(component.item->instances));
     }
+    if (rteComponent->HasMaxInstances()) {
+      SetNodeValue(componentNode[YAML_MAX_INSTANCES], to_string(rteComponent->GetMaxInstances()));
+    }
     SetNodeValue(componentNode[YAML_CONDITION], rteComponent->GetConditionID());
     SetNodeValue(componentNode[YAML_FROM_PACK], rteComponent->GetPackageID());
     SetNodeValue(componentNode[YAML_SELECTED_BY], componentItem->component);
