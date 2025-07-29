@@ -163,7 +163,6 @@ RpcArgs::Device RpcDataCollector::FromRteDevice( RteDevice* rteDevice, bool bInc
   d.pack = rteDevice->GetPackageID();
   if(bIncludeProperties) {
     string description;
-    auto descr = rteDevice->GetAllEffectiveProperties("description");
     for(auto descr : rteDevice->GetAllEffectiveProperties("description")) {
       description += descr->GetText() + "\n";
     }
