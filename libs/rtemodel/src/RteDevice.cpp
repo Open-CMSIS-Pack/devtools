@@ -19,6 +19,8 @@
 
 #include "XMLTree.h"
 
+#include <algorithm>
+
 using namespace std;
 
 static const list<RteDeviceProperty*> EMPTY_PROPERTY_LIST;
@@ -813,6 +815,23 @@ RteDeviceProperty* RteDeviceItem::GetSingleEffectiveProperty(const string& tag, 
   return nullptr;
 }
 
+std::list<RteDeviceProperty*> RteDeviceItem::GetAllEffectiveProperties(const std::string& tag)
+{
+  // Make a copy, simpler to merge with potential processor specific memories
+  list<RteDeviceProperty*> properties = GetEffectiveProperties(tag, RteUtils::EMPTY_STRING);
+  // Iterate over processors
+  for(auto [pname, _] : GetProcessors()) {
+    // Collect processor - unique memories
+    const list<RteDeviceProperty*>& procProps = GetEffectiveProperties(tag, pname);
+    for(auto p : procProps) {
+      if(std::find(properties.begin(), properties.end(), p) == properties.end()) {
+        properties.push_back(p);
+      }
+    }
+  }
+  return properties;
+}
+
 
 void RteDeviceItem::GetEffectiveFilterAttributes(const string& pName, XmlItem& attributes)
 {
@@ -1175,9 +1194,6 @@ string RteDeviceItemAggregate::GetSummaryString() const
   list<RteDeviceProperty*> processors;
   item->GetEffectiveProcessors(processors);
 
-  // Make a copy, simpler to merge with potential processor specific memories
-  list<RteDeviceProperty*> mems = item->GetEffectiveProperties("memory", RteUtils::EMPTY_STRING);
-
   // Iterate over processors
   for (auto it = processors.begin(); it != processors.end(); ++it) {
     procProperties = *it;
@@ -1205,39 +1221,21 @@ string RteDeviceItemAggregate::GetSummaryString() const
       }
       summary += GetScaledClockFrequency(dclock);
     }
-
-    // Collect unique memory attributes
-    const list<RteDeviceProperty*>& procMems = item->GetEffectiveProperties("memory", procProperties->GetAttribute("Pname"));
-    list<RteDeviceProperty*> addMems;
-    for (auto procMemIt = procMems.begin(); procMemIt != procMems.end(); ++procMemIt) {
-      auto memsIt = mems.begin();
-      for (; memsIt != mems.end(); ++memsIt) {
-        if ((*memsIt) == (*procMemIt)) {
-          break;
-        }
-      }
-      if (memsIt == mems.end()) {
-        addMems.push_back(*procMemIt);
-      }
-    }
-
-    if (!addMems.empty()) {
-      mems.insert(mems.end(), addMems.begin(), addMems.end());
-    }
   }
 
   // Memory (RAM/ROM)
-  unsigned int ramSize = 0, romSize = 0;
-
+  unsigned long long ramSize = 0, romSize = 0;
+  // Get all memory properties
+  list<RteDeviceProperty*> mems = item->GetAllEffectiveProperties("memory");
   for (auto memsIt = mems.begin(); memsIt != mems.end(); ++memsIt) {
     RteDeviceMemory* mem = dynamic_cast<RteDeviceMemory*>(*memsIt);
     if (!mem) {
       continue;
     }
     if (mem->IsWriteAccess()) {
-      ramSize += mem->GetAttributeAsUnsigned("size");
+      ramSize += mem->GetAttributeAsULL("size");
     } else if (mem->IsReadAccess()) {
-      romSize += mem->GetAttributeAsUnsigned("size");
+      romSize += mem->GetAttributeAsULL("size");
     }
   }
 
@@ -1258,24 +1256,24 @@ string RteDeviceItemAggregate::GetSummaryString() const
   return summary;
 }
 
-string RteDeviceItemAggregate::GetMemorySizeString(unsigned int size)
+string RteDeviceItemAggregate::GetMemorySizeString(unsigned long long size)
 {
   if (size == 0) {
     return RteUtils::EMPTY_STRING;
   }
 
   if (size < 1024) {
-    return (to_string((unsigned long long)size) + " Byte");
+    return (to_string(size) + " Byte");
   }
 
   size >>= 10; // Scale to kByte
   if (size < 1024 || size % 1024) {
     // Less than a MByte or division with rest => show kByte
-    return (to_string((unsigned long long)size) + " kB");
+    return (to_string(size) + " KiB");
   }
 
   size >>= 10; // Scale to MByte
-  return (to_string((unsigned long long)size) + " MB");
+  return (to_string(size) + " MiB");
 }
 
 string RteDeviceItemAggregate::GetScaledClockFrequency(const string& dclock)

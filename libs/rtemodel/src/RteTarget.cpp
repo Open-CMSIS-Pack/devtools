@@ -1750,26 +1750,13 @@ std::string RteTarget::GetRegionsHeader() const
   return GetDeviceFolder() + "/regions_" + filename + ".h";
 }
 
-std::pair<std::string, std::string> RteTarget::GetAccessAttributes(RteItem* mem) const
-{
-  return {
-    string(mem->IsReadAccess() ? "r" : "") +
-          (mem->IsWriteAccess() ? "w" : "") +
-          (mem->IsExecuteAccess() ? "x" : ""),
-    string(mem->IsPeripheralAccess() ? "p" : "") +
-          (mem->IsSecureAccess() ? "s" : "") +
-          (mem->IsNonSecureAccess() ? "n" : "") +
-          (mem->IsCallableAccess() ? "c" : "")
-  };
-}
-
 std::string RteTarget::GenerateMemoryRegionContent(const std::vector<RteItem*> memVec, const std::string& id, const std::string& dfp) const
 {
   string pack, access, name, start, size;
   bool unused = memVec.empty();
   if (!unused) {
     pack = memVec.front()->GetPackageID() == dfp ? "DFP" : "BSP";
-    access = GetAccessAttributes(memVec.front()).first;
+    access = memVec.front()->GetAccessPermissions();
     for (const auto& mem : memVec) {
       name += (mem == memVec.front() ? "" : "+") + mem->GetName();
     }
@@ -1860,7 +1847,7 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
         } else {
           // search contiguous memory region (same pack, same access)
           if ((mem->GetPackageID() == alloc.back()->GetPackageID()) &&
-            GetAccessAttributes(mem) == GetAccessAttributes(alloc.back()) &&
+            mem->GetAccessAttributes() == alloc.back()->GetAccessAttributes() &&
             stoul(mem->GetAttribute("start"), nullptr, 16) == stoul(alloc.back()->GetAttribute("start"), nullptr, 16) +
             stoul(alloc.back()->GetAttribute("size"), nullptr, 16)) {
             alloc.push_back(mem);
@@ -1924,7 +1911,7 @@ std::string RteTarget::GenerateRegionsHeaderContent() const
     }
     for (const auto& mem : notAllocated) {
       oss << "// <i> ";
-      oss << left << setw(10) << GetAccessAttributes(mem).first + (mem->IsWriteAccess() ? " RAM:" : " ROM:");
+      oss << left << setw(10) << mem->GetAccessPermissions() + (mem->IsWriteAccess() ? " RAM:" : " ROM:");
       oss << left << setw(maxNameLength + 12) << mem->GetName() + " from" + (mem->GetPackageID() == device->GetPackageID() ? " DFP:" : " BSP:");
       oss << "BASE: " << mem->GetAttribute("start") << "  SIZE: " << mem->GetAttribute("size");
       oss << (mem->GetProcessorName().empty() ? "" : "  Pname: " + mem->GetProcessorName()) << RteUtils::LF_STRING;

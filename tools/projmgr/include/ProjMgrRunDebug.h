@@ -56,7 +56,7 @@ struct FilesType {
   std::string info;
   std::string type;
   std::string load;
-  std::string offset;  
+  std::string offset;
   std::string pname;
 };
 
@@ -217,7 +217,6 @@ protected:
     const RteItem* item, const std::string pname);
   void AddGeneratedImage(const ContextItem* context, const std::string& filename, const std::string& type, const std::string& load);
   void AddGeneratedImages(const ContextItem* context);
-  const std::string GetAccessAttributes(const RteItem* mem);
   void SetAccessPorts(std::vector<AccessPortType>& parent, const std::map<unsigned int,
     std::vector<AccessPortType>>& childrenMap);
   void SetProtNodes(const RteDeviceProperty* item, AccessPortType& ap);

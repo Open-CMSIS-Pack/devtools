@@ -762,7 +762,31 @@ string RteItem::GetDocFile() const
   return EMPTY_STRING;
 }
 
-bool RteItem::IsReadAccess()
+
+string RteItem::GetAccessPermissions() const
+{
+  string access = GetAccess();
+  if (access.empty()) {
+    access = string(IsReadAccess() ? "r" : "") + (IsWriteAccess() ? "w" : "") + (IsExecuteAccess() ? "x" : "");
+  }
+  return access;
+}
+
+std::pair<std::string, std::string> RteItem::GetAccessAttributes() const
+{
+  return {
+    string(IsReadAccess() ? "r" : "") +
+          (IsWriteAccess() ? "w" : "") +
+          (IsExecuteAccess() ? "x" : ""),
+    string(IsPeripheralAccess() ? "p" : "") +
+          (IsSecureAccess() ? "s" : "") +
+          (IsNonSecureAccess() ? "n" : "") +
+          (IsCallableAccess() ? "c" : "")
+  };
+}
+
+
+bool RteItem::IsReadAccess() const
 {
   if (HasAttribute("id")) {
     return true;
@@ -771,7 +795,7 @@ bool RteItem::IsReadAccess()
   return access.empty() || access.find('r') != string::npos;
 }
 
-bool RteItem::IsWriteAccess()
+bool RteItem::IsWriteAccess() const
 {
   const string& id = GetAttribute("id");
   if (!id.empty()) {
@@ -781,7 +805,7 @@ bool RteItem::IsWriteAccess()
   return access.find('w') != string::npos;
 }
 
-bool RteItem::IsExecuteAccess()
+bool RteItem::IsExecuteAccess() const
 {
   const string& id = GetAttribute("id");
   if (!id.empty()) {
@@ -791,7 +815,7 @@ bool RteItem::IsExecuteAccess()
   return access.find('x') != string::npos;
 }
 
-bool RteItem::IsSecureAccess()
+bool RteItem::IsSecureAccess() const
 {
   if (HasAttribute("id")) {
     return true;
@@ -799,7 +823,7 @@ bool RteItem::IsSecureAccess()
   const string& access = GetAccess();
   return access.find('s') != string::npos && access.find('n') == string::npos;
 }
-bool RteItem::IsNonSecureAccess()
+bool RteItem::IsNonSecureAccess() const
 {
   if (HasAttribute("id")) {
     return false;
@@ -808,7 +832,7 @@ bool RteItem::IsNonSecureAccess()
   return access.find('n') != string::npos && access.find('s') == string::npos;
 }
 
-bool RteItem::IsCallableAccess()
+bool RteItem::IsCallableAccess() const
 {
   if (HasAttribute("id")) {
     return false;
@@ -817,7 +841,7 @@ bool RteItem::IsCallableAccess()
   return access.find('c') != string::npos;
 }
 
-bool RteItem::IsPeripheralAccess()
+bool RteItem::IsPeripheralAccess() const
 {
   if (HasAttribute("id")) {
     return false;

@@ -750,41 +750,53 @@ public:
    * @return value of memory attribute "access"
   */
   virtual const std::string& GetAccess() const { return GetAttribute("access"); }
+
+  /**
+   * @brief return a string of memory access permissions
+   * @return value of memory attribute "access" or construct it
+   */
+  virtual std::string GetAccessPermissions() const;
+
+  /**
+   * @brief return a string of memory access attributes permissions
+   * @return pair of strings with access permissions (rwx) and attributes (psnc)
+   */
+  virtual std::pair<std::string, std::string> GetAccessAttributes() const;
   /**
    * @brief check for memory read access
    * @return true if read access specified
   */
-  virtual bool IsReadAccess();
+  virtual bool IsReadAccess() const;
   /**
    * @brief check for memory write access
    * @return true if write access specified
   */
-  virtual bool IsWriteAccess();
+  virtual bool IsWriteAccess() const;
   /**
    * @brief check for memory executable access
    * @return true if executable access specified
   */
-  virtual bool IsExecuteAccess();
+  virtual bool IsExecuteAccess() const;
   /**
    * @brief check for memory secure access
    * @return true if secure access specified
   */
-  virtual bool IsSecureAccess();
+  virtual bool IsSecureAccess() const;
   /**
    * @brief check for memory non-secure access
    * @return true if non-secure access specified
   */
-  virtual bool IsNonSecureAccess();
+  virtual bool IsNonSecureAccess() const;
   /**
    * @brief check for memory callable access
    * @return true if callable access specified
   */
-  virtual bool IsCallableAccess();
+  virtual bool IsCallableAccess() const;
   /**
    * @brief check for memory peripheral area
    * @return true if memory peripheral area specified
   */
-  virtual bool IsPeripheralAccess();
+  virtual bool IsPeripheralAccess() const;
 
   /**
    * @brief get RteCondition associated with the item

@@ -96,14 +96,14 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   // if not found, use ramstart/size from other algorithm in DFP
   RamType defaultRam;
   for (const auto& [memory, _] : memories) {
-    if (memory->GetAttributeAsBool("default") && GetAccessAttributes(memory).find("rwx") == 0) {
+    if (memory->GetAttributeAsBool("default") && memory->GetAccessPermissions().find("rwx") == 0) {
       defaultRam.start = memory->GetAttributeAsULL("start");
       defaultRam.size = memory->GetAttributeAsULL("size");
       defaultRam.pname = memory->GetProcessorName();
       break;
     }
   }
-  if (defaultRam.size == 0) {    
+  if (defaultRam.size == 0) {
     for (const auto& [algorithm, _] : algorithms) {
       if (algorithm->HasAttribute("RAMsize")) {
         defaultRam.start = algorithm->GetAttributeAsULL("RAMstart");
@@ -150,7 +150,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
       if (style != "Keil" && style != "CMSIS") {
         continue;
       }
-    }  
+    }
     AlgorithmType item;
     item.algorithm = algorithm->GetOriginalAbsolutePath();
     item.start = algorithm->GetAttributeAsULL("start");
@@ -171,7 +171,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   for (const auto& [memory, _] : memories) {
     MemoryType item;
     item.name = memory->GetName();
-    item.access = GetAccessAttributes(memory);
+    item.access = memory->GetAccessPermissions();
     item.alias = memory->GetAlias();
     item.start = memory->GetAttributeAsULL("start");
     item.size = memory->GetAttributeAsULL("size");
@@ -615,16 +615,6 @@ void ProjMgrRunDebug::PushBackUniquely(vector<pair<const RteItem*, vector<string
     }
   }
   vec.push_back({ item, { pname } });
-}
-
-const string ProjMgrRunDebug::GetAccessAttributes(const RteItem* mem)
-{
-  string access = mem->GetAccess();
-  if (access.empty()) {
-    RteItem m = *mem;
-    access = string(m.IsReadAccess() ? "r" : "") + (m.IsWriteAccess() ? "w" : "") + (m.IsExecuteAccess() ? "x" : "");
-  }
-  return access;
 }
 
 bool ProjMgrRunDebug::GetDebugAdapter(const string& name, const DebugAdaptersItem& adapters, DebugAdapterItem& match) {
