@@ -596,7 +596,6 @@ protected:
   void FilterComponents();
   std::string GenerateRegionsHeaderContent() const;
   std::string GenerateMemoryRegionContent(const std::vector<RteItem*> memVec, const std::string& id, const std::string& dfp) const;
-  std::pair<std::string, std::string> GetAccessAttributes(RteItem* mem) const;
   bool GenerateRTEComponentsH();
   bool GenerateRteHeaderFile(const std::string& headerName, const std::string& content,
                               bool bRegionsHeader = false, const std::string& directory = EMPTY_STRING);

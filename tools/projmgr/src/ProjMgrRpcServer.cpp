@@ -84,6 +84,10 @@ public:
   RpcArgs::SuccessResult LoadSolution(const string& solution) override;
   RpcArgs::UsedItems GetUsedItems(const string& context) override;
   RpcArgs::PacksInfo GetPacksInfo(const string& context) override;
+  RpcArgs::DeviceList GetDeviceList(const string& context, const string& namePattern, const string& vendor) override;
+  RpcArgs::DeviceInfo GetDeviceInfo(const string& id) override;
+  RpcArgs::BoardList GetBoardList(const string& context, const string& namePattern, const string& vendor) override;
+  RpcArgs::BoardInfo GetBoardInfo(const string& id) override;
   RpcArgs::CtRoot GetComponentsTree(const string& context, const bool& all) override;
   RpcArgs::SuccessResult SelectComponent(const string& context, const string& id, const int& count, const RpcArgs::Options& options) override;
   RpcArgs::SuccessResult SelectVariant(const string& context, const string& aggregateId, const string& variantName) override;
@@ -109,7 +113,6 @@ protected:
   ProjMgrRpcServer& m_server;
   ProjMgr& m_manager;
   ProjMgrWorker& m_worker;
-  ContextItem m_globalContext;
   bool m_packsLoaded = false;
   bool m_solutionLoaded = false;
   bool m_bUseAllPacks = false;
@@ -226,12 +229,38 @@ RpcArgs::SuccessResult RpcHandler::Resolve(const string& context) {
   return result;
 }
 
-RpcArgs::UsedItems RpcHandler::GetUsedItems(const string& context) {
-  RpcArgs::UsedItems usedItems;
-  usedItems.success = true;
-  RpcDataCollector dc(GetActiveTarget(context));
-  dc.CollectUsedItems(usedItems);
-  return usedItems;
+RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context) {
+  const auto contextItem = GetContext(context);
+  map<string, vector<string>> packRefs;
+  for (const auto& packItem : contextItem.packRequirements) {
+    if (!packItem.origin.empty()) {
+      const auto packId = RtePackage::ComposePackageID(packItem.pack.vendor, packItem.pack.name, packItem.pack.version);
+      CollectionUtils::PushBackUniquely(packRefs[packId], packItem.origin);
+    }
+  }
+  RpcArgs::PacksInfo packsInfo;
+  for (auto& [pack, packItem] : contextItem.rteActiveTarget->GetFilteredModel()->GetPackages()) {
+    RpcArgs::Pack p;
+    p.id = packItem->GetPackageID(true);
+    const auto& description = packItem->GetDescription();
+    if (!description.empty()) {
+      p.description = description;
+    }
+    string overview = packItem->GetChildAttribute("description", "overview");
+    if (!overview.empty()) {
+      RteFsUtils::NormalizePath(overview, packItem->GetAbsolutePackagePath());
+      p.overview = overview;
+    }
+    if (contextItem.packages.find(p.id) != contextItem.packages.end()) {
+      p.used = true;
+      if (packRefs.find(p.id) != packRefs.end()) {
+        p.references = packRefs.at(p.id);
+      }
+    }
+    packsInfo.packs.push_back(p);
+  }
+  packsInfo.success = true;
+  return packsInfo;
 }
 
 RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
@@ -265,42 +294,6 @@ RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution) {
     result.message = "failed to load and process solution " + csolutionFile;
   }
   return result;
-}
-
-RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context) {
-  const auto contextItem = GetContext(context);
-
-  map<string, vector<string>> packRefs;
-  for (const auto& packItem : contextItem.packRequirements) {
-    if (!packItem.origin.empty()) {
-      const auto packId = RtePackage::ComposePackageID(packItem.pack.vendor, packItem.pack.name, packItem.pack.version);
-      CollectionUtils::PushBackUniquely(packRefs[packId], packItem.origin);
-    }
-  }
-
-  RpcArgs::PacksInfo packsInfo;
-  for (auto& [pack, packItem] : contextItem.rteActiveTarget->GetFilteredModel()->GetPackages()) {
-    RpcArgs::Pack p;
-    p.id = packItem->GetPackageID(true);
-    const auto& description = packItem->GetDescription();
-    if (!description.empty()) {
-      p.description = description;
-    }
-    string overview = packItem->GetChildAttribute("description", "overview");
-    if (!overview.empty()) {
-      RteFsUtils::NormalizePath(overview, packItem->GetAbsolutePackagePath());
-      p.overview = overview;
-    }
-    if (contextItem.packages.find(p.id) != contextItem.packages.end()) {
-      p.used = true;
-      if (packRefs.find(p.id) != packRefs.end()) {
-        p.references = packRefs.at(p.id);
-      }
-    }
-    packsInfo.packs.push_back(p);
-  }
-  packsInfo.success = true;
-  return packsInfo;
 }
 
 void RpcHandler::StoreSelectedComponents(RteTarget* rteTarget, map<RteComponent*, int>& selectedComponents)
@@ -356,6 +349,72 @@ void RpcHandler::UpdateFilter(const string& context, RteTarget* rteTarget, bool 
   }
 }
 
+RpcArgs::UsedItems RpcHandler::GetUsedItems(const string& context) {
+  RpcArgs::UsedItems usedItems;
+  usedItems.success = true;
+  RpcDataCollector dc(GetActiveTarget(context));
+  dc.CollectUsedItems(usedItems);
+  return usedItems;
+}
+
+RpcArgs::DeviceList RpcHandler::GetDeviceList(const string& context, const string& namePattern, const string& vendor)
+{
+  RpcArgs::DeviceList deviceList{{false}};
+  if (!m_packsLoaded) {
+    deviceList.message = "Packs must be loaded before accessing device info";
+  } else {
+    RteTarget* rteTarget = context.empty() ? nullptr : GetActiveTarget(context);
+    RteModel* rteModel = rteTarget ? rteTarget->GetFilteredModel() : ProjMgrKernel::Get()->GetGlobalModel();
+    RpcDataCollector dc(rteTarget, rteModel);
+    dc.CollectDeviceList(deviceList, namePattern, vendor);
+    deviceList.success = true;
+  }
+  return deviceList;
+}
+
+RpcArgs::DeviceInfo RpcHandler::GetDeviceInfo(const string& id)
+{
+  RpcArgs::DeviceInfo deviceInfo{{false}};
+  if (!m_packsLoaded) {
+    deviceInfo.message = "Packs must be loaded before accessing device info";
+  } else {
+    RpcDataCollector dc(nullptr, ProjMgrKernel::Get()->GetGlobalModel());
+    dc.CollectDeviceInfo(deviceInfo, id);
+  }
+  return deviceInfo;
+}
+
+RpcArgs::BoardList RpcHandler::GetBoardList(const string& context, const string& namePattern, const string& vendor)
+{
+  RpcArgs::BoardList boardList{{false}};
+  if (!m_packsLoaded) {
+    boardList.message = "Packs must be loaded before accessing board info";
+  } else {
+    RteTarget* rteTarget = context.empty() ? nullptr : GetActiveTarget(context);
+    RteModel* rteModel = rteTarget ? rteTarget->GetFilteredModel() : ProjMgrKernel::Get()->GetGlobalModel();
+    RpcDataCollector dc(rteTarget, rteModel);
+    dc.CollectBoardList(boardList, namePattern, vendor);
+    boardList.success = true;
+  }
+  return boardList;
+
+}
+
+RpcArgs::BoardInfo RpcHandler::GetBoardInfo(const string& id)
+{
+  RpcArgs::BoardInfo boardInfo{{false}};
+  if (!m_packsLoaded) {
+    boardInfo.message = "Packs must be loaded before accessing board info";
+  } else {
+    RpcDataCollector dc(nullptr, ProjMgrKernel::Get()->GetGlobalModel());
+    dc.CollectBoardInfo(boardInfo, id);
+  }
+  return boardInfo;
+}
+
+
+
+
 RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool& all) {
   RteTarget* rteTarget = GetActiveTarget(context);
   UpdateFilter(context, rteTarget, all);
@@ -366,6 +425,7 @@ RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool&
   ctRoot.success = true;
   return ctRoot;
 }
+
 RpcArgs::SuccessResult RpcHandler::SelectComponent(const string& context, const string& id, const int& count, const RpcArgs::Options& options) {
 // first try full component ID
   RteTarget* activeTarget = GetActiveTarget(context);

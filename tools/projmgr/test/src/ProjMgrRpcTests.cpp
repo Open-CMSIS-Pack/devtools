@@ -43,22 +43,26 @@ string ProjMgrRpcTests::FormatRequest(const int id, const string& method, const 
 
 string ProjMgrRpcTests::CreateLoadRequests(const string& solution, const vector<string>& contextList)
 {
-  auto csolutionPath = testinput_folder + solution;
-  if(!contextList.empty()) {
-    YAML::Node cbuildset;
-    cbuildset["cbuild-set"]["generated-by"] = "ProjMrgUnitTests";
-    for(const auto& context : contextList) {
-      cbuildset["cbuild-set"]["contexts"].push_back(map<string, string>{ { "context", context } });
-    }
-    auto cbuildsetPath = csolutionPath;
-    RteUtils::ReplaceAll(cbuildsetPath, ".csolution.yml", ".cbuild-set.yml");
+  string loadSolutionRequest;
+  if(!solution.empty()) {
+    auto csolutionPath = testinput_folder + solution;
+    loadSolutionRequest = FormatRequest(2, "LoadSolution", json({{ "solution", csolutionPath }}));
+    if(!contextList.empty()) {
+      YAML::Node cbuildset;
+      cbuildset["cbuild-set"]["generated-by"] = "ProjMrgUnitTests";
+      for(const auto& context : contextList) {
+        cbuildset["cbuild-set"]["contexts"].push_back(map<string, string>{ { "context", context } });
+      }
+      auto cbuildsetPath = csolutionPath;
+      RteUtils::ReplaceAll(cbuildsetPath, ".csolution.yml", ".cbuild-set.yml");
 
-    ofstream cbuildsetFile;
-    cbuildsetFile.open(cbuildsetPath, fstream::trunc);
-    cbuildsetFile << cbuildset << std::endl;
-    cbuildsetFile.close();
+      ofstream cbuildsetFile;
+      cbuildsetFile.open(cbuildsetPath, fstream::trunc);
+      cbuildsetFile << cbuildset << std::endl;
+      cbuildsetFile.close();
+    }
   }
-  return FormatRequest(1, "LoadPacks") + FormatRequest(2, "LoadSolution", json({ { "solution", csolutionPath } }));
+  return FormatRequest(1, "LoadPacks") + loadSolutionRequest;
 }
 
 vector<json> ProjMgrRpcTests::RunRpcMethods(const string& strIn) {
@@ -131,7 +135,7 @@ TEST_F(ProjMgrRpcTests, RpcLoadUndefinedSolution) {
 }
 
 TEST_F(ProjMgrRpcTests, RpcLoadNotSolution) {
-    const auto& requests = CreateLoadRequests("/TestRpc/undefined.yml");
+  const auto& requests = CreateLoadRequests("/TestRpc/undefined.yml");
   const auto& responses = RunRpcMethods(requests);
   EXPECT_TRUE(responses[0]["result"]["success"]);
   EXPECT_FALSE(responses[1]["result"]["success"]);
@@ -148,6 +152,275 @@ TEST_F(ProjMgrRpcTests, RpcLoadSolutionNoPacks) {
   EXPECT_EQ(msg, "Packs must be loaded before loading solution");
 }
 
+TEST_F(ProjMgrRpcTests, RpcDeviceListNoPacks) {
+  const auto requests = FormatRequest(1, "GetDeviceList", json({{"context", ""},{ "namePattern", ""}, {"vendor", ""}})) +
+                        FormatRequest(2, "GetDeviceInfo", json({{ "id", "ARM::RteTest_ARMCM0"}}));
+  const auto& responses = RunRpcMethods(requests);
+  EXPECT_FALSE(responses[0]["result"]["success"]);
+  string msg = responses[0]["result"]["message"];
+  EXPECT_EQ(msg, "Packs must be loaded before accessing device info");
+  EXPECT_FALSE(responses[1]["result"]["success"]);
+  msg = responses[1]["result"]["message"];
+  EXPECT_EQ(msg, "Packs must be loaded before accessing device info");
+}
+
+TEST_F(ProjMgrRpcTests, RpcDeviceListNoContext) {
+  auto requests = CreateLoadRequests(""); // no solution, no context
+  // all devices
+  requests += FormatRequest(2, "GetDeviceList", json({{"context", ""},{ "namePattern", ""}, {"vendor", ""}}));
+  // filtered devices
+  requests += FormatRequest(3, "GetDeviceList", json({{"context", ""},{ "namePattern", "*CM0"}, {"vendor", "ARM"}}));
+  // filtered devices wrong vendor
+  requests += FormatRequest(4, "GetDeviceList", json({{"context", ""},{ "namePattern", ""}, {"vendor", "foo"}}));
+
+  const auto responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+  auto deviceList = responses[1]["result"]["devices"];
+  EXPECT_EQ(deviceList.size(), 7);
+  auto d0 = deviceList[0];
+  EXPECT_EQ(d0["id"], "ARM::RteTest_ARMCM0");
+  EXPECT_EQ(d0["family"], "RteTest ARM Cortex M");
+  EXPECT_EQ(d0["subFamily"], "RteTest ARM Cortex M0");
+  EXPECT_EQ(d0["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_FALSE(d0.contains("description"));
+  EXPECT_FALSE(d0.contains("processors"));
+  EXPECT_FALSE(d0.contains("memories"));
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  deviceList = responses[2]["result"]["devices"];
+  EXPECT_EQ(deviceList.size(), 2);
+  auto d1 = deviceList[1];
+  EXPECT_EQ(d1["id"], "ARM::RteTestGen_ARMCM0");
+  EXPECT_EQ(d1["family"], "RteTestGen ARM Cortex M");
+  EXPECT_EQ(d1["subFamily"], "RteTestGen ARM Cortex M0");
+  EXPECT_EQ(d1["pack"], "ARM::RteTestGenerator@0.1.0");
+
+  EXPECT_TRUE(responses[3]["result"]["success"]);
+  deviceList = responses[3]["result"]["devices"];
+  EXPECT_EQ(deviceList.size(), 0);
+}
+
+TEST_F(ProjMgrRpcTests, RpcDeviceListContext) {
+  string context = "selectable+CM0";
+  vector<string> contextList = {
+    context
+  };
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
+  // all devices
+  requests += FormatRequest(3, "GetDeviceList", json({{"context", "selectable+CM0"},{ "namePattern", ""}, {"vendor", ""}}));
+  requests += FormatRequest(4, "GetDeviceList", json({{"context", "selectable+CM0"},{ "namePattern", "*Dual*"}, {"vendor", ""}}));
+  const auto responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto deviceList = responses[2]["result"]["devices"];
+  EXPECT_EQ(deviceList.size(), 6);
+  auto d0 = deviceList[0];
+  EXPECT_EQ(d0["id"], "ARM::RteTest_ARMCM0");
+
+  EXPECT_TRUE(responses[3]["result"]["success"]);
+  deviceList = responses[3]["result"]["devices"];
+  EXPECT_EQ(deviceList.size(), 1);
+  d0 = deviceList[0];
+  EXPECT_EQ(d0["id"], "ARM::RteTest_ARMCM0_Dual");
+}
+
+TEST_F(ProjMgrRpcTests, RpcDeviceInfo) {
+  auto requests = CreateLoadRequests(""); // no solution, no context
+  // device with name and vendor
+  requests += FormatRequest(2, "GetDeviceInfo", json({{ "id", "ARM::RteTest_ARMCM0_Dual"}}));
+  // device with name, no vendor
+  requests += FormatRequest(3, "GetDeviceInfo", json({{ "id", "RteTest_ARMCM0_Dual"}}));
+  // device with name, wrong vendor
+  requests += FormatRequest(4, "GetDeviceInfo", json({{ "id", "foo::RteTest_ARMCM0"}}));
+  // device with wrong name, no vendor
+  requests += FormatRequest(5, "GetDeviceInfo", json({{ "id", "RteTest_Unknown"}}));
+  //  empty id
+  requests += FormatRequest(6, "GetDeviceInfo", json({{ "id", ""}}));
+  //  only vendor
+  requests += FormatRequest(7, "GetDeviceInfo", json({{ "id", "ARM::"}}));
+
+  const auto responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  EXPECT_FALSE(responses[3]["result"]["success"]);
+  EXPECT_EQ("Device 'foo::RteTest_ARMCM0' not found", responses[3]["result"]["message"]);
+  EXPECT_FALSE(responses[4]["result"]["success"]);
+  EXPECT_EQ("Device 'RteTest_Unknown' not found", responses[4]["result"]["message"]);
+  EXPECT_FALSE(responses[5]["result"]["success"]);
+  EXPECT_EQ("Invalid device ID: ''", responses[5]["result"]["message"]);
+  EXPECT_FALSE(responses[6]["result"]["success"]);
+  EXPECT_EQ("Invalid device ID: 'ARM::'", responses[6]["result"]["message"]);
+
+  auto d1 = responses[1]["result"]["device"];
+  EXPECT_EQ(d1["id"], "ARM::RteTest_ARMCM0_Dual");
+  EXPECT_EQ(d1["family"], "RteTest ARM Cortex M");
+  EXPECT_EQ(d1["subFamily"], "RteTest ARM Cortex M0");
+  EXPECT_EQ(d1["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_TRUE(d1.contains("description"));
+  EXPECT_FALSE(d1["description"].empty());
+  EXPECT_EQ(d1["processors"].size(), 2);
+  auto p0 = d1["processors"][0];
+  EXPECT_EQ(p0["name"], "cm0_core0");
+  EXPECT_EQ(p0["core"], "Cortex-M0");
+  RpcArgs::Processor proc;
+  from_json(p0, proc);
+  EXPECT_TRUE(proc.attributes.has_value());
+  XmlItem attributes(proc.attributes.value());
+  EXPECT_EQ(attributes.GetAttributesString(),
+    "Dclock=10000000 Dcore=Cortex-M0 DcoreVersion=r0p0 Dendian=Configurable Dfpu=NO_FPU Dmpu=NO_MPU Pname=cm0_core0");
+
+  EXPECT_EQ(d1["memories"].size(), 4);
+  auto m0 = d1["memories"][0];
+  EXPECT_EQ(m0["name"], "FLASH_DUAL");
+  EXPECT_EQ(m0["size"], "0x00080000");
+  EXPECT_EQ(m0["access"], "rx");
+
+  d1 = responses[2]["result"]["device"];
+  EXPECT_EQ(d1["id"], "ARM::RteTest_ARMCM0_Dual");
+}
+
+TEST_F(ProjMgrRpcTests, RpcBoardListNoPacks) {
+  const auto requests = FormatRequest(1, "GetBoardList", json({{"context", ""},{ "namePattern", ""}, {"vendor", ""}})) +
+                        FormatRequest(2, "GetBoardInfo", json({{ "id", "ARM::RteTest_ARMCM0"}}));
+  const auto& responses = RunRpcMethods(requests);
+  EXPECT_FALSE(responses[0]["result"]["success"]);
+  string msg = responses[0]["result"]["message"];
+  EXPECT_EQ(msg, "Packs must be loaded before accessing board info");
+  EXPECT_FALSE(responses[1]["result"]["success"]);
+  msg = responses[1]["result"]["message"];
+  EXPECT_EQ(msg, "Packs must be loaded before accessing board info");
+}
+
+TEST_F(ProjMgrRpcTests, RpcBoardListNoContext) {
+  auto requests = CreateLoadRequests(""); // no solution, no context
+  // all boards
+  requests += FormatRequest(2, "GetBoardList", json({{"context", ""},{ "namePattern", ""}, {"vendor", ""}}));
+  // filtered boards
+  requests += FormatRequest(3, "GetBoardList", json({{"context", ""},{ "namePattern", "*CM4*"}, {"vendor", "Keil"}}));
+  // filtered boards wrong vendor
+  requests += FormatRequest(4, "GetBoardList", json({{"context", ""},{ "namePattern", ""}, {"vendor", "foo"}}));
+
+  const auto responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+  auto boardList = responses[1]["result"]["boards"];
+  EXPECT_EQ(boardList.size(), 14);
+  auto b0 = boardList[0];
+  EXPECT_EQ(b0["id"], "Keil::RteTest board listing:Rev.C");
+  EXPECT_EQ(b0["pack"], "ARM::RteTestBoard@0.1.0");
+  EXPECT_FALSE(b0.contains("description"));
+  EXPECT_FALSE(b0.contains("devices"));
+  EXPECT_FALSE(b0.contains("memories"));
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  boardList = responses[2]["result"]["boards"];
+  EXPECT_EQ(boardList.size(), 1);
+  b0 = boardList[0];
+  EXPECT_EQ(b0["id"], "Keil::RteTest CM4 board:Rev.C");
+  EXPECT_EQ(b0["pack"], "ARM::RteTestBoard@0.1.0");
+
+  EXPECT_TRUE(responses[3]["result"]["success"]);
+  boardList = responses[3]["result"]["boards"];
+  EXPECT_EQ(boardList.size(), 0);
+}
+
+TEST_F(ProjMgrRpcTests, RpcBoardListContext) {
+
+ string context = "selectable+CM0";
+  vector<string> contextList = {
+    context
+  };
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
+
+  // all boards
+  requests += FormatRequest(2, "GetBoardList", json({{"context", "selectable+CM0"},{ "namePattern", ""}, {"vendor", ""}}));
+
+  const auto responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto boardList = responses[2]["result"]["boards"];
+  EXPECT_EQ(boardList.size(), 11);
+  auto b0 = boardList[0];
+  EXPECT_EQ(b0["id"], "Keil::RteTest board test revision:Rev1");
+  EXPECT_EQ(b0["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_FALSE(b0.contains("description"));
+  EXPECT_FALSE(b0.contains("devices"));
+  EXPECT_FALSE(b0.contains("memories"));
+}
+
+TEST_F(ProjMgrRpcTests, RpcBoardInfo) {
+  auto requests = CreateLoadRequests(""); // no solution, no context
+  // board with name, vendor and revision
+  requests += FormatRequest(2, "GetBoardInfo", json({{ "id", "Keil::RteTest Test board:1.1.1"}}));
+  // board with name, no vendor
+  requests += FormatRequest(3, "GetBoardInfo", json({{ "id", "RteTest Test board:1.1.1"}}));
+  // board with name, no revision
+  requests += FormatRequest(4, "GetBoardInfo", json({{ "id", "Keil::RteTest Test board"}}));
+  // board with memory
+  requests += FormatRequest(5, "GetBoardInfo", json({{ "id", "RteTest CM4 board:Rev.C" }}));
+  //  no device
+  requests += FormatRequest(6, "GetBoardInfo", json({{ "id", "RteTest NoMCU board"}}));
+  //  only vendor => no ID
+  requests += FormatRequest(7, "GetBoardInfo", json({{ "id", "Keil::"}}));
+
+  const auto responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+
+  auto b1 = responses[1]["result"]["board"];
+  EXPECT_EQ(b1["id"], "Keil::RteTest Test board:1.1.1");
+  EXPECT_EQ(b1["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(b1["description"], "uVision Simulator");
+  auto devices = b1["devices"];
+  EXPECT_EQ(devices.size(), 4);
+  EXPECT_FALSE(b1.contains("memories"));
+  auto d1 = devices[1];
+  EXPECT_EQ(d1["id"], "ARM::RteTest_ARMCM0_Dual");
+  EXPECT_EQ(d1["processors"].size(), 2);
+  EXPECT_EQ(d1["processors"][0]["name"], "cm0_core0");
+
+  auto d2 = devices[2];
+  EXPECT_EQ(d2["id"], "ARM::RteTest_ARMCM4_NOFP");
+  EXPECT_FALSE(d2.contains("processors"));
+
+  auto b2 = responses[2]["result"]["board"];
+  EXPECT_EQ(b2["id"], "Keil::RteTest Test board:1.1.1");
+  EXPECT_EQ(b2["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(b2["description"], "uVision Simulator");
+
+  EXPECT_FALSE(responses[3]["result"]["success"]);
+  EXPECT_EQ(responses[3]["result"]["message"], "Board 'Keil::RteTest Test board' not found");
+
+  auto b4 = responses[4]["result"]["board"];
+  EXPECT_EQ(b4["id"], "Keil::RteTest CM4 board:Rev.C");
+  EXPECT_EQ(b4["pack"], "ARM::RteTestBoard@0.1.0");
+  EXPECT_EQ(b4["description"], "uVision Simulator");
+  EXPECT_TRUE(b4.contains("memories"));
+  EXPECT_EQ(b4["memories"][0]["name"], "BoardFLASH");
+
+  auto b5 = responses[5]["result"]["board"];
+  EXPECT_EQ(b5["id"], "Keil::RteTest NoMCU board");
+  EXPECT_EQ(b5["pack"], "ARM::RteTestBoard@0.1.0");
+  EXPECT_EQ(b5["description"], "No device board");
+  EXPECT_TRUE(b5.contains("memories"));
+  EXPECT_EQ(b5["memories"][1]["name"], "BoardRAM");
+  EXPECT_FALSE(b5.contains("devices"));
+
+  EXPECT_FALSE(responses[6]["result"]["success"]);
+  EXPECT_EQ(responses[6]["result"]["message"], "Invalid board ID: 'Keil::'");
+}
+
+/////////
+// components
+/////////
 TEST_F(ProjMgrRpcTests, RpcLoadSolution_UnknownComponent) {
   const string& csolution = testinput_folder + "/TestRpc/unknown-component.csolution.yml";
   auto requests = CreateLoadRequests("/TestRpc/unknown-component.csolution.yml") +

@@ -12,8 +12,12 @@
 #include "RteProject.h"
 #include "RteTarget.h"
 #include "RteModel.h"
+#include "RteConstants.h"
 
 #include "CollectionUtils.h"
+
+#include <algorithm>
+using namespace std;
 
 using namespace RpcArgs;
 
@@ -32,8 +36,9 @@ T FromRteItem(const string& id, RteItem* rteItem) {
   return e;
 }
 
-RpcDataCollector::RpcDataCollector(RteTarget* t) :
-  m_target(t)
+RpcDataCollector::RpcDataCollector(RteTarget* t, RteModel* m) :
+  m_target(t),
+  m_model(t? t->GetFilteredModel() : m)
 {
 }
 
@@ -148,6 +153,173 @@ void RpcDataCollector::CollectUsedItems(RpcArgs::UsedItems& usedItems) const {
     p.id = id;
     usedItems.packs.push_back(p);
   }
+}
+
+RpcArgs::Device RpcDataCollector::FromRteDevice( RteDevice* rteDevice, bool bIncludeProperties) const {
+  RpcArgs::Device d;
+  d.id = rteDevice->GetVendorName() + RteConstants::SUFFIX_CVENDOR + rteDevice->GetName();
+  d.family = rteDevice->GetEffectiveAttribute("Dfamily");
+  d.subFamily = rteDevice->GetEffectiveAttribute("DsubFamily");
+  d.pack = rteDevice->GetPackageID();
+  if(bIncludeProperties) {
+    string description;
+    auto descr = rteDevice->GetAllEffectiveProperties("description");
+    for(auto descr : rteDevice->GetAllEffectiveProperties("description")) {
+      description += descr->GetText() + "\n";
+    }
+    if(!description.empty()) {
+      d.description = description;
+    }
+    vector<RpcArgs::Processor> processors;
+    for(auto [pname, rteProc] : rteDevice->GetProcessors()) {
+      RpcArgs::Processor p;
+      p.name = pname;
+      p.core = rteProc->GetAttribute("Dcore");
+      p.attributes = rteProc->GetAttributes();
+      processors.push_back(p);
+    }
+    d.processors = processors;
+    auto mems = rteDevice->GetAllEffectiveProperties("memory");
+    vector<RpcArgs::Memory> memories;
+    for(auto rteMem : rteDevice->GetAllEffectiveProperties("memory")) {
+      RpcArgs::Memory m;
+      m.name = rteMem->GetName();
+      m.size = rteMem->GetAttribute("size");
+      m.access = rteMem->GetAccessPermissions();
+      memories.push_back(m);
+    }
+    d.memories = memories;
+  }
+  return d;
+}
+
+RpcArgs::Board RpcDataCollector::FromRteBoard( RteBoard* rteBoard, bool bIncludeProperties) const {
+  RpcArgs::Board b;
+  b.id = rteBoard->GetVendorString() + "::" + rteBoard->GetName();
+  const string& rev = rteBoard->GetRevision();
+  if(!rev.empty()) {
+    b.id += ":" + rev;
+  }
+  b.pack = rteBoard->GetPackageID();
+  if(bIncludeProperties) {
+    b.description = rteBoard->GetDescription();
+    auto imageItem = rteBoard->GetFirstChild("image");
+    if(imageItem) {
+      auto imageFile = imageItem->GetAttribute("small");
+      if(imageFile.empty()) {
+        imageFile = imageItem->GetAttribute("large");
+      }
+      if(!imageFile.empty()) {
+        b.image = rteBoard->GetOriginalAbsolutePath(imageFile);
+      }
+    }
+    Collection<RteItem*> mems;
+    vector<RpcArgs::Memory> memories;
+    for(auto rteMem : rteBoard->GetMemories(mems)) {
+      RpcArgs::Memory m;
+      m.name = rteMem->GetName();
+      m.size = rteMem->GetAttribute("size");
+      m.access = rteMem->GetAccessPermissions();
+      memories.push_back(m);
+    }
+    if(!memories.empty()) {
+      b.memories = memories;
+    }
+    vector<RpcArgs::Device> devices;
+    list<RteDevice*> processedDevices;
+    CollectBoardDevices(devices, rteBoard, true, processedDevices);
+    CollectBoardDevices(devices, rteBoard, false, processedDevices);
+    if(!devices.empty()) {
+      b.devices = devices;
+    }
+  }
+  return b;
+}
+
+void RpcDataCollector::CollectBoardDevices(vector<RpcArgs::Device>& boardDevices, RteBoard* rteBoard,
+  bool bInstalled, list<RteDevice*>& processedDevices) const {
+  list<RteItem*> refDevices;
+  rteBoard->GetDevices(refDevices, !bInstalled, bInstalled);
+  for(auto rteItem : refDevices) {
+    RteDevice* rteDevice = m_model->GetDevice(rteItem->GetDeviceName(), rteItem->GetDeviceVendor());
+    if(rteDevice && find(processedDevices.begin(), processedDevices.end(), rteDevice) == processedDevices.end()) {
+      processedDevices.push_back(rteDevice);
+      boardDevices.push_back(FromRteDevice(rteDevice, bInstalled));
+    }
+  }
+}
+
+
+void RpcDataCollector::CollectDeviceList(RpcArgs::DeviceList& deviceList, const std::string& namePattern, const std::string& vendor) const {
+  list<RteDevice*> devices;
+  if(m_model) {
+    m_model->GetDevices(devices, namePattern, vendor);
+  }
+  for(auto rteDevice : devices) {
+    deviceList.devices.push_back(FromRteDevice(rteDevice, false));
+  }
+}
+
+void RpcDataCollector::CollectDeviceInfo(RpcArgs::DeviceInfo& deviceInfo, const std::string& id) const {
+  string name = RteUtils::StripPrefix(id, RteConstants::SUFFIX_CVENDOR);
+  string vendor = RteUtils::ExtractPrefix(id, RteConstants::SUFFIX_CVENDOR);
+  if(name.empty()) {
+    deviceInfo.success = false;
+    deviceInfo.message = "Invalid device ID: '" + id + "'";
+    return;
+  }
+
+  RteDevice* rteDevice = m_model? m_model->GetDevice(name, vendor) : nullptr;
+  if(rteDevice) {
+    deviceInfo.device = FromRteDevice(rteDevice, true);
+    deviceInfo.success = true;
+  } else {
+    deviceInfo.success = false;
+    deviceInfo.message = "Device '" + id + "' not found";
+    return;
+  }
+  deviceInfo.device = FromRteDevice(rteDevice, true);
+}
+
+void RpcDataCollector::CollectBoardList(RpcArgs::BoardList& boardList, const std::string& namePattern, const std::string& vendor) const {
+  if(!m_model) {
+    return;
+  }
+  auto& boards = m_model->GetBoards();
+  for(auto [name, rteBoard] : boards) {
+    if(vendor.empty() || rteBoard->GetVendorString() == vendor) {
+      if(namePattern.empty() || WildCards::MatchToPattern(name, namePattern)) {
+        boardList.boards.push_back(FromRteBoard(rteBoard, false));
+      }
+    }
+  }
+}
+
+void RpcDataCollector::CollectBoardInfo(RpcArgs::BoardInfo& boardInfo, const std::string& id) const {
+  string displayName = RteUtils::StripPrefix(id, RteConstants::SUFFIX_CVENDOR);
+  string vendor = RteUtils::ExtractPrefix(id, RteConstants::SUFFIX_CVENDOR);
+  string name = RteUtils::GetPrefix(displayName, ':');
+  string revision = RteUtils::GetSuffix(displayName, ':');
+  if(!revision.empty()) {
+    displayName = name + " (" + revision + ")";
+  }
+
+  if(name.empty()) {
+    boardInfo.success = false;
+    boardInfo.message = "Invalid board ID: '" + id + "'";
+    return;
+  }
+
+  RteBoard* rteBoard = m_model? m_model->FindBoard(displayName) : nullptr;
+  if(rteBoard) {
+    boardInfo.board = FromRteBoard(rteBoard, true);
+    boardInfo.success = true;
+  } else {
+    boardInfo.success = false;
+    boardInfo.message = "Board '" + id + "' not found";
+    return;
+  }
+  boardInfo.board = FromRteBoard(rteBoard, true);
 }
 
 

@@ -189,6 +189,7 @@ public:
   static constexpr const char* RTE_SECURE_ONLY = "Secure-only";
   static constexpr const char* RTE_NON_SECURE = "Non-secure";
   static constexpr const char* RTE_TZ_DISABLED = "TZ-disabled";
+  static constexpr const char* RTE_TZ = "TZ";
   static constexpr const char* RTE_NO_TZ = "NO_TZ";
   static constexpr const char* RTE_BTI = "BTI";
   static constexpr const char* RTE_BTI_SIGNRET = "BTI_SIGNRET";

@@ -1054,7 +1054,7 @@ public:
    * @brief get list of all effective properties for given tag and processor name
    * @param tag property tag
    * @param pName processor name
-   * @return list of RteDeviceProperty pointers
+   * @return reference to the list of RteDeviceProperty pointers
   */
   const std::list<RteDeviceProperty*>& GetEffectiveProperties(const std::string& tag, const std::string& pName);
 
@@ -1065,6 +1065,13 @@ public:
    * @return pointer to RteDeviceProperty item if found, nullptr otherwise
   */
   RteDeviceProperty* GetSingleEffectiveProperty(const std::string& tag, const std::string& pName);
+
+  /**
+   * @brief return list of all effective memory properties for all processors
+   * @param tag property tag
+   * @return list of RteDeviceProperty* pointers
+  */
+   std::list<RteDeviceProperty*> GetAllEffectiveProperties(const std::string& tag);
 
   /**
    * @brief get list of immediate RteDeviceItem children
@@ -1429,7 +1436,7 @@ public:
   bool IsDeprecated() const { return m_bDeprecated; }
 
 private:
-  static std::string GetMemorySizeString(unsigned int size);
+  static std::string GetMemorySizeString(unsigned long long size);
   static std::string GetScaledClockFrequency(const std::string& dclock);
 
   std::string m_name;

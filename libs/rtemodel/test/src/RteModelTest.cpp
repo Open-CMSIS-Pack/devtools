@@ -150,13 +150,13 @@ TEST(RteModelTest, LoadPacks) {
   ASSERT_NE(da, nullptr);
   // test deprecated memory attributes: IROM and IRAM
   string summary = da->GetSummaryString();
-  EXPECT_EQ(summary, "ARM Cortex-M3, 10 MHz, 128 kB RAM, 256 kB ROM");
+  EXPECT_EQ(summary, "ARM Cortex-M3, 10 MHz, 128 KiB RAM, 256 KiB ROM");
 
   da = rteModel->GetDeviceAggregate("RteTest_ARMCM4", "ARM:82");
   ASSERT_NE(da, nullptr);
   // test recommended memory attributes: name and access
   summary = da->GetSummaryString();
-  EXPECT_EQ(summary, "ARM Cortex-M4, 10 MHz, 128 kB RAM, 256 kB ROM");
+  EXPECT_EQ(summary, "ARM Cortex-M4, 10 MHz, 128 KiB RAM, 256 KiB ROM");
 
   RteBoard* board = rteModel->FindBoard("RteTest board listing (Rev.C)");
   ASSERT_NE(board, nullptr);
