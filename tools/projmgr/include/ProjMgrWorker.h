@@ -124,6 +124,9 @@ struct BoardItem {
   std::string vendor;
   std::string name;
   std::string revision;
+  bool operator==(const BoardItem& b) const {
+    return name == b.name && revision == b.revision;
+  }
 };
 
 /**
@@ -287,6 +290,7 @@ struct GdbServerItem {
 struct EnvironmentItem {
   std::string load;
   std::string folder;
+  bool operator==(const EnvironmentItem& b) const { return true; }
 };
 
 /**
@@ -315,6 +319,10 @@ struct ExampleItem {
   std::vector<std::string> categories;
   std::vector<std::string> keywords;
   std::string pack;
+  bool operator==(const ExampleItem& e) const {
+    return name == e.name && version == e.version && description == e.description &&
+      boards == e.boards && environments == e.environments;
+  }
 };
 
 /**
@@ -428,9 +436,9 @@ struct ContextItem {
   RteProject* rteActiveProject = nullptr;
   RteTarget* rteActiveTarget = nullptr;
   RteModel* rteFilteredModel = nullptr;
-  RteItem* rteComponents;
-  RteDeviceItem* rteDevice;
-  RteBoard* rteBoard;
+  RteItem* rteComponents = nullptr;
+  RteDeviceItem* rteDevice = nullptr;
+  RteBoard* rteBoard = nullptr;
   TranslationControl controls;
   TargetItem targetItem;
   DirectoriesItem directories;
@@ -525,6 +533,7 @@ enum class BoardOrDevice {
   Both,
   None,
   SkipDevice,
+  SkipProcessor,
 };
 
 /**
@@ -813,6 +822,13 @@ public:
   bool InitializeModel(void);
 
   /**
+   * @brief initialize rte target for a given context
+   * @param context reference
+   * @return true if executed successfully
+  */
+  bool InitializeTarget(ContextItem& context);
+
+  /**
    * @brief load all relevant packs
    * @return true if executed successfully
   */
@@ -995,6 +1011,29 @@ public:
   void AddImageOnlyContext();
 
   /**
+   * @brief process device and/or board
+   * @param context item
+   * @param scope: process board, device or both
+   * @return true if there is no error
+  */
+  bool ProcessDevice(ContextItem& context, BoardOrDevice process = BoardOrDevice::Both);
+
+  /**
+   * @brief collect examples
+   * @param context item
+   * @param environments filter 
+   * @return vector of example items
+  */
+  std::vector<ExampleItem> CollectExamples(const ContextItem& context, const StrVec& filter);
+
+  /**
+   * @brief collect templates
+   * @param context item
+   * @return vector of template items
+  */
+  std::vector<TemplateItem> CollectTemplates(const ContextItem& context);
+
+  /**
    * @brief clear worker members for reloading a solution
    * @return true if there is no error
   */
@@ -1073,11 +1112,9 @@ protected:
   bool CheckContextFilters(const TypeFilter& typeFilter, const ContextItem& context);
   bool GetTypeContent(ContextItem& context);
   bool GetProjectSetup(ContextItem& context);
-  bool InitializeTarget(ContextItem& context);
   bool ProcessPrecedences(ContextItem& context, BoardOrDevice process = BoardOrDevice::None, bool rerun = false);
   bool ProcessPrecedence(StringCollection& item);
   bool ProcessCompilerPrecedence(StringCollection& item, bool acceptRedefinition = false);
-  bool ProcessDevice(ContextItem& context, BoardOrDevice process = BoardOrDevice::Both);
   bool ProcessDevicePrecedence(StringCollection& item);
   bool ProcessBoardPrecedence(StringCollection& item);
   bool ProcessToolchain(ContextItem& context);
@@ -1171,10 +1208,10 @@ protected:
   bool IsCreatedByExecute(const std::string file, const std::string dir);
   bool CollectAllRequiredPdscFiles();
   bool ParseTargetSetContextSelection();
-  std::vector<ExampleItem> CollectExamples(ContextItem& context);
-  std::vector<RteBoard*> GetCompatibleBoards(ContextItem& context);
+  std::vector<RteBoard*> GetCompatibleBoards(const ContextItem& context);
   bool IsBoardListCompatible(const ContextItem& context, const std::vector<RteBoard*> compatibleBoards, const Collection<RteItem*>& boards);
-  std::vector<TemplateItem> CollectTemplates(ContextItem& context);
+  bool IsEnvironmentCompatible(const std::string& environment, const StrVec& filter);
+  bool HasCompatibleEnvironment(const Collection<RteItem*>& environments, const StrVec& filter);
 };
 
 #endif  // PROJMGRWORKER_H

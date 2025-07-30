@@ -631,5 +631,72 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   EXPECT_TRUE(components[1]["options"]["explicitVendor"]);
 }
 
+TEST_F(ProjMgrRpcTests, RpcGetDraftProjects) {
+  // filter 'board'
+  auto requests =
+    FormatRequest(1, "LoadPacks") +
+    FormatRequest(2, "GetDraftProjects", json{{ "filter", {{ "board", "RteTest Dummy board" }}}});
+  auto responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+  auto examples = responses[1]["result"]["examples"];
+  auto templates = responses[1]["result"]["templates"];
+  EXPECT_EQ(2, examples.size());
+  EXPECT_EQ(1, templates.size());
+  EXPECT_EQ(examples[0]["name"], "PreInclude");
+  EXPECT_EQ(examples[1]["name"], "PreIncludeEnvFolder");
+  EXPECT_EQ(templates[0]["name"], "Board3");
+
+  // filter 'device'
+  requests =
+    FormatRequest(1, "LoadPacks") +
+    FormatRequest(2, "GetDraftProjects", json{{ "filter", {{ "device", "RteTest_ARMCM0_Dual" }}}});
+  responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+  examples = responses[1]["result"]["examples"];
+  templates = responses[1]["result"]["templates"];
+  EXPECT_EQ(2, examples.size());
+  EXPECT_EQ(3, templates.size());
+  EXPECT_EQ(examples[0]["name"], "PreInclude");
+  EXPECT_EQ(examples[1]["name"], "PreIncludeEnvFolder");
+  EXPECT_EQ(templates[0]["name"], "Board1Template");
+  EXPECT_EQ(templates[1]["name"], "Board2");
+  EXPECT_EQ(templates[2]["name"], "Board3");
+
+  // filter 'environment'
+  requests =
+    FormatRequest(1, "LoadPacks") +
+    FormatRequest(2, "GetDraftProjects", json{{ "filter", {{ "environments", { "csolution" }}}}});
+  responses = RunRpcMethods(requests);
+  EXPECT_FALSE(responses[1]["result"].contains("examples"));
+  templates = responses[1]["result"]["templates"];
+  EXPECT_EQ(3, templates.size());
+  EXPECT_EQ(templates[0]["name"], "Board1Template");
+  EXPECT_EQ(templates[1]["name"], "Board2");
+  EXPECT_EQ(templates[2]["name"], "Board3");
+
+  // empty filter
+  requests =
+    FormatRequest(1, "LoadPacks") +
+    FormatRequest(2, "GetDraftProjects", json{{ "filter", json::object() }});
+  responses = RunRpcMethods(requests);
+  examples = responses[1]["result"]["examples"];
+  templates = responses[1]["result"]["templates"];
+  EXPECT_EQ(2, examples.size());
+  EXPECT_EQ(3, templates.size());
+
+  // unknown board
+  requests =
+    FormatRequest(1, "LoadPacks") +
+    FormatRequest(2, "GetDraftProjects", json{{ "filter", {{ "board", "UNKNOWN" }}}});
+  responses = RunRpcMethods(requests);
+  EXPECT_FALSE(responses[1]["result"]["success"]);
+  EXPECT_EQ(responses[1]["result"]["message"], "Board or device processing failed");
+
+  // without loading packs
+  requests = FormatRequest(1, "GetDraftProjects", json{{ "filter", json::object() }});
+  responses = RunRpcMethods(requests);
+  EXPECT_FALSE(responses[0]["result"]["success"]);
+  EXPECT_EQ(responses[0]["result"]["message"], "Packs must be loaded before retrieving draft projects");
+}
 
 // end of ProjMgrRpcTests.cpp
