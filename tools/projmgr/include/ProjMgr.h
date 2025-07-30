@@ -165,7 +165,7 @@ protected:
   std::string m_clayerSearchPath;
   std::string m_export;
   std::string m_selectedToolchain;
-  std::string m_activeTargetSet;
+  std::optional<std::string> m_activeTargetSet;
   bool m_checkSchema;
   bool m_missingPacks;
   bool m_updateRteFiles;
