@@ -549,7 +549,7 @@ bool ProjMgr::PopulateContexts(void) {
   }
 
   // Populate active target-set
-  if (!m_activeTargetSet.empty() && !m_worker.PopulateActiveTargetSet(m_activeTargetSet)) {
+  if (m_activeTargetSet.has_value() && !m_worker.PopulateActiveTargetSet(m_activeTargetSet.value())) {
     return false;
   }
 
@@ -581,7 +581,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
 
   // Generate cbuild-run file
   if (previousResult && !m_processedContexts.empty() &&
-    (m_contextSet || !m_activeTargetSet.empty())) {
+    (m_contextSet || m_activeTargetSet.has_value())) {
     const auto& debugAdapters = GetDebugAdaptersFile();
     if (!debugAdapters.empty()) {
       if (!m_parser.ParseDebugAdapters(debugAdapters, m_checkSchema)) {

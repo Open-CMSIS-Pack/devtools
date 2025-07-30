@@ -5733,10 +5733,20 @@ bool ProjMgrWorker::ParseTargetSetContextSelection() {
 }
 
 bool ProjMgrWorker::PopulateActiveTargetSet(const string& activeTargetSet) {
+  const auto& targetTypes = m_parser->GetCsolution().targetTypes;
+  if (activeTargetSet.empty()) {
+    // cmd line option --active="" : take first target-type and first target-set
+    // target-type is mandatory, target-set is optional
+    m_activeTargetType = targetTypes.front().first;
+    if (!targetTypes.front().second.targetSet.empty()) {
+      m_activeTargetSet = targetTypes.front().second.targetSet.front();
+    }
+    return true;
+  }
   const auto& targetType = RteUtils::GetPrefix(activeTargetSet, '@');
   const auto& targetSet = RteUtils::GetSuffix(activeTargetSet, '@');
   bool targetSetFound = false;
-  for (const auto& [name, type] : m_parser->GetCsolution().targetTypes) {
+  for (const auto& [name, type] : targetTypes) {
     if (name == targetType) {
       for (const auto& item : type.targetSet) {
         if (item.set == targetSet) {

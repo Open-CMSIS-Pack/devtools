@@ -7032,6 +7032,13 @@ TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   EXPECT_EQ("<default>", cbuildRun2["cbuild-run"]["target-set"].as<string>());
 
   streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuildRun3 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type1.cbuild-run.yml");
+  EXPECT_EQ("Type1", cbuildRun3["cbuild-run"]["target-type"].as<string>());
+  EXPECT_EQ("<default>", cbuildRun3["cbuild-run"]["target-set"].as<string>());
+
+  streamRedirect.ClearStringStreams();
   argv[4] = (char*)"Type1@Unknown";
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
