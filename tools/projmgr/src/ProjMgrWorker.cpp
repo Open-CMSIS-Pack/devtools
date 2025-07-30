@@ -1413,7 +1413,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context, BoardOrDevice process) {
     if (!deviceItem.pname.empty()) {
       ProjMgrLogger::Get().Error("processor name '" + deviceItem.pname + "' was not found", context.name);
       return false;
-    } else if (!HasVarDefineError()) {
+    } else if (!HasVarDefineError() && process != BoardOrDevice::SkipProcessor) {
       string msg = "one of the following processors must be specified:";
       const auto& processors = matchedDevice->GetProcessors();
       for (const auto& p : processors) {
@@ -4187,11 +4187,11 @@ bool ProjMgrWorker::ListDependencies(vector<string>& dependencies, const string&
   return true;
 }
 
-vector<RteBoard*> ProjMgrWorker::GetCompatibleBoards(ContextItem& context) {
+vector<RteBoard*> ProjMgrWorker::GetCompatibleBoards(const ContextItem& context) {
   vector<RteBoard*> compatibleBoards;
-  if (!context.board.empty()) {
+  if (context.rteBoard) {
     compatibleBoards.push_back(context.rteBoard);
-  } else if (!context.device.empty()) {
+  } else if (context.rteDevice) {
     context.rteFilteredModel->GetCompatibleBoards(compatibleBoards, context.rteDevice);
   }
   return compatibleBoards;
@@ -4224,11 +4224,23 @@ bool ProjMgrWorker::IsBoardListCompatible(const ContextItem& context, const vect
   return false;
 }
 
-std::vector<ExampleItem> ProjMgrWorker::CollectExamples(ContextItem& context) {
+bool ProjMgrWorker::IsEnvironmentCompatible(const std::string& environment, const StrVec& filter) {
+  return (filter.empty() || find(filter.begin(), filter.end(), environment) != filter.end());
+}
+
+bool ProjMgrWorker::HasCompatibleEnvironment(const Collection<RteItem*>& environments, const StrVec& filter) {
+  for (const auto& environment : environments) {
+    if (IsEnvironmentCompatible(environment->GetName(), filter)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::vector<ExampleItem> ProjMgrWorker::CollectExamples(const ContextItem& context, const StrVec& filter) {
   std::vector<ExampleItem> examples;
   vector<const RteItem*> rteExamples;
-  const auto& packs = context.rteFilteredModel->GetPackages();
-  for (const auto& [_, pack] : packs) {
+  for (const auto& pack : m_loadedPacks) {
     const RteItem* packExamples = pack->GetExamples();
     if (packExamples) {
       const Collection<RteItem*> items = packExamples->GetChildren();
@@ -4244,6 +4256,11 @@ std::vector<ExampleItem> ProjMgrWorker::CollectExamples(ContextItem& context) {
     Collection<RteItem*> boards;
     boards = rteExample->GetChildrenByTag("board", boards);
     if (!IsBoardListCompatible(context, compatibleBoards, boards)) {
+      continue;
+    }
+    Collection<RteItem*> environments;
+    environments = rteExample->GetChildrenByTag("environment", environments);
+    if (!HasCompatibleEnvironment(environments, filter)) {
       continue;
     }
     ExampleItem example;
@@ -4262,17 +4279,18 @@ std::vector<ExampleItem> ProjMgrWorker::CollectExamples(ContextItem& context) {
     for (const auto& board : boards) {
       example.boards.push_back(BoardItem{ board->GetVendorString(), board->GetName() });
     }
-    const auto& version = rteExample->GetVersionString();
+    const auto& version = rteExample->GetAttribute("version");
     if (!version.empty()) {
       example.version = version;
     }
 
-    Collection<RteItem*> environments;
-    environments = rteExample->GetChildrenByTag("environment", environments);
     for (const auto& item : environments) {
+      const auto& name = item->GetName();
+      if (!IsEnvironmentCompatible(name, filter)) {
+        continue;
+      }
       string load = item->GetAttribute("load");
       RteFsUtils::NormalizePath(load, folder);
-      const auto& name = item->GetName();
       example.environments[name].load = load;
       example.environments[name].folder = item->GetFolderString();
       RteFsUtils::NormalizePath(example.environments[name].folder, folder);
@@ -4296,7 +4314,9 @@ std::vector<ExampleItem> ProjMgrWorker::CollectExamples(ContextItem& context) {
       example.keywords.push_back(item->GetText());
     }
 
-    examples.push_back(example);
+    if (find(examples.begin(), examples.end(), example) == examples.end()) {
+      examples.push_back(example);
+    }
   } 
   return examples;
 }
@@ -4316,7 +4336,7 @@ bool ProjMgrWorker::ListExamples(vector<string>& examples, const string& filter)
     return false;
   }
 
-  const auto& collectedExamples = CollectExamples(context);
+  const auto& collectedExamples = CollectExamples(context, StrVec());
 
   for (const auto& exampleItem : collectedExamples) {
     if (!filter.empty() && exampleItem.name.find(filter) == string::npos) {
@@ -4348,7 +4368,7 @@ bool ProjMgrWorker::ListExamples(vector<string>& examples, const string& filter)
   return true;
 }
 
-std::vector<TemplateItem> ProjMgrWorker::CollectTemplates(ContextItem& context) {
+std::vector<TemplateItem> ProjMgrWorker::CollectTemplates(const ContextItem& context) {
   std::vector<TemplateItem> templates;
   const auto& rteTemplates = context.rteFilteredModel->GetProjectDescriptors();
   for (const auto& rteTemplate : rteTemplates) {

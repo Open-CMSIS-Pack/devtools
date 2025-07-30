@@ -94,6 +94,7 @@ public:
   RpcArgs::SuccessResult SelectBundle(const string& context, const string& className, const string& bundleName) override;
   RpcArgs::Results ValidateComponents(const string& context) override;
   RpcArgs::LogMessages GetLogMessages(void) override;
+  RpcArgs::DraftProjectsInfo GetDraftProjects(const RpcArgs::DraftProjectsFilter& filter) override;
 
 protected:
   enum Exception
@@ -582,6 +583,94 @@ RpcArgs::LogMessages RpcHandler::GetLogMessages(void) {
   }
   messages.success = true;
   return messages;
+}
+
+RpcArgs::DraftProjectsInfo RpcHandler::GetDraftProjects(const RpcArgs::DraftProjectsFilter& filter) {
+  RpcArgs::DraftProjectsInfo applications;
+  applications.success = false;
+
+  if (!m_packsLoaded) {
+    applications.message = "Packs must be loaded before retrieving draft projects";
+    return applications;
+  }
+
+  // initialize context and target attributes with board and device
+  ContextItem context;
+  m_worker.InitializeTarget(context);
+  if (filter.board.has_value() || filter.device.has_value()) {
+    context.board = filter.board.has_value() ? filter.board.value() : "";
+    context.device = filter.device.has_value() ? filter.device.value() : "";
+    if (!m_worker.ProcessDevice(context, BoardOrDevice::SkipProcessor)) {
+      applications.message = "Board or device processing failed";
+      return applications;
+    }
+    m_worker.SetTargetAttributes(context, context.targetAttributes);
+  }
+
+  // collect examples, optionally filtered for 'environments'
+  vector<RpcArgs::ExampleProject> examples, refApps;
+  const auto& environments = filter.environments.has_value() ? filter.environments.value() : StrVec();
+  const auto& collectedExamples = m_worker.CollectExamples(context, environments);
+  for (const auto& example : collectedExamples) {
+    RpcArgs::ExampleProject e;
+    e.name = example.name;
+    e.pack = example.pack;
+    e.doc = example.doc;
+    e.description = example.description;
+    if (!example.version.empty()) {
+      e.version = example.version;
+    }
+    if (!example.archive.empty()) {
+      e.archive = example.archive;
+    }
+    for (const auto& [name, environment] : example.environments) {
+      RpcArgs::ExampleEnvironment env;
+      env.name = name;
+      env.file = environment.load;
+      env.folder = environment.folder;
+      e.environments.push_back(env);
+    }  
+    if (!example.components.empty()) {
+      e.components = example.components;
+    }
+    if (!example.categories.empty()) {
+      e.categories = example.categories;
+    }
+    if (!example.keywords.empty()) {
+      e.keywords = example.keywords;
+    }
+    // classify the example as ref-app if it does not specify boards
+    auto& ref = example.boards.empty() ? refApps : examples;
+    ref.push_back(e);
+  }
+  if (!examples.empty()) {
+    applications.examples = examples;
+  }
+  if (!refApps.empty()) {
+    applications.refApps = refApps;
+  }
+
+  // collect templates
+  vector<RpcArgs::SolutionTemplate> templates;
+  const auto& csolutionTemplates = m_worker.CollectTemplates(context);
+  for (const auto& csolutionTemplate : csolutionTemplates) {
+    RpcArgs::SolutionTemplate t;
+    t.name = csolutionTemplate.name;
+    t.pack = csolutionTemplate.pack;
+    t.description = csolutionTemplate.description;
+    t.file = csolutionTemplate.file;
+    t.folder = csolutionTemplate.path;
+    if (!csolutionTemplate.copyTo.empty()) {
+      t.copyTo = csolutionTemplate.copyTo;
+    }
+    templates.push_back(t);
+  }
+  if (!templates.empty()) {
+    applications.templates = templates;
+  }
+
+  applications.success = true;
+  return applications;
 }
 
 // end of ProkMgrRpcServer.cpp
