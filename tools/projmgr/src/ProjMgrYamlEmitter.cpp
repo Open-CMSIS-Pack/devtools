@@ -92,7 +92,10 @@ bool ProjMgrYamlEmitter::CompareFile(const string& filename, const YAML::Node& r
     return false;
   }
   const YAML::Node& yamlRoot = YAML::LoadFile(filename);
-  return CompareNodes(yamlRoot, rootNode);
+
+  // emit and load rootNode to ensure both comparison sides have the same formatting
+  YAML::Emitter emitter;
+  return CompareNodes(yamlRoot, YAML::Load((emitter << rootNode).c_str()));
 }
 
 bool ProjMgrYamlEmitter::CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs) {
