@@ -19,8 +19,10 @@ build-gen:
     - _RTE_
   add-path:
     - ${DEVTOOLS(data)}/ExternalGenerator/single/RTE/_Debug_CM0
+    - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Include
   add-path-asm:
     - ${DEVTOOLS(data)}/ExternalGenerator/single/RTE/_Debug_CM0
+    - ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Include
   output-dirs:
     intdir: ${DEVTOOLS(data)}/ExternalGenerator/tmp
     outdir: ${DEVTOOLS(data)}/ExternalGenerator/out/single-core/CM0/Debug
@@ -32,6 +34,23 @@ build-gen:
     - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
       from-pack: ARM::RteTestGenerator@0.1.0
       selected-by: RteTestGenerator:Check Global Generator
+      files:
+        - file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Include/RteTestInc.h
+          category: header
+          version: 1.0.0
+        - file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Templates/RteTest.gpdsc.template
+          category: genAsset
+          version: 1.0.0
+        - file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Templates/RteTestGen.c.template
+          category: genSource
+          version: 1.0.0
+        - file: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0/Templates/RteTestGen.h.template
+          category: genHeader
+          version: 1.0.0
+        - file: ${DEVTOOLS(data)}/ExternalGenerator/single/RTE/RteTestGenerator/RteTestGen.params
+          category: genParams
+          attr: config
+          version: 0.9.0
       generator:
         id: RteTestExternalGenerator
         path: ${DEVTOOLS(data)}/ExternalGenerator/single/generated/single-core.cgen.yml

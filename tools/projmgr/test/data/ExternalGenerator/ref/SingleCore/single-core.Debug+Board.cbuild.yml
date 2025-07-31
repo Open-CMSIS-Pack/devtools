@@ -44,12 +44,14 @@ build:
     - ../../../../single/generated/RTE/RteTest
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM4/Include
   add-path-asm:
     - ../../../../single/RTE/_Debug_Board
     - ../../../../single/generated/RTE/RteTest
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/GlobalLevel
     - ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/Include
+    - ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM4/Include
   output-dirs:
     intdir: ../../../../tmp
@@ -86,6 +88,23 @@ build:
     - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
       from-pack: ARM::RteTestGenerator@0.1.0
       selected-by: RteTestGenerator:Check Global Generator
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Include/RteTestInc.h
+          category: header
+          version: 1.0.0
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Templates/RteTest.gpdsc.template
+          category: genAsset
+          version: 1.0.0
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Templates/RteTestGen.c.template
+          category: genSource
+          version: 1.0.0
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0/Templates/RteTestGen.h.template
+          category: genHeader
+          version: 1.0.0
+        - file: ../../../../single/RTE/RteTestGenerator/RteTestGen.params
+          category: genParams
+          attr: config
+          version: 0.9.0
       generator:
         id: RteTestExternalGenerator
         path: ../../../../single/generated/single-core.cgen.yml

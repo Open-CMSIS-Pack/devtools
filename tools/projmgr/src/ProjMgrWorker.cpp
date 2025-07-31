@@ -2334,15 +2334,6 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
       const auto& language = componentFile->GetAttribute("language");
       const auto& select = componentFile->GetAttribute("select");
       const auto& version = componentFile->GetSemVer();
-      switch (RteFile::CategoryFromString(category)) {
-      case RteFile::Category::GEN_SOURCE:
-      case RteFile::Category::GEN_HEADER:
-      case RteFile::Category::GEN_PARAMS:
-      case RteFile::Category::GEN_ASSET:
-        continue; // ignore gen files
-      default:
-        break;
-      };
       context.componentFiles[componentId].push_back({ name, attr, category, language, scope, version, select });
     }
     // config files
@@ -2357,21 +2348,12 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
           const auto& category = configFile->GetAttribute("category");
           const auto& language = configFile->GetAttribute("language");
           const auto& scope = configFile->GetAttribute("scope");
-          switch (RteFile::CategoryFromString(category)) {
-          case RteFile::Category::GEN_SOURCE:
-          case RteFile::Category::GEN_HEADER:
-          case RteFile::Category::GEN_PARAMS:
-          case RteFile::Category::GEN_ASSET:
-            continue; // ignore gen files
-          default:
-            break;
-          };
           const auto& version = originalFile ? originalFile->GetSemVer() : "";
           context.componentFiles[componentId].push_back({ filename, "config", category, language, scope, version });
         }
       }
     }
-    // input files for component generator. This list of files is directly fetched from the PDSC.
+    // input files for 'bootstrap' component generator. This list of files is directly fetched from the PDSC.
     RteComponentInstance* rteBootstrapInstance = context.bootstrapComponents.find(componentId) != context.bootstrapComponents.end() ?
       context.bootstrapMap.find(componentId) != context.bootstrapMap.end() ? context.bootstrapComponents.at(context.bootstrapMap.at(componentId)).instance :
       context.bootstrapComponents.at(componentId).instance : nullptr;
@@ -2396,6 +2378,16 @@ bool ProjMgrWorker::ProcessComponentFiles(ContextItem& context) {
         const auto& filename = (attr == "config" && configFilePaths.find(rteFile) != configFilePaths.end()) ?
                                 configFilePaths[rteFile] : rteFile->GetOriginalAbsolutePath();
         context.generatorInputFiles[componentId].push_back({ filename, attr, category, language, scope, version });
+        // remove file from parent component list to avoid duplicates
+        auto& componentFiles = context.componentFiles[componentId];
+        componentFiles.erase(
+          std::remove_if(
+            componentFiles.begin(),
+            componentFiles.end(),
+            [filename](const ComponentFileItem& item) { return item.name == filename;}
+          ),
+          componentFiles.end()
+        );
       }
     }
   }
