@@ -425,7 +425,7 @@ struct DebuggerType {
  *        images
  *        selected target-set
  *        load offset for generated binary
- *        load modes
+ *        elf load mode
  *        image only flag
 */
 struct ContextItem {
@@ -494,7 +494,7 @@ struct ContextItem {
   std::vector<ImageItem> images;
   std::string targetSet;
   std::string loadOffset;
-  StrMap loadMode;
+  std::string elfLoadMode;
   bool imageOnly = false;
 };
 

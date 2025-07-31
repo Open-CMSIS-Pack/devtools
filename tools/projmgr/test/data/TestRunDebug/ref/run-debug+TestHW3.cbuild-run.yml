@@ -15,12 +15,17 @@ cbuild-run:
     - file: core1/TestHW3/core1.axf
       info: generate by core1+TestHW3
       type: elf
-      load: none
+      load: symbols
+      pname: cm0_core1
+    - file: core1/TestHW3/core1.hex
+      info: generate by core1+TestHW3
+      type: hex
+      load: image
       pname: cm0_core1
     - file: core1/TestHW3/core1.bin
       info: generate by core1+TestHW3
       type: bin
-      load: image
+      load: none
       pname: cm0_core1
   system-resources:
     memory:
