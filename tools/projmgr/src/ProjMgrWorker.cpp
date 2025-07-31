@@ -2595,7 +2595,7 @@ bool ProjMgrWorker::ProcessImages(ContextItem& context) {
     else if (item.context == context.cproject->name + (context.type.build.empty() ? "" : '.' + context.type.build)) {
       context.loadOffset = item.offset;
       if (!item.load.empty()) {
-        context.loadMode[item.type] = item.load;
+        context.elfLoadMode = item.load;
       }
     }
   }

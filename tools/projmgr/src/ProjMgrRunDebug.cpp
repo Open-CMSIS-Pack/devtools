@@ -540,8 +540,7 @@ void ProjMgrRunDebug::AddGeneratedImage(const ContextItem* context, const string
     image.file = file;
     image.info = "generate by " + context->name;
     image.type = type;
-    image.load = context->loadMode.find(type) != context->loadMode.end() ? context->loadMode.at(type) :
-      context->loadMode.find("") != context->loadMode.end() ? context->loadMode.at("") : load;
+    image.load = type == RteConstants::OUTPUT_TYPE_ELF && !context->elfLoadMode.empty() ? context->elfLoadMode : load;
     image.pname = context->deviceItem.pname;
     image.offset = type == RteConstants::OUTPUT_TYPE_BIN ? context->loadOffset : RteUtils::EMPTY_STRING;
     m_runDebug.outputs.push_back(image);

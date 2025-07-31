@@ -5,4 +5,4 @@ project:
   device: :cm0_core1
 
   output:
-    type: [elf, bin]
+    type: [hex, bin]

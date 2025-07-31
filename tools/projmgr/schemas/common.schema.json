@@ -2371,7 +2371,7 @@
       },
       "additionalProperties": false,
       "oneOf": [
-        { "required": ["project-context"], "not": {"required": ["image"]} },
+        { "required": ["project-context"], "not": {"required": ["image", "type"]} },
         { "required": ["image"], "not": {"required": ["project-context"]} }
       ]
     },
