@@ -186,6 +186,13 @@
     </component>
     <component generator="RteTestExternalGenerator" Cclass="RteTestGenerator" Cgroup="Check Global Generator" Cversion="0.9.0">
       <description>Component addressing external</description>
+      <files>
+        <file category="header" name="Include/RteTestInc.h" version ="1.0.0"/>
+        <file category="genAsset" name="Templates/RteTest.gpdsc.template" version ="1.0.0"/>
+        <file category="genHeader" name="Templates/RteTestGen.h.template" version ="1.0.0"/>
+        <file category="genSource" name="Templates/RteTestGen.c.template" version ="1.0.0"/>
+        <file category="genParams" name="Generator with spaces/RteTestGen.params" version ="0.9.0" attr="config"/>
+      </files>
     </component>
     <component generator="RteTestGeneratorIdentifier" Cvendor="ARM" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTestOverlap" Cversion="1.1.0">
       <description>Component with overlaping file lists</description>
