@@ -441,7 +441,7 @@ void RteComponentAggregate::Clear()
 
 bool RteComponentAggregate::IsFiltered() const
 {
-  if (GetSelectedBundleShortID() != GetBundleShortID())
+  if (GetSelectedBundleName() != GetCbundleName())
     return false;
   return true;
 }
@@ -1701,13 +1701,21 @@ string RteComponentGroup::GetDocFile() const
 }
 
 
-RteItem::ConditionResult RteComponentGroup::GetComponentAggregates(const XmlItem& componentAttributes, set<RteComponentAggregate*>& aggregates) const
+RteItem::ConditionResult RteComponentGroup::GetComponentAggregates(const XmlItem& componentAttributes,
+  set<RteComponentAggregate*>& aggregates, const std::string& bundleName) const
 {
   ConditionResult res = MISSING;
 
   for (auto child : m_children) {
     RteComponentAggregate* a = dynamic_cast<RteComponentAggregate*>(child);
-    if (a && a->MatchComponentAttributes(componentAttributes.GetAttributes())) {
+    if(!a) {
+      continue;
+    }
+    auto& componentBundle = a->GetCbundleName();
+    if(!(bundleName.empty() || bundleName == componentBundle)) {
+      continue; // skip non-matching bundles
+    }
+    if (a->MatchComponentAttributes(componentAttributes.GetAttributes())) {
       aggregates.insert(a);
       ConditionResult r = INSTALLED;
       if (a->IsFiltered()) {
@@ -1735,7 +1743,7 @@ RteItem::ConditionResult RteComponentGroup::GetComponentAggregates(const XmlItem
   }
   for (auto [_, g] : m_groups) {
     if (g) {
-      ConditionResult r = g->GetComponentAggregates(componentAttributes, aggregates);
+      ConditionResult r = g->GetComponentAggregates(componentAttributes, aggregates, bundleName);
       if (res < r)
         res = r;
     }
@@ -1896,11 +1904,15 @@ RteComponentGroup* RteComponentClassContainer::CreateGroup(const string& name)
   return new RteComponentClass(this);
 }
 
-RteItem::ConditionResult RteComponentClassContainer::GetComponentAggregates(const XmlItem& componentAttributes, set<RteComponentAggregate*>& aggregates) const
+RteItem::ConditionResult RteComponentClassContainer::GetComponentAggregates(const XmlItem& componentAttributes, set<RteComponentAggregate*>& aggregates,
+  const std::string& _bundleName) const
 {
   RteComponentGroup* classGroup = GetGroup(componentAttributes.GetAttribute("Cclass"));
-  if (classGroup)
-    return classGroup->GetComponentAggregates(componentAttributes, aggregates);
+  if(classGroup) {
+     // limit to selected bundle if at least one component is selected
+    const string& selectedBundleName = classGroup->IsSelected() ? classGroup->GetSelectedBundleName() : EMPTY_STRING;
+    return classGroup->GetComponentAggregates(componentAttributes, aggregates, selectedBundleName);
+  }
   return MISSING;
 }
 

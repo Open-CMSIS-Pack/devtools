@@ -1014,9 +1014,11 @@ public:
    * @brief find recursively component aggregates matching supplied attributes
    * @param componentAttributes component attributes as a reference to XmlItem
    * @param components std::set collection of RteComponentAggregate pointer to fill
+   * @param bundleName bundle to be used
    * @return overall matching result as RteItem::ConditionResult value
   */
-  virtual ConditionResult GetComponentAggregates(const XmlItem& componentAttributes, std::set<RteComponentAggregate*>& components) const;
+   virtual ConditionResult GetComponentAggregates(const XmlItem& componentAttributes, std::set<RteComponentAggregate*>& components,
+     const std::string& bundleName = EMPTY_STRING) const;
 
   /**
    * @brief adjust component selection in the group when active bundle changes
@@ -1168,7 +1170,8 @@ public:
    * @param components std::set collection of RteComponentAggregate pointer to fill
    * @return overall matching result as RteItem::ConditionResult value
   */
-   ConditionResult GetComponentAggregates(const XmlItem& componentAttributes, std::set<RteComponentAggregate*>& components) const override;
+   ConditionResult GetComponentAggregates(const XmlItem& componentAttributes, std::set<RteComponentAggregate*>& components,
+     const std::string& bundleName = EMPTY_STRING) const override;
 
   /**
    * @brief find component aggregate matching supplied instance to resolve a component
