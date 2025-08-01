@@ -79,16 +79,40 @@ TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   RteCondition* denyIncompatibleVariant = pack->GetCondition("DenyIncompatibleVariant");
   ASSERT_NE(denyIncompatibleVariant, nullptr);
 
-  // select component to check dependencies
+  // list only selected bundle
   RteComponentInstance item(nullptr);
   item.SetTag("component");
+  item.SetAttributes({ {"Cbundle","BundleOne" },
+                       {"Cclass","RteTestBundle" },
+                       {"Cgroup", "G2" },
+                       {"Cversion","1.1.0"},
+                       {"condition","Require_G0"} });
+  item.SetPackageAttributes(packInfo);
+  RteComponent* c = rteModel->FindFirstComponent(item);
+  ASSERT_NE(c, nullptr);
+  auto requireG0Condition = pack->GetCondition("Require_G0");
+  ASSERT_NE(requireG0Condition, nullptr);
+  auto expr = dynamic_cast<RteConditionExpression*>(requireG0Condition->GetFirstChild());
+  ASSERT_NE(expr, nullptr);
+  set<RteComponentAggregate*> aggregates;
+  activeTarget->GetComponentAggregates(*expr, aggregates);
+  ASSERT_EQ(aggregates.size(), 3); // all available bundles
+  aggregates.clear();
+  activeTarget->SelectComponent(c, 1, true);
+  EXPECT_EQ(depSolver->GetConditionResult(), RteItem::SELECTABLE);
+  activeTarget->GetComponentAggregates(*expr, aggregates);
+  ASSERT_EQ(aggregates.size(), 1); // only with selected bundle
+  auto depsAggr = *aggregates.begin();
+  EXPECT_EQ(depsAggr->GetCbundleName(), "BundleOne");
+  activeTarget->SelectComponent(c, 0, true);
+
+  // select component to check dependencies
   item.SetAttributes({ {"Cclass","RteTest" },
                        {"Cgroup", "AcceptDependency" },
                        {"Cversion","0.9.9"},
                        {"condition","AcceptDependency"} });
-  item.SetPackageAttributes(packInfo);
 
-  RteComponent* c = rteModel->FindFirstComponent(item);
+  c = rteModel->FindFirstComponent(item);
   ASSERT_NE(c, nullptr);
   activeTarget->SelectComponent(c, 1, true);
   EXPECT_EQ(depSolver->GetConditionResult(), RteItem::FULFILLED); // required dependency already selected

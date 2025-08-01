@@ -86,7 +86,9 @@
     <condition id="DenyIncompatibleVariant">
       <deny condition="Incompatible Variant"/>
     </condition>
-
+    <condition id="Require_G0">
+      <require Cclass="RteTestBundle" Cgroup="G0"/>
+    </condition>
   </conditions>
 
   <apis>
@@ -140,7 +142,7 @@
           <file category="doc" name="https://arm-software.github.io/CMSIS_5/Pack/html/createPackUtil.html"/>
         </files>
       </component>
-      <component Cgroup="G2">
+      <component Cgroup="G2" condition="Require_G0">
         <description>Bundle One, component G2</description>
         <files>
           <file category="doc" name="https://arm-software.github.io/CMSIS_5/Pack/html/createPackUtil.html"/>
@@ -157,7 +159,7 @@
           <file category="doc" name="https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_conditions_pg.html"/>
         </files>
       </component>
-      <component Cgroup="G2">
+      <component Cgroup="G2" condition="Require_G0">
         <description>Bundle Two, component G2</description>
         <files>
           <file category="doc" name="https://arm-software.github.io/CMSIS_5/Pack/html/createPackUtil.html"/>
