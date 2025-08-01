@@ -295,6 +295,13 @@ public:
   */
   static const std::string FileTypeFromExtension(const std::string& file);
 
+  /**
+   * @brief normalize line endings for consistent string comparison
+   * @param input string
+   * @return output normalized string
+  */
+  static const std::string NormalizeLineEndings(const std::string& in);
+
 protected:
   /**
    * @brief get filtered list of contexts

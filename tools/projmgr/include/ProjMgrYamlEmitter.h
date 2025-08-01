@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -114,6 +114,7 @@ protected:
   bool CompareFile(const std::string& filename, const YAML::Node& rootNode);
   bool CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs);
   bool NeedRebuild(const std::string& filename, const YAML::Node& rootNode);
+  std::string EraseGeneratedByNode(const std::string& inStr);
 };
 
 #endif  // PROJMGRYAMLEMITTER_H

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -530,4 +530,12 @@ TEST_F(ProjMgrUtilsUnitTests, ULLToHex) {
   EXPECT_EQ("0x00000000", ProjMgrUtils::ULLToHex(0));
   EXPECT_EQ("0xDEADBEEF", ProjMgrUtils::ULLToHex(3735928559));
   EXPECT_EQ("0xFFFFFFFF", ProjMgrUtils::ULLToHex(4294967295));
+}
+
+TEST_F(ProjMgrUtilsUnitTests, NormalizeLineEndings) {
+  EXPECT_EQ("abc\ndef\n", ProjMgrUtils::NormalizeLineEndings("abc\r\ndef\r\n"));
+  EXPECT_EQ("abc\ndef\n", ProjMgrUtils::NormalizeLineEndings("abc\rdef\r"));
+  EXPECT_EQ("abc\ndef\n", ProjMgrUtils::NormalizeLineEndings("abc\rdef\n"));
+  EXPECT_EQ("abc\ndef\n", ProjMgrUtils::NormalizeLineEndings("abc\ndef\r"));
+  EXPECT_EQ("abc\ndef\n", ProjMgrUtils::NormalizeLineEndings("abc\ndef\n"));
 }
