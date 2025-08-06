@@ -49,7 +49,7 @@ public:
   std::string ResultStringFromRteItem(const RteItem* item) const;
 
 protected:
-  void CollectBoardDevices(vector<RpcArgs::Device>& boardDevices, RteBoard* rteBoard, bool bInstalled, std::list<RteDevice*>& processedDevices) const;
+  void CollectBoardDevices(vector<RpcArgs::Device>& boardDevices, RteBoard* rteBoard, bool bMounted, std::list<RteDevice*>& processedDevices) const;
   void CollectCtBundles(RpcArgs::CtClass& ctClass, RteComponentGroup* rteClass) const;
   void CollectCtChildren(RpcArgs::CtTreeItem& parent, RteComponentGroup* rteGroup, const string& bundleName) const;
   void CollectCtAggregates(RpcArgs::CtTreeItem& parent, RteComponentGroup* rteGroup, const string& bundleName) const;
