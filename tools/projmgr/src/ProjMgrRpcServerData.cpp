@@ -227,7 +227,6 @@ RpcArgs::Board RpcDataCollector::FromRteBoard( RteBoard* rteBoard, bool bInclude
     vector<RpcArgs::Device> devices;
     list<RteDevice*> processedDevices;
     CollectBoardDevices(devices, rteBoard, true, processedDevices);
-    CollectBoardDevices(devices, rteBoard, false, processedDevices);
     if(!devices.empty()) {
       b.devices = devices;
     }
@@ -236,18 +235,17 @@ RpcArgs::Board RpcDataCollector::FromRteBoard( RteBoard* rteBoard, bool bInclude
 }
 
 void RpcDataCollector::CollectBoardDevices(vector<RpcArgs::Device>& boardDevices, RteBoard* rteBoard,
-  bool bInstalled, list<RteDevice*>& processedDevices) const {
+  bool bMounted, list<RteDevice*>& processedDevices) const {
   list<RteItem*> refDevices;
-  rteBoard->GetDevices(refDevices, !bInstalled, bInstalled);
+  rteBoard->GetDevices(refDevices, !bMounted, bMounted);
   for(auto rteItem : refDevices) {
     RteDevice* rteDevice = m_model->GetDevice(rteItem->GetDeviceName(), rteItem->GetDeviceVendor());
     if(rteDevice && find(processedDevices.begin(), processedDevices.end(), rteDevice) == processedDevices.end()) {
       processedDevices.push_back(rteDevice);
-      boardDevices.push_back(FromRteDevice(rteDevice, bInstalled));
+      boardDevices.push_back(FromRteDevice(rteDevice, bMounted));
     }
   }
 }
-
 
 void RpcDataCollector::CollectDeviceList(RpcArgs::DeviceList& deviceList, const std::string& namePattern, const std::string& vendor) const {
   list<RteDevice*> devices;

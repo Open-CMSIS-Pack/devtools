@@ -380,16 +380,17 @@ TEST_F(ProjMgrRpcTests, RpcBoardInfo) {
   EXPECT_EQ(b1["pack"], "ARM::RteTest_DFP@0.2.0");
   EXPECT_EQ(b1["description"], "uVision Simulator");
   auto devices = b1["devices"];
-  EXPECT_EQ(devices.size(), 4);
+  EXPECT_EQ(devices.size(), 2);
   EXPECT_FALSE(b1.contains("memories"));
   auto d1 = devices[1];
   EXPECT_EQ(d1["id"], "ARM::RteTest_ARMCM0_Dual");
   EXPECT_EQ(d1["processors"].size(), 2);
   EXPECT_EQ(d1["processors"][0]["name"], "cm0_core0");
 
-  auto d2 = devices[2];
-  EXPECT_EQ(d2["id"], "ARM::RteTest_ARMCM4_NOFP");
-  EXPECT_FALSE(d2.contains("processors"));
+  auto d0 = devices[0];
+  EXPECT_EQ(d0["id"], "ARM::RteTest_ARMCM3");
+  EXPECT_EQ(d0["processors"].size(), 1);
+  EXPECT_EQ(d0["processors"][0]["name"], "");
 
   auto b2 = responses[2]["result"]["board"];
   EXPECT_EQ(b2["id"], "Keil::RteTest Test board:1.1.1");
