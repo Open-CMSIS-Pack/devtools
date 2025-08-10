@@ -197,69 +197,69 @@ jobs:
           cp -r tools/projmgr/templates/* tools/projmgr/distribution/etc/
 
       - name: Download projmgr linux-amd64
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: projmgr-linux-amd64
           path: tools/projmgr/distribution/bin/linux-amd64/
 
       - name: Download projmgr linux-arm64
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: projmgr-linux-arm64
           path: tools/projmgr/distribution/bin/linux-arm64/
 
       - name: Download projmgr macos-amd64
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: projmgr-darwin-amd64
           path: tools/projmgr/distribution/bin/darwin-amd64/
 
       - name: Download projmgr macos-arm64
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: projmgr-darwin-arm64
           path: tools/projmgr/distribution/bin/darwin-arm64/
 
       - name: Download projmgr windows-amd64
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: projmgr-windows-amd64
           path: tools/projmgr/distribution/bin/windows-amd64/
 
       - name: Download projmgr windows-arm64
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: projmgr-windows-arm64
           path: tools/projmgr/distribution/bin/windows-arm64/
 
       - name: Download projmgr-swig-python linux-amd64
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: projmgr-swig-python-linux-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/python/
 
       - name: Download projmgr-swig-python macos-amd64
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: projmgr-swig-python-darwin-amd64
           path: tools/projmgr/distribution/lib/darwin-amd64/python/
 
       - name: Download projmgr-swig-python windows-amd64
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: projmgr-swig-python-windows-amd64
           path: tools/projmgr/distribution/lib/windows-amd64/python/
 
       - name: Download projmgr-swig-go linux-amd64
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: projmgr-swig-go-linux-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/go/
 
       - name: Download projmgr-swig-go macos-amd64
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: projmgr-swig-go-darwin-amd64
           path: tools/projmgr/distribution/lib/darwin-amd64/go/
@@ -278,20 +278,20 @@ jobs:
           asset_name: projmgr.zip
 
       - name: Download test report windows-amd64
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: unit_test_result_projmgr-windows-amd64
           path: tools/testreport/windows-amd64/
 
       - name: Download test report linux-amd64
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: unit_test_result_projmgr-linux-amd64
           path: tools/testreport/linux-amd64/
 
       - name: Download test report macos-amd64
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: unit_test_result_projmgr-darwin-amd64
           path: tools/testreport/darwin-amd64/
@@ -310,7 +310,7 @@ jobs:
           asset_name: testreport.zip
 
       - name: Download coverage report
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: coverage-report-projmgr
           path: tools/coverage/
