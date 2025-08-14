@@ -7093,6 +7093,20 @@ TEST_F(ProjMgrUnitTests, ImageOnly) {
     testinput_folder + "/ImageOnly/ref/image-only+CM0.cbuild-run.yml");
 }
 
+TEST_F(ProjMgrUnitTests, ImageOnlyMulticore) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/ImageOnly/image-only-multicore.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"CM0";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  const YAML::Node& cbuildRun = YAML::LoadFile(testinput_folder + "/ImageOnly/out/image-only-multicore+CM0.cbuild-run.yml");
+  EXPECT_EQ("cm0_core0", cbuildRun["cbuild-run"]["output"][0]["pname"].as<string>());
+  EXPECT_EQ("cm0_core1", cbuildRun["cbuild-run"]["output"][1]["pname"].as<string>());
+}
+
 TEST_F(ProjMgrUnitTests, ListDebuggers) {
   char* argv[6];
   StdStreamRedirect streamRedirect;

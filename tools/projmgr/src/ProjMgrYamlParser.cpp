@@ -1065,6 +1065,8 @@ void ProjMgrYamlParser::ParseImages(const YAML::Node& parent, const string& file
       ParseString(imagesEntry, YAML_INFO, imageItem.info);
       ParseString(imagesEntry, YAML_TYPE, imageItem.type);
       ParseString(imagesEntry, YAML_LOAD, imageItem.load);
+      ParseString(imagesEntry, YAML_DEVICE, imageItem.pname);
+      imageItem.pname = RteUtils::ExtractSuffix(imageItem.pname);
       ParseNumber(imagesEntry, file, YAML_LOAD_OFFSET, imageItem.offset);
       images.push_back(imageItem);
     }

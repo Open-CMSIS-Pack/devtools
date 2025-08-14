@@ -166,6 +166,7 @@ struct DebuggerItem {
  *        type specifies an explicit file type
  *        load mode
  *        load offset
+ *        processor name associated with specified image
 */
 struct ImageItem {
   std::string context;
@@ -174,6 +175,7 @@ struct ImageItem {
   std::string type;
   std::string load;
   std::string offset;
+  std::string pname;
 };
 
 /**

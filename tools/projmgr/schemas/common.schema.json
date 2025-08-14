@@ -222,7 +222,13 @@
       "title": "device:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#device",
       "type": "string",
       "pattern": "^(([ -9;-~]+::)?[ -9;-~]+)?(:[ -9;-~]+)?$",
-      "description": "Unique device name. Overrules default board device setting.\nA unique processor ID is reqiured for devices with multiple processors.\nExample: STMicroelectronics::STM32H735IGK"
+      "description": "Unique device name. Overrules default board device setting.\nA unique processor ID is required for devices with multiple processors.\nExample: STMicroelectronics::STM32H735IGK"
+    },
+    "ProcessorNameType": {
+      "title": "device:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#device",
+      "type": "string",
+      "pattern": "^:[ -9;-~]+$",
+      "description": "Unique processor ID.\nFormat :pname (see device name convention).\nExample: :cm0plus"
     },
     "BoardType": {
       "title": "board:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#board",
@@ -2367,11 +2373,12 @@
         "info":            { "type": "string", "description": "Brief description of the image file." },
         "type":            { "enum": [ "elf", "hex", "bin", "lib" ], "description": "Specifies an explicit image type." },
         "load":            { "$ref": "#/definitions/TargetSetLoadType" },
-        "load-offset":     { "type": "number", "description": "Offset applied to the binary content when loading the image file." }
+        "load-offset":     { "type": "number", "description": "Offset applied to the binary content when loading the image file." },
+        "device":          { "$ref": "#/definitions/ProcessorNameType" }
       },
       "additionalProperties": false,
       "oneOf": [
-        { "required": ["project-context"], "not": {"required": ["image", "type"]} },
+        { "required": ["project-context"], "not": {"required": ["image", "type", "device"]} },
         { "required": ["image"], "not": {"required": ["project-context"]} }
       ]
     },

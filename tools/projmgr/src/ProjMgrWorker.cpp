@@ -1413,7 +1413,7 @@ bool ProjMgrWorker::ProcessDevice(ContextItem& context, BoardOrDevice process) {
     if (!deviceItem.pname.empty()) {
       ProjMgrLogger::Get().Error("processor name '" + deviceItem.pname + "' was not found", context.name);
       return false;
-    } else if (!HasVarDefineError() && process != BoardOrDevice::SkipProcessor) {
+    } else if (!HasVarDefineError() && process != BoardOrDevice::SkipProcessor && !context.imageOnly) {
       string msg = "one of the following processors must be specified:";
       const auto& processors = matchedDevice->GetProcessors();
       for (const auto& p : processors) {
