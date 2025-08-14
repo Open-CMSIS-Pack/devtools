@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  packs:
+    - pack: ARM::RteTest_DFP
+
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0_Dual
+      target-set:
+        - set:
+          debugger:
+            name: CMSIS-DAP
+          images:
+            - image: ./images/image1.elf
+              device: :cm0_core0
+            - image: ./images/image2.elf
+              device: :cm0_core1

@@ -242,7 +242,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
       item.load = item.type == RteConstants::OUTPUT_TYPE_ELF ? LOAD_IMAGE_SYMBOLS :
         item.type == RteConstants::OUTPUT_TYPE_LIB ? LOAD_NONE : LOAD_IMAGE;
     }
-    m_runDebug.outputs.push_back({ item.image, item.info, item.type, item.load, item.offset });
+    m_runDebug.outputs.push_back({ item.image, item.info, item.type, item.load, item.offset, item.pname });
   }
 
   // debug vars
