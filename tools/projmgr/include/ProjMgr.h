@@ -65,9 +65,10 @@ public:
   /**
    * @brief load solution
    * @param path to <solution>.csolution.yml file
+   * @param active target set in the format <target-type>[@<set>]
    * @return processing status
   */
-  bool LoadSolution(const std::string& csolution);
+  bool LoadSolution(const std::string& csolution, const std::string& activeTargetSet);
 
 protected:
   /**

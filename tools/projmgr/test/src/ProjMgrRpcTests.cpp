@@ -26,7 +26,10 @@ protected:
   vector<json> RunRpcMethods(const string& strIn);
   string RunRpcMethodsWithContent(const string& strIn);
 
-  string CreateLoadRequests(const string& solution, const vector<string>& contextList = RteUtils::EMPTY_STRING_VECTOR);
+  string CreateLoadRequests(const string& solution,
+    const string& activeTarget = RteUtils::EMPTY_STRING,
+    const vector<string>& contextList = RteUtils::EMPTY_STRING_VECTOR
+  );
 
 };
 
@@ -41,12 +44,12 @@ string ProjMgrRpcTests::FormatRequest(const int id, const string& method, const 
   return request.dump();
 }
 
-string ProjMgrRpcTests::CreateLoadRequests(const string& solution, const vector<string>& contextList)
+string ProjMgrRpcTests::CreateLoadRequests(const string& solution, const string& activeTarget, const vector<string>& contextList)
 {
   string loadSolutionRequest;
   if(!solution.empty()) {
     auto csolutionPath = testinput_folder + solution;
-    loadSolutionRequest = FormatRequest(2, "LoadSolution", json({{ "solution", csolutionPath }}));
+    loadSolutionRequest = FormatRequest(2, "LoadSolution", json({{ "solution", csolutionPath }, { "activeTarget", activeTarget } }));
     if(!contextList.empty()) {
       YAML::Node cbuildset;
       cbuildset["cbuild-set"]["generated-by"] = "ProjMrgUnitTests";
@@ -110,6 +113,7 @@ TEST_F(ProjMgrRpcTests, RpcGetVersion) {
   EXPECT_EQ(1, responses[0]["id"]);
   EXPECT_TRUE(responses[0]["result"]["success"]);
   EXPECT_EQ(string(VERSION_STRING), responses[0]["result"]["version"]);
+  EXPECT_EQ(string(RPC_API_VERSION), responses[0]["result"]["apiVersion"]);
 }
 
 TEST_F(ProjMgrRpcTests, RpcGetVersionWithContent) {
@@ -119,7 +123,7 @@ TEST_F(ProjMgrRpcTests, RpcGetVersionWithContent) {
 }
 
 TEST_F(ProjMgrRpcTests, RpcLoadSolution) {
-  const auto& requests = CreateLoadRequests("/TestRpc/minimal.csolution.yml");
+  const auto& requests = CreateLoadRequests("/TestRpc/minimal.csolution.yml", "TestHW");
   const auto& responses = RunRpcMethods(requests);
   EXPECT_TRUE(responses[0]["result"]["success"]);
   EXPECT_TRUE(responses[1]["result"]["success"]);
@@ -145,7 +149,7 @@ TEST_F(ProjMgrRpcTests, RpcLoadNotSolution) {
 
 TEST_F(ProjMgrRpcTests, RpcLoadSolutionNoPacks) {
   auto csolutionPath = testinput_folder + "/TestRpc/minimal.csolution.yml";
-  const auto& requests = FormatRequest(1, "LoadSolution", json({ { "solution", csolutionPath } }));
+  const auto& requests = FormatRequest(1, "LoadSolution", json({ { "solution", csolutionPath }, { "activeTarget", "TestHW" } }));
   const auto& responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
   string msg = responses[0]["result"]["message"];
@@ -207,7 +211,7 @@ TEST_F(ProjMgrRpcTests, RpcDeviceListContext) {
   vector<string> contextList = {
     context
   };
-  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
   // all devices
   requests += FormatRequest(3, "GetDeviceList", json({{"context", "selectable+CM0"},{ "namePattern", ""}, {"vendor", ""}}));
   requests += FormatRequest(4, "GetDeviceList", json({{"context", "selectable+CM0"},{ "namePattern", "*Dual*"}, {"vendor", ""}}));
@@ -336,7 +340,7 @@ TEST_F(ProjMgrRpcTests, RpcBoardListContext) {
   vector<string> contextList = {
     context
   };
-  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
 
   // all boards
   requests += FormatRequest(2, "GetBoardList", json({{"context", "selectable+CM0"},{ "namePattern", ""}, {"vendor", ""}}));
@@ -442,7 +446,7 @@ TEST_F(ProjMgrRpcTests, RpcValidateComponents) {
     "incompatible+CM0",
     "incompatible-variant+CM0",
   };
-  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
   int id = 3;
   for (const auto& context : contextList) {
     requests += FormatRequest(id++, "ValidateComponents", json({ { "context", context } }));
@@ -497,7 +501,7 @@ TEST_F(ProjMgrRpcTests, RpcResolveComponents) {
   vector<string> contextList = {
     context
   };
-  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
   requests += FormatRequest(3, "ValidateComponents", json({{ "context", context }}));
   requests += FormatRequest(4, "Resolve", json({{ "context", context }}));
   requests += FormatRequest(5, "ValidateComponents", json({{ "context", context }}));
@@ -528,7 +532,7 @@ TEST_F(ProjMgrRpcTests, RpcSelectComponent) {
   param["count"] = 1;
   param["options"] = json::object();
 
-  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
   requests += FormatRequest(3, "ValidateComponents", json({{ "context", context }}));
   requests += FormatRequest(4, "GetComponentsTree", json({{ "context", context }, {"all", false}}));
   requests += FormatRequest(5, "SelectComponent", param);
@@ -561,7 +565,7 @@ TEST_F(ProjMgrRpcTests, RpcSelectVariant) {
   param["id"] = "ARM::RteTest:Dependency:Variant";
   param["variant"] = "Compatible";
 
-  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
   requests += FormatRequest(3, "ValidateComponents", json({{ "context", context }}));
   requests += FormatRequest(4, "SelectVariant", param);
   requests += FormatRequest(5, "ValidateComponents", json({{ "context", context }}));
@@ -598,7 +602,7 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   param["count"] = 1;
   RpcArgs::to_json(param["options"], opt);
 
-  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", contextList);
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
   requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
   requests += FormatRequest(4, "SelectComponent", param);
   requests += FormatRequest(5, "Apply", param);

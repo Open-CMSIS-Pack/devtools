@@ -81,7 +81,7 @@ public:
   RpcArgs::SuccessResult Apply(const string& context) override;
   RpcArgs::SuccessResult Resolve(const string& context) override;
   RpcArgs::SuccessResult LoadPacks(void) override;
-  RpcArgs::SuccessResult LoadSolution(const string& solution) override;
+  RpcArgs::SuccessResult LoadSolution(const string& solution, const string& activeTarget) override;
   RpcArgs::UsedItems GetUsedItems(const string& context) override;
   RpcArgs::PacksInfo GetPacksInfo(const string& context) override;
   RpcArgs::DeviceList GetDeviceList(const string& context, const string& namePattern, const string& vendor) override;
@@ -201,6 +201,7 @@ RpcArgs::GetVersionResult RpcHandler::GetVersion(void) {
   RpcArgs::GetVersionResult res = {{true}};
   res.message = string("Running ") + INTERNAL_NAME + " " + VERSION_STRING;
   res.version = VERSION_STRING;
+  res.apiVersion = RPC_API_VERSION;
   return res;
 }
 
@@ -279,7 +280,7 @@ RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
   return result;
 }
 
-RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution) {
+RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const string& activeTarget) {
   RpcArgs::SuccessResult result = {false};
   const auto csolutionFile = RteFsUtils::MakePathCanonical(solution);
   if (!regex_match(csolutionFile, regex(".*\\.csolution\\.(yml|yaml)"))) {
@@ -290,7 +291,7 @@ RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution) {
     result.message = "Packs must be loaded before loading solution";
     return result;
   }
-  result.success = m_solutionLoaded = m_manager.LoadSolution(csolutionFile);
+  result.success = m_solutionLoaded = m_manager.LoadSolution(csolutionFile, activeTarget);
   if (!m_solutionLoaded) {
     result.message = "failed to load and process solution " + csolutionFile;
   }
