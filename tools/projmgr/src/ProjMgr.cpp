@@ -1286,14 +1286,19 @@ void ProjMgr::Clear() {
   ProjMgrLogger::Get().Clear();
 }
 
-bool ProjMgr::LoadSolution(const std::string& csolution) {
+bool ProjMgr::LoadSolution(const std::string& csolution, const std::string& activeTargetSet) {
   Clear();
 
   m_csolutionFile = csolution;
   m_rootDir = RteUtils::ExtractFilePath(m_csolutionFile, false);
-
-  m_contextSet = true;
   m_updateRteFiles = false;
+
+  if (activeTargetSet.empty()) {
+    // fallback to 'context-set' for backward compatibility
+    m_contextSet = true;
+  } else {
+    m_activeTargetSet = activeTargetSet;
+  }
 
   if (!PopulateContexts()) {
     return false;

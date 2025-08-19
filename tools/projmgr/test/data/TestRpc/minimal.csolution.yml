@@ -7,6 +7,10 @@ solution:
   target-types:
     - type: TestHW
       device: RteTest_ARMCM4_NOFP
+      target-set:
+        - set: 
+          images:
+           - project-context: minimal
 
   projects:
     - project: minimal.cproject.yml
