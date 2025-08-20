@@ -46,7 +46,7 @@ solution:
             - project-context: core0
               load: none
             - project-context: core1
-              load: symbols
+              load: image+symbols
           debugger:
             name: CMSIS-DAP
             start-pname: cm0_core1
