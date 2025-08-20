@@ -95,6 +95,7 @@ public:
   RpcArgs::Results ValidateComponents(const string& context) override;
   RpcArgs::LogMessages GetLogMessages(void) override;
   RpcArgs::DraftProjectsInfo GetDraftProjects(const RpcArgs::DraftProjectsFilter& filter) override;
+  RpcArgs::ConvertSolutionResult ConvertSolution(const string& solution, const string& activeTarget, const bool& updateRte) override;
 
 protected:
   enum Exception
@@ -672,6 +673,30 @@ RpcArgs::DraftProjectsInfo RpcHandler::GetDraftProjects(const RpcArgs::DraftProj
 
   applications.success = true;
   return applications;
+}
+
+RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solution, const string& activeTarget, const bool& updateRte) {
+  RpcArgs::ConvertSolutionResult result = { false };
+  const auto csolutionFile = RteFsUtils::MakePathCanonical(solution);
+  if (!regex_match(csolutionFile, regex(".*\\.csolution\\.(yml|yaml)"))) {
+    result.message = solution + " is not a *.csolution.yml file";
+    return result;
+  }
+  if (!m_manager.RunConvert(csolutionFile, activeTarget, updateRte) || !ProjMgrLogger::Get().GetErrors().empty()) {
+    if (m_worker.HasVarDefineError()) {
+      const auto& vars = m_worker.GetUndefLayerVars();
+      result.undefinedLayers = StrVec(vars.begin(), vars.end());
+      result.message = "Layer variables undefined, names can be found under 'undefinedLayers'";
+    } else if (m_worker.HasCompilerDefineError()) {
+      result.selectCompiler = m_worker.GetSelectableCompilers();
+      result.message = "Compiler undefined, selectable values can be found under 'selectCompiler'";
+    } else {
+      result.message = "Convert solution failed, see log messages";
+    }
+    return result;
+  }
+  result.success = true;
+  return result;
 }
 
 // end of ProkMgrRpcServer.cpp

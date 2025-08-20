@@ -12,6 +12,7 @@
 
 #include "CrossPlatformUtils.h"
 #include "ProductInfo.h"
+#include "RteFsUtils.h"
 #include "yaml-cpp/yaml.h"
 
 #include <fstream>
@@ -72,7 +73,7 @@ vector<json> ProjMgrRpcTests::RunRpcMethods(const string& strIn) {
   StdStreamRedirect streamRedirect;
   streamRedirect.SetInString(strIn);
   char* argv[] = { (char*)"csolution", (char*)"rpc" };
-  EXPECT_EQ(0, RunProjMgr(2, argv, 0));
+  EXPECT_EQ(0, RunProjMgr(2, argv, m_envp));
   string line;
   vector<json> responses;
   istringstream iss(streamRedirect.GetOutString());
@@ -86,7 +87,7 @@ string ProjMgrRpcTests::RunRpcMethodsWithContent(const string& strIn) {
   StdStreamRedirect streamRedirect;
   streamRedirect.SetInString(strIn);
   char* argv[] = { (char*)"csolution", (char*)"rpc", (char*)"--content-length" };
-  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+  EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
   return streamRedirect.GetOutString();
 }
 
@@ -704,4 +705,39 @@ TEST_F(ProjMgrRpcTests, RpcGetDraftProjects) {
   EXPECT_EQ(responses[0]["result"]["message"], "Packs must be loaded before retrieving draft projects");
 }
 
+TEST_F(ProjMgrRpcTests, RpcConvertSolution) {
+  auto csolutionPath = testinput_folder + "/TestRpc/minimal.csolution.yml";
+  auto requests = FormatRequest(1, "ConvertSolution",
+    json({ { "solution", csolutionPath }, { "activeTarget", "TestHW" }, { "updateRte", true } }));
+  auto responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestRpc/minimal.cbuild-idx.yml"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestRpc/minimal.cbuild-pack.yml"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestRpc/out/minimal+TestHW.cbuild-run.yml"));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestRpc/out/minimal/TestHW/minimal+TestHW.cbuild.yml"));
+  
+  // convert fail
+  csolutionPath = testinput_folder + "/TestRpc/unknown-component.csolution.yml";
+  requests = FormatRequest(1, "ConvertSolution",
+    json({ { "solution", csolutionPath }, { "activeTarget", "" }, { "updateRte", true } }));
+  responses = RunRpcMethods(requests);
+  EXPECT_FALSE(responses[0]["result"]["success"]);
+
+  // undefined compiler
+  csolutionPath = testinput_folder + "/TestSolution/SelectableToolchains/select-compiler.csolution.yml";
+  requests = FormatRequest(1, "ConvertSolution",
+    json({ { "solution", csolutionPath }, { "activeTarget", "" }, { "updateRte", true } }));
+  responses = RunRpcMethods(requests);
+  EXPECT_FALSE(responses[0]["result"]["success"]);
+  EXPECT_EQ(responses[0]["result"]["selectCompiler"][0], "AC6@>=6.0.0");
+  EXPECT_EQ(responses[0]["result"]["selectCompiler"][1], "GCC@>=8.0.0");
+
+  // undefined layer
+  csolutionPath = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
+  requests = FormatRequest(1, "ConvertSolution",
+    json({ { "solution", csolutionPath }, { "activeTarget", "" }, { "updateRte", true } }));
+  responses = RunRpcMethods(requests);
+  EXPECT_FALSE(responses[0]["result"]["success"]);
+  EXPECT_EQ(responses[0]["result"]["undefinedLayers"][0], "NotDefined");
+}
 // end of ProjMgrRpcTests.cpp
