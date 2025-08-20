@@ -540,7 +540,7 @@ void ProjMgrRunDebug::AddGeneratedImage(const ContextItem* context, const string
     image.file = file;
     image.info = "generate by " + context->name;
     image.type = type;
-    image.load = type == RteConstants::OUTPUT_TYPE_ELF && !context->elfLoadMode.empty() ? context->elfLoadMode : load;
+    image.load = load;
     image.pname = context->deviceItem.pname;
     image.offset = type == RteConstants::OUTPUT_TYPE_BIN ? context->loadOffset : RteUtils::EMPTY_STRING;
     m_runDebug.outputs.push_back(image);
@@ -553,17 +553,20 @@ void ProjMgrRunDebug::AddGeneratedImages(const ContextItem* context) {
     - When only a file with 'type: elf' is generated, the file gets 'load: image+symbols'
     - When a file with 'type: elf' and a file with 'type: hex' is generated, the 'type: elf' file gets 'load: symbols' and the 'type: hex' file gets 'load: image'
     - All other file types get 'load: none'
+    - This work-around should be still intact when load: image+symbols is explicitly stated
   For any other compiler:
     - Files with 'type: elf' get 'load: image+symbols'
     - All other file types get 'load: none'
   */
+  const auto elfLoadMode = !context->elfLoadMode.empty() ? context->elfLoadMode : LOAD_IMAGE_SYMBOLS;
+  const bool enableAC6Handling = context->compiler == "AC6" && context->outputTypes.hex.on && elfLoadMode == LOAD_IMAGE_SYMBOLS;
   if (context->outputTypes.elf.on) {
     AddGeneratedImage(context, context->outputTypes.elf.filename, RteConstants::OUTPUT_TYPE_ELF,
-      context->compiler == "AC6" && context->outputTypes.hex.on ? LOAD_SYMBOLS : LOAD_IMAGE_SYMBOLS);
+      enableAC6Handling ? LOAD_SYMBOLS : elfLoadMode);
   }
   if (context->outputTypes.hex.on) {
     AddGeneratedImage(context, context->outputTypes.hex.filename, RteConstants::OUTPUT_TYPE_HEX,
-      context->compiler == "AC6" ? LOAD_IMAGE : LOAD_NONE);
+      enableAC6Handling ? LOAD_IMAGE : LOAD_NONE);
   }
   if (context->outputTypes.bin.on) {
     AddGeneratedImage(context, context->outputTypes.bin.filename, RteConstants::OUTPUT_TYPE_BIN, LOAD_NONE);
