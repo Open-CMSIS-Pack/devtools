@@ -70,6 +70,16 @@ public:
   */
   bool LoadSolution(const std::string& csolution, const std::string& activeTargetSet);
 
+  /**
+   * @brief convert solution and generate yml files
+   * @param path to <solution>.csolution.yml file
+   * @param active target set in the format <target-type>[@<set>]
+   * @param update-rte: create/update configuration files
+   * @return processing status
+  */
+  bool RunConvert(const std::string&csolution = RteUtils::EMPTY_STRING,
+    const std::string& activeTargetSet = RteUtils::EMPTY_STRING, const bool& updateRte = false);
+
 protected:
   /**
    * @brief parse command line options
@@ -185,7 +195,6 @@ protected:
   std::set<std::string> m_failedContext;
 
   bool RunConfigure();
-  bool RunConvert();
   bool RunCodeGenerator();
   bool RunListPacks();
   bool RunListBoards();
@@ -212,6 +221,7 @@ protected:
   bool ParseAndValidateContexts();
   bool ProcessContexts();
   bool IsSolutionImageOnly();
+  void InitSolution(const std::string& csolution, const std::string& activeTargetSet, const bool& updateRte);
 };
 
 #endif  // PROJMGR_H

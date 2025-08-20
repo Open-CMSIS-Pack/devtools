@@ -563,7 +563,7 @@ bool ProjMgr::PopulateContexts(void) {
 
 bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
   // Generate cbuild pack file
-  const bool isUsingContexts = m_contextSet || m_context.size() != 0;
+  const bool isUsingContexts = m_contextSet || m_activeTargetSet.has_value() || m_context.size() != 0;
   if (!m_emitter.GenerateCbuildPack(m_processedContexts, isUsingContexts, m_frozenPacks)) {
     return false;
   }
@@ -750,7 +750,12 @@ bool ProjMgr::RunConfigure() {
   return success;
 }
 
-bool ProjMgr::RunConvert(void) {
+bool ProjMgr::RunConvert(const std::string& csolution, const std::string& activeTargetSet, const bool& updateRte) {
+  // Set csolution.yml file and options
+  if (!csolution.empty()) {
+    InitSolution(csolution, activeTargetSet, updateRte);
+  }
+  
   // Configure
   bool Success = Configure();
 
@@ -1286,19 +1291,22 @@ void ProjMgr::Clear() {
   ProjMgrLogger::Get().Clear();
 }
 
-bool ProjMgr::LoadSolution(const std::string& csolution, const std::string& activeTargetSet) {
+void ProjMgr::InitSolution(const std::string& csolution, const std::string& activeTargetSet, const bool& updateRte) {
   Clear();
-
   m_csolutionFile = csolution;
   m_rootDir = RteUtils::ExtractFilePath(m_csolutionFile, false);
-  m_updateRteFiles = false;
-
+  m_updateRteFiles = updateRte;
   if (activeTargetSet.empty()) {
     // fallback to 'context-set' for backward compatibility
     m_contextSet = true;
   } else {
     m_activeTargetSet = activeTargetSet;
   }
+}
+
+bool ProjMgr::LoadSolution(const std::string& csolution, const std::string& activeTargetSet) {
+
+  InitSolution(csolution, activeTargetSet, false);
 
   if (!PopulateContexts()) {
     return false;

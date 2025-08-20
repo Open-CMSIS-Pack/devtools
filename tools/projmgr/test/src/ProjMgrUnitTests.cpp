@@ -33,32 +33,10 @@ protected:
 
   void SetUp() {
     m_context.clear();
-    std::string ac6 = "AC6_TOOLCHAIN_6_18_0=" + testinput_folder;
-    std::string gcc = "GCC_TOOLCHAIN_11_2_1=" + testinput_folder;
-    std::string iar = "IAR_TOOLCHAIN_8_50_6=" + testinput_folder;
-
-    // Allocate memory for environment variables
-    m_envp[0] = new char[ac6.size() + 1];
-    m_envp[1] = new char[iar.size() + 1];
-    m_envp[2] = new char[gcc.size() + 1];
-
-    // Copy strings to allocated memory
-    std::strcpy(m_envp[0], ac6.c_str());
-    std::strcpy(m_envp[1], iar.c_str());
-    std::strcpy(m_envp[2], gcc.c_str());
-
-    // Null terminator
-    m_envp[3] = nullptr;
   };
 
   void TearDown() {
-    cleanupEnvp();
-  }
-
-  void cleanupEnvp() {
-    delete[] m_envp[0];
-    delete[] m_envp[1];
-    delete[] m_envp[2];
+    // reserved
   }
 
   void GetFilesInTree(const string& dir, set<string>& files) {
@@ -98,8 +76,6 @@ protected:
     fout.close();
     return csolutionFile;
   }
-
-  char* m_envp[4];
 };
 
 TEST_F(ProjMgrUnitTests, Validate_Logger) {
