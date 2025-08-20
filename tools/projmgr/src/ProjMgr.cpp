@@ -56,7 +56,6 @@ Options:\n\
   -N, --no-update-rte           Skip creation of RTE directory and files\n\
   -o,-O --output arg            Base folder for output files, 'outdir' and 'tmpdir' (default \"Same as '*.csolution.yml'\")\n\
   -q, --quiet                   Run silently, printing only error messages\n\
-  -R, --relative-paths          Print paths relative to project or ${CMSIS_PACK_ROOT}\n\
   -S, --context-set             Select the context names from cbuild-set.yml for generating the target application\n\
   -t, --toolchain arg           Selection of the toolchain used in the project optionally with version\n\
   -v, --verbose                 Enable verbose messages\n\
@@ -164,7 +163,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option toolchain("t,toolchain", "Selection of the toolchain used in the project optionally with version", cxxopts::value<string>());
   cxxopts::Option ymlOrder("yml-order", "Preserve order as specified in input yml", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option contextSet("S,context-set", "Select the context names from cbuild-set.yml for generating the target application", cxxopts::value<bool>()->default_value("false"));
-  cxxopts::Option relativePaths("R,relative-paths", "Output paths relative to project or to CMSIS_PACK_ROOT", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option relativePaths("R,relative-paths", "Output paths relative to csolution.yml or to CMSIS_PACK_ROOT", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option frozenPacks("frozen-packs", "The list of packs from cbuild-pack.yml is frozen and raises error if not up-to-date", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option updateIdx("update-idx", "Update cbuild-idx file with layer info", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option quiet("q,quiet", "Run silently, printing only error messages", cxxopts::value<bool>()->default_value("false"));
@@ -178,7 +177,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"update-rte",        { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose, frozenPacks}}},
     {"convert",           { false, {context, contextSet, activeTargetSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, outputAlt, toolchain, verbose, frozenPacks, cbuildgen}}},
     {"run",               { false, {context, contextSet, activeTargetSet, debug, generator, load, quiet, schemaCheck, verbose, dryRun}}},
-    {"list packs",        { true,  {context, contextSet, activeTargetSet, debug, filter, load, missing, quiet, schemaCheck, toolchain, verbose, relativePaths}}},
+    {"list packs",        { true,  {context, contextSet, activeTargetSet, debug, filter, load, missing, quiet, schemaCheck, toolchain, verbose}}},
     {"list boards",       { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list devices",      { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list configs",      { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
