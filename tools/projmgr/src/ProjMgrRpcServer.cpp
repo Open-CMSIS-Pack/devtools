@@ -676,7 +676,7 @@ RpcArgs::DraftProjectsInfo RpcHandler::GetDraftProjects(const RpcArgs::DraftProj
 }
 
 RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solution, const string& activeTarget, const bool& updateRte) {
-  RpcArgs::ConvertSolutionResult result = { false };
+  RpcArgs::ConvertSolutionResult result = {{ false }};
   const auto csolutionFile = RteFsUtils::MakePathCanonical(solution);
   if (!regex_match(csolutionFile, regex(".*\\.csolution\\.(yml|yaml)"))) {
     result.message = solution + " is not a *.csolution.yml file";
