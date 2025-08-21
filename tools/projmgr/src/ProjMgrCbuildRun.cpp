@@ -271,6 +271,21 @@ void ProjMgrCbuildRun::SetProcessorsNode(YAML::Node node, const vector<Processor
 
 //-- ProjMgrYamlEmitter::GenerateCbuildRun --------------------------------------------------------
 bool ProjMgrYamlEmitter::GenerateCbuildRun(const RunDebugType& debugRun) {
+  // remove cbuild-run file if it was generated in the $SolutionDir()$ by csolution lower than 2.11.0
+  const string olderCbuildRun = RteFsUtils::ParentPath(debugRun.solution) + '/' +
+    debugRun.solutionName + '+' + debugRun.targetType + ".cbuild-run.yml";
+  if (RteFsUtils::Exists(olderCbuildRun)) {
+    try {
+      const YAML::Node& cbuildRun = YAML::LoadFile(olderCbuildRun);
+      const auto& generatedBy = cbuildRun["cbuild-run"]["generated-by"].as<string>();
+      const auto& tool = RteUtils::ExtractPrefix(generatedBy, " version");
+      const auto& version = RteUtils::ExtractSuffix(generatedBy, "version ");
+      if (tool == "csolution" && VersionCmp::Compare(version, "2.11.0") < 0) {
+        RteFsUtils::RemoveFile(olderCbuildRun);
+      }
+    } catch (YAML::Exception&) {}
+  }
+
   // generate cbuild-run.yml
   m_cbuildRun = debugRun.cbuildRun;
   RteFsUtils::NormalizePath(m_cbuildRun, m_outputDir);
