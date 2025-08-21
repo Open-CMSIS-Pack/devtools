@@ -327,12 +327,13 @@ struct ExampleItem {
 
 /**
  * @brief template item containing
- *        name of example
+ *        name of template
  *        description
  *        path to the directory that contains the template
  *        path to the *.csolution.yml file
  *        path to copy the template into
  *        pack identifier
+ *        placeholder symmetric to ExampleItem for reusable template
 */
 struct TemplateItem {
   std::string name;
@@ -341,6 +342,7 @@ struct TemplateItem {
   std::string file;
   std::string copyTo;
   std::string pack;
+  std::vector<BoardItem> boards;
 };
 
 /**
@@ -1212,6 +1214,7 @@ protected:
   bool IsBoardListCompatible(const ContextItem& context, const std::vector<RteBoard*> compatibleBoards, const Collection<RteItem*>& boards);
   bool IsEnvironmentCompatible(const std::string& environment, const StrVec& filter);
   bool HasCompatibleEnvironment(const Collection<RteItem*>& environments, const StrVec& filter);
+  template<class T> bool CheckFilter(const std::string& filter, const T& item);
 };
 
 #endif  // PROJMGRWORKER_H
