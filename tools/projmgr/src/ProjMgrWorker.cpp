@@ -4313,6 +4313,24 @@ std::vector<ExampleItem> ProjMgrWorker::CollectExamples(const ContextItem& conte
   return examples;
 }
 
+template<class T> bool ProjMgrWorker::CheckFilter(const std::string& filter, const T& item) {
+  const bool nameFound = item.name.find(filter) != string::npos;
+  const bool packFound = item.pack.find(filter) != string::npos;
+  const bool descriptionFound = m_verbose ? item.description.find(filter) != string::npos : false;
+  bool boardFound = false;
+  if (m_verbose) {
+    for (const auto& board : item.boards) {
+      if (board.vendor.find(filter) != std::string::npos ||
+        board.name.find(filter) != std::string::npos ||
+        board.revision.find(filter) != std::string::npos) {
+        boardFound = true;
+        break;
+      }
+    }
+  }
+  return nameFound || packFound || descriptionFound || boardFound;
+}
+
 bool ProjMgrWorker::ListExamples(vector<string>& examples, const string& filter) {
   const auto& selectedContext = m_selectedContexts.front();
   ContextItem& context = m_contexts[selectedContext];
@@ -4331,7 +4349,7 @@ bool ProjMgrWorker::ListExamples(vector<string>& examples, const string& filter)
   const auto& collectedExamples = CollectExamples(context, StrVec());
 
   for (const auto& exampleItem : collectedExamples) {
-    if (!filter.empty() && exampleItem.name.find(filter) == string::npos) {
+    if (!filter.empty() && !CheckFilter(filter, exampleItem)) {
       continue;
     }
     string example = exampleItem.boards.empty() ? "Reference Application: " : "";
@@ -4394,7 +4412,7 @@ bool ProjMgrWorker::ListTemplates(vector<string>& templates, const string& filte
   }
   const auto& collectedTemplates = CollectTemplates(context);
   for (const auto& templateItem : collectedTemplates) {
-    if (!filter.empty() && templateItem.name.find(filter) == string::npos) {
+    if (!filter.empty() && !CheckFilter(filter, templateItem)) {
       continue;
     }
     string templateStr = templateItem.name + " (" + templateItem.pack + ")";

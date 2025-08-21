@@ -6879,7 +6879,7 @@ TEST_F(ProjMgrUnitTests, ListTargetSetsImageOnly) {
 }
 
 TEST_F(ProjMgrUnitTests, ListExamples) {
-  char* argv[8];
+  char* argv[9];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/Examples/solution.csolution.yml";
 
@@ -6940,6 +6940,17 @@ PreIncludeEnvFolder@1.0.0 (ARM::RteTest@0.1.0)\n\
 PreIncludeEnvFolder@1.0.0 (ARM::RteTest@0.1.0)\n\
 ");
 
+  // test with filter option (description)
+  streamRedirect.ClearStringStreams();
+  argv[7] = (char*)"different folder description";
+  argv[8] = (char*)"--verbose";
+  EXPECT_EQ(0, RunProjMgr(9, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+PreIncludeEnvFolder@1.0.0 \\(ARM::RteTest@0.1.0\\)\n\
+  description: PreInclude Test Application with different folder description\n\
+")));
+
   // test with non-compatible device
   streamRedirect.ClearStringStreams();
   argv[5] = (char*)"CM0";
@@ -6973,6 +6984,17 @@ Board3 (ARM::RteTest_DFP@0.2.0)\n\
   EXPECT_STREQ(outStr.c_str(), "\
 Board1Template (ARM::RteTest_DFP@0.2.0)\n\
 ");
+
+  // test filter (description)
+  argv[4] = (char*)"Template one";
+  argv[5] = (char*)"--verbose";
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Board1Template \\(ARM::RteTest_DFP@0.2.0\\)\n\
+  description: \"Test board Template one\"\n\
+")));
 
   // list board's compatible template
   const string& csolution = testinput_folder + "/Examples/solution.csolution.yml";
