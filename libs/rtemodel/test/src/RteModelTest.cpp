@@ -1126,7 +1126,7 @@ TEST_F(RteModelPrjTest, LoadCprjM4) {
   auto& allLayerDescriptors = rteKernel.GetGlobalModel()->GetLayerDescriptors();
   EXPECT_EQ(allLayerDescriptors.size(), 10);
   auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
-  EXPECT_EQ(filteredLayerDescriptors.size(), 10);
+  EXPECT_EQ(filteredLayerDescriptors.size(), 7);
   ca = activeTarget->GetComponentAggregate("ARM::Device:Startup");
   ASSERT_NE(ca, nullptr);
   EXPECT_EQ(ca->GetAttribute("layer"), "LayerOne");

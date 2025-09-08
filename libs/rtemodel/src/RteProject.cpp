@@ -1589,6 +1589,11 @@ bool RteProject::AddTarget(const string& name, const map<string, string>& attrib
     if (boardInfo) {
       targetAttributes.AddAttributes(boardInfo->GetAttributes(), false);
     }
+    if(targetAttributes.HasAttribute("Dname") &&
+      !targetAttributes.HasAttribute("Bname")) {
+      // set empty board name to filter-out board-specific items if device is selected
+      targetAttributes.AddAttribute("Bname", "");
+    }
 
     // add Brevision attribute if Bversion is specified
     if (!targetAttributes.HasAttribute("Brevision") && targetAttributes.HasAttribute("Bversion")) {
