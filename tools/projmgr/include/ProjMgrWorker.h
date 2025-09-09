@@ -1034,6 +1034,13 @@ public:
    * @return vector of template items
   */
   std::vector<TemplateItem> CollectTemplates(const ContextItem& context);
+  
+  /**
+   * @brief check if all selected contexts have lib output
+   * @param reference to processed contexts
+   * @return true if it's lib only
+  */
+  bool IsLibOnly(const std::vector<ContextItem*>& contexts);
 
   /**
    * @brief clear worker members for reloading a solution
