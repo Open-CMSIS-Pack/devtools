@@ -4641,8 +4641,8 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_StandardLibrary) {
   const string& csolution = testinput_folder + "/TestSolution/StandardLibrary/library.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
-  argv[3] = (char*)"-c";
-  argv[4] = (char*)"library.Debug+RteTest_ARMCM3";
+  argv[3] = (char*)"-a";
+  argv[4] = (char*)"";
   argv[5] = (char*)"-o";
   argv[6] = (char*)testoutput_folder.c_str();
   argv[7] = (char*)"--cbuildgen";
@@ -4655,6 +4655,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_StandardLibrary) {
   // Check generated cbuild YMLs
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/library.Debug+RteTest_ARMCM3.cbuild.yml",
     testinput_folder + "/TestSolution/StandardLibrary/ref/library.Debug+RteTest_ARMCM3.cbuild.yml");
+
+  // Check there is no cbuild-run (target-set has only lib contexts)
+  const YAML::Node& cbuildIdx = YAML::LoadFile(testoutput_folder + "/library.cbuild-idx.yml");
+  EXPECT_FALSE(cbuildIdx["build-idx"]["cbuild-run"].IsDefined());
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleProject_SameFolder) {

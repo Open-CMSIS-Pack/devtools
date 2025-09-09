@@ -5775,3 +5775,12 @@ bool ProjMgrWorker::PopulateActiveTargetSet(const string& activeTargetSet) {
   }
   return true;
 }
+
+bool ProjMgrWorker::IsLibOnly(const std::vector<ContextItem*>& contexts) {
+  for (auto& context : contexts) {
+    if (!context->outputTypes.lib.on) {
+      return false;
+    }
+  }
+  return true;
+}

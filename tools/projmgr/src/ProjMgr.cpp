@@ -579,7 +579,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
   }
 
   // Generate cbuild-run file
-  if (previousResult && !m_processedContexts.empty() &&
+  if (previousResult && !m_processedContexts.empty() && !m_worker.IsLibOnly(m_processedContexts) &&
     (m_contextSet || m_activeTargetSet.has_value())) {
     const auto& debugAdapters = GetDebugAdaptersFile();
     if (!debugAdapters.empty()) {
