@@ -4038,6 +4038,10 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& filter) {
     list<RteDevice*> filteredModelDevices;
     context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
     for (const auto& deviceItem : filteredModelDevices) {
+      if (!deviceItem->GetDeviceItems().empty()) {
+        // skip not end-leaf item
+        continue;
+      }
       const string& deviceVendor = deviceItem->GetVendorName();
       const string& deviceName = deviceItem->GetFullDeviceName();
       const string& devicePack = deviceItem->GetPackageID();

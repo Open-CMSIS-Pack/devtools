@@ -183,7 +183,7 @@ TEST_F(ProjMgrRpcTests, RpcDeviceListNoContext) {
 
   EXPECT_TRUE(responses[1]["result"]["success"]);
   auto deviceList = responses[1]["result"]["devices"];
-  EXPECT_EQ(deviceList.size(), 7);
+  EXPECT_EQ(deviceList.size(), 8);
   auto d0 = deviceList[0];
   EXPECT_EQ(d0["id"], "ARM::RteTest_ARMCM0");
   EXPECT_EQ(d0["family"], "RteTest ARM Cortex M");
@@ -222,7 +222,7 @@ TEST_F(ProjMgrRpcTests, RpcDeviceListContext) {
 
   EXPECT_TRUE(responses[2]["result"]["success"]);
   auto deviceList = responses[2]["result"]["devices"];
-  EXPECT_EQ(deviceList.size(), 6);
+  EXPECT_EQ(deviceList.size(), 7);
   auto d0 = deviceList[0];
   EXPECT_EQ(d0["id"], "ARM::RteTest_ARMCM0");
 

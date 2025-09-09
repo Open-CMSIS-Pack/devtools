@@ -532,7 +532,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices) {
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(),"\
-ARM::RteTest_ARMCM4 (ARM::RteTest_DFP@0.2.0)\n\
 ARM::RteTest_ARMCM4_FP (ARM::RteTest_DFP@0.2.0)\n\
 ARM::RteTest_ARMCM4_NOFP (ARM::RteTest_DFP@0.2.0)\n"
   );

@@ -250,9 +250,13 @@ void RpcDataCollector::CollectBoardDevices(vector<RpcArgs::Device>& boardDevices
 void RpcDataCollector::CollectDeviceList(RpcArgs::DeviceList& deviceList, const std::string& namePattern, const std::string& vendor) const {
   list<RteDevice*> devices;
   if(m_model) {
-    m_model->GetDevices(devices, namePattern, vendor);
+    m_model->GetDevices(devices, namePattern, vendor, RteDeviceItem::VARIANT);
   }
   for(auto rteDevice : devices) {
+    if (!rteDevice->GetDeviceItems().empty()) {
+      // skip not end-leaf item
+      continue;
+    }
     deviceList.devices.push_back(FromRteDevice(rteDevice, false));
   }
 }
