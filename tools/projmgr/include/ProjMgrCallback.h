@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -33,11 +33,19 @@ public:
   }
 
   /**
- * @brief obtain warning messages
- * @return list of all warning messages
-*/
+   * @brief obtain warning messages
+   * @return list of all warning messages
+  */
   const std::list<std::string>& GetWarningMessages() const {
     return m_warningMessages;
+  }
+
+  /**
+   * @brief obtain info messages
+   * @return list of all info messages
+  */
+  const std::list<std::string>& GetInfoMessages() const {
+    return m_infoMessages;
   }
 
   /**
@@ -52,6 +60,13 @@ public:
   */
   void ClearWarningMessages() {
     m_warningMessages.clear();
+  }
+
+  /**
+   * @brief clear all info messages
+  */
+  void ClearInfoMessages() {
+    m_infoMessages.clear();
   }
 
   /**
@@ -72,6 +87,12 @@ public:
   void OutputMessage(const std::string& message) override;
 
   /**
+   * @brief output specified info message
+   * @param message string to output specified info message
+  */
+  void OutputInfoMessage(const std::string& message) override;
+
+  /**
    * @brief create error message string and add it to message list
    * @param id error Id
    * @param message error message
@@ -82,6 +103,7 @@ public:
 protected:
   std::list<std::string> m_errorMessages;
   std::list<std::string> m_warningMessages;
+  std::list<std::string> m_infoMessages;
 
 };
 #endif // PROJMGRCALLBACK_H
