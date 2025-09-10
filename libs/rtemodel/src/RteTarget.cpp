@@ -2063,7 +2063,7 @@ bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& co
   // file does not exist or its content is different
   if (RteFsUtils::CopyBufferToFile(headerFile, oss.str(), false) // write file
     && !GetProject()->ShouldUpdateRte() && !bRegionsHeader) {
-    callback->OutputMessage("Constructed file " + headerFile + " was recreated");
+    callback->OutputInfoMessage("Constructed file " + headerFile + " was recreated");
   }
   return true;
 }

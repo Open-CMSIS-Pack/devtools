@@ -610,6 +610,15 @@ std::vector<PackageItem> ProjMgrWorker::GetFilteredPacks(const PackageItem& pack
 
 bool ProjMgrWorker::CheckRteErrors(void) {
   const auto& callback = m_kernel->GetCallback();
+  const list<string>& rteInfoMessages = callback->GetInfoMessages();
+  if (!rteInfoMessages.empty()) {
+    string infoMsg = "RTE Model reports:";
+    for (const auto& rteInfoMessage : rteInfoMessages) {
+      infoMsg += "\n" + rteInfoMessage;
+    }
+    ProjMgrLogger::Get().Info(infoMsg);
+    callback->ClearInfoMessages();
+  }
   const list<string>& rteWarningMessages = callback->GetWarningMessages();
   if (!rteWarningMessages.empty()) {
     string warnMsg = "RTE Model reports:";

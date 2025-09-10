@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -46,6 +46,13 @@ void ProjMgrCallback::OutputMessage(const string& message)
 {
   if (!message.empty()) {
     m_warningMessages.push_back(message);
+  }
+}
+
+void ProjMgrCallback::OutputInfoMessage(const string& message)
+{
+  if (!message.empty()) {
+    m_infoMessages.push_back(message);
   }
 }
 
