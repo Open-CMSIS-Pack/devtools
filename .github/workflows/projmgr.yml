@@ -111,6 +111,24 @@ jobs:
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
+      - name: Archive projmgr schemas
+        if: matrix.arch == 'amd64' && matrix.target == 'linux'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: projmgr-schemas
+          path: ./tools/projmgr/schemas
+          retention-days: ${{ needs.setup.outputs.retention_days }}
+          if-no-files-found: error
+
+      - name: Archive projmgr templates
+        if: matrix.arch == 'amd64' && matrix.target == 'linux'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: projmgr-templates
+          path: ./tools/projmgr/templates
+          retention-days: ${{ needs.setup.outputs.retention_days }}
+          if-no-files-found: error
+
   build-swig:
     needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
@@ -193,8 +211,18 @@ jobs:
         run: |
           mkdir -p tools/projmgr/distribution/bin tools/projmgr/distribution/lib tools/projmgr/distribution/doc tools/projmgr/distribution/etc
           cp tools/projmgr/docs/LICENSE.txt tools/projmgr/distribution/
-          cp -r tools/projmgr/schemas/* tools/projmgr/distribution/etc/
-          cp -r tools/projmgr/templates/* tools/projmgr/distribution/etc/
+
+      - name: Download projmgr schemas
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: projmgr-schemas
+          path: tools/projmgr/distribution/etc/
+
+      - name: Download projmgr templates
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: projmgr-templates
+          path: tools/projmgr/distribution/etc/
 
       - name: Download projmgr linux-amd64
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0

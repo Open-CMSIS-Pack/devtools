@@ -7,10 +7,17 @@ dump_cmake_project_version()
 
 configure_file(src/ProductInfo.h.in ProductInfo.h)
 
-file(DOWNLOAD
-  https://raw.githubusercontent.com/Open-CMSIS-Pack/debug-adapter-registry/refs/heads/main/registry/debug-adapters.yml
-  ${CMAKE_CURRENT_SOURCE_DIR}/templates/debug-adapters.yml
+# debug adapter registry
+include(FetchContent)
+FetchContent_Declare(
+  debug-adapter-registry
+  DOWNLOAD_EXTRACT_TIMESTAMP ON
+  URL https://github.com/Open-CMSIS-Pack/debug-adapter-registry/releases/download/v2.11.0/debug-adapter-registry.zip
+  URL_HASH SHA256=3b65ed965c85ff9665caca5da5f785ec081b7edf7f6a8a0f4512f90f65a00d75
 )
+FetchContent_MakeAvailable(debug-adapter-registry)
+file(COPY ${debug-adapter-registry_SOURCE_DIR}/schemas/debug-adapters.schema.json DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/schemas)
+file(COPY ${debug-adapter-registry_SOURCE_DIR}/registry/debug-adapters.yml DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/templates)
 
 # rpc interface
 include(FetchContent)
