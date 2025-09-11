@@ -300,26 +300,47 @@ SemVer ProjMgrUtils::GetSemVer(const std::string version) {
   return semVer;
 }
 
+VersionType ProjMgrUtils::GetVersionType(const string& version) {
+  if (version.find(HIGHER_OR_EQUAL_OPERATOR) != string::npos) {
+    return VersionType::MINIMUM;
+  } else if (version.find(TILDE_OPERATOR) != string::npos) {
+    return VersionType::EQUIVALENT;
+  } else if (version.find(CARET_OPERATOR) != string::npos) {
+    return VersionType::COMPATIBLE;
+  } else if (version.empty()) {
+    return VersionType::ANY;
+  } else {
+    return VersionType::FIXED;
+  }
+}
+
 string ProjMgrUtils::ConvertToVersionRange(const string& version) {
-  string versionRange = version;
-  if (!versionRange.empty()) {
-    if (versionRange.find(HIGHER_OR_EQUAL_OPERATOR) != string::npos) {
-      // Minimum version
-      versionRange = RteUtils::StripPrefix(versionRange, HIGHER_OR_EQUAL_OPERATOR);
-    } else if (versionRange.find(TILDE_OPERATOR) != string::npos) {
-      // Equivalent version
-      versionRange = RteUtils::StripPrefix(versionRange, TILDE_OPERATOR);
-      SemVer semVer = GetSemVer(versionRange);
-      versionRange = versionRange + ":" + to_string(semVer.major) + "." + to_string(semVer.minor + 1) + ".0-0";
-    } else if (versionRange.find(CARET_OPERATOR) != string::npos) {
-      // Compatible version
-      versionRange = RteUtils::StripPrefix(versionRange, CARET_OPERATOR);
-      SemVer semVer = GetSemVer(versionRange);
-      versionRange = versionRange + ":" + to_string(semVer.major + 1) + ".0.0-0";
-    } else {
-      // Fixed version
-      versionRange = versionRange + ":" + versionRange;
-    }
+  string versionRange;
+  SemVer semVer;
+  switch (GetVersionType(version)) {
+  case VersionType::MINIMUM:
+    // Minimum version
+    versionRange = RteUtils::StripPrefix(version, HIGHER_OR_EQUAL_OPERATOR);
+    break;
+  case VersionType::EQUIVALENT:
+    // Equivalent version
+    versionRange = RteUtils::StripPrefix(version, TILDE_OPERATOR);
+    semVer = GetSemVer(versionRange);
+    versionRange = versionRange + ":" + to_string(semVer.major) + "." + to_string(semVer.minor + 1) + ".0-0";
+    break;
+  case VersionType::COMPATIBLE:
+    // Compatible version
+    versionRange = RteUtils::StripPrefix(version, CARET_OPERATOR);
+    semVer = GetSemVer(versionRange);
+    versionRange = versionRange + ":" + to_string(semVer.major + 1) + ".0.0-0";
+    break;
+  case VersionType::FIXED:
+    // Fixed version
+    versionRange = version + ":" + version;
+    break;
+  case VersionType::ANY:
+    // Any version
+    versionRange = RteUtils::EMPTY_STRING;
   }
   return versionRange;
 }
