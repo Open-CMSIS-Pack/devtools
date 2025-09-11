@@ -1,10 +1,10 @@
 {
   "$comment": "For documentation refer to https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#layer",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.10.0/tools/projmgr/schemas/clayer.schema.json",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.11.0/tools/projmgr/schemas/clayer.schema.json",
   "title": "CMSIS Layer",
   "description": "Set of source files and pre-configured components for reuse in different applications.",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "type": "object",
   "properties": {
     "layer": {
