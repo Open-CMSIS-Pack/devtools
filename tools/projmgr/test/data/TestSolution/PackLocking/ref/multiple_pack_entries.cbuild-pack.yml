@@ -1,0 +1,9 @@
+cbuild-pack:
+  resolved-packs:
+    - resolved-pack: ARM::RteTest_DFP@0.1.1
+      selected-by-pack:
+        - ARM::RteTest_DFP
+        - ARM::RteTest_DFP@0.1.1
+        - ARM::RteTest_DFP@>=0.0.9
+        - ARM::RteTest_DFP@^0.0.9
+        - ARM::RteTest_DFP@~0.1.0

@@ -23,6 +23,18 @@ typedef std::vector<const ConnectItem*> ConnectPtrVec;
 typedef std::map<const ConnectItem*, bool> ActiveConnectMap;
 
 /**
+ * @brief version type
+*/
+enum class VersionType
+{
+  FIXED = 0,
+  EQUIVALENT,
+  COMPATIBLE,
+  MINIMUM,
+  ANY
+};
+
+/**
  * @brief connections collection item containing
  *        filename reference
  *        layer type
@@ -211,6 +223,13 @@ public:
    * @return true if match
   */
   static bool IsMatchingPackInfo(const PackInfo& exactPackInfo, const PackInfo& packInfoToMatch);
+
+  /**
+   * @brief get type of version string
+   * @param version string
+   * @return type according to VersionType enum
+  */
+  static VersionType GetVersionType(const std::string& version);
 
   /**
    * @brief convert version in YML format to CPRJ range format

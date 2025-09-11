@@ -1675,6 +1675,7 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
   }
 
   // Process packages
+  map<VersionType, vector<PackItem>> packEntries;
   for (const auto& packageEntry : packages) {
     if (packageEntry.path.empty()) {
       // Store specified pack metadata
@@ -1696,28 +1697,11 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
       } else {
         // Not matching cbuild pack, add it unless a wildcard entry
         PackageItem package;
-        package.origin = packageEntry.origin;
         ProjMgrUtils::ConvertToPackInfo(packageEntry.pack, package.pack);
 
-        // Resolve version range using installed/local packs
+        // Store pack entries in separated vectors for later resolution in the right order
         if (!package.pack.name.empty() && !WildCards::IsWildcardPattern(package.pack.name)) {
-          XmlItem attributes({
-          {"name",    package.pack.name},
-          {"vendor",  package.pack.vendor},
-          {"version", ProjMgrUtils::ConvertToVersionRange(package.pack.version)},
-          });
-          auto pdsc = m_kernel->GetEffectivePdscFile(attributes);
-          // Only remember the version of the pack if we had it installed or local
-          // Will be used when serializing the cbuild-pack.yml file later
-          if (!pdsc.first.empty()) {
-            context.userInputToResolvedPackIdMap[packageEntry.pack].insert(pdsc.first);
-            string installedVersion = RtePackage::VersionFromId(pdsc.first);
-            package.pack.version = VersionCmp::RemoveVersionMeta(installedVersion);
-          } else {
-            // Remember that we had the user input, but it does not match any installed pack
-            context.userInputToResolvedPackIdMap[packageEntry.pack] = {};
-          }
-          context.packRequirements.push_back(package);
+          packEntries[ProjMgrUtils::GetVersionType(package.pack.version)].push_back(packageEntry);
         }
       }
     } else {
@@ -1739,6 +1723,14 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
       }
       context.packRequirements.push_back(package);
       context.localPackPaths.insert(package.path);
+    }
+  }
+
+  // Resolve pack entries in the order according to the version type: fixed, equivalent, compatible, minimum, any
+  for (const auto& versionType : { VersionType::FIXED, VersionType::EQUIVALENT, VersionType::COMPATIBLE,
+    VersionType::MINIMUM, VersionType::ANY }) {
+    for (const auto& packEntry : packEntries[versionType]) {
+      ResolvePackRequirement(context, packEntry);
     }
   }
 
@@ -1764,6 +1756,44 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
   }
 
   return true;
+}
+
+void ProjMgrWorker::ResolvePackRequirement(ContextItem& context, const PackItem& packageEntry) {
+  // Resolve version range using installed/local packs
+  // Reuse already resolved pack when possible
+  PackageItem package;
+  ProjMgrUtils::ConvertToPackInfo(packageEntry.pack, package.pack);
+  string versionRange = ProjMgrUtils::ConvertToVersionRange(package.pack.version);
+  string bestMatch = RteUtils::EMPTY_STRING;
+  for (const auto& resolved : context.packRequirements) {
+    if (resolved.pack.vendor == package.pack.vendor &&
+      resolved.pack.name == package.pack.name &&
+      VersionCmp::RangeCompare(resolved.pack.version, versionRange) == 0 &&
+      VersionCmp::Compare(resolved.pack.version, bestMatch) > 0) {
+      bestMatch = resolved.pack.version;
+    }
+  }
+  if (!bestMatch.empty()) {
+    versionRange = ProjMgrUtils::ConvertToVersionRange(bestMatch);
+  }
+  XmlItem attributes({
+      {"name",    package.pack.name},
+      {"vendor",  package.pack.vendor},
+      {"version", versionRange}
+    });
+  auto pdsc = m_kernel->GetEffectivePdscFile(attributes);
+  // Only remember the version of the pack if we had it installed or local
+  // Will be used when serializing the cbuild-pack.yml file later
+  if (!pdsc.first.empty()) {
+    context.userInputToResolvedPackIdMap[packageEntry.pack].insert(pdsc.first);
+    string installedVersion = RtePackage::VersionFromId(pdsc.first);
+    package.pack.version = VersionCmp::RemoveVersionMeta(installedVersion);
+  } else {
+    // Remember that we had the user input, but it does not match any installed pack
+    context.userInputToResolvedPackIdMap[packageEntry.pack] = {};
+  }
+  package.origin = packageEntry.origin;
+  context.packRequirements.push_back(package);
 }
 
 bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {

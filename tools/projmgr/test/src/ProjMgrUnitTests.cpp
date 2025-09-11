@@ -943,6 +943,18 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackVersion) {
   RteFsUtils::RemoveFile(cbuildPackBackup);
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_MultiplePackEntries) {
+  char* argv[3];
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/multiple_pack_entries.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
+
+  // Check the generated cbuild-pack file
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/PackLocking/multiple_pack_entries.cbuild-pack.yml",
+    testinput_folder + "/TestSolution/PackLocking/ref/multiple_pack_entries.cbuild-pack.yml");
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackKeepExistingForContextSelections) {
   char* argv[9];
   string buf1, buf2, buf3;
