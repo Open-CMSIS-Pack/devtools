@@ -57,6 +57,17 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.11.0</td>
+    <td>Release notes:
+      - added AC6 ASM flags for dependency rules generation
+      - added IAR toolchain configuration support for Cortex-M52
+      - fixed map file generation to cope with spaces in path
+      - updated cbridge utility v0.9.18
+      - updated cbuild2cmake utility v0.9.8
+      - updated cbuild utility v2.11.0
+      - updated cpackget utility v2.1.9
+      - updated csolution utility v2.11.0
+    </td>
     <td>2.10.0</td>
     <td>Release notes:
       - updated cbridge utility v0.9.16
