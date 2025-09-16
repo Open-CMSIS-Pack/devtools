@@ -4233,7 +4233,7 @@ vector<RteBoard*> ProjMgrWorker::GetCompatibleBoards(const ContextItem& context)
 }
 
 bool ProjMgrWorker::IsBoardListCompatible(const ContextItem& context, const vector<RteBoard*> compatibleBoards, const Collection<RteItem*>& boards) {
-  if (compatibleBoards.empty()) {
+  if (!context.rteBoard && !context.rteDevice) {
     // no board/device is selected
     return true;
   }

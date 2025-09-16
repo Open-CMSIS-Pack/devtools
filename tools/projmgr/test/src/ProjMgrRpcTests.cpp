@@ -668,6 +668,14 @@ TEST_F(ProjMgrRpcTests, RpcGetDraftProjects) {
   EXPECT_EQ(templates[1]["name"], "Board2");
   EXPECT_EQ(templates[2]["name"], "Board3");
 
+  // filter 'device' that's not mounted on any board
+  requests =
+    FormatRequest(1, "LoadPacks") +
+    FormatRequest(2, "GetDraftProjects", json{ { "filter", {{ "device", "RteTestGen_ARMCM0" }}} });
+  responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+  EXPECT_FALSE(responses[1]["result"].contains("examples"));
+
   // filter 'environment'
   requests =
     FormatRequest(1, "LoadPacks") +
