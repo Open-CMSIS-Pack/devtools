@@ -2180,9 +2180,7 @@
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
-        "gdbserver":       { "$ref": "#/definitions/GdbServersType" },
-        "terminal":        { "type": "string", "description": "Terminal port of the debugger." },
-        "trace":           { "type": "string", "description": "Trace port of the debugger." }
+        "gdbserver":       { "$ref": "#/definitions/GdbServersType" }
       },
       "additionalProperties": true,
       "required": ["name"]
