@@ -50,6 +50,7 @@ jobs:
   build:
     needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
+    name: build (${{ matrix.runs_on }}, ${{ matrix.arch }})
     timeout-minutes: 15
     strategy:
       fail-fast: true
@@ -89,7 +90,7 @@ jobs:
           github.event_name == 'release' &&
           (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu'))
         run: |
-          binary_path="./build/tools/packgen/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}"      
+          binary_path="./build/tools/packgen/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}"
           echo "Stripping binary at: $binary_path"
           # Use appropriate strip tool based on architecture and target
           if [[ "${{ matrix.arch }}" == "arm64" && "${{ matrix.target }}" == "linux" ]]; then
@@ -177,6 +178,7 @@ jobs:
 
   unittest:
     needs: [ setup, matrix_prep ]
+    name: unittest (${{ matrix.runs_on }}, ${{ matrix.arch }})
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:

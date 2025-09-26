@@ -46,6 +46,7 @@ jobs:
 
   build:
     needs: [ setup, matrix_prep ]
+    name: build (${{ matrix.runs_on }}, ${{ matrix.arch }})
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:
@@ -101,7 +102,7 @@ jobs:
           tar -xvf svdconv-*-${{ matrix.target }}-${{ matrix.arch }}.tbz2 -C svdconv_release_bin
 
           # Construct the path to the extracted binary
-          binary_path="./svdconv_release_bin/${{ matrix.binary }}"      
+          binary_path="./svdconv_release_bin/${{ matrix.binary }}"
           echo "Stripping binary at: $binary_path"
 
           # Use appropriate strip tool based on architecture and target
@@ -132,6 +133,7 @@ jobs:
 
   test:
     needs: [ setup, matrix_prep ]
+    name: test (${{ matrix.runs_on }}, ${{ matrix.arch }})
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
     strategy:

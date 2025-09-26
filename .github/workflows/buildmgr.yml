@@ -24,14 +24,7 @@ on:
       - '.github/workflows/buildmgr.yml'
       - '.github/matrix_includes_buildmgr.json'
       - 'CMakeLists.txt'
-      - 'libs/crossplatform/**'
-      - 'libs/errlog/**'
-      - 'libs/xmlreader/**'
-      - 'libs/xmltree/**'
-      - 'libs/xmltreeslim/**'
-      - 'libs/rteutils/**'
-      - 'libs/rtemodel/**'
-      - 'libs/rtefsutils/**'
+      - 'libs/**'
       - 'tools/buildmgr/**'
       - '!**/docs/**/*'
       - '!**/*.md'
@@ -55,6 +48,7 @@ jobs:
       workflow_name: buildmgr
 
   build:
+    name: build (${{ matrix.runs_on }}, ${{ matrix.arch }})
     needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 15
@@ -96,7 +90,7 @@ jobs:
           github.event_name == 'release' &&
           (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu'))
         run: |
-          binary_path="./build/tools/buildmgr/cbuildgen/${{ matrix.target }}-${{ matrix.arch }}/Release/cbuildgen${{ matrix.binary_extension }}"      
+          binary_path="./build/tools/buildmgr/cbuildgen/${{ matrix.target }}-${{ matrix.arch }}/Release/cbuildgen${{ matrix.binary_extension }}"
           echo "Stripping binary at: $binary_path"
           # Use appropriate strip tool based on architecture and target
           if [[ "${{ matrix.arch }}" == "arm64" && "${{ matrix.target }}" == "linux" ]]; then
@@ -164,7 +158,7 @@ jobs:
         id: var
         run: |
           echo "retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
-          
+
       - name: Upload documentation
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -338,10 +332,11 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
 
-  tests:
+  test:
     needs: [ setup, matrix_prep, create_installer ]
     timeout-minutes: 15
     runs-on: ${{ matrix.runs_on }}
+    name: test (${{ matrix.runs_on }}, ${{ matrix.arch }})
     env:
       arm_gcc_install_base: ${{ matrix.arm_gcc_install_base }}
       CI_CBUILD_DEB_PKG: ${{ github.workspace }}
@@ -631,6 +626,7 @@ jobs:
     needs: [ matrix_prep, create_installer ]
     timeout-minutes: 15
     runs-on: ${{ matrix.runs_on }}
+    name: sanity check native (${{ matrix.runs_on }}, ${{ matrix.arch }})
     env:
       CMSIS_PACK_ROOT: ${{ github.workspace }}/packs
       AC6_TOOLCHAIN_ROOT: ""
@@ -669,6 +665,7 @@ jobs:
         shell: bash
         run: |
           ${{ github.workspace }}/cbuild/bin/cbuildgen | grep "(cbuildgen): Build Process Manager"
+
   sanity-check-docker:
     needs: create_installer
     timeout-minutes: 15
@@ -717,7 +714,7 @@ jobs:
 
   test-results-preparation:
     name: "Publish Tests Results"
-    needs: [ tests ]
+    needs: [ test ]
     runs-on: ubuntu-22.04
     steps:
       - name: Harden Runner
