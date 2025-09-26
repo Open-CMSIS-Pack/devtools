@@ -38,7 +38,7 @@ add_custom_command(TARGET cbuildgen POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy 
 
 #
 if(MSVC)
-  target_link_options(cbuildgen PUBLIC "$<$<CONFIG:Debug>:/SAFESEH:NO>")
+  target_link_options(cbuildgen PUBLIC "$<$<CONFIG:Debug>:/SAFESEH:NO;/INCREMENTAL:NO>")
 endif(MSVC)
 set_property(TARGET cbuildgen PROPERTY
   MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
