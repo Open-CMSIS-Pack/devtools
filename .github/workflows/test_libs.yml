@@ -40,6 +40,7 @@ jobs:
 
   test_libs:
     runs-on: ${{ matrix.runs_on }}
+    name: test_libs (${{ matrix.runs_on }}, ${{ matrix.arch }})
     needs: [ setup, matrix_prep ]
     timeout-minutes: 15
     strategy:

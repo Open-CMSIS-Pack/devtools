@@ -5,7 +5,7 @@ on:
     inputs:
       run_if:
         description: 'True if workflow needs to run'
-        default: false 
+        default: false
         required: true
         type: boolean
     outputs:

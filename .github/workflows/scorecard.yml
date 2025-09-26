@@ -16,6 +16,7 @@ permissions: read-all
 
 jobs:
   analysis:
+    if: github.repository == 'Open-CMSIS-Pack/devtools'
     name: Scorecard analysis
     runs-on: ubuntu-latest
     permissions:
