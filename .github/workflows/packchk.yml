@@ -55,6 +55,7 @@ jobs:
   build:
     needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
+    name: build (${{ matrix.runs_on }}, ${{ matrix.arch }})
     timeout-minutes: 15
     strategy:
       fail-fast: true
@@ -62,7 +63,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
         with:
           egress-policy: audit
 
@@ -105,7 +106,7 @@ jobs:
         shell: bash
         working-directory: build/tools/packchk/
         run: |
-          mkdir -p packchk_release_bin       
+          mkdir -p packchk_release_bin
 
           # Extract the binary tarball into the release directory
           tar -xvf packchk-*-${{ matrix.target }}-${{ matrix.arch }}.tbz2 -C packchk_release_bin
@@ -143,6 +144,7 @@ jobs:
   test:
     needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
+    name: test (${{ matrix.runs_on }}, ${{ matrix.arch }})
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -150,7 +152,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
         with:
           egress-policy: audit
 
@@ -220,7 +222,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
         with:
           egress-policy: audit
 
@@ -363,7 +365,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
         with:
           egress-policy: audit
 
