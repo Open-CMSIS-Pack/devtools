@@ -652,7 +652,7 @@ TEST_F(ProjMgrRpcTests, RpcGetDraftProjects) {
   EXPECT_EQ(examples[1]["name"], "PreIncludeEnvFolder");
   EXPECT_EQ(templates[0]["name"], "Board3");
 
-  // filter 'device'
+  // filter 'device', no board
   requests =
     FormatRequest(1, "LoadPacks") +
     FormatRequest(2, "GetDraftProjects", json{{ "filter", {{ "device", "RteTest_ARMCM0_Dual" }}}});
@@ -661,12 +661,21 @@ TEST_F(ProjMgrRpcTests, RpcGetDraftProjects) {
   examples = responses[1]["result"]["examples"];
   templates = responses[1]["result"]["templates"];
   EXPECT_EQ(2, examples.size());
-  EXPECT_EQ(3, templates.size());
+  EXPECT_EQ(0, templates.size());
   EXPECT_EQ(examples[0]["name"], "PreInclude");
   EXPECT_EQ(examples[1]["name"], "PreIncludeEnvFolder");
+
+  // filter 'device', with board
+  requests =
+    FormatRequest(1, "LoadPacks") +
+    FormatRequest(2, "GetDraftProjects", json{{ "filter", {{ "device", "RteTest_ARMCM0_Dual" },{"board", "RteTest Test board"}}}});
+  responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+  examples = responses[1]["result"]["examples"];
+  templates = responses[1]["result"]["templates"];
+  EXPECT_EQ(0, examples.size());
+  EXPECT_EQ(1, templates.size());
   EXPECT_EQ(templates[0]["name"], "Board1Template");
-  EXPECT_EQ(templates[1]["name"], "Board2");
-  EXPECT_EQ(templates[2]["name"], "Board3");
 
   // filter 'device' that's not mounted on any board
   requests =
