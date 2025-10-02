@@ -11,7 +11,8 @@
 #include "ProductInfo.h"
 
 #include "CrossPlatformUtils.h"
-#include <RteFsUtils.h>
+#include "RteFsUtils.h"
+#include "CollectionUtils.h"
 
 #include <fstream>
 #include <iostream>
@@ -606,6 +607,10 @@ RpcArgs::DraftProjectsInfo RpcHandler::GetDraftProjects(const RpcArgs::DraftProj
       applications.message = "Board or device processing failed";
       return applications;
     }
+
+    if(contains_key(context.targetAttributes, "Dname") && !contains_key(context.targetAttributes, "Bname")) {
+      context.targetAttributes["Bname"] = "";
+    }
     m_worker.SetTargetAttributes(context, context.targetAttributes);
   }
 
@@ -631,7 +636,7 @@ RpcArgs::DraftProjectsInfo RpcHandler::GetDraftProjects(const RpcArgs::DraftProj
       env.file = environment.load;
       env.folder = environment.folder;
       e.environments.push_back(env);
-    }  
+    }
     if (!example.components.empty()) {
       e.components = example.components;
     }
