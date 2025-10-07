@@ -991,7 +991,7 @@
       "type": "object",
       "properties": {
         "component": {
-          "title:": "component:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#components",
+          "title": "component:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#components",
           "$ref": "#/definitions/ComponentID"
         },
         "add-path":     { "$ref": "#/definitions/AddpathsType" },
