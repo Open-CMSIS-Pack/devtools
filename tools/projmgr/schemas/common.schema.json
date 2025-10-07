@@ -119,18 +119,36 @@
     },
     "TypeListMutualExclusion": {
       "oneOf": [
-        { 
+        {
+          "type": "object",
           "required": ["for-context"],
-          "not": {"required": ["not-for-context"]}
+          "not": {
+            "type": "object",
+            "required": ["not-for-context"]
+          }
         },
-        { 
+        {
+          "type": "object",
           "required": ["not-for-context"],
-          "not": {"required": ["for-context"]}
+          "not": {
+            "type": "object",
+            "required": ["for-context"]
+          }
         },
         {
           "allOf": [
-            { "not": {"required": ["for-context"] }},
-            { "not": {"required": ["not-for-context"]}}
+            {
+              "not": {
+                "type": "object",
+                "required": ["for-context"]
+              }
+            },
+            {
+              "not": {
+                "type": "object",
+                "required": ["not-for-context"]
+              }
+            }
           ]
         }
       ]
