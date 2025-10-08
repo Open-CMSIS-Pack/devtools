@@ -487,7 +487,7 @@ bool ProjMgr::PopulateContexts(void) {
     }
     // Check cproject separate folders and unique names
     const StrVec& cprojects = m_parser.GetCsolution().cprojects;
-    if (!IsSolutionImageOnly() && cprojects.empty()) {
+    if (!IsSolutionImageOnly() && cprojects.empty() && m_parser.GetCsolution().westApps.empty()) {
       ProjMgrLogger::Get().Error("projects not found", "", m_csolutionFile);
       return false;
     }

@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+solution:
+
+  packs:
+    - pack: ARM::RteTest_DFP
+
+  compiler: AC6
+
+  target-types:
+    - type: CM0
+      board: RteTest Dummy board
+      west-defs:
+        - TARGET-DEF: on
+      target-set:
+        - set:
+          images:
+            - project-context: core0.Debug
+            - project-context: core1.Debug
+
+  build-types:
+    - type: Debug
+      west-defs:
+        - CONFIG-DEBUG: y
+
+  # List related projects.
+  projects:
+    - project: core0/core0.cproject.yml
+      west:
+        app-path: ./west/core0
+        device: :cm0_core0
+        west-defs:
+          - CORE: 0
+    - project: core1/core1.cproject.yml
+      west:
+        app-path: ./west/core1
+        project-id: core1
+        device: :cm0_core1
+        west-defs:
+          - CORE: 1

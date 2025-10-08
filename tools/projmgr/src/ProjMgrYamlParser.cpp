@@ -831,11 +831,26 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
         return false;
       }
       ParsePortablePath(projectsEntry, csolution.path, YAML_PROJECT, descriptor.cproject);
-      descriptor.cproject = RteFsUtils::RelativePath(fs::path(csolution.directory).append(descriptor.cproject).generic_string(), csolution.directory);
       if (!descriptor.cproject.empty()) {
-        csolution.contexts.push_back(descriptor);
+        descriptor.cproject = RteFsUtils::RelativePath(fs::path(csolution.directory).append(descriptor.cproject).generic_string(), csolution.directory);
         CollectionUtils::PushBackUniquely(csolution.cprojects, descriptor.cproject);
       }
+      if (projectsEntry[YAML_WEST].IsDefined()) {
+        const auto& westEntry = projectsEntry[YAML_WEST];
+        WestDesc west;
+        ParsePortablePath(westEntry, csolution.path, YAML_APP_PATH, west.app);
+        ParseString(westEntry, YAML_PROJECT_ID, west.projectId);
+        ParseString(westEntry, YAML_BOARD, west.board);
+        ParseString(westEntry, YAML_DEVICE, west.device);
+        ParseDefine(westEntry[YAML_WEST_DEFS], west.westDefs);
+        ParseVectorOrString(westEntry, YAML_WEST_OPT, west.westOpt);
+        if (west.projectId.empty()) {
+          west.projectId = fs::path(west.app).filename().generic_string();
+        }
+        descriptor.west = west;
+        CollectionUtils::PushBackUniquely(csolution.westApps, west.projectId);
+      }
+      csolution.contexts.push_back(descriptor);
     }
   }
   return true;
@@ -970,6 +985,9 @@ bool ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, const string& f
     return false;
   }
   if (!ParseDefine(parent[YAML_DEFINE_ASM], buildType.definesAsm)) {
+    return false;
+  }
+  if (!ParseDefine(parent[YAML_WEST_DEFS], buildType.westDefs)) {
     return false;
   }
   ParseVector(parent, YAML_UNDEFINE, buildType.undefines);
@@ -1143,6 +1161,7 @@ const set<string> projectsKeys = {
   YAML_PROJECT,
   YAML_FORCONTEXT,
   YAML_NOTFORCONTEXT,
+  YAML_WEST
 };
 
 const set<string> projectKeys = {
@@ -1264,6 +1283,7 @@ const set<string> targetTypeKeys = {
   YAML_VARIABLES,
   YAML_CONTEXT_MAP,
   YAML_TARGET_SET,
+  YAML_WEST_DEFS,
 };
 
 const set<string> buildTypeKeys = {
@@ -1285,6 +1305,7 @@ const set<string> buildTypeKeys = {
   YAML_MISC,
   YAML_VARIABLES,
   YAML_CONTEXT_MAP,
+  YAML_WEST_DEFS,
 };
 
 const set<string> outputDirsKeys = {
@@ -1449,6 +1470,15 @@ const set<string> executesKeys = {
   YAML_NOTFORCONTEXT,
 };
 
+const set<string> westKeys = {
+  YAML_PROJECT_ID,
+  YAML_APP_PATH,
+  YAML_BOARD,
+  YAML_DEVICE,
+  YAML_WEST_DEFS,
+  YAML_WEST_OPT
+};
+
 const map<string, set<string>> sequences = {
   {YAML_PROJECTS, projectsKeys},
   {YAML_TARGETTYPES, targetTypeKeys},
@@ -1474,6 +1504,7 @@ const map<string, set<string>> mappings = {
   {YAML_OUTPUT, outputKeys},
   {YAML_GENERATORS, generatorsKeys},
   {YAML_RTE, rteKeys},
+  {YAML_WEST, westKeys},
 };
 
 bool ProjMgrYamlParser::ValidateCdefault(const string& input, const YAML::Node& root) {

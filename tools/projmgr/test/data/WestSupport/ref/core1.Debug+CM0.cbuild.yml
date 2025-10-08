@@ -1,0 +1,41 @@
+build:
+  generated-by: csolution version 0.0.0
+  solution: ../../../../solution.csolution.yml
+  project: ../../../../core1/core1.cproject.yml
+  context: core1.Debug+CM0
+  compiler: AC6
+  board: Keil::RteTest Dummy board:1.2.3
+  board-pack: ARM::RteTest_DFP@0.2.0
+  device: ARM::RteTest_ARMCM0_Dual:cm0_core1
+  device-pack: ARM::RteTest_DFP@0.2.0
+  device-books:
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
+      title: Cortex-M0 Device Generic Users Guide
+  dbgconf:
+    - file: ../../../../.cmsis/solution+CM0.dbgconf
+      version: 0.0.2
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  output-dirs:
+    outdir: .
+  output:
+    - type: elf
+      file: zephyr/zephyr.elf
+    - type: hex
+      file: zephyr/zephyr.hex
+  licenses:
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+  west:
+    project-id: core1
+    app-path: ../../../../west/core1
+    board: rtetest dummy board
+    device: :cm0_core1
+    west-defs:
+      - CORE: 1
+      - CONFIG_BUILD_OUTPUT_HEX: y
+      - TARGET-DEF: on
+      - CONFIG-DEBUG: y

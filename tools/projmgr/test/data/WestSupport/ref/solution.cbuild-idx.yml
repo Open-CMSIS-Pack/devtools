@@ -1,0 +1,27 @@
+build-idx:
+  generated-by: csolution version 0.0.0
+  csolution: solution.csolution.yml
+  cbuild-run: out/solution+CM0.cbuild-run.yml
+  tmpdir: tmp
+  cprojects:
+    - cproject: core0/core0.cproject.yml
+    - cproject: core1/core1.cproject.yml
+  cbuilds:
+    - cbuild: out/core0/CM0/Debug/core0.Debug+CM0.cbuild.yml
+      west: true
+      project: core0
+      configuration: .Debug+CM0
+      messages:
+        info:
+          - solution.cbuild-pack.yml - file generated successfully
+          - solution+CM0.cbuild-run.yml - file generated successfully
+          - core0.Debug+CM0.cbuild.yml - file generated successfully
+    - cbuild: out/core1/CM0/Debug/core1.Debug+CM0.cbuild.yml
+      west: true
+      project: core1
+      configuration: .Debug+CM0
+      messages:
+        info:
+          - solution.cbuild-pack.yml - file generated successfully
+          - solution+CM0.cbuild-run.yml - file generated successfully
+          - core1.Debug+CM0.cbuild.yml - file generated successfully

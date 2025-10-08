@@ -209,6 +209,7 @@ struct TargetSetItem {
  *        misc compiler controls,
  *        platform processor
  *        context map
+ *        west defines
 */
 struct BuildType {
   std::string compiler;
@@ -228,6 +229,7 @@ struct BuildType {
   ProcessorItem processor;
   std::vector<std::pair<std::string, std::string>> variables;
   std::vector<ContextName> contextMap;
+  std::vector<std::string> westDefs;
 };
 
 /**
@@ -453,6 +455,18 @@ struct GroupNode {
 };
 
 /**
+ * @brief west descriptor
+*/
+struct WestDesc {
+  std::string projectId;
+  std::string app;
+  std::string board;
+  std::string device;
+  std::vector<std::string> westDefs;
+  std::vector<std::string> westOpt;
+};
+
+/**
  * @brief context descriptor containing
  *        cproject filename,
  *        type filter
@@ -460,6 +474,7 @@ struct GroupNode {
 struct ContextDesc {
   std::string cproject;
   TypeFilter type;
+  WestDesc west;
 };
 
 /**
@@ -506,6 +521,7 @@ typedef std::vector<std::pair<std::string, TargetType>> TargetTypes;
  *        target types,
  *        target properties,
  *        list of cprojects,
+ *        list of west apps,
  *        list of contexts descriptors,
  *        list of packs,
  *        cdefault enable switch,
@@ -524,6 +540,7 @@ struct CsolutionItem {
   TargetTypes targetTypes;
   TargetType target;
   std::vector<std::string> cprojects;
+  std::vector<std::string> westApps;
   std::vector<ContextDesc> contexts;
   std::vector<PackItem> packs;
   bool enableCdefault;

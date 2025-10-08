@@ -429,6 +429,8 @@ struct DebuggerType {
  *        load offset for generated binary
  *        elf load mode
  *        image only flag
+ *        west options
+ *        west on flag
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -498,6 +500,8 @@ struct ContextItem {
   std::string loadOffset;
   std::string elfLoadMode;
   bool imageOnly = false;
+  WestDesc west;
+  bool westOn = false;
 };
 
 /**
@@ -508,6 +512,11 @@ static constexpr const char* PLM_STATUS_MISSING_BASE = "missing base";
 static constexpr const char* PLM_STATUS_UPDATE_REQUIRED = "update required";
 static constexpr const char* PLM_STATUS_UPDATE_RECOMMENDED = "update recommended";
 static constexpr const char* PLM_STATUS_UPDATE_SUGGESTED = "update suggested";
+
+/**
+  * @brief west board variable
+*/
+static constexpr const char* WEST_BOARD = "west-board";
 
 /**
   * @brief set policy for packs loading [latest|all|required]
