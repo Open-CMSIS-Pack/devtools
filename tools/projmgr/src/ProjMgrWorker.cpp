@@ -5835,10 +5835,15 @@ bool ProjMgrWorker::PopulateActiveTargetSet(const string& activeTargetSet) {
         }
       }
       m_activeTargetType = targetType;
+      if (!targetSetFound && targetSet.empty() && !type.targetSet.empty()) {
+        // selected target-type does not have a default target-set: take first named target-set
+        // use default context selection (ParseTargetSetContextSelection)
+        m_activeTargetSet = type.targetSet.front();
+      }      
       break;
     }
   }
-  if (m_activeTargetType.empty() || !targetSetFound) {
+  if (m_activeTargetType.empty() || (!targetSetFound && !targetSet.empty())) {
     ProjMgrLogger::Get().Error("'" + activeTargetSet + "' is not selectable as active target-set");
     return false;
   }
