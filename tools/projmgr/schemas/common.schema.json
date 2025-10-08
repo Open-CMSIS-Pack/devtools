@@ -406,6 +406,9 @@
                   },
                   {
                     "type": "number"
+                  },
+                  {
+                    "type": "boolean"
                   }
                 ]
               }
@@ -601,7 +604,8 @@
         "target-set":   { "$ref": "#/definitions/TargetSetsType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "variables":    { "$ref": "#/definitions/VariablesType" },
-        "warnings":     { "$ref": "#/definitions/WarningsType" }
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
+        "west-defs":    { "$ref": "#/definitions/DefinesType" }
       },
       "additionalProperties": false,
       "required" : [ "type"]
@@ -638,7 +642,8 @@
         "processor":    { "$ref": "#/definitions/ProcessorType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "variables":    { "$ref": "#/definitions/VariablesType" },
-        "warnings":     { "$ref": "#/definitions/WarningsType" }
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
+        "west-defs":    { "$ref": "#/definitions/DefinesType" }
       },
       "additionalProperties": false,
       "required" : [ "type"]
@@ -660,13 +665,13 @@
           "pattern": "^.*[/]([^.+]*\\.cproject\\.(yml|yaml))$|^([^.+]+)\\.cproject\\.(yml|yaml)$",
           "description": "Path to the valid project file."
         },
+        "west": { "$ref": "#/definitions/WestProjectType" },
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
       "additionalProperties": false,
-      "allOf": [
-        { "$ref": "#/definitions/TypeListMutualExclusion"},
-        { "required": [ "project" ] }
+      "oneOf": [
+        { "$ref": "#/definitions/TypeListMutualExclusion"}
       ]
     },
     "ProcessorTrustzone": {
@@ -1274,6 +1279,7 @@
       "type": "object",
       "properties": {
         "cbuild": { "type": "string", "description": "Path to <context>.cbuild.yml file." },
+        "west": { "type": "boolean" },
         "project": { "type": "string", "description": "Project name." },
         "configuration": { "$ref": "#/definitions/BuildContext" },
         "depends-on": {
@@ -1427,7 +1433,8 @@
         "licenses": {
           "type": "array",
           "items": { "$ref": "#/definitions/LicenseInfoType" }
-        }
+        },
+        "west": { "$ref": "#/definitions/WestProjectType" }
       },
       "additionalProperties": false
     },
@@ -2398,6 +2405,21 @@
       "title": "optimize:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#load",
       "description": "Specifies the load mode for the project output or image file.",
       "enum": [ "image+symbols", "symbols", "image", "none" ]
+    },
+    "WestProjectType": {
+      "title": "west:",
+      "description": "Enable West build orchestration wrapper for Zephyr projects.",
+      "type": "object",
+      "properties": {
+        "app-path":   { "type": "string", "description": "Path to the application source directory." },
+        "project-id": { "type": "string", "description": "Project identifier (default: last sub-dir name of app-path)." },
+        "board":      { "type": "string", "description": "Board name used for west build invocation (default: variable $west-board$)."},
+        "device":     { "$ref": "#/definitions/ProcessorNameType" },
+        "west-defs":  { "$ref": "#/definitions/DefinesType" },
+        "west-opts":  { "type": "string", "description": "Options for the west tool (default: empty)." }
+      },
+      "additionalProperties": false,
+      "required": ["app-path"]
     }
   }
 }

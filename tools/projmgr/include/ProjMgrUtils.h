@@ -321,6 +321,13 @@ public:
   */
   static const std::string NormalizeLineEndings(const std::string& in);
 
+  /**
+   * @brief convert board string to west board string
+   * @param board string
+   * @return output west board string
+  */
+  static const std::string GetWestBoard(const std::string& board);
+
 protected:
   /**
    * @brief get filtered list of contexts

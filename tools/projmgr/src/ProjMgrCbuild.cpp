@@ -40,6 +40,7 @@ private:
   void SetBooksNode(YAML::Node node, const std::vector<BookItem>& books, const std::string& dir);
   void SetDebugConfigNode(YAML::Node node, const ContextItem* context);
   void SetPLMStatus(YAML::Node node, const ContextItem* context, const string& file);
+  void SetWestNode(YAML::Node node, const ContextItem* context);
   bool m_ignoreRteFileMissing;
 };
 
@@ -85,11 +86,11 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
   }
   SetBooksNode(contextNode[YAML_DEVICE_BOOKS], context->deviceBooks, context->directories.cbuild);
   SetDebugConfigNode(contextNode[YAML_DBGCONF], context);
-  if (!context->imageOnly) {
+  if (!context->imageOnly && !context->westOn) {
     SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
   }
   SetPacksNode(contextNode[YAML_PACKS], context);
-  if (!context->imageOnly) {
+  if (!context->imageOnly && !context->westOn) {
     SetControlsNode(contextNode, context, context->controls.processed);
     vector<string> defines;
     if (context->rteActiveTarget != nullptr) {
@@ -108,7 +109,14 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
       }
     }
     SetOutputDirsNode(contextNode[YAML_OUTPUTDIRS], context);
-    SetOutputNode(contextNode[YAML_OUTPUT], context);
+  }
+  if (context->westOn) {
+    string outDir = context->directories.outdir;
+    RteFsUtils::NormalizePath(outDir, context->directories.cprj);
+    SetNodeValue(contextNode[YAML_OUTPUTDIRS][YAML_OUTPUT_OUTDIR], FormatPath(outDir, context->directories.cbuild));
+  }  
+  SetOutputNode(contextNode[YAML_OUTPUT], context);
+  if (!context->imageOnly && !context->westOn) {
     SetComponentsNode(contextNode[YAML_COMPONENTS], context);
     SetApisNode(contextNode[YAML_APIS], context);
     SetGeneratorsNode(contextNode[YAML_GENERATORS], context);
@@ -117,6 +125,9 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
     SetConstructedFilesNode(contextNode[YAML_CONSTRUCTEDFILES], context);
   }
   SetLicenseInfoNode(contextNode[YAML_LICENSES], context);
+  if (context->westOn) {
+    SetWestNode(contextNode[YAML_WEST], context);
+  }
 }
 
 void ProjMgrCbuild::SetComponentsNode(YAML::Node node, const ContextItem* context) {
@@ -589,4 +600,13 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context,
   // get context rebuild flag
   context->needRebuild = NeedRebuild(filename, rootNode);
   return WriteFile(rootNode, filename, context->name);
+}
+
+void ProjMgrCbuild::SetWestNode(YAML::Node node, const ContextItem* context) {
+  SetNodeValue(node[YAML_PROJECT_ID], context->west.projectId);
+  SetNodeValue(node[YAML_APP_PATH], FormatPath(context->west.app, context->directories.cbuild));
+  SetNodeValue(node[YAML_BOARD], context->west.board);
+  SetNodeValue(node[YAML_DEVICE], context->west.device);
+  SetDefineNode(node[YAML_WEST_DEFS], context->west.westDefs);
+  SetNodeValue(node[YAML_WEST_OPT], context->west.westOpt);
 }

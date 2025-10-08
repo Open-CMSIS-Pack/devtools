@@ -498,3 +498,11 @@ const std::string ProjMgrUtils::NormalizeLineEndings(const std::string& in) {
   }
   return out;
 }
+
+const std::string ProjMgrUtils::GetWestBoard(const std::string& board) {
+  string westBoard = RteUtils::StripSuffix(RteUtils::StripPrefix(board, "::"));
+  std::transform(westBoard.begin(), westBoard.end(), westBoard.begin(),
+    [](unsigned char c) { return std::tolower(c); });
+  std::replace(westBoard.begin(), westBoard.end(), '-', '_');
+  return westBoard;
+}

@@ -33,7 +33,7 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
   if (!processedContexts.empty()) {
     const auto& context = processedContexts.front();
     SetNodeValue(node[YAML_DESCRIPTION], context->csolution->description);
-    if (!parser->GetCdefault().path.empty() && !context->imageOnly) {
+    if (!parser->GetCdefault().path.empty() && !context->imageOnly && !context->westOn) {
       SetNodeValue(node[YAML_CDEFAULT], FormatPath(parser->GetCdefault().path, directory));
     }
   }
@@ -44,7 +44,14 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
   SetNodeValue(node[YAML_OUTPUT_TMPDIR], FormatPath(parser->GetCsolution().directories.tmpdir, directory));
 
   // Image Only flag
-  if (!processedContexts.empty() && processedContexts.front()->imageOnly) {
+  bool imageOnlySolution = true;
+  for (const auto& processedContext : processedContexts) {
+    if (!processedContext->imageOnly) {
+      imageOnlySolution = false;
+      break;
+    }
+  }
+  if (imageOnlySolution) {
     node[YAML_IMAGE_ONLY] = true;
   }
 
@@ -134,6 +141,9 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
       const string& filename = context->directories.cprj + "/" + context->name + ".cbuild.yml";
       const string& relativeFilename = fs::relative(filename, directory, ec).generic_string();
       SetNodeValue(cbuildNode[YAML_CBUILD], relativeFilename);
+      if (context->westOn) {
+        cbuildNode[YAML_WEST] = true;
+      }
       if (context->cproject) {
         if (!context->imageOnly) {
           SetNodeValue(cbuildNode[YAML_PROJECT], context->cproject->name);

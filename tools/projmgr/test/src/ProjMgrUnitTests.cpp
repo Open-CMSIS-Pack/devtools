@@ -7160,3 +7160,23 @@ CMSIS-DAP@Arm-Debugger\n\
   CMSIS-DAP@armdbg\n\
 ")));
 }
+
+TEST_F(ProjMgrUnitTests, WestSupport) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/WestSupport/solution.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"CM0";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/solution.cbuild-idx.yml",
+    testinput_folder + "/WestSupport/ref/solution.cbuild-idx.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/out/solution+CM0.cbuild-run.yml",
+    testinput_folder + "/WestSupport/ref/solution+CM0.cbuild-run.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/out/core0/CM0/Debug/core0.Debug+CM0.cbuild.yml",
+    testinput_folder + "/WestSupport/ref/core0.Debug+CM0.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/out/core1/CM0/Debug/core1.Debug+CM0.cbuild.yml",
+    testinput_folder + "/WestSupport/ref/core1.Debug+CM0.cbuild.yml");
+}
+
