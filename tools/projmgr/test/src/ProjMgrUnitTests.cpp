@@ -7047,12 +7047,17 @@ TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   const YAML::Node& cbuildRun2 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type1.cbuild-run.yml");
   EXPECT_EQ("<default>", cbuildRun2["cbuild-run"]["target-set"].as<string>());
 
-  streamRedirect.ClearStringStreams();
   argv[4] = (char*)"";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
   const YAML::Node& cbuildRun3 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type1.cbuild-run.yml");
   EXPECT_EQ("Type1", cbuildRun3["cbuild-run"]["target-type"].as<string>());
   EXPECT_EQ("<default>", cbuildRun3["cbuild-run"]["target-set"].as<string>());
+
+  argv[4] = (char*)"Type2";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuildRun4 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type2.cbuild-run.yml");
+  EXPECT_EQ("Type2", cbuildRun4["cbuild-run"]["target-type"].as<string>());
+  EXPECT_EQ("Default2", cbuildRun4["cbuild-run"]["target-set"].as<string>());
 
   streamRedirect.ClearStringStreams();
   argv[4] = (char*)"Type1@Unknown";
@@ -7061,10 +7066,10 @@ TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   EXPECT_STREQ(errStr.c_str(), "error csolution: 'Type1@Unknown' is not selectable as active target-set\n");
 
   streamRedirect.ClearStringStreams();
-  argv[4] = (char*)"Type2";
+  argv[4] = (char*)"TypeUnknown";
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
   errStr = streamRedirect.GetErrorString();
-  EXPECT_STREQ(errStr.c_str(), "error csolution: 'Type2' is not selectable as active target-set\n");
+  EXPECT_STREQ(errStr.c_str(), "error csolution: 'TypeUnknown' is not selectable as active target-set\n");
 
   streamRedirect.ClearStringStreams();
   argv[4] = (char*)"Type1";
