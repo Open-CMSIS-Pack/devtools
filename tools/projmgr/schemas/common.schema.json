@@ -374,6 +374,9 @@
                   },
                   {
                     "type": "number"
+                  },
+                  {
+                    "type": "boolean"
                   }
                 ]
               }
@@ -441,6 +444,9 @@
                   },
                   {
                     "type": "number"
+                  },
+                  {
+                    "type": "boolean"
                   }
                 ]
               }
@@ -2370,10 +2376,15 @@
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/TargetSetImageType" }
     },
+    "TargetSetProjectContext": {
+      "description": "Project output with optional build-type: '<project_name>[.build_type]'.",
+      "type": "string",
+      "pattern": "^([^\\.\\+]+(\\.[a-zA-Z0-9_-]{1,32})?)$"
+    },
     "TargetSetImageType": {
       "type": "object",
       "properties": {
-        "project-context": { "type": "string", "description": "Project output with optional build-type: '<project_name>[.buid_type]'." },
+        "project-context": { "$ref": "#/definitions/TargetSetProjectContext" },
         "image":           { "type": "string", "description": "Additional image file to load." },
         "info":            { "type": "string", "description": "Brief description of the image file." },
         "type":            { "enum": [ "elf", "hex", "bin", "lib" ], "description": "Specifies an explicit image type." },
@@ -2388,7 +2399,7 @@
       ]
     },
     "TargetSetDebuggerType": {
-      "title": "optimize:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#debugger",
+      "title": "debugger:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#debugger",
       "description": "Debugger configuration for this set.",
       "type": "object",
       "properties": {
@@ -2402,7 +2413,7 @@
       "required": ["name"]
     },
     "TargetSetLoadType": {
-      "title": "optimize:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#load",
+      "title": "load:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#load",
       "description": "Specifies the load mode for the project output or image file.",
       "enum": [ "image+symbols", "symbols", "image", "none" ]
     },
