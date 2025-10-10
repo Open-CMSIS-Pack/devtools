@@ -516,8 +516,16 @@ RpcArgs::SuccessResult RpcHandler::SelectBundle(const string& context, const str
   if(!rteClass) {
     throw JsonRpcException(COMPONENT_NOT_FOUND, className + ": component class not found");
   }
+  if(rteClass->GetSelectedBundleName() == bundleName) {
+    return result; // no change => false
+  }
+  if(!contains_key(rteClass->GetBundleNames(), bundleName)) {
+    result.message = "Bundle '" + bundleName + "' is not found for component class '" + className +"'";
+    return result; // error => false
+  }
   rteClass->SetSelectedBundleName(bundleName, true);
   GetActiveTarget(context)->EvaluateComponentDependencies();
+  result.success = true;
   return result;
 }
 
