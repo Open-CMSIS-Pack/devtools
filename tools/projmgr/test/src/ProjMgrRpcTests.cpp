@@ -590,6 +590,36 @@ TEST_F(ProjMgrRpcTests, RpcSelectVariant) {
   EXPECT_EQ(responses[5]["result"]["message"], "Variant 'undefined' is not found for component ARM::RteTest:Dependency:Variant"); // variant not found
 }
 
+TEST_F(ProjMgrRpcTests, RpcSelectBundle) {
+  string context = "selectable+CM0";
+  vector<string> contextList = {
+    context
+  };
+  json param;
+  param["context"] = context;
+  param["cclass"] = "RteTestBundle";
+  param["bundle"] = "BundleTwo";
+
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "SelectBundle", param);
+  requests += FormatRequest(4, "SelectBundle", param);
+  param["bundle"] = "undefined";
+  requests += FormatRequest(5, "SelectBundle", param);
+  param["bundle"] = "";
+  requests += FormatRequest(6, "SelectBundle", param);
+  param["cclass"] = "UnknownCclass";
+  requests += FormatRequest(7, "SelectBundle", param);
+
+  const auto& responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[2]["result"]["success"]); // bundle changed
+  EXPECT_FALSE(responses[3]["result"]["success"]);   // bundle not changed
+  EXPECT_FALSE(responses[4]["result"]["success"]);   // bundle not found
+  EXPECT_EQ(responses[4]["result"]["message"], "Bundle 'undefined' is not found for component class 'RteTestBundle'");
+  EXPECT_TRUE(responses[5]["result"]["success"]);   // bundle '' found
+  EXPECT_EQ(responses[6]["error"]["message"], "UnknownCclass: component class not found");
+
+}
+
 
 TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   string context = "selectable+CM0";
@@ -732,7 +762,7 @@ TEST_F(ProjMgrRpcTests, RpcConvertSolution) {
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestRpc/minimal.cbuild-pack.yml"));
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestRpc/out/minimal+TestHW.cbuild-run.yml"));
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestRpc/out/minimal/TestHW/minimal+TestHW.cbuild.yml"));
-  
+
   // convert fail
   csolutionPath = testinput_folder + "/TestRpc/unknown-component.csolution.yml";
   requests = FormatRequest(1, "ConvertSolution",
