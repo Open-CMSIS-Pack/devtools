@@ -735,7 +735,7 @@ set (ELF2HEX --i32combined --output "${OUT_DIR}/${HEX_FILE}" "${OUT_DIR}/$<TARGE
 set (ELF2BIN --bin --output "${OUT_DIR}/${BIN_FILE}" "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TARGET_PROPERTY:${TARGET},SUFFIX>")
 
 # Linker Map file generation
-set (LD_MAP --map --list="${OUT_DIR}/${LD_MAP_FILE}")
+set (LD_MAP --map --list "${OUT_DIR}/${LD_MAP_FILE}")
 
 # Set CMake variables for toolchain initialization
 set(CMAKE_C_FLAGS_INIT "${CC_CPU}")
