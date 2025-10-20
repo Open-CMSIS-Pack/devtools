@@ -238,38 +238,40 @@ bool SvdCpu::ProcessXmlAttributes(XMLTreeElement* xmlElement)
 
 bool SvdCpu::CopyItem(SvdItem *from)
 {
-  const auto pFrom = (SvdCpu*) from;
+  const auto pFrom = dynamic_cast<SvdCpu*>(from);
 
-  const auto&  revisionStr         = GetRevisionStr          ();
-  const auto   revision            = GetRevision             ();
-  const auto   nvicPrioBits        = GetNvicPrioBits         ();
-  const auto   mpuPresent          = GetMpuPresent           ();
-  const auto   fpuPresent          = GetFpuPresent           ();
-  const auto   vendorSystickConfig = GetVendorSystickConfig  ();
-  const auto   fpuDP               = GetFpuDP                ();
-  const auto   icachePresent       = GetIcachePresent        ();
-  const auto   dcachePresent       = GetDcachePresent        ();
-  const auto   itcmPresent         = GetItcmPresent          ();
-  const auto   dtcmPresent         = GetDtcmPresent          ();
-  const auto   vtorPresent         = GetVtorPresent          ();
-  const auto   endian              = GetEndian               ();
-  const auto   type                = GetType                 ();
+  if(pFrom) {
+    const auto&  revisionStr         = GetRevisionStr          ();
+    const auto   revision            = GetRevision             ();
+    const auto   nvicPrioBits        = GetNvicPrioBits         ();
+    const auto   mpuPresent          = GetMpuPresent           ();
+    const auto   fpuPresent          = GetFpuPresent           ();
+    const auto   vendorSystickConfig = GetVendorSystickConfig  ();
+    const auto   fpuDP               = GetFpuDP                ();
+    const auto   icachePresent       = GetIcachePresent        ();
+    const auto   dcachePresent       = GetDcachePresent        ();
+    const auto   itcmPresent         = GetItcmPresent          ();
+    const auto   dtcmPresent         = GetDtcmPresent          ();
+    const auto   vtorPresent         = GetVtorPresent          ();
+    const auto   endian              = GetEndian               ();
+    const auto   type                = GetType                 ();
 
-  if(revisionStr         == "")                       { SetRevisionStr          (pFrom->GetRevisionStr          ()); }
-  if(revision            == 0 )                       { SetRevision             (pFrom->GetRevision             ()); }
-  if(nvicPrioBits        == 0 )                       { SetNvicPrioBits         (pFrom->GetNvicPrioBits         ()); }
-  if(mpuPresent          == 0 )                       { SetMpuPresent           (pFrom->GetMpuPresent           ()); }
-  if(fpuPresent          == 0 )                       { SetFpuPresent           (pFrom->GetFpuPresent           ()); }
-  if(vendorSystickConfig == 0 )                       { SetVendorSystickConfig  (pFrom->GetVendorSystickConfig  ()); }
-  if(fpuDP               == 0 )                       { SetFpuDP                (pFrom->GetFpuDP                ()); }
-  if(icachePresent       == 0 )                       { SetIcachePresent        (pFrom->GetIcachePresent        ()); }
-  if(dcachePresent       == 0 )                       { SetDcachePresent        (pFrom->GetDcachePresent        ()); }
-  if(itcmPresent         == 0 )                       { SetItcmPresent          (pFrom->GetItcmPresent          ()); }
-  if(dtcmPresent         == 0 )                       { SetDtcmPresent          (pFrom->GetDtcmPresent          ()); }
-  if(vtorPresent         == 0 )                       { SetVtorPresent          (pFrom->GetVtorPresent          ()); }
-  if(endian              == SvdTypes::Endian::UNDEF)  {  SetEndian              (pFrom->GetEndian               ()); }
-  if(type                == SvdTypes::CpuType::UNDEF) { SetType                 (pFrom->GetType                 ()); }
-
+    if(revisionStr         == "")                       { SetRevisionStr          (pFrom->GetRevisionStr          ()); }
+    if(revision            == 0 )                       { SetRevision             (pFrom->GetRevision             ()); }
+    if(nvicPrioBits        == 0 )                       { SetNvicPrioBits         (pFrom->GetNvicPrioBits         ()); }
+    if(mpuPresent          == 0 )                       { SetMpuPresent           (pFrom->GetMpuPresent           ()); }
+    if(fpuPresent          == 0 )                       { SetFpuPresent           (pFrom->GetFpuPresent           ()); }
+    if(vendorSystickConfig == 0 )                       { SetVendorSystickConfig  (pFrom->GetVendorSystickConfig  ()); }
+    if(fpuDP               == 0 )                       { SetFpuDP                (pFrom->GetFpuDP                ()); }
+    if(icachePresent       == 0 )                       { SetIcachePresent        (pFrom->GetIcachePresent        ()); }
+    if(dcachePresent       == 0 )                       { SetDcachePresent        (pFrom->GetDcachePresent        ()); }
+    if(itcmPresent         == 0 )                       { SetItcmPresent          (pFrom->GetItcmPresent          ()); }
+    if(dtcmPresent         == 0 )                       { SetDtcmPresent          (pFrom->GetDtcmPresent          ()); }
+    if(vtorPresent         == 0 )                       { SetVtorPresent          (pFrom->GetVtorPresent          ()); }
+    if(endian              == SvdTypes::Endian::UNDEF)  {  SetEndian              (pFrom->GetEndian               ()); }
+    if(type                == SvdTypes::CpuType::UNDEF) { SetType                 (pFrom->GetType                 ()); }
+  }
+  
   SvdItem::CopyItem(from);
 
   return false;
