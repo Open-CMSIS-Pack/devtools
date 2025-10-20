@@ -225,21 +225,23 @@ bool SvdEnum::SetValue(uint64_t value)
 
 bool SvdEnum::CopyItem(SvdItem *from)
 {
-  const auto pFrom = (SvdEnum*) from;
+  const auto pFrom = dynamic_cast<SvdEnum*>(from);
 
   bool valValid  = GetValue ().bValid;
   bool isDefault = IsDefault();
 
-  if(!valValid) {
-    if(pFrom->GetValue().bValid) {
-      SetValue(pFrom->GetValue().u32);
+  if(pFrom) {
+    if(!valValid) {
+      if(pFrom->GetValue().bValid) {
+        SetValue(pFrom->GetValue().u32);
+      }
+    }
+
+    if(isDefault == 0 ) {
+      SetIsDefault(pFrom->IsDefault());
     }
   }
-
-  if(isDefault == 0 ) {
-    SetIsDefault(pFrom->IsDefault());
-  }
-
+  
   return SvdItem::CopyItem(from);
 }
 
