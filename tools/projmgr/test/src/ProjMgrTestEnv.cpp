@@ -163,6 +163,13 @@ void ProjMgrTestEnv::TearDown() {
   CleanUpEnvp();
 }
 
+std::string ProjMgrTestEnv::StripAbsoluteFunc(const std::string& in) {
+  std::string str = in;
+  RteUtils::ReplaceAll(str, testinput_folder, "${DEVTOOLS(data)}");
+  RteUtils::ReplaceAll(str, testcmsispack_folder, "${DEVTOOLS(packs)}");
+  return str;
+};
+
 void ProjMgrTestEnv::CompareFile(const string& file1, const string& file2, LineReplaceFunc_t file2LineReplaceFunc) {
   ifstream f1, f2;
   string l1, l2;

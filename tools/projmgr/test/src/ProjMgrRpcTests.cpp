@@ -31,6 +31,7 @@ protected:
     const string& activeTarget = RteUtils::EMPTY_STRING,
     const vector<string>& contextList = RteUtils::EMPTY_STRING_VECTOR
   );
+  bool CompareRpcResponse(const json& response, const string& ref);
 
 };
 
@@ -67,6 +68,13 @@ string ProjMgrRpcTests::CreateLoadRequests(const string& solution, const string&
     }
   }
   return FormatRequest(1, "LoadPacks") + loadSolutionRequest;
+}
+
+bool ProjMgrRpcTests::CompareRpcResponse(const json& response, const string& ref) {
+  ifstream fileRef(ref);
+  json jsonRef;
+  fileRef >> jsonRef;
+  return ProjMgrTestEnv::StripAbsoluteFunc(response.dump()) == jsonRef.dump();
 }
 
 vector<json> ProjMgrRpcTests::RunRpcMethods(const string& strIn) {
@@ -796,5 +804,31 @@ TEST_F(ProjMgrRpcTests, RpcConvertSolution) {
   responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
   EXPECT_EQ(responses[0]["result"]["undefinedLayers"][0], "NotDefined");
+}
+
+TEST_F(ProjMgrRpcTests, RpcDiscoverLayers) {
+  auto csolutionPath = testinput_folder + "/TestLayers/config.csolution.yml";
+  auto requests = FormatRequest(1, "DiscoverLayers",
+    json({ { "solution", csolutionPath }, { "activeTarget", "" } }));
+  auto responses = RunRpcMethods(requests);
+
+  // valid configurations: compare response with golden reference
+  EXPECT_TRUE(CompareRpcResponse(responses[0], testinput_folder + "/TestLayers/ref/rpc-discover-layers.json"));
+
+  // unknown active target set
+  csolutionPath = testinput_folder + "/TestLayers/config.csolution.yml";
+  requests = FormatRequest(1, "DiscoverLayers",
+    json({ { "solution", csolutionPath }, { "activeTarget", "unknown" } }));
+  responses = RunRpcMethods(requests);
+  EXPECT_FALSE(responses[0]["result"]["success"]);
+  EXPECT_EQ(responses[0]["result"]["message"], "Setup of solution contexts failed");
+
+  // no compatible layer combination
+  csolutionPath = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
+  requests = FormatRequest(1, "DiscoverLayers",
+    json({ { "solution", csolutionPath }, { "activeTarget", "" } }));
+  responses = RunRpcMethods(requests);
+  EXPECT_FALSE(responses[0]["result"]["success"]);
+  EXPECT_EQ(responses[0]["result"]["message"], "No compatible software layer found. Review required connections of the project");
 }
 // end of ProjMgrRpcTests.cpp

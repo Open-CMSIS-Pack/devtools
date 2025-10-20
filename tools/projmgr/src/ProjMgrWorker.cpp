@@ -5858,3 +5858,93 @@ bool ProjMgrWorker::IsLibOnly(const std::vector<ContextItem*>& contexts) {
   }
   return true;
 }
+
+const vector<ContextItem*>& ProjMgrWorker::GetProcessedContexts(void) {
+  m_processedContexts.clear();
+  for (auto& contextName : m_selectedContexts) {
+    auto& contextItem = m_contexts[contextName];
+    m_processedContexts.push_back(&contextItem);
+  }
+  return m_processedContexts;
+}
+
+bool ProjMgrWorker::ElaborateVariablesConfigurations() {
+  bool configurationFound = false;
+  const auto& processedContexts = GetProcessedContexts();
+  for (const auto& context : processedContexts) {
+    // collect layer connection info specific to each context
+    if (context->validConnections.size() > 0) {
+      map<int, map<string, map<string, set<const ConnectItem*>>>> configurations;
+      int index = 0;
+      for (const auto& combination : context->validConnections) {
+        index++;
+        for (const auto& item : combination) {
+          if (item.type.empty())
+            continue;
+          for (const auto& [type, _] : context->compatibleLayers) {
+            // add all required layer types, including discarded optionals
+            configurations[index][type].insert({});
+          }
+          for (const auto& connect : item.connections) {
+            configurations[index][item.type][item.filename].insert(connect);
+          }
+        }
+      }
+      // process connection info
+      if (configurations.size() > 0) {
+        for (const auto& [index, types] : configurations) {
+          VariablesConfiguration configuration;
+          for (const auto& [type, filenames] : types) {
+            if (type.empty()) {
+              continue;
+            }
+            LayerVariable variable;
+            variable.name = context->layerVariables.find(type) != context->layerVariables.end() ?
+              context->layerVariables.at(type) : type + "-Layer";
+            if (filenames.empty()) {
+              configuration.variables.push_back(variable);
+            } else {
+              for (const auto& [filename, options] : filenames) {
+                string packRoot = ProjMgrKernel::Get()->GetCmsisPackRoot();
+                variable.clayer = filename;
+                RteFsUtils::NormalizePath(variable.clayer);
+                variable.clayer = RteFsUtils::MakePathCanonical(variable.clayer);
+                // Replace with ${CMSIS_PACK_ROOT} or $SolutionDir()$ depending on the detected path
+                size_t index = variable.clayer.find(packRoot);
+                if (index != string::npos) {
+                  variable.clayer.replace(index, packRoot.length(), "${CMSIS_PACK_ROOT}");
+                } else {
+                  string relPath = RteFsUtils::RelativePath(filename, context->csolution->directory);
+                  if (!relPath.empty()) {
+                    variable.clayer = "$" + string(RteConstants::AS_SOLUTION_DIR_BR) + "$/" + RteFsUtils::LexicallyNormal(relPath);
+                  }
+                }
+                if (m_parser->GetGenericClayers().find(filename) != m_parser->GetGenericClayers().end()) {
+                  const auto& clayer = m_parser->GetGenericClayers().at(filename);
+                  variable.description = clayer.description;
+                }
+                for (const auto& connect : options) {
+                  if (!connect->set.empty()) {
+                    SettingsType settings;
+                    settings.set = connect->set + " (" + connect->connect + (connect->info.empty() ? "" : " - " + connect->info) + ")";
+                    variable.settings.push_back(settings);
+                  }
+                }
+                if (context->packLayers.find(filename) != context->packLayers.end()) {
+                  const auto& clayer = context->packLayers.at(filename);
+                  variable.path = clayer->GetOriginalAbsolutePath(clayer->GetPathString());
+                  variable.file = clayer->GetFileString();
+                  variable.copyTo = clayer->GetCopyToString();
+                }
+                configuration.variables.push_back(variable);
+              }
+            }
+          }
+          context->variablesConfigurations.push_back(configuration);
+          configurationFound = true;
+        }
+      }
+    }
+  }
+  return configurationFound;
+}

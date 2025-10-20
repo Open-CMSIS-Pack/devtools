@@ -97,6 +97,7 @@ public:
   RpcArgs::LogMessages GetLogMessages(void) override;
   RpcArgs::DraftProjectsInfo GetDraftProjects(const RpcArgs::DraftProjectsFilter& filter) override;
   RpcArgs::ConvertSolutionResult ConvertSolution(const string& solution, const string& activeTarget, const bool& updateRte) override;
+  RpcArgs::DiscoverLayersInfo DiscoverLayers(const string& solution, const string& activeTarget) override;
 
 protected:
   enum Exception
@@ -126,6 +127,7 @@ protected:
   RteTarget* GetActiveTarget(const string& context) const;
   RteComponentAggregate* GetComponentAggregate(const string& context, const string& id) const;
   bool SelectVariantOrVersion(const string& context, const string& id, const string& value, bool bVariant);
+  bool CheckSolutionArg(string& solution, optional<string>& message) const;
 };
 
 bool ProjMgrRpcServer::Run(void) {
@@ -165,6 +167,19 @@ bool ProjMgrRpcServer::Run(void) {
       log.close();
     }
 
+  }
+  return true;
+}
+
+bool RpcHandler::CheckSolutionArg(string& solution, optional<string>& message) const {
+  if (!regex_match(solution, regex(".*\\.csolution\\.(yml|yaml)"))) {
+    message = solution + " is not a *.csolution.yml file";
+    return false;
+  }
+  solution = RteFsUtils::MakePathCanonical(solution);
+  if (!RteFsUtils::Exists(solution)) {
+    message = solution + " file does not exist";
+    return false;
   }
   return true;
 }
@@ -690,9 +705,8 @@ RpcArgs::DraftProjectsInfo RpcHandler::GetDraftProjects(const RpcArgs::DraftProj
 
 RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solution, const string& activeTarget, const bool& updateRte) {
   RpcArgs::ConvertSolutionResult result = {{ false }};
-  const auto csolutionFile = RteFsUtils::MakePathCanonical(solution);
-  if (!regex_match(csolutionFile, regex(".*\\.csolution\\.(yml|yaml)"))) {
-    result.message = solution + " is not a *.csolution.yml file";
+  string csolutionFile = solution;
+  if (!CheckSolutionArg(csolutionFile, result.message)) {
     return result;
   }
   if (!m_manager.RunConvert(csolutionFile, activeTarget, updateRte) || !ProjMgrLogger::Get().GetErrors().empty()) {
@@ -710,6 +724,69 @@ RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solutio
   }
   result.success = true;
   return result;
+}
+
+RpcArgs::DiscoverLayersInfo RpcHandler::DiscoverLayers(const string& solution, const string& activeTarget) {
+  RpcArgs::DiscoverLayersInfo result = {{ false }};
+  string csolutionFile = solution;
+  if (!CheckSolutionArg(csolutionFile, result.message)) {
+    return result;
+  }
+  if (!m_manager.SetupContexts(csolutionFile, activeTarget)) {
+    result.message = "Setup of solution contexts failed";
+    return result;
+  }
+  m_worker.SetUpCommand(true);
+  StrVec layers;
+  StrSet fails;
+  if (!m_worker.ListLayers(layers, "", fails) || !m_worker.ElaborateVariablesConfigurations()) {
+    result.message = "No compatible software layer found. Review required connections of the project";
+    return result;
+  } else {
+    // retrieve valid configurations
+    vector<RpcArgs::VariablesConfiguration> vcVec;
+    const auto& processedContexts = m_worker.GetProcessedContexts();
+    for (const auto& context : processedContexts) {
+      if (!context->variablesConfigurations.empty()) {
+        for (const auto& configuration : context->variablesConfigurations) {
+          RpcArgs::VariablesConfiguration vc;
+          vector<RpcArgs::LayerVariable> lvVec;
+          for (const auto& variable : configuration.variables) {
+            RpcArgs::LayerVariable lv = { variable.name, variable.clayer };
+            vector<RpcArgs::SettingsType> settings;
+            for (const auto& s : variable.settings) {
+              if (!s.set.empty()) {
+                settings.push_back(RpcArgs::SettingsType{s.set});
+              }
+            }
+            if (!settings.empty()) {
+              lv.settings = settings;
+            }
+            if (!variable.path.empty()) {
+              lv.path = variable.path;
+            }
+            if (!variable.file.empty()) {
+              lv.file = variable.file;
+            }
+            if (!variable.copyTo.empty()) {
+              lv.copyTo = variable.copyTo;
+            }
+            lvVec.push_back(lv);
+          }
+          vc.variables = lvVec;
+          vcVec.push_back(vc);
+        }
+        // break after first project context with possible variable configurations
+        // solutions with undefined layer variables over multiple projects are currently not supported
+        break;
+      }
+    }
+    if (!vcVec.empty()) {
+      result.configurations = vcVec;
+    }
+    result.success = true;
+    return result;
+  }
 }
 
 // end of ProkMgrRpcServer.cpp

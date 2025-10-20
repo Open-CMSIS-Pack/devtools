@@ -60,6 +60,7 @@ class ProjMgrTestEnv : public ::testing::Environment {
 public:
   void SetUp() override;
   void TearDown() override;
+  static std::string StripAbsoluteFunc(const std::string& in);
   static void CompareFile(const std::string& file1, const std::string& file2, LineReplaceFunc_t file2LineReplaceFunc = nullptr);
   static const std::string& GetCmsisPackRoot();
   static std::map<std::string, std::string, RtePackageComparator> GetEffectivePdscFiles(bool bLatestsOnly = false);

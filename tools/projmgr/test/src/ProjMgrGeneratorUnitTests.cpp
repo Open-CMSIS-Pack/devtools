@@ -90,14 +90,7 @@ TEST_F(ProjMgrGeneratorUnitTests, GenFiles) {
   const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_1.Debug+TypeA.cbuild-gen.yml";
   const string generatedGPDSC = testinput_folder + "/TestSolution/TestProject3_1/gendir/RteTestGen_ARMCM0/RteTest.gpdsc";
 
-  auto stripAbsoluteFunc = [](const std::string& in) {
-    std::string str = in;
-    RteUtils::ReplaceAll(str, testinput_folder, "${DEVTOOLS(data)}");
-    RteUtils::ReplaceAll(str, testcmsispack_folder, "${DEVTOOLS(packs)}");
-    return str;
-  };
-
-  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/ref/TestProject3_1.Debug+TypeA.cbuild-gen.yml",  generatorInputFile, stripAbsoluteFunc);
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/ref/TestProject3_1.Debug+TypeA.cbuild-gen.yml",  generatorInputFile, ProjMgrTestEnv::StripAbsoluteFunc);
 
   EXPECT_EQ(true, std::filesystem::exists(generatorInputFile));
   EXPECT_EQ(true, std::filesystem::exists(generatedGPDSC));
@@ -190,14 +183,7 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
 
   EXPECT_EQ(0, ProjMgr::RunProjMgr(7, argv, envp));
 
-  auto stripAbsoluteFunc = [](const std::string& in) {
-    std::string str = in;
-    RteUtils::ReplaceAll(str, testinput_folder, "${DEVTOOLS(data)}");
-    RteUtils::ReplaceAll(str, testcmsispack_folder, "${DEVTOOLS(packs)}");
-    return str;
-  };
-
-  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/ref/TestProject3_1.Debug+TypeA.cbuild-gen.yml",  generatorInputFile, stripAbsoluteFunc);
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/ref/TestProject3_1.Debug+TypeA.cbuild-gen.yml",  generatorInputFile, ProjMgrTestEnv::StripAbsoluteFunc);
 
   EXPECT_EQ(true, std::filesystem::exists(generatorInputFile));
   EXPECT_EQ(false, std::filesystem::exists(rteDir + "/Device"));
