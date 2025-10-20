@@ -1104,22 +1104,11 @@ bool ProjMgr::RunListLayers(void) {
   // Step4: Run only when --update-idx flag is used
   // Update the cbuild-idx.yml file with layer information
   if (m_updateIdx) {
-    map<string, ContextItem>* contexts = nullptr;
-    m_worker.GetContexts(contexts);
-
-    // Check if contexts were properly retrieved
-    if (contexts == nullptr) {
-      return false;
-    }
-
     // Generate Cbuild index
-    m_processedContexts.clear();
-    for (auto& contextName : m_worker.GetSelectedContexts()) {
-      auto& contextItem = (*contexts)[contextName];
-      m_processedContexts.push_back(&contextItem);
-    }
-    if (!m_processedContexts.empty()) {
-      if (!m_emitter.GenerateCbuildIndex(m_processedContexts,
+    const auto& processedContexts = m_worker.GetProcessedContexts();
+    if (!processedContexts.empty()) {
+      m_worker.ElaborateVariablesConfigurations();
+      if (!m_emitter.GenerateCbuildIndex(processedContexts,
         m_failedContext, map<string, ExecutesItem>())) {
         return false;
       }
@@ -1301,10 +1290,11 @@ void ProjMgr::InitSolution(const std::string& csolution, const std::string& acti
     m_contextSet = true;
   } else {
     m_activeTargetSet = activeTargetSet;
+    m_contextSet = false;
   }
 }
 
-bool ProjMgr::LoadSolution(const std::string& csolution, const std::string& activeTargetSet) {
+bool ProjMgr::SetupContexts(const std::string& csolution, const std::string& activeTargetSet) {
 
   InitSolution(csolution, activeTargetSet, false);
 
@@ -1312,6 +1302,14 @@ bool ProjMgr::LoadSolution(const std::string& csolution, const std::string& acti
     return false;
   }
   if (!ParseAndValidateContexts()) {
+    return false;
+  }
+  return true;
+}
+
+bool ProjMgr::LoadSolution(const std::string& csolution, const std::string& activeTargetSet) {
+
+  if (!SetupContexts(csolution, activeTargetSet)) {
     return false;
   }
   if (!ProcessContexts()) {

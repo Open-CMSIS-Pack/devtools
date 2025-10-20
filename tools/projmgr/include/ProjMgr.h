@@ -71,6 +71,14 @@ public:
   bool LoadSolution(const std::string& csolution, const std::string& activeTargetSet);
 
   /**
+   * @brief setup contexts
+   * @param path to <solution>.csolution.yml file
+   * @param active target set in the format <target-type>[@<set>]
+   * @return processing status
+  */
+  bool SetupContexts(const std::string& csolution, const std::string& activeTargetSet);  
+
+  /**
    * @brief convert solution and generate yml files
    * @param path to <solution>.csolution.yml file
    * @param active target set in the format <target-type>[@<set>]

@@ -1726,13 +1726,8 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_pack_layer) {
   EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
   EXPECT_TRUE(regex_match(streamRedirect.GetOutString(), regex(expectedOutStr)));
 
-  auto stripAbsoluteFunc = [](const std::string& in) {
-    std::string str = in;
-    RteUtils::ReplaceAll(str, testcmsispack_folder, "${DEVTOOLS(packs)}");
-    return str;
-  };
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/config.cbuild-idx.yml",
-    testinput_folder + "/TestLayers/config.cbuild-idx.yml", stripAbsoluteFunc);
+    testinput_folder + "/TestLayers/config.cbuild-idx.yml", ProjMgrTestEnv::StripAbsoluteFunc);
   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/config.cbuild-idx.yml"));
 }
 
@@ -5422,39 +5417,32 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator) {
   argv[6] = (char*)"core0.Debug+MultiCore";
   EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
 
-  auto stripAbsoluteFunc = [](const std::string& in) {
-    std::string str = in;
-    RteUtils::ReplaceAll(str, testinput_folder, "${DEVTOOLS(data)}");
-    RteUtils::ReplaceAll(str, testcmsispack_folder, "${DEVTOOLS(packs)}");
-    return str;
-  };
-
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/extgen.cbuild-gen-idx.yml",
-    testinput_folder + "/ExternalGenerator/tmp/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp/extgen.cbuild-gen-idx.yml", ProjMgrTestEnv::StripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/core0.Debug+MultiCore.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/core0.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp/core0.Debug+MultiCore.cbuild-gen.yml", ProjMgrTestEnv::StripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/MultiCore/core1.Debug+MultiCore.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/core1.Debug+MultiCore.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp/core1.Debug+MultiCore.cbuild-gen.yml", ProjMgrTestEnv::StripAbsoluteFunc);
 
   // run single-core
   argv[6] = (char*)"single-core.Debug+CM0";
   EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
 
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/SingleCore/extgen.cbuild-gen-idx.yml",
-    testinput_folder + "/ExternalGenerator/tmp/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp/extgen.cbuild-gen-idx.yml", ProjMgrTestEnv::StripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/SingleCore/single-core.Debug+CM0.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/single-core.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp/single-core.Debug+CM0.cbuild-gen.yml", ProjMgrTestEnv::StripAbsoluteFunc);
 
   // run trustzone
   argv[6] = (char*)"ns.Debug+CM0";
   EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
 
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/extgen.cbuild-gen-idx.yml",
-    testinput_folder + "/ExternalGenerator/tmp/extgen.cbuild-gen-idx.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp/extgen.cbuild-gen-idx.yml", ProjMgrTestEnv::StripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/ns.Debug+CM0.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/ns.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp/ns.Debug+CM0.cbuild-gen.yml", ProjMgrTestEnv::StripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/ExternalGenerator/ref/TrustZone/s.Debug+CM0.cbuild-gen.yml",
-    testinput_folder + "/ExternalGenerator/tmp/s.Debug+CM0.cbuild-gen.yml", stripAbsoluteFunc);
+    testinput_folder + "/ExternalGenerator/tmp/s.Debug+CM0.cbuild-gen.yml", ProjMgrTestEnv::StripAbsoluteFunc);
 
   // convert single core
   argv[2] = (char*)"convert";

@@ -368,6 +368,42 @@ struct DebuggerType {
 };
 
 /**
+ * @brief settings type containing
+ *        connection set
+*/
+struct SettingsType {
+  std::string set;
+};
+
+/**
+ * @brief layer variable type containing
+ *        variable name
+ *        clayer path
+ *        brief description
+ *        list of connection sets
+ *        directory path that contains the layer (from PDSC)
+ *        clayer path relative to directory path (from PDSC)
+ *        proposed destination directory for the layer (from PDSC)
+*/
+struct LayerVariable {
+  std::string name;
+  std::string clayer;
+  std::string description;
+  std::vector<SettingsType> settings;
+  std::string path;
+  std::string file;
+  std::string copyTo;
+};
+
+/**
+ * @brief variables configuration type containing
+ *        list of layer variables
+*/
+struct VariablesConfiguration {
+  std::vector<LayerVariable> variables;
+};
+
+/**
  * @brief project context item containing
  *        pointer to csolution,
  *        pointer to cproject,
@@ -431,6 +467,7 @@ struct DebuggerType {
  *        image only flag
  *        west options
  *        west on flag
+ *        layer variables configurations
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -502,6 +539,7 @@ struct ContextItem {
   bool imageOnly = false;
   WestDesc west;
   bool westOn = false;
+  std::vector<VariablesConfiguration> variablesConfigurations;
 };
 
 /**
@@ -1052,6 +1090,18 @@ public:
   bool IsLibOnly(const std::vector<ContextItem*>& contexts);
 
   /**
+   * @brief get processed contexts
+   * @return reference to vector with context items
+  */
+  const std::vector<ContextItem*>& GetProcessedContexts(void);
+
+  /**
+   * @brief elaborate possible variables configurations according to compatible layers
+   * @return true if there are configurations available
+  */
+  bool ElaborateVariablesConfigurations();
+
+  /**
    * @brief clear worker members for reloading a solution
    * @return true if there is no error
   */
@@ -1094,6 +1144,7 @@ protected:
   std::map<std::string, ContextItem> m_contexts;
   std::map<std::string, std::set<std::string>> m_contextErrMap;
   std::vector<std::string> m_selectedContexts;
+  std::vector<ContextItem*> m_processedContexts;
   std::string m_outputDir;
   std::string m_packRoot;
   std::string m_compilerRoot;
