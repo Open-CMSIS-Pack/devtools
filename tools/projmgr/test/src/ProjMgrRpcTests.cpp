@@ -375,6 +375,8 @@ TEST_F(ProjMgrRpcTests, RpcBoardInfo) {
   requests += FormatRequest(6, "GetBoardInfo", json({{ "id", "RteTest NoMCU board"}}));
   //  only vendor => no ID
   requests += FormatRequest(7, "GetBoardInfo", json({{ "id", "Keil::"}}));
+  // board with debugger
+  requests += FormatRequest(8, "GetBoardInfo", json({{ "id", "Keil::RteTest-Test-board With.Memory:1.1.1" }}));  
 
   const auto responses = RunRpcMethods(requests);
   EXPECT_TRUE(responses[0]["result"]["success"]);
@@ -422,6 +424,14 @@ TEST_F(ProjMgrRpcTests, RpcBoardInfo) {
 
   EXPECT_FALSE(responses[6]["result"]["success"]);
   EXPECT_EQ(responses[6]["result"]["message"], "Invalid board ID: 'Keil::'");
+
+  auto b7 = responses[7]["result"]["board"];
+  EXPECT_EQ(b7["id"], "Keil::RteTest-Test-board With.Memory:1.1.1");
+  EXPECT_EQ(b7["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(b7["description"], "TestBoard with dots in the name and memory");
+  EXPECT_EQ(b7["debugger"]["name"], "CMSIS-DAP");
+  EXPECT_EQ(b7["debugger"]["protocol"], "swd");
+  EXPECT_EQ(b7["debugger"]["clock"], 30000000);
 }
 
 /////////
