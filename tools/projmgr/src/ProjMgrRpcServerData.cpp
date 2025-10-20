@@ -224,6 +224,14 @@ RpcArgs::Board RpcDataCollector::FromRteBoard( RteBoard* rteBoard, bool bInclude
     if(!memories.empty()) {
       b.memories = memories;
     }
+    auto debugProbe = rteBoard->GetItemByTag("debugProbe");
+    if (debugProbe) {
+      RpcArgs::Debugger d;
+      d.name = debugProbe->GetName();
+      d.protocol = debugProbe->GetAttribute("debugLink");
+      d.clock = debugProbe->GetAttributeAsULL("debugClock");
+      b.debugger = d;
+    }
     vector<RpcArgs::Device> devices;
     list<RteDevice*> processedDevices;
     CollectBoardDevices(devices, rteBoard, true, processedDevices);
