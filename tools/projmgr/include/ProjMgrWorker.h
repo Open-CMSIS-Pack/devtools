@@ -1126,6 +1126,7 @@ public:
     m_selectableCompilers.clear();
     m_missingFiles.clear();
     m_types = {};
+    m_activeTargetType.clear();
   };
 
 protected:

@@ -98,6 +98,7 @@ public:
   RpcArgs::DraftProjectsInfo GetDraftProjects(const RpcArgs::DraftProjectsFilter& filter) override;
   RpcArgs::ConvertSolutionResult ConvertSolution(const string& solution, const string& activeTarget, const bool& updateRte) override;
   RpcArgs::DiscoverLayersInfo DiscoverLayers(const string& solution, const string& activeTarget) override;
+  RpcArgs::ListMissingPacksResult ListMissingPacks(const string& solution, const string& activeTarget) override;
 
 protected:
   enum Exception
@@ -787,6 +788,25 @@ RpcArgs::DiscoverLayersInfo RpcHandler::DiscoverLayers(const string& solution, c
     result.success = true;
     return result;
   }
+}
+
+RpcArgs::ListMissingPacksResult RpcHandler::ListMissingPacks(const string& solution, const string& activeTarget) {
+  RpcArgs::ListMissingPacksResult result = {{ false }};
+  string csolutionFile = solution;
+  if (!CheckSolutionArg(csolutionFile, result.message)) {
+    return result;
+  }
+  if (!m_manager.SetupContexts(csolutionFile, activeTarget)) {
+    result.message = "Setup of solution contexts failed";
+    return result;
+  }
+  StrVec missingPacks;
+  m_worker.ListPacks(missingPacks, true);
+  if (!missingPacks.empty()) {
+    result.packs = missingPacks;
+  }
+  result.success = true;
+  return result;
 }
 
 // end of ProkMgrRpcServer.cpp
