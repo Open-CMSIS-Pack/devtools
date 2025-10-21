@@ -18,6 +18,9 @@ solution:
               - value 2
             custom-map:
               key: value
+            custom-array-map:
+              - key: value 1
+              - key: value 2
           images:
             - project-context: custom
 

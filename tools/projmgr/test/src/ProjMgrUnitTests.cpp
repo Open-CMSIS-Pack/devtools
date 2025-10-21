@@ -6736,6 +6736,7 @@ TEST_F(ProjMgrUnitTests, TestRunDebugCustom) {
   testAdapter["defaults"]["custom-key-overwrite"] = "custom adapter key overwrite";
   testAdapter["defaults"]["custom-map"]["adapter-key"] = "adapter value";
   testAdapter["defaults"]["custom-array"][0] = "adapter item";
+  testAdapter["defaults"]["custom-array-map"][0]["adapter-key"] = "adapter value";
   debugAdapters["debug-adapters"].push_back(testAdapter);
   ofstream debugAdaptersFile;
   debugAdaptersFile.open(debugAdaptersPath, fstream::trunc);
