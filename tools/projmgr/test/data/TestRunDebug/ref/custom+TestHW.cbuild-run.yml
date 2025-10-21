@@ -34,12 +34,13 @@ cbuild-run:
     custom-adapter-key: custom adapter value
     custom-key-overwrite: custom value overwrite
     custom-map:
-      adapter-key: adapter value
       key: value
     custom-array:
-      - adapter item
       - value 1
       - value 2
+    custom-array-map:
+      - key: value 1
+      - key: value 2
     custom-key: custom value
   debug-vars:
     vars: |

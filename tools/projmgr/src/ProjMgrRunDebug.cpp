@@ -633,15 +633,6 @@ bool ProjMgrRunDebug::GetDebugAdapter(const string& name, const DebugAdaptersIte
   return false;
 }
 
-void ProjMgrRunDebug::CustomVecPushBack(vector<CustomItem>& vec, const CustomItem& value) {
-  for (const auto& item : vec) {
-    if (item.scalar == value.scalar) {
-      return;
-    }
-  }
-  vec.push_back(value);
-}
-
 CustomItem& ProjMgrRunDebug::CustomMapFind(vector<pair<string, CustomItem>>& customMap, const string& key) {
   for (auto& [k, v] : customMap) {
     if (key == k) {
@@ -657,13 +648,11 @@ void ProjMgrRunDebug::MergeCustomItems(const CustomItem& src, CustomItem& dst) {
     dst.scalar = src.scalar;
   }
   else if (!src.vec.empty()) {
-    for (const auto& item : src.vec) {
-      CustomVecPushBack(dst.vec, item);
-    }
+    dst.vec = src.vec;
   }
   else if (!src.map.empty()) {
     for (const auto& [k, v] : src.map) {
-      MergeCustomItems(v, CustomMapFind(dst.map, k));
+      CustomMapFind(dst.map, k) = v;
     }
   }
 }

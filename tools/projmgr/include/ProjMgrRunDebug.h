@@ -225,7 +225,6 @@ protected:
     const std::map<std::string, RteDeviceProperty*>& pnames);
   void CollectDebugTopology(const ContextItem& context, std::vector<std::pair<const RteItem*, std::vector<std::string>>> debugs,
     const std::map<std::string, RteDeviceProperty*>& pnames);
-  void CustomVecPushBack(std::vector<CustomItem>& vec, const CustomItem& value);
   CustomItem& CustomMapFind(std::vector<std::pair<std::string, CustomItem>>& customMap, const std::string& key);
   void MergeCustomItems(const CustomItem& src, CustomItem& dst);
 };
