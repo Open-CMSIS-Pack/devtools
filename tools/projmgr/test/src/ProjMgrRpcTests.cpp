@@ -831,4 +831,24 @@ TEST_F(ProjMgrRpcTests, RpcDiscoverLayers) {
   EXPECT_FALSE(responses[0]["result"]["success"]);
   EXPECT_EQ(responses[0]["result"]["message"], "No compatible software layer found. Review required connections of the project");
 }
+
+TEST_F(ProjMgrRpcTests, RpcListMissingPacks) {
+  auto csolutionPath = testinput_folder + "/TestSolution/pack_missing.csolution.yml";
+  auto requests =
+    FormatRequest(1, "ListMissingPacks", json({ { "solution", csolutionPath }, { "activeTarget", "CM0" } })) +
+    FormatRequest(2, "ListMissingPacks", json({ { "solution", csolutionPath }, { "activeTarget", "Gen" } })) +
+    FormatRequest(3, "ListMissingPacks", json({ { "solution", csolutionPath }, { "activeTarget", "Unknown" } }));
+  auto responses = RunRpcMethods(requests);
+
+  // valid responses
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+  EXPECT_EQ(responses[0]["result"]["packs"][0], "ARM::Missing_DFP@0.0.9");
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+  EXPECT_EQ(responses[1]["result"]["packs"][0], "ARM::Missing_PACK@0.0.1");
+
+  // unknown active target set
+  EXPECT_FALSE(responses[2]["result"]["success"]);
+  EXPECT_EQ(responses[2]["result"]["message"], "Setup of solution contexts failed");
+}
+
 // end of ProjMgrRpcTests.cpp
