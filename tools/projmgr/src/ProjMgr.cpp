@@ -441,6 +441,7 @@ int ProjMgr::ProcessCommands() {
   } else if (m_command == "rpc") {
     // Launch 'rpc' server over stdin/stdout
     ProjMgrLogger::m_silent = true;
+    m_rpcMode = true;
     m_worker.RpcMode(true);
     if (!m_rpcServer.Run()) {
       return ErrorCode::ERROR;
@@ -1241,12 +1242,18 @@ bool ProjMgr::ValidateCreatedFor(const string& createdFor) {
         if (currentVersion.empty()) {
           return true;
         }
-        currentVersion += (":" + currentVersion);
-        if (VersionCmp::RangeCompare(version, currentVersion) <= 0) {
+        if (VersionCmp::RangeCompare(version, currentVersion + ":" + currentVersion) <= 0) {
           return true;
         } else {
-          ProjMgrLogger::Get().Error("solution requires newer CMSIS-Toolbox version " + version, "", m_csolutionFile);
-          return false;
+          const string msg = "the 'created-for' node in file " + m_csolutionFile + " specifies a minimum version "
+            + version + " which is higher than " + currentVersion + " of the used CMSIS-Toolbox manifest";
+          if (m_rpcMode) {
+            ProjMgrLogger::Get().Warn(msg);
+            return true;
+          } else {
+            ProjMgrLogger::Get().Error(msg);
+            return false;
+          }
         }
       }
     }

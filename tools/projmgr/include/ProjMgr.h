@@ -197,6 +197,7 @@ protected:
   bool m_frozenPacks;
   bool m_cbuildgen;
   bool m_updateIdx;
+  bool m_rpcMode = false;
   GroupNode m_files;
   std::vector<ContextItem*> m_processedContexts;
   std::vector<ContextItem*> m_allContexts;
