@@ -240,39 +240,39 @@ jobs:
           mkdir -p tools/buildmgr/cbuildgen/distribution/doc
 
       - name: Download cbuildgen linux-amd64
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: cbuildgen-linux-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen linux-arm64
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: cbuildgen-linux-arm64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen macos-amd64
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: cbuildgen-darwin-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen macos-arm64
         if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: cbuildgen-darwin-arm64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen windows-amd64
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: cbuildgen-windows-amd64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
       - name: Download cbuildgen windows-arm64
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: cbuildgen-windows-arm64
           path: tools/buildmgr/cbuildgen/distribution/bin/
@@ -283,7 +283,7 @@ jobs:
         working-directory: tools/buildmgr/cbuildgen/distribution/bin
 
       - name: Download documentation
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: documentation
           path: tools/buildmgr/cbuildgen/distribution/doc/
@@ -414,13 +414,13 @@ jobs:
           path: ${{ env.CMSIS_PACK_ROOT }}
 
       - name: Download cbuild_install
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: cbuild_install
           path: ${{ github.workspace }}
 
       - name: Download deb_package
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: deb_package
           path: ${{ github.workspace }}
@@ -643,7 +643,7 @@ jobs:
           egress-policy: audit
 
       - name: Download cbuild_install
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: cbuild_install
           path: ${{ github.workspace }}
@@ -689,7 +689,7 @@ jobs:
           egress-policy: audit
 
       - name: Download cbuild_install
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: cbuild_install
           path: ${{ github.workspace }}
