@@ -100,7 +100,7 @@ jobs:
           fi
 
       - name: Archive packgen
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: packgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/packgen/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}
@@ -212,7 +212,7 @@ jobs:
 
       - name: Archive unit tests results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: unit_test_result_packgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packgenunittests-*.xml
@@ -270,7 +270,7 @@ jobs:
 
       - name: Archive unit tests results
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: unit_test_result_packgen-linux-amd64
           path: ./build/test_reports/packgenunittests-*.xml
@@ -308,7 +308,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: coverage-report-packgen
           path: |
@@ -329,7 +329,7 @@ jobs:
           egress-policy: audit
 
       - name: Event File
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: Event File packgen
           path: ${{ github.event_path }}
