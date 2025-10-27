@@ -488,7 +488,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards) {
   argv[1] = (char*)"list";
   argv[2] = (char*)"boards";
   argv[3] = (char*)"--filter";
-  argv[4] = (char*)"Dummy";
+  argv[4] = (char*)"DUMMY";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
   auto outStr = streamRedirect.GetOutString();
@@ -527,7 +527,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDevices) {
   argv[1] = (char*)"list";
   argv[2] = (char*)"devices";
   argv[3] = (char*)"--filter";
-  argv[4] = (char*)"RteTest_ARMCM4";
+  argv[4] = (char*)"RTETest_ARMCM4";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
 
   auto outStr = streamRedirect.GetOutString();
@@ -683,7 +683,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrContextSolution) {
   argv[3] = (char*)"--solution";
   argv[4] = (char*)csolution.c_str();
   argv[5] = (char*)"--filter";
-  argv[6] = (char*)"test1";
+  argv[6] = (char*)"TEST1";
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
 
   auto outStr = streamRedirect.GetOutString();
@@ -2600,7 +2600,7 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
   vector<string> packs;
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
-  EXPECT_TRUE(m_worker.ListPacks(packs, false, "RteTest"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, "RTETest"));
   string allPacks;
   for (auto& pack : packs) {
     allPacks += pack + "\n";
@@ -2615,7 +2615,7 @@ TEST_F(ProjMgrUnitTests, ListPacksLatest) {
   vector<string> packs;
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
-  EXPECT_TRUE(m_worker.ListPacks(packs, false, "RteTest"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, "RTETest"));
   string latestPacks;
   for (auto& pack : packs) {
     latestPacks += pack + "\n";
@@ -2631,7 +2631,7 @@ TEST_F(ProjMgrUnitTests, ListBoards) {
   };
   vector<string> devices;
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
-  EXPECT_TRUE(m_worker.ListBoards(devices, "Dummy"));
+  EXPECT_TRUE(m_worker.ListBoards(devices, "DUMMY"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
 
@@ -2646,7 +2646,7 @@ TEST_F(ProjMgrUnitTests, ListDevices) {
   };
   vector<string> devices;
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
-  EXPECT_TRUE(m_worker.ListDevices(devices, "CM0"));
+  EXPECT_TRUE(m_worker.ListDevices(devices, "cm0"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
 
@@ -2660,7 +2660,7 @@ TEST_F(ProjMgrUnitTests, ListDevicesPackageFiltered) {
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
   EXPECT_TRUE(m_worker.ParseContextSelection({ "test" }));
-  EXPECT_TRUE(m_worker.ListDevices(devices, "CM3"));
+  EXPECT_TRUE(m_worker.ListDevices(devices, "cm3"));
   EXPECT_EQ(expected, set<string>(devices.begin(), devices.end()));
 }
 
@@ -2670,7 +2670,7 @@ TEST_F(ProjMgrUnitTests, ListComponents) {
   };
   vector<string> components;
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
-  EXPECT_TRUE(m_worker.ListComponents(components, "Device:Startup"));
+  EXPECT_TRUE(m_worker.ListComponents(components, "DEVICE:STARTUP"));
   EXPECT_EQ(expected, set<string>(components.begin(), components.end()));
 }
 
@@ -2698,7 +2698,7 @@ TEST_F(ProjMgrUnitTests, ListDependencies) {
   EXPECT_TRUE(m_parser.ParseCproject(filenameInput, false, true));
   EXPECT_TRUE(m_worker.AddContexts(m_parser, descriptor, filenameInput));
   EXPECT_TRUE(m_worker.ParseContextSelection({ "test-dependency" }));
-  EXPECT_TRUE(m_worker.ListDependencies(dependencies, "CORE"));
+  EXPECT_TRUE(m_worker.ListDependencies(dependencies, "Core"));
   EXPECT_EQ(expected, set<string>(dependencies.begin(), dependencies.end()));
 }
 
@@ -4790,7 +4790,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_UpdateRte) {
   string csolutionFile = testinput_folder + "/TestSolution/test.csolution.yml";
   RemoveCbuildSetFile(csolutionFile);
 
-  char* argv[9];
+  char* argv[11];
   argv[0] = (char*)"";
   argv[1] = (char*)"update-rte";
   argv[2] = (char*)csolutionFile.c_str();
@@ -4835,6 +4835,14 @@ info csolution: config files for each component:\n\
  "../TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c@2.0.1 (update@2.0.3) from ARM::Device:Startup&RteTest Startup@2.0.3\n"\
  "../TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c@1.0.0 (up to date) from ARM::Device:Startup&RteTest Startup@2.0.3\n";
   EXPECT_EQ(outStr, expected1);
+
+  streamRedirect.ClearStringStreams();
+  argv[9] = (char*)"-f";
+  argv[10] = (char*)"DBGCONF";
+  EXPECT_EQ(0, RunProjMgr(11, argv, m_envp));
+  outStr = streamRedirect.GetOutString();
+  const string expected2 = "../.cmsis/test+CM0.dbgconf@0.0.2 (up to date)\n";
+  EXPECT_EQ(outStr, expected2);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListConfigsWithoutInput) {
@@ -6857,7 +6865,7 @@ TEST_F(ProjMgrUnitTests, ListTargetSets) {
 
   streamRedirect.ClearStringStreams();
   argv[4] = (char*)"--filter";
-  argv[5] = (char*)"Type2";
+  argv[5] = (char*)"TYPE2";
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
 
   outStr = streamRedirect.GetOutString();
@@ -6940,7 +6948,7 @@ PreIncludeEnvFolder@1.0.0 (ARM::RteTest@0.1.0)\n\
   // test with filter option
   streamRedirect.ClearStringStreams();
   argv[6] = (char*)"--filter";
-  argv[7] = (char*)"EnvFolder";
+  argv[7] = (char*)"ENVFOLDER";
   EXPECT_EQ(0, RunProjMgr(8, argv, 0));
   outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "\
@@ -6984,7 +6992,7 @@ Board3 (ARM::RteTest_DFP@0.2.0)\n\
 
   // test filter
   argv[3] = (char*)"--filter";
-  argv[4] = (char*)"Board1";
+  argv[4] = (char*)"BOARD1";
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
   outStr = streamRedirect.GetOutString();
@@ -7146,7 +7154,7 @@ Keil uVision\n\
   streamRedirect.ClearStringStreams();
   argv[3] = (char*)"--verbose";
   argv[4] = (char*)"--filter";
-  argv[5] = (char*)"CMSIS-DAP";
+  argv[5] = (char*)"Cmsis-Dap";
   EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
   outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_search(outStr, regex("\

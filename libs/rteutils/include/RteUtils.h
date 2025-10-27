@@ -8,7 +8,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -397,6 +397,14 @@ public:
    * @return trimmed string without whitespace characters after newline character
   */
   static std::string RemoveLeadingSpaces(const std::string& input);
+
+  /**
+   * @brief convert string characters to lower case
+   * @param input string
+   * @return string with lower case characters
+  */
+  static std::string ToLower(const std::string& input);
+
 // static constants
 public:
   static const std::string EMPTY_STRING;

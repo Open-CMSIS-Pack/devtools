@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -621,7 +621,7 @@ void RteUtils::ApplyFilter(const vector<string>& origin, const set<string>& filt
       if (word.empty()) {
         continue;
       }
-      if (item.find(word) == string::npos) {
+      if (RteUtils::ToLower(item).find(RteUtils::ToLower(word)) == string::npos) {
         match = false;
         break;
       }
@@ -640,6 +640,13 @@ string RteUtils::RemoveLeadingSpaces(const string& input) {
   // with a single newline character
   std::string result = std::regex_replace(input, pattern, "$1");
   return result;
+}
+
+string RteUtils::ToLower(const string& input) {
+  string output = input;
+  std::transform(output.begin(), output.end(), output.begin(),
+    [](unsigned char c) { return std::tolower(c); });
+  return output;
 }
 
 // End of RteUtils.cpp
