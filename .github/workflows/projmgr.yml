@@ -105,7 +105,7 @@ jobs:
           fi
 
       - name: Archive projmgr
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/projmgr/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}
@@ -114,7 +114,7 @@ jobs:
 
       - name: Archive projmgr schemas
         if: matrix.arch == 'amd64' && matrix.target == 'linux'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: projmgr-schemas
           path: ./tools/projmgr/schemas
@@ -123,7 +123,7 @@ jobs:
 
       - name: Archive projmgr templates
         if: matrix.arch == 'amd64' && matrix.target == 'linux'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: projmgr-templates
           path: ./tools/projmgr/templates
@@ -178,7 +178,7 @@ jobs:
 
       - name: Archive projmgr swig python libs
         if: always() && matrix.pyswig
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
           path: |
@@ -189,7 +189,7 @@ jobs:
 
       - name: Archive projmgr swig go libs
         if: always() && matrix.goswig
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: projmgr-swig-go-${{ matrix.target }}-${{ matrix.arch }}
           path: |
@@ -395,7 +395,7 @@ jobs:
 
       - name: Archive unit tests results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: unittest-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/Testing/Temporary/LastTest.log
@@ -404,7 +404,7 @@ jobs:
 
       - name: Archive gtest report
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: unit_test_result_projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/projmgrunittests-*.xml
@@ -462,7 +462,7 @@ jobs:
 
       - name: Archive test report
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: unit_test_result_projmgr-linux-amd64
           path: ./build/test_reports/projmgrunittests-*.xml
@@ -500,7 +500,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: coverage-report-projmgr
           path: |
@@ -521,7 +521,7 @@ jobs:
           egress-policy: audit
 
       - name: Event File
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: Event File projmgr
           path: ${{ github.event_path }}
