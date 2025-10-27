@@ -1246,8 +1246,8 @@ bool ProjMgr::ValidateCreatedFor(const string& createdFor) {
         if (VersionCmp::RangeCompare(version, currentVersion + ":" + currentVersion) <= 0) {
           return true;
         } else {
-          const string msg = "the 'created-for' node in file " + m_csolutionFile + " specifies a minimum version "
-            + version + " which is higher than " + currentVersion + " of the used CMSIS-Toolbox manifest";
+          const string msg = "'created-for' node in file " + m_csolutionFile + " specifies a minimum version "
+            + version + "(current version " + currentVersion + ")";
           if (m_rpcMode) {
             ProjMgrLogger::Get().Warn(msg);
             return true;
