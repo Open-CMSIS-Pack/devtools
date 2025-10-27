@@ -8,7 +8,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1333,11 +1333,33 @@ public:
   */
   const std::map<std::string, RtePackage*>& GetLoadedPacks() const { return m_loadedPacks;}
 
+  /**
+   * @brief get collection of effective pdscs
+   * @return const map of effective pdscs
+  */
+  const std::map<std::string, std::string, RtePackageComparator>& GetPdscMap() const { return m_pdscMap; }
+
+  /**
+   * @brief set collection of effective pdscs
+   * @param map of effective pdscs
+  */
+  void SetPdscMap(const std::map<std::string, std::string, RtePackageComparator>& pdscMap) { m_pdscMap = pdscMap; }
+
+  /**
+   * @brief clear collection of effective pdscs
+  */
+  void ClearPdscMap() { m_pdscMap.clear(); }
+
 protected:
   /**
    * @brief collection of loaded packs: absolute pdsc filename -> RtePackage*
   */
   std::map<std::string, RtePackage*> m_loadedPacks;
+
+  /**
+   * @brief collection of effective pdscs: lower-case pack id -> absolute pdsc filename
+  */
+  std::map<std::string, std::string, RtePackageComparator> m_pdscMap;
 };
 
 

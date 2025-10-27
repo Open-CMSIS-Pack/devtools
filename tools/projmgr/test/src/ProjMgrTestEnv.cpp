@@ -143,6 +143,16 @@ void ProjMgrTestEnv::SetUp() {
   RteFsUtils::CreateDirectories(destInvalidPacks);
   fs::copy(fs::path(srcInvalidPacks), fs::path(destInvalidPacks), fs::copy_options::recursive, ec);
 
+  // copy PDSCs for case insensitiveness check
+  string packsCaseInsensitive = testinput_folder + "/packs-case-insensitive";
+  if (RteFsUtils::Exists(packsCaseInsensitive)) {
+    RteFsUtils::RemoveDir(packsCaseInsensitive);
+  }
+  RteFsUtils::CopyFileExAutoRetry(testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0/ARM.RteTest_DFP.pdsc",
+    packsCaseInsensitive + "/Arm/RteTest_dfp/0.2.0/arm.rtetest_DFP.pdsc");
+  RteFsUtils::CopyFileExAutoRetry(testcmsispack_folder + "/ARM/RteTest_DFP/0.1.1/ARM.RteTest_DFP.pdsc",
+    packsCaseInsensitive + "/ARM/RTETEST_DFP/0.1.1/Arm.RTETEST_DFP.pdsc");
+
   CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", testcmsispack_folder);
 
   // create dummy cmsis compiler root
@@ -231,7 +241,13 @@ std::map<std::string, std::string, RtePackageComparator> ProjMgrTestEnv::GetEffe
   std::map<std::string, std::string, RtePackageComparator> pdscMap;
   RteKernelSlim rteKernel;
   rteKernel.SetCmsisPackRoot(GetCmsisPackRoot());
-  rteKernel.GetEffectivePdscFilesAsMap(pdscMap,  bLatestsOnly);
+  std::list<std::string> pdscFiles;
+  std::list<RtePackage*> packs;
+  rteKernel.GetEffectivePdscFiles(pdscFiles, bLatestsOnly);  
+  rteKernel.LoadAndInsertPacks(packs, pdscFiles);
+  for (const auto& pack : packs) {
+    pdscMap[pack->GetID()] = pack->GetPackageFileName();
+  }
   return pdscMap;
 }
 

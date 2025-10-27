@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -725,60 +725,13 @@ TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
 
 }
 
-TEST_F(RteModelPrjTest, GetLocalPdscFile) {
-  RteKernelSlim rteKernel;
-  rteKernel.SetCmsisPackRoot(packsDir);
-
-  XmlItem attributes;
-  auto pdsc = rteKernel.GetLocalPdscFile(attributes);
-  EXPECT_TRUE(pdsc.first.empty());
-  EXPECT_TRUE(pdsc.second.empty());
-
-  attributes.AddAttribute("name", "LocalPack");
-  attributes.AddAttribute("vendor", "LocalVendor");
-  pdsc = rteKernel.GetLocalPdscFile(attributes);
-
-  // check returned packId
-  EXPECT_EQ(pdsc.first, "LocalVendor::LocalPack@1.0.1");
-
-  // check returned pdsc
-  const string expectedPdsc =
-    RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(localPacks + "/L/LocalVendor.LocalPack.pdsc").generic_string());
-  error_code ec;
-  EXPECT_TRUE(fs::equivalent(pdsc.second, expectedPdsc, ec));
-}
-
-TEST_F(RteModelPrjTest, GetInstalledPdscFile) {
-  RteKernelSlim rteKernel;
-  rteKernel.SetCmsisPackRoot(packsDir);
-
-  XmlItem attributes;
-  auto pdsc = rteKernel.GetInstalledPdscFile(attributes);
-  EXPECT_TRUE(pdsc.first.empty());
-  EXPECT_TRUE(pdsc.second.empty());
-
-  attributes.AddAttribute("name", "RteTestRequired");
-  attributes.AddAttribute("vendor", "ARM");
-  pdsc = rteKernel.GetInstalledPdscFile(attributes);
-
-  // check returned packId
-  EXPECT_EQ(pdsc.first, "ARM::RteTestRequired@1.0.0");
-
-  // check returned pdsc
-  const string expectedPdsc =
-    RteFsUtils::MakePathCanonical(RteFsUtils::AbsolutePath(packsDir +
-      "/ARM/RteTestRequired/1.0.0/ARM.RteTestRequired.pdsc").generic_string());
-  error_code ec;
-  EXPECT_TRUE(fs::equivalent(pdsc.second, expectedPdsc, ec));
-}
-
 TEST_F(RteModelPrjTest, GetEffectivePdscFile) {
   RteKernelSlim rteKernel;
   rteKernel.SetCmsisPackRoot(packsDir);
   XmlItem attributes;
 
   // nothing has found for empty attributes
-  auto pdsc = rteKernel.GetInstalledPdscFile(attributes);
+  auto pdsc = rteKernel.GetEffectivePdscFile(attributes);
   EXPECT_TRUE(pdsc.first.empty());
   EXPECT_TRUE(pdsc.second.empty());
 
@@ -821,14 +774,14 @@ TEST_F(RteModelPrjTest, GetEffectivePdscFile) {
 
   // outside range
   attributes.AddAttribute("version", "2.0.0");
-  pdsc = rteKernel.GetInstalledPdscFile(attributes);
+  pdsc = rteKernel.GetEffectivePdscFile(attributes);
   EXPECT_TRUE(pdsc.first.empty());
   EXPECT_TRUE(pdsc.second.empty());
 
   // unknown name
   attributes.RemoveAttribute("version");
   attributes.AddAttribute("name", "Unknown");
-  pdsc = rteKernel.GetInstalledPdscFile(attributes);
+  pdsc = rteKernel.GetEffectivePdscFile(attributes);
   EXPECT_TRUE(pdsc.first.empty());
   EXPECT_TRUE(pdsc.second.empty());
 }
