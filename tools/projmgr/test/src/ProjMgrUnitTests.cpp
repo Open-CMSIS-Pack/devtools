@@ -6175,8 +6175,8 @@ TEST_F(ProjMgrUnitTests, FailCreatedFor) {
   char* argv[5];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/created-for.csolution.yml";
-  const string& expectedErrMsg = "error csolution: the 'created-for' node in file .*created-for\\.csolution\\.yml\
- specifies a minimum version 9\\.9\\.9 which is higher than .* of the used CMSIS-Toolbox manifest\n";
+  const string& expectedErrMsg = "error csolution: 'created-for' in file .*created-for\\.csolution\\.yml\
+ specifies a minimum version 9\\.9\\.9 \\(current version .*\\)\n";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"--output";
