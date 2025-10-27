@@ -6677,24 +6677,20 @@ TEST_F(ProjMgrUnitTests, GetToolboxVersion) {
   RteFsUtils::RemoveDir(testdir);
 }
 
-TEST_F(ProjMgrUnitTests, PackCaseSensitive) {
+TEST_F(ProjMgrUnitTests, PackCaseInsensitive) {
+  // pack identifiers are now case insensitive regardless of platform and file system
   char* argv[3];
-  const string& csolution = testinput_folder + "/TestSolution/pack_case_sensitive.csolution.yml";
+  const string& csolution = testinput_folder + "/TestSolution/pack_case_insensitive.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
-  if (CrossPlatformUtils::GetHostType() == "linux") {
-    EXPECT_EQ(1, RunProjMgr(3, argv, 0));
-  } else {
-    EXPECT_EQ(0, RunProjMgr(3, argv, 0));
-    const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestSolution/pack_case_sensitive.cbuild-idx.yml");
-    const string& expected = "\
-RTE Model reports:\n\
-warning #500: pack 'ARM::RteTest_DFP@0.2.0' is duplicated, letter case is inconsistent:\n\
-  .*/ARM/RteTest_DFP/0.2.0/ARM.RteTest_DFP.pdsc\n\
-  .*/Arm/RteTest_DFP/0.2.0/Arm.RteTest_DFP.pdsc - ignored\
-";
-    EXPECT_TRUE(regex_search(cbuild["build-idx"]["cbuilds"][0]["messages"]["warnings"][0].as<string>(), regex(expected)));
-  }
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+
+  // check cbuild-pack.yml has a resolved pack selected by pack identifiers with mixed letter-cases
+  const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestSolution/pack_case_insensitive.cbuild-pack.yml");
+  const auto& resolvedPack = cbuild["cbuild-pack"]["resolved-packs"][0];
+  EXPECT_EQ("ARM::RteTest_DFP@0.2.0", resolvedPack["resolved-pack"].as<string>());
+  EXPECT_EQ("ARM::RteTest_DFP", resolvedPack["selected-by-pack"][0].as<string>());
+  EXPECT_EQ("Arm::RteTest_DFP", resolvedPack["selected-by-pack"][1].as<string>());
 }
 
 TEST_F(ProjMgrUnitTests, InvalidContextSet) {

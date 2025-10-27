@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1845,4 +1845,17 @@ TEST_F(ProjMgrWorkerUnitTests, GetToolchainConfig) {
     EXPECT_EQ(retVal, expect) <<
       "Failed to validate for name: " + name + ", version: " + version;
   }
+}
+
+TEST_F(ProjMgrWorkerUnitTests, LoadPacksCaseInsensitive) {
+  const string cmsisPackRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", testinput_folder + "/packs-case-insensitive");
+  
+  CsolutionItem csolution;
+  SetCsolutionPacks(&csolution, { "Arm::RTETest_Dfp@0.1.1" }, "Test");
+  EXPECT_TRUE(LoadPacks(m_contexts["Test"]));
+  EXPECT_EQ(1, m_loadedPacks.size());
+  EXPECT_EQ("ARM::RteTest_DFP@0.1.1", (*m_loadedPacks.begin())->GetPackageID());
+
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", cmsisPackRoot);
 }

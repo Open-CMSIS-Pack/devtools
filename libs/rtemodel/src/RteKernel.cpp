@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -80,6 +80,7 @@ bool RteKernel::SetCmsisPackRoot(const string& cmsisPackRoot)
   if (m_cmsisPackRoot == cmsisPackRoot)
     return false;
   m_cmsisPackRoot = cmsisPackRoot;
+  RteFsUtils::NormalizePath(m_cmsisPackRoot);
   return true;
 }
 
@@ -413,12 +414,19 @@ bool RteKernel::GetEffectivePdscFilesAsMap(map<string, string, RtePackageCompara
   if(cmsisPackRoot.empty()) {
     return false;
   }
-  // Get all installed files
-  RteKernel::GetInstalledPdscFiles(pdscMap);
 
-  // Overwrite entries with local pdsc files if any
-  XmlItem emptyAttributes;
-  GetLocalPdscFiles(emptyAttributes, pdscMap);
+  // Get pdsc map
+  RtePackRegistry* packRegistry = GetPackRegistry();
+  pdscMap = packRegistry->GetPdscMap();
+  if (pdscMap.empty()) {
+    // Get all installed files
+    GetInstalledPdscFiles(pdscMap);
+    // Overwrite entries with local pdsc files if any
+    XmlItem emptyAttributes;
+    GetLocalPdscFiles(emptyAttributes, pdscMap);
+    // Store pdsc map
+    packRegistry->SetPdscMap(pdscMap);
+  }
 
   // purge entries if only latest are required
   if(latest) {
@@ -482,49 +490,52 @@ void RteKernel::GetInstalledPdscFiles(std::map<std::string, std::string, RtePack
 {
   list<string> allFiles;
   RteFsUtils::GetPackageDescriptionFiles(allFiles, GetCmsisPackRoot(), 3);
-  for(auto& f : allFiles) {
-    string id = RtePackage::PackIdFromPath(f);
+  for (auto& f : allFiles) {
+    string id = RteUtils::ToLower(RtePackage::PackIdFromPath(f));
     pdscMap[id] = f;
   }
 }
 
-pair<string, string> RteKernel::GetInstalledPdscFile(const XmlItem& attributes) const
+pair<string, string> RteKernel::GetEffectivePdscFile(const XmlItem& attributes) const
 {
   const string& name = attributes.GetAttribute("name");
   const string& vendor = attributes.GetAttribute("vendor");
-  if(!name.empty() && !vendor.empty()) {
-    string path = GetCmsisPackRoot() + '/' + vendor + '/' + name;
-    const string& versionRange = attributes.GetAttribute("version");
-    string installedVersion = RteFsUtils::GetInstalledPackVersion(path, versionRange);
-    if(!installedVersion.empty()) {
-      string packId = RtePackage::ComposePackageID(vendor, name, installedVersion);
-      path += '/' + installedVersion + '/' + vendor + '.' + name + ".pdsc";
-      return make_pair(packId, path);
+  if (!name.empty() && !vendor.empty()) {
+    const string& packId = RteUtils::ToLower(vendor + RteConstants::SUFFIX_PACK_VENDOR + name);
+    // get map of effective pdscs with lower-case ids
+    map<string, string, RtePackageComparator> pdscMap;
+    GetEffectivePdscFilesAsMap(pdscMap, false);
+    StrPairVec pdscs;
+    // get subset of pdscs for the searched packId
+    for (const auto& pdsc : pdscMap) {
+      if (RtePackage::CommonIdFromId(pdsc.first) == packId) {
+        pdscs.push_back(pdsc);
+      }
+    }
+    if (!pdscs.empty()) {
+      const string& versionRange = attributes.GetAttribute("version");
+      StrPair effectivePdsc;
+      if (versionRange.empty()) {
+        // required version range is empty = get greatest effective version
+        effectivePdsc = *pdscs.begin();
+      } else {
+        for (const auto& pdsc : pdscs) {
+          // find the greatest effective version in the required version range
+          if (VersionCmp::RangeCompare(RtePackage::VersionFromId(pdsc.first), versionRange) == 0) {
+            effectivePdsc = pdsc;
+            break;
+          }
+        }
+      }
+      auto& id = effectivePdsc.first;
+      if (!id.empty()) {
+        // preserve name::vendor as given in input attributes
+        id = RtePackage::ComposePackageID(vendor, name, RtePackage::VersionFromId(id));
+        return effectivePdsc;
+      }
     }
   }
   return make_pair(RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING);
-}
-
-pair<string, string> RteKernel::GetLocalPdscFile(const XmlItem& attributes) const
-{
-  map<string, string, RtePackageComparator> pdscMap;
-  if(!attributes.IsEmpty() && GetLocalPdscFiles(attributes, pdscMap)) {
-    return *pdscMap.begin();
-  }
-  return make_pair(RteUtils::EMPTY_STRING, RteUtils::EMPTY_STRING);
-}
-
-pair<string, string> RteKernel::GetEffectivePdscFile(const XmlItem& attributes) const
-{
-  auto localPdsc = GetLocalPdscFile(attributes);
-  auto installedPdsc = GetInstalledPdscFile(attributes);
-
-  string localVersion = RtePackage::VersionFromId(localPdsc.first);
-  string installedVersion = RtePackage::VersionFromId(installedPdsc.first);
-  if(!localVersion.empty() && VersionCmp::Compare(localVersion, installedVersion) >= 0) {
-    return localPdsc;
-  }
-  return installedPdsc;
 }
 
 
@@ -579,7 +590,7 @@ bool RteKernel::GetLocalPdscFiles(const XmlItem& attr, std::map<std::string, std
       if(pack) {
         const string& version = pack->GetVersionString();
         if(versionRange.empty() || VersionCmp::RangeCompare(version, versionRange) == 0) {
-          pdscMap[pack->GetID()] = localPdscFile;
+          pdscMap[RteUtils::ToLower(pack->GetID())] = localPdscFile;
           found = true;
         }
       }

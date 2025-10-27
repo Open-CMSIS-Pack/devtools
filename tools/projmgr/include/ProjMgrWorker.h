@@ -1284,6 +1284,7 @@ protected:
   bool HasCompatibleEnvironment(const Collection<RteItem*>& environments, const StrVec& filter);
   template<class T> bool CheckFilter(const std::string& filter, const T& item);
   void ResolvePackRequirement(ContextItem& context, const PackItem& packEntry);
+  void FormatResolvedPackIds();
 };
 
 #endif  // PROJMGRWORKER_H
