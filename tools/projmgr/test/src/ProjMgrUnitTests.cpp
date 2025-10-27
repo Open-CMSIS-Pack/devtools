@@ -6176,7 +6176,7 @@ TEST_F(ProjMgrUnitTests, FailCreatedFor) {
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/created-for.csolution.yml";
   const string& expectedErrMsg = "error csolution: 'created-for' in file .*created-for\\.csolution\\.yml\
- specifies a minimum version 9\\.9\\.9 (current version .*)\n";
+ specifies a minimum version 9\\.9\\.9 \\(current version .*\\)\n";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"--output";
