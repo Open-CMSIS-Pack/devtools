@@ -1246,7 +1246,6 @@ bool ProjMgr::ValidateCreatedFor(const string& createdFor) {
         if (VersionCmp::RangeCompare(version, currentVersion + ":" + currentVersion) <= 0) {
           return true;
         } else {
-          const string msg = "'created-for' node in file " + m_csolutionFile + " specifies a minimum version "
           const string msg = "'created-for' in file " + m_csolutionFile + " specifies a minimum version "
             + version + "(current version " + currentVersion + ")";
           if (m_rpcMode) {
