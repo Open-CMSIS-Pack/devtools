@@ -1030,7 +1030,8 @@ bool ProjMgr::RunListDebuggers(void) {
         debugger += "\n  " + alias;
       }
     }
-    if (!m_filter.empty() && debugger.find(m_filter) == string::npos) {
+    if (!m_filter.empty() &&
+      RteUtils::ToLower(debugger).find(RteUtils::ToLower(m_filter)) == string::npos) {
       continue;
     }
     debuggers.push_back(debugger);

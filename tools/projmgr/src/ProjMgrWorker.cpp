@@ -4383,15 +4383,16 @@ std::vector<ExampleItem> ProjMgrWorker::CollectExamples(const ContextItem& conte
 }
 
 template<class T> bool ProjMgrWorker::CheckFilter(const std::string& filter, const T& item) {
-  const bool nameFound = item.name.find(filter) != string::npos;
-  const bool packFound = item.pack.find(filter) != string::npos;
-  const bool descriptionFound = m_verbose ? item.description.find(filter) != string::npos : false;
+  const string filterNoCase = RteUtils::ToLower(filter);
+  const bool nameFound = RteUtils::ToLower(item.name).find(filterNoCase) != string::npos;
+  const bool packFound = RteUtils::ToLower(item.pack).find(filterNoCase) != string::npos;
+  const bool descriptionFound = m_verbose ? RteUtils::ToLower(item.description).find(filterNoCase) != string::npos : false;
   bool boardFound = false;
   if (m_verbose) {
     for (const auto& board : item.boards) {
-      if (board.vendor.find(filter) != std::string::npos ||
-        board.name.find(filter) != std::string::npos ||
-        board.revision.find(filter) != std::string::npos) {
+      if (RteUtils::ToLower(board.vendor).find(filterNoCase) != std::string::npos ||
+        RteUtils::ToLower(board.name).find(filterNoCase) != std::string::npos ||
+        RteUtils::ToLower(board.revision).find(filterNoCase) != std::string::npos) {
         boardFound = true;
         break;
       }
