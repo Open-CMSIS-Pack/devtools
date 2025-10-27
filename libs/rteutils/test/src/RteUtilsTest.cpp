@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -613,4 +613,12 @@ TEST(RteUtilsTest, RemoveLeadingSpaces) {
   EXPECT_EQ(RteUtils::RemoveLeadingSpaces("Start\n"), "Start\n");
   EXPECT_EQ(RteUtils::RemoveLeadingSpaces("Full"), "Full");
 }
+
+TEST(RteUtilsTest, ToLower) {
+  EXPECT_EQ(RteUtils::ToLower("ALL UPPER CASE"), "all upper case");
+  EXPECT_EQ(RteUtils::ToLower("all lower case"), "all lower case");
+  EXPECT_EQ(RteUtils::ToLower("Mixed Case"), "mixed case");
+  EXPECT_EQ(RteUtils::ToLower("Mixed Case And @$% Symbols_0H12AB"), "mixed case and @$% symbols_0h12ab");
+}
+
 // end of RteUtilsTest.cpp
