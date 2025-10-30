@@ -12,8 +12,8 @@ include(FetchContent)
 FetchContent_Declare(
   debug-adapter-registry
   DOWNLOAD_EXTRACT_TIMESTAMP ON
-  URL https://github.com/Open-CMSIS-Pack/debug-adapter-registry/releases/download/v2.11.0/debug-adapter-registry.zip
-  URL_HASH SHA256=3b65ed965c85ff9665caca5da5f785ec081b7edf7f6a8a0f4512f90f65a00d75
+  URL https://github.com/Open-CMSIS-Pack/debug-adapter-registry/releases/download/v2.12.0/debug-adapter-registry.zip
+  URL_HASH SHA256=bb372b97264496bbcb483d2e6d746427974ccdb8a9b91f42f5f8f2ee274742b0
 )
 FetchContent_MakeAvailable(debug-adapter-registry)
 file(COPY ${debug-adapter-registry_SOURCE_DIR}/schemas/debug-adapters.schema.json DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/schemas)

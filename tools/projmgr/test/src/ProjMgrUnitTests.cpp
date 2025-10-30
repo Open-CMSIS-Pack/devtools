@@ -7140,10 +7140,10 @@ PICkit@pyOCD\n\
 KitProg3@pyOCD\n\
 RPiDebugProbe@pyOCD\n\
 ST-Link@pyOCD\n\
-JLink Server\n\
+J-Link Server\n\
 CMSIS-DAP@Arm-Debugger\n\
 ST-Link@Arm-Debugger\n\
-AVH-FVP\n\
+Arm-FVP\n\
 Keil uVision\n\
 ")));
 
