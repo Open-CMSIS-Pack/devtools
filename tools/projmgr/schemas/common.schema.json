@@ -2418,7 +2418,7 @@
       "enum": [ "image+symbols", "symbols", "image", "none" ]
     },
     "WestProjectType": {
-      "title": "west:",
+      "title": "west:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#west",
       "description": "Enable West build orchestration wrapper for Zephyr projects.",
       "type": "object",
       "properties": {
