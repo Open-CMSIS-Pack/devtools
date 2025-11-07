@@ -1,7 +1,6 @@
 build:
   generated-by: csolution version 0.0.0
   solution: ../../../../solution.csolution.yml
-  project: ../../../../core1/core1.cproject.yml
   context: core1.Debug+CM0
   compiler: AC6
   board: Keil::RteTest Dummy board:1.2.3

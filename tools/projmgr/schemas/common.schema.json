@@ -389,6 +389,11 @@
         ]
       }
     },
+    "WestDefinesType": {
+      "title": "west-defs:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#west-defs",
+      "description": "Defines forwarded to CMake via west build system.",
+      "$ref": "#/definitions/DefinesType"
+    },
     "DefinesType": {
       "title": "define:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#define",
       "type": "array",
@@ -611,7 +616,7 @@
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "variables":    { "$ref": "#/definitions/VariablesType" },
         "warnings":     { "$ref": "#/definitions/WarningsType" },
-        "west-defs":    { "$ref": "#/definitions/DefinesType" }
+        "west-defs":    { "$ref": "#/definitions/WestDefinesType" }
       },
       "additionalProperties": false,
       "required" : [ "type"]
@@ -649,7 +654,7 @@
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
         "variables":    { "$ref": "#/definitions/VariablesType" },
         "warnings":     { "$ref": "#/definitions/WarningsType" },
-        "west-defs":    { "$ref": "#/definitions/DefinesType" }
+        "west-defs":    { "$ref": "#/definitions/WestDefinesType" }
       },
       "additionalProperties": false,
       "required" : [ "type"]
@@ -676,8 +681,9 @@
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
       "additionalProperties": false,
-      "oneOf": [
-        { "$ref": "#/definitions/TypeListMutualExclusion"}
+      "allOf": [
+        { "$ref": "#/definitions/TypeListMutualExclusion" },
+        { "oneOf": [ { "required": ["project"], "not": {"required": ["west"]} }, { "required": ["west"], "not": {"required": ["project"]} } ] }
       ]
     },
     "ProcessorTrustzone": {
@@ -2426,7 +2432,7 @@
         "project-id": { "type": "string", "description": "Project identifier (default: last sub-dir name of app-path)." },
         "board":      { "type": "string", "description": "Board name used for west build invocation (default: variable $west-board$)."},
         "device":     { "$ref": "#/definitions/ProcessorNameType" },
-        "west-defs":  { "$ref": "#/definitions/DefinesType" },
+        "west-defs":  { "$ref": "#/definitions/WestDefinesType" },
         "west-opts":  { "type": "string", "description": "Options for the west tool (default: empty)." }
       },
       "additionalProperties": false,
