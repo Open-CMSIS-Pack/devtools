@@ -1,0 +1,7 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/1.0.0/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  description: Project 3_5
+  components:
+    - component: CORE
+    - component: Device:RteTest Generated Component:RteTestSimple
