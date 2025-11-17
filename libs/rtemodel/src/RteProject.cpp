@@ -137,7 +137,7 @@ RteLicenseInfo* RteLicenseInfoCollection::EnsureLicenseInfo(RteItem* item, RteIt
     m_LicensInfos[licId] = info;
     string licFile;
     if (license) {
-      info->SetAttributes(*license);
+      info->CopyAttributes(*license);
       if(!info->HasAttribute("spdx")) {
         licFile = license->GetName();
       }
@@ -399,7 +399,7 @@ RteComponentInstance* RteProject::AddComponent(RteComponent* c, int instanceCoun
   if (c->IsGenerated() && c->HasAttribute("selectable") ) {
     RteItem* packInfo = c->GetFirstChild("package");
     if (packInfo) {
-      ci->SetPackageAttributes(packInfo->GetAttributes());
+      ci->SetPackageAttributes(*packInfo);
     }
   }
 
@@ -1460,18 +1460,18 @@ RteItem::ConditionResult RteProject::ResolveComponents(bool bFindReplacementForA
       }
 
       // first try to find a component from the same vendor
-      t->GetComponentAggregates(componentAttributes.GetAttributes(), aggregates);
+      t->GetComponentAggregates(componentAttributes, aggregates);
 
       // try to find a component from any vendor
       if (aggregates.empty()) {
         componentAttributes.RemoveAttribute("Cvendor");
-        t->GetComponentAggregates(componentAttributes.GetAttributes(), aggregates);
+        t->GetComponentAggregates(componentAttributes, aggregates);
       }
 
       // try to find a component with any variant
       if (aggregates.empty() && !componentAttributes.GetCvariantName().empty()) {
         componentAttributes.RemoveAttribute("Cvariant");
-        t->GetComponentAggregates(componentAttributes.GetAttributes(), aggregates);
+        t->GetComponentAggregates(componentAttributes, aggregates);
       }
 
     }
@@ -1601,7 +1601,7 @@ bool RteProject::AddTarget(const string& name, const map<string, string>& attrib
       targetAttributes.RemoveAttribute("Bversion");
     }
 
-    bool changed = target->SetAttributes(targetAttributes);
+    bool changed = target->CopyAttributes(targetAttributes);
     if (supported) {
       if (bNewTarget) {
         AddTargetInfo(name);

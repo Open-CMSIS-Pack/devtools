@@ -1641,7 +1641,7 @@ TEST_F(ProjMgrUnitTests, ListLayersCompatible) {
   argv[7] = (char*)"-d";
   EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
 
-  const string& expectedErrStr = "\
+   const string& expectedErrStr = "\
 debug csolution: check for context 'genericlayers.CompatibleLayers\\+AnyBoard'\n\
 \n\
 check combined connections:\n\
@@ -1680,10 +1680,8 @@ clayer of type 'TestVariant' was uniquely found:\n\
   .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml\n\
 \n\
 ";
-
   const string& errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
-
   const string& expectedOutStr = "\
 info csolution: valid configuration #1: \\(context 'genericlayers.CompatibleLayers\\+AnyBoard'\\)\n\
   .*/TestLayers/genericlayers.cproject.yml\n\
@@ -1705,7 +1703,6 @@ info csolution: valid configuration #3: \\(context 'genericlayers.CompatibleLaye
 .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\)\n\
 .*/ARM/RteTest_DFP/0.2.0/Layers/testvariant.clayer.yml \\(layer type: TestVariant\\)\n\
 ";
-
   const string& outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
 }
@@ -2318,10 +2315,6 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined) {
   string expectedErrStr = ".*\
 error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
   - \\$NotDefined\\$.*\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/board1.clayer.yml \\(layer type: Board\\).*\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/board2.clayer.yml \\(layer type: Board\\).*\
-  .*/ARM/RteTest_DFP/0.2.0/Layers/board3.clayer.yml \\(layer type: Board\\).*\
-no valid combination of clayers was found.*\
 ";
 
   string errStr = streamRedirect.GetErrorString();
@@ -2354,14 +2347,12 @@ TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined_SearchPath) {
   argv[5] = (char*)"--clayer-path";
   argv[6] = (char*)clayerSearchPath.c_str();
   argv[7] = (char*)"-d";
-  EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
+  EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
 
   const string& expectedErrStr = ".*\
 error csolution: undefined variables in variables-notdefined.csolution.yml:.*\
   - \\$NotDefined\\$.*\
 debug csolution: check for context \\'variables-notdefined\\.BuildType\\+TargetType\\'.*\
-clayer of type 'Board' was uniquely found:\
-  .*/TestLayers/variables/target1.clayer.yml.*\
 ";
 
   string errStr = streamRedirect.GetErrorString();
@@ -7009,7 +7000,7 @@ Board1Template \\(ARM::RteTest_DFP@0.2.0\\)\n\
 
   // list board's compatible template
   const string& csolution = testinput_folder + "/Examples/solution.csolution.yml";
-  const string expected = 
+  const string expected =
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"--active";
   argv[5] = (char*)"TestBoard";

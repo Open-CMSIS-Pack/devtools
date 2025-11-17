@@ -446,7 +446,7 @@ public:
    * @param books collection of file path mapped to book title to fill
    * @param deviceAttributes device attributes
   */
-  void GetBoardBooks(std::map<std::string, std::string>& books, const std::map<std::string, std::string>& deviceAttributes) const;
+  void GetBoardBooks(std::map<std::string, std::string>& books, const XmlItem& deviceAttributes) const;
 
 public:
   /**
