@@ -8,6 +8,7 @@
           {
             "clayer": "${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml",
             "copy-to": "path/to/config1",
+            "description": "Config1 Layer Description",
             "file": "config1.clayer.yml",
             "name": "Config1-Layer",
             "path": "${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Layers",
@@ -23,6 +24,7 @@
           {
             "clayer": "${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml",
             "copy-to": "path/to/config2",
+            "description": "Config2 Layer Description",
             "file": "Layers/config2.clayer.yml",
             "name": "Config2-Layer",
             "path": "${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0",
@@ -43,6 +45,7 @@
           {
             "clayer": "${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml",
             "copy-to": "path/to/config1",
+            "description": "Config1 Layer Description",
             "file": "config1.clayer.yml",
             "name": "Config1-Layer",
             "path": "${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Layers",
@@ -58,6 +61,7 @@
           {
             "clayer": "${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config3.clayer.yml",
             "copy-to": "path/to/config3",
+            "description": "Config3 Layer Description",
             "file": "Layers/config3.clayer.yml",
             "name": "Config2-Layer",
             "path": "${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0",
@@ -78,6 +82,7 @@
           {
             "clayer": "${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml",
             "copy-to": "path/to/config1",
+            "description": "Config1 Layer Description",
             "file": "config1.clayer.yml",
             "name": "Config1-Layer",
             "path": "${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Layers",
@@ -93,6 +98,7 @@
           {
             "clayer": "${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config2.clayer.yml",
             "copy-to": "path/to/config2",
+            "description": "Config2 Layer Description",
             "file": "Layers/config2.clayer.yml",
             "name": "Config2-Layer",
             "path": "${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0",
@@ -113,6 +119,7 @@
           {
             "clayer": "${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config1.clayer.yml",
             "copy-to": "path/to/config1",
+            "description": "Config1 Layer Description",
             "file": "config1.clayer.yml",
             "name": "Config1-Layer",
             "path": "${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Layers",
@@ -128,6 +135,7 @@
           {
             "clayer": "${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Layers/config3.clayer.yml",
             "copy-to": "path/to/config3",
+            "description": "Config3 Layer Description",
             "file": "Layers/config3.clayer.yml",
             "name": "Config2-Layer",
             "path": "${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0",
