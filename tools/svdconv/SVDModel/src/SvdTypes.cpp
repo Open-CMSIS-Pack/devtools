@@ -131,7 +131,8 @@ const map <SvdTypes::CpuType, CpuTypeFeature> SvdTypes::cpuTypeName = {
 
   // Arm China
   { SvdTypes::CpuType::SMC1     , {"SMC1"               , "ARM China Star-MC1",  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 480 } },  // ~ M33
-  { SvdTypes::CpuType::SMC2     , {"SMC1"               , "ARM China Star-MC2",  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } },
+  { SvdTypes::CpuType::SMC2     , {"SMC2"               , "ARM China Star-MC2",  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } },
+  { SvdTypes::CpuType::SMC3     , {"SMC3"               , "ARM China Star-MC3",  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } },
 
   // SVDConv not supported
   { SvdTypes::CpuType::CA5      , {"CA5"                , "ARM Cortex-A5"     ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
