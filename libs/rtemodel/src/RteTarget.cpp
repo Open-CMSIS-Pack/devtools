@@ -582,6 +582,13 @@ void RteTarget::ProcessAttributes() // called from SetAttributes(), AddAttribute
 {
   if (m_bDestroy)
     return;
+
+  // set empty board name to filter-out board-specific items if device is selected
+  if(HasAttribute("Dname") &&
+    !HasAttribute("Bname")) {
+    AddAttribute("Bname", "");
+  }
+
   m_device = 0;
   RteModel *model = GetFilteredModel();
   if (!model)

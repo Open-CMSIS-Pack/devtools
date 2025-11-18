@@ -4,6 +4,7 @@ layer:
 
   components:
     - component: Board:Test:Rev1
+      not-for-context: +RteTest_ARMCM3
     - component: Device:Startup&RteTest Startup
       for-context: [.PriorityRegions, .PriorityDefines, .Debug_GCC]
     - component: RteTest:CORE

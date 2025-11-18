@@ -13,6 +13,7 @@ solution:
       device: :cm0_core0
     - type: AnyBoard
       device: RteTest_ARMCM3
+      board: Any Board
     - type: BoardSpecific
       board: RteTest board listing
 
