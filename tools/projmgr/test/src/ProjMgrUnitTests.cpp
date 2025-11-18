@@ -943,6 +943,37 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackVersion) {
   RteFsUtils::RemoveFile(cbuildPackBackup);
 }
 
+
+TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackVersionUpgrade) {
+  char* argv[6];
+
+  // convert --solution solution.yml
+  const string csolution = testinput_folder + "/TestSolution/PackLocking/lock_pack_version_upgrade.csolution.yml";
+  const string cbuildPack = testinput_folder + "/TestSolution/PackLocking/lock_pack_version_upgrade.cbuild-pack.yml";
+
+  string buf1;
+  RteFsUtils::ReadFile(cbuildPack, buf1);
+
+  const string output = testoutput_folder + "/testpacklock";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
+
+  string buf2;
+  RteFsUtils::ReadFile(cbuildPack, buf2);
+  RteUtils::ReplaceAll(buf2, "\r\n", "\n");
+  // Check that the cbuild-pack file has been modified by this operation to reflect version change in csolution.yml
+  EXPECT_NE(buf2, buf1); // expected 0.0.1 != 0.2.0
+
+  //  replace buf1 versions with expected values
+  RteUtils::ReplaceAll(buf1, "@0.1.1", "@0.2.0");
+  EXPECT_EQ(buf2, buf1);
+}
+
+
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_MultiplePackEntries) {
   char* argv[3];
   const string csolution = testinput_folder + "/TestSolution/PackLocking/multiple_pack_entries.csolution.yml";
@@ -1502,8 +1533,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockedPackVersionNotChangedByAddedPa
   argv[3] = (char*)csolution.c_str();
   argv[4] = (char*)"-o";
   argv[5] = (char*)output.c_str();
-  argv[6] = (char*)"--cbuildgen";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
 
   // Check that the cbuild-pack file contains both packs and that the first still has the same version
   EXPECT_TRUE(RteFsUtils::ReadFile(cbuildPack, buf));
