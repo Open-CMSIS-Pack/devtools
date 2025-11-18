@@ -207,6 +207,55 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
   EXPECT_NE(string::npos, gpdscContent.find("<component generator=\"RteTestGeneratorIdentifier\""));
 }
 
+TEST_F(ProjMgrGeneratorUnitTests, DryRunNoLdScript) {
+  char* argv[7], *envp[2];
+  string gcc = "GCC_TOOLCHAIN_11_2_1=" + testinput_folder;
+  envp[0] = (char*)gcc.c_str();
+  envp[1] = (char*)'\0';
+
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/dryrun_noldscript.csolution.yml";
+  argv[1] = (char*)"run";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-g";
+  argv[5] = (char*)"RteTestGeneratorIdentifier";
+  argv[6] = (char*)"--dry-run";
+
+  const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_5.Debug+TypeA.cbuild-gen.yml";
+  const string generatorDestination = testinput_folder + "/TestSolution/TestProject3_5/gendir";
+  const string targetGPDSC = generatorDestination + "/RteTestGen_ARMCM0/RteTest.gpdsc";
+  const string rteDir = testinput_folder + "/TestSolution/TestProject3_5/RTE";
+
+  RteFsUtils::RemoveDir(generatorDestination);
+  RteFsUtils::RemoveDir(rteDir);
+
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(7, argv, envp));
+
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/ref/TestProject3_5.Debug+TypeA.cbuild-gen.yml",  generatorInputFile, ProjMgrTestEnv::StripAbsoluteFunc);
+
+  EXPECT_EQ(true, RteFsUtils::Exists(generatorInputFile));
+  EXPECT_EQ(false, RteFsUtils::Exists(rteDir + "/Device"));
+  EXPECT_EQ(false, RteFsUtils::Exists(targetGPDSC));
+  EXPECT_EQ(false, RteFsUtils::Exists(generatorDestination));
+
+  // Expect that the GPDSC content was printed to stdout, enclosed within the begin and end marks
+  auto outStr = streamRedirect.GetOutString();
+  string beginGpdscMark = "-----BEGIN GPDSC-----\n";
+  string endGpdscMark = "-----END GPDSC-----\n";
+  auto beginGpdscMarkIndex = outStr.find(beginGpdscMark);
+  auto endGpdscMarkIndex = outStr.find(endGpdscMark);
+  EXPECT_NE(string::npos, beginGpdscMarkIndex);
+  EXPECT_NE(string::npos, endGpdscMarkIndex);
+  auto gpdscContentIndex = beginGpdscMarkIndex + beginGpdscMark.size();
+  auto contentLength = endGpdscMarkIndex - gpdscContentIndex;
+  string gpdscContent = outStr.substr(gpdscContentIndex, contentLength);
+
+  // Check that the GPDSC content seems OK (the full reference GPDSC file is not easily available from the test for comparison)
+  EXPECT_EQ(0, gpdscContent.find("<?xml"));
+  EXPECT_NE(string::npos, gpdscContent.find("<component generator=\"RteTestGeneratorIdentifier\""));
+}
+
 TEST_F(ProjMgrGeneratorUnitTests, PdscAndGpdscWithSameComponentName) {
   char* argv[6], * envp[2];
   string gcc = "GCC_TOOLCHAIN_11_2_1=" + testinput_folder;

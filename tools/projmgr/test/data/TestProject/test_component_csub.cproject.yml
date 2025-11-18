@@ -2,6 +2,7 @@
 
 project:
   device: RteTest_ARMCM0
+  board: RteTest Test board
   compiler: AC6
   components:
     - component: Board:Test:Rev1

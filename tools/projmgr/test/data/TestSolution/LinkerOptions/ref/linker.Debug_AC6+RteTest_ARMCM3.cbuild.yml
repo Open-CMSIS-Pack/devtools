@@ -1,5 +1,5 @@
 build:
-  generated-by: csolution version 0.0.0+ge3c3a1b8
+  generated-by: csolution version 0.0.0+ga8747d9a
   solution: ../data/TestSolution/LinkerOptions/linker.csolution.yml
   project: ../data/TestSolution/LinkerOptions/linker.cproject.yml
   context: linker.Debug_AC6+RteTest_ARMCM3
@@ -20,17 +20,11 @@ build:
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   define:
     - ARMCM3
-    - _RTE_
   define-asm:
     - ARMCM3
-    - _RTE_
   add-path:
-    - ../data/TestSolution/LinkerOptions/RTE/_Debug_AC6_RteTest_ARMCM3
-    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   add-path-asm:
-    - ../data/TestSolution/LinkerOptions/RTE/_Debug_AC6_RteTest_ARMCM3
-    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
     intdir: tmp/linker/RteTest_ARMCM3/Debug_AC6
@@ -39,25 +33,11 @@ build:
   output:
     - type: elf
       file: linker.axf
-  components:
-    - component: ARM::Board:Test:Rev1@1.1.1
-      condition: BoardTest1
-      from-pack: ARM::RteTest_DFP@0.2.0
-      selected-by: Board:Test:Rev1
-      files:
-        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include/ARMCM0.h
-          category: header
-          version: 1.1.1
   linker:
     script: ../data/TestSolution/LinkerOptions/linkerScript.sct
     regions: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h
-  constructed-files:
-    - file: ../data/TestSolution/LinkerOptions/RTE/_Debug_AC6_RteTest_ARMCM3/RTE_Components.h
-      category: header
   licenses:
     - license: <unknown>
       license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
       packs:
         - pack: ARM::RteTest_DFP@0.2.0
-      components:
-        - component: ARM::Board:Test:Rev1@1.1.1

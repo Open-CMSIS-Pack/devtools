@@ -9,6 +9,7 @@ solution:
   target-types:
     - type: TargetType
       device: RteTest_ARMCM0
+      board: RteTest Dummy board
 
   projects:
     - project: variables-notdefined.cproject.yml

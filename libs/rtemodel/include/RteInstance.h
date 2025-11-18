@@ -428,7 +428,7 @@ public:
    * @param attr attributes to set as XmlItem reference
    * @return true if changed
   */
-  virtual bool SetPackageAttributes(const XmlItem& attr) { return m_packageAttributes.SetAttributes(attr); }
+  virtual bool SetPackageAttributes(const XmlItem& attr) { return m_packageAttributes.CopyAttributes(attr); }
 
   /**
    * @brief get pointer to resolved RtePackage
@@ -594,7 +594,7 @@ public:
    * @param attr pack attributes to set
    * @return true if attribute values have changed
   */
-   bool SetPackageAttributes(const XmlItem& attr) override { return SetAttributes(attr); }
+   bool SetPackageAttributes(const XmlItem& attr) override { return CopyAttributes(attr); }
 
   /**
    * @brief check if this object contains pack attributes directly rather than in a dedicated child
@@ -714,7 +714,7 @@ public:
    * @param attr pack attributes
    * @return true if changed
   */
-   bool SetPackageAttributes(const XmlItem& attr) override { return SetAttributes(attr); }
+   bool SetPackageAttributes(const XmlItem& attr) override { return CopyAttributes(attr); }
 
   /**
    * @brief check if this object contains pack attributes directly rather than in a dedicated child

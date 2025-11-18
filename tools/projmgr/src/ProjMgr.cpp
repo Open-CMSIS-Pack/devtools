@@ -756,7 +756,7 @@ bool ProjMgr::RunConvert(const std::string& csolution, const std::string& active
   if (!csolution.empty()) {
     InitSolution(csolution, activeTargetSet, updateRte);
   }
-  
+
   // Configure
   bool Success = Configure();
 
@@ -1090,8 +1090,8 @@ bool ProjMgr::RunListLayers(void) {
 
   // Step3: Detect layers and list them
   vector<string> layers;
-  error = !m_worker.ListLayers(layers, m_clayerSearchPath, m_failedContext);
-  if (error) {
+  if (!m_worker.ListLayers(layers, m_clayerSearchPath, m_failedContext)) {
+    error = true;
     for (const string& context : m_failedContext) {
       ProjMgrLogger::Get().Error("no compatible software layer found. Review required connections of the project", context);
     }

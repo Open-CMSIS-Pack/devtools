@@ -800,13 +800,14 @@ void RteModel::GetBoardBooks(map<string, string>& books, const string& device, c
     return;
   XmlItem ea;
   d->GetEffectiveAttributes(ea);
-  GetBoardBooks(books, ea.GetAttributes());
+  GetBoardBooks(books, ea);
 }
 
-void RteModel::GetBoardBooks(map<string, string>& books, const map<string, string>& deviceAttributes) const
+void RteModel::GetBoardBooks(map<string, string>& books, const XmlItem& deviceAttributes) const
 {
-  if (m_boards.empty())
+  if(m_boards.empty()) {
     return;
+  }
   for (auto [_, b] : m_boards) {
     if (b->HasCompatibleDevice(deviceAttributes)) {
       b->GetBooks(books);

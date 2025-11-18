@@ -2307,7 +2307,7 @@ bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
 }
 
 void ProjMgrWorker::SetDefaultLinkerScript(ContextItem& context) {
-  if (context.linker.script.empty()) {
+  if (context.linker.script.empty() && !m_dryRun) {
     const string& compilerRoot = GetCompilerRoot();
     string linkerScript;
     error_code ec;

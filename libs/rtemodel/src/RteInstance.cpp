@@ -157,9 +157,9 @@ void RteInstanceTargetInfo::CopySettings(const RteInstanceTargetInfo& other)
   SetVersionMatchMode(other.GetVersionMatchMode());
   SetExcluded(other.IsExcluded());
   SetIncludeInLib(other.IsIncludeInLib());
-  m_memOpt.SetAttributes(other.GetMemOpt());
-  m_cOpt.SetAttributes(other.GetCOpt());
-  m_asmOpt.SetAttributes(other.GetAsmOpt());
+  m_memOpt.CopyAttributes(other.GetMemOpt());
+  m_cOpt.CopyAttributes(other.GetCOpt());
+  m_asmOpt.CopyAttributes(other.GetAsmOpt());
 }
 
 
@@ -700,7 +700,7 @@ void RteFileInstance::Update(RteItem* f, bool bUpdateComponent)
     for (auto [targetName, ti] : m_targetInfos) {
       RteComponentInstance* ci = GetComponentInstance(targetName);
       if (ci) {
-        ci->SetAttributes(m_componentAttributes);
+        ci->CopyAttributes(m_componentAttributes);
         ci->SetPackageAttributes(m_packageAttributes);
       }
     }

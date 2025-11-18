@@ -433,7 +433,7 @@ TEST_F(RteModelPrjTest, LoadCprj) {
   EXPECT_EQ(boardName, "RteTest Test board");
   // get layers
   auto& allLayerDescriptors = rteKernel.GetGlobalModel()->GetLayerDescriptors();
-  EXPECT_EQ(allLayerDescriptors.size(), 10);
+  EXPECT_EQ(allLayerDescriptors.size(), 13);
   auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
   EXPECT_EQ(filteredLayerDescriptors.size(), 8);
 
@@ -1077,7 +1077,7 @@ TEST_F(RteModelPrjTest, LoadCprjM4) {
   EXPECT_TRUE(boardName.empty());
   // get layers
   auto& allLayerDescriptors = rteKernel.GetGlobalModel()->GetLayerDescriptors();
-  EXPECT_EQ(allLayerDescriptors.size(), 10);
+  EXPECT_EQ(allLayerDescriptors.size(), 13);
   auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
   EXPECT_EQ(filteredLayerDescriptors.size(), 7);
   ca = activeTarget->GetComponentAggregate("ARM::Device:Startup");
@@ -1160,7 +1160,7 @@ TEST_F(RteModelPrjTest, LoadCprjM4_Board) {
   EXPECT_EQ(boardName, "RteTest CM4 board");
   // get layers
   auto& allLayerDescriptors = rteKernel.GetGlobalModel()->GetLayerDescriptors();
-  EXPECT_EQ(allLayerDescriptors.size(), 10);
+  EXPECT_EQ(allLayerDescriptors.size(), 13);
   auto& filteredLayerDescriptors = activeTarget->GetFilteredModel()->GetLayerDescriptors();
   EXPECT_EQ(filteredLayerDescriptors.size(), 7);
 

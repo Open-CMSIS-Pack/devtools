@@ -47,13 +47,13 @@ public:
    * @brief parametrized constructor
    * @param tag XML tag
   */
-  XmlItem(const std::string& tag) : m_tag(tag), m_lineNumber(0) {};
+  explicit XmlItem(const std::string& tag) : m_tag(tag), m_lineNumber(0) {};
 
   /**
    * @brief parametrized constructor to instantiate with given attributes
    * @param attributes collection as key to value pairs
   */
-  XmlItem(const std::map<std::string, std::string>& attributes) : m_attributes(attributes), m_lineNumber(0) {};
+  explicit XmlItem(const std::map<std::string, std::string>& attributes) : m_attributes(attributes), m_lineNumber(0) {};
 
   /**
    * @brief virtual destructor
@@ -163,7 +163,7 @@ public:
    * @param attributes instance of XmlItem containing attributes to assign
    * @return true if attributes are set
   */
-  bool SetAttributes(const XmlItem &attributes);
+  bool CopyAttributes(const XmlItem &attributes);
 
   /**
    * @brief assign specified attribute value from supplied object to this one

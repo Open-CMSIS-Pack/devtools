@@ -102,7 +102,7 @@ bool XmlItem::SetAttributes(const map<string, string>& attributes)
 }
 
 
-bool XmlItem::SetAttributes(const XmlItem& attributes)
+bool XmlItem::CopyAttributes(const XmlItem& attributes)
 {
   return SetAttributes(attributes.GetAttributes());
 }

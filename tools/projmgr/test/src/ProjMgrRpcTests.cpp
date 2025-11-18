@@ -323,8 +323,8 @@ TEST_F(ProjMgrRpcTests, RpcBoardListNoContext) {
 
   EXPECT_TRUE(responses[1]["result"]["success"]);
   auto boardList = responses[1]["result"]["boards"];
-  EXPECT_EQ(boardList.size(), 14);
-  auto b0 = boardList[0];
+  EXPECT_EQ(boardList.size(), 15);
+  auto b0 = boardList[1];
   EXPECT_EQ(b0["id"], "Keil::RteTest board listing:Rev.C");
   EXPECT_EQ(b0["pack"], "ARM::RteTestBoard@0.1.0");
   EXPECT_FALSE(b0.contains("description"));
@@ -360,8 +360,8 @@ TEST_F(ProjMgrRpcTests, RpcBoardListContext) {
 
   EXPECT_TRUE(responses[2]["result"]["success"]);
   auto boardList = responses[2]["result"]["boards"];
-  EXPECT_EQ(boardList.size(), 11);
-  auto b0 = boardList[0];
+  EXPECT_EQ(boardList.size(), 12);
+  auto b0 = boardList[1];
   EXPECT_EQ(b0["id"], "Keil::RteTest board test revision:Rev1");
   EXPECT_EQ(b0["pack"], "ARM::RteTest_DFP@0.2.0");
   EXPECT_FALSE(b0.contains("description"));
@@ -566,7 +566,7 @@ TEST_F(ProjMgrRpcTests, RpcSelectComponent) {
   EXPECT_EQ("ARM::RteTest:CORE", validation["conditions"][0]["aggregates"][0]);
 
   EXPECT_FALSE(responses[3]["result"]["classes"][0].contains("result"));
-  string res = responses[3]["result"]["classes"][2]["result"];
+  string res = responses[3]["result"]["classes"][1]["result"];
   EXPECT_EQ(res, "SELECTABLE");
 
   EXPECT_TRUE(responses[4]["result"]["success"]); // components resolved

@@ -3,9 +3,6 @@ build-idx:
   csolution: solution.csolution.yml
   cbuild-run: out/solution+CM0.cbuild-run.yml
   tmpdir: tmp
-  cprojects:
-    - cproject: core0/core0.cproject.yml
-    - cproject: core1/core1.cproject.yml
   cbuilds:
     - cbuild: out/core0/CM0/Debug/core0.Debug+CM0.cbuild.yml
       west: true

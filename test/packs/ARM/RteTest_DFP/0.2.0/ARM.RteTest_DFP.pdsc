@@ -317,6 +317,13 @@
       <require Bname="RteTest Dummy board" Bvendor="Keil" Brevision="1.2.3"/>
     </condition>
 
+    <condition id="AnyBoard">
+      <description>Test component filtering on Dummy any Board</description>
+      <require Dvendor="ARM:82" Dname="*ARMCM*"/>
+      <require Bname="Any Board" Bvendor="Keil" Brevision="1.2.3"/>
+    </condition>
+
+
     <condition id="BoardDependent">
       <description>Checks board dependency</description>
       <accept condition="BoardTest1"/>
@@ -549,6 +556,11 @@
       <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM0_Dual"/>
       <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM4_NOFP"/>
     </board>
+    <board name="Any Board" vendor="Keil" revision="1.2.3">
+      <description>Board for AnyBoard Tests</description>
+      <mountedDevice    deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+      <compatibleDevice deviceIndex="0" Dvendor="ARM:82" Dname="RteTest_ARMCM3"/>
+    </board>
   </boards>
 
   <csolution>
@@ -560,6 +572,15 @@
     </clayer>
     <clayer name="Board3" type="Board" file="Layers/board3.clayer.yml" condition="BoardTest3">
       <description>"Test board layer three"</description>
+    </clayer>
+    <clayer name="AnyBoard1" type="Board" file="Layers/board1.clayer.yml" condition="AnyBoard">
+      <description>"Test any board layer 1"</description>
+    </clayer>
+    <clayer name="AnyBoard2" type="Board" file="Layers/board2.clayer.yml" condition="AnyBoard">
+      <description>"Test any board layer 2"</description>
+    </clayer>
+    <clayer name="AnyBoard3" type="Board" file="Layers/board3.clayer.yml" condition="AnyBoard">
+      <description>"Test any board layer 3"</description>
     </clayer>
     <template name="Board1Template" file="Templates/board1.csolution.yml" condition="BoardTest1">
       <description>"Test board Template one"</description>

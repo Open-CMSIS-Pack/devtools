@@ -24,14 +24,12 @@ solution:
 
   # List related projects.
   projects:
-    - project: core0/core0.cproject.yml
-      west:
+    - west:
         app-path: ./west/core0
         device: :cm0_core0
         west-defs:
           - CORE: 0
-    - project: core1/core1.cproject.yml
-      west:
+    - west:
         app-path: ./west/core1
         project-id: core1
         device: :cm0_core1

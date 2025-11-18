@@ -262,4 +262,33 @@ TEST(RteItemTest, GetInstancePathName) {
   EXPECT_EQ(instanceFile, "MySolDir/.cmsis/MySolName+MyTarget.dbgconf");
 }
 
+TEST(RteTargetTest, ProcessAttributes_Bname) {
+  RteTarget target(nullptr, nullptr, "test", {});
+
+  // Bname is not set by default
+  EXPECT_FALSE(target.HasAttribute("Bname"));
+
+  // Bname is not set when no Dname
+  target.SetAttributes({{"Dfpu", "NO_FPU"}});
+  EXPECT_FALSE(target.HasAttribute("Bname"));
+  target.ClearAttributes();
+
+  // Bname is set to empty if Dname and no Bname
+  target.SetAttributes({{"Dname", "MyDevice"}});
+  EXPECT_TRUE(target.HasAttribute("Bname"));
+  EXPECT_EQ(target.GetAttribute("Bname"), "");
+  target.ClearAttributes();
+
+  // Bname only
+  target.SetAttributes({{"Bname", "MyBoard"}});
+  EXPECT_TRUE(target.HasAttribute("Bname"));
+  EXPECT_EQ(target.GetAttribute("Bname"), "MyBoard");
+  target.ClearAttributes();
+
+  // Bname with Dname
+  target.SetAttributes({{"Bname", "MyBoard"}, {"Dname", "MyDevice"}});
+  EXPECT_TRUE(target.HasAttribute("Bname"));
+  EXPECT_EQ(target.GetAttribute("Bname"), "MyBoard");
+}
+
 // end of RteItemTest.cpp
