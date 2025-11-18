@@ -813,7 +813,8 @@ TEST_F(ProjMgrRpcTests, RpcDiscoverLayers) {
   auto responses = RunRpcMethods(requests);
 
   // valid configurations: compare response with golden reference
-  EXPECT_TRUE(CompareRpcResponse(responses[0], testinput_folder + "/TestLayers/ref/rpc-discover-layers.json"));
+  EXPECT_TRUE(CompareRpcResponse(responses[0], testinput_folder + "/TestLayers/ref/rpc-discover-layers.json"))
+    << "json response:\n" << ProjMgrTestEnv::StripAbsoluteFunc(responses[0].dump(2));
 
   // unknown active target set
   csolutionPath = testinput_folder + "/TestLayers/config.csolution.yml";

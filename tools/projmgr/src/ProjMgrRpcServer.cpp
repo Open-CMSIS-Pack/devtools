@@ -714,6 +714,10 @@ RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solutio
     if (m_worker.HasVarDefineError()) {
       const auto& vars = m_worker.GetUndefLayerVars();
       result.undefinedLayers = StrVec(vars.begin(), vars.end());
+      const auto& selectCompiler = m_worker.GetSelectableCompilers();
+      if (!selectCompiler.empty()) {
+        result.selectCompiler = selectCompiler;
+      }
       result.message = "Layer variables undefined, names can be found under 'undefinedLayers'";
     } else if (m_worker.HasCompilerDefineError()) {
       result.selectCompiler = m_worker.GetSelectableCompilers();
@@ -768,6 +772,9 @@ RpcArgs::DiscoverLayersInfo RpcHandler::DiscoverLayers(const string& solution, c
             }
             if (!variable.file.empty()) {
               lv.file = variable.file;
+            }
+            if (!variable.description.empty()) {
+              lv.description = variable.description;
             }
             if (!variable.copyTo.empty()) {
               lv.copyTo = variable.copyTo;
