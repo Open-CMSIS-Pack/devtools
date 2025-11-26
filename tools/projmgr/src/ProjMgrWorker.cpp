@@ -455,6 +455,7 @@ bool ProjMgrWorker::InitializeModel() {
   if(m_kernel) {
     // kernel is already initialized, clear pdsc map
     m_kernel->GetPackRegistry()->ClearPdscMap();
+    m_model->SetRootFileName(m_csolutionFile);
     return true;
   }
   m_packRoot = GetPackRoot();
@@ -559,7 +560,7 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
     PrintContextErrors(context.name);
     return false;
   }
-  if (m_loadedPacks.empty() && !LoadAllRelevantPacks()) {
+  if ((m_loadedPacks.empty() || m_rpcMode) && !LoadAllRelevantPacks()) {
     return false;
   }
   // Filter context specific packs
@@ -2254,6 +2255,9 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
 
 bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
   bool error = false;
+  if (!context.rteActiveProject) {
+    return error;
+  }
   for (const auto& fi : context.rteActiveProject->GetFileInstances()) {
     // get absolute path to file instance
     const string file = fs::path(context.cproject->directory).append(fi.second->GetInstanceName()).generic_string();

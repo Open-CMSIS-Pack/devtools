@@ -1113,7 +1113,7 @@ public:
     }
     m_contexts.clear();
     m_ymlOrderedContexts.clear();
-    m_contexts.clear();
+    m_processedContexts.clear();
     m_contextErrMap.clear();
     m_selectedContexts.clear();
     m_outputDir.clear();

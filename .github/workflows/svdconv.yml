@@ -123,7 +123,7 @@ jobs:
 
       - name: Attach svdconv binary to release
         if: ${{ github.event_name == 'release' }}
-        uses: svenstaro/upload-release-action@81c65b7cd4de9b2570615ce3aad67a41de5b1a13 # v2
+        uses: svenstaro/upload-release-action@6b7fa9f267e90b50a19fef07b3596790bb941741 # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
@@ -348,7 +348,7 @@ jobs:
         working-directory: tools/svdconv/distribution
 
       - name: Attach zip archive to release assets
-        uses: svenstaro/upload-release-action@81c65b7cd4de9b2570615ce3aad67a41de5b1a13 # v2
+        uses: svenstaro/upload-release-action@6b7fa9f267e90b50a19fef07b3596790bb941741 # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: tools/svdconv/distribution/svdconv.zip
