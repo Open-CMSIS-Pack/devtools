@@ -1859,3 +1859,10 @@ TEST_F(ProjMgrWorkerUnitTests, LoadPacksCaseInsensitive) {
 
   CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", cmsisPackRoot);
 }
+
+TEST_F(ProjMgrWorkerUnitTests, CheckConfigPLMFiles_NoRteActiveProject) {
+  ContextItem context;
+  context.rteActiveProject = nullptr;
+  // ensure CheckConfigPLMFiles does not crash when rteActiveProject is not initialized
+  EXPECT_FALSE(CheckConfigPLMFiles(context));
+}

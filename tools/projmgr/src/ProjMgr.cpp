@@ -1291,6 +1291,7 @@ void ProjMgr::Clear() {
 void ProjMgr::InitSolution(const std::string& csolution, const std::string& activeTargetSet, const bool& updateRte) {
   Clear();
   m_csolutionFile = csolution;
+  m_worker.SetCsolutionFile(m_csolutionFile);
   m_rootDir = RteUtils::ExtractFilePath(m_csolutionFile, false);
   m_updateRteFiles = updateRte;
   if (activeTargetSet.empty()) {
