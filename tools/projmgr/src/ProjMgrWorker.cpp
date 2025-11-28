@@ -582,7 +582,13 @@ bool ProjMgrWorker::CheckMissingPackRequirements(const std::string& contextName)
 {
   bool bRequiredPacksLoaded = true;
   // check if all pack requirements are fulfilled
+  const auto& context = m_contexts[contextName];
+  const auto& packFilter = context.rteFilteredModel ? context.rteFilteredModel->GetPackageFilter() : RtePackageFilter();
   for(auto pack : m_loadedPacks) {
+    if (!contextName.empty() && !packFilter.IsPackageSelected(pack->GetPackageID())) {
+      // skip non relevant packs
+      continue;
+    }
     RtePackageMap allRequiredPacks;
     pack->GetRequiredPacks(allRequiredPacks, m_model);
     for(auto [id, p] : allRequiredPacks) {
