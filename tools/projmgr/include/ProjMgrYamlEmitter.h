@@ -114,7 +114,7 @@ protected:
   bool CompareFile(const std::string& filename, const YAML::Node& rootNode);
   bool CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs);
   bool NeedRebuild(const std::string& filename, const YAML::Node& rootNode);
-  std::string EraseGeneratedByNode(const std::string& inStr);
+  void CopyWestGroups(const std::string& filename, YAML::Node rootNode);
 };
 
 #endif  // PROJMGRYAMLEMITTER_H

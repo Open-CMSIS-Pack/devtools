@@ -1,0 +1,8 @@
+build:
+  groups:
+    - group: sources
+      files:
+        - file: ../../../../src/main.c
+    - group: zephyr
+      files:
+        - file: ../../../../zephyr/utils.c
