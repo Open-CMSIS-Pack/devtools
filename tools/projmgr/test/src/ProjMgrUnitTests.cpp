@@ -6805,6 +6805,28 @@ TEST_F(ProjMgrUnitTests, TestNoDbgconf) {
   EXPECT_FALSE(cbuildrun["cbuild-run"]["debugger"]["dbgconf"].IsDefined());
 }
 
+TEST_F(ProjMgrUnitTests, MissingDbgconf) {
+  const string csolutionFile = testinput_folder + "/TestSolution/test.csolution.yml";
+  const string dbgconf = testinput_folder + "/TestSolution/.cmsis/test+CM0.dbgconf";
+  char* argv[6];
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolutionFile.c_str();
+  argv[3] = (char*)"-a";
+  argv[4] = (char*)"CM0";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  // remove dbgconf file and convert again but with --no-update-rte
+  // the missing dbgconf is just a warning, the convert must succeed
+  StdStreamRedirect streamRedirect;
+  EXPECT_TRUE(RteFsUtils::RemoveFile(dbgconf));
+  EXPECT_FALSE(RteFsUtils::Exists(dbgconf));
+  argv[5] = (char*)"--no-update-rte";
+  EXPECT_EQ(0, RunProjMgr(6, argv, m_envp));
+  auto errStr = streamRedirect.GetErrorString();
+  auto expected = "warning csolution: file '" + dbgconf + "' not found; use --update-rte";
+  EXPECT_TRUE(errStr.find(expected) != string::npos);
+}
+
 TEST_F(ProjMgrUnitTests, TestRunDebugMulticore) {
   char* argv[7];
   const string& csolution = testinput_folder + "/TestRunDebug/run-debug.csolution.yml";

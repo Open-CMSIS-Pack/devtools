@@ -2268,8 +2268,14 @@ bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
     // get absolute path to file instance
     const string file = fs::path(context.cproject->directory).append(fi.second->GetInstanceName()).generic_string();
     if (!RteFsUtils::Exists(file)) {
-      error = true;
-      ProjMgrLogger::Get().Error("file '" + file + "' not found; use --update-rte", context.name);
+      const auto& msg = "file '" + file + "' not found; use --update-rte";
+      if (fi.second->HasAttribute("configfile")) {
+        // missing dbgconf file is just a warning
+        ProjMgrLogger::Get().Warn(msg, context.name);
+      } else {
+        ProjMgrLogger::Get().Error(msg, context.name);
+        error = true;
+      }
       context.plmStatus[file] = PLM_STATUS_MISSING_FILE;
       continue;
     }
