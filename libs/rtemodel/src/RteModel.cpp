@@ -6,11 +6,11 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-/******************************************************************************/
+ /******************************************************************************/
 
 #include "RteModel.h"
 
@@ -84,7 +84,7 @@ void RteModel::ClearModel()
 
 void RteModel::ClearDevices()
 {
-  for (auto [_, dv] : m_deviceVendors) {
+  for(auto [_, dv] : m_deviceVendors) {
     delete dv;
   }
   m_deviceVendors.clear();
@@ -93,10 +93,10 @@ void RteModel::ClearDevices()
 }
 
 
- RteCallback* RteModel::GetCallback() const
- {
-   return m_callback ? m_callback : RteCallback::GetGlobal();
- }
+RteCallback* RteModel::GetCallback() const
+{
+  return m_callback ? m_callback : RteCallback::GetGlobal();
+}
 
 void RteModel::SetCallback(RteCallback* callback)
 {
@@ -106,7 +106,7 @@ void RteModel::SetCallback(RteCallback* callback)
 RtePackage* RteModel::GetPackage(const string& id) const
 {
   auto it = m_packages.find(id);
-  if (it != m_packages.end())
+  if(it != m_packages.end())
     return it->second;
   return NULL;
 }
@@ -115,7 +115,7 @@ RtePackage* RteModel::GetPackage(const string& id) const
 RtePackage* RteModel::GetLatestPackage(const string& id) const
 {
   auto it = m_latestPackages.find(RtePackage::CommonIdFromId(id));
-  if (it != m_latestPackages.end())
+  if(it != m_latestPackages.end())
     return it->second;
   return NULL;
 }
@@ -123,13 +123,13 @@ RtePackage* RteModel::GetLatestPackage(const string& id) const
 RtePackage* RteModel::GetAvailablePackage(const string& id) const
 {
   RtePackage* pack = GetPackage(id);
-  if (pack)
+  if(pack)
     return pack;
   pack = GetLatestPackage(id);
-  if (!pack)
+  if(!pack)
     return nullptr;
   string packVer = RtePackage::VersionFromId(id);
-  if (VersionCmp::Compare(pack->GetVersionString(), packVer) >= 0) {
+  if(VersionCmp::Compare(pack->GetVersionString(), packVer) >= 0) {
     return pack;
   }
   return nullptr;
@@ -140,20 +140,20 @@ RtePackage* RteModel::GetPackage(const XmlItem& attr) const
 {
   string commonId = RtePackage::GetPackageIDfromAttributes(attr, false);
   RtePackage* pack = GetLatestPackage(commonId);
-  if (!pack)
+  if(!pack)
     return NULL; // latest not found => none is found
   const string& versionRange = attr.GetAttribute("version");
-  if (versionRange.empty()) {
+  if(versionRange.empty()) {
     return pack; // version is not provided => the latest
   }
-  if (VersionCmp::RangeCompare(pack->GetVersionString(), versionRange) == 0)
+  if(VersionCmp::RangeCompare(pack->GetVersionString(), versionRange) == 0)
     return pack; // the latest matches the range
 
-  for (auto itp = m_packages.begin(); itp != m_packages.end(); ++itp) {
+  for(auto itp = m_packages.begin(); itp != m_packages.end(); ++itp) {
     pack = itp->second;
-    if (pack->GetPackageID(false) != commonId)
+    if(pack->GetPackageID(false) != commonId)
       continue;
-    if (VersionCmp::RangeCompare(pack->GetVersionString(), versionRange) == 0)
+    if(VersionCmp::RangeCompare(pack->GetVersionString(), versionRange) == 0)
       return pack; // the latest matches the range
   }
   return NULL;
@@ -161,8 +161,8 @@ RtePackage* RteModel::GetPackage(const XmlItem& attr) const
 
 RteBoard* RteModel::FindBoard(const string& displayName) const
 {
-  for (auto [_, b] : GetBoards()) {
-    if (b->GetDisplayName() == displayName) {
+  for(auto [_, b] : GetBoards()) {
+    if(b->GetDisplayName() == displayName) {
       return b;
     }
   }
@@ -171,13 +171,13 @@ RteBoard* RteModel::FindBoard(const string& displayName) const
 
 void RteModel::GetCompatibleBoards(vector<RteBoard*>& boards, RteDeviceItem* device, bool bOnlyMounted) const
 {
-  if (!device) {
+  if(!device) {
     return;
   }
   XmlItem ea;
   device->GetEffectiveAttributes(ea);
-  for (auto [_, b] : GetBoards()) {
-    if (b->HasCompatibleDevice(ea, bOnlyMounted)) {
+  for(auto [_, b] : GetBoards()) {
+    if(b->HasCompatibleDevice(ea, bOnlyMounted)) {
       boards.push_back(b);
     }
   }
@@ -187,8 +187,8 @@ RteBoard* RteModel::FindCompatibleBoard(const string& displayName, RteDeviceItem
 {
   vector<RteBoard*> boards;
   GetCompatibleBoards(boards, device, bOnlyMounted);
-  for (auto b : boards) {
-    if (b->GetDisplayName() == displayName) {
+  for(auto b : boards) {
+    if(b->GetDisplayName() == displayName) {
       return b;
     }
   }
@@ -198,14 +198,14 @@ RteBoard* RteModel::FindCompatibleBoard(const string& displayName, RteDeviceItem
 RteComponent* RteModel::FindComponents(const RteItem& item, std::list<RteComponent*>& components) const
 {
   const string packId = item.GetPackageID(true);
-  if (!packId.empty()) {
+  if(!packId.empty()) {
     RtePackage* pack = GetAvailablePackage(packId);
     return pack ? pack->FindComponents(item, components) : nullptr;
   }
-  for (auto [key, pack] : m_packages) {
+  for(auto [key, pack] : m_packages) {
     pack->FindComponents(item, components);
   }
-  return components.empty()? nullptr : *(components.begin());
+  return components.empty() ? nullptr : *(components.begin());
 }
 
 RteComponent* RteModel::FindFirstComponent(const RteItem& item) const
@@ -218,13 +218,13 @@ RteComponent* RteModel::GetComponent(const string& uniqueID) const
 {
   // look in the APIs
   map<string, RteApi* >::const_iterator ita = m_apiList.find(uniqueID);
-  if (ita != m_apiList.end()) {
+  if(ita != m_apiList.end()) {
     return ita->second;
   }
 
   // look in the components
   RteComponentMap::const_iterator itc = m_componentList.find(uniqueID);
-  if (itc != m_componentList.end()) {
+  if(itc != m_componentList.end()) {
     return itc->second;
   }
   return NULL;
@@ -233,8 +233,8 @@ RteComponent* RteModel::GetComponent(const string& uniqueID) const
 RteComponent* RteModel::FindComponent(const std::string& id) const
 {
   bool withVersion = id.find(RteConstants::PREFIX_CVERSION_CHAR) != string::npos;
-  for (auto [_, c] : m_componentList) {
-    if (c->GetComponentID(withVersion) == id) {
+  for(auto [_, c] : m_componentList) {
+    if(c->GetComponentID(withVersion) == id) {
       return c;
     }
   }
@@ -243,7 +243,7 @@ RteComponent* RteModel::FindComponent(const std::string& id) const
 
 RteComponent* RteModel::GetComponent(RteComponentInstance* ci, bool matchVersion) const
 {
-  if (ci->IsApi() || matchVersion) {
+  if(ci->IsApi() || matchVersion) {
     return GetComponent(ci->GetID());
   }
   return FindComponent(ci->GetComponentID(false));
@@ -253,7 +253,7 @@ RteComponent* RteModel::GetComponent(RteComponentInstance* ci, bool matchVersion
 RteApi* RteModel::GetApi(const map<string, string>& componentAttributes) const
 {
   RteApi* api = nullptr;
-  for (auto [_, a] : m_apiList) {
+  for(auto [_, a] : m_apiList) {
     if(a && a->MatchApiAttributes(componentAttributes)) {
       if(a->GetPackage()->IsDominating()) {
         return a; // first dominating API wins
@@ -267,9 +267,9 @@ RteApi* RteModel::GetApi(const map<string, string>& componentAttributes) const
 
 RteApi* RteModel::GetApi(const string& id) const
 {
-  if (id.find(RteConstants::PREFIX_CVERSION_CHAR) != string::npos) {
+  if(id.find(RteConstants::PREFIX_CVERSION_CHAR) != string::npos) {
     auto it = m_apiList.find(id);
-    if (it != m_apiList.end()) {
+    if(it != m_apiList.end()) {
       RteApi* api = it->second;
       return api;
     }
@@ -283,8 +283,8 @@ RteApi* RteModel::GetLatestApi(const string& id) const
   string commonId = RteUtils::GetPrefix(id, RteConstants::PREFIX_CVERSION_CHAR);
   RteApi* api = nullptr;
   // get highest API version
-  for (auto [key, a] : m_apiList) {
-    if (RteUtils::GetPrefix(key, RteConstants::PREFIX_CVERSION_CHAR) == commonId) {
+  for(auto [key, a] : m_apiList) {
+    if(RteUtils::GetPrefix(key, RteConstants::PREFIX_CVERSION_CHAR) == commonId) {
       if(a->GetPackage()->IsDominating()) {
         return a; // first dominating API wins
       } else if(!api) {
@@ -299,8 +299,8 @@ std::list<RteApi*> RteModel::GetAvailableApis(const std::string& id) const
 {
   std::list<RteApi*> apis;
   string commonId = RteUtils::GetPrefix(id, RteConstants::PREFIX_CVERSION_CHAR);
-  for (auto [key, api] : m_apiList) {
-    if (RteUtils::GetPrefix(key, RteConstants::PREFIX_CVERSION_CHAR) == commonId) {
+  for(auto [key, api] : m_apiList) {
+    if(RteUtils::GetPrefix(key, RteConstants::PREFIX_CVERSION_CHAR) == commonId) {
       apis.push_back(api);
     }
   }
@@ -310,15 +310,15 @@ std::list<RteApi*> RteModel::GetAvailableApis(const std::string& id) const
 RteBundle* RteModel::GetBundle(const string& id) const
 {
   auto it = m_bundles.find(id);
-  if (it != m_bundles.end())
+  if(it != m_bundles.end())
     return it->second;
   return nullptr;
 }
 
 RteBundle* RteModel::GetLatestBundle(const string& id) const
 {
-  for (auto [_, b] : m_bundles) {
-    if (b->GetBundleID(false) == id)
+  for(auto [_, b] : m_bundles) {
+    if(b->GetBundleID(false) == id)
       return b;
   }
   return NULL;
@@ -328,7 +328,7 @@ RteBundle* RteModel::GetLatestBundle(const string& id) const
 RteItem* RteModel::GetTaxonomyItem(const string& id) const
 {
   map<string, RteItem*>::const_iterator it = m_taxonomy.find(id);
-  if (it != m_taxonomy.end()) {
+  if(it != m_taxonomy.end()) {
     return it->second;
   }
   return NULL;
@@ -337,7 +337,7 @@ RteItem* RteModel::GetTaxonomyItem(const string& id) const
 const string& RteModel::GetTaxonomyDescription(const string& id) const
 {
   RteItem* t = GetTaxonomyItem(id);
-  if (t) {
+  if(t) {
     return t->GetText();
   }
   return EMPTY_STRING;
@@ -347,7 +347,7 @@ const string& RteModel::GetTaxonomyDescription(const string& id) const
 string RteModel::GetTaxonomyDoc(const string& id) const
 {
   RteItem* t = GetTaxonomyItem(id);
-  if (t) {
+  if(t) {
     return t->GetDocFile();
   }
   return EMPTY_STRING;
@@ -357,7 +357,7 @@ string RteModel::GetTaxonomyDoc(const string& id) const
 RteCondition* RteModel::GetCondition(const string& packageId, const string& conditionId) const
 {
   RtePackage* package = GetPackage(packageId);
-  if (package)
+  if(package)
     return package->GetCondition(conditionId);
   return NULL;
 }
@@ -368,7 +368,7 @@ void RteModel::Construct()
 
 void RteModel::InsertPacks(const list<RtePackage*>& packs)
 {
-  for (auto pack : packs) {
+  for(auto pack : packs) {
     InsertPack(dynamic_cast<RtePackage*>(pack));
   }
   FillComponentList(nullptr); // no device package yet
@@ -377,29 +377,34 @@ void RteModel::InsertPacks(const list<RtePackage*>& packs)
 
 void RteModel::InsertPack(RtePackage* package)
 {
-  if (!package) {
+  if(!package) {
     return;
   }
-  if (package->GetPackageState() == PackageState::PS_UNKNOWN) {
+  if(package->GetPackageState() == PackageState::PS_UNKNOWN) {
     package->SetPackageState(GetPackageState());
   }
   // check for duplicates
   const string& id = package->GetID();
   RtePackage* insertedPack = GetPackage(id);
-  if (insertedPack) {
+  if(insertedPack) {
     if(insertedPack == package) {
       return; // already inserted
     }
-    string pdscPath = RteFsUtils::MakePathCanonical(package->GetAbsolutePackagePath());
-    if (pdscPath.find(m_rtePath) == 0) { // regular installed pack => error
-    // duplicate, kept it in a temporary collection till validate;
-      m_packageDuplicates.push_back(package);
-      return;
-    }
-    string insertedPdscPath = RteFsUtils::MakePathCanonical(insertedPack->GetAbsolutePackagePath());
-    if (insertedPdscPath.find(m_rtePath) == string::npos) { // inserted pack is also from outside => error
-      m_packageDuplicates.push_back(package);
-      return;
+    auto state = package->GetPackageState();
+    if(insertedPack->GetPackageState() == state) {
+      string pdscPath = RteFsUtils::MakePathCanonical(package->GetAbsolutePackagePath());
+      if(pdscPath.find(m_rtePath) == 0) { // regular installed pack => error
+      // duplicate, kept it in a temporary collection till validate;
+        m_packageDuplicates.push_back(package);
+        return;
+      }
+      string insertedPdscPath = RteFsUtils::MakePathCanonical(insertedPack->GetAbsolutePackagePath());
+      if(insertedPdscPath.find(m_rtePath) == string::npos) { // inserted pack is also from outside => error
+        m_packageDuplicates.push_back(package);
+        return;
+      }
+    } else if(state != PS_EXPLICIT_PATH) {
+      return; // pack with explicit path must override installed pack
     }
   }
 
@@ -410,10 +415,10 @@ void RteModel::InsertPack(RtePackage* package)
   // add to latest package map
   const string& commonId = package->GetCommonID();
   RtePackage* p = GetLatestPackage(commonId);
-  if (!p || p == insertedPack || VersionCmp::Compare(package->GetVersionString(), p->GetVersionString()) > 0) {
+  if(!p || p == insertedPack || VersionCmp::Compare(package->GetVersionString(), p->GetVersionString()) > 0) {
     m_latestPackages[commonId] = package;
   }
-  if (insertedPack) {
+  if(insertedPack) {
     // remove inserted pack as replaced
     RemoveItem(insertedPack);
   }
@@ -423,15 +428,15 @@ void RteModel::InsertPack(RtePackage* package)
 bool RteModel::Validate()
 {
   m_bValid = RteItem::Validate();
-  if (!m_errors.empty())
+  if(!m_errors.empty())
     m_bValid = false;
-  if (!m_packageDuplicates.empty()) {
+  if(!m_packageDuplicates.empty()) {
     m_bValid = false;
-    for (auto duplicate : m_packageDuplicates) {
+    for(auto duplicate : m_packageDuplicates) {
       RtePackage* orig = GetPackage(duplicate->GetID());
 
       string msg = "warning #500: pack '" + duplicate->GetID() + "' is duplicated";
-      if (RteUtils::EqualNoCase(duplicate->GetPackageFileName(), orig->GetPackageFileName())) {
+      if(RteUtils::EqualNoCase(duplicate->GetPackageFileName(), orig->GetPackageFileName())) {
         msg += ", letter case is inconsistent";
       }
       msg += ":\n  " + orig->GetPackageFileName() +
@@ -451,36 +456,36 @@ RtePackage* RteModel::FilterModel(RteModel* globalModel, RtePackage* devicePacka
   // first add all latest packs
   set<string> latestPackIds;
   const RtePackageMap& latestPackages = globalModel->GetLatestPackages();
-  for ( auto& [key, pack] : latestPackages) {
-    if (pack) {
+  for(auto& [key, pack] : latestPackages) {
+    if(pack) {
       latestPackIds.insert(pack->GetID());
     }
   }
   m_packageFilter.SetLatestInstalledPacks(latestPackIds); // filter requires global latests
 
   const RtePackageMap& allPacks = globalModel->GetPackages();
-  for (auto [id, pack] : allPacks) {
-    if (!m_packageFilter.IsPackageFiltered(pack))
+  for(auto [id, pack] : allPacks) {
+    if(!m_packageFilter.IsPackageFiltered(pack))
       continue;
 
-    if (m_packageFilter.IsPackageSelected(pack)) {
+    if(m_packageFilter.IsPackageSelected(pack)) {
       m_packages[id] = pack; //directly add to map
     }
     const string& commonId = pack->GetCommonID();
     RtePackage* p = GetLatestPackage(commonId);
-    if (!p || VersionCmp::Compare(pack->GetVersionString(), p->GetVersionString()) > 0) {
+    if(!p || VersionCmp::Compare(pack->GetVersionString(), p->GetVersionString()) > 0) {
       m_latestPackages[commonId] = pack;
     }
   }
-  if (devicePackage && !m_packageFilter.IsPackageFiltered(devicePackage)) {
+  if(devicePackage && !m_packageFilter.IsPackageFiltered(devicePackage)) {
     const string& commonId = devicePackage->GetCommonID();
     devicePackage = GetLatestPackage(commonId);
   }
 
   // add latest packs that pass filter, but not added yet
-  for (auto [id, pack] : m_latestPackages) {
+  for(auto [id, pack] : m_latestPackages) {
     const string& packId = pack->GetID();
-    if (m_packages.find(packId) == m_packages.end())
+    if(m_packages.find(packId) == m_packages.end())
       m_packages[id] = pack;
   }
 
@@ -492,11 +497,11 @@ RtePackage* RteModel::FilterModel(RteModel* globalModel, RtePackage* devicePacka
 void RteModel::AddItemsFromPack(RtePackage* pack)
 {
   RteItem* taxonomy = pack->GetTaxonomy();
-  if (taxonomy) {
+  if(taxonomy) {
     // fill in taxonomy
-    for (auto t : taxonomy->GetChildren()) {
+    for(auto t : taxonomy->GetChildren()) {
       string id = t->GetTaxonomyDescriptionID();
-      if (GetTaxonomyItem(id) == NULL && IsFiltered(t)) {// do not overwrite the newest
+      if(GetTaxonomyItem(id) == NULL && IsFiltered(t)) {// do not overwrite the newest
         m_taxonomy[id] = t;
       }
     }
@@ -512,19 +517,19 @@ void RteModel::AddItemsFromPack(RtePackage* pack)
 
 void RteModel::AddPackItemsToList(const Collection<RteItem*>& srcCollection, Collection<RteItem*>& dstCollection, const std::string& tag)
 {
-  for (auto item : srcCollection) {
-    if ((tag.empty() || tag == item->GetTag()) && IsFiltered(item)) {
+  for(auto item : srcCollection) {
+    if((tag.empty() || tag == item->GetTag()) && IsFiltered(item)) {
       dstCollection.push_back(item);
     }
   }
 }
 
 bool RteModel::IsFiltered(RteItem* item) {
-  if (!item)
+  if(!item)
     return false;
-  if (!GetFilterContext())
+  if(!GetFilterContext())
     return true;
-  if (item->Evaluate(GetFilterContext()) < FULFILLED)
+  if(item->Evaluate(GetFilterContext()) < FULFILLED)
     return false;
   return true;
 }
@@ -537,40 +542,40 @@ void RteModel::FillComponentList(RtePackage* devicePackage)
   m_apiList.clear();
 
   // first process DFP - it has precedence
-  if (devicePackage) {
+  if(devicePackage) {
     AddItemsFromPack(devicePackage);
   }
 
   // evaluate dominate packages first
-  for (auto [id, package] : m_packages) {
-    if (package == devicePackage)
+  for(auto [id, package] : m_packages) {
+    if(package == devicePackage)
       continue;
-    if (package->IsDeprecated())
+    if(package->IsDeprecated())
       continue;
-    if (package->IsDominating()) {
+    if(package->IsDominating()) {
       AddItemsFromPack(package);
     }
   }
 
   // evaluated sorted collection, deprecated packs in the second run
   bool bHasDeprecated = false;
-  for (auto [id, package] : m_packages) {
-    if (package->IsDeprecated()) {
+  for(auto [id, package] : m_packages) {
+    if(package->IsDeprecated()) {
       bHasDeprecated = true;
       continue;
     }
-    if (package->IsDominating())
+    if(package->IsDominating())
       continue;
-    if (package == devicePackage)
+    if(package == devicePackage)
       continue;
     AddItemsFromPack(package);
   }
-  if (!bHasDeprecated)
+  if(!bHasDeprecated)
     return;
-  for (auto [id, package] : m_packages) {
-    if (!package->IsDeprecated())
+  for(auto [id, package] : m_packages) {
+    if(!package->IsDeprecated())
       continue;
-    if (package == devicePackage)
+    if(package == devicePackage)
       continue;
     AddItemsFromPack(package);
   }
@@ -579,17 +584,17 @@ void RteModel::FillComponentList(RtePackage* devicePackage)
 
 void RteModel::InsertComponent(RteComponent* c)
 {
-  if (!c)
+  if(!c)
     return;
   const string& id = c->GetID();
-  if (c->IsApi()) {
+  if(c->IsApi()) {
     RteApi* a = dynamic_cast<RteApi*>(c);
-    if (IsFiltered(a) && IsApiDominatingOrNewer(a)) {
+    if(IsFiltered(a) && IsApiDominatingOrNewer(a)) {
       m_apiList[id] = a;
     }
   } else {
     // do not allow duplicates (filtering is performed later)
-    if (GetComponent(id))
+    if(GetComponent(id))
       return;
     m_componentList[id] = c;
   }
@@ -598,13 +603,13 @@ void RteModel::InsertComponent(RteComponent* c)
 bool RteModel::IsApiDominatingOrNewer(RteApi* a) {
   const string& id = a->GetID();
   RteApi* aExisting = GetApi(id);
-  if (!aExisting)
+  if(!aExisting)
     return true;
   bool existingDominating = aExisting->GetPackage()->IsDominating();
   bool packageDominating = a->GetPackage()->IsDominating();
-  if (packageDominating && !existingDominating)
+  if(packageDominating && !existingDominating)
     return true; // use new api anyway since it is dominating
-  if (!packageDominating && existingDominating)
+  if(!packageDominating && existingDominating)
     return false;
   return VersionCmp::Compare(aExisting->GetVersionString(), a->GetVersionString()) < 0;
 }
@@ -612,23 +617,23 @@ bool RteModel::IsApiDominatingOrNewer(RteApi* a) {
 
 void RteModel::InsertBundle(RteBundle* b)
 {
-  if (!b)
+  if(!b)
     return;
   const string& id = b->GetID();
   RteBundle* inserted = GetBundle(id);
-  if (inserted) {
+  if(inserted) {
 
     // insert bundle with most information (description and doc)
-    if (b->GetDocFile().empty() && b->GetDescription().empty())
+    if(b->GetDocFile().empty() && b->GetDescription().empty())
       return;
 
-    if (!inserted->GetDocFile().empty()) {
+    if(!inserted->GetDocFile().empty()) {
       // ensure bundle has description
-      if (inserted->GetDescription().empty())
+      if(inserted->GetDescription().empty())
         inserted->SetText(b->GetDescription());
       return;
     }
-    if (b->GetDescription().empty())
+    if(b->GetDescription().empty())
       b->SetText(inserted->GetDescription());
   }
   m_bundles[id] = b;
@@ -637,7 +642,7 @@ void RteModel::InsertBundle(RteBundle* b)
 RteDeviceVendor* RteModel::FindDeviceVendor(const string& vendor) const
 {
   auto it = m_deviceVendors.find(vendor);
-  if (it != m_deviceVendors.end())
+  if(it != m_deviceVendors.end())
     return it->second;
   return NULL;
 
@@ -645,10 +650,10 @@ RteDeviceVendor* RteModel::FindDeviceVendor(const string& vendor) const
 
 RteDeviceVendor* RteModel::EnsureDeviceVendor(const string& vendor)
 {
-  if (vendor.empty())
+  if(vendor.empty())
     return NULL;
   RteDeviceVendor* dv = FindDeviceVendor(vendor);
-  if (dv)
+  if(dv)
     return dv;
   dv = new RteDeviceVendor(vendor);
   m_deviceVendors[vendor] = dv;
@@ -657,7 +662,7 @@ RteDeviceVendor* RteModel::EnsureDeviceVendor(const string& vendor)
 
 bool RteModel::AddDeviceItem(RteDeviceItem* item)
 {
-  if (!item)
+  if(!item)
     return false;
   string vendor = item->GetVendorName();
   RteDeviceVendor* dv = EnsureDeviceVendor(vendor);
@@ -667,40 +672,40 @@ bool RteModel::AddDeviceItem(RteDeviceItem* item)
 
 void RteModel::GetDevices(list<RteDevice*>& devices, const string& namePattern, const string& vendor, RteDeviceItem::TYPE depth) const
 {
-  if (namePattern.empty() || namePattern.find_first_of("*?[") != string::npos) {
-    if (IsUseDeviceTree()) {
+  if(namePattern.empty() || namePattern.find_first_of("*?[") != string::npos) {
+    if(IsUseDeviceTree()) {
       m_deviceTree->GetDevices(devices, namePattern, vendor, depth); // pattern match
       return;
     }
-    for (auto [_, dv] : m_deviceVendors) {
+    for(auto [_, dv] : m_deviceVendors) {
       dv->GetDevices(devices, namePattern);
     }
     return;
   }
   RteDevice* d = GetDevice(namePattern, vendor);
-  if (d)
+  if(d)
     devices.push_back(d);
 }
 
 RteDevice* RteModel::GetDevice(const string& deviceName, const string& vendor) const
 {
-  if (!vendor.empty()) {
+  if(!vendor.empty()) {
     string vendorName = DeviceVendor::GetCanonicalVendorName(vendor);
     RteDeviceVendor* dv = FindDeviceVendor(vendorName);
-    if (dv) {
+    if(dv) {
       RteDevice* d = dv->GetDevice(deviceName);
-      if (d)
+      if(d)
         return d;
 
     }
   } else {
-    for (auto [_, dv] : m_deviceVendors) {
+    for(auto [_, dv] : m_deviceVendors) {
       RteDevice* d = dv->GetDevice(deviceName);
-      if (d)
+      if(d)
         return d;
     }
   }
-  if (IsUseDeviceTree())
+  if(IsUseDeviceTree())
     return dynamic_cast<RteDevice*>(m_deviceTree->GetDeviceItem(deviceName, vendor));
   return NULL;
 }
@@ -708,7 +713,7 @@ RteDevice* RteModel::GetDevice(const string& deviceName, const string& vendor) c
 int RteModel::GetDeviceCount() const
 {
   int count = 0;
-  for (auto [_, dv] : m_deviceVendors) {
+  for(auto [_, dv] : m_deviceVendors) {
     count += dv->GetCount();
   }
   return count;
@@ -717,7 +722,7 @@ int RteModel::GetDeviceCount() const
 int RteModel::GetDeviceCount(const string& vendor) const
 {
   RteDeviceVendor* dv = FindDeviceVendor(vendor);
-  if (dv)
+  if(dv)
     return dv->GetCount();
   return 0;
 }
@@ -738,22 +743,22 @@ void RteModel::FillDeviceTree()
 
   bool bHasDeprecated = false;
   // use only latest packages
-  for (auto [id, package] : m_latestPackages) {
-    if (!package)
+  for(auto [id, package] : m_latestPackages) {
+    if(!package)
       continue;
-    if (package->IsDeprecated()) {
+    if(package->IsDeprecated()) {
       bHasDeprecated = true;
       continue;
     }
     FillDeviceTree(package);
   }
 
-  if (!bHasDeprecated)
+  if(!bHasDeprecated)
     return;
-  for (auto [id, package] :  m_latestPackages) {
-    if (!package)
+  for(auto [id, package] : m_latestPackages) {
+    if(!package)
       continue;
-    if (!package->IsDeprecated()) {
+    if(!package->IsDeprecated()) {
       continue;
     }
     FillDeviceTree(package);
@@ -763,27 +768,27 @@ void RteModel::FillDeviceTree()
 void RteModel::FillDeviceTree(RtePackage* package)
 {
   RteDeviceFamilyContainer* families = package->GetDeviceFamiles();
-  if (families) {
-    for (auto child : families->GetChildren()) {
+  if(families) {
+    for(auto child : families->GetChildren()) {
       RteDeviceFamily* fam = dynamic_cast<RteDeviceFamily*>(child);
-      if (fam) {
+      if(fam) {
         bool bInserted = AddDeviceItem(fam);
-        if (!bInserted)
+        if(!bInserted)
           continue;
-        if (!IsUseDeviceTree()) // additionally add device info as a tree
+        if(!IsUseDeviceTree()) // additionally add device info as a tree
           continue;
         m_deviceTree->AddDeviceItem(fam);
       }
     }
   }
   RteItem* boards = package->GetBoards();
-  if (boards) {
-    for (auto child : boards->GetChildren()) {
+  if(boards) {
+    for(auto child : boards->GetChildren()) {
       RteBoard* b = dynamic_cast<RteBoard*>(child);
-      if (b == 0)
+      if(b == 0)
         continue;
       const string& id = b->GetID();
-      if (m_boards.find(id) == m_boards.end()) {
+      if(m_boards.find(id) == m_boards.end()) {
         m_boards[id] = b;
       }
     }
@@ -793,10 +798,10 @@ void RteModel::FillDeviceTree(RtePackage* package)
 
 void RteModel::GetBoardBooks(map<string, string>& books, const string& device, const string& vendor) const
 {
-  if (m_boards.empty())
+  if(m_boards.empty())
     return;
   RteDevice* d = GetDevice(device, vendor);
-  if (!d)
+  if(!d)
     return;
   XmlItem ea;
   d->GetEffectiveAttributes(ea);
@@ -808,8 +813,8 @@ void RteModel::GetBoardBooks(map<string, string>& books, const XmlItem& deviceAt
   if(m_boards.empty()) {
     return;
   }
-  for (auto [_, b] : m_boards) {
-    if (b->HasCompatibleDevice(deviceAttributes)) {
+  for(auto [_, b] : m_boards) {
+    if(b->HasCompatibleDevice(deviceAttributes)) {
       b->GetBooks(books);
     }
   }
@@ -844,7 +849,7 @@ void RteGlobalModel::ClearModel()
 void RteGlobalModel::SetCallback(RteCallback* callback)
 {
   RteModel::SetCallback(callback);
-  for (auto [n, project] : m_projects) {
+  for(auto [n, project] : m_projects) {
     project->SetCallback(callback);
   }
 }
@@ -856,8 +861,8 @@ int RteGlobalModel::GenerateProjectId()
 {
   int id = 1;
   int n = (int)(m_projects.size() + 2);
-  for (; id < n ; id++) {
-    if (!GetProject(id))
+  for(; id < n; id++) {
+    if(!GetProject(id))
       break;
   }
   return id;
@@ -866,19 +871,19 @@ int RteGlobalModel::GenerateProjectId()
 RteProject* RteGlobalModel::GetProject(int id) const
 {
   auto it = m_projects.find(id);
-  if (it != m_projects.end())
+  if(it != m_projects.end())
     return it->second;
   return nullptr;
 }
 
 RteProject* RteGlobalModel::AddProject(int id, RteProject* project)
 {
-  if (id <= 0) {
+  if(id <= 0) {
     id = GenerateProjectId();
   }
-  if (!project) {
+  if(!project) {
     project = GetProject(id);
-    if (!project) {
+    if(!project) {
       project = new RteProject();
     }
   }
@@ -892,17 +897,17 @@ RteProject* RteGlobalModel::AddProject(int id, RteProject* project)
 void RteGlobalModel::DeleteProject(int id)
 {
   auto it = m_projects.find(id);
-  if (it != m_projects.end()) {
+  if(it != m_projects.end()) {
     delete it->second;
     m_projects.erase(it);
-    if (id == m_nActiveProjectId)
+    if(id == m_nActiveProjectId)
       m_nActiveProjectId = -1;
   }
 }
 
 void RteGlobalModel::ClearProjects()
 {
-  for (auto [n, project] : m_projects) {
+  for(auto [n, project] : m_projects) {
     delete project;
   }
   m_projects.clear();
@@ -912,8 +917,8 @@ void RteGlobalModel::ClearProjects()
 
 void RteGlobalModel::ClearProjectTargets(int id)
 {
-  for (auto [n, project] : m_projects) {
-    if (id <= 0 || id == n) {
+  for(auto [n, project] : m_projects) {
+    if(id <= 0 || id == n) {
       project->ClearTargets();
     }
   }

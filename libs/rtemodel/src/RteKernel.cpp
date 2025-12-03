@@ -81,6 +81,9 @@ bool RteKernel::SetCmsisPackRoot(const string& cmsisPackRoot)
     return false;
   m_cmsisPackRoot = cmsisPackRoot;
   RteFsUtils::NormalizePath(m_cmsisPackRoot);
+  if(m_globalModel) {
+    m_globalModel->SetRtePath(cmsisPackRoot);
+  }
   return true;
 }
 
@@ -466,11 +469,14 @@ bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std:
   std::list<RtePackage*> newPacks;
   pdscFiles.unique();
   for (const auto& pdscFile : pdscFiles) {
-    RtePackage* pack = LoadPack(pdscFile);
+    PackageState state = pdscFile.find(GetCmsisPackRoot()) == 0 ? PS_INSTALLED : PS_EXPLICIT_PATH;
+    RtePackage* pack = LoadPack(pdscFile, state);
     if (!pack) {
       return false;
     }
-    if(!RtePackage::GetPackFromList(pack->GetID(), packs)){
+    // pack with explicit path must override installed pack
+    auto loadedPack = RtePackage::GetPackFromList(pack->GetID(), packs);
+    if(!loadedPack || (loadedPack->GetPackageState() == PS_INSTALLED && pack->GetPackageState() == PS_EXPLICIT_PATH)) {
       newPacks.push_back(pack);
     }
   }
