@@ -38,3 +38,10 @@ build:
       - CONFIG_BUILD_OUTPUT_HEX: y
       - TARGET-DEF: on
       - CONFIG-DEBUG: y
+  groups:
+    - group: sources
+      files:
+        - file: ../../../../src/main.c
+    - group: zephyr
+      files:
+        - file: ../../../../zephyr/utils.c

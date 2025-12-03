@@ -87,17 +87,6 @@ bool ProjMgrYamlEmitter::WriteFile(YAML::Node& rootNode, const std::string& file
   return true;
 }
 
-string ProjMgrYamlEmitter::EraseGeneratedByNode(const string& inStr) {
-  size_t startIndex, endIndex;
-  string outStr = inStr;
-  startIndex = outStr.find(YAML_GENERATED_BY, 0);
-  endIndex = outStr.find('\n', startIndex);
-  if (startIndex != std::string::npos && endIndex != std::string::npos) {
-    outStr = outStr.erase(startIndex, endIndex - startIndex);
-  }
-  return outStr;
-};
-
 bool ProjMgrYamlEmitter::CompareFile(const string& filename, const YAML::Node& rootNode) {
   string inBuffer;
   if (!RteFsUtils::Exists(filename) || !RteFsUtils::ReadFile(filename, inBuffer)) {
@@ -105,8 +94,8 @@ bool ProjMgrYamlEmitter::CompareFile(const string& filename, const YAML::Node& r
   }
   YAML::Emitter emitter;
   const auto& outBuffer = string((emitter << rootNode).c_str()) + '\n';
-  return ProjMgrUtils::NormalizeLineEndings(EraseGeneratedByNode(inBuffer)) ==
-    ProjMgrUtils::NormalizeLineEndings(EraseGeneratedByNode(outBuffer));
+  return ProjMgrUtils::NormalizeLineEndings(inBuffer) ==
+    ProjMgrUtils::NormalizeLineEndings(outBuffer);
 }
 
 bool ProjMgrYamlEmitter::CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs) {
@@ -118,8 +107,8 @@ bool ProjMgrYamlEmitter::CompareNodes(const YAML::Node& lhs, const YAML::Node& r
   rhsEmitter << rhs;
 
   // remove generated-by node from the string
-  lhsData = EraseGeneratedByNode(lhsEmitter.c_str());
-  rhsData = EraseGeneratedByNode(rhsEmitter.c_str());
+  lhsData = lhsEmitter.c_str();
+  rhsData = rhsEmitter.c_str();
 
   return (lhsData == rhsData) ? true : false;
 }
