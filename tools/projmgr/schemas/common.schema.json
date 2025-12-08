@@ -1634,7 +1634,7 @@
       "title": "pack:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#pack",
       "type": "string",
       "pattern": "^([a-zA-Z0-9_ \\.-]+)((::[a-zA-Z0-9_ \\.\\*-]+)(@(>=|\\~|\\^)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?)?$",
-      "description": "Name of a software pack with the following format:\n  [vendor ::] pack-name # Use the latest version of the pack\n  [vendor ::] pack-name@version # With exact version\n  [vendor ::] pack-name@>=version # With version equal or higher\n  [vendor ::] pack-name@^version # With version equal or higher but the same major version\n  [vendor ::] pack-name@~version # With version equal or higher but the same major and minor version"
+      "description": "Name of a software pack with the following format:\n  vendor::pack-name # Use the latest installed version of the pack\n  vendor::pack-name@version # With exact version\n  vendor::pack-name@>=version # With version equal or higher\n  vendor::pack-name@^version # With version equal or higher but the same major version\n  vendor::pack-name@~version # With version equal or higher but the same major and minor version"
     },
     "VersionlessPackID": {
       "title": "pack:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#pack",
