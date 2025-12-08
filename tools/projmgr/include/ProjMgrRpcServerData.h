@@ -10,8 +10,11 @@
 
 #include <optional>
 #include <list>
+#include <set>
 
 using namespace std;
+
+using PackReferenceVector = std::vector<RpcArgs::PackReference>;
 
 class RteTarget;
 class RteBundle;
@@ -30,7 +33,9 @@ public:
   RteTarget* GetTarget() const { return m_target; }
 
   void CollectCtClasses(RpcArgs::CtRoot& ctRoot) const;
-  void CollectUsedItems(RpcArgs::UsedItems& usedItems) const;
+  void CollectUsedComponents(vector< RpcArgs::ComponentInstance>& usedComponents) const;
+
+  std::set<std::string> GetUsedPacks() const;
 
   void CollectDeviceList(RpcArgs::DeviceList& deviceList, const std::string& namePattern, const std::string& vendor) const;
   void CollectDeviceInfo(RpcArgs::DeviceInfo& deviceInfo, const std::string& id) const;

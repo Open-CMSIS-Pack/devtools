@@ -135,24 +135,24 @@ RteItem* RpcDataCollector::GetTaxonomyItem(const RteComponentGroup* rteGroup) co
   return nullptr;
 }
 
-void RpcDataCollector::CollectUsedItems(RpcArgs::UsedItems& usedItems) const {
+void RpcDataCollector::CollectUsedComponents(vector< RpcArgs::ComponentInstance>& usedComponents) const {
   auto rteProject = m_target ? m_target->GetProject() : nullptr;
   if(!rteProject) {
     return;
   }
-
   for(auto [_id, rteCi] : rteProject->GetComponentInstances()) {
     if(!rteCi->IsApi()) {
-      usedItems.components.push_back(FromComponentInstance(rteCi));
+      usedComponents.push_back(FromComponentInstance(rteCi));
     }
   }
-  RtePackageMap packs;
-  rteProject->GetUsedPacks(packs, m_target->GetName());
-  for(auto [id, rtePack] : packs) {
-    Pack p;
-    p.id = id;
-    usedItems.packs.push_back(p);
+}
+std::set<std::string> RpcDataCollector::GetUsedPacks() const {
+  RtePackageMap usedPacks;
+  auto rteProject = m_target ? m_target->GetProject() : nullptr;
+  if(rteProject) {
+    rteProject->GetUsedPacks(usedPacks, m_target->GetName());
   }
+  return key_set(usedPacks);
 }
 
 RpcArgs::Device RpcDataCollector::FromRteDevice( RteDevice* rteDevice, bool bIncludeProperties) const {
