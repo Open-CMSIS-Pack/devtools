@@ -63,7 +63,7 @@ ProjMgrCbuildPack::ProjMgrCbuildPack(YAML::Node node, const vector<ContextItem*>
   // Stage 3: Add all user input expression on the matching resolved pack
   for (const auto& context : processedContexts) {
     for (const auto& [userInput, resolvedPacks] : context->userInputToResolvedPackIdMap) {
-      for (const auto& resolvedPack : resolvedPacks) {
+      for (const auto& [resolvedPack, _] : resolvedPacks) {
         if (model.find(resolvedPack) == model.end()) {
           ModelItem modelItem;
           ProjMgrUtils::ConvertToPackInfo(resolvedPack, modelItem.info);

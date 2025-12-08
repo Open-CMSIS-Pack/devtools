@@ -108,7 +108,7 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
     context.cproject->name = context.west.projectId;
     context.cproject->output.type = { "elf", "hex" };
     CollectionUtils::PushBackUniquely(context.west.westDefs, "CONFIG_BUILD_OUTPUT_HEX=y");
-  } 
+  }
 
   // No build/target-types
   if (context.csolution->buildTypes.empty() && context.csolution->targetTypes.empty()) {
@@ -1716,15 +1716,16 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
         for (const auto& resolvedPackId : matchedPackIds) {
           PackageItem package;
           package.origin = packageEntry.origin;
+          package.selectedBy = packageEntry.pack;
           ProjMgrUtils::ConvertToPackInfo(resolvedPackId, package.pack);
-          context.userInputToResolvedPackIdMap[packageEntry.pack].insert(resolvedPackId);
+          context.userInputToResolvedPackIdMap[packageEntry.pack].insert(make_pair(resolvedPackId, package));
           context.packRequirements.push_back(package);
         }
       } else {
         // Not matching cbuild pack, add it unless a wildcard entry
         PackageItem package;
         ProjMgrUtils::ConvertToPackInfo(packageEntry.pack, package.pack);
-
+        package.selectedBy = packageEntry.pack;
         // Store pack entries in separated vectors for later resolution in the right order
         if (!package.pack.name.empty() && !WildCards::IsWildcardPattern(package.pack.name)) {
           packEntries[ProjMgrUtils::GetVersionType(package.pack.version)].push_back(packageEntry);
@@ -1735,6 +1736,7 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
       PackageItem package;
       package.origin = packageEntry.origin;
       package.path = packageEntry.path;
+      package.selectedBy = packageEntry.pack;
       RteFsUtils::NormalizePath(package.path, context.csolution->directory + "/");
       if (!RteFsUtils::Exists(package.path)) {
         ProjMgrLogger::Get().Error("pack path: " + packageEntry.path + " does not exist", context.name);
@@ -1765,6 +1767,8 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
     PackageItem package;
     package.origin = packageEntry.origin;
     package.path = packageEntry.path;
+    package.selectedBy = packageEntry.pack;
+
     ProjMgrUtils::ConvertToPackInfo(packageEntry.pack, package.pack);
 
     if (package.pack.name.empty() || WildCards::IsWildcardPattern(package.pack.name)) {
@@ -1811,14 +1815,15 @@ void ProjMgrWorker::ResolvePackRequirement(ContextItem& context, const PackItem&
   // Only remember the version of the pack if we had it installed or local
   // Will be used when serializing the cbuild-pack.yml file later
   if (!pdsc.first.empty()) {
-    context.userInputToResolvedPackIdMap[packageEntry.pack].insert(pdsc.first);
     string installedVersion = RtePackage::VersionFromId(pdsc.first);
     package.pack.version = VersionCmp::RemoveVersionMeta(installedVersion);
+    context.userInputToResolvedPackIdMap[packageEntry.pack].insert(make_pair(pdsc.first, package));
   } else {
     // Remember that we had the user input, but it does not match any installed pack
     context.userInputToResolvedPackIdMap[packageEntry.pack] = {};
   }
   package.origin = packageEntry.origin;
+  package.selectedBy = packageEntry.pack;
   context.packRequirements.push_back(package);
 }
 
@@ -4398,7 +4403,7 @@ std::vector<ExampleItem> ProjMgrWorker::CollectExamples(const ContextItem& conte
     if (find(examples.begin(), examples.end(), example) == examples.end()) {
       examples.push_back(example);
     }
-  } 
+  }
   return examples;
 }
 
@@ -5860,7 +5865,7 @@ bool ProjMgrWorker::PopulateActiveTargetSet(const string& activeTargetSet) {
         // selected target-type does not have a default target-set: take first named target-set
         // use default context selection (ParseTargetSetContextSelection)
         m_activeTargetSet = type.targetSet.front();
-      }      
+      }
       break;
     }
   }
@@ -5979,12 +5984,12 @@ void ProjMgrWorker::FormatResolvedPackIds() {
   for (auto& contextName : m_selectedContexts) {
     auto& contextItem = m_contexts[contextName];
     for (auto& [_, resolvedPackIds] : contextItem.userInputToResolvedPackIdMap) {
-      StrSet formattedPackIds;
-      for (auto& resolvedPackId : resolvedPackIds) {
+      map<string, PackageItem> formattedPackIds;
+      for (auto& [resolvedPackId, package] : resolvedPackIds) {
         const auto& lowerCasePackId = RteUtils::ToLower(resolvedPackId);
         const auto& packId = realPackIds.find(lowerCasePackId) != realPackIds.end() ?
           realPackIds.at(lowerCasePackId) : resolvedPackId;
-        formattedPackIds.insert(packId);
+        formattedPackIds.insert(make_pair(packId, package));
       }
       resolvedPackIds = formattedPackIds;
     }
