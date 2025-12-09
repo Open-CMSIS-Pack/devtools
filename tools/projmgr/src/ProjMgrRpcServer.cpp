@@ -407,7 +407,7 @@ RpcArgs::PackReference& RpcHandler::EnsurePackReferenceForPack(const string& con
   auto& packRefs = GetPackReferences(context);
   for(auto& ref : packRefs) {
     if(ref.resolvedPack.has_value() && ref.resolvedPack == packId &&
-       (origin.empty() || ref.origin == origin)) {
+       (origin.empty() || RteFsUtils::Equivalent(ref.origin, origin))) {
       ref.selected = true; // ensure selected
       return ref;
     }
@@ -428,8 +428,8 @@ RpcArgs::PackReference& RpcHandler::EnsurePackReference(const string& context, c
   auto& packRefs = GetPackReferences(context);
   for(auto& ref : packRefs) {
     if(ref.pack == packRef.pack &&
-      (!packRef.path.has_value() || ref.path == packRef.path) &&
-      (packRef.origin.empty() || ref.origin == packRef.origin)) {
+      (packRef.origin.empty() || RteFsUtils::Equivalent(ref.origin, packRef.origin)) &&
+      (RteFsUtils::Equivalent(ref.path.value_or(""), packRef.path.value_or("")))) {
       return ref;
     }
   }
