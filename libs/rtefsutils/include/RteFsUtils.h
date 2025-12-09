@@ -224,6 +224,15 @@ public:
   static std::string ParentPath(const std::string& path);
 
   /**
+   * @brief checks if two paths are equivalent
+   * @param p1 first path to be compared
+   * @param p2 second path to be compared
+   * @return true if p1 == p2 or both refer to the same file or both are empty
+   */
+  static bool Equivalent(const std::string& p1, const std::string& p2);
+
+
+  /**
    * @brief get lexically normalized path
    * @param path path to be processed
    * @return string containing the lexically normalized path

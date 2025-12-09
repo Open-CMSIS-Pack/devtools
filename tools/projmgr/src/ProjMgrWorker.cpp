@@ -2690,8 +2690,7 @@ bool ProjMgrWorker::IsPreIncludeByTarget(const RteTarget* activeTarget, const st
   const auto& preIncludeFiles = activeTarget->GetPreIncludeFiles();
   for (const auto& [_, fileSet] : preIncludeFiles) {
     for (auto file : fileSet) {
-      error_code ec;
-      if (fs::equivalent(file, preInclude, ec)) {
+      if (RteFsUtils::Equivalent(file, preInclude)) {
         return true;
       }
     }
@@ -3621,9 +3620,8 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
     }
   }
   if (!pathReplace && !ref.empty()) {
-     error_code ec;
     // adjust relative path according to the given reference
-    if (!fs::equivalent(outDir, ref, ec)) {
+    if (!RteFsUtils::Equivalent(outDir, ref)) {
       const string absPath = RteFsUtils::MakePathCanonical(fs::path(item).is_relative() ? ref + "/" + item : item);
       const string relPath = RteFsUtils::RelativePath(absPath, outDir, withHeadingDot);
       if (!relPath.empty()) {
