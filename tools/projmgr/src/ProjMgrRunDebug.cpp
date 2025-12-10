@@ -322,12 +322,12 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
   }
 
   // add info from debug-adapters
+  DebugAdapterItem adapter;
   if (!adapters.empty()) {
-    DebugAdapterItem adapter;
     if (GetDebugAdapter(m_runDebug.debugger.name, adapters, adapter)) {
       m_runDebug.debugger.name = adapter.name;
-      if (adapter.gdbserver) {
-        unsigned long long port = adapter.defaults.port.empty() ? 0 : RteUtils::StringToULL(adapter.defaults.port);
+      if (adapter.defaults.gdbserver.active) {
+        unsigned long long port = adapter.defaults.gdbserver.port.empty() ? 0 : RteUtils::StringToULL(adapter.defaults.gdbserver.port);
         // add primary processor port first
         m_runDebug.debugger.gdbserver.push_back({ port, m_runDebug.debugger.startPname });
         for (const auto& [pname, _] : pnames) {
@@ -348,8 +348,77 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
     }
   }
 
+  // collect telnet options
+  CollectTelnetOptions(context, adapter, pnames);
+
   // merge custom options
   MergeCustomItems(context.debugger.custom, m_runDebug.debugger.custom);
+
+}
+
+void ProjMgrRunDebug::CollectTelnetOptions(const ContextItem& context, DebugAdapterItem& adapter,
+  const std::map<std::string, RteDeviceProperty*>& pnames) {
+  if (!context.debugger.telnet.empty() || adapter.defaults.telnet.active) {
+    set<unsigned long long> usedPorts;
+    const string fileBase = context.directories.cprj + "/" + context.directories.outBaseDir + "/" +
+      m_runDebug.solutionName + "+" + m_runDebug.targetType;
+
+    // get values from user definitions
+    for (const auto& [pname, value] : context.debugger.telnet) {
+      if (pnames.size() > 1 && value.pname.empty()) {
+        ProjMgrLogger::Get().Warn("'telnet:' pname is required (multicore device)");
+        continue;
+      }
+      if (pnames.find(pname) == pnames.end()) {
+        ProjMgrLogger::Get().Warn("pname '" + pname + "' does not match any device pname");
+        continue;
+      }
+      m_runDebug.debugger.telnet[pname] = { value };
+      if (!value.port.empty()) {
+        m_runDebug.debugger.telnet[pname].ullPort = RteUtils::StringToULL(value.port);
+        usedPorts.insert(m_runDebug.debugger.telnet[pname].ullPort);
+      }
+      if (value.mode.empty()) {
+        m_runDebug.debugger.telnet[pname].mode = adapter.defaults.telnet.mode.empty() ? "monitor" : adapter.defaults.telnet.mode;
+      }
+      if (value.mode == "file" && value.file.empty()) {
+        m_runDebug.debugger.telnet[pname].file = fileBase + (pname.empty() ? "" : '.' + pname);
+      }
+    }
+    // active flag: enable telnet options for all cores
+    if (adapter.defaults.telnet.active) {
+      for (const auto& [pname, _] : pnames) {
+        auto& telnet = m_runDebug.debugger.telnet[pname];
+        if (telnet.mode.empty() || telnet.mode == "off") {
+          telnet.mode = adapter.defaults.telnet.mode.empty() ? "monitor" : adapter.defaults.telnet.mode;
+        }
+      }
+    }
+    // port number handling
+    unsigned long long port = adapter.defaults.telnet.port.empty() ? 0 : RteUtils::StringToULL(adapter.defaults.telnet.port);
+    if (m_runDebug.debugger.telnet.find(m_runDebug.debugger.startPname) != m_runDebug.debugger.telnet.end()) {
+      // add primary processor port first
+      auto& startPort = m_runDebug.debugger.telnet[m_runDebug.debugger.startPname].ullPort;
+      if (startPort == 0) {
+        startPort = port;
+      } else {
+        port = startPort;
+      }
+      usedPorts.insert(port);
+    }
+    for (auto& [pname, telnet] : m_runDebug.debugger.telnet) {
+      // add ports for other processors
+      if (pname != m_runDebug.debugger.startPname) {
+        // get customized port if set
+        port = telnet.port.empty() ? port : telnet.ullPort;
+        while (usedPorts.find(port) != usedPorts.end()) {
+          // skip port number if it has already been used
+          port++;
+        }
+        telnet.ullPort = port;
+      }
+    }
+  }
 }
 
 void ProjMgrRunDebug::CollectDebugTopology(const ContextItem& context, const vector<pair<const RteItem*, vector<string>>> debugs,

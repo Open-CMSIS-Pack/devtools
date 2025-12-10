@@ -6841,6 +6841,81 @@ TEST_F(ProjMgrUnitTests, TestRunDebugMulticore) {
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW3.cbuild-run.yml");
 }
 
+TEST_F(ProjMgrUnitTests, TestRunDebugTelnet) {
+  char* argv[7];
+  const string& csolution = testinput_folder + "/TestRunDebug/telnet.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"--active";
+
+  // single core without port, with file mode
+  argv[6] = (char*)"SingleCore";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  stringstream sstream0;
+  const YAML::Node& cbuildrun0 = YAML::LoadFile(testoutput_folder + "/out/telnet+SingleCore.cbuild-run.yml");
+  sstream0 << cbuildrun0["cbuild-run"]["debugger"]["telnet"];
+  EXPECT_EQ(
+R"(- mode: file
+  port: 4444
+  file: telnet+SingleCore)", sstream0.str());
+
+  // dual core without ports
+  argv[6] = (char*)"DualCore";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  const YAML::Node& cbuildrun1 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  stringstream sstream1;
+  sstream1 << cbuildrun1["cbuild-run"]["debugger"]["telnet"];
+  EXPECT_EQ(
+R"(- mode: server
+  pname: cm0_core0
+  port: 4445
+- mode: console
+  pname: cm0_core1
+  port: 4444)", sstream1.str());
+
+  // dual core with start port and file mode
+  argv[6] = (char*)"DualCore@TelnetFile";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  const YAML::Node& cbuildrun2 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  stringstream sstream2;
+  sstream2 << cbuildrun2["cbuild-run"]["debugger"]["telnet"];
+  EXPECT_EQ(
+R"(- mode: monitor
+  pname: cm0_core0
+  port: 5556
+- mode: file
+  pname: cm0_core1
+  port: 5555
+  file: telnet+DualCore.cm0_core1)", sstream2.str());
+
+  // dual core with jlink and no telnet
+  argv[6] = (char*)"DualCore@JLinkNoTelnet";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  const YAML::Node& cbuildrun3 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  stringstream sstream3;
+  sstream3 << cbuildrun3["cbuild-run"]["debugger"]["telnet"];
+  EXPECT_EQ(
+R"(- mode: monitor
+  pname: cm0_core0
+  port: 4445
+- mode: monitor
+  pname: cm0_core1
+  port: 4444)", sstream3.str());
+
+  // warnings
+  StdStreamRedirect streamRedirect;
+  argv[6] = (char*)"DualCore@Warnings";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  string expected = "\
+warning csolution: \\'telnet:\\' pname is required \\(multicore device\\)\n\
+warning csolution: pname \\'unknown\\' does not match any device pname\n\
+";
+  string errStr = streamRedirect.GetErrorString();
+  EXPECT_TRUE(regex_search(errStr, regex(expected)));
+}
+
 TEST_F(ProjMgrUnitTests, Test_Check_Define_Value_With_Quotes) {
   StdStreamRedirect streamRedirect;
   char* argv[6];

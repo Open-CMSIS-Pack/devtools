@@ -284,6 +284,14 @@ struct GdbServerItem {
 };
 
 /**
+ * @brief telnet port item extends TelnetItem containing
+   resolved port number
+*/
+struct TelnetOptionsItem : TelnetItem {
+  unsigned long long ullPort;
+};
+
+/**
  * @brief example environment item containing
  *        project file with extension
  *        subdirectory to be copied
@@ -355,6 +363,7 @@ struct TemplateItem {
  *        debug configuration file
  *        start pname
  *        list of gdbserver items
+ *        list of telnet options items
  *        custom options
 */
 struct DebuggerType {
@@ -365,6 +374,7 @@ struct DebuggerType {
   std::string dbgconf;
   std::string startPname;
   std::vector<GdbServerItem> gdbserver;
+  std::map<std::string, TelnetOptionsItem> telnet;
   CustomItem custom;
 };
 
