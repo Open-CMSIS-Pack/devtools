@@ -2646,6 +2646,14 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
       }
     }
     context.debugger.startPname = m_activeTargetSet.debugger.startPname;
+    for (auto telnet : m_activeTargetSet.debugger.telnet) {
+      if (!telnet.file.empty()) {
+        if (!ProcessSequenceRelative(context, telnet.file, context.csolution->directory)) {
+          return false;
+        }
+      }
+      context.debugger.telnet[telnet.pname] = { telnet };
+    }
     context.debugger.custom = m_activeTargetSet.debugger.custom;
   }
   for (const auto& [filename, fi] : context.rteActiveProject->GetFileInstances()) {

@@ -2217,10 +2217,29 @@
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
-        "gdbserver":       { "$ref": "#/definitions/GdbServersType" }
+        "gdbserver":       { "$ref": "#/definitions/GdbServersType" },
+        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" }
       },
       "additionalProperties": true,
       "required": ["name"]
+    },
+    "TelnetOptionsType": {
+      "title": "telnet:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#telnet-for-pyocd",
+      "description": "Telnet port for connecting remote tools.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/TelnetOptionType" }
+    },
+    "TelnetOptionType": {
+      "type": "object",
+      "properties": {
+        "mode": { "enum": [ "off", "server", "file", "console", "monitor" ], "description": "Redirect output mode." },
+        "pname": { "type": "string", "description": "Processor name of the processor (only required for multi-core systems)." },
+        "port": { "type": "number", "description": "Set TCP/IP port number of Telnet Server." },
+        "file": { "type": "string", "description": "Base path and name of the telnet output file (without extension)."}
+      },
+      "additionalProperties": false,
+      "required": ["mode"]
     },
     "GdbServersType": {
       "title": "gdbserver:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#gdbserver",
@@ -2431,7 +2450,8 @@
         "protocol":        { "enum": [ "jtag", "swd" ], "description": "Selected debug protocol (jtag or swd)." },
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
-        "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." }
+        "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
+        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" }
       },
       "additionalProperties": true,
       "required": ["name"]

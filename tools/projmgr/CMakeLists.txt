@@ -12,8 +12,8 @@ include(FetchContent)
 FetchContent_Declare(
   debug-adapter-registry
   DOWNLOAD_EXTRACT_TIMESTAMP ON
-  URL https://github.com/Open-CMSIS-Pack/debug-adapter-registry/releases/download/v2.12.0/debug-adapter-registry.zip
-  URL_HASH SHA256=bb372b97264496bbcb483d2e6d746427974ccdb8a9b91f42f5f8f2ee274742b0
+  URL https://github.com/Open-CMSIS-Pack/debug-adapter-registry/releases/download/v2.12.1/debug-adapter-registry.zip
+  URL_HASH SHA256=cdba4704cbc8f0d8815508e733b9eb2180c87f749312a6b6938ad5dbe3ace3fa
 )
 FetchContent_MakeAvailable(debug-adapter-registry)
 file(COPY ${debug-adapter-registry_SOURCE_DIR}/schemas/debug-adapters.schema.json DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/schemas)
@@ -51,6 +51,10 @@ SET(PROJMGR_HEADER_FILES ProjMgr.h ProjMgrKernel.h ProjMgrCallback.h
 
 list(TRANSFORM PROJMGR_SOURCE_FILES PREPEND src/)
 list(TRANSFORM PROJMGR_HEADER_FILES PREPEND include/)
+
+if(MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+endif()
 
 add_library(projmgrlib OBJECT
   ${PROJMGR_SOURCE_FILES}

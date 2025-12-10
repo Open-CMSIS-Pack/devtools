@@ -225,6 +225,8 @@ protected:
     const std::map<std::string, RteDeviceProperty*>& pnames);
   void CollectDebugTopology(const ContextItem& context, std::vector<std::pair<const RteItem*, std::vector<std::string>>> debugs,
     const std::map<std::string, RteDeviceProperty*>& pnames);
+  void CollectTelnetOptions(const ContextItem& context, DebugAdapterItem& adapter,
+    const std::map<std::string, RteDeviceProperty*>& pnames);
   CustomItem& CustomMapFind(std::vector<std::pair<std::string, CustomItem>>& customMap, const std::string& key);
   void MergeCustomItems(const CustomItem& src, CustomItem& dst);
 };

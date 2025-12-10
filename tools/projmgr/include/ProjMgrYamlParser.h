@@ -15,6 +15,7 @@
 */
 static constexpr const char* YAML_ACCESS = "access";
 static constexpr const char* YAML_ACCESSPORTS = "accessports";
+static constexpr const char* YAML_ACTIVE = "active";
 static constexpr const char* YAML_ALGORITHM = "algorithm";
 static constexpr const char* YAML_ALIAS = "alias";
 static constexpr const char* YAML_ALIAS_NAME = "alias-name";
@@ -164,6 +165,7 @@ static constexpr const char* YAML_MISC_LIBRARY = "Library";
 static constexpr const char* YAML_MISC_LINK = "Link";
 static constexpr const char* YAML_MISC_LINK_C = "Link-C";
 static constexpr const char* YAML_MISC_LINK_CPP = "Link-CPP";
+static constexpr const char* YAML_MODE = "mode";
 static constexpr const char* YAML_MVE = "mve";
 static constexpr const char* YAML_NAME = "name";
 static constexpr const char* YAML_NOTFORCONTEXT = "not-for-context";
@@ -234,6 +236,7 @@ static constexpr const char* YAML_TARGET_SET = "target-set";
 static constexpr const char* YAML_TARGETTYPE = "target-type";
 static constexpr const char* YAML_TARGETTYPES = "target-types";
 static constexpr const char* YAML_TEMPLATE = "template";
+static constexpr const char* YAML_TELNET = "telnet";
 static constexpr const char* YAML_TIMEOUT = "timeout";
 static constexpr const char* YAML_TRUSTZONE = "trustzone";
 static constexpr const char* YAML_TITLE = "title";
@@ -359,6 +362,7 @@ protected:
   bool ParseLinker(const YAML::Node& parent, const std::string& file, std::vector<LinkerItem>& linker);
   void ParseRte(const YAML::Node& parent, std::string& rteBaseDir);
   void ParseDebugDefaults(const YAML::Node& parent, const std::string& file, DebugAdapterDefaultsItem& defaults);
+  void ParseTelnet(const YAML::Node& parent, const std::string& file, std::vector<TelnetItem>& telnet);
   void ParseCustom(const YAML::Node& parent, const std::vector<std::string>& skip, CustomItem& custom);
   bool GetTypes(const std::string& type, std::string& buildType, std::string& targetType, std::string& pattern);
   bool ValidateCdefault(const std::string& input, const YAML::Node& root);

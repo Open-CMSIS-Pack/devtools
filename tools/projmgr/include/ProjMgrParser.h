@@ -129,6 +129,20 @@ struct MemoryItem {
 };
 
 /**
+ * @brief telnet item containing
+ *        mode
+ *        port
+ *        file
+ *        pname
+*/
+struct TelnetItem {
+  std::string mode;
+  std::string port;
+  std::string file;
+  std::string pname;
+};
+
+/**
  * @brief custom item containing
  *        scalar
  *        array
@@ -147,6 +161,7 @@ struct CustomItem {
  *        debug clock speed
  *        debug configuration file
  *        start pname
+ *        telnet options
  *        custom properties
 */
 struct DebuggerItem {
@@ -155,6 +170,7 @@ struct DebuggerItem {
   std::string clock;
   std::string dbgconf;
   std::string startPname;
+  std::vector<TelnetItem> telnet;
   CustomItem custom;
 };
 
@@ -635,13 +651,37 @@ struct CbuildSetItem {
 };
 
 /**
+ * @brief gdbserver defaults item containing
+ *        gdbserver port
+ *        active flag
+*/
+struct GdbServerDefaults {
+  std::string port;
+  bool active = false;
+};
+
+/**
+ * @brief telnet defaults item containing
+ *        telnet port
+ *        telnet mode
+ *        active flag
+*/
+struct TelnetDefaults {
+  std::string port;
+  std::string mode;
+  bool active = false;
+};
+
+/**
  * @brief debug-adapter defaults item containing
- *        port number of processor
+ *        gdbserver defaults
+ *        telnet defaults
  *        debug protocol(jtag or swd)
  *        debug clock speed
 */
 struct DebugAdapterDefaultsItem {
-  std::string port;
+  GdbServerDefaults gdbserver;
+  TelnetDefaults telnet;
   std::string protocol;
   std::string clock;
   CustomItem custom;
@@ -659,7 +699,6 @@ struct DebugAdapterItem {
   std::string name;
   std::vector<std::string> alias;
   std::string templateFile;
-  bool gdbserver = false;
   DebugAdapterDefaultsItem defaults;
 };
 

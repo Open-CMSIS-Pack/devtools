@@ -32,6 +32,7 @@ protected:
   void SetAccessPortsNode(YAML::Node node, const std::vector<AccessPortType>& accessPorts);
   void SetDatapatchNode(YAML::Node node, const std::vector<DatapatchType>& datapatch);
   void SetGdbServerNode(YAML::Node node, const std::vector<GdbServerItem>& gdbserver);
+  void SetTelnetNode(YAML::Node node, const std::map<std::string, TelnetOptionsItem>& telnet);
   void SetCustomNodes(YAML::Node node, const CustomItem& debugger);
   YAML::Node GetCustomNode(const CustomItem& value);
 };
@@ -112,6 +113,7 @@ void ProjMgrCbuildRun::SetDebuggerNode(YAML::Node node, const DebuggerType& debu
     }
     SetNodeValue(node[YAML_START_PNAME], debugger.startPname);
     SetGdbServerNode(node[YAML_GDBSERVER], debugger.gdbserver);
+    SetTelnetNode(node[YAML_TELNET], debugger.telnet);
     SetCustomNodes(node, debugger.custom);
   }
 }
@@ -146,6 +148,17 @@ void ProjMgrCbuildRun::SetGdbServerNode(YAML::Node node, const std::vector<GdbSe
     gdbserverNode[YAML_PORT] = item.port;
     SetNodeValue(gdbserverNode[YAML_PNAME], item.pname);
     node.push_back(gdbserverNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetTelnetNode(YAML::Node node, const std::map<std::string, TelnetOptionsItem>& telnet) {
+  for (const auto& [pname, item] : telnet) {
+    YAML::Node telnetNode;
+    SetNodeValue(telnetNode[YAML_MODE], item.mode);
+    SetNodeValue(telnetNode[YAML_PNAME], pname);
+    telnetNode[YAML_PORT] = item.ullPort;
+    SetNodeValue(telnetNode[YAML_FILE], FormatPath(item.file, m_directory));
+    node.push_back(telnetNode);
   }
 }
 
