@@ -157,7 +157,9 @@ void ProjMgrCbuildRun::SetTelnetNode(YAML::Node node, const std::map<std::string
     SetNodeValue(telnetNode[YAML_MODE], item.mode);
     SetNodeValue(telnetNode[YAML_PNAME], pname);
     telnetNode[YAML_PORT] = item.ullPort;
-    SetNodeValue(telnetNode[YAML_FILE], FormatPath(item.file, m_directory));
+    if (!item.file.empty()) {
+      SetNodeValue(telnetNode[YAML_FILE], FormatPath(item.file, m_directory));
+    }
     node.push_back(telnetNode);
   }
 }
