@@ -379,7 +379,7 @@ void ProjMgrRunDebug::CollectTelnetOptions(const ContextItem& context, DebugAdap
         usedPorts.insert(m_runDebug.debugger.telnet[pname].ullPort);
       }
       if (value.mode.empty()) {
-        m_runDebug.debugger.telnet[pname].mode = adapter.defaults.telnet.mode.empty() ? "monitor" : adapter.defaults.telnet.mode;
+        m_runDebug.debugger.telnet[pname].mode = adapter.defaults.telnet.mode.empty() ? "off" : adapter.defaults.telnet.mode;
       }
       if (value.mode == "file" && value.file.empty()) {
         m_runDebug.debugger.telnet[pname].file = fileBase + (pname.empty() ? "" : '.' + pname);
@@ -389,8 +389,8 @@ void ProjMgrRunDebug::CollectTelnetOptions(const ContextItem& context, DebugAdap
     if (adapter.defaults.telnet.active) {
       for (const auto& [pname, _] : pnames) {
         auto& telnet = m_runDebug.debugger.telnet[pname];
-        if (telnet.mode.empty() || telnet.mode == "off") {
-          telnet.mode = adapter.defaults.telnet.mode.empty() ? "monitor" : adapter.defaults.telnet.mode;
+        if (telnet.mode.empty()) {
+          telnet.mode = adapter.defaults.telnet.mode.empty() ? "off" : adapter.defaults.telnet.mode;
         }
       }
     }

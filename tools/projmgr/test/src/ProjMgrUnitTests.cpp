@@ -6897,10 +6897,10 @@ R"(- mode: monitor
   stringstream sstream3;
   sstream3 << cbuildrun3["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
-R"(- mode: monitor
+R"(- mode: off
   pname: cm0_core0
   port: 4445
-- mode: monitor
+- mode: off
   pname: cm0_core1
   port: 4444)", sstream3.str());
 
