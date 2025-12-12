@@ -2471,7 +2471,7 @@
         "board":      { "type": "string", "description": "Board name used for west build invocation (default: variable $west-board$)."},
         "device":     { "$ref": "#/definitions/ProcessorNameType" },
         "west-defs":  { "$ref": "#/definitions/WestDefinesType" },
-        "west-opts":  { "type": "string", "description": "Options for the west tool (default: empty)." }
+        "west-opt":   { "type": "array", "description": "Options for the west tool (default: empty).", "items": { "type": "string" }}
       },
       "additionalProperties": false,
       "required": ["app-path"]
