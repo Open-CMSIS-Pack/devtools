@@ -1286,6 +1286,9 @@ void ProjMgr::Clear() {
   m_worker.Clear();
   m_runDebug.Clear();
   ProjMgrLogger::Get().Clear();
+  m_processedContexts.clear();
+  m_allContexts.clear();
+  m_failedContext.clear();
 }
 
 void ProjMgr::InitSolution(const std::string& csolution, const std::string& activeTargetSet, const bool& updateRte) {

@@ -101,6 +101,7 @@ struct PackageItem {
   PackInfo    pack;
   std::string path;
   std::string origin;
+  std::string selectedBy;
 };
 
 /**
@@ -283,6 +284,14 @@ struct GdbServerItem {
 };
 
 /**
+ * @brief telnet port item extends TelnetItem containing
+   resolved port number
+*/
+struct TelnetOptionsItem : TelnetItem {
+  unsigned long long ullPort;
+};
+
+/**
  * @brief example environment item containing
  *        project file with extension
  *        subdirectory to be copied
@@ -354,6 +363,7 @@ struct TemplateItem {
  *        debug configuration file
  *        start pname
  *        list of gdbserver items
+ *        list of telnet options items
  *        custom options
 */
 struct DebuggerType {
@@ -364,6 +374,7 @@ struct DebuggerType {
   std::string dbgconf;
   std::string startPname;
   std::vector<GdbServerItem> gdbserver;
+  std::map<std::string, TelnetOptionsItem> telnet;
   CustomItem custom;
 };
 
@@ -522,7 +533,7 @@ struct ContextItem {
   RtePackage* devicePack = nullptr;
   RtePackage* boardPack = nullptr;
   bool precedences;
-  std::map<std::string, std::set<std::string>> userInputToResolvedPackIdMap;
+  std::map<std::string, std::map<std::string, PackageItem> > userInputToResolvedPackIdMap;
   StrSet localPackPaths;
   StrVec dependsOn;
   std::map<std::string, RteItem*> packLayers;
@@ -1070,7 +1081,7 @@ public:
   /**
    * @brief collect examples
    * @param context item
-   * @param environments filter 
+   * @param environments filter
    * @return vector of example items
   */
   std::vector<ExampleItem> CollectExamples(const ContextItem& context, const StrVec& filter);
@@ -1081,7 +1092,7 @@ public:
    * @return vector of template items
   */
   std::vector<TemplateItem> CollectTemplates(const ContextItem& context);
-  
+
   /**
    * @brief check if all selected contexts have lib output
    * @param reference to processed contexts

@@ -47,11 +47,12 @@ const string filenameBackup0 = RteUtils::SlashesToOsSlashes(filenameRegular + ".
 const string filenameBackup1 = RteUtils::SlashesToOsSlashes(filenameRegular + ".0001");
 const string pathInvalid = dirnameSubdir + "/Invalid";
 
-// For Canonical Tests
+// For Canonical and Equivalent tests
 const string filenameBackslashForCanonical = dirnameSubdirBackslash + "\\file.txt";
 const string dirnameSubdirBackslashForCanonical = dirnameBase + "\\dir\\subdir";
 const string dirnameMixedWithTrailingForCanonical = dirnameBase + "/dir\\subdir/";
 const string dirnameBackslashWithTrailingForCanonical = dirnameBase + "\\dir\\subdir\\";
+const string filenameMixedForCanonical = dirnameMixedWithTrailingForCanonical + "\\file.txt";
 
 static set<string, VersionCmp::Greater> sortedFileSet = {
   "foo.h",
@@ -859,7 +860,7 @@ TEST_F(RteFsUtilsTest, MakePathCanonical) {
   EXPECT_EQ(ret, filenameCanonical);
 
   // Test filename with mixed separators
-  ret = RteFsUtils::MakePathCanonical(filenameBackslashForCanonical);
+  ret = RteFsUtils::MakePathCanonical(filenameMixedForCanonical);
   EXPECT_EQ(ret, filenameCanonical);
 
   // Test dirname with regular separators and trailing
@@ -884,6 +885,61 @@ TEST_F(RteFsUtilsTest, MakePathCanonical) {
 
   RteFsUtils::RemoveDir(dirnameSubdir);
 }
+
+TEST_F(RteFsUtilsTest, Equivalent) {
+
+
+  EXPECT_TRUE(RteFsUtils::Equivalent("",""));
+  EXPECT_TRUE(RteFsUtils::Equivalent("foo","foo"));
+
+  EXPECT_FALSE(RteFsUtils::Equivalent("","foo"));
+  EXPECT_FALSE(RteFsUtils::Equivalent("foo",""));
+
+
+  // now test different combinations: files must exist!
+  string ret;
+  error_code ec;
+  const string filenameCanonical = fs::current_path(ec).append(filenameRegular).generic_string();
+  const string dirnameCanonical = fs::current_path(ec).append(dirnameSubdir).generic_string();
+
+  // create file and with parent directories for reliability of the tests
+  RteFsUtils::CreateTextFile(filenameRegular, "foo");
+
+  // check filename with regular separators
+  EXPECT_TRUE(RteFsUtils::Equivalent(filenameRegular, filenameCanonical));
+
+  // Even longer path are equal
+  string nonExistingFileRel = dirnameSubdir + "/non/existing/path/../file.txt";
+  string nonExistingFileAbs = dirnameCanonical + "/non/existing/file.txt";
+  EXPECT_TRUE(RteFsUtils::Equivalent(nonExistingFileRel, nonExistingFileAbs));
+
+  // Test filenames with backslashes separators
+  EXPECT_TRUE(RteFsUtils::Equivalent(filenameBackslashForCanonical, filenameCanonical));
+
+  // Test filename with mixed separators
+  EXPECT_TRUE(RteFsUtils::Equivalent(filenameMixedForCanonical, filenameCanonical));
+
+  //Test filename with mixed separators against backslashes
+  EXPECT_TRUE(RteFsUtils::Equivalent(filenameMixedForCanonical, filenameBackslashForCanonical));
+
+  // Test dirname with regular separators and trailing
+  EXPECT_TRUE(RteFsUtils::Equivalent(dirnameSubdirWithTrailing, dirnameCanonical));
+
+  // Test dirname with backslashes separators and trailing
+  EXPECT_TRUE(RteFsUtils::Equivalent(dirnameBackslashWithTrailingForCanonical, dirnameCanonical));
+
+  // Test dirname with mixed separators and trailing
+  EXPECT_TRUE(RteFsUtils::Equivalent(dirnameMixedWithTrailingForCanonical, dirnameCanonical));
+
+  // Test path with dot inside
+  EXPECT_TRUE(RteFsUtils::Equivalent(dirnameDotSubdir, dirnameCanonical));
+
+  // Test path with two dots inside
+  EXPECT_TRUE(RteFsUtils::Equivalent(dirnameDotDotSubdir, dirnameCanonical));
+
+  RteFsUtils::RemoveDir(dirnameSubdir);
+}
+
 
 TEST_F(RteFsUtilsTest, GetCurrentFolder) {
   error_code ec;

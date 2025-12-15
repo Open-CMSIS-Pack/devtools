@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+
+  compiler: AC6
+
+  target-types:
+    - type: SingleCore
+      device: RteTest_ARMCM0
+      target-set:
+        - set:
+          debugger:
+            name: CMSIS-DAP
+            telnet:
+              - mode: file
+          images:
+            - project-context: telnet
+  
+    - type: DualCore
+      device: RteTest_ARMCM0_Dual
+      target-set:
+        - set:
+          images:
+            - project-context: core0
+            - project-context: core1
+          debugger:
+            name: CMSIS-DAP
+            start-pname: cm0_core1
+            telnet:
+              - mode: console
+                pname: cm0_core1
+              - mode: server
+                pname: cm0_core0
+
+        - set: TelnetFile
+          images:
+            - project-context: core0
+            - project-context: core1
+          debugger:
+            name: CMSIS-DAP
+            start-pname: cm0_core1
+            telnet:
+              - mode: file
+                pname: cm0_core1
+                port: 5555
+              - mode: monitor
+                pname: cm0_core0
+
+        - set: JLinkNoTelnet
+          images:
+            - project-context: core0
+            - project-context: core1
+          debugger:
+            name: J-Link Server
+            start-pname: cm0_core1
+
+        - set: Warnings
+          images:
+            - project-context: core0
+            - project-context: core1
+          debugger:
+            name: CMSIS-DAP
+            start-pname: cm0_core1
+            telnet:
+              - mode: monitor
+              - mode: monitor
+                pname: unknown
+  projects:
+    - project: telnet.cproject.yml
+      for-context: +SingleCore
+    - project: core0.cproject.yml
+      for-context: +DualCore
+    - project: core1.cproject.yml
+      for-context: +DualCore
+
+  packs:
+    - pack: ARM::RteTest_DFP

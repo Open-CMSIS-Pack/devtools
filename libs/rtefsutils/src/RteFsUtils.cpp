@@ -558,6 +558,25 @@ string RteFsUtils::ParentPath(const string& path) {
   return fs::path(path).parent_path().generic_string();
 }
 
+bool RteFsUtils::Equivalent(const std::string& p1, const std::string& p2) {
+  if(p1 == p2) {
+    return true;
+  }
+
+  if(p1.empty() || p2.empty()) {
+    return false;
+  }
+  error_code _ec;
+  if(fs::equivalent(p1, p2, _ec)) {
+    return true;
+  }
+  if(MakePathCanonical(p1) == MakePathCanonical(p2)) {
+    return true;
+  }
+  return false;
+}
+
+
 string RteFsUtils::LexicallyNormal(const string& path) {
   string lexicallyNormal = fs::path(path).lexically_normal().generic_string();
   if ((lexicallyNormal.length() > 1) && (lexicallyNormal.back() == '/')) {

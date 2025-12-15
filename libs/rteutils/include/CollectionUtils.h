@@ -73,6 +73,21 @@ bool contains_key(const M& m, const typename M::key_type& k) {
 }
 
 /**
+ * @brief Returns set of key in the map
+ * @tparam M template parameter representing a map
+ * @param m a key-value map
+ * @return std::set of keys
+*/
+template <typename M>
+auto key_set(const M& m) {
+    using Key = typename M::key_type;
+    std::set<Key> ks;
+    for (const auto& kv : m)
+        ks.insert(kv.first);
+    return ks;
+}
+
+/**
   * @brief string pair
  */
 typedef std::pair<std::string, std::string> StrPair;

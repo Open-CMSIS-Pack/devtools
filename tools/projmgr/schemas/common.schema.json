@@ -1634,7 +1634,7 @@
       "title": "pack:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#pack",
       "type": "string",
       "pattern": "^([a-zA-Z0-9_ \\.-]+)((::[a-zA-Z0-9_ \\.\\*-]+)(@(>=|\\~|\\^)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?)?$",
-      "description": "Name of a software pack with the following format:\n  [vendor ::] pack-name # Use the latest version of the pack\n  [vendor ::] pack-name@version # With exact version\n  [vendor ::] pack-name@>=version # With version equal or higher\n  [vendor ::] pack-name@^version # With version equal or higher but the same major version\n  [vendor ::] pack-name@~version # With version equal or higher but the same major and minor version"
+      "description": "Name of a software pack with the following format:\n  vendor::pack-name # Use the latest installed version of the pack\n  vendor::pack-name@version # With exact version\n  vendor::pack-name@>=version # With version equal or higher\n  vendor::pack-name@^version # With version equal or higher but the same major version\n  vendor::pack-name@~version # With version equal or higher but the same major and minor version"
     },
     "VersionlessPackID": {
       "title": "pack:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#pack",
@@ -2217,10 +2217,29 @@
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
-        "gdbserver":       { "$ref": "#/definitions/GdbServersType" }
+        "gdbserver":       { "$ref": "#/definitions/GdbServersType" },
+        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" }
       },
       "additionalProperties": true,
       "required": ["name"]
+    },
+    "TelnetOptionsType": {
+      "title": "telnet:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#telnet-for-pyocd",
+      "description": "Telnet port for connecting remote tools.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/TelnetOptionType" }
+    },
+    "TelnetOptionType": {
+      "type": "object",
+      "properties": {
+        "mode": { "enum": [ "off", "server", "file", "console", "monitor" ], "description": "Redirect output mode." },
+        "pname": { "type": "string", "description": "Processor name of the processor (only required for multi-core systems)." },
+        "port": { "type": "number", "description": "Set TCP/IP port number of Telnet Server." },
+        "file": { "type": "string", "description": "Base path and name of the telnet output file (without extension)."}
+      },
+      "additionalProperties": false,
+      "required": ["mode"]
     },
     "GdbServersType": {
       "title": "gdbserver:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#gdbserver",
@@ -2431,7 +2450,8 @@
         "protocol":        { "enum": [ "jtag", "swd" ], "description": "Selected debug protocol (jtag or swd)." },
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
-        "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." }
+        "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
+        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" }
       },
       "additionalProperties": true,
       "required": ["name"]
@@ -2451,7 +2471,7 @@
         "board":      { "type": "string", "description": "Board name used for west build invocation (default: variable $west-board$)."},
         "device":     { "$ref": "#/definitions/ProcessorNameType" },
         "west-defs":  { "$ref": "#/definitions/WestDefinesType" },
-        "west-opts":  { "type": "string", "description": "Options for the west tool (default: empty)." }
+        "west-opt":   { "type": "array", "description": "Options for the west tool (default: empty).", "items": { "type": "string" }}
       },
       "additionalProperties": false,
       "required": ["app-path"]

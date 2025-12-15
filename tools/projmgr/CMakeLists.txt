@@ -12,8 +12,8 @@ include(FetchContent)
 FetchContent_Declare(
   debug-adapter-registry
   DOWNLOAD_EXTRACT_TIMESTAMP ON
-  URL https://github.com/Open-CMSIS-Pack/debug-adapter-registry/releases/download/v2.12.0/debug-adapter-registry.zip
-  URL_HASH SHA256=bb372b97264496bbcb483d2e6d746427974ccdb8a9b91f42f5f8f2ee274742b0
+  URL https://github.com/Open-CMSIS-Pack/debug-adapter-registry/releases/download/v2.12.1/debug-adapter-registry.zip
+  URL_HASH SHA256=13439ad3b30258da9bcfe2c6ce2f5afbb43a9025f73450854a63c4b443d6db98
 )
 FetchContent_MakeAvailable(debug-adapter-registry)
 file(COPY ${debug-adapter-registry_SOURCE_DIR}/schemas/debug-adapters.schema.json DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/schemas)
@@ -24,8 +24,8 @@ include(FetchContent)
 FetchContent_Declare(
   rpc-interface
   DOWNLOAD_EXTRACT_TIMESTAMP ON
-  URL https://github.com/Open-CMSIS-Pack/csolution-rpc/releases/download/v0.0.5/csolution-rpc.zip
-  URL_HASH SHA256=94bd65ec0f8054dc7685a60812f00bc32cc7f9227bec5abdbaa7215fb6b6bd27
+  URL https://github.com/Open-CMSIS-Pack/csolution-rpc/releases/download/v0.0.6/csolution-rpc.zip
+  URL_HASH SHA256=86bce42eaef998cb37f3623931068056625d471e80032695946081531359ba5f
 )
 FetchContent_MakeAvailable(rpc-interface)
 
@@ -51,6 +51,10 @@ SET(PROJMGR_HEADER_FILES ProjMgr.h ProjMgrKernel.h ProjMgrCallback.h
 
 list(TRANSFORM PROJMGR_SOURCE_FILES PREPEND src/)
 list(TRANSFORM PROJMGR_HEADER_FILES PREPEND include/)
+
+if(MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+endif()
 
 add_library(projmgrlib OBJECT
   ${PROJMGR_SOURCE_FILES}

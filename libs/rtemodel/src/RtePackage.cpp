@@ -115,6 +115,11 @@ void RtePackage::Clear()
   RteItem::Clear();
 }
 
+const std::string& RtePackage::GetDocValue() const
+{
+  return GetChildAttribute("description", "overview");
+}
+
 bool RtePackage::IsDeprecated() const
 {
   if (m_nDeprecated >= 0)

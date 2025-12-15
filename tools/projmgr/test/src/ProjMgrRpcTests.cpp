@@ -40,7 +40,7 @@ string ProjMgrRpcTests::FormatRequest(const int id, const string& method, const 
   request["jsonrpc"] = "2.0";
   request["id"] = id;
   request["method"] = method;
-  if (!params.is_null()) {
+  if(!params.is_null()) {
     request["params"] = params;
   }
   return request.dump();
@@ -51,7 +51,7 @@ string ProjMgrRpcTests::CreateLoadRequests(const string& solution, const string&
   string loadSolutionRequest;
   if(!solution.empty()) {
     auto csolutionPath = testinput_folder + solution;
-    loadSolutionRequest = FormatRequest(2, "LoadSolution", json({{ "solution", csolutionPath }, { "activeTarget", activeTarget } }));
+    loadSolutionRequest = FormatRequest(2, "LoadSolution", json({{ "solution", csolutionPath }, { "activeTarget", activeTarget }}));
     if(!contextList.empty()) {
       YAML::Node cbuildset;
       cbuildset["cbuild-set"]["generated-by"] = "ProjMrgUnitTests";
@@ -80,12 +80,12 @@ bool ProjMgrRpcTests::CompareRpcResponse(const json& response, const string& ref
 vector<json> ProjMgrRpcTests::RunRpcMethods(const string& strIn) {
   StdStreamRedirect streamRedirect;
   streamRedirect.SetInString(strIn);
-  char* argv[] = { (char*)"csolution", (char*)"rpc" };
+  char* argv[] = {(char*)"csolution", (char*)"rpc"};
   EXPECT_EQ(0, RunProjMgr(2, argv, m_envp));
   string line;
   vector<json> responses;
   istringstream iss(streamRedirect.GetOutString());
-  while (getline(iss, line)) {
+  while(getline(iss, line)) {
     responses.push_back(json::parse(line));
   }
   return responses;
@@ -94,7 +94,7 @@ vector<json> ProjMgrRpcTests::RunRpcMethods(const string& strIn) {
 string ProjMgrRpcTests::RunRpcMethodsWithContent(const string& strIn) {
   StdStreamRedirect streamRedirect;
   streamRedirect.SetInString(strIn);
-  char* argv[] = { (char*)"csolution", (char*)"rpc", (char*)"--content-length" };
+  char* argv[] = {(char*)"csolution", (char*)"rpc", (char*)"--content-length"};
   EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
   return streamRedirect.GetOutString();
 }
@@ -158,7 +158,7 @@ TEST_F(ProjMgrRpcTests, RpcLoadNotSolution) {
 
 TEST_F(ProjMgrRpcTests, RpcLoadSolutionNoPacks) {
   auto csolutionPath = testinput_folder + "/TestRpc/minimal.csolution.yml";
-  const auto& requests = FormatRequest(1, "LoadSolution", json({ { "solution", csolutionPath }, { "activeTarget", "TestHW" } }));
+  const auto& requests = FormatRequest(1, "LoadSolution", json({{ "solution", csolutionPath }, { "activeTarget", "TestHW" }}));
   const auto& responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
   string msg = responses[0]["result"]["message"];
@@ -167,7 +167,7 @@ TEST_F(ProjMgrRpcTests, RpcLoadSolutionNoPacks) {
 
 TEST_F(ProjMgrRpcTests, RpcDeviceListNoPacks) {
   const auto requests = FormatRequest(1, "GetDeviceList", json({{"context", ""},{ "namePattern", ""}, {"vendor", ""}})) +
-                        FormatRequest(2, "GetDeviceInfo", json({{ "id", "ARM::RteTest_ARMCM0"}}));
+    FormatRequest(2, "GetDeviceInfo", json({{ "id", "ARM::RteTest_ARMCM0"}}));
   const auto& responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
   string msg = responses[0]["result"]["message"];
@@ -299,7 +299,7 @@ TEST_F(ProjMgrRpcTests, RpcDeviceInfo) {
 
 TEST_F(ProjMgrRpcTests, RpcBoardListNoPacks) {
   const auto requests = FormatRequest(1, "GetBoardList", json({{"context", ""},{ "namePattern", ""}, {"vendor", ""}})) +
-                        FormatRequest(2, "GetBoardInfo", json({{ "id", "ARM::RteTest_ARMCM0"}}));
+    FormatRequest(2, "GetBoardInfo", json({{ "id", "ARM::RteTest_ARMCM0"}}));
   const auto& responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
   string msg = responses[0]["result"]["message"];
@@ -345,7 +345,7 @@ TEST_F(ProjMgrRpcTests, RpcBoardListNoContext) {
 
 TEST_F(ProjMgrRpcTests, RpcBoardListContext) {
 
- string context = "selectable+CM0";
+  string context = "selectable+CM0";
   vector<string> contextList = {
     context
   };
@@ -384,7 +384,7 @@ TEST_F(ProjMgrRpcTests, RpcBoardInfo) {
   //  only vendor => no ID
   requests += FormatRequest(7, "GetBoardInfo", json({{ "id", "Keil::"}}));
   // board with debugger
-  requests += FormatRequest(8, "GetBoardInfo", json({{ "id", "Keil::RteTest-Test-board With.Memory:1.1.1" }}));  
+  requests += FormatRequest(8, "GetBoardInfo", json({{ "id", "Keil::RteTest-Test-board With.Memory:1.1.1" }}));
 
   const auto responses = RunRpcMethods(requests);
   EXPECT_TRUE(responses[0]["result"]["success"]);
@@ -467,8 +467,8 @@ TEST_F(ProjMgrRpcTests, RpcValidateComponents) {
   };
   auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
   int id = 3;
-  for (const auto& context : contextList) {
-    requests += FormatRequest(id++, "ValidateComponents", json({ { "context", context } }));
+  for(const auto& context : contextList) {
+    requests += FormatRequest(id++, "ValidateComponents", json({{ "context", context }}));
   }
 
   const auto& responses = RunRpcMethods(requests);
@@ -644,7 +644,7 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   vector<string> contextList = {
     context
   };
-  RpcArgs::Options opt{ "corelayer.yml", "@>=0.1.0", true};
+  RpcArgs::Options opt{"core.clayer.yml", "@>=0.1.0", true};
   json param;
   param["context"] = context;
   param["id"] = "ARM::RteTest:CORE";
@@ -654,7 +654,7 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
   requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
   requests += FormatRequest(4, "SelectComponent", param);
-  requests += FormatRequest(5, "Apply", param);
+  requests += FormatRequest(5, "Apply", json({{ "context", context }}));
   requests += FormatRequest(6, "GetUsedItems", json({{ "context", context }}));
 
   const auto& responses = RunRpcMethods(requests);
@@ -662,16 +662,27 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   EXPECT_TRUE(responses[2]["result"]["success"]);
   auto components = responses[2]["result"]["components"];
   auto packs = responses[2]["result"]["packs"];
-  EXPECT_EQ(packs[0]["id"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs.size(), 2);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
   EXPECT_EQ(components[0]["id"], "Device:Startup&RteTest Startup");
   EXPECT_EQ(components[0]["resolvedComponent"]["id"], "ARM::Device:Startup&RteTest Startup@2.0.3");
 
+  EXPECT_TRUE(responses[3]["result"]["success"]); // select successful
+
   EXPECT_TRUE(responses[4]["result"]["success"]); // apply successful
 
-  EXPECT_TRUE(responses[5]["result"]["success"]); // select successful
   components = responses[5]["result"]["components"];
   packs = responses[5]["result"]["packs"];
-  EXPECT_EQ(packs[0]["id"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs.size(), 3); // added reference to layer file
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@0.2.0");
+  string origin = packs[0]["origin"];
+  EXPECT_TRUE(origin.find(".csolution.yml") != string::npos);
+  EXPECT_TRUE(!!packs[0]["selected"]);
+  EXPECT_EQ(packs[2]["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs[2]["origin"], "core.clayer.yml");
+  EXPECT_TRUE(!!packs[2]["selected"]);
+
   EXPECT_EQ(components[0]["id"], "Device:Startup&RteTest Startup");
   EXPECT_EQ(components[0]["resolvedComponent"]["id"], "ARM::Device:Startup&RteTest Startup@2.0.3");
 
@@ -680,10 +691,204 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   EXPECT_EQ(RteUtils::ExtractPrefix(id, "::"), "ARM");
   EXPECT_EQ(RteUtils::ExtractSuffix(id, "@", true), "@>=0.1.0");
   EXPECT_EQ(components[1]["resolvedComponent"]["id"], "ARM::RteTest:CORE@0.1.1");
-  EXPECT_EQ(components[1]["options"]["layer"], "corelayer.yml");
+  EXPECT_EQ(components[1]["options"]["layer"], "core.clayer.yml");
   EXPECT_EQ(components[1]["options"]["explicitVersion"], "@>=0.1.0");
   EXPECT_TRUE(components[1]["options"]["explicitVendor"]);
+
 }
+
+TEST_F(ProjMgrRpcTests, RpcGetPacksInfoSimple) {
+  string context = "selectable+CM0";
+  vector<string> contextList = {
+    context
+  };
+
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
+  requests += FormatRequest(5, "GetPacksInfo", json({{ "context", context }, {"all", true}}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+  string origin = packs[0]["origin"];
+  EXPECT_TRUE(origin.find(".csolution.yml") != string::npos);
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
+  auto packInfos = responses[3]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 2);
+  auto& pack = packInfos[1];
+
+  EXPECT_EQ(pack["id"], "ARM::RteTest_DFP@0.2.0");
+  auto& refs = pack["references"];
+  EXPECT_EQ(refs.size(), 1);
+
+  EXPECT_TRUE(!pack["description"].empty());
+
+  packInfos = responses[4]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 8);
+  EXPECT_EQ(packInfos[7]["id"], "SomeVendor::RteTest@0.0.1");
+  EXPECT_EQ(packInfos[7]["references"].size(), 0);
+}
+
+TEST_F(ProjMgrRpcTests, RpcGetPacksInfo) {
+  string context = "test1.Release+CM0";
+  vector<string> contextList = {
+    context
+  };
+
+  auto requests = CreateLoadRequests("/TestSolution/test_pack_requirements.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
+  requests += FormatRequest(5, "GetPacksInfo", json({{ "context", context }, {"all", true}}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@>=0.2.0");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
+  auto packInfos = responses[3]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 2);
+  EXPECT_EQ(packInfos[1]["id"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_TRUE(packInfos[1]["used"]);
+
+  packInfos = responses[4]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 8);
+  EXPECT_EQ(packInfos[7]["id"], "SomeVendor::RteTest@0.0.1");
+  EXPECT_FALSE(packInfos[7].contains("used"));
+}
+
+
+TEST_F(ProjMgrRpcTests, RpcSelectPack) {
+  string context = "test1.Release+CM0";
+  vector<string> contextList = {
+    context
+  };
+
+  auto requests = CreateLoadRequests("/TestSolution/test_pack_requirements.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", true}}));
+
+  // unselect pack
+  RpcArgs::PackReference ref;
+  ref.pack = "ARM::RteTestRequired";
+  ref.selected = false;
+  requests += FormatRequest(5, "SelectPack", json({{ "context", context }, {"pack", ref}}));
+
+  // select in another origin
+  ref.origin = "my.clayer.yml";
+  ref.resolvedPack = "ARM::RteTestRequired@1.0.1-local"; // pretend we keep resolved value
+  ref.selected = true;
+  requests += FormatRequest(6, "SelectPack", json({{ "context", context }, {"pack", ref}}));
+
+  // select another pack
+  ref.pack = "SomeVendor::RteTest@^0.0.1";
+  ref.resolvedPack = "SomeVendor::RteTest@0.0.1";
+  ref.selected = true;
+  requests += FormatRequest(7, "SelectPack", json({{ "context", context }, {"pack", ref}})); // select in another origin
+
+  // select non-existing pack with path
+  ref.pack = "Foo::Bar";
+  ref.origin = "my.cproject.yml";
+  ref.resolvedPack = "";
+  ref.selected = true;
+  ref.path = "path/To/Foo/Bar";
+  requests += FormatRequest(8, "SelectPack", json({{ "context", context }, {"pack", ref}})); // select in another origin
+
+  requests += FormatRequest(9, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(10, "Apply", json({{ "context", context }}));
+  requests += FormatRequest(11, "GetUsedItems", json({{ "context", context }})); // should purge non-selected
+  requests += FormatRequest(12, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 2);
+
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@>=0.2.0");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs[1]["pack"], "ARM::RteTestRequired");
+  EXPECT_EQ(packs[1]["resolvedPack"], "ARM::RteTestRequired@1.0.1-local");
+
+  string origin = packs[1]["origin"];
+  EXPECT_TRUE(origin.find(".csolution.yml") != string::npos);
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
+  auto packInfos = responses[3]["result"]["packs"];
+
+  packInfos = responses[3]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 8);
+  EXPECT_EQ(packInfos[3]["id"], "ARM::RteTestRequired@1.0.1-local");
+  EXPECT_FALSE(packInfos[3].contains("used"));
+  EXPECT_EQ(packInfos[5]["id"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_TRUE(packInfos[5]["used"]);
+  EXPECT_EQ(packInfos[7]["id"], "SomeVendor::RteTest@0.0.1");
+  EXPECT_FALSE(packInfos[7].contains("used"));
+
+// before apply
+  packs = responses[8]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 5);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@>=0.2.0");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+
+  EXPECT_EQ(packs[1]["pack"], "ARM::RteTestRequired");
+  EXPECT_EQ(packs[1]["resolvedPack"], "ARM::RteTestRequired@1.0.1-local");
+  EXPECT_FALSE(packs[1]["selected"]);
+
+  EXPECT_EQ(packs[2]["pack"], "ARM::RteTestRequired");
+  EXPECT_EQ(packs[2]["resolvedPack"], "ARM::RteTestRequired@1.0.1-local");
+  EXPECT_EQ(packs[2]["origin"], "my.clayer.yml");
+  EXPECT_TRUE(packs[2]["selected"]);
+
+  EXPECT_EQ(packs[3]["pack"], "SomeVendor::RteTest@^0.0.1");
+  EXPECT_EQ(packs[3]["resolvedPack"], "SomeVendor::RteTest@0.0.1");
+  EXPECT_EQ(packs[3]["origin"], "my.clayer.yml");
+  EXPECT_TRUE(packs[3]["selected"]);
+
+  EXPECT_EQ(packs[4]["pack"], "Foo::Bar");
+  string resolved = packs[4].contains("resolvedPack") ? packs[4]["resolvedPack"] : "";
+  EXPECT_TRUE(resolved.empty());
+  EXPECT_EQ(packs[4]["origin"], "my.cproject.yml");
+  EXPECT_TRUE(packs[4]["selected"]);
+
+// after apply
+
+  packs = responses[10]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 4);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@>=0.2.0");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+
+  EXPECT_EQ(packs[1]["pack"], "ARM::RteTestRequired");
+  EXPECT_EQ(packs[1]["resolvedPack"], "ARM::RteTestRequired@1.0.1-local");
+  EXPECT_EQ(packs[1]["origin"], "my.clayer.yml");
+  EXPECT_TRUE(packs[1]["selected"]);
+
+  EXPECT_EQ(packs[2]["pack"], "SomeVendor::RteTest@^0.0.1");
+  EXPECT_EQ(packs[2]["resolvedPack"], "SomeVendor::RteTest@0.0.1");
+  EXPECT_EQ(packs[2]["origin"], "my.clayer.yml");
+  EXPECT_TRUE(packs[2]["selected"]);
+
+  EXPECT_EQ(packs[3]["pack"], "Foo::Bar");
+  resolved = packs[3].contains("resolvedPack") ? packs[3]["resolvedPack"] : "";
+  EXPECT_TRUE(resolved.empty());
+  EXPECT_EQ(packs[3]["origin"], "my.cproject.yml");
+  EXPECT_TRUE(packs[3]["selected"]);
+
+  // list packs
+  // TODO: updated test when unresolved packs will be listed
+  packInfos = responses[11]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 3);
+
+}
+
+
 
 TEST_F(ProjMgrRpcTests, RpcGetDraftProjects) {
   // filter 'board'
@@ -728,7 +933,7 @@ TEST_F(ProjMgrRpcTests, RpcGetDraftProjects) {
   // filter 'device' that's not mounted on any board
   requests =
     FormatRequest(1, "LoadPacks") +
-    FormatRequest(2, "GetDraftProjects", json{ { "filter", {{ "device", "RteTestGen_ARMCM0" }}} });
+    FormatRequest(2, "GetDraftProjects", json{{ "filter", {{ "device", "RteTestGen_ARMCM0" }}}});
   responses = RunRpcMethods(requests);
   EXPECT_TRUE(responses[1]["result"]["success"]);
   EXPECT_FALSE(responses[1]["result"].contains("examples"));
@@ -773,7 +978,7 @@ TEST_F(ProjMgrRpcTests, RpcGetDraftProjects) {
 TEST_F(ProjMgrRpcTests, RpcConvertSolution) {
   auto csolutionPath = testinput_folder + "/TestRpc/minimal.csolution.yml";
   auto requests = FormatRequest(1, "ConvertSolution",
-    json({ { "solution", csolutionPath }, { "activeTarget", "TestHW" }, { "updateRte", true } }));
+    json({{ "solution", csolutionPath }, { "activeTarget", "TestHW" }, { "updateRte", true }}));
   auto responses = RunRpcMethods(requests);
   EXPECT_TRUE(responses[0]["result"]["success"]);
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestRpc/minimal.cbuild-idx.yml"));
@@ -784,14 +989,14 @@ TEST_F(ProjMgrRpcTests, RpcConvertSolution) {
   // convert fail
   csolutionPath = testinput_folder + "/TestRpc/unknown-component.csolution.yml";
   requests = FormatRequest(1, "ConvertSolution",
-    json({ { "solution", csolutionPath }, { "activeTarget", "" }, { "updateRte", true } }));
+    json({{ "solution", csolutionPath }, { "activeTarget", "" }, { "updateRte", true }}));
   responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
 
   // undefined compiler
   csolutionPath = testinput_folder + "/TestSolution/SelectableToolchains/select-compiler.csolution.yml";
   requests = FormatRequest(1, "ConvertSolution",
-    json({ { "solution", csolutionPath }, { "activeTarget", "" }, { "updateRte", true } }));
+    json({{ "solution", csolutionPath }, { "activeTarget", "" }, { "updateRte", true }}));
   responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
   EXPECT_EQ(responses[0]["result"]["selectCompiler"][0], "AC6@>=6.0.0");
@@ -800,7 +1005,7 @@ TEST_F(ProjMgrRpcTests, RpcConvertSolution) {
   // undefined layer
   csolutionPath = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
   requests = FormatRequest(1, "ConvertSolution",
-    json({ { "solution", csolutionPath }, { "activeTarget", "" }, { "updateRte", true } }));
+    json({{ "solution", csolutionPath }, { "activeTarget", "" }, { "updateRte", true }}));
   responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
   EXPECT_EQ(responses[0]["result"]["undefinedLayers"][0], "NotDefined");
@@ -809,7 +1014,7 @@ TEST_F(ProjMgrRpcTests, RpcConvertSolution) {
 TEST_F(ProjMgrRpcTests, RpcDiscoverLayers) {
   auto csolutionPath = testinput_folder + "/TestLayers/config.csolution.yml";
   auto requests = FormatRequest(1, "DiscoverLayers",
-    json({ { "solution", csolutionPath }, { "activeTarget", "" } }));
+    json({{ "solution", csolutionPath }, { "activeTarget", "" }}));
   auto responses = RunRpcMethods(requests);
 
   // valid configurations: compare response with golden reference
@@ -819,7 +1024,7 @@ TEST_F(ProjMgrRpcTests, RpcDiscoverLayers) {
   // unknown active target set
   csolutionPath = testinput_folder + "/TestLayers/config.csolution.yml";
   requests = FormatRequest(1, "DiscoverLayers",
-    json({ { "solution", csolutionPath }, { "activeTarget", "unknown" } }));
+    json({{ "solution", csolutionPath }, { "activeTarget", "unknown" }}));
   responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
   EXPECT_EQ(responses[0]["result"]["message"], "Setup of solution contexts failed");
@@ -827,7 +1032,7 @@ TEST_F(ProjMgrRpcTests, RpcDiscoverLayers) {
   // no compatible layer combination
   csolutionPath = testinput_folder + "/TestLayers/variables-notdefined.csolution.yml";
   requests = FormatRequest(1, "DiscoverLayers",
-    json({ { "solution", csolutionPath }, { "activeTarget", "" } }));
+    json({{ "solution", csolutionPath }, { "activeTarget", "" }}));
   responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
   EXPECT_EQ(responses[0]["result"]["message"], "No compatible software layer found. Review required connections of the project");
@@ -836,9 +1041,9 @@ TEST_F(ProjMgrRpcTests, RpcDiscoverLayers) {
 TEST_F(ProjMgrRpcTests, RpcListMissingPacks) {
   auto csolutionPath = testinput_folder + "/TestSolution/pack_missing.csolution.yml";
   auto requests =
-    FormatRequest(1, "ListMissingPacks", json({ { "solution", csolutionPath }, { "activeTarget", "CM0" } })) +
-    FormatRequest(2, "ListMissingPacks", json({ { "solution", csolutionPath }, { "activeTarget", "Gen" } })) +
-    FormatRequest(3, "ListMissingPacks", json({ { "solution", csolutionPath }, { "activeTarget", "Unknown" } }));
+    FormatRequest(1, "ListMissingPacks", json({{ "solution", csolutionPath }, { "activeTarget", "CM0" }})) +
+    FormatRequest(2, "ListMissingPacks", json({{ "solution", csolutionPath }, { "activeTarget", "Gen" }})) +
+    FormatRequest(3, "ListMissingPacks", json({{ "solution", csolutionPath }, { "activeTarget", "Unknown" }}));
   auto responses = RunRpcMethods(requests);
 
   // valid responses

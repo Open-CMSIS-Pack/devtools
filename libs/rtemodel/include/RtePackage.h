@@ -85,6 +85,14 @@ public:
   */
   const std::string& GetPackageFileName() const override { return GetRootFileName(); }
 
+
+  /**
+   * @brief get path to overview document
+   * @return file path
+  */
+  const std::string& GetDocValue() const override;
+
+
   /**
    * @brief get pack common ID, also known as 'pack family ID', does not contain version
    * @return ID string in the form PackVendor.PackName

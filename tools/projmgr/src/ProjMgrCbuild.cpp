@@ -570,6 +570,15 @@ void ProjMgrCbuild::SetDefineNode(YAML::Node define, const vector<string>& vec) 
   }
 }
 
+void ProjMgrCbuild::SetWestNode(YAML::Node node, const ContextItem* context) {
+  SetNodeValue(node[YAML_PROJECT_ID], context->west.projectId);
+  SetNodeValue(node[YAML_APP_PATH], FormatPath(context->west.app, context->directories.cbuild));
+  SetNodeValue(node[YAML_BOARD], context->west.board);
+  SetNodeValue(node[YAML_DEVICE], context->west.device);
+  SetDefineNode(node[YAML_WEST_DEFS], context->west.westDefs);
+  SetNodeValue(node[YAML_WEST_OPT], context->west.westOpt);
+}
+
 //-- ProjMgrYamlEmitter::GenerateCbuild -----------------------------------------------------------
 bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context,
   const string& generatorId, const string& generatorPack, bool ignoreRteFileMissing)
@@ -596,17 +605,21 @@ bool ProjMgrYamlEmitter::GenerateCbuild(ContextItem* context,
   }
   YAML::Node rootNode;
   ProjMgrCbuild cbuild(rootNode[rootKey], context, generatorId, generatorPack, ignoreRteFileMissing);
+  if (context->westOn) {
+    CopyWestGroups(filename, rootNode);
+  }
   RteFsUtils::CreateDirectories(RteFsUtils::ParentPath(filename));
   // get context rebuild flag
   context->needRebuild = NeedRebuild(filename, rootNode);
   return WriteFile(rootNode, filename, context->name);
 }
 
-void ProjMgrCbuild::SetWestNode(YAML::Node node, const ContextItem* context) {
-  SetNodeValue(node[YAML_PROJECT_ID], context->west.projectId);
-  SetNodeValue(node[YAML_APP_PATH], FormatPath(context->west.app, context->directories.cbuild));
-  SetNodeValue(node[YAML_BOARD], context->west.board);
-  SetNodeValue(node[YAML_DEVICE], context->west.device);
-  SetDefineNode(node[YAML_WEST_DEFS], context->west.westDefs);
-  SetNodeValue(node[YAML_WEST_OPT], context->west.westOpt);
+void ProjMgrYamlEmitter::CopyWestGroups(const string& filename, YAML::Node rootNode) {
+  if (!RteFsUtils::Exists(filename) || !RteFsUtils::IsRegularFile(filename)) {
+    return;
+  }
+  const YAML::Node& cbuildFile = YAML::LoadFile(filename);
+  if (cbuildFile[YAML_BUILD][YAML_GROUPS].IsDefined()) {
+    rootNode[YAML_BUILD][YAML_GROUPS] = cbuildFile[YAML_BUILD][YAML_GROUPS];
+  }
 }

@@ -316,7 +316,6 @@ bool ProjMgrYamlParser::ParseDebugAdapters(const string& input, DebugAdaptersIte
       ParseString(adaptersEntry, YAML_NAME, adapter.name);
       ParseVector(adaptersEntry, YAML_ALIAS_NAME, adapter.alias);
       ParseString(adaptersEntry, YAML_TEMPLATE, adapter.templateFile);
-      adapter.gdbserver = adaptersEntry[YAML_GDBSERVER].IsDefined();
       ParseDebugDefaults(adaptersEntry, debugAdaptersPath, adapter.defaults);
       adapters.push_back(adapter);
     }
@@ -602,6 +601,20 @@ void ProjMgrYamlParser::ParseExecutes(const YAML::Node& parent, const string& fi
   }
 }
 
+void ProjMgrYamlParser::ParseTelnet(const YAML::Node& parent, const std::string& file, std::vector<TelnetItem>& telnet) {
+  if (parent[YAML_TELNET].IsDefined()) {
+    const YAML::Node& telnetNode = parent[YAML_TELNET];
+    for (const auto& telnetEntry : telnetNode) {
+      TelnetItem telnetItem;
+      ParseString(telnetEntry, YAML_MODE, telnetItem.mode);
+      ParseString(telnetEntry, YAML_PORT, telnetItem.port);
+      ParseString(telnetEntry, YAML_FILE, telnetItem.file);
+      ParseString(telnetEntry, YAML_PNAME, telnetItem.pname);
+      telnet.push_back(telnetItem);
+    }
+  }
+}
+
 void ProjMgrYamlParser::ParseDebugger(const YAML::Node& parent, const string& file, DebuggerItem& debugger) {
   if (parent[YAML_DEBUGGER].IsDefined()) {
     const YAML::Node& debuggerNode = parent[YAML_DEBUGGER];
@@ -610,7 +623,8 @@ void ProjMgrYamlParser::ParseDebugger(const YAML::Node& parent, const string& fi
     ParseNumber(debuggerNode, file, YAML_CLOCK, debugger.clock);
     ParsePortablePath(debuggerNode, file, YAML_DBGCONF, debugger.dbgconf);
     ParseString(debuggerNode, YAML_START_PNAME, debugger.startPname);
-    ParseCustom(debuggerNode, { YAML_NAME, YAML_PROTOCOL, YAML_CLOCK, YAML_DBGCONF, YAML_START_PNAME }, debugger.custom);
+    ParseTelnet(debuggerNode, file, debugger.telnet);
+    ParseCustom(debuggerNode, { YAML_NAME, YAML_PROTOCOL, YAML_CLOCK, YAML_DBGCONF, YAML_START_PNAME, YAML_TELNET }, debugger.custom);
   }
 }
 
@@ -624,10 +638,20 @@ void ProjMgrYamlParser::ParseRte(const YAML::Node& parent, string& rteBaseDir) {
 void ProjMgrYamlParser::ParseDebugDefaults(const YAML::Node& parent, const string& file, DebugAdapterDefaultsItem& defaults) {
   if (parent[YAML_DEFAULTS].IsDefined()) {
     const YAML::Node& defaultsNode = parent[YAML_DEFAULTS];
-    ParseNumber(defaultsNode, file, YAML_PORT, defaults.port);
+    if (defaultsNode[YAML_GDBSERVER].IsDefined()) {
+      const YAML::Node& gdbserverNode = defaultsNode[YAML_GDBSERVER];
+      ParseString(gdbserverNode, YAML_PORT, defaults.gdbserver.port);
+      defaults.gdbserver.active = gdbserverNode[YAML_ACTIVE].IsDefined();
+    }
+    if (defaultsNode[YAML_TELNET].IsDefined()) {
+      const YAML::Node& telnetNode = defaultsNode[YAML_TELNET];
+      ParseString(telnetNode, YAML_PORT, defaults.telnet.port);
+      ParseString(telnetNode, YAML_MODE, defaults.telnet.mode);
+      defaults.telnet.active = telnetNode[YAML_ACTIVE].IsDefined();
+    }
     ParseString(defaultsNode, YAML_PROTOCOL, defaults.protocol);
     ParseNumber(defaultsNode, file, YAML_CLOCK, defaults.clock);
-    ParseCustom(defaultsNode, { YAML_PORT, YAML_PROTOCOL, YAML_CLOCK }, defaults.custom);
+    ParseCustom(defaultsNode, { YAML_GDBSERVER, YAML_TELNET, YAML_PROTOCOL, YAML_CLOCK }, defaults.custom);
   }
 }
 

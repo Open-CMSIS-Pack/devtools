@@ -34,11 +34,11 @@ const string ProjMgrRpcServer::GetRequestFromStdinWithLength(void) {
   string line;
   int contentLength = 0;
   const string& header = CONTENT_LENGTH_HEADER;
-  while (getline(cin, line) && !cin.fail()) {
-    if (line.find(header) == 0) {
+  while(getline(cin, line) && !cin.fail()) {
+    if(line.find(header) == 0) {
       contentLength = RteUtils::StringToInt(line.substr(header.length()), 0);
     }
-    if (line.empty() || line.front() == '\r' || line.front() == '\n') {
+    if(line.empty() || line.front() == '\r' || line.front() == '\n') {
       break;
     }
   }
@@ -52,18 +52,18 @@ const string ProjMgrRpcServer::GetRequestFromStdin(void) {
   int braces = 0;
   bool inJson = false;
   char c;
-  while (cin.get(c) && !cin.fail()) {
-    if (c == '{') {
+  while(cin.get(c) && !cin.fail()) {
+    if(c == '{') {
       braces++;
       inJson = true;
     }
-    if (c == '}') {
+    if(c == '}') {
       braces--;
     }
-    if (inJson) {
+    if(inJson) {
       jsonData += c;
     }
-    if (inJson && braces == 0) {
+    if(inJson && braces == 0) {
       break;
     }
   }
@@ -84,7 +84,8 @@ public:
   RpcArgs::SuccessResult LoadPacks(void) override;
   RpcArgs::SuccessResult LoadSolution(const string& solution, const string& activeTarget) override;
   RpcArgs::UsedItems GetUsedItems(const string& context) override;
-  RpcArgs::PacksInfo GetPacksInfo(const string& context) override;
+  RpcArgs::PacksInfo GetPacksInfo(const string& context, const bool& all) override;
+  RpcArgs::SuccessResult SelectPack(const string& context, const RpcArgs::PackReference& pack) override;
   RpcArgs::DeviceList GetDeviceList(const string& context, const string& namePattern, const string& vendor) override;
   RpcArgs::DeviceInfo GetDeviceInfo(const string& id) override;
   RpcArgs::BoardList GetBoardList(const string& context, const string& namePattern, const string& vendor) override;
@@ -103,16 +104,16 @@ public:
 protected:
   enum Exception
   {
-    SOLUTION_NOT_FOUND     = -1,
-    SOLUTION_NOT_VALID     = -2,
-    SOLUTION_NOT_LOADED    = -3,
-    CONTEXT_NOT_FOUND      = -4,
-    CONTEXT_NOT_VALID      = -5,
-    COMPONENT_NOT_FOUND    = -6,
+    SOLUTION_NOT_FOUND = -1,
+    SOLUTION_NOT_VALID = -2,
+    SOLUTION_NOT_LOADED = -3,
+    CONTEXT_NOT_FOUND = -4,
+    CONTEXT_NOT_VALID = -5,
+    COMPONENT_NOT_FOUND = -6,
     COMPONENT_NOT_RESOLVED = -7,
-    PACKS_NOT_LOADED       = -8,
-    PACKS_LOADING_FAIL     = -9,
-    RTE_MODEL_ERROR        = -10,
+    PACKS_NOT_LOADED = -8,
+    PACKS_LOADING_FAIL = -9,
+    RTE_MODEL_ERROR = -10,
   };
 
   ProjMgrRpcServer& m_server;
@@ -122,7 +123,16 @@ protected:
   bool m_solutionLoaded = false;
   bool m_bUseAllPacks = false;
 
+  map<std::string, PackReferenceVector> m_packReferences; // packsInfo is used to simplify creation and access to references
+
   void StoreSelectedComponents(RteTarget* rteTarget, map<RteComponent*, int>& selectedComponents);
+  PackReferenceVector& GetPackReferences(const string& context);
+  PackReferenceVector CollectPackReferences(const string& context);
+  PackReferenceVector GetPackReferencesForPack(const string& context, const string& packId);
+  RpcArgs::PackReference& EnsurePackReferenceForPack(const string& context, const string& packId, const string& origin, bool bVersion);
+  RpcArgs::PackReference& EnsurePackReference(const string& context, const RpcArgs::PackReference& packRef);
+
+
   void UpdateFilter(const string& context, RteTarget* rteTarget, bool bAll); // returns true if changed
   const ContextItem& GetContext(const string& context) const;
   RteTarget* GetActiveTarget(const string& context) const;
@@ -135,18 +145,18 @@ bool ProjMgrRpcServer::Run(void) {
   JsonRpc2Server jsonServer;
   RpcHandler handler(*this, jsonServer);
 
-  while (!m_shutdown && !cin.fail()) {
+  while(!m_shutdown && !cin.fail()) {
     // Get request
     const auto request = m_contextLength ?
       GetRequestFromStdinWithLength() :
       GetRequestFromStdin();
 
-    if (request.empty()) {
+    if(request.empty()) {
       continue;
     }
 
     ofstream log;
-    if (m_debug) {
+    if(m_debug) {
       log.open(RteFsUtils::GetCurrentFolder(true) + "csolution-rpc-log.txt", fstream::app);
       log << request << std::endl;
     }
@@ -155,7 +165,7 @@ bool ProjMgrRpcServer::Run(void) {
     const auto response = jsonServer.HandleRequest(request);
 
     // Send response
-    if (m_contextLength) {
+    if(m_contextLength) {
       // compliant to https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#baseProtocol
       cout << CONTENT_LENGTH_HEADER << response.size() <<
         CrossPlatformUtils::Crlf() << CrossPlatformUtils::Crlf() << response << std::flush;
@@ -163,7 +173,7 @@ bool ProjMgrRpcServer::Run(void) {
       cout << response << std::endl;
     }
 
-    if (m_debug) {
+    if(m_debug) {
       log << response << std::endl;
       log.close();
     }
@@ -173,12 +183,12 @@ bool ProjMgrRpcServer::Run(void) {
 }
 
 bool RpcHandler::CheckSolutionArg(string& solution, optional<string>& message) const {
-  if (!regex_match(solution, regex(".*\\.csolution\\.(yml|yaml)"))) {
+  if(!regex_match(solution, regex(".*\\.csolution\\.(yml|yaml)"))) {
     message = solution + " is not a *.csolution.yml file";
     return false;
   }
   solution = RteFsUtils::MakePathCanonical(solution);
-  if (!RteFsUtils::Exists(solution)) {
+  if(!RteFsUtils::Exists(solution)) {
     message = solution + " file does not exist";
     return false;
   }
@@ -186,14 +196,14 @@ bool RpcHandler::CheckSolutionArg(string& solution, optional<string>& message) c
 }
 
 const ContextItem& RpcHandler::GetContext(const string& context) const {
-  if (!m_solutionLoaded) {
+  if(!m_solutionLoaded) {
     throw JsonRpcException(SOLUTION_NOT_LOADED, "a valid solution must be loaded before proceeding");
   }
-  if (context.empty()) {
+  if(context.empty()) {
     throw JsonRpcException(CONTEXT_NOT_VALID, "'context' argument cannot be empty");
   }
   const auto selected = m_worker.GetSelectedContexts();
-  if (find(selected.begin(), selected.end(), context) == selected.end()) {
+  if(find(selected.begin(), selected.end(), context) == selected.end()) {
     throw JsonRpcException(CONTEXT_NOT_FOUND, context + " was not found among selected contexts");
   }
   map<string, ContextItem>* contexts = nullptr;
@@ -233,8 +243,16 @@ RpcArgs::SuccessResult RpcHandler::Apply(const string& context) {
   auto rteProject = GetActiveTarget(context)->GetProject();
   if(rteProject) {
     rteProject->Apply();
-    // Apply returns if list of gpdc files needs to be updated: irrelevant for csolution
+    // Apply returns true if list of gpdc files needs to be updated: irrelevant for csolution
     result.success = true;
+    // purge unselected packs
+
+    auto& packRefs = GetPackReferences(context);
+    packRefs.erase(
+      std::remove_if(packRefs.begin(), packRefs.end(),
+        [](RpcArgs::PackReference& ref) { return !ref.selected; }),
+      packRefs.end()
+    );
   }
   return result;
 }
@@ -249,39 +267,6 @@ RpcArgs::SuccessResult RpcHandler::Resolve(const string& context) {
   return result;
 }
 
-RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context) {
-  const auto contextItem = GetContext(context);
-  map<string, vector<string>> packRefs;
-  for (const auto& packItem : contextItem.packRequirements) {
-    if (!packItem.origin.empty()) {
-      const auto packId = RtePackage::ComposePackageID(packItem.pack.vendor, packItem.pack.name, packItem.pack.version);
-      CollectionUtils::PushBackUniquely(packRefs[packId], packItem.origin);
-    }
-  }
-  RpcArgs::PacksInfo packsInfo;
-  for (auto& [pack, packItem] : contextItem.rteActiveTarget->GetFilteredModel()->GetPackages()) {
-    RpcArgs::Pack p;
-    p.id = packItem->GetPackageID(true);
-    const auto& description = packItem->GetDescription();
-    if (!description.empty()) {
-      p.description = description;
-    }
-    string overview = packItem->GetChildAttribute("description", "overview");
-    if (!overview.empty()) {
-      RteFsUtils::NormalizePath(overview, packItem->GetAbsolutePackagePath());
-      p.overview = overview;
-    }
-    if (contextItem.packages.find(p.id) != contextItem.packages.end()) {
-      p.used = true;
-      if (packRefs.find(p.id) != packRefs.end()) {
-        p.references = packRefs.at(p.id);
-      }
-    }
-    packsInfo.packs.push_back(p);
-  }
-  packsInfo.success = true;
-  return packsInfo;
-}
 
 RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
   RpcArgs::SuccessResult result = {false};
@@ -299,18 +284,19 @@ RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
 }
 
 RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const string& activeTarget) {
+  m_packReferences.clear();
   RpcArgs::SuccessResult result = {false};
   const auto csolutionFile = RteFsUtils::MakePathCanonical(solution);
-  if (!regex_match(csolutionFile, regex(".*\\.csolution\\.(yml|yaml)"))) {
+  if(!regex_match(csolutionFile, regex(".*\\.csolution\\.(yml|yaml)"))) {
     result.message = solution + " is not a *.csolution.yml file";
     return result;
   }
-  if (!m_packsLoaded) {
+  if(!m_packsLoaded) {
     result.message = "Packs must be loaded before loading solution";
     return result;
   }
   result.success = m_solutionLoaded = m_manager.LoadSolution(csolutionFile, activeTarget);
-  if (!m_solutionLoaded) {
+  if(!m_solutionLoaded) {
     result.message = "failed to load and process solution " + csolutionFile;
   }
   return result;
@@ -340,18 +326,12 @@ void RpcHandler::UpdateFilter(const string& context, RteTarget* rteTarget, bool 
   RtePackageFilter packFilter;
   if(!all) {
     // construct and apply filter
-    auto& contextItem = GetContext(context);
-    // use pack ID's from context
+    // use resolved pack ID's from selected references
     set<string> packIds;
-    for(const auto& [_, packs] : contextItem.userInputToResolvedPackIdMap) {
-      for (const auto& id : packs) {
-        packIds.insert(id);
+    for(auto& ref : GetPackReferences(context)) {
+      if(ref.selected && ref.resolvedPack.has_value()) {
+        packIds.insert(ref.resolvedPack.value());
       }
-    }
-    // add new packs from current selection otherwise we will loose the selection
-    for(auto [c, _count] : selectedComponents) {
-      auto id = c->GetPackageID();
-      packIds.insert(id);
     }
     packFilter.SetSelectedPackages(packIds);
     packFilter.SetUseAllPacks(false);
@@ -369,18 +349,135 @@ void RpcHandler::UpdateFilter(const string& context, RteTarget* rteTarget, bool 
   }
 }
 
+RpcArgs::SuccessResult RpcHandler::SelectPack(const string& context, const RpcArgs::PackReference& packRef) {
+  RpcArgs::SuccessResult result = {true};
+  // find reference if exists, otherwise add new one
+  auto& ref = EnsurePackReference(context, packRef);
+  ref.selected = packRef.selected;
+  if(!ref.resolvedPack.has_value()) {
+    // TODO: resolve pack
+  }
+  return result;
+}
+
 RpcArgs::UsedItems RpcHandler::GetUsedItems(const string& context) {
   RpcArgs::UsedItems usedItems;
   usedItems.success = true;
   RpcDataCollector dc(GetActiveTarget(context));
-  dc.CollectUsedItems(usedItems);
+  dc.CollectUsedComponents(usedItems.components);
+  // get all references, even if they are not selected , because it is useful for client to remove them from files
+  usedItems.packs = GetPackReferences(context);
   return usedItems;
+}
+
+
+PackReferenceVector& RpcHandler::GetPackReferences(const string& context) {
+  // emplace returns pair<iterator, bool>
+  // return the value from the iterator
+  return m_packReferences.emplace(context, RpcHandler::CollectPackReferences(context)).first->second;
+}
+
+PackReferenceVector RpcHandler::CollectPackReferences(const string& context) {
+  PackReferenceVector packRefs;
+  auto contextItem = GetContext(context);
+  for(const auto& packItem : contextItem.packRequirements) {
+    const auto packId = RtePackage::ComposePackageID(packItem.pack.vendor, packItem.pack.name, packItem.pack.version);
+    RpcArgs::PackReference packRef;
+    packRef.pack = packItem.selectedBy;
+    packRef.resolvedPack = packId;
+    packRef.origin = packItem.origin;
+    packRef.path = packItem.path;
+    packRef.selected = true; // initially pack is selected;
+    packRefs.push_back(packRef);
+  }
+  return packRefs;
+}
+
+PackReferenceVector RpcHandler::GetPackReferencesForPack(const string& context, const string& packId) {
+  PackReferenceVector packRefs;
+  for(auto& ref : GetPackReferences(context)) {
+    if(ref.resolvedPack.has_value() && ref.resolvedPack == packId) {
+      packRefs.push_back(ref);
+    }
+  }
+  return packRefs;
+}
+
+RpcArgs::PackReference& RpcHandler::EnsurePackReferenceForPack(const string& context, const string& packId, const string& origin, bool bExplicitVersion) {
+  auto& packRefs = GetPackReferences(context);
+  for(auto& ref : packRefs) {
+    if(ref.resolvedPack.has_value() && ref.resolvedPack == packId &&
+       (origin.empty() || RteFsUtils::Equivalent(ref.origin, origin))) {
+      ref.selected = true; // ensure selected
+      return ref;
+    }
+  }
+  // no reference->add one to list of all references
+  RpcArgs::PackReference newRef;
+  newRef.pack = bExplicitVersion ? packId : RtePackage::CommonIdFromId(packId);
+  newRef.resolvedPack = packId;
+  if(!origin.empty()) {
+    newRef.origin = origin;
+  }
+  newRef.selected = true;
+  return GetPackReferences(context).emplace_back(newRef);
+}
+
+
+RpcArgs::PackReference& RpcHandler::EnsurePackReference(const string& context, const RpcArgs::PackReference& packRef) {
+  auto& packRefs = GetPackReferences(context);
+  for(auto& ref : packRefs) {
+    if(ref.pack == packRef.pack &&
+      (packRef.origin.empty() || RteFsUtils::Equivalent(ref.origin, packRef.origin)) &&
+      (RteFsUtils::Equivalent(ref.path.value_or(""), packRef.path.value_or("")))) {
+      return ref;
+    }
+  }
+  // no reference->add supplied
+  return packRefs.emplace_back(packRef);
+}
+
+
+RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& all) {
+
+  RteTarget* rteTarget = GetActiveTarget(context);
+
+  UpdateFilter(context, rteTarget, all);
+  RpcDataCollector dc(GetActiveTarget(context));
+  auto usedPacks = dc.GetUsedPacks();
+
+  RpcArgs::PacksInfo packsInfo;
+  for(auto& [packId, rtePackage] : rteTarget->GetFilteredModel()->GetPackages()) {
+    RpcArgs::Pack p;
+    p.id = rtePackage->GetPackageID(true);
+    const auto& description = rtePackage->GetDescription();
+    if(!description.empty()) {
+      p.description = description;
+    }
+    auto overview = rtePackage->GetDocFile();
+    if(!overview.empty()) {
+      p.doc = overview;
+    }
+    if(contains_key(usedPacks, p.id)) {
+      p.used = true;
+    }
+    auto packRefs = GetPackReferencesForPack(context, p.id);
+
+    if(!packRefs.empty()) {
+      p.references = packRefs;
+    }
+    packsInfo.packs.push_back(p);
+  }
+  // TODO: add unresolved packs from unresolved references
+
+  packsInfo.success = true;
+  return packsInfo;
 }
 
 RpcArgs::DeviceList RpcHandler::GetDeviceList(const string& context, const string& namePattern, const string& vendor)
 {
   RpcArgs::DeviceList deviceList{{false}};
-  if (!m_packsLoaded) {
+  if(!m_packsLoaded) {
     deviceList.message = "Packs must be loaded before accessing device info";
   } else {
     RteTarget* rteTarget = context.empty() ? nullptr : GetActiveTarget(context);
@@ -395,7 +492,7 @@ RpcArgs::DeviceList RpcHandler::GetDeviceList(const string& context, const strin
 RpcArgs::DeviceInfo RpcHandler::GetDeviceInfo(const string& id)
 {
   RpcArgs::DeviceInfo deviceInfo{{false}};
-  if (!m_packsLoaded) {
+  if(!m_packsLoaded) {
     deviceInfo.message = "Packs must be loaded before accessing device info";
   } else {
     RpcDataCollector dc(nullptr, ProjMgrKernel::Get()->GetGlobalModel());
@@ -407,7 +504,7 @@ RpcArgs::DeviceInfo RpcHandler::GetDeviceInfo(const string& id)
 RpcArgs::BoardList RpcHandler::GetBoardList(const string& context, const string& namePattern, const string& vendor)
 {
   RpcArgs::BoardList boardList{{false}};
-  if (!m_packsLoaded) {
+  if(!m_packsLoaded) {
     boardList.message = "Packs must be loaded before accessing board info";
   } else {
     RteTarget* rteTarget = context.empty() ? nullptr : GetActiveTarget(context);
@@ -423,7 +520,7 @@ RpcArgs::BoardList RpcHandler::GetBoardList(const string& context, const string&
 RpcArgs::BoardInfo RpcHandler::GetBoardInfo(const string& id)
 {
   RpcArgs::BoardInfo boardInfo{{false}};
-  if (!m_packsLoaded) {
+  if(!m_packsLoaded) {
     boardInfo.message = "Packs must be loaded before accessing board info";
   } else {
     RpcDataCollector dc(nullptr, ProjMgrKernel::Get()->GetGlobalModel());
@@ -447,7 +544,7 @@ RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool&
 }
 
 RpcArgs::SuccessResult RpcHandler::SelectComponent(const string& context, const string& id, const int& count, const RpcArgs::Options& options) {
-// first try full component ID
+  // first try full component ID
   RteTarget* activeTarget = GetActiveTarget(context);
   RteComponent* rteComponent = activeTarget->GetComponent(id);
   RteComponentAggregate* rteAggregate = nullptr;
@@ -460,20 +557,21 @@ RpcArgs::SuccessResult RpcHandler::SelectComponent(const string& context, const 
     result.success = activeTarget->SelectComponent(rteAggregate, count, true);
     rteComponent = rteAggregate->GetComponent();
   }
-
   // set options
-  if(options.layer.has_value()) {
-    rteAggregate->AddAttribute("layer", options.layer.value(), false);
-  }
-  if(options.explicitVendor.has_value()) {
-    rteAggregate->AddAttribute("explicitVendor", options.explicitVendor.value() ? "1" : "", false);
-  }
+  auto& layer = options.layer.has_value() ? options.layer.value() : RteUtils::EMPTY_STRING;
+  rteAggregate->AddAttribute("layer", layer, false);
+  bool explicitVendor = options.explicitVendor.has_value() ? options.explicitVendor.value() : false;
+  rteAggregate->AddAttribute("explicitVendor", explicitVendor ? "1" : "", false);
 
+  auto& explicitVersion = options.explicitVersion.has_value() ? options.explicitVersion.value() : RteUtils::EMPTY_STRING;
   // TODO: check if version is plausible
-  if(options.explicitVersion.has_value()) {
-    rteAggregate->AddAttribute("explicitVersion", options.explicitVersion.value(), false);
-  }
+  rteAggregate->AddAttribute("explicitVersion", explicitVersion, false);
 
+  // ensure Pack reference is added when component is selected
+  if(count > 0 && rteComponent) {
+    auto& packId = rteComponent->GetPackage()->GetID();
+    EnsurePackReferenceForPack(context, packId, layer, !explicitVersion.empty());
+  }
   return result;
 }
 
@@ -536,7 +634,7 @@ RpcArgs::SuccessResult RpcHandler::SelectBundle(const string& context, const str
     return result; // no change => false
   }
   if(!contains_key(rteClass->GetBundleNames(), bundleName)) {
-    result.message = "Bundle '" + bundleName + "' is not found for component class '" + className +"'";
+    result.message = "Bundle '" + bundleName + "' is not found for component class '" + className + "'";
     return result; // error => false
   }
   rteClass->SetSelectedBundleName(bundleName, true);
@@ -552,21 +650,21 @@ RpcArgs::Results RpcHandler::ValidateComponents(const string& context) {
   RpcArgs::Results results;
   auto validationRes = m_worker.ValidateContext(contextItem);
   results.result = RteItem::ConditionResultToString(validationRes);
-  if (validationRes < RteItem::ConditionResult::FULFILLED) {
+  if(validationRes < RteItem::ConditionResult::FULFILLED) {
     results.validation = vector<RpcArgs::Result>{};
-    for (const auto& validation : contextItem.validationResults) {
+    for(const auto& validation : contextItem.validationResults) {
       RpcArgs::Result r;
       r.result = RteItem::ConditionResultToString(validation.result);
       r.id = validation.id;
-      if (!validation.aggregates.empty()) {
+      if(!validation.aggregates.empty()) {
         r.aggregates = vector<string>(validation.aggregates.begin(), validation.aggregates.end());
       }
-      if (!validation.conditions.empty()) {
+      if(!validation.conditions.empty()) {
         RpcArgs::Condition c;
         r.conditions = vector<RpcArgs::Condition>{};
-        for (const auto& condition : validation.conditions) {
+        for(const auto& condition : validation.conditions) {
           c.expression = condition.expression;
-          if (!condition.aggregates.empty()) {
+          if(!condition.aggregates.empty()) {
             c.aggregates = vector<string>(condition.aggregates.begin(), condition.aggregates.end());
           }
           r.conditions->push_back(c);
@@ -581,31 +679,31 @@ RpcArgs::Results RpcHandler::ValidateComponents(const string& context) {
 
 RpcArgs::LogMessages RpcHandler::GetLogMessages(void) {
   StrVec infoVec;
-  for (const auto& [_, info] : ProjMgrLogger::Get().GetInfos()) {
-    for (const auto& msg : info) {
+  for(const auto& [_, info] : ProjMgrLogger::Get().GetInfos()) {
+    for(const auto& msg : info) {
       CollectionUtils::PushBackUniquely(infoVec, msg);
     }
   }
   StrVec errorsVec;
-  for (const auto& [_, errors] : ProjMgrLogger::Get().GetErrors()) {
-    for (const auto& msg : errors) {
+  for(const auto& [_, errors] : ProjMgrLogger::Get().GetErrors()) {
+    for(const auto& msg : errors) {
       CollectionUtils::PushBackUniquely(errorsVec, msg);
     }
   }
   StrVec warningsVec;
-  for (const auto& [_, warnings] : ProjMgrLogger::Get().GetWarns()) {
-    for (const auto& msg : warnings) {
+  for(const auto& [_, warnings] : ProjMgrLogger::Get().GetWarns()) {
+    for(const auto& msg : warnings) {
       CollectionUtils::PushBackUniquely(warningsVec, msg);
     }
   }
   RpcArgs::LogMessages messages;
-  if (!infoVec.empty()) {
+  if(!infoVec.empty()) {
     messages.info = infoVec;
   }
-  if (!errorsVec.empty()) {
+  if(!errorsVec.empty()) {
     messages.errors = errorsVec;
   }
-  if (!warningsVec.empty()) {
+  if(!warningsVec.empty()) {
     messages.warnings = warningsVec;
   }
   messages.success = true;
@@ -616,7 +714,7 @@ RpcArgs::DraftProjectsInfo RpcHandler::GetDraftProjects(const RpcArgs::DraftProj
   RpcArgs::DraftProjectsInfo applications;
   applications.success = false;
 
-  if (!m_packsLoaded) {
+  if(!m_packsLoaded) {
     applications.message = "Packs must be loaded before retrieving draft projects";
     return applications;
   }
@@ -624,10 +722,10 @@ RpcArgs::DraftProjectsInfo RpcHandler::GetDraftProjects(const RpcArgs::DraftProj
   // initialize context and target attributes with board and device
   ContextItem context;
   m_worker.InitializeTarget(context);
-  if (filter.board.has_value() || filter.device.has_value()) {
+  if(filter.board.has_value() || filter.device.has_value()) {
     context.board = filter.board.has_value() ? filter.board.value() : "";
     context.device = filter.device.has_value() ? filter.device.value() : "";
-    if (!m_worker.ProcessDevice(context, BoardOrDevice::SkipProcessor)) {
+    if(!m_worker.ProcessDevice(context, BoardOrDevice::SkipProcessor)) {
       applications.message = "Board or device processing failed";
       return applications;
     }
@@ -642,61 +740,61 @@ RpcArgs::DraftProjectsInfo RpcHandler::GetDraftProjects(const RpcArgs::DraftProj
   vector<RpcArgs::ExampleProject> examples, refApps;
   const auto& environments = filter.environments.has_value() ? filter.environments.value() : StrVec();
   const auto& collectedExamples = m_worker.CollectExamples(context, environments);
-  for (const auto& example : collectedExamples) {
+  for(const auto& example : collectedExamples) {
     RpcArgs::ExampleProject e;
     e.name = example.name;
     e.pack = example.pack;
     e.doc = example.doc;
     e.description = example.description;
-    if (!example.version.empty()) {
+    if(!example.version.empty()) {
       e.version = example.version;
     }
-    if (!example.archive.empty()) {
+    if(!example.archive.empty()) {
       e.archive = example.archive;
     }
-    for (const auto& [name, environment] : example.environments) {
+    for(const auto& [name, environment] : example.environments) {
       RpcArgs::ExampleEnvironment env;
       env.name = name;
       env.file = environment.load;
       env.folder = environment.folder;
       e.environments.push_back(env);
     }
-    if (!example.components.empty()) {
+    if(!example.components.empty()) {
       e.components = example.components;
     }
-    if (!example.categories.empty()) {
+    if(!example.categories.empty()) {
       e.categories = example.categories;
     }
-    if (!example.keywords.empty()) {
+    if(!example.keywords.empty()) {
       e.keywords = example.keywords;
     }
     // classify the example as ref-app if it does not specify boards
     auto& ref = example.boards.empty() ? refApps : examples;
     ref.push_back(e);
   }
-  if (!examples.empty()) {
+  if(!examples.empty()) {
     applications.examples = examples;
   }
-  if (!refApps.empty()) {
+  if(!refApps.empty()) {
     applications.refApps = refApps;
   }
 
   // collect templates
   vector<RpcArgs::SolutionTemplate> templates;
   const auto& csolutionTemplates = m_worker.CollectTemplates(context);
-  for (const auto& csolutionTemplate : csolutionTemplates) {
+  for(const auto& csolutionTemplate : csolutionTemplates) {
     RpcArgs::SolutionTemplate t;
     t.name = csolutionTemplate.name;
     t.pack = csolutionTemplate.pack;
     t.description = csolutionTemplate.description;
     t.file = csolutionTemplate.file;
     t.folder = csolutionTemplate.path;
-    if (!csolutionTemplate.copyTo.empty()) {
+    if(!csolutionTemplate.copyTo.empty()) {
       t.copyTo = csolutionTemplate.copyTo;
     }
     templates.push_back(t);
   }
-  if (!templates.empty()) {
+  if(!templates.empty()) {
     applications.templates = templates;
   }
 
@@ -707,19 +805,19 @@ RpcArgs::DraftProjectsInfo RpcHandler::GetDraftProjects(const RpcArgs::DraftProj
 RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solution, const string& activeTarget, const bool& updateRte) {
   RpcArgs::ConvertSolutionResult result = {{ false }};
   string csolutionFile = solution;
-  if (!CheckSolutionArg(csolutionFile, result.message)) {
+  if(!CheckSolutionArg(csolutionFile, result.message)) {
     return result;
   }
-  if (!m_manager.RunConvert(csolutionFile, activeTarget, updateRte) || !ProjMgrLogger::Get().GetErrors().empty()) {
-    if (m_worker.HasVarDefineError()) {
+  if(!m_manager.RunConvert(csolutionFile, activeTarget, updateRte) || !ProjMgrLogger::Get().GetErrors().empty()) {
+    if(m_worker.HasVarDefineError()) {
       const auto& vars = m_worker.GetUndefLayerVars();
       result.undefinedLayers = StrVec(vars.begin(), vars.end());
       const auto& selectCompiler = m_worker.GetSelectableCompilers();
-      if (!selectCompiler.empty()) {
+      if(!selectCompiler.empty()) {
         result.selectCompiler = selectCompiler;
       }
       result.message = "Layer variables undefined, names can be found under 'undefinedLayers'";
-    } else if (m_worker.HasCompilerDefineError()) {
+    } else if(m_worker.HasCompilerDefineError()) {
       result.selectCompiler = m_worker.GetSelectableCompilers();
       result.message = "Compiler undefined, selectable values can be found under 'selectCompiler'";
     } else {
@@ -734,49 +832,49 @@ RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solutio
 RpcArgs::DiscoverLayersInfo RpcHandler::DiscoverLayers(const string& solution, const string& activeTarget) {
   RpcArgs::DiscoverLayersInfo result = {{ false }};
   string csolutionFile = solution;
-  if (!CheckSolutionArg(csolutionFile, result.message)) {
+  if(!CheckSolutionArg(csolutionFile, result.message)) {
     return result;
   }
-  if (!m_manager.SetupContexts(csolutionFile, activeTarget)) {
+  if(!m_manager.SetupContexts(csolutionFile, activeTarget)) {
     result.message = "Setup of solution contexts failed";
     return result;
   }
   m_worker.SetUpCommand(true);
   StrVec layers;
   StrSet fails;
-  if (!m_worker.ListLayers(layers, "", fails) || !m_worker.ElaborateVariablesConfigurations()) {
+  if(!m_worker.ListLayers(layers, "", fails) || !m_worker.ElaborateVariablesConfigurations()) {
     result.message = "No compatible software layer found. Review required connections of the project";
     return result;
   } else {
     // retrieve valid configurations
     vector<RpcArgs::VariablesConfiguration> vcVec;
     const auto& processedContexts = m_worker.GetProcessedContexts();
-    for (const auto& context : processedContexts) {
-      if (!context->variablesConfigurations.empty()) {
-        for (const auto& configuration : context->variablesConfigurations) {
+    for(const auto& context : processedContexts) {
+      if(!context->variablesConfigurations.empty()) {
+        for(const auto& configuration : context->variablesConfigurations) {
           RpcArgs::VariablesConfiguration vc;
           vector<RpcArgs::LayerVariable> lvVec;
-          for (const auto& variable : configuration.variables) {
-            RpcArgs::LayerVariable lv = { variable.name, variable.clayer };
+          for(const auto& variable : configuration.variables) {
+            RpcArgs::LayerVariable lv = {variable.name, variable.clayer};
             vector<RpcArgs::SettingsType> settings;
-            for (const auto& s : variable.settings) {
-              if (!s.set.empty()) {
+            for(const auto& s : variable.settings) {
+              if(!s.set.empty()) {
                 settings.push_back(RpcArgs::SettingsType{s.set});
               }
             }
-            if (!settings.empty()) {
+            if(!settings.empty()) {
               lv.settings = settings;
             }
-            if (!variable.path.empty()) {
+            if(!variable.path.empty()) {
               lv.path = variable.path;
             }
-            if (!variable.file.empty()) {
+            if(!variable.file.empty()) {
               lv.file = variable.file;
             }
-            if (!variable.description.empty()) {
+            if(!variable.description.empty()) {
               lv.description = variable.description;
             }
-            if (!variable.copyTo.empty()) {
+            if(!variable.copyTo.empty()) {
               lv.copyTo = variable.copyTo;
             }
             lvVec.push_back(lv);
@@ -789,7 +887,7 @@ RpcArgs::DiscoverLayersInfo RpcHandler::DiscoverLayers(const string& solution, c
         break;
       }
     }
-    if (!vcVec.empty()) {
+    if(!vcVec.empty()) {
       result.configurations = vcVec;
     }
     result.success = true;
@@ -800,16 +898,16 @@ RpcArgs::DiscoverLayersInfo RpcHandler::DiscoverLayers(const string& solution, c
 RpcArgs::ListMissingPacksResult RpcHandler::ListMissingPacks(const string& solution, const string& activeTarget) {
   RpcArgs::ListMissingPacksResult result = {{ false }};
   string csolutionFile = solution;
-  if (!CheckSolutionArg(csolutionFile, result.message)) {
+  if(!CheckSolutionArg(csolutionFile, result.message)) {
     return result;
   }
-  if (!m_manager.SetupContexts(csolutionFile, activeTarget)) {
+  if(!m_manager.SetupContexts(csolutionFile, activeTarget)) {
     result.message = "Setup of solution contexts failed";
     return result;
   }
   StrVec missingPacks;
   m_worker.ListPacks(missingPacks, true);
-  if (!missingPacks.empty()) {
+  if(!missingPacks.empty()) {
     result.packs = missingPacks;
   }
   result.success = true;
