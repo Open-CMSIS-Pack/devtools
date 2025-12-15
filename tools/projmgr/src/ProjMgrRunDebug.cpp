@@ -235,14 +235,26 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
     if (item.type.empty()) {
       item.type = ProjMgrUtils::FileTypeFromExtension(item.image);
     }
-    if (item.load.empty()) {
-      // files with 'type: elf' get 'load: image+symbols'
-      // files with 'type: lib' get 'load: none'
-      // all other file types get 'load: image'
-      item.load = item.type == RteConstants::OUTPUT_TYPE_ELF ? LOAD_IMAGE_SYMBOLS :
-        item.type == RteConstants::OUTPUT_TYPE_LIB ? LOAD_NONE : LOAD_IMAGE;
+    bool merged = false;
+    for (auto& output : m_runDebug.outputs) {
+      if (output.file == item.image && output.type == item.type) {
+        // set load/offset of already inserted output with same image/type 
+        output.load = item.load.empty() ? output.load : item.load;
+        output.offset = item.offset.empty() ? output.offset : item.offset;
+        merged = true;
+        break;
+      }
     }
-    m_runDebug.outputs.push_back({ item.image, item.info, item.type, item.load, item.offset, item.pname });
+    if (!merged) {
+      if (item.load.empty()) {
+        // files with 'type: elf' get 'load: image+symbols'
+        // files with 'type: lib' get 'load: none'
+        // all other file types get 'load: image'
+        item.load = item.type == RteConstants::OUTPUT_TYPE_ELF ? LOAD_IMAGE_SYMBOLS :
+          item.type == RteConstants::OUTPUT_TYPE_LIB ? LOAD_NONE : LOAD_IMAGE;
+      }
+      m_runDebug.outputs.push_back({ item.image, item.info, item.type, item.load, item.offset, item.pname });
+    }
   }
 
   // debug vars

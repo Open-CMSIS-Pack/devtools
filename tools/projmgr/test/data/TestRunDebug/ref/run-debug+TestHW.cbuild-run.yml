@@ -12,15 +12,15 @@ cbuild-run:
     - file: run-debug/TestHW/run-debug.axf
       info: generate by run-debug+TestHW
       type: elf
-      load: symbols
+      load: none
     - file: run-debug/TestHW/run-debug.hex
       info: generate by run-debug+TestHW
       type: hex
-      load: image
+      load: none
     - file: run-debug/TestHW/run-debug.bin
       info: generate by run-debug+TestHW
       type: bin
-      load: none
+      load: image
       load-offset: 0x0000A000
     - file: ../../data/TestRunDebug/customImage.bin
       info: load image info
