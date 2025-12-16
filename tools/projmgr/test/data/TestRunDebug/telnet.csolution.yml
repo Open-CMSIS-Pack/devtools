@@ -54,6 +54,20 @@ solution:
             name: J-Link Server
             start-pname: cm0_core1
 
+        - set: CustomPorts
+          images:
+            - project-context: core0
+            - project-context: core1
+          debugger:
+            name: CMSIS-DAP
+            telnet:
+              - mode: monitor
+                pname: cm0_core1
+                port: 1234
+              - mode: monitor
+                pname: cm0_core0
+                port: 5678
+
         - set: Warnings
           images:
             - project-context: core0
