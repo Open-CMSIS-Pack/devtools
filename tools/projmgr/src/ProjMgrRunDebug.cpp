@@ -410,26 +410,31 @@ void ProjMgrRunDebug::CollectTelnetOptions(const ContextItem& context, DebugAdap
     unsigned long long port = adapter.defaults.telnet.port.empty() ? 0 : RteUtils::StringToULL(adapter.defaults.telnet.port);
     if (m_runDebug.debugger.telnet.find(m_runDebug.debugger.startPname) != m_runDebug.debugger.telnet.end()) {
       // add primary processor port first
-      auto& startPort = m_runDebug.debugger.telnet[m_runDebug.debugger.startPname].ullPort;
-      if (startPort == 0) {
-        startPort = port;
-      } else {
-        port = startPort;
-      }
-      usedPorts.insert(port);
+      auto& start = m_runDebug.debugger.telnet[m_runDebug.debugger.startPname];
+      // set next available port
+      SetTelnetPort(start, port, usedPorts);
+      // set starting port for other processors
+      port = start.ullPort;
     }
     for (auto& [pname, telnet] : m_runDebug.debugger.telnet) {
       // add ports for other processors
       if (pname != m_runDebug.debugger.startPname) {
-        // get customized port if set
-        port = telnet.port.empty() ? port : telnet.ullPort;
-        while (usedPorts.find(port) != usedPorts.end()) {
-          // skip port number if it has already been used
-          port++;
-        }
-        telnet.ullPort = port;
+        // set next available port
+        SetTelnetPort(telnet, port, usedPorts);
       }
     }
+  }
+}
+
+void ProjMgrRunDebug::SetTelnetPort(TelnetOptionsItem& item, unsigned long long& port, std::set<unsigned long long>& usedPorts) {
+  // only assign a port number if it has not been already specified
+  if (item.port.empty()) {
+    while (usedPorts.find(port) != usedPorts.end()) {
+      // skip port number if it has already been used
+      port++;
+    }
+    item.ullPort = port;
+    usedPorts.insert(port);
   }
 }
 

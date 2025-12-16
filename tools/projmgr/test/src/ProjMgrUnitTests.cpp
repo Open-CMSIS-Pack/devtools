@@ -6904,6 +6904,20 @@ R"(- mode: off
   pname: cm0_core1
   port: 4444)", sstream3.str());
 
+  // dual core with custom port numbers
+  argv[6] = (char*)"DualCore@CustomPorts";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  const YAML::Node& cbuildrun4 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  stringstream sstream4;
+  sstream4 << cbuildrun4["cbuild-run"]["debugger"]["telnet"];
+  EXPECT_EQ(
+    R"(- mode: monitor
+  pname: cm0_core0
+  port: 5678
+- mode: monitor
+  pname: cm0_core1
+  port: 1234)", sstream4.str());
+
   // warnings
   StdStreamRedirect streamRedirect;
   argv[6] = (char*)"DualCore@Warnings";
