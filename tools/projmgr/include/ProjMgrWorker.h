@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -479,6 +479,7 @@ struct VariablesConfiguration {
  *        west options
  *        west on flag
  *        layer variables configurations
+ *        unresolved components
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -551,6 +552,7 @@ struct ContextItem {
   WestDesc west;
   bool westOn = false;
   std::vector<VariablesConfiguration> variablesConfigurations;
+  std::set<RteComponentInstance*> unresolvedComponents;
 };
 
 /**

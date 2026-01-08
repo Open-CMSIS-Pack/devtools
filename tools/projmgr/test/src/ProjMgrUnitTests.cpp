@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1341,7 +1341,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFindUnspecifiedPackUsingLoad
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(1, RunProjMgr(9, argv, m_envp));
   EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
-  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: no component was found with identifier 'RteTest:ComponentLevel'"), string::npos);
+  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: component 'RteTest:ComponentLevel' not found in included packs"), string::npos);
   ProjMgrTestEnv::CompareFile(expectedCbuildPackRequiredUpdated, cbuildPack);
 
   // Test with --load required and with cbuild-pack.yml file
@@ -1350,7 +1350,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFindUnspecifiedPackUsingLoad
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(1, RunProjMgr(9, argv, m_envp));
   EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file is already up-to-date"), string::npos);
-  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: no component was found with identifier 'RteTest:ComponentLevel'"), string::npos);
+  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: component 'RteTest:ComponentLevel' not found in included packs"), string::npos);
   ProjMgrTestEnv::CompareFile(expectedCbuildPackRequired, cbuildPack);
 
   // Test without --load and without cbuild-pack.yml file
@@ -1358,7 +1358,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFindUnspecifiedPackUsingLoad
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
   EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file generated successfully"), string::npos);
-  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: no component was found with identifier 'RteTest:ComponentLevel'"), string::npos);
+  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: component 'RteTest:ComponentLevel' not found in included packs"), string::npos);
   ProjMgrTestEnv::CompareFile(expectedCbuildPackRequiredUpdated, cbuildPack);
 
   // Test without --load but with cbuild-pack.yml file
@@ -1366,7 +1366,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFindUnspecifiedPackUsingLoad
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
   EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file is already up-to-date"), string::npos);
-  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: no component was found with identifier 'RteTest:ComponentLevel'"), string::npos);
+  EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: component 'RteTest:ComponentLevel' not found in included packs"), string::npos);
   ProjMgrTestEnv::CompareFile(expectedCbuildPackRequired, cbuildPack);
 }
 
@@ -4056,7 +4056,7 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Filtering) {
     {"recursive", 1, "\
 warning csolution: RTE Model reports:\n\
 ARM::RteTestRecursive@0.1.0: condition 'Recursive': error #503: direct or indirect recursion detected\n\
-error csolution: no component was found with identifier 'RteTest:Check:Recursive'\n"},
+error csolution: component 'RteTest:Check:Recursive' not found in included packs\n"},
     {"missing-condition", 0, "\
 warning csolution: RTE Model reports:\n\
 ARM::RteTestMissingCondition@0.1.0: component 'ARM::RteTest:Check:MissingCondition@0.9.9(MissingCondition)[]': error #501: error(s) in component definition:\n\
@@ -4081,7 +4081,7 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Quiet_Mode) {
   argv[2] = (char*)"--solution";
   argv[4] = (char*)"-c";
 
-  string expectedMsg = "error csolution: no component was found with identifier 'RteTest:Check:Recursive'\nerror csolution: processing context 'recursive+CM0' failed\n";
+  string expectedMsg = "error csolution: component 'RteTest:Check:Recursive' not found in included packs\nerror csolution: processing context 'recursive+CM0' failed\n";
 
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/Validation/recursive.csolution.yml";
@@ -5621,7 +5621,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_WrongGeneratedData) {
   argv[4] = (char*)"wrong.WrongComponent+CM0";
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
   errStr = streamRedirect.GetErrorString();
-  EXPECT_TRUE(errStr.find("error csolution: no component was found with identifier 'UnknownVendor:UnknownComponent'") != string::npos);
+  EXPECT_TRUE(errStr.find("error csolution: component 'UnknownVendor:UnknownComponent' not found in included packs") != string::npos);
 
   streamRedirect.ClearStringStreams();
   argv[4] = (char*)"wrong.WrongGroup+CM0";

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -453,7 +453,7 @@ TEST_F(ProjMgrRpcTests, RpcLoadSolution_UnknownComponent) {
   const auto& responses = RunRpcMethods(requests);
   EXPECT_TRUE(responses[0]["result"]["success"]);
   EXPECT_TRUE(responses[1]["result"]["success"]);
-  EXPECT_EQ("no component was found with identifier 'ARM::UNKNOWN:COMPONENT'",
+  EXPECT_EQ("component 'ARM::UNKNOWN:COMPONENT' not found in included packs",
     responses[2]["result"]["errors"][0]);
 }
 

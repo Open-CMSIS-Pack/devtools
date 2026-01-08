@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -469,8 +469,8 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessComponents_Csub) {
   EXPECT_TRUE(context.components.find("ARM::Board:Test:Rev1@1.1.1") != context.components.end());
 
   auto errorMap = ProjMgrLogger::Get().GetErrors();
-  EXPECT_EQ("no component was found with identifier 'Board:Test'\n  did you mean 'Board:Test:Rev1'?", errorMap["test_component_csub"][0]);
-  EXPECT_EQ("no component was found with identifier 'Device:Startup'\n  did you mean 'Device:Startup&RteTest Startup'?",
+  EXPECT_EQ("component 'Board:Test' not found in included packs\n  did you mean 'Board:Test:Rev1'?", errorMap["test_component_csub"][0]);
+  EXPECT_EQ("component 'Device:Startup' not found in included packs\n  did you mean 'Device:Startup&RteTest Startup'?",
     errorMap["test_component_csub"][1]);
  }
 
