@@ -4,3 +4,4 @@ layer:
 
   packs:
     - pack: ARM::RteTestBoard
+    - pack: ARM::RteTest_DFP@^0.2.0-0

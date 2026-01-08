@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
+ * Copyright (c) 2025-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -574,6 +574,64 @@ TEST_F(ProjMgrRpcTests, RpcSelectComponent) {
   EXPECT_FALSE(responses[5]["result"].contains("validation"));
 }
 
+TEST_F(ProjMgrRpcTests, RpcSelectComponentMissing) {
+  string context = "missing-component+CM0";
+  vector<string> contextList = {
+    context
+  };
+  RpcArgs::Options opt{""};
+  json param;
+  param["context"] = context;
+  param["id"] = "RteTest:Missing:Component";
+  param["count"] = 0;
+  param["options"] = json::object();
+
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "ValidateComponents", json({{ "context", context }}));
+  requests += FormatRequest(4, "GetComponentsTree", json({{ "context", context }, {"all", false}}));
+  requests += FormatRequest(5, "GetUsedItems", json({{ "context", context }}));
+  // unselect component
+  requests += FormatRequest(6, "SelectComponent", param);
+  requests += FormatRequest(7, "ValidateComponents", json({{ "context", context }}));
+  // select component again
+  param["count"] = 1;
+  requests += FormatRequest(8, "SelectComponent", param);
+  requests += FormatRequest(9, "ValidateComponents", json({{ "context", context }}));
+  // finally unselect and apply
+  param["count"] = 0;
+  requests += FormatRequest(10, "SelectComponent", param);
+  requests += FormatRequest(11, "ValidateComponents", json({{ "context", context }}));
+  requests += FormatRequest(12, "Apply", json({{ "context", context }}));
+  requests += FormatRequest(13, "GetUsedItems", json({{ "context", context }}));
+
+  const auto& responses = RunRpcMethods(requests);
+  // selectable
+  auto validation = responses[2]["result"]["validation"][0];
+  EXPECT_EQ("RteTest:Missing:Component", validation["id"]);
+  EXPECT_EQ("MISSING", validation["result"]);
+
+  EXPECT_TRUE(responses[3]["result"]["classes"][2].contains("result"));
+  string res = responses[3]["result"]["classes"][2]["result"];
+  EXPECT_EQ(res, "MISSING");
+
+  auto components = responses[4]["result"]["components"];
+  EXPECT_EQ(components.size(), 1);
+  EXPECT_EQ(components[0]["id"], "RteTest:Missing:Component");
+  EXPECT_EQ(components[0]["selectedCount"], 1);
+
+  EXPECT_TRUE(responses[5]["result"]["success"]);
+  EXPECT_EQ(responses[6]["result"]["result"], "IGNORED");
+  EXPECT_FALSE(responses[6]["result"].contains("validation"));
+
+  EXPECT_EQ(responses[8]["result"]["result"], "MISSING");
+
+  EXPECT_EQ(responses[10]["result"]["result"], "IGNORED");
+
+  components = responses[12]["result"]["components"];
+  EXPECT_EQ(components.size(), 0);
+}
+
+
 TEST_F(ProjMgrRpcTests, RpcSelectVariant) {
   string context = "incompatible-variant+CM0";
   vector<string> contextList = {
@@ -635,7 +693,6 @@ TEST_F(ProjMgrRpcTests, RpcSelectBundle) {
   EXPECT_EQ(responses[4]["result"]["message"], "Bundle 'undefined' is not found for component class 'RteTestBundle'");
   EXPECT_TRUE(responses[5]["result"]["success"]);   // bundle '' found
   EXPECT_EQ(responses[6]["error"]["message"], "UnknownCclass: component class not found");
-
 }
 
 
@@ -694,7 +751,6 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   EXPECT_EQ(components[1]["options"]["layer"], "core.clayer.yml");
   EXPECT_EQ(components[1]["options"]["explicitVersion"], "@>=0.1.0");
   EXPECT_TRUE(components[1]["options"]["explicitVendor"]);
-
 }
 
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfoSimple) {
@@ -763,6 +819,42 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfo) {
   EXPECT_EQ(packInfos[7]["id"], "SomeVendor::RteTest@0.0.1");
   EXPECT_FALSE(packInfos[7].contains("used"));
 }
+
+TEST_F(ProjMgrRpcTests, RpcGetPacksInfoLayer) {
+  string context = "packs.CompatibleLayers+RteTest_ARMCM3";
+  vector<string> contextList = {
+    context
+  };
+
+  auto requests = CreateLoadRequests("/TestLayers/packs.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
+  requests += FormatRequest(5, "GetPacksInfo", json({{ "context", context }, {"all", true}}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 4);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@^0.2.0-0");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(RteUtils::ExtractFileName(packs[0]["origin"]), "packs.clayer.yml");
+  EXPECT_EQ(RteUtils::ExtractFileName(packs[1]["origin"]), "packs.csolution.yml");
+  EXPECT_EQ(RteUtils::ExtractFileName(packs[2]["origin"]), "packs.cproject.yml");
+  EXPECT_EQ(RteUtils::ExtractFileName(packs[3]["origin"]), "packs.clayer.yml");
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
+  auto packInfos = responses[3]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 3);
+  EXPECT_EQ(packInfos[2]["id"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_TRUE(packInfos[2].contains("used"));
+
+  packInfos = responses[4]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 8);
+  EXPECT_EQ(packInfos[7]["id"], "SomeVendor::RteTest@0.0.1");
+  EXPECT_FALSE(packInfos[7].contains("used"));
+}
+
 
 
 TEST_F(ProjMgrRpcTests, RpcSelectPack) {
@@ -859,7 +951,6 @@ TEST_F(ProjMgrRpcTests, RpcSelectPack) {
   EXPECT_TRUE(packs[4]["selected"]);
 
 // after apply
-
   packs = responses[10]["result"]["packs"];
   EXPECT_EQ(packs.size(), 4);
   EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@>=0.2.0");
@@ -882,13 +973,10 @@ TEST_F(ProjMgrRpcTests, RpcSelectPack) {
   EXPECT_TRUE(packs[3]["selected"]);
 
   // list packs
-  // TODO: updated test when unresolved packs will be listed
+  // TODO: update test when unresolved packs will be listed
   packInfos = responses[11]["result"]["packs"];
   EXPECT_EQ(packInfos.size(), 3);
-
 }
-
-
 
 TEST_F(ProjMgrRpcTests, RpcGetDraftProjects) {
   // filter 'board'
