@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1906,7 +1906,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     RteComponent* matchedComponent = matchedComponentInstance->GetComponent();
     if (!matchedComponent) {
       // No match
-      ProjMgrLogger::Get().Error("no component was found with identifier '" + item.component + "'" +
+      ProjMgrLogger::Get().Error("component '" + item.component + "' not found in included packs" +
         (!hint.empty() ? "\n  did you mean '" + hint + "'?" : ""), context.name);
       error = true;
       if(!m_rpcMode) {
@@ -2168,14 +2168,9 @@ bool ProjMgrWorker::AddRequiredComponents(ContextItem& context) {
   for (auto& [_, component] : context.components) {
     selItems.push_back(component.instance);
   }
-  set<RteComponentInstance*> unresolvedComponents;
-  context.rteActiveProject->AddCprjComponents(selItems, context.rteActiveTarget, unresolvedComponents);
-  if (!unresolvedComponents.empty()) {
-    string msg = "unresolved components:";
-    for (const auto& component : unresolvedComponents) {
-      msg += "\n" + component->GetComponentID(true);
-    }
-    ProjMgrLogger::Get().Error(msg, context.name);
+  context.rteActiveProject->AddCprjComponents(selItems, context.rteActiveTarget, context.unresolvedComponents);
+  if (!context.unresolvedComponents.empty()) {
+    // unresolved components error messages are previously sent during component processing
     return false;
   }
   return true;
@@ -3967,7 +3962,8 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
     // TODO: Add uniquely identified missing dependencies to RTE Model
 
     // Get dependency validation results
-    if (ValidateContext(context)  < RteItem::ConditionResult::FULFILLED ) {
+    if (ValidateContext(context) < RteItem::ConditionResult::FULFILLED
+      && context.unresolvedComponents.empty()) {
       string msg = "dependency validation for context '" + context.name + "' failed:";
       set<string> results;
       FormatValidationResults(results, context);
