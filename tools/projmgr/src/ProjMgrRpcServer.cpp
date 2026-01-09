@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2025-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -420,7 +420,7 @@ RpcArgs::PackReference& RpcHandler::EnsurePackReferenceForPack(const string& con
     newRef.origin = origin;
   }
   newRef.selected = true;
-  return GetPackReferences(context).emplace_back(newRef);
+  return packRefs.emplace_back(newRef);
 }
 
 
@@ -530,8 +530,6 @@ RpcArgs::BoardInfo RpcHandler::GetBoardInfo(const string& id)
 }
 
 
-
-
 RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool& all) {
   RteTarget* rteTarget = GetActiveTarget(context);
   UpdateFilter(context, rteTarget, all);
@@ -620,7 +618,6 @@ bool RpcHandler::SelectVariantOrVersion(const string& context, const string& id,
   }
   return true;
 }
-
 
 
 RpcArgs::SuccessResult RpcHandler::SelectBundle(const string& context, const string& className, const string& bundleName) {
