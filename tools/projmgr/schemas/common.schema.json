@@ -1745,7 +1745,7 @@
     "SetupType": {
       "type": "object",
       "properties": {
-        "setup":           {
+        "setup": {
           "title": "setup:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#setups",
           "type": "string",
           "description": "Description of the setup."
@@ -1773,7 +1773,7 @@
         "undefine":        { "$ref": "#/definitions/UndefinesType" },
         "warnings":        { "$ref": "#/definitions/WarningsType" }
       },
-      "oneOf": [
+      "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" }
       ],
       "additionalProperties": false
@@ -1851,7 +1851,7 @@
         "not-for-context": { "$ref": "#/definitions/NotForContext" },
         "for-compiler":    { "$ref": "#/definitions/CompilersType" }
       },
-      "oneOf": [
+      "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" }
       ],
       "additionalProperties": false

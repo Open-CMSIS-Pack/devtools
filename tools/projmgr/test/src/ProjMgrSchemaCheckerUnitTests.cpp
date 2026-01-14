@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -401,6 +401,135 @@ vector<ErrInfo> expectedErrPos = {
     for (auto& err : errList) {
       auto errItr = find_if(errorPos.begin(), errorPos.end(),
         [&](const std::pair<int,int>& errPos) {
+          return err.m_line == errPos.first && err.m_col == errPos.second;
+        });
+      EXPECT_TRUE(errorPos.end() != errItr) << "failed for: " << data;
+    }
+  }
+}
+
+TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Setup_Linker) {
+  typedef std::pair<int, int> ErrInfo;
+
+  // only for-context
+  const char* valid_setup_schema_Ex1 = "\
+project:\n\
+  setups:\n\
+    - setup: debug Setup\n\
+      for-context: +Debug\n\
+      define:\n\
+        - TEST: 1\n\
+";
+
+  //only not-for-context
+  const char* valid_setup_schema_Ex2 = "\
+project:\n\
+  setups:\n\
+    - setup: Release Setup\n\
+      not-for-context: +Release\n\
+      optimize: speed\n\
+";
+
+  // neither for-context not not-for-context present
+  const char* valid_setup_schema_Ex3 = "\
+project:\n\
+  setups:\n\
+    - setup: test\n\
+      misc:\n\
+        - Link:\n\
+          - --verbose\n\
+";
+
+  // both for-context and not-for-context
+  const char* invalid_setup_schema_Ex1 = "\
+project:\n\
+  setups:\n\
+    - setup: test\n\
+      for-context: +Debug\n\
+      not-for-context: +Release\n\
+";
+
+  // No setup string
+  const char* invalid_setup_schema_Ex2 = "\
+project:\n\
+  setups:\n\
+    - setup:\n\
+      for-context: +Debug\n\
+";
+
+  const char* valid_linker_schema_Ex1 = "\
+project:\n\
+  linker:\n\
+    - script: MyLinker.scf.src\n\
+      for-context: +Debug\n\
+";
+
+  const char* valid_linker_schema_Ex2 = "\
+project:\n\
+  linker:\n\
+    - script: MyLinker.scf.src\n\
+      not-for-context: +Debug\n\
+";
+
+  const char* valid_linker_schema_Ex3 = "\
+project:\n\
+  linker:\n\
+    - script: MyLinker.scf.src\n\
+      for-compiler: AC6\n\
+    - script: MyLinker.ld\n\
+      for-compiler: CLANG\n\
+";
+
+  const char* invalid_linker_schema_Ex1 = "\
+project:\n\
+  linker:\n\
+    - script: MyLinker.scf.src\n\
+      for-context: +Debug\n\
+      not-for-context: +Release\n\
+";
+
+  const char* invalid_linker_schema_Ex2 = "\
+project:\n\
+  linker:\n\
+    - script: MyLinker.scf.src\n\
+      for-context: +Debug\n\
+      invalid: 1\n\
+";
+
+  vector<std::tuple<const char*, bool, vector<ErrInfo>>> vecTestData = {
+    // data, expectedRetVal, errorPos
+    { valid_setup_schema_Ex1, true, vector<ErrInfo>{ } },
+    { valid_setup_schema_Ex2, true, vector<ErrInfo>{ } },
+    { valid_setup_schema_Ex3, true, vector<ErrInfo>{ } },
+    { invalid_setup_schema_Ex1, false, vector<ErrInfo>{ {3,7} } },
+    { invalid_setup_schema_Ex2, false, vector<ErrInfo>{ {3,7} } },
+    { valid_linker_schema_Ex1, true, vector<ErrInfo>{ } },
+    { valid_linker_schema_Ex2, true, vector<ErrInfo>{ } },
+    { valid_linker_schema_Ex3, true, vector<ErrInfo>{ } },
+    { invalid_linker_schema_Ex1, false, vector<ErrInfo>{ {3,7} } },
+    { invalid_linker_schema_Ex2, false, vector<ErrInfo>{ {5,7} } }
+  };
+
+  auto writeFile = [](const string& filePath, const char* data) {
+    ofstream fileStream(filePath);
+    fileStream << data;
+    fileStream << endl;
+    fileStream << flush;
+    fileStream.close();
+    };
+
+  const string& filename = testoutput_folder +
+    "/test_schema_validation.cproject.yml";
+  for (auto [data, expectRetVal, errorPos] : vecTestData) {
+    writeFile(filename, data);
+    EXPECT_EQ(expectRetVal, Validate(filename)) << "failed for: " << data;
+
+    // Check errors
+    auto errList = GetErrors();
+    EXPECT_EQ(errList.size(), expectRetVal ? 0 : errorPos.size()) << "failed for: " << data;
+    for (auto& err : errList) {
+      auto errItr = find_if(errorPos.begin(), errorPos.end(),
+        [&](const std::pair<int, int>& errPos) {
           return err.m_line == errPos.first && err.m_col == errPos.second;
         });
       EXPECT_TRUE(errorPos.end() != errItr) << "failed for: " << data;
