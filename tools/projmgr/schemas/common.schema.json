@@ -187,7 +187,7 @@
     "CompilerType": {
       "title":"compiler:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#compiler",
       "type": "string",
-      "pattern": "^(GCC|CLANG|AC6|IAR|CLANG_TI)(@(>=)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?$",
+      "pattern": "^(GCC|CLANG|AC6|IAR|CLANG_TI|XC)(@(>=)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?$",
       "description": "Compiler toolchain to be used, optionally with version, for example AC6@6.23.0."
     },
     "ConsumesProvidesType": {
