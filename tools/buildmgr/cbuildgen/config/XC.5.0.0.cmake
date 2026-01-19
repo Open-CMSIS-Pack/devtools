@@ -76,7 +76,7 @@ set(LANGUAGE_CC_FLAGS     "-std=c90" "-std=gnu90" "-std=c99" "-std=gnu99" "-std=
 set(LANGUAGE_CXX_FLAGS    ""         ""           ""         ""           ""         ""            ""    ""    "-std=c++98" "-std=gnu++98" "-std=c++03" "-std=gnu++03" "-std=c++11" "-std=gnu++11" "-std=c++14" "-std=gnu++14" "-std=c++17" "-std=gnu++17" "" "" "" "" )
 
 # XC32 Processor/DFP flags
-set(XC32_COMMON_FLAGS "-mprocessor=${DNAME} -mdfp=${DPACK_DIR}")
+set(XC32_COMMON_FLAGS "-mprocessor=${DNAME} -mdfp=${DPACK_DIR}/")
 
 set(CPP_FLAGS "-E -P ${XC32_COMMON_FLAGS} -xc")
 set(CPP_DEFINES ${LD_SCRIPT_PP_DEFINES})

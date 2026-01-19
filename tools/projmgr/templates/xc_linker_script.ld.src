@@ -40,7 +40,7 @@ MEMORY
 }
 
 #ifndef CODE_REGION
-# if ROM0_SIZE > 0
+# if __ROM0_SIZE > 0
 #   define CODE_REGION rom
 # else
 #   define CODE_REGION ram
@@ -48,7 +48,7 @@ MEMORY
 #endif
 #ifndef DATA_REGION
 # define DATA_REGION ram
-#endif 
+#endif
 #ifndef VECTOR_REGION
 # define VECTOR_REGION CODE_REGION
 #endif
