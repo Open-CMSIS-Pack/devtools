@@ -22,20 +22,6 @@ if(DEFINED TOOLCHAIN_ROOT)
   set(OC ${TOOLCHAIN_ROOT}/${PREFIX}${OC}${EXT})
 endif()
 
-# Environment variables
-
-if(NOT DEFINED ENV{DEVICE_ID})
-    message(FATAL_ERROR "Environment variable DEVICE_ID not defined!")
-endif()
-
-if(NOT DEFINED ENV{DFP_PATH})
-    message(FATAL_ERROR "Environment variable DFP_PATH not defined!")
-endif()
-
-set(DEVICE_ID $ENV{DEVICE_ID})
-set(DFP_PATH  $ENV{DFP_PATH})
-set(LINKER_SCRIPT "${DFP_PATH}/xc32/${DEVICE_ID}/${DEVICE_ID}.ld")
-
 # Helpers
 
 function(cbuild_set_option_flags lang option value flags)
@@ -51,7 +37,7 @@ function(cbuild_set_option_flags lang option value flags)
     endif()
   elseif(NOT value STREQUAL "")
     string(TOLOWER "${option}" _option)
-    message(FATAL_ERROR "unkown '${_option}' value '${value}' !")
+    message(FATAL_ERROR "unknown '${_option}' value '${value}' !")
   endif()
 endfunction()
 
@@ -67,8 +53,8 @@ function(cbuild_set_options_flags lang optimize debug warnings language flags)
 endfunction()
 
 
-set(OPTIMIZE_VALUES       "debug" "none" "balanced" "size" "speed" "minimal")
-set(OPTIMIZE_CC_FLAGS     "-Og"   "-O0"  "-O2"      "-Os" "-O3"   "-O1")
+set(OPTIMIZE_VALUES       "debug" "none" "balanced" "size" "speed")
+set(OPTIMIZE_CC_FLAGS     "-Og"   "-O0"  "-O2"      "-Os"  "-O1")
 set(OPTIMIZE_CXX_FLAGS    ${OPTIMIZE_CC_FLAGS})
 set(OPTIMIZE_LD_FLAGS     ${OPTIMIZE_CC_FLAGS})
 set(OPTIMIZE_ASM_FLAGS    ${OPTIMIZE_CC_FLAGS})
@@ -85,12 +71,20 @@ set(WARNINGS_CXX_FLAGS    "-Wall"  "-w"        "-Wall -Wextra")
 set(WARNINGS_ASM_FLAGS    "-Wall"  "-w"        "-Wall -Wextra")
 set(WARNINGS_LD_FLAGS     ""       ""          "")
 
-set(LANGUAGE_VALUES       "c90"      "gnu90"      "c99"      "gnu99"      "c11"      "gnu11"        "c++98"      "gnu++98"      "c++03"      "gnu++03"      "c++11"      "gnu++11"      "c++14"      "gnu++14"      "c++17"      "gnu++17"     )
-set(LANGUAGE_CC_FLAGS     "-std=c90" "-std=gnu90" "-std=c99" "-std=gnu99" "-std=c11" "-std=gnu11"   ""           ""             ""           ""             ""           ""             ""           ""             ""           ""            )
-set(LANGUAGE_CXX_FLAGS    ""         ""           ""         ""           ""         ""             "-std=c++98" "-std=gnu++98" "-std=c++03" "-std=gnu++03" "-std=c++11" "-std=gnu++11" "-std=c++14" "-std=gnu++14" "-std=c++17" "-std=gnu++17")
+set(LANGUAGE_VALUES       "c90"      "gnu90"      "c99"      "gnu99"      "c11"      "gnu11"       ""    ""    "c++98"      "gnu++98"      "c++03"      "gnu++03"      "c++11"      "gnu++11"      "c++14"      "gnu++14"      "c++17"      "gnu++17"      "" "" "" "" )
+set(LANGUAGE_CC_FLAGS     "-std=c90" "-std=gnu90" "-std=c99" "-std=gnu99" "-std=c11" "-std=gnu11"  ""    ""    ""           ""             ""           ""             ""           ""             ""           ""             ""           ""             "" "" "" "" )
+set(LANGUAGE_CXX_FLAGS    ""         ""           ""         ""           ""         ""            ""    ""    "-std=c++98" "-std=gnu++98" "-std=c++03" "-std=gnu++03" "-std=c++11" "-std=gnu++11" "-std=c++14" "-std=gnu++14" "-std=c++17" "-std=gnu++17" "" "" "" "" )
 
 # XC32 Processor/DFP flags
-set(XC32_COMMON_FLAGS "-mprocessor=${DEVICE_ID} -mdfp=${DFP_PATH}")
+set(XC32_COMMON_FLAGS "-mprocessor=${DNAME} -mdfp=${DPACK_DIR}")
+
+set(CPP_FLAGS "-E -P ${XC32_COMMON_FLAGS} -xc")
+set(CPP_DEFINES ${LD_SCRIPT_PP_DEFINES})
+if(DEFINED LD_REGIONS AND NOT LD_REGIONS STREQUAL "")
+  set(CPP_INCLUDES "-include \"${LD_REGIONS}\"")
+endif()
+set(CPP_ARGS_LD_SCRIPT "${CPP_FLAGS} ${CPP_DEFINES} ${CPP_INCLUDES} \"${LD_SCRIPT}\" -o \"${LD_SCRIPT_PP}\"")
+separate_arguments(CPP_ARGS_LD_SCRIPT NATIVE_COMMAND ${CPP_ARGS_LD_SCRIPT})
 
 # C Compiler
 
@@ -115,7 +109,7 @@ set(CMAKE_ASM_FLAGS "${XC32_COMMON_FLAGS} ${ASM_OPTIONS_FLAGS}")
 
 set(LD_OPTIONS_FLAGS "")
 cbuild_set_options_flags(LD "${OPTIMIZE}" "${DEBUG}" "${WARNINGS}" "" LD_OPTIONS_FLAGS)
-set(CMAKE_EXE_LINKER_FLAGS "${XC32_COMMON_FLAGS} ${LD_OPTIONS_FLAGS} -T ${LINKER_SCRIPT}")
+set(CMAKE_EXE_LINKER_FLAGS "${XC32_COMMON_FLAGS} ${LD_OPTIONS_FLAGS} -T")
 
 # ELF to HEX conversion
 set(ELF2HEX  -O ihex   "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>.elf" "${OUT_DIR}/${HEX_FILE}")
