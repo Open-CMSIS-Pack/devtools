@@ -35,6 +35,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   setup:
     uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
@@ -215,6 +218,8 @@ jobs:
     # Debian package generation in ubuntu 22.04 produces incompatible metadata
     runs-on: ubuntu-22.04
     timeout-minutes: 15
+    permissions:
+      contents: write
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
@@ -506,8 +511,7 @@ jobs:
         AC6_TOOLCHAIN_6_18_0: ${{ github.workspace }}/${{ matrix.toolchain_root }}
     runs-on: ubuntu-22.04
     timeout-minutes: 15
-    strategy:
-      fail-fast: true
+
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
