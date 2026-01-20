@@ -1,5 +1,3 @@
-
-
 name: Publish Test Results
 
 on:
@@ -9,6 +7,9 @@ on:
     branches-ignore: ["main"]
     types:
       - completed
+
+permissions:
+  contents: read
 
 jobs:
   publish-test-results:

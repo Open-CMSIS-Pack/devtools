@@ -35,6 +35,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   setup:
     uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
@@ -114,7 +117,8 @@ jobs:
     needs: [ build, unittest ]
     runs-on: ubuntu-22.04
     timeout-minutes: 15
-
+    permissions:
+      contents: write
     steps:
       - name: Checkout devtools
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
