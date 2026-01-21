@@ -31,7 +31,7 @@ comment:
   behavior: new
 
 ignore:
-  - /test/.*
+  - "**/test/**"
   - /docs/*
   
 flags:

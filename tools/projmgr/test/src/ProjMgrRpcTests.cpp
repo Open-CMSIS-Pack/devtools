@@ -1145,4 +1145,35 @@ TEST_F(ProjMgrRpcTests, RpcListMissingPacks) {
   EXPECT_EQ(responses[2]["result"]["message"], "Setup of solution contexts failed");
 }
 
+TEST_F(ProjMgrRpcTests, RpcGetVariables) {
+  vector<string> contextList = {
+    "variables.BuildType1+TargetType1",
+  };
+
+  auto requests = CreateLoadRequests("/TestLayers/variables.csolution.yml", "TargetType1", contextList);
+  int id = 3;
+  for(const auto& context : contextList) {
+    requests += FormatRequest(id++, "GetVariables", json({{ "context", context }}));
+  }
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  map<string, string> vars = responses[2]["result"]["variables"];
+
+  EXPECT_EQ(vars["BuildType"], "BuildType1");
+  EXPECT_EQ(vars["Compiler"], "AC6");
+  EXPECT_EQ(vars["Dname"], "RteTest_ARMCM0");
+  EXPECT_EQ(vars["Dpack"], testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0/");
+  EXPECT_EQ(vars["Pname"], "");
+  EXPECT_EQ(vars["Project"], "variables");
+  EXPECT_EQ(vars["Solution"], "variables");
+  EXPECT_EQ(vars["TargetType"], "TargetType1");
+  EXPECT_EQ(vars["VarBuildLayer"], "./variables/build1.clayer.yml");
+  EXPECT_EQ(vars["VarSolution"], "./variables/app.clayer.yml");
+  EXPECT_EQ(vars["VarSolutionDir"], testinput_folder + "/TestLayers/variables/solutionDir.clayer.yml");
+  EXPECT_EQ(vars["VarTargetLayer"], "./variables/target1.clayer.yml");
+}
+
+
 // end of ProjMgrRpcTests.cpp
