@@ -1654,6 +1654,10 @@ vector<string> ProjMgrWorker::FindMatchingPackIdsInCbuildPack(const PackItem& ne
 }
 
 bool ProjMgrWorker::ProcessPackages(ContextItem& context, const string& packRoot) {
+
+  if(!context.packRequirements.empty()) {
+    return true; // already processed for context
+  }
   vector<PackItem> packRequirements;
 
   // Solution package requirements
