@@ -119,6 +119,8 @@ jobs:
         ((github.event.schedule != '') && (!github.event.repository.private))
     runs-on: ubuntu-22.04
     timeout-minutes: 5
+    permissions:
+      contents: write
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
