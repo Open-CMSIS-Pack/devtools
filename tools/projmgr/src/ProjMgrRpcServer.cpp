@@ -86,6 +86,7 @@ public:
   RpcArgs::UsedItems GetUsedItems(const string& context) override;
   RpcArgs::PacksInfo GetPacksInfo(const string& context, const bool& all) override;
   RpcArgs::SuccessResult SelectPack(const string& context, const RpcArgs::PackReference& pack) override;
+  RpcArgs::VariablesResult GetVariables(const string& context) override;
   RpcArgs::DeviceList GetDeviceList(const string& context, const string& namePattern, const string& vendor) override;
   RpcArgs::DeviceInfo GetDeviceInfo(const string& id) override;
   RpcArgs::BoardList GetBoardList(const string& context, const string& namePattern, const string& vendor) override;
@@ -472,6 +473,15 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& a
 
   packsInfo.success = true;
   return packsInfo;
+}
+
+RpcArgs::VariablesResult RpcHandler::GetVariables(const string& context) {
+  RpcArgs::VariablesResult res;
+  res.success = false;
+  auto& contextItem = GetContext(context);
+  res.variables = contextItem.variables;
+  res.success = true;
+  return res;
 }
 
 RpcArgs::DeviceList RpcHandler::GetDeviceList(const string& context, const string& namePattern, const string& vendor)
