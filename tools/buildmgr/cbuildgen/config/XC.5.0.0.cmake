@@ -52,6 +52,21 @@ function(cbuild_set_options_flags lang optimize debug warnings language flags)
   set(${flags} "${tmp}" PARENT_SCOPE)
 endfunction()
 
+set(MDFP "")
+file(GLOB_RECURSE ALL_DIRS LIST_DIRECTORIES true "${DPACK_DIR}")
+foreach(DIR_PATH ${ALL_DIRS})
+    if(IS_DIRECTORY "${DIR_PATH}")
+	    get_filename_component(CURRENT_DIR_NAME "${DIR_PATH}" NAME)
+	    if(CURRENT_DIR_NAME STREQUAL DNAME AND EXISTS "${DIR_PATH}/specs-${DNAME}")
+		    set(MDFP "${DIR_PATH}/../../")
+		    break()
+	    endif()
+    endif()
+endforeach()
+
+if(NOT MDFP OR MDFP STREQUAL "")
+	message(FATAL_ERROR " Error: Could not determine the DFP path for -mdfp option!!")
+endif()
 
 set(OPTIMIZE_VALUES       "debug" "none" "balanced" "size" "speed")
 set(OPTIMIZE_CC_FLAGS     "-Og"   "-O0"  "-O2"      "-Os"  "-O1")
@@ -76,7 +91,7 @@ set(LANGUAGE_CC_FLAGS     "-std=c90" "-std=gnu90" "-std=c99" "-std=gnu99" "-std=
 set(LANGUAGE_CXX_FLAGS    ""         ""           ""         ""           ""         ""            ""    ""    "-std=c++98" "-std=gnu++98" "-std=c++03" "-std=gnu++03" "-std=c++11" "-std=gnu++11" "-std=c++14" "-std=gnu++14" "-std=c++17" "-std=gnu++17" "" "" "" "" )
 
 # XC32 Processor/DFP flags
-set(XC32_COMMON_FLAGS "-mprocessor=${DNAME} -mdfp=${DPACK_DIR}/")
+set(XC32_COMMON_FLAGS "-mprocessor=${DNAME} -mdfp=${MDFP}")
 
 set(CPP_FLAGS "-E -P ${XC32_COMMON_FLAGS} -xc")
 set(CPP_DEFINES ${LD_SCRIPT_PP_DEFINES})
