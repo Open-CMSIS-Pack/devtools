@@ -53,7 +53,7 @@ function(cbuild_set_options_flags lang optimize debug warnings language flags)
 endfunction()
 
 set(MDFP "")
-file(GLOB_RECURSE ALL_DIRS LIST_DIRECTORIES true "${DPACK_DIR}")
+file(GLOB_RECURSE ALL_DIRS LIST_DIRECTORIES true "${DPACK_DIR}/*")
 foreach(DIR_PATH ${ALL_DIRS})
     if(IS_DIRECTORY "${DIR_PATH}")
 	    get_filename_component(CURRENT_DIR_NAME "${DIR_PATH}" NAME)
@@ -64,7 +64,7 @@ foreach(DIR_PATH ${ALL_DIRS})
     endif()
 endforeach()
 
-if(NOT MDFP OR MDFP STREQUAL "")
+if(NOT DEFINED MDFP OR MDFP STREQUAL "")
 	message(FATAL_ERROR " Error: Could not determine the DFP path for -mdfp option!!")
 endif()
 
