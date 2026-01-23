@@ -1,0 +1,140 @@
+/*
+ * Copyright (c) 2026 Microchip Technology Inc. and its subsidiaries.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the License); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an AS IS BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+SEARCH_DIR(.)
+
+/*
+ *  Define the __XC32_RESET_HANDLER_NAME macro on the command line when you
+ *  want to use a different name for the Reset Handler function.
+ */
+#ifndef __XC32_RESET_HANDLER_NAME
+#define __XC32_RESET_HANDLER_NAME Reset_Handler
+#endif /* __XC32_RESET_HANDLER_NAME */
+
+ENTRY(__XC32_RESET_HANDLER_NAME)
+
+/* ----------------------------------------------------------------------------
+  Memory definition
+ *----------------------------------------------------------------------------*/
+MEMORY
+{
+  rom  (rx)  : ORIGIN = __ROM0_BASE, LENGTH = __ROM0_SIZE
+  ram  (rwx) : ORIGIN = __RAM0_BASE, LENGTH = __RAM0_SIZE
+}
+
+#ifndef CODE_REGION
+# if __ROM0_SIZE > 0
+#   define CODE_REGION rom
+# else
+#   define CODE_REGION ram
+# endif
+#endif
+#ifndef DATA_REGION
+# define DATA_REGION ram
+#endif
+#ifndef VECTOR_REGION
+# define VECTOR_REGION CODE_REGION
+#endif
+
+SECTIONS
+{
+  .vectors :
+  {
+    . = ALIGN(4);
+    _sfixed = .;
+    KEEP(*(.vectors .vectors.* .vectors_default .vectors_default.*))
+    KEEP(*(.isr_vector))
+    KEEP(*(.reset*))
+    KEEP(*(.after_vectors))
+  } > VECTOR_REGION
+
+  .text :
+  {
+    . = ALIGN(4);
+    *(.glue_7t) *(.glue_7)
+    *(.gnu.linkonce.r.*)
+    *(.ARM.extab* .gnu.linkonce.armextab.*)
+
+    /* Support C constructors, and C destructors in both user code
+       and the C library. This also provides support for C++ code. */
+    . = ALIGN(4);
+    KEEP(*(.init))
+    . = ALIGN(4);
+    __preinit_array_start = .;
+    KEEP (*(.preinit_array))
+    __preinit_array_end = .;
+
+    . = ALIGN(4);
+    __init_array_start = .;
+    KEEP (*(SORT(.init_array.*)))
+    KEEP (*(.init_array))
+    __init_array_end = .;
+
+    . = ALIGN(0x4);
+    KEEP (*crtbegin.o(.ctors))
+    KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
+    KEEP (*(SORT(.ctors.*)))
+    KEEP (*crtend.o(.ctors))
+
+    . = ALIGN(4);
+    KEEP(*(.fini))
+
+    . = ALIGN(4);
+    __fini_array_start = .;
+    KEEP (*(.fini_array))
+    KEEP (*(SORT(.fini_array.*)))
+    __fini_array_end = .;
+
+    KEEP (*crtbegin.o(.dtors))
+    KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
+    KEEP (*(SORT(.dtors.*)))
+    KEEP (*crtend.o(.dtors))
+
+    . = ALIGN(4);
+    _efixed = .;            /* End of text section */
+  } > CODE_REGION
+
+  PROVIDE_HIDDEN (__exidx_start = .);
+  .ARM.exidx :
+  {
+    *(.ARM.exidx* .gnu.linkonce.armexidx.*)
+  } > CODE_REGION
+  PROVIDE_HIDDEN (__exidx_end = .);
+
+  . = ALIGN(4);
+  _etext = .;
+
+  .bss (NOLOAD) :
+  {
+      . = ALIGN(4);
+      __bss_start__ = .;
+      _sbss = . ;
+      _szero = .;
+      *(COMMON)
+      . = ALIGN(4);
+      __bss_end__ = .;
+      _ebss = . ;
+      _ezero = .;
+  } > DATA_REGION
+
+  . = ALIGN(4);
+  _end = . ;
+  _ram_end_ = ORIGIN(ram) + LENGTH(ram) -1 ;
+}
