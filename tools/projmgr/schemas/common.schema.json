@@ -264,6 +264,11 @@
       "type": ["null", "boolean"],
       "description": "Enable Link Time Optimization (LTO)"
     },
+    "LinkDirectiveType": {
+      "title": "link:",
+      "enum": [ "whole-archive" ],
+      "description": "Link directive: whole-archive instructs the linker to include the entire library"
+    },
     "DebugType": {
       "title": "debug:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#debug",
       "enum": [ "on", "off" ],
@@ -864,7 +869,6 @@
       "description": "The file attribute defines the special handling in the project when being used as configuration or template file."
     },
     "FileLanguageType": {
-      "title": "languange:",
       "enum": [ "asm", "c", "cpp", "c-cpp", "link" ],
       "description": "File language attribute type defines the language for source, header and include file categories. Based on the language the information is used by language specific build tools."
     },
@@ -882,7 +886,7 @@
         },
         "add-path":        { "$ref": "#/definitions/AddpathsType" },
         "add-path-asm":    { "$ref": "#/definitions/AddAsmPathsType" },
-        "attr":            { "title": "attr:", "$ref": "#/definitions/FileAttributeType" },
+        "attr":            { "$ref": "#/definitions/FileAttributeType" },
         "base": {
           "title": "base:",
           "type": "string",
@@ -904,6 +908,7 @@
         "language":        { "$ref": "#/definitions/FileLanguageType" },
         "language-C":      { "$ref": "#/definitions/LanguageCType" },
         "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
+        "link":            { "$ref": "#/definitions/LinkDirectiveType" },
         "link-time-optimize": { "$ref": "#/definitions/LinkTimeOptimizeType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" },

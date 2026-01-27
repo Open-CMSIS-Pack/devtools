@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -362,6 +362,7 @@ void ProjMgrCbuild::SetFilesNode(YAML::Node node, const ContextItem* context, co
     RteFsUtils::NormalizePath(fileName, context->directories.cprj);
     SetNodeValue(fileNode[YAML_FILE], FormatPath(fileName, context->directories.cbuild));
     SetNodeValue(fileNode[YAML_CATEGORY], file.category.empty() ? RteFsUtils::FileCategoryFromExtension(file.file) : file.category);
+    SetNodeValue(fileNode[YAML_LINK], file.link);
     SetControlsNode(fileNode, context, file.build);
     node.push_back(fileNode);
   }

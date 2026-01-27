@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -774,6 +774,7 @@ bool ProjMgrYamlParser::ParseFiles(const YAML::Node& parent, const string& file,
       ParsePortablePath(fileEntry, file, YAML_FILE, fileItem.file);
       ParseVectorOrString(fileEntry, YAML_FORCOMPILER, fileItem.forCompiler);
       ParseString(fileEntry, YAML_CATEGORY, fileItem.category);
+      ParseString(fileEntry, YAML_LINK, fileItem.link);
       if (!ParseBuildType(fileEntry, file, fileItem.build)) {
         return false;
       }
@@ -1475,6 +1476,7 @@ const set<string> filesKeys = {
   YAML_LANGUAGE_C,
   YAML_LANGUAGE_CPP,
   YAML_LINK_TIME_OPTIMIZE,
+  YAML_LINK,
   YAML_DEFINE,
   YAML_DEFINE_ASM,
   YAML_UNDEFINE,

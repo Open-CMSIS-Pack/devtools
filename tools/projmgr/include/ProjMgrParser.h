@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -439,6 +439,7 @@ struct YamlMark {
  *        file path,
  *        for compiler control,
  *        file category,
+ *        link directives,
  *        file build settings,
  *        type filter,
  *        yaml mark
@@ -447,9 +448,10 @@ struct FileNode {
   std::string file;
   std::vector<std::string> forCompiler;
   std::string category;
+  std::string link;
   BuildType build;
   TypeFilter type;
-  YamlMark mark;
+  YamlMark mark;;
 };
 
 /**

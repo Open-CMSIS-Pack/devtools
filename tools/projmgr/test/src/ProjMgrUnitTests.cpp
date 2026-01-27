@@ -7225,6 +7225,17 @@ TEST_F(ProjMgrUnitTests, LinkTimeOptimize) {
   EXPECT_TRUE(cbuild["build"]["groups"][0]["files"][0]["link-time-optimize"].IsDefined());
 }
 
+TEST_F(ProjMgrUnitTests, LinkWholeArchive) {
+  char* argv[3];
+  const string& csolution = testinput_folder + "/TestLinkLib/solution.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(3, argv, m_envp));
+  const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestLinkLib/out/project/CM0/project+CM0.cbuild.yml");
+  EXPECT_EQ("library", cbuild["build"]["groups"][0]["files"][0]["category"].as<string>());
+  EXPECT_EQ("whole-archive", cbuild["build"]["groups"][0]["files"][0]["link"].as<string>());
+}
+
 TEST_F(ProjMgrUnitTests, ImageOnly) {
   char* argv[5];
   const string& csolution = testinput_folder + "/ImageOnly/image-only.csolution.yml";
