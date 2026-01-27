@@ -23,6 +23,7 @@ class RteComponentInstance;
 class RteComponentAggregate;
 class RteComponentGroup;
 class RteDevice;
+class RteDeviceItem;
 class RteBoard;
 class RteItem;
 class RteModel;
@@ -43,7 +44,7 @@ public:
   void CollectBoardList(RpcArgs::BoardList& boardList, const std::string& namePattern, const std::string& vendor) const;
   void CollectBoardInfo(RpcArgs::BoardInfo& boardInfo, const std::string& id) const;
 
-  RpcArgs::Device FromRteDevice(RteDevice* rteDevice, bool bIncludeProperties) const;
+  RpcArgs::Device FromRteDevice(RteDeviceItem* rteDevice, bool bIncludeProperties) const;
   RpcArgs::Board  FromRteBoard(RteBoard* rteBoard, bool bIncludeProperties) const;
 
   RpcArgs::Component FromRteComponent(const RteComponent* rteComponent) const;

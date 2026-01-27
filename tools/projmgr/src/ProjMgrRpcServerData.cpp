@@ -155,7 +155,7 @@ std::set<std::string> RpcDataCollector::GetUsedPacks() const {
   return key_set(usedPacks);
 }
 
-RpcArgs::Device RpcDataCollector::FromRteDevice( RteDevice* rteDevice, bool bIncludeProperties) const {
+RpcArgs::Device RpcDataCollector::FromRteDevice( RteDeviceItem* rteDevice, bool bIncludeProperties) const {
   RpcArgs::Device d;
   d.id = rteDevice->GetVendorName() + RteConstants::SUFFIX_CVENDOR + rteDevice->GetName();
   d.family = rteDevice->GetEffectiveAttribute("Dfamily");

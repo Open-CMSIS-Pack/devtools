@@ -83,6 +83,7 @@ public:
   RpcArgs::SuccessResult Resolve(const string& context) override;
   RpcArgs::SuccessResult LoadPacks(void) override;
   RpcArgs::SuccessResult LoadSolution(const string& solution, const string& activeTarget) override;
+  RpcArgs::ContextInfo GetContextInfo(const string& context) override;
   RpcArgs::UsedItems GetUsedItems(const string& context) override;
   RpcArgs::PacksInfo GetPacksInfo(const string& context, const bool& all) override;
   RpcArgs::SuccessResult SelectPack(const string& context, const RpcArgs::PackReference& pack) override;
@@ -361,13 +362,39 @@ RpcArgs::SuccessResult RpcHandler::SelectPack(const string& context, const RpcAr
   return result;
 }
 
+RpcArgs::ContextInfo RpcHandler::GetContextInfo(const string& context) {
+  RpcArgs::ContextInfo contextInfo;
+  RpcDataCollector dc(GetActiveTarget(context));
+  contextInfo.success = true;
+  dc.CollectUsedComponents(contextInfo.components);
+  // get all references, even if they are not selected , because it is useful for client to remove them from files
+  contextInfo.packs = GetPackReferences(context);
+
+  auto& contextItem = GetContext(context);
+  contextInfo.variables = contextItem.variables;
+  contextInfo.attributes = contextItem.targetAttributes;
+  contextInfo.pname = contextItem.deviceItem.pname;
+
+  if(contextItem.rteDevice) {
+    contextInfo.device = dc.FromRteDevice(contextItem.rteDevice, true);
+  } else {
+    contextInfo.device.id = contextItem.device;
+    contextInfo.success = false;
+    contextInfo.message = "No device is found";
+  }
+  if(contextItem.rteBoard) {
+    contextInfo.board = dc.FromRteBoard(contextItem.rteBoard, true);
+  }
+  return contextInfo;
+}
+
 RpcArgs::UsedItems RpcHandler::GetUsedItems(const string& context) {
   RpcArgs::UsedItems usedItems;
-  usedItems.success = true;
   RpcDataCollector dc(GetActiveTarget(context));
   dc.CollectUsedComponents(usedItems.components);
   // get all references, even if they are not selected , because it is useful for client to remove them from files
   usedItems.packs = GetPackReferences(context);
+  usedItems.success = true;
   return usedItems;
 }
 
@@ -381,8 +408,10 @@ PackReferenceVector& RpcHandler::GetPackReferences(const string& context) {
 PackReferenceVector RpcHandler::CollectPackReferences(const string& context) {
   PackReferenceVector packRefs;
   auto contextItem = GetContext(context);
+  auto model = contextItem.rteFilteredModel;
   for(const auto& packItem : contextItem.packRequirements) {
     const auto packId = RtePackage::ComposePackageID(packItem.pack.vendor, packItem.pack.name, packItem.pack.version);
+
     RpcArgs::PackReference packRef;
     packRef.pack = packItem.selectedBy;
     packRef.resolvedPack = packId;

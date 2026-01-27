@@ -695,6 +695,175 @@ TEST_F(ProjMgrRpcTests, RpcSelectBundle) {
   EXPECT_EQ(responses[6]["error"]["message"], "UnknownCclass: component class not found");
 }
 
+TEST_F(ProjMgrRpcTests, RpcGetContextInfoSingleCoreDevice) {
+  string context = "project+CM0";
+  vector<string> contextList = {
+    context
+  };
+  const string& csolution = testinput_folder + "/Examples/solution.csolution.yml";
+
+  auto requests = CreateLoadRequests("/Examples/solution.csolution.yml", "CM0", contextList);
+  requests += FormatRequest(3, "GetContextInfo", json({{ "context", context }}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto components = responses[2]["result"]["components"];
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 2);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(components[0]["id"], "Device:Startup&RteTest Startup");
+  EXPECT_EQ(components[0]["resolvedComponent"]["id"], "ARM::Device:Startup&RteTest Startup@2.0.3");
+
+  map<string, string> vars = responses[2]["result"]["variables"];
+  EXPECT_EQ(vars["BuildType"], "");
+  EXPECT_EQ(vars["Compiler"], "AC6");
+  EXPECT_EQ(vars["Dname"], "RteTest_ARMCM0");
+  EXPECT_EQ(vars["Dpack"], testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0/");
+  EXPECT_EQ(vars["Pname"], "");
+  EXPECT_EQ(vars["Project"], "project");
+  EXPECT_EQ(vars["Solution"], "solution");
+  EXPECT_EQ(vars["TargetType"], "CM0");
+
+  EXPECT_FALSE(responses[2]["result"].contains("board"));
+  EXPECT_EQ(responses[2]["result"]["pname"], "");
+
+  auto d0 = responses[2]["result"]["device"];
+  EXPECT_EQ(d0["id"], "ARM::RteTest_ARMCM0");
+  EXPECT_EQ(d0["family"], "RteTest ARM Cortex M");
+  EXPECT_EQ(d0["subFamily"], "RteTest ARM Cortex M0");
+  EXPECT_EQ(d0["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(d0["processors"].size(), 1);
+  EXPECT_EQ(d0["processors"][0]["name"], "");
+  EXPECT_EQ(d0["memories"].size(), 2);
+  EXPECT_TRUE(d0.contains("description"));
+
+  map<string, string> attrs = responses[2]["result"]["attributes"];
+  EXPECT_EQ(attrs["Tcompiler"], "ARMCC");
+  EXPECT_EQ(attrs["Toptions"], "AC6");
+  EXPECT_EQ(attrs["Dname"], "RteTest_ARMCM0");
+  EXPECT_EQ(attrs["Dcore"], "Cortex-M0");
+  EXPECT_EQ(attrs["Dfpu"], "NO_FPU");
+  EXPECT_EQ(attrs["Pname"], "");
+}
+
+TEST_F(ProjMgrRpcTests, RpcGetContextInfoMultiCoreDevice) {
+  string context = "project+CM0_Dual";
+  vector<string> contextList = {
+    context
+  };
+  const string& csolution = testinput_folder + "/Examples/solution.csolution.yml";
+
+  auto requests = CreateLoadRequests("/Examples/solution.csolution.yml", "CM0_Dual", contextList);
+  requests += FormatRequest(3, "GetContextInfo", json({{ "context", context }}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto components = responses[2]["result"]["components"];
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 2);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(components[0]["id"], "Device:Startup&RteTest Startup");
+  EXPECT_EQ(components[0]["resolvedComponent"]["id"], "ARM::Device:Startup&RteTest Startup@2.0.3");
+
+  map<string, string> vars = responses[2]["result"]["variables"];
+  EXPECT_EQ(vars["BuildType"], "");
+  EXPECT_EQ(vars["Compiler"], "AC6");
+  EXPECT_EQ(vars["Dname"], "RteTest_ARMCM0_Dual");
+  EXPECT_EQ(vars["Dpack"], testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0/");
+  EXPECT_EQ(vars["Pname"], "cm0_core0");
+  EXPECT_EQ(vars["Project"], "project");
+  EXPECT_EQ(vars["Solution"], "solution");
+  EXPECT_EQ(vars["TargetType"], "CM0_Dual");
+
+  EXPECT_FALSE(responses[2]["result"].contains("board"));
+  EXPECT_EQ(responses[2]["result"]["pname"], "cm0_core0");
+
+  auto d0 = responses[2]["result"]["device"];
+  EXPECT_EQ(d0["id"], "ARM::RteTest_ARMCM0_Dual");
+  EXPECT_EQ(d0["family"], "RteTest ARM Cortex M");
+  EXPECT_EQ(d0["subFamily"], "RteTest ARM Cortex M0");
+  EXPECT_EQ(d0["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(d0["processors"].size(), 2);
+  EXPECT_EQ(d0["processors"][0]["name"], "cm0_core0");
+  EXPECT_EQ(d0["memories"].size(), 4);
+  EXPECT_TRUE(d0.contains("description"));
+
+  map<string, string> attrs = responses[2]["result"]["attributes"];
+  EXPECT_EQ(attrs["Tcompiler"], "ARMCC");
+  EXPECT_EQ(attrs["Toptions"], "AC6");
+  EXPECT_EQ(attrs["Dname"], "RteTest_ARMCM0_Dual");
+  EXPECT_EQ(attrs["Dcore"], "Cortex-M0");
+  EXPECT_EQ(attrs["Dfpu"], "NO_FPU");
+  EXPECT_EQ(attrs["Pname"], "cm0_core0");
+}
+
+
+TEST_F(ProjMgrRpcTests, RpcGetContextInfoBoard) {
+  string context = "project+TestBoard";
+  vector<string> contextList = {
+    context
+  };
+  const string& csolution = testinput_folder + "/Examples/solution.csolution.yml";
+
+  auto requests = CreateLoadRequests("/Examples/solution.csolution.yml", "TestBoard", contextList);
+  requests += FormatRequest(3, "GetContextInfo", json({{ "context", context }}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto components = responses[2]["result"]["components"];
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 2);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(components[0]["id"], "Device:Startup&RteTest Startup");
+  EXPECT_EQ(components[0]["resolvedComponent"]["id"], "ARM::Device:Startup&RteTest Startup@2.0.3");
+
+  map<string, string> vars = responses[2]["result"]["variables"];
+  EXPECT_EQ(vars["BuildType"], "");
+  EXPECT_EQ(vars["Compiler"], "AC6");
+  EXPECT_EQ(vars["Dname"], "RteTest_ARMCM0_Dual");
+  EXPECT_EQ(vars["Dpack"], testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0/");
+  EXPECT_EQ(vars["Pname"], "cm0_core0");
+  EXPECT_EQ(vars["Project"], "project");
+  EXPECT_EQ(vars["Solution"], "solution");
+  EXPECT_EQ(vars["TargetType"], "TestBoard");
+
+  EXPECT_EQ(responses[2]["result"]["pname"], "cm0_core0");
+  auto d0 = responses[2]["result"]["device"];
+  EXPECT_EQ(d0["id"], "ARM::RteTest_ARMCM0_Dual");
+  EXPECT_EQ(d0["family"], "RteTest ARM Cortex M");
+  EXPECT_EQ(d0["subFamily"], "RteTest ARM Cortex M0");
+  EXPECT_EQ(d0["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(d0["processors"].size(), 2);
+  EXPECT_EQ(d0["processors"][0]["name"], "cm0_core0");
+  EXPECT_EQ(d0["memories"].size(), 4);
+  EXPECT_TRUE(d0.contains("description"));
+
+  auto b1 = responses[2]["result"]["board"];
+  EXPECT_EQ(b1["id"], "Keil::RteTest Dummy board:1.2.3");
+  EXPECT_EQ(b1["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(b1["description"], "uVision Simulator");
+  auto devices = b1["devices"];
+  EXPECT_EQ(devices.size(), 1);
+  EXPECT_FALSE(b1.contains("memories"));
+  auto d1 = devices[0];
+  EXPECT_EQ(d1["id"], "ARM::RteTest_ARMCM0_Dual");
+  EXPECT_EQ(d1["processors"].size(), 2);
+  EXPECT_EQ(d1["processors"][0]["name"], "cm0_core0");
+
+  map<string, string> attrs = responses[2]["result"]["attributes"];
+  EXPECT_EQ(attrs["Tcompiler"], "ARMCC");
+  EXPECT_EQ(attrs["Toptions"], "AC6");
+  EXPECT_EQ(attrs["Dname"], "RteTest_ARMCM0_Dual");
+  EXPECT_EQ(attrs["Dcore"], "Cortex-M0");
+  EXPECT_EQ(attrs["Dfpu"], "NO_FPU");
+  EXPECT_EQ(attrs["Pname"], "cm0_core0");
+}
 
 TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   string context = "selectable+CM0";
@@ -779,6 +948,8 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfoSimple) {
   auto& pack = packInfos[1];
 
   EXPECT_EQ(pack["id"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(pack["doc"], testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0/Doc/overview.md");
+
   auto& refs = pack["references"];
   EXPECT_EQ(refs.size(), 1);
 
