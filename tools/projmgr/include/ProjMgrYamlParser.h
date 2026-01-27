@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -148,6 +148,7 @@ static constexpr const char* YAML_LOAD_OFFSET = "load-offset";
 static constexpr const char* YAML_LICENSE = "license";
 static constexpr const char* YAML_LICENSES = "licenses";
 static constexpr const char* YAML_LICENSE_AGREEMENT = "license-agreement";
+static constexpr const char* YAML_LINK = "link";
 static constexpr const char* YAML_LINKER = "linker";
 static constexpr const char* YAML_LINK_TIME_OPTIMIZE = "link-time-optimize";
 static constexpr const char* YAML_MAP = "map";
