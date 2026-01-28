@@ -408,7 +408,6 @@ PackReferenceVector& RpcHandler::GetPackReferences(const string& context) {
 PackReferenceVector RpcHandler::CollectPackReferences(const string& context) {
   PackReferenceVector packRefs;
   auto contextItem = GetContext(context);
-  auto model = contextItem.rteFilteredModel;
   for(const auto& packItem : contextItem.packRequirements) {
     const auto packId = RtePackage::ComposePackageID(packItem.pack.vendor, packItem.pack.name, packItem.pack.version);
 
