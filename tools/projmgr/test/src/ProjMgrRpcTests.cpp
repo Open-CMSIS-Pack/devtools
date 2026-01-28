@@ -752,7 +752,6 @@ TEST_F(ProjMgrRpcTests, RpcGetContextInfoMultiCoreDevice) {
   vector<string> contextList = {
     context
   };
-  const string& csolution = testinput_folder + "/Examples/solution.csolution.yml";
 
   auto requests = CreateLoadRequests("/Examples/solution.csolution.yml", "CM0_Dual", contextList);
   requests += FormatRequest(3, "GetContextInfo", json({{ "context", context }}));
