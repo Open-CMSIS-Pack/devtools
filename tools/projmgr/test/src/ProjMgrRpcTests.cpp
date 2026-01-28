@@ -806,7 +806,6 @@ TEST_F(ProjMgrRpcTests, RpcGetContextInfoBoard) {
   vector<string> contextList = {
     context
   };
-  const string& csolution = testinput_folder + "/Examples/solution.csolution.yml";
 
   auto requests = CreateLoadRequests("/Examples/solution.csolution.yml", "TestBoard", contextList);
   requests += FormatRequest(3, "GetContextInfo", json({{ "context", context }}));
