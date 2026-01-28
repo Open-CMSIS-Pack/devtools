@@ -2,7 +2,7 @@
 
 <package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
   <name>RteTest_DFP</name>
-  <description>RTE test of DFP pack, extraction from ARM.CMSIS</description>
+  <description overview="Doc/overview.md">RTE test of DFP pack, extraction from ARM.CMSIS</description>
   <vendor>ARM</vendor>
   <license>Doc/license.txt</license>
   <url>http://www.keil.com/pack/</url>
