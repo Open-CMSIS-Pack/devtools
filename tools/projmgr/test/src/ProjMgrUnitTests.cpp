@@ -7324,3 +7324,23 @@ TEST_F(ProjMgrUnitTests, WestSupport) {
     testinput_folder + "/WestSupport/ref/core1.Debug+CM0.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, TargetSetDependencies) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestTargetSet/cross-dependency.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"CM4";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuildRun = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/cross-dependency+CM4.cbuild-run.yml");
+  // check access sequences were correctly expanded: bin images, dbgconf and telnet file
+  EXPECT_EQ("project/CM4/project.bin", cbuildRun["cbuild-run"]["output"][2]["file"].as<string>());
+  EXPECT_EQ("project2/CM4/project2.bin", cbuildRun["cbuild-run"]["output"][3]["file"].as<string>());
+  EXPECT_EQ("../RteTest_ARMCM4_NOFP.dbgconf", cbuildRun["cbuild-run"]["debugger"]["dbgconf"].as<string>());
+  EXPECT_EQ("../../../../../project2/CM4/telnet.log", cbuildRun["cbuild-run"]["debugger"]["telnet"][0]["file"].as<string>());
+
+  // ensure dependencies are not set
+  const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/TestTargetSet/cross-dependency.cbuild-idx.yml");
+  EXPECT_FALSE(cbuildIdx["build-idx"]["cbuilds"][0]["depends-on"].IsDefined());
+  EXPECT_FALSE(cbuildIdx["build-idx"]["cbuilds"][1]["depends-on"].IsDefined());
+}
