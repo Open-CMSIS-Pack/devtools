@@ -2637,7 +2637,7 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
     context.debugger.protocol = m_activeTargetSet.debugger.protocol;
     if (!m_activeTargetSet.debugger.dbgconf.empty()) {
       context.debugger.dbgconf = m_activeTargetSet.debugger.dbgconf;
-      if (!ProcessSequenceRelative(context, context.debugger.dbgconf, context.csolution->directory)) {
+      if (!ProcessSequenceRelative(context, context.debugger.dbgconf, context.csolution->directory, false)) {
         return false;
       }
       if (RteFsUtils::IsRelative(context.debugger.dbgconf)) {
@@ -2647,7 +2647,7 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
     context.debugger.startPname = m_activeTargetSet.debugger.startPname;
     for (auto telnet : m_activeTargetSet.debugger.telnet) {
       if (!telnet.file.empty()) {
-        if (!ProcessSequenceRelative(context, telnet.file, context.csolution->directory)) {
+        if (!ProcessSequenceRelative(context, telnet.file, context.csolution->directory, false)) {
           return false;
         }
       }
@@ -2670,7 +2670,8 @@ bool ProjMgrWorker::ProcessImages(ContextItem& context) {
   const vector<ImageItem>& images = m_activeTargetSet.images;
   for (auto item : images) {
     if (!item.image.empty()) {
-      if (!ProcessSequenceRelative(context, item.image, context.csolution->directory)) {
+      // process access sequences
+      if (!ProcessSequenceRelative(context, item.image, context.csolution->directory, false)) {
         return false;
       }
       if (RteFsUtils::IsRelative(item.image)) {
@@ -3549,7 +3550,8 @@ void ProjMgrWorker::ExpandPackDir(ContextItem& context, const string& pack, stri
   item = regex_replace(item, regEx, replacement);
 }
 
-bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref, string outDir, bool withHeadingDot, bool solutionLevel) {
+bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref,
+  bool genDep, string outDir, bool withHeadingDot, bool solutionLevel) {
   size_t offset = 0;
   bool pathReplace = false;
   outDir = outDir.empty() && item != context.directories.cprj ? context.directories.cprj : outDir;
@@ -3610,7 +3612,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
           // expand access sequence
           ExpandAccessSequence(context, refContext, sequenceName, outDir, item, withHeadingDot);
           // store dependency information
-          if (refContext.name != context.name) {
+          if (genDep && refContext.name != context.name) {
             CollectionUtils::PushBackUniquely(context.dependsOn, refContext.name);
           }
         } else {
@@ -4904,7 +4906,7 @@ std::string ProjMgrWorker::GetBoardInfoString(const std::string& vendor,
 
 bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, vector<string>& src, const string& ref, string outDir, bool withHeadingDot, bool solutionLevel) {
   for (auto& item : src) {
-    if (!ProcessSequenceRelative(context, item, ref, outDir, withHeadingDot, solutionLevel)) {
+    if (!ProcessSequenceRelative(context, item, ref, true, outDir, withHeadingDot, solutionLevel)) {
       return false;
     }
   }
