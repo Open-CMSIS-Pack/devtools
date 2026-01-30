@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -73,7 +73,8 @@ TEST_F(YmlSchemaChkTests, validate_csolution_yml_schema) {
 
   YmlSchemaChecker ymlSchemaChecker;
   EXPECT_TRUE(ymlSchemaChecker.ValidateFile(datafile, schemafile));
-  EXPECT_EQ(ymlSchemaChecker.GetErrors().size(), 0);
+  auto err = ymlSchemaChecker.GetErrors();
+  EXPECT_EQ(err.size(), 0);
 }
 
 TEST_F(YmlSchemaChkTests, Invalid_schema) {

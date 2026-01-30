@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -7,6 +7,7 @@
 #include "YmlSchemaValidator.h"
 #include "YmlSchemaErrorHandler.h"
 #include "RteUtils.h"
+#include "YmlSchemaCheckerUtils.h"
 
 #include <fstream>
 #include <iostream>
@@ -53,6 +54,8 @@ json YmlSchemaValidator::ReadData() {
     }
 
     data = YamlToJson(yamldata);
+    // Sanitize: turn "0x1234U" -> numeric 0x1234 (number)
+    YmlSchemaCheckerUtils::SanitizeJsonForNumericSuffixes(data);
   }
 
   return data;

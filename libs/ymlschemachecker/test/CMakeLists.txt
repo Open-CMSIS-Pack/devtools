@@ -1,5 +1,6 @@
 SET(TEST_SOURCE_FILES YmlSchemaChkTestEnv.cpp
-  YmlSchemaChkTestEnv.h YmlSchemaChkTests.cpp)
+  YmlSchemaChkTestEnv.h YmlSchemaChkTests.cpp
+  YmlSchemaCheckerUtilsTest.cpp)
 
 list(TRANSFORM TEST_SOURCE_FILES PREPEND src/)
 
@@ -13,6 +14,7 @@ set_property(TARGET YmlSchemaChkTests PROPERTY
 
 target_link_libraries(YmlSchemaChkTests
   PUBLIC YmlSchemaChecker YmlTree RteFsUtils gtest_main)
+target_include_directories(YmlSchemaChkTests PUBLIC ../src)
 
 add_test(NAME YmlSchemaChkTests
          COMMAND YmlSchemaChkTests --gtest_output=xml:test_reports/ymlschemachktests-report-${SYSTEM}-${CPU_ARCH}.xml
