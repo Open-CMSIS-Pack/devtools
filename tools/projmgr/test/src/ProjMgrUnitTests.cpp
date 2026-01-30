@@ -2621,7 +2621,7 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
   vector<string> packs;
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
-  EXPECT_TRUE(m_worker.ListPacks(packs, false, "RTETest"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, false, "RTETest"));
   string allPacks;
   for (auto& pack : packs) {
     allPacks += pack + "\n";
@@ -2636,7 +2636,7 @@ TEST_F(ProjMgrUnitTests, ListPacksLatest) {
   vector<string> packs;
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
-  EXPECT_TRUE(m_worker.ListPacks(packs, false, "RTETest"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, false, "RTETest"));
   string latestPacks;
   for (auto& pack : packs) {
     latestPacks += pack + "\n";
@@ -6474,6 +6474,22 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_ContextSet) {
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_NE(outStr.find("ARM::RteTest_DFP@0.2.0"), string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_LockedOption) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/PackLocking/lock_pack_version.csolution.yml";
+
+  // list packs --locked
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"--locked";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_NE(outStr.find("ARM::RteTest_DFP@0.1.1 (locked) available update 0.2.0"), string::npos);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards_ContextSet) {

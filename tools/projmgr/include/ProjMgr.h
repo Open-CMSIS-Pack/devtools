@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -198,6 +198,7 @@ protected:
   bool m_cbuildgen;
   bool m_updateIdx;
   bool m_rpcMode = false;
+  bool m_locked;
   GroupNode m_files;
   std::vector<ContextItem*> m_processedContexts;
   std::vector<ContextItem*> m_allContexts;

@@ -1713,27 +1713,13 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
       if (!specifiedMetadata.empty()) {
         m_packMetadata[RteUtils::ExtractPrefix(packageEntry.pack, "+")] = specifiedMetadata;
       }
-      // System wide package
-      vector<string> matchedPackIds = FindMatchingPackIdsInCbuildPack(packageEntry, resolvedPacks);
-      if (matchedPackIds.size()) {
-        // Cbuild pack content matches, so use it
-        for (const auto& resolvedPackId : matchedPackIds) {
-          PackageItem package;
-          package.origin = packageEntry.origin;
-          package.selectedBy = packageEntry.pack;
-          ProjMgrUtils::ConvertToPackInfo(resolvedPackId, package.pack);
-          context.userInputToResolvedPackIdMap[packageEntry.pack].insert(make_pair(resolvedPackId, package));
-          context.packRequirements.push_back(package);
-        }
-      } else {
-        // Not matching cbuild pack, add it unless a wildcard entry
-        PackageItem package;
-        ProjMgrUtils::ConvertToPackInfo(packageEntry.pack, package.pack);
-        package.selectedBy = packageEntry.pack;
-        // Store pack entries in separated vectors for later resolution in the right order
-        if (!package.pack.name.empty() && !WildCards::IsWildcardPattern(package.pack.name)) {
-          packEntries[ProjMgrUtils::GetVersionType(package.pack.version)].push_back(packageEntry);
-        }
+      // Store pack entries in separated vectors for later resolution in the right order, unless a wildcard entry
+      // TODO: store also the wildcard entries, expanding them but preserving origin and selectedBy for each resolved pack
+      PackageItem package;
+      ProjMgrUtils::ConvertToPackInfo(packageEntry.pack, package.pack);
+      package.selectedBy = packageEntry.pack;
+      if (!package.pack.name.empty() && !WildCards::IsWildcardPattern(package.pack.name)) {
+        packEntries[ProjMgrUtils::GetVersionType(package.pack.version)].push_back(packageEntry);
       }
     } else {
       // Project local pack - add as-is
@@ -1762,7 +1748,7 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
   for (const auto& versionType : { VersionType::FIXED, VersionType::EQUIVALENT, VersionType::COMPATIBLE,
     VersionType::MINIMUM, VersionType::ANY }) {
     for (const auto& packEntry : packEntries[versionType]) {
-      ResolvePackRequirement(context, packEntry);
+      ResolvePackRequirement(context, packEntry, ignoreCBuildPack);
     }
   }
 
@@ -1792,7 +1778,7 @@ bool ProjMgrWorker::AddPackRequirements(ContextItem& context, const vector<PackI
   return true;
 }
 
-void ProjMgrWorker::ResolvePackRequirement(ContextItem& context, const PackItem& packageEntry) {
+void ProjMgrWorker::ResolvePackRequirement(ContextItem& context, const PackItem& packageEntry, bool ignoreCBuildPack) {
   // Resolve version range using installed/local packs
   // Reuse already resolved pack when possible
   PackageItem package;
@@ -1815,13 +1801,29 @@ void ProjMgrWorker::ResolvePackRequirement(ContextItem& context, const PackItem&
       {"vendor",  package.pack.vendor},
       {"version", versionRange}
     });
-  auto pdsc = m_kernel->GetEffectivePdscFile(attributes);
+  auto [packId, _] = m_kernel->GetEffectivePdscFile(attributes);
   // Only remember the version of the pack if we had it installed or local
   // Will be used when serializing the cbuild-pack.yml file later
-  if (!pdsc.first.empty()) {
-    string installedVersion = RtePackage::VersionFromId(pdsc.first);
+  if (!packId.empty()) {
+    string installedVersion = RtePackage::VersionFromId(packId);
     package.pack.version = VersionCmp::RemoveVersionMeta(installedVersion);
-    context.userInputToResolvedPackIdMap[packageEntry.pack].insert(make_pair(pdsc.first, package));
+
+    // Check whether the packageEntry is already locked in cbuild-pack
+    if (!ignoreCBuildPack) {
+      vector<string> locked = FindMatchingPackIdsInCbuildPack(packageEntry, context.csolution->cbuildPack.packs);
+      if (!locked.empty()) {
+        // TODO: When wildcards will be fully stored in cbuild-pack there may be multiple matches
+        const auto& lockedId = locked.front();
+        if (lockedId != packId) {
+          // Save available version if different from locked
+          context.availablePackVersions[lockedId] = package.pack.version;
+          // Keep the locked pack
+          packId = lockedId;
+          package.pack.version = RtePackage::VersionFromId(lockedId);
+        }
+      }
+    }
+    context.userInputToResolvedPackIdMap[packageEntry.pack].insert(make_pair(packId, package));
   } else {
     // Remember that we had the user input, but it does not match any installed pack
     context.userInputToResolvedPackIdMap[packageEntry.pack] = {};
@@ -3989,8 +3991,9 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   return ret;
 }
 
-bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, const string& filter) {
+bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, bool bLocked, const string& filter) {
   map<string, string, RtePackageComparator> packsMap;
+  StrMap availablePackVersions;
   list<string> pdscFiles;
   if (!InitializeModel()) {
     return false;
@@ -4052,6 +4055,13 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
         // check if additional dependencies must be added
         CheckMissingPackRequirements(RteUtils::EMPTY_STRING);
       }
+      // get available updates for locked packs
+      if (bLocked) {
+        for (const auto& selectedContext : m_selectedContexts) {
+          ContextItem& context = m_contexts[selectedContext];
+          availablePackVersions.merge(context.availablePackVersions);
+        }
+      }
     }
 
     if (!m_contextErrMap.empty()) {
@@ -4066,7 +4076,11 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
   packsVec.reserve(packsMap.size());
   for (auto [id, fileName] : packsMap) {
     string s = id;
-    if (!fileName.empty()) {
+    if (bLocked) {
+      if (!availablePackVersions[id].empty()) {
+        s += " (locked) available update " + availablePackVersions[id];
+      }
+    } else if (!fileName.empty()) {
       string str = fileName;
       if(m_relativePaths) {
         if(str.find(m_packRoot) == 0) {

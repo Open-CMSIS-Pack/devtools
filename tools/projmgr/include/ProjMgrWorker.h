@@ -480,6 +480,7 @@ struct VariablesConfiguration {
  *        west on flag
  *        layer variables configurations
  *        unresolved components
+ *        map of available packs for locked packs
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -553,6 +554,7 @@ struct ContextItem {
   bool westOn = false;
   std::vector<VariablesConfiguration> variablesConfigurations;
   std::set<RteComponentInstance*> unresolvedComponents;
+  StrMap availablePackVersions;
 };
 
 /**
@@ -627,10 +629,11 @@ public:
    * @brief list available packs
    * @param reference to list of packs
    * @param bListMissingPacksOnly only missing packs
+   * @param bLocked print available update version for locked packs
    * @param filter words to filter results
    * @return true if executed successfully
   */
-  bool ListPacks(std::vector<std::string>& packs, bool bListMissingPacksOnly, const std::string& filter = RteUtils::EMPTY_STRING);
+  bool ListPacks(std::vector<std::string>& packs, bool bListMissingPacksOnly, bool bLocked = false, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
    * @brief list available boards
@@ -1298,7 +1301,7 @@ protected:
   bool IsEnvironmentCompatible(const std::string& environment, const StrVec& filter);
   bool HasCompatibleEnvironment(const Collection<RteItem*>& environments, const StrVec& filter);
   template<class T> bool CheckFilter(const std::string& filter, const T& item);
-  void ResolvePackRequirement(ContextItem& context, const PackItem& packEntry);
+  void ResolvePackRequirement(ContextItem& context, const PackItem& packEntry, bool ignoreCBuildPack);
   void FormatResolvedPackIds();
 };
 
