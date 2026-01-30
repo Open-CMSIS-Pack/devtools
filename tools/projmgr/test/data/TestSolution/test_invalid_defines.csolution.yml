@@ -36,5 +36,65 @@ solution:
     - KEY9: No_Starting_escaped_quotes\"
     - KEY10: \"Mixed_quotes"
 
+    # --------------------------
+    # Valid integer literals
+    # --------------------------
+
+    # No suffix
+    - DEF_NO_SUFFIX_DEC: 1234
+    - DEF_NO_SUFFIX_HEX: 0x1324
+    # Unsigned (U)
+    - DEF_U_DEC: 1234U
+    - DEF_U_HEX: 0x1234U
+    # Long (L)
+    - DEF_L_DEC: 1234L
+    - DEF_L_HEX: 0x1234L
+    # Unsigned Long (UL)
+    - DEF_UL_DEC: 1234UL
+    - DEF_UL_HEX: 0x1234UL
+    # Long Unsigned (LU) valid in C/C++
+    - DEF_LU_DEC: 1234LU
+    - DEF_LU_HEX: 0x1234LU
+    # Long Long (LL)
+    - DEF_LL_DEC: 1234LL
+    - DEF_LL_HEX: 0x1234LL
+    # Unsigned Long Long (ULL)
+    - DEF_ULL_DEC: 1234ULL
+    - DEF_ULL_HEX: 0x1234ULL
+    # Long Long Unsigned (LLU) also valid in C/C++
+    - DEF_LLU_DEC: 1234LLU
+    - DEF_LLU_HEX: 0x1234LLU
+    # 32-bit boundaries
+    - DEF_INT32_MAX: 0x7FFFFFFF
+    - DEF_INT32_MAX_U: 0x7FFFFFFFU
+    - DEF_INT32_OVERFLOW: 0x80000000
+    - DEF_INT32_OVERFLOW_U: 0x80000000U
+    # 64-bit boundaries
+    - DEF_UINT64_MAX: 0xFFFFFFFFFFFFFFFFULL
+    - DEF_NEG_DEC: -1234
+    - DEF_NEG_DEC_L: -1234L
+    - DEF_NEG_DEC_LL: -1234LL
+    - DEF_LEADING_ZEROS_DEC: 0001234U
+    - DEF_LEADING_ZEROS_HEX: 0x00001234UL
+
+    # --------------------------
+    # Invalid literals (negative test cases)
+    # --------------------------
+
+    # Invalid hex digits
+    - DEF_BAD_HEX_1: 0x12G4U
+    - DEF_BAD_HEX_2: 0xZZZZUL
+    - DEF_UINT64_OVERFLOW: 0x10000000000000000ULL
+    # Invalid suffix combinations
+    - DEF_BAD_SUFFIX_1: 0x1234UU
+    - DEF_BAD_SUFFIX_2: 0x1234ULU
+    - DEF_BAD_SUFFIX_3: 0x1234LUL
+    - DEF_BAD_SUFFIX_4: 0x1234XYZ
+    # Mixed or malformed tokens
+    - DEF_GARBAGE_1: 0x1234_UL
+    - DEF_GARBAGE_2: 0x1234+U
+    # Float-like (not integers)
+    - DEF_FLOAT_1: 0x12.34UL
+
   define-asm:
     - DEF_ASM_SOLUTION

@@ -6946,7 +6946,7 @@ warning csolution: pname \\'unknown\\' does not match any device pname\n\
   EXPECT_TRUE(regex_search(errStr, regex(expected)));
 }
 
-TEST_F(ProjMgrUnitTests, Test_Check_Define_Value_With_Quotes) {
+TEST_F(ProjMgrUnitTests, Test_Check_Define_Value) {
   StdStreamRedirect streamRedirect;
   char* argv[6];
   const string& csolution = testinput_folder + "/TestSolution/test_invalid_defines.csolution.yml";
@@ -6959,6 +6959,16 @@ TEST_F(ProjMgrUnitTests, Test_Check_Define_Value_With_Quotes) {
   string expected = "\
 .*test_invalid_defines.csolution.yml:33:7 - error csolution: schema check failed, verify syntax\n\
 .*test_invalid_defines.csolution.yml:34:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:85:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:86:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:87:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:89:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:90:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:91:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:92:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:94:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:95:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:97:7 - error csolution: schema check failed, verify syntax\n\
 ";
   EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
   string errStr = streamRedirect.GetErrorString();
