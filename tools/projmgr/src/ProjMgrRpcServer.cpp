@@ -417,6 +417,9 @@ PackReferenceVector RpcHandler::CollectPackReferences(const string& context) {
     packRef.origin = packItem.origin;
     packRef.path = packItem.path;
     packRef.selected = true; // initially pack is selected;
+    if (!contextItem.availablePackVersions[packId].empty()) {
+      packRef.upgrade = contextItem.availablePackVersions[packId];
+    }
     packRefs.push_back(packRef);
   }
   return packRefs;
