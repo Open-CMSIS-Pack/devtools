@@ -6672,6 +6672,19 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_pack_version_not_available) {
   EXPECT_NE(string::npos, errStr.find(errExpected));
 }
 
+TEST_F(ProjMgrUnitTests, ListMissingPacks_LockedNotInstalled) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/PackLocking/pack_version_not_available.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)"-m";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_EQ("ARM::RteTest_DFP@0.1.0\n", outStr);
+}
+
 TEST_F(ProjMgrUnitTests, ReportPacksUnused) {
   char* argv[5];
   const string& csolution = testinput_folder + "/TestSolution/PacksUnused/packs.csolution.yml";

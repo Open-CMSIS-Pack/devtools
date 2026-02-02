@@ -1801,31 +1801,32 @@ void ProjMgrWorker::ResolvePackRequirement(ContextItem& context, const PackItem&
       {"vendor",  package.pack.vendor},
       {"version", versionRange}
     });
-  auto [packId, _] = m_kernel->GetEffectivePdscFile(attributes);
-  // Only remember the version of the pack if we had it installed or local
-  // Will be used when serializing the cbuild-pack.yml file later
-  if (!packId.empty()) {
-    string installedVersion = RtePackage::VersionFromId(packId);
-    package.pack.version = VersionCmp::RemoveVersionMeta(installedVersion);
+  auto packId = get<0>(m_kernel->GetEffectivePdscFile(attributes));
 
-    // Check whether the packageEntry is already locked in cbuild-pack
-    if (!ignoreCBuildPack) {
-      vector<string> locked = FindMatchingPackIdsInCbuildPack(packageEntry, context.csolution->cbuildPack.packs);
-      if (!locked.empty()) {
-        // TODO: When wildcards will be fully stored in cbuild-pack there may be multiple matches
-        const auto& lockedId = locked.front();
-        if (lockedId != packId) {
-          // Save available version if different from locked
-          context.availablePackVersions[lockedId] = package.pack.version;
-          // Keep the locked pack
-          packId = lockedId;
-          package.pack.version = RtePackage::VersionFromId(lockedId);
-        }
+  // Get installed pack version without meta-data
+  if (!packId.empty()) {
+    package.pack.version = VersionCmp::RemoveVersionMeta(RtePackage::VersionFromId(packId));
+  }
+  // Check whether the packageEntry is already locked in cbuild-pack
+  if (!ignoreCBuildPack) {
+    vector<string> locked = FindMatchingPackIdsInCbuildPack(packageEntry, context.csolution->cbuildPack.packs);
+    if (!locked.empty()) {
+      // TODO: When wildcards will be fully stored in cbuild-pack there may be multiple matches
+      const auto& lockedId = locked.front();
+      if (lockedId != packId) {
+        // Save available version if different from locked
+        context.availablePackVersions[lockedId] = package.pack.version;
+        // Keep the locked pack
+        packId = lockedId;
+        package.pack.version = RtePackage::VersionFromId(lockedId);
       }
     }
+  }
+  if (!packId.empty()) {
+    // Remember the version of the pack if we had it installed, local or locked in cbuild-pack
     context.userInputToResolvedPackIdMap[packageEntry.pack].insert(make_pair(packId, package));
   } else {
-    // Remember that we had the user input, but it does not match any installed pack
+    // Remember that we had the user input, but it does not match any installed nor locked pack
     context.userInputToResolvedPackIdMap[packageEntry.pack] = {};
   }
   package.origin = packageEntry.origin;
