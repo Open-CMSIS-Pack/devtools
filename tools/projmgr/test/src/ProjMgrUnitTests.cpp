@@ -4873,7 +4873,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListConfigsWithoutInput) {
   argv[2] = (char*)"configs";
   EXPECT_EQ(1, RunProjMgr(3, argv, m_envp));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find("input yml files were not specified"));
+  EXPECT_NE(string::npos, errStr.find("csolution file not specified"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_No_target_Types) {

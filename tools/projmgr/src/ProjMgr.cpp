@@ -524,7 +524,7 @@ bool ProjMgr::PopulateContexts(void) {
       }
     }
   } else {
-    ProjMgrLogger::Get().Error("input yml files were not specified");
+    ProjMgrLogger::Get().Error("csolution file not specified");
     return false;
   }
 
