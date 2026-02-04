@@ -1835,6 +1835,7 @@ void ProjMgrWorker::ResolvePackRequirement(ContextItem& context, const PackItem&
 }
 
 bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
+  RetrieveToolchainConfigFiles();
   if (context.compiler.empty()) {
     // Use the default compiler if available
     if (context.cdefault && !context.cdefault->compiler.empty()) {
@@ -3939,7 +3940,7 @@ void ProjMgrWorker::PrintMissingFilters(void) {
       (misspelled ? ", did you mean '." + type + "'?" : ""));
   }
   for (const auto& toolchain : m_missingToolchains) {
-    ProjMgrLogger::Get().Warn("compiler '" + toolchain + "' is not supported");
+    ProjMgrLogger::Get().Warn("'for-compiler: " + toolchain + "' is not supported");
   }
 }
 
@@ -5152,17 +5153,20 @@ bool ProjMgrWorker::GetLatestToolchain(ToolchainItem& toolchain) {
   return found;
 }
 
-bool ProjMgrWorker::GetToolchainConfig(const string& toolchainName, const string& toolchainVersion, string& configPath, string& selectedConfigVersion) {
-  const string& compilerRoot = GetCompilerRoot();
+void ProjMgrWorker::RetrieveToolchainConfigFiles(void) {
   // get toolchain configuration files
   if (m_toolchainConfigFiles.empty()) {
     // get *.cmake files from compiler root (not recursively)
-    auto cmakeFiles = RteFsUtils::GrepFiles(compilerRoot, "*.cmake");
+    auto cmakeFiles = RteFsUtils::GrepFiles(GetCompilerRoot(), "*.cmake");
     std::transform(cmakeFiles.begin(), cmakeFiles.end(), std::back_inserter(m_toolchainConfigFiles),
       [](const std::filesystem::path& item) {
         return item.generic_string();
-    });
+      });
   }
+}
+
+bool ProjMgrWorker::GetToolchainConfig(const string& toolchainName, const string& toolchainVersion, string& configPath, string& selectedConfigVersion) {
+  RetrieveToolchainConfigFiles();
   // find greatest compatible file
   bool found = false;
   static const regex regEx = regex("(\\w+)\\.(\\d+\\.\\d+\\.\\d+)");
@@ -5189,7 +5193,7 @@ bool ProjMgrWorker::GetToolchainConfig(const string& toolchainName, const string
     }
   }
   if (!found) {
-    m_toolchainErrors[MessageType::Error].insert("no toolchain cmake files found for '" + toolchainName + "' in '" + compilerRoot + "' directory");
+    m_toolchainErrors[MessageType::Error].insert("no toolchain cmake files found for '" + toolchainName + "' in '" + GetCompilerRoot() + "' directory");
   }
   return found;
 }
