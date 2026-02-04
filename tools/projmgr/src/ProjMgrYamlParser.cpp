@@ -448,20 +448,20 @@ bool ProjMgrYamlParser::ParseDefine(const YAML::Node& defineNode, vector<string>
     for (const auto& item : defineNode) {
       // accept map elements <string, string> or a string
       if (item.IsDefined()) {
-        if (item.IsMap()) {
+            if (item.IsMap()) {
           const auto& elements = item.as<map<string, string>>();
           for (auto element : elements) {
             if (YAML::IsNullString(element.second)) {
               element.second = "";
             }
-            success = ValidateDefineStr(element.second);
+            success &= ValidateDefineStr(element.second);
             if (success) {
               define.push_back(element.first + "=" + element.second);
             }
           }
         }
         else {
-          success = ValidateDefineStr(item.as<string>());
+          success &= ValidateDefineStr(item.as<string>());
           if (success) {
             define.push_back(item.as<string>());
           }

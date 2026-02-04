@@ -2621,7 +2621,7 @@ TEST_F(ProjMgrUnitTests, ListPacks) {
   vector<string> packs;
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
-  EXPECT_TRUE(m_worker.ListPacks(packs, false, "RTETest"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, false, "RTETest"));
   string allPacks;
   for (auto& pack : packs) {
     allPacks += pack + "\n";
@@ -2636,7 +2636,7 @@ TEST_F(ProjMgrUnitTests, ListPacksLatest) {
   vector<string> packs;
   EXPECT_TRUE(m_worker.ParseContextSelection({}));
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::LATEST);
-  EXPECT_TRUE(m_worker.ListPacks(packs, false, "RTETest"));
+  EXPECT_TRUE(m_worker.ListPacks(packs, false, false, "RTETest"));
   string latestPacks;
   for (auto& pack : packs) {
     latestPacks += pack + "\n";
@@ -4873,7 +4873,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListConfigsWithoutInput) {
   argv[2] = (char*)"configs";
   EXPECT_EQ(1, RunProjMgr(3, argv, m_envp));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_NE(string::npos, errStr.find("input yml files were not specified"));
+  EXPECT_NE(string::npos, errStr.find("csolution file not specified"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_No_target_Types) {
@@ -6476,6 +6476,22 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_ContextSet) {
   EXPECT_NE(outStr.find("ARM::RteTest_DFP@0.2.0"), string::npos);
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_LockedOption) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/PackLocking/lock_pack_version.csolution.yml";
+
+  // list packs --locked
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"--locked";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_NE(outStr.find("ARM::RteTest_DFP@0.1.1 (locked) available update 0.2.0"), string::npos);
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListBoards_ContextSet) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
@@ -6654,6 +6670,19 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_pack_version_not_available) {
 
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(errExpected));
+}
+
+TEST_F(ProjMgrUnitTests, ListMissingPacks_LockedNotInstalled) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string& csolution = testinput_folder + "/TestSolution/PackLocking/pack_version_not_available.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)"-m";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_EQ("ARM::RteTest_DFP@0.1.0\n", outStr);
 }
 
 TEST_F(ProjMgrUnitTests, ReportPacksUnused) {
@@ -6930,7 +6959,7 @@ warning csolution: pname \\'unknown\\' does not match any device pname\n\
   EXPECT_TRUE(regex_search(errStr, regex(expected)));
 }
 
-TEST_F(ProjMgrUnitTests, Test_Check_Define_Value_With_Quotes) {
+TEST_F(ProjMgrUnitTests, Test_Check_Define_Value) {
   StdStreamRedirect streamRedirect;
   char* argv[6];
   const string& csolution = testinput_folder + "/TestSolution/test_invalid_defines.csolution.yml";
@@ -6943,6 +6972,16 @@ TEST_F(ProjMgrUnitTests, Test_Check_Define_Value_With_Quotes) {
   string expected = "\
 .*test_invalid_defines.csolution.yml:33:7 - error csolution: schema check failed, verify syntax\n\
 .*test_invalid_defines.csolution.yml:34:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:85:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:86:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:87:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:89:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:90:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:91:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:92:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:94:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:95:7 - error csolution: schema check failed, verify syntax\n\
+.*test_invalid_defines.csolution.yml:97:7 - error csolution: schema check failed, verify syntax\n\
 ";
   EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
   string errStr = streamRedirect.GetErrorString();

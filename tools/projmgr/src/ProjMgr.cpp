@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -170,6 +170,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option cbuildgen("cbuildgen", "Generate legacy *.cprj files", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option contentLength("content-length", "Prepend 'Content-Length' header to JSON RPC requests and responses", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option activeTargetSet("a,active", "Select active target-set: <target-type>[@<set>]", cxxopts::value<string>());
+  cxxopts::Option locked("locked", "Print available update version for locked packs", cxxopts::value<bool>()->default_value("false"));
 
   // command options dictionary
   map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
@@ -177,7 +178,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"update-rte",        { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose, frozenPacks}}},
     {"convert",           { false, {context, contextSet, activeTargetSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, outputAlt, toolchain, verbose, frozenPacks, cbuildgen}}},
     {"run",               { false, {context, contextSet, activeTargetSet, debug, generator, load, quiet, schemaCheck, verbose, dryRun}}},
-    {"list packs",        { true,  {context, contextSet, activeTargetSet, debug, filter, load, missing, quiet, schemaCheck, toolchain, verbose}}},
+    {"list packs",        { true,  {context, contextSet, activeTargetSet, debug, filter, load, missing, locked, quiet, schemaCheck, toolchain, verbose}}},
     {"list boards",       { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list devices",      { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list configs",      { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
@@ -201,7 +202,8 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
       solution, context, contextSet, filter, generator,
       load, clayerSearchPath, missing, schemaCheck, noUpdateRte, output, outputAlt,
       help, version, verbose, debug, dryRun, exportSuffix, toolchain, ymlOrder,
-      relativePaths, frozenPacks, updateIdx, quiet, cbuildgen, contentLength, activeTargetSet
+      relativePaths, frozenPacks, updateIdx, quiet, cbuildgen, contentLength,
+      activeTargetSet, locked
     });
     options.parse_positional({ "positional" });
 
@@ -230,6 +232,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     ProjMgrLogger::m_quiet = parseResult.count("quiet");
     m_rpcServer.SetContentLengthHeader(parseResult.count("content-length"));
     m_rpcServer.SetDebug(m_debug);
+    m_locked = parseResult.count("locked");
 
     vector<string> positionalArguments;
     if (parseResult.count("positional")) {
@@ -521,7 +524,7 @@ bool ProjMgr::PopulateContexts(void) {
       }
     }
   } else {
-    ProjMgrLogger::Get().Error("input yml files were not specified");
+    ProjMgrLogger::Get().Error("csolution file not specified");
     return false;
   }
 
@@ -804,7 +807,7 @@ bool ProjMgr::RunListPacks(void) {
   }
 
   vector<string> packs;
-  bool ret = m_worker.ListPacks(packs, m_missingPacks, m_filter);
+  bool ret = m_worker.ListPacks(packs, m_missingPacks, m_locked, m_filter);
   for (const auto& pack : packs) {
     ProjMgrLogger::out() << pack << endl;
   }

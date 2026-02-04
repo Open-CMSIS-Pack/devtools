@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -11,6 +11,7 @@
 
 #include "yaml-cpp/yaml.h"
 #include <nlohmann/json-schema.hpp>
+#include "YmlSchemaCheckerUtils.h"
 
 #include <string>
 

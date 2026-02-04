@@ -24,8 +24,8 @@ include(FetchContent)
 FetchContent_Declare(
   rpc-interface
   DOWNLOAD_EXTRACT_TIMESTAMP ON
-  URL https://github.com/Open-CMSIS-Pack/csolution-rpc/releases/download/v0.0.8/csolution-rpc.zip
-  URL_HASH SHA256=e347a98b6130c64d942d360ad31ca49899f3bf3113d40d9c460d6cd8f4c07b11
+  URL https://github.com/Open-CMSIS-Pack/csolution-rpc/releases/download/v0.0.9/csolution-rpc.zip
+  URL_HASH SHA256=2be58020a28b7f8cda5da8f6cba8f605f93346beb32805919c5872b8fbc0d541
 )
 FetchContent_MakeAvailable(rpc-interface)
 

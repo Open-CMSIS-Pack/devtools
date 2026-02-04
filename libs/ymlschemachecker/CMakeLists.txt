@@ -5,7 +5,7 @@ project(YmlSchemaChecker VERSION 1.0.0)
 add_subdirectory("test")
 
 SET(SOURCE_FILES YmlSchemaChecker.cpp YmlSchemaErrorHandler.h YmlSchemaErrorHandler.cpp
-  YmlSchemaValidator.h YmlSchemaValidator.cpp)
+  YmlSchemaValidator.h YmlSchemaValidator.cpp YmlSchemaCheckerUtils.h YmlSchemaCheckerUtils.cpp)
 SET(HEADER_FILES YmlSchemaChecker.h)
 
 list(TRANSFORM SOURCE_FILES PREPEND src/)

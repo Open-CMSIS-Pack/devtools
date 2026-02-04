@@ -919,6 +919,21 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItems) {
   EXPECT_TRUE(components[1]["options"]["explicitVendor"]);
 }
 
+TEST_F(ProjMgrRpcTests, RpcGetUsedItemsLocked) {
+  string context = "project_with_dfp_components+CM0";
+  vector<string> contextList = {
+    context
+  };
+  auto requests = CreateLoadRequests("/TestSolution/PackLocking/lock_pack_version.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({ { "context", context } }));
+  const auto& responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.1.1");
+  EXPECT_EQ(packs[0]["upgrade"], "0.2.0");
+}
+
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfoSimple) {
   string context = "selectable+CM0";
   vector<string> contextList = {
