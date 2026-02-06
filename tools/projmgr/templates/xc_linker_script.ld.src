@@ -28,6 +28,7 @@ SEARCH_DIR(.)
 #define __XC32_RESET_HANDLER_NAME Reset_Handler
 #endif /* __XC32_RESET_HANDLER_NAME */
 
+_start = __XC32_RESET_HANDLER_NAME;
 ENTRY(__XC32_RESET_HANDLER_NAME)
 
 /* ----------------------------------------------------------------------------
@@ -59,21 +60,23 @@ SECTIONS
   {
     . = ALIGN(4);
     _sfixed = .;
+    __Vectors = .;
     KEEP(*(.vectors .vectors.* .vectors_default .vectors_default.*))
     KEEP(*(.isr_vector))
     KEEP(*(.reset*))
     KEEP(*(.after_vectors))
+    . = ALIGN(4);
   } > VECTOR_REGION
 
   .text :
   {
     . = ALIGN(4);
+    *(.text .text.*)
     *(.glue_7t) *(.glue_7)
     *(.gnu.linkonce.r.*)
     *(.ARM.extab* .gnu.linkonce.armextab.*)
 
-    /* Support C constructors, and C destructors in both user code
-       and the C library. This also provides support for C++ code. */
+
     . = ALIGN(4);
     KEEP(*(.init))
     . = ALIGN(4);
@@ -108,33 +111,88 @@ SECTIONS
     KEEP (*crtend.o(.dtors))
 
     . = ALIGN(4);
-    _efixed = .;            /* End of text section */
+    _efixed = .;           
   } > CODE_REGION
 
-  PROVIDE_HIDDEN (__exidx_start = .);
   .ARM.exidx :
   {
+    PROVIDE_HIDDEN (__exidx_start = .);
     *(.ARM.exidx* .gnu.linkonce.armexidx.*)
+    PROVIDE_HIDDEN (__exidx_end = .);
   } > CODE_REGION
-  PROVIDE_HIDDEN (__exidx_end = .);
 
-  . = ALIGN(4);
-  _etext = .;
+  .copy.table :
+  {
+    . = ALIGN(4);
+    __copy_table_start__ = .;
+    LONG (__data_load__)
+    LONG (__data_start__)
+    LONG (__data_end__ - __data_start__)
+    __copy_table_end__ = .;
+  } > CODE_REGION
+
+  .zero.table :
+  {
+    . = ALIGN(4);
+    __zero_table_start__ = .;
+    LONG (__bss_start__)
+    LONG (__bss_end__ - __bss_start__)
+    __zero_table_end__ = .;
+  } > CODE_REGION
+
+
+  __data_load__ = LOADADDR(.data);
+
+  .data :
+  {
+    . = ALIGN(4);
+    __data_start__ = .;
+    _sdata = .;
+    *(.data .data.*)
+    . = ALIGN(4);
+    __data_end__ = .;
+    _edata = .;
+  } > DATA_REGION AT > CODE_REGION
 
   .bss (NOLOAD) :
   {
       . = ALIGN(4);
       __bss_start__ = .;
+      __bss_start = .;
       _sbss = . ;
       _szero = .;
+      *(.bss .bss.*)
       *(COMMON)
       . = ALIGN(4);
       __bss_end__ = .;
+      __bss_end = .;
       _ebss = . ;
       _ezero = .;
   } > DATA_REGION
+
+  .heap (NOLOAD) :
+  {
+    . = ALIGN(8);
+    __end__ = .;
+    PROVIDE(end = .);
+    . = . + 0x400;
+    __HeapLimit = .;
+  } > DATA_REGION
+
+  .stack (NOLOAD) :
+  {
+    . = ALIGN(8);
+    . = . + 0x800;
+  } > DATA_REGION
+
+  __StackTop = ORIGIN(ram) + LENGTH(ram);
+  __StackLimit = __StackTop - 0x1000; 
+  
+  __STACK_LIMIT = __StackLimit;
+  PROVIDE(__stack = __StackTop);
 
   . = ALIGN(4);
   _end = . ;
   _ram_end_ = ORIGIN(ram) + LENGTH(ram) -1 ;
 }
+
