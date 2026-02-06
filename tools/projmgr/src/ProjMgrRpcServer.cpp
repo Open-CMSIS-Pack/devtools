@@ -286,6 +286,7 @@ RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
 }
 
 RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const string& activeTarget) {
+  m_bUseAllPacks = false; // loading solution will first use only listed packs
   m_packReferences.clear();
   RpcArgs::SuccessResult result = {false};
   const auto csolutionFile = RteFsUtils::MakePathCanonical(solution);
@@ -846,6 +847,9 @@ RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solutio
   if(!CheckSolutionArg(csolutionFile, result.message)) {
     return result;
   }
+  m_bUseAllPacks = false; // loading solution will first use only listed packs
+  m_packReferences.clear(); // will be updated
+
   if(!m_manager.RunConvert(csolutionFile, activeTarget, updateRte) || !ProjMgrLogger::Get().GetErrors().empty()) {
     if(m_worker.HasVarDefineError()) {
       const auto& vars = m_worker.GetUndefLayerVars();

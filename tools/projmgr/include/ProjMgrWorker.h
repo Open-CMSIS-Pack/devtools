@@ -1143,6 +1143,7 @@ public:
     m_missingFiles.clear();
     m_types = {};
     m_activeTargetType.clear();
+    m_missingToolchains.clear();
     m_undefCompiler = false;
     m_isSetupCommand = false;
   };
@@ -1303,6 +1304,7 @@ protected:
   template<class T> bool CheckFilter(const std::string& filter, const T& item);
   void ResolvePackRequirement(ContextItem& context, const PackItem& packEntry, bool ignoreCBuildPack);
   void FormatResolvedPackIds();
+  void RetrieveToolchainConfigFiles();
 };
 
 #endif  // PROJMGRWORKER_H
