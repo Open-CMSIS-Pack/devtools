@@ -8,12 +8,16 @@ solution:
   build-types:
     - type: Debug
       compiler: AC6
+    - type: DebugOldDfp
+      compiler: AC6
     - type: Release
       compiler: GCC
 
   packs:
     - pack: ARM::RteTest
       for-context: .Debug
+    - pack: ARM::RteTest_DFP@0.1.1
+      for-context: .DebugOldDfp
     - pack: ARM::RteTest_DFP@>=0.2.0
       for-context: .Release
     - pack: ARM::RteTestRequired

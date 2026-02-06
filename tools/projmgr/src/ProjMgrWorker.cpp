@@ -567,11 +567,13 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   set<string> selectedPacks;
   const bool allOrLatest = (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST);
   for (const auto& pack : m_loadedPacks) {
-    if (allOrLatest || (context.pdscFiles.find(pack->GetPackageFileName()) != context.pdscFiles.end())) {
+    if (context.pdscFiles.find(pack->GetPackageFileName()) != context.pdscFiles.end()) {
       selectedPacks.insert(pack->GetPackageID());
     }
   }
   RtePackageFilter filter;
+   // use all packs is enabled by default, by default policy it should be disabled if selectedPacks is not empty
+  filter.SetUseAllPacks(allOrLatest || selectedPacks.empty());
   filter.SetSelectedPackages(selectedPacks);
   context.rteActiveTarget->SetPackageFilter(filter);
   context.rteActiveTarget->UpdateFilterModel();
