@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -497,6 +497,15 @@ TEST(RteUtils, CollectionUtils)
 
   EXPECT_EQ(*get_or_default(strToPtr, "two", sDefault), '2');
   EXPECT_EQ(*get_or_default(strToPtr, "four", sDefault), 'd');
+
+  auto notFound = find_item(intToInt, [](const auto& kv) {return kv.second < 5; });
+  EXPECT_FALSE(!!notFound);
+  auto foundInt = find_item(intToInt, [](const auto& kv) {return kv.second > 5; });
+  ASSERT_TRUE(!!foundInt);
+  auto& [key, val] = foundInt->get();
+  EXPECT_EQ(key, 1);
+  EXPECT_EQ(val, 10);
+
 }
 
 TEST(RteUtils, ExpandAccessSequences) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -13,6 +13,7 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <optional>
 
 /**
  * @brief Returns value stored in a map for a given key or default value if no entry is found
@@ -85,6 +86,37 @@ auto key_set(const M& m) {
     for (const auto& kv : m)
         ks.insert(kv.first);
     return ks;
+}
+
+/**
+ * @brief Finds the first element in a container that satisfies a predicate.
+ *
+ * Searches the container in forward order and returns a reference to the
+ * first element for which the predicate returns true.
+ *
+ * @tparam Container A container type providing begin()/end() and value_type.
+ * @tparam Predicate A callable with signature bool(const value_type&).
+ *
+ * @param c     Container to search.
+ * @param pred  Predicate applied to each element.
+ *
+ * @return std::optional containing a reference to the matching element,
+ *         or std::nullopt if no such element is found.
+ *
+ * @note The returned reference remains valid only as long as the container
+ *       is not structurally modified (e.g. erase, reallocation).
+ *
+ * @complexity Linear in the size of the container.
+ */
+template <typename Container, typename Predicate>
+auto find_item(Container& c, Predicate pred)
+    -> std::optional<std::reference_wrapper<typename Container::value_type>>
+{
+    auto it = std::find_if(std::begin(c), std::end(c), pred);
+    if(it == std::end(c)) {
+      return std::nullopt;
+    }
+    return *it;   // reference, not a copy
 }
 
 /**

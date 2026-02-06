@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1139,7 +1139,7 @@ bool RtePackageFilter::AreAllExcluded() const
 
 bool RtePackageFilter::IsUseAllPacks() const
 {
-  return m_bUseAllPacks && m_selectedPacks.empty() && m_latestPacks.empty();
+  return m_bUseAllPacks;
 }
 
 bool RtePackageFilter::IsPackageSelected(const string& packId) const
@@ -1170,10 +1170,10 @@ bool RtePackageFilter::IsPackageFiltered(RtePackage* pack) const
 
 bool RtePackageFilter::IsPackageFiltered(const string& packId) const
 {
+  if(IsPackageSelected(packId)) { // pack is explicitly selected => filtered
+    return true;
+  }
   if (!IsUseAllPacks()) {
-    if (IsPackageSelected(packId))
-      return true;
-
     string commonId = RtePackage::CommonIdFromId(packId);
     if (m_latestPacks.find(commonId) == m_latestPacks.end())
       return false;
@@ -1185,8 +1185,9 @@ bool RtePackageFilter::IsPackageFiltered(const string& packId) const
       }
     }
   }
-  if (m_latestInstalledPacks.find(packId) != m_latestInstalledPacks.end())
+  if(m_latestInstalledPacks.find(packId) != m_latestInstalledPacks.end()) {
     return true;
+  }
   return false;
 }
 

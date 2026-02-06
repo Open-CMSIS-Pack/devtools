@@ -19,6 +19,10 @@
 
 using namespace std;
 
+auto find_item_by_id(json& items, const std::string& id) {
+    return find_item(items, [&](const auto& item) { return item["id"] == id; });
+}
+
 class ProjMgrRpcTests : public ProjMgr, public ::testing::Test {
 protected:
   ProjMgrRpcTests() {}
@@ -1012,6 +1016,7 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfo) {
   auto packs = responses[2]["result"]["packs"];
   EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@>=0.2.0");
   EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_FALSE(packs[0].contains("upgrade"));
 
   EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
   auto packInfos = responses[3]["result"]["packs"];
@@ -1024,6 +1029,54 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfo) {
   EXPECT_EQ(packInfos[7]["id"], "SomeVendor::RteTest@0.0.1");
   EXPECT_FALSE(packInfos[7].contains("used"));
 }
+
+
+TEST_F(ProjMgrRpcTests, RpcGetPacksNotLatest) {
+  string context = "test1.DebugOldDfp+CM0";
+  vector<string> contextList = {
+    context
+  };
+
+  auto requests = CreateLoadRequests("/TestSolution/test_pack_requirements.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
+  requests += FormatRequest(5, "GetPacksInfo", json({{ "context", context }, {"all", true}}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@0.1.1");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.1.1");
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
+  auto packInfos = responses[3]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 2);
+  auto p = find_item_by_id(packInfos, "ARM::RteTest_DFP@0.1.1");
+  EXPECT_TRUE(!!p);
+  EXPECT_TRUE(p->get()["used"]);
+  EXPECT_TRUE(p->get().contains("references"));
+  p = find_item_by_id(packInfos, "ARM::RteTest_DFP@0.2.0");
+  EXPECT_FALSE(!!p);
+
+  auto packInfosAll = responses[4]["result"]["packs"];
+  EXPECT_TRUE(packInfosAll.size() > packInfos.size());
+
+  p = find_item_by_id(packInfosAll, "SomeVendor::RteTest@0.0.1");
+  EXPECT_TRUE(!!p);
+  EXPECT_FALSE(p->get().contains("used"));
+
+  p = find_item_by_id(packInfosAll, "ARM::RteTest_DFP@0.1.1");
+  EXPECT_TRUE(!!p);
+  EXPECT_TRUE(p->get()["used"]);
+  EXPECT_TRUE(p->get().contains("references"));
+
+  p = find_item_by_id(packInfosAll, "ARM::RteTest_DFP@0.2.0");
+  EXPECT_TRUE(!!p);
+  EXPECT_FALSE(p->get().contains("used"));
+  EXPECT_FALSE(p->get().contains("references"));
+}
+
 
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfoLayer) {
   string context = "packs.CompatibleLayers+RteTest_ARMCM3";
