@@ -327,18 +327,17 @@ void RpcHandler::UpdateFilter(const string& context, RteTarget* rteTarget, bool 
   StoreSelectedComponents(rteTarget, selectedComponents);
 
   RtePackageFilter packFilter;
-  if(!all) {
-    // construct and apply filter
-    // use resolved pack ID's from selected references
-    set<string> packIds;
-    for(auto& ref : GetPackReferences(context)) {
-      if(ref.selected && ref.resolvedPack.has_value()) {
-        packIds.insert(ref.resolvedPack.value());
-      }
+  // construct and apply filter
+  // use resolved pack ID's from selected references
+  set<string> packIds;
+  for(auto& ref : GetPackReferences(context)) {
+    if(ref.selected && ref.resolvedPack.has_value()) {
+      packIds.insert(ref.resolvedPack.value());
     }
-    packFilter.SetSelectedPackages(packIds);
-    packFilter.SetUseAllPacks(false);
   }
+  packFilter.SetSelectedPackages(packIds);
+  packFilter.SetUseAllPacks(all);
+
   // only update filter if differs from current state
   if(!packFilter.IsEqual(rteTarget->GetPackageFilter())) {
     rteTarget->SetPackageFilter(packFilter);
