@@ -108,6 +108,7 @@ auto key_set(const M& m) {
  *
  * @complexity Linear in the size of the container.
  */
+#if defined(__cpp_lib_optional)
 template <typename Container, typename Predicate>
 auto find_item(Container& c, Predicate pred)
     -> std::optional<std::reference_wrapper<typename Container::value_type>>
@@ -118,6 +119,7 @@ auto find_item(Container& c, Predicate pred)
     }
     return *it;   // reference, not a copy
 }
+#endif
 
 /**
   * @brief string pair
