@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -211,17 +211,26 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
       m_runDebug.systemDescriptions.push_back(item);
     }
   }
-  StrVec scvdFiles;
+  // scvd
+  StrVecMap scvdFiles;
   for (const auto& context : contexts) {
     for (const auto& [scvdFile, _] : context->rteActiveTarget->GetScvdFiles()) {
-      CollectionUtils::PushBackUniquely(scvdFiles, scvdFile);
+      CollectionUtils::PushBackUniquely(scvdFiles[scvdFile], context->deviceItem.pname);
     }
   }
-  for (const auto& scvdFile : scvdFiles) {
-    FilesType item;
-    item.file = scvdFile;
-    item.type = "scvd";
-    m_runDebug.systemDescriptions.push_back(item);
+  for (const auto& [scvdFile, pnameVec] : scvdFiles) {
+    const bool allPnames = pnameVec.size() == pnames.size();
+    // when one file is valid for multiple cores, but not for all cores -> multiple entries with a different pname each
+    for (const auto& pname : pnameVec) {
+      FilesType item;
+      item.file = scvdFile;
+      item.type = "scvd";
+      item.pname = allPnames ? "" : pname;
+      m_runDebug.systemDescriptions.push_back(item);
+      if (allPnames) {
+        break;
+      }
+    }
   }
 
   // outputs

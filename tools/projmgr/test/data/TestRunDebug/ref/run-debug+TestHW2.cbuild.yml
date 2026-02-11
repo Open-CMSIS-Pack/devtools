@@ -76,7 +76,7 @@ build:
           category: doc
           version: 0.1.1
     - component: ARM::RteTest:scvd@1.1.1
-      condition: ARMCM3 RteTest
+      condition: DeviceDependent
       from-pack: ARM::RteTest_DFP@0.2.0
       selected-by: RteTest:scvd
       files:

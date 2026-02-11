@@ -474,7 +474,7 @@
       </files>
     </component>
 
-    <component Cclass="RteTest" Cgroup="scvd" Cversion="1.1.1" condition="ARMCM3 RteTest">
+    <component Cclass="RteTest" Cgroup="scvd" Cversion="1.1.1" condition="DeviceDependent">
     <description>scvd test</description>
       <files>
         <file category="other"  name="Components/RteTest.scvd"/>
