@@ -3911,8 +3911,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_NoUpdateRTEFiles) {
   argv[7] = (char*)"--cbuildgen";
   EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
 
-  EXPECT_NE(streamRedirect.GetOutString().find("RTE/_TEST_TARGET/RTE_Components.h was recreated"), string::npos);
-
   // Only constructed files are created in the RTE folder
   GetFilesInTree(rteFolder, rteFiles);
   const set<string> expected = { "RTE_Components.h", "_TEST_TARGET" };

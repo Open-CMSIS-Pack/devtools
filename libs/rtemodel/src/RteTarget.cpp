@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -2067,11 +2067,8 @@ bool RteTarget::GenerateRteHeaderFile(const string& headerName, const string& co
     return true;
   }
 
-  // file does not exist or its content is different
-  if (RteFsUtils::CopyBufferToFile(headerFile, oss.str(), false) // write file
-    && !GetProject()->ShouldUpdateRte() && !bRegionsHeader) {
-    callback->OutputInfoMessage("Constructed file " + headerFile + " was recreated");
-  }
+  // file does not exist or its content is different, write file
+  RteFsUtils::CopyBufferToFile(headerFile, oss.str(), false);
   return true;
 }
 // End of RteTarget.cpp
