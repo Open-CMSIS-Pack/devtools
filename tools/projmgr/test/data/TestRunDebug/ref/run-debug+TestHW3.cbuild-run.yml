@@ -54,6 +54,9 @@ cbuild-run:
   system-descriptions:
     - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM0.svd
       type: svd
+    - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Components/RteTest.scvd
+      type: scvd
+      pname: cm0_core0
   debugger:
     name: CMSIS-DAP@pyOCD
     protocol: swd
