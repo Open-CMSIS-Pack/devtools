@@ -37,6 +37,8 @@ build:
   output:
     - type: lib
       file: library-AC6.lib
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM3 RteTest

@@ -24,3 +24,5 @@ build:
   output:
     - type: elf
       file: project.axf
+    - type: comp-db
+      file: compile_commands.json

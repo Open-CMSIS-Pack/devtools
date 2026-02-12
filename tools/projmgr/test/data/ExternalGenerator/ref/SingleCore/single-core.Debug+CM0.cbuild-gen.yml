@@ -30,6 +30,8 @@ build-gen:
   output:
     - type: elf
       file: single-core.axf
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
       from-pack: ARM::RteTestGenerator@0.1.0

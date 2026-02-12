@@ -431,6 +431,13 @@ void ProjMgrCbuild::SetOutputNode(YAML::Node node, const ContextItem* context) {
       node.push_back(fileNode);
     }
   }
+  if (!context->imageOnly) {
+    // add reference to compilation database
+    YAML::Node compdb;
+    SetNodeValue(compdb[YAML_TYPE], "comp-db");
+    SetNodeValue(compdb[YAML_FILE], "compile_commands.json");
+    node.push_back(compdb);
+  }
 }
 
 void ProjMgrCbuild::SetLinkerNode(YAML::Node node, const ContextItem* context) {

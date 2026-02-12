@@ -31,6 +31,8 @@ build-gen:
   output:
     - type: elf
       file: TestProject3_5.elf
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::Device:RteTest Generated Component:RteTestSimple@1.1.0
       from-pack: ARM::RteTestGenerator@0.1.0

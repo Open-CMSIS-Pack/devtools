@@ -33,6 +33,8 @@ build:
   output:
     - type: elf
       file: linker.axf
+    - type: comp-db
+      file: compile_commands.json
   linker:
     script: ../data/TestSolution/LinkerOptions/linkerScript.sct
     regions: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h

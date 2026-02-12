@@ -42,6 +42,8 @@ build:
       file: run-debug.axf
     - type: hex
       file: run-debug.hex
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM3 RteTest

@@ -23,6 +23,8 @@ build:
       file: zephyr/zephyr.elf
     - type: hex
       file: zephyr/zephyr.hex
+    - type: comp-db
+      file: compile_commands.json
   licenses:
     - license: <unknown>
       license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt

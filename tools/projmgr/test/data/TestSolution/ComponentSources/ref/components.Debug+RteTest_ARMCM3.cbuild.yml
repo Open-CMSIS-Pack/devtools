@@ -43,6 +43,8 @@ build:
   output:
     - type: elf
       file: components.axf
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::RteTest:DupFilename@0.9.9
       from-pack: ARM::RteTest@0.1.0

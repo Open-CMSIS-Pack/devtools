@@ -39,6 +39,8 @@ build:
   output:
     - type: elf
       file: lang-scope.axf
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::RteTest:LanguageAndScope@0.9.9
       from-pack: ARM::RteTest@0.1.0-alpha0

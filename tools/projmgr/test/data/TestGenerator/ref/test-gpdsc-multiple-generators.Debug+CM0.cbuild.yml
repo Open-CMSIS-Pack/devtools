@@ -28,6 +28,8 @@ build:
   output:
     - type: elf
       file: test-gpdsc-multiple-generators.axf
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::Device:RteTest Generated Component:RteTest@1.1.0
       condition: RteTest

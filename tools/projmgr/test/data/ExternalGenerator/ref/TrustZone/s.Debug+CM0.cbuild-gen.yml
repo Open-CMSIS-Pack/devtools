@@ -33,6 +33,8 @@ build-gen:
       file: s.axf
     - type: cmse-lib
       file: s_CMSE_Lib.o
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
       from-pack: ARM::RteTestGenerator@0.1.0

@@ -28,6 +28,8 @@ build:
   output:
     - type: elf
       file: multiple-components.axf
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::Device&RteTestBundle:RteTest Generated Component@1.1.0
       condition: RteTest

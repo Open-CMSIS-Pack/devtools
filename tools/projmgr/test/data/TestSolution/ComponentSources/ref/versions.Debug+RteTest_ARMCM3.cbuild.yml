@@ -41,6 +41,8 @@ build:
   output:
     - type: elf
       file: versions.axf
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::RteTest:TestVersion@1.8-dev1
       from-pack: ARM::RteTest@0.1.0
