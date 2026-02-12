@@ -40,6 +40,8 @@ build:
       file: trustzone.axf
     - type: cmse-lib
       file: trustzone_CMSE_Lib.o
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM0 RteTest

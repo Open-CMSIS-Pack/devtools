@@ -60,6 +60,8 @@ build:
   output:
     - type: elf
       file: single-core.axf
+    - type: comp-db
+      file: compile_commands.json
   components:
     - component: ARM::RteTest:GlobalLevel@0.0.2
       from-pack: ARM::RteTest@0.1.0
