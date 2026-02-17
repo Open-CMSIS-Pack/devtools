@@ -61,6 +61,8 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   vector<pair<const RteItem*, vector<string>>> debugvars;
   // debug sequences
   vector<pair<const RteItem*, vector<string>>> debugSequences;
+  // flash info
+  vector<pair<const RteItem*, vector<string>>> flashInfo;
 
   // all processors
   const auto& pnames = context0->rteDevice->GetProcessors();
@@ -88,6 +90,10 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
       const auto& deviceDebugSequences = context0->rteDevice->GetEffectiveProperties("sequence", pname);
       for (const auto& deviceDebugSequence : deviceDebugSequences) {
         PushBackUniquely(debugSequences, deviceDebugSequence, pname);
+      }
+      const auto& deviceFlashInfos = context0->rteDevice->GetEffectiveProperties("flashinfo", pname);
+      for (const auto& deviceFlashInfo : deviceFlashInfos) {
+        PushBackUniquely(flashInfo, deviceFlashInfo, pname);
       }
     }
   }
@@ -134,7 +140,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   }
 
   // sort collections starting with specific pnames
-  for (auto vec : { &algorithms, &memories, &debugs, &debugSequences }) {
+  for (auto vec : { &algorithms, &memories, &debugs, &debugSequences, &flashInfo }) {
     sort(vec->begin(), vec->end(), [](auto& left, auto& right) {
       return left.second.size() < right.second.size();
     });
@@ -198,6 +204,38 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
       algoItem.ram.pname = defaultRam.pname;
       m_runDebug.algorithms.push_back(algoItem);
     }
+  }
+
+  // flash info
+  for (const auto& [flash, _] : flashInfo) {
+    FlashInfoType item;
+    item.name = flash->GetName();
+    item.start = flash->GetAttributeAsULL("start");
+    item.pageSize = flash->GetAttributeAsULL("pagesize");
+    Collection<RteItem*> blocks;
+    for (const auto& block : flash->GetChildrenByTag("block", blocks)) {
+      FlashInfoBlockType b;
+      b.count = block->GetAttributeAsULL("count");
+      b.size = block->GetAttributeAsULL("size");
+      if (block->HasAttribute("arg")) {
+        b.arg = block->GetAttributeAsULL("arg");
+      }
+      item.blocks.push_back(b);
+    }
+    if (flash->HasAttribute("blankval")) {
+      item.blankVal = flash->GetAttributeAsULL("blankval");
+    }
+    if (flash->HasAttribute("filler")) {
+      item.fillVal = flash->GetAttributeAsULL("filler");
+    }
+    if (flash->HasAttribute("ptime")) {
+      item.ptime = flash->GetAttributeAsUnsigned("ptime");
+    }
+    if (flash->HasAttribute("etime")) {
+      item.etime = flash->GetAttributeAsUnsigned("etime");
+    }
+    item.pname = flash->GetProcessorName();
+    m_runDebug.flashInfo.push_back(item);
   }
 
   // system descriptions
