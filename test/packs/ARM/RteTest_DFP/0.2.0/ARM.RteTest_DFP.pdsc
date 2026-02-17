@@ -31,6 +31,10 @@
       <algorithm name="Device/ARM/Flash/FAMILY.FLM" start="0x00000000" size="0x00040000"  default="1"/>
       <algorithm name="Device/ARM/Flash/NonDefaultAlgo.FLM" start="0x00000000" size="0x00010000"/>
       <algorithm name="Device/ARM/Flash/IARAlgo.FLM" start="0x00000000" size="0x00020000" default="1" style="IAR"/>
+      <flashinfo name="Family Flash" start="0x80000000" pagesize="0x00000100">
+        <block count="64" size="0x100"/>
+        <block count="128" size="0x400"/>
+      </flashinfo>
       <debugvars configfile="Device/ARM/Debug/ARMCM.dbgconf" version="0.0.2">
         __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
         __var TraceClk_Pin   = 0x00040002;   // PE2
@@ -150,6 +154,9 @@
           <datapatch  __dp="0" __ap="0" address="0xE0040FF0" value="0x0D" info="CIDR0"/>
         </debug>
         <algorithm name="Device/ARM/Flash/CortexM4Dual.FLM" start="0x000A0000" size="0x00020000" RAMstart="0x000C0000" RAMsize="0x00040000" Pname="cm0_core1" default="1"/>
+        <flashinfo name="Internal Flash 16KB" start="0x0000F000" blankval="0x00000000" filler="0xCCCCCCCC" pagesize="0x00000040" ptime="100000" etime="1000000" Pname="cm0_core1">
+          <block count="64" size="0x100" arg="0"/>
+        </flashinfo>
       </device>
       <device Dname="RteTest_ARMCM0_Single">
         <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>

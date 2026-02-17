@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2024-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -38,6 +38,30 @@ struct MemoryType {
   std::string fromPack;
   unsigned long long start = 0;
   unsigned long long size = 0;
+  std::string pname;
+};
+
+/**
+  * @brief flash info block
+ */
+struct FlashInfoBlockType {
+  unsigned long long count = 0;
+  unsigned long long size = 0;
+  std::optional<unsigned long long> arg;
+};
+
+/**
+  * @brief flash info
+ */
+struct FlashInfoType {
+  std::string name;
+  unsigned long long start = 0;
+  unsigned long long pageSize = 0;
+  std::vector<FlashInfoBlockType> blocks;
+  std::optional<unsigned long long> blankVal;
+  std::optional<unsigned long long> fillVal;
+  std::optional<unsigned int> ptime;
+  std::optional<unsigned int> etime;
   std::string pname;
 };
 
@@ -169,6 +193,7 @@ struct RunDebugType {
   std::string device;
   std::string devicePack;
   std::vector<AlgorithmType> algorithms;
+  std::vector<FlashInfoType> flashInfo;
   std::vector<FilesType> outputs;
   std::vector<FilesType> systemDescriptions;
   SystemResourcesType systemResources;

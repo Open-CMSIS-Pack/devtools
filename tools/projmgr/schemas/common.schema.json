@@ -2087,6 +2087,45 @@
       "additionalProperties": false,
       "required": ["name", "access", "start", "size"]
     },
+    "FlashInfoType": {
+      "title": "flash-info:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#flash-info",
+      "description": "Flash information that the debugger can use to erase and program flash.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/FlashInfoElementType" }
+    },
+    "FlashInfoElementType": {
+      "type": "object",
+      "properties": {
+        "name":      { "type": "string", "description": "Name of the specified flash device." },
+        "start":     { "type": "number", "description": "Base address of the specified flash device as mapped into target memory system." },
+        "page-size": { "type": "number", "description": "Programming page size (page is the smallest unit that can be programmed)." },
+        "blocks":    { "$ref": "#/definitions/FlashInfoBlocksType" },
+        "blank-val": { "type": "number", "description": "Expected memory value for unprogrammed address ranges (64-bit value)." },
+        "fill-val":  { "type": "number", "description": "Value that a debugger uses to fill the remainder of a programming page (64-bit value)." },
+        "ptime":     { "type": "number", "description": "Timeout in milliseconds for programming a page." },
+        "etime":     { "type": "number", "description": "Timeout in milliseconds for erasing a page." },
+        "pname":     { "type": "string", "description": "Specifies the processor for the execution of the algorithm." }
+      },
+      "additionalProperties": false,
+      "required": ["name", "start", "page-size", "blocks"]
+    },
+    "FlashInfoBlocksType": {
+      "description": "An ordered list of subsequent blocks (block is the smallest unit that can be erased).",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/FlashInfoBlockType" }
+    },
+    "FlashInfoBlockType": {
+      "type": "object",
+      "properties": {
+        "count": { "type": "number", "description": "Number of subsequent blocks." },
+        "size":  { "type": "number", "description": "Block size in bytes. The overall memory size that is covered by this block is count times size." },
+        "arg":   { "type": "number", "description": "An optional argument (non-negative number) to pass to flash operation sequence." }
+      },
+      "additionalProperties": false,
+      "required": ["count", "size"]
+    },
     "ProgrammingType": {
       "title": "programming:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#programming",
       "description": "Algorithms for flash download.",
@@ -2394,6 +2433,7 @@
         "debug-vars":          { "$ref": "#/definitions/DebugVarsType" },
         "debug-sequences":     { "$ref": "#/definitions/DebugSequencesType" },
         "programming":         { "$ref": "#/definitions/ProgrammingType" },
+        "flash-info":          { "$ref": "#/definitions/FlashInfoType" },
         "debug-topology":      { "$ref": "#/definitions/DebugTopologyType" }
       },
       "additionalProperties": false,

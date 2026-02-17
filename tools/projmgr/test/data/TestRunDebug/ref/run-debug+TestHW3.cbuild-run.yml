@@ -146,6 +146,27 @@ cbuild-run:
       size: 0x00040000
       ram-start: 0x20000000
       ram-size: 0x00020000
+  flash-info:
+    - name: Internal Flash 16KB
+      start: 0x0000F000
+      page-size: 0x00000040
+      blocks:
+        - count: 64
+          size: 0x00000100
+          arg: 0
+      blank-val: 0x00000000
+      fill-val: 0xCCCCCCCC
+      ptime: 100000
+      etime: 1000000
+      pname: cm0_core1
+    - name: Family Flash
+      start: 0x80000000
+      page-size: 0x00000100
+      blocks:
+        - count: 64
+          size: 0x00000100
+        - count: 128
+          size: 0x00000400
   debug-topology:
     debugports:
       - dpid: 0

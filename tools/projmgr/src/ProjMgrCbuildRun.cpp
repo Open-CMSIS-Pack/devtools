@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -20,6 +20,7 @@ public:
 protected:
   std::string m_directory;
   void SetProgrammingNode(YAML::Node node, const std::vector<AlgorithmType>& algorithms);
+  void SetFlashInfoNode(YAML::Node node, const std::vector<FlashInfoType>& flashInfo);
   void SetFilesNode(YAML::Node node, const std::vector<FilesType>& outputs);
   void SetResourcesNode(YAML::Node node, const SystemResourcesType& systemResources);
   void SetDebuggerNode(YAML::Node node, const DebuggerType& debugger);
@@ -55,6 +56,7 @@ ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
   SetDebugVarsNode(node[YAML_DEBUG_VARS], debugRun.debugVars);
   SetDebugSequencesNode(node[YAML_DEBUG_SEQUENCES], debugRun.debugSequences);
   SetProgrammingNode(node[YAML_PROGRAMMING], debugRun.algorithms);
+  SetFlashInfoNode(node[YAML_FLASH_INFO], debugRun.flashInfo);
   SetDebugTopologyNode(node[YAML_DEBUG_TOPOLOGY], debugRun.debugTopology);
 };
 
@@ -68,6 +70,40 @@ void ProjMgrCbuildRun::SetProgrammingNode(YAML::Node node, const std::vector<Alg
     SetNodeValue(algorithmNode[YAML_RAM_SIZE], ProjMgrUtils::ULLToHex(item.ram.size));
     SetNodeValue(algorithmNode[YAML_PNAME], item.ram.pname);
     node.push_back(algorithmNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetFlashInfoNode(YAML::Node node, const std::vector<FlashInfoType>& flashInfo) {
+  for (const auto& item : flashInfo) {
+    YAML::Node flashInfoNode;
+    SetNodeValue(flashInfoNode[YAML_NAME], item.name);
+    SetNodeValue(flashInfoNode[YAML_START], ProjMgrUtils::ULLToHex(item.start));
+    SetNodeValue(flashInfoNode[YAML_PAGE_SIZE], ProjMgrUtils::ULLToHex(item.pageSize));
+    if (!item.blocks.empty()) {
+      for (const auto& block : item.blocks) {
+        YAML::Node blockNode;
+        blockNode[YAML_COUNT] = block.count;
+        SetNodeValue(blockNode[YAML_SIZE], ProjMgrUtils::ULLToHex(block.size));
+        if (block.arg.has_value()) {
+          blockNode[YAML_ARG] = block.arg.value();
+        }
+        flashInfoNode[YAML_BLOCKS].push_back(blockNode);
+      }
+    }
+    if (item.blankVal.has_value()) {
+      SetNodeValue(flashInfoNode[YAML_BLANK_VAL], ProjMgrUtils::ULLToHex(item.blankVal.value()));
+    }
+    if (item.fillVal.has_value()) {
+      SetNodeValue(flashInfoNode[YAML_FILL_VAL], ProjMgrUtils::ULLToHex(item.fillVal.value()));
+    }
+    if (item.ptime.has_value()) {
+      flashInfoNode[YAML_PTIME] = item.ptime.value();
+    }
+    if (item.etime.has_value()) {
+      flashInfoNode[YAML_ETIME] = item.etime.value();
+    }
+    SetNodeValue(flashInfoNode[YAML_PNAME], item.pname);
+    node.push_back(flashInfoNode);
   }
 }
 
