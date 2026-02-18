@@ -154,8 +154,8 @@ cbuild-run:
         - count: 64
           size: 0x00000100
           arg: 0
-      blank-val: 0x00000000
-      fill-val: 0xCCCCCCCC
+      blank-val: 0x0000000000000000
+      fill-val: 0xCCCCCCCCCCCCCCCC
       ptime: 100000
       etime: 1000000
       pname: cm0_core1

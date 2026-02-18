@@ -91,10 +91,10 @@ void ProjMgrCbuildRun::SetFlashInfoNode(YAML::Node node, const std::vector<Flash
       }
     }
     if (item.blankVal.has_value()) {
-      SetNodeValue(flashInfoNode[YAML_BLANK_VAL], ProjMgrUtils::ULLToHex(item.blankVal.value()));
+      SetNodeValue(flashInfoNode[YAML_BLANK_VAL], ProjMgrUtils::ULLToHex(item.blankVal.value(), 16));
     }
     if (item.fillVal.has_value()) {
-      SetNodeValue(flashInfoNode[YAML_FILL_VAL], ProjMgrUtils::ULLToHex(item.fillVal.value()));
+      SetNodeValue(flashInfoNode[YAML_FILL_VAL], ProjMgrUtils::ULLToHex(item.fillVal.value(), 16));
     }
     if (item.ptime.has_value()) {
       flashInfoNode[YAML_PTIME] = item.ptime.value();
