@@ -154,7 +154,7 @@
           <datapatch  __dp="0" __ap="0" address="0xE0040FF0" value="0x0D" info="CIDR0"/>
         </debug>
         <algorithm name="Device/ARM/Flash/CortexM4Dual.FLM" start="0x000A0000" size="0x00020000" RAMstart="0x000C0000" RAMsize="0x00040000" Pname="cm0_core1" default="1"/>
-        <flashinfo name="Internal Flash 16KB" start="0x0000F000" blankval="0x00000000" filler="0xCCCCCCCC" pagesize="0x00000040" ptime="100000" etime="1000000" Pname="cm0_core1">
+        <flashinfo name="Internal Flash 16KB" start="0x0000F000" blankval="0x0000000000000000" filler="0xCCCCCCCCCCCCCCCC" pagesize="0x00000040" ptime="100000" etime="1000000" Pname="cm0_core1">
           <block count="64" size="0x100" arg="0"/>
         </flashinfo>
       </device>
