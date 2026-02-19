@@ -57,6 +57,18 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.13.0</td>
+    <td>Release notes:
+      - added support for Microchip XC32 toolchain
+      - added support for Star-MC3 and correct the support of Cortex-M52
+      - added AC6 and GCC support for Star-MC3 via Cortex-M52 compatibility
+      - fixed generated cflags in LLVM/Clang for Star-MC3
+      - updated cbridge utility v0.10.0
+      - updated cbuild2cmake utility v0.10.0
+      - updated cbuild utility v2.13.0
+      - updated cpackget utility v2.2.0
+      - updated csolution utility v2.13.0
+    </td>
     <td>2.12.0</td>
     <td>Release notes:
       - fixed command-line options for map file generation 
