@@ -926,7 +926,15 @@ std::string RteFsUtils::FileTimeToString(const fs::file_time_type& timeStamp) {
      auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
        timeStamp - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
      std::time_t cftime = std::chrono::system_clock::to_time_t(sctp);
-     strTime = std::asctime(std::localtime(&cftime));
+    std::tm tm{};
+#if defined(_WIN32)
+    localtime_s(&tm, &t);      // Windows secure version
+#else
+    localtime_r(&t, &tm);      // POSIX thread-safe version
+#endif
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
+    strTime = oss.str();
    }
    return strTime;
 }
