@@ -925,7 +925,7 @@ std::string RteFsUtils::FileTimeToString(const fs::file_time_type& timeStamp) {
      // Convert file_time_type to system_clock (C++ 17 compatible version)
      auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
        timeStamp - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
-     std::time_t cftime = std::chrono::system_clock::to_time_t(sctp);
+     std::time_t t = std::chrono::system_clock::to_time_t(sctp);
     std::tm tm{};
 #if defined(_WIN32)
     localtime_s(&tm, &t);      // Windows secure version
