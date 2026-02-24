@@ -409,6 +409,21 @@ public:
    * @return true if file is found successfully, false otherwise
   */
   static bool FindFileWithPattern(const std::string& searchPath, const std::string& pattern, std::string& file);
+
+    /**
+   * @brief returns file/dir modification time
+   * @param path absolute file/directory path
+   * @return fs::file_time_type
+  */
+  static fs::file_time_type GetModificationTime(const std::string& path);
+
+
+  /**
+   * @brief converts time to string
+   * @param timeStamp fs::file_time_type to convert
+   * @return string representing time
+  */
+  static std::string FileTimeToString(const fs::file_time_type& timeStamp);
 };
 
 #endif // RteFsUtils_H

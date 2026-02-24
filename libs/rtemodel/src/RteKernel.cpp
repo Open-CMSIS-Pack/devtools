@@ -297,7 +297,7 @@ RtePackage* RteKernel::LoadPack(const string& pdscFile, PackageState packState) 
   }
   RtePackRegistry* packRegistry = GetPackRegistry();
   RtePackage* pack = packRegistry->GetPack(pdscFile);
-  if(pack) {
+  if(pack && !pack->IsFileTimeModified()) {
     return pack;
   }
   const string ext = RteUtils::ExtractFileExtension(pdscFile, true);
@@ -334,9 +334,9 @@ bool RteKernel::LoadPacks(const std::list<std::string>& pdscFiles, std::list<Rte
     auto rteItemBuilder = CreateUniqueRteItemBuilder(model, model->GetPackageState());
     xmlTree->SetXmlItemBuilder(rteItemBuilder.get());
     RtePackage* pack = packRegistry->GetPack(pdscFile);
-    if(bReplace) {
+    if(bReplace || !pack || pack->IsFileTimeModified()) {
       packRegistry->ErasePack(pdscFile);
-    } else if(pack) {
+    } else {
       packs.push_back(pack);
       continue;
     }

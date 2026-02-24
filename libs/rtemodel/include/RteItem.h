@@ -17,6 +17,7 @@
 #include "RteCallback.h"
 
 #include "RteUtils.h"
+#include "RteFsUtils.h"
 
 #include "XmlTreeItem.h"
 
@@ -1014,14 +1015,42 @@ public:
    * @brief get absolute filename of the file for this root item
    * @return filename this root element is read from
   */
-  const std::string& GetRootFileName() const override { return m_rootFileName; }
+  const std::string& GetRootFileName() const override { return m_rootFileName;}
 
   /**
    * @brief set filename associated with the root item this instance belongs to
    * @param rootFileName absolute file name string
   */
-   void SetRootFileName(const std::string& rootFileName) override {
+  void SetRootFileName(const std::string& rootFileName) override {
     m_rootFileName = rootFileName;
+    m_modificationTime = RteFsUtils::GetModificationTime(m_rootFileName);
+  }
+
+  /**
+   * @brief check if associated file time has been modified
+   * @return true if file has been modified and this item might represent outdated data
+  */
+  bool IsFileTimeModified() const {
+    return GetModificationTime() != RteFsUtils::GetModificationTime(m_rootFileName);
+  }
+
+  /**
+   * @brief return stored modification time of associated file
+   * @return true if file has been modified and this item represents outdated data
+  */
+  const fs::file_time_type& GetModificationTime() const { return m_modificationTime; }
+
+  /**
+   * @brief sets file modification time return stored modification time of associated file
+   * @param modificationTime time to set
+   * @return true if time is changed
+  */
+  bool SetModificationTime(const fs::file_time_type& modificationTime) {
+    if(m_modificationTime != modificationTime) {
+      m_modificationTime = modificationTime;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -1029,10 +1058,11 @@ public:
    * @param tag name of tag
    * @return pointer to instance of type RteItem
   */
-   RteItem* CreateItem(const std::string& tag) override;
+  RteItem* CreateItem(const std::string& tag) override;
 
 protected:
   std::string m_rootFileName; // absolute filename of this item's file
+  fs::file_time_type m_modificationTime;
 };
 
 

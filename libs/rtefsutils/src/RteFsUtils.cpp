@@ -906,4 +906,29 @@ bool RteFsUtils::FindFileWithPattern(const std::string& searchDir,
   return false; // No matching file found
 }
 
+fs::file_time_type RteFsUtils::GetModificationTime(const std::string& path) {
+
+  if(path.empty()) {
+    return fs::file_time_type{}; // return default time
+  }
+  std::error_code ec;
+  auto modificationTime = fs::last_write_time(path, ec);
+  if(ec) {
+    return fs::file_time_type{}; // return default time
+  }
+  return modificationTime;
+}
+
+std::string RteFsUtils::FileTimeToString(const fs::file_time_type& timeStamp) {
+   std::string strTime;
+   if(timeStamp != fs::file_time_type{}) { // default value, return empty string
+     // Convert file_time_type to system_clock (C++ 17 compatible version)
+     auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+       timeStamp - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
+     std::time_t cftime = std::chrono::system_clock::to_time_t(sctp);
+     strTime = std::asctime(std::localtime(&cftime));
+   }
+   return strTime;
+}
+
 // End of RteFsUtils.cpp

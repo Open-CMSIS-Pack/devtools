@@ -135,6 +135,15 @@ TEST_F(ProjMgrRpcTests, RpcGetVersionWithContent) {
   EXPECT_TRUE(responses.find(CrossPlatformUtils::Crlf() + CrossPlatformUtils::Crlf() + "{") != string::npos);
 }
 
+TEST_F(ProjMgrRpcTests, RpcLoadPacks) {
+  auto requests = CreateLoadRequests("");
+  requests += FormatRequest(1, "LoadPacks"); // load for the second time
+  const auto& responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+}
+
+
 TEST_F(ProjMgrRpcTests, RpcLoadSolution) {
   const auto& requests = CreateLoadRequests("/TestRpc/minimal.csolution.yml", "TestHW");
   const auto& responses = RunRpcMethods(requests);

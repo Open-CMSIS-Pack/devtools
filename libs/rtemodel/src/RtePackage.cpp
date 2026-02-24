@@ -1500,7 +1500,7 @@ bool RtePackRegistry::AddPack(RtePackage* pack, bool bReplace)
   auto& fileName = pack->GetPackageFileName();
   auto existing = GetPack(fileName);
   if(existing) {
-    if(bReplace) {
+    if(bReplace || (pack->GetModificationTime() > existing->GetModificationTime())) {
       delete existing;
     } else {
       return false;

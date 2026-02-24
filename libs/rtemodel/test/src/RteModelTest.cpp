@@ -23,7 +23,7 @@
 
 using namespace std;
 
-TEST(RteModelTest, PackRegistry) {
+TEST_F(RteModelTestConfig, PackRegistry) {
 
   // tests for pack registry
   RteKernelSlim rteKernel;  // here just to instantiate XMLTree parser
@@ -52,11 +52,11 @@ TEST(RteModelTest, PackRegistry) {
 
 }
 
-TEST(RteModelTest, PackRegistryLoadPacks) {
+TEST_F(RteModelTestConfig, PackRegistryLoadPacks) {
 
   // tests for pack registry
   RteKernelSlim rteKernel;  // here just to instantiate XMLTree parser
-  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  rteKernel.SetCmsisPackRoot(packsDir);
 
   RtePackRegistry* packRegistry = rteKernel.GetPackRegistry();
   ASSERT_TRUE(packRegistry != nullptr);
@@ -65,24 +65,29 @@ TEST(RteModelTest, PackRegistryLoadPacks) {
   list<string> files;
   rteKernel.GetEffectivePdscFiles(files, false);
   EXPECT_FALSE(files.empty());
-  list<RtePackage*> packs;
+  const string& firstFile = *files.begin();
+  list<RtePackage*> packs, packs1;
   EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel));
   EXPECT_FALSE(packs.empty());
   EXPECT_EQ(packs.size(), files.size());
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), packs.size());
- // to check if packs are the same or reloaded, modify the first pack
+  // no reload by default
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs1, &testModel));
+  EXPECT_EQ(packs, packs1); // no new packs loaded
+  packs1.clear();
+
+  // to check if packs are the same or reloaded, modify the first pack
   ASSERT_NE(packs.begin(), packs.end());
   RtePackage* pack = *(packs.begin());
   ASSERT_TRUE(pack != nullptr);
   RteItem* dummyChild = new RteItem("dummy_child", pack);
   pack->AddItem(dummyChild);
   // no reload of the same files by default
-  list<RtePackage*> packs1;
   EXPECT_TRUE(rteKernel.LoadPacks(files, packs1, &testModel));
   EXPECT_EQ(packs1.size(), files.size());
   EXPECT_EQ(packs, packs1); // no new packs loaded
   ASSERT_NE(packs1.begin(), packs1.end());
-  auto pack1 = *packs1.begin();
+  RtePackage* pack1 = *(packs1.begin());
   ASSERT_TRUE(pack1 != nullptr);
 
   EXPECT_EQ(pack1->GetFirstChild("dummy_child"), dummyChild);
@@ -94,8 +99,6 @@ TEST(RteModelTest, PackRegistryLoadPacks) {
   EXPECT_EQ(pack1->GetFirstChild("dummy_child"), nullptr); // pack got loaded again => no added child
 
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), files.size());
-  ASSERT_NE(files.begin(), files.end());
-  const string& firstFile = *files.begin();
   pack = packRegistry->GetPack(firstFile);
   ASSERT_TRUE(pack != nullptr);
   EXPECT_EQ(pack->GetPackageState(), PackageState::PS_INSTALLED);
@@ -104,8 +107,25 @@ TEST(RteModelTest, PackRegistryLoadPacks) {
   EXPECT_FALSE(packRegistry->ErasePack(firstFile)); // already not in collection
   packs.clear();
   EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel));
-  EXPECT_EQ(packs.size(), packs1.size()); //only one pack is loaded
+  EXPECT_EQ(packs.size(), packs1.size()); // the pack is reloaded()
   packs.clear();
+  packs1.clear();
+
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs, &testModel));
+  // modify a file time stamp reloading
+  string buf;
+  pack = *(packs.begin());
+  dummyChild = new RteItem("dummy_child", pack);
+  pack->AddItem(dummyChild);
+  auto t = pack->GetModificationTime() - std::chrono::seconds(5);
+  EXPECT_TRUE(pack->SetModificationTime(t));
+  EXPECT_FALSE(pack->SetModificationTime(t)); // to check return value
+
+  EXPECT_TRUE(rteKernel.LoadPacks(files, packs1, &testModel));
+  pack1 = *(packs1.begin());
+  auto t1 = pack1->GetModificationTime();
+  EXPECT_NE(t, t1);
+  EXPECT_EQ(pack1->GetFirstChild("dummy_child"), nullptr); // pack got loaded again => no added child
 }
 
 TEST(RteModelTest, LoadPacks) {

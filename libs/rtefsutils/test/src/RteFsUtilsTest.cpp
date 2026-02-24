@@ -1295,4 +1295,47 @@ TEST_F(RteFsUtilsTest, FindFileWithPattern_InvalidSearchPath) {
   RteFsUtils::RemoveDir(testdir);
   EXPECT_TRUE(discoveredFile.empty());
 }
+
+
+TEST_F(RteFsUtilsTest, GetModificationTime) {
+
+  EXPECT_EQ(fs::file_time_type{}, RteFsUtils::GetModificationTime(""));
+
+  auto filePath = dirnameBase + "/Test/TempTime.txt";
+  auto timeStamp0 = RteFsUtils::GetModificationTime(filePath);
+  EXPECT_EQ(fs::file_time_type{}, timeStamp0);
+  auto str0 = RteFsUtils::FileTimeToString(timeStamp0);
+  EXPECT_TRUE(str0.empty());
+
+
+  // create file
+  RteFsUtils::CreateTextFile(filePath, bufferFoo);
+  auto timeStamp1 = RteFsUtils::GetModificationTime(filePath);
+  EXPECT_NE(timeStamp0, timeStamp1);
+  auto str1 = RteFsUtils::FileTimeToString(timeStamp1);
+  EXPECT_FALSE(str1.empty());
+
+  auto timeStamp2 = RteFsUtils::GetModificationTime(filePath);
+  EXPECT_EQ(timeStamp1, timeStamp2);
+  auto str2 = RteFsUtils::FileTimeToString(timeStamp2);
+  EXPECT_EQ(str1, str2);
+
+  // modify file
+  RteFsUtils::CreateTextFile(filePath, bufferBar);
+  auto timeStamp3 = RteFsUtils::GetModificationTime(filePath);
+  EXPECT_TRUE(timeStamp3 >= timeStamp1); // some file systems have pure resolution
+  auto str3 = RteFsUtils::FileTimeToString(timeStamp3);
+  // string representation has resolution of 1 second, so we need some fuzzy compare
+  auto timeStamp31 = timeStamp3 + std::chrono::seconds(1);
+  auto str31 = RteFsUtils::FileTimeToString(timeStamp31);
+  EXPECT_TRUE(str3 != str1 || str3 != str31);
+
+  // delete file
+  RteFsUtils::DeleteFileAutoRetry(filePath);
+  auto timeStamp4 = RteFsUtils::GetModificationTime(filePath);
+  EXPECT_EQ(timeStamp0, timeStamp4);
+  auto str4 = RteFsUtils::FileTimeToString(timeStamp4);
+  EXPECT_EQ(str0, str4);
+}
+
 // end of RteFsUtilsTest.cpp
