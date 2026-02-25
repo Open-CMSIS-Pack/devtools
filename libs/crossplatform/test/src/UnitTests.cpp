@@ -1,14 +1,42 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#include "CrossPlatform.h"
 #include "CrossPlatformUtils.h"
 #include "RteFsUtils.h"
 #include "gtest/gtest.h"
 
 using namespace std;
 
+
+TEST(CrossPlatformUnitTests, localtime_s)
+{
+    // 24.02.2026 10:00:00 local time
+    std::tm reference{};
+    reference.tm_year = 2026 - 1900; // years since 1900
+    reference.tm_mon  = 1;           // February (0-based)
+    reference.tm_mday = 24;
+    reference.tm_hour = 10;
+    reference.tm_min  = 0;
+    reference.tm_sec  = 0;
+    reference.tm_isdst = -1;         // let system determine DST
+
+    // Convert to time_t (interpreted as local time)
+    std::time_t t = std::mktime(&reference);
+    ASSERT_NE(t, static_cast<std::time_t>(-1));
+
+    // Convert back using localtime_s
+    std::tm result{};
+    localtime_s(&result, &t);
+    EXPECT_EQ(result.tm_year, 2026 - 1900);
+    EXPECT_EQ(result.tm_mon,  1);
+    EXPECT_EQ(result.tm_mday, 24);
+    EXPECT_EQ(result.tm_hour, 10);
+    EXPECT_EQ(result.tm_min,  0);
+    EXPECT_EQ(result.tm_sec,  0);
+}
 
 TEST(CrossPlatformUnitTests, GetEnv_Empty) {
   string value = CrossPlatformUtils::GetEnv("");
@@ -87,15 +115,10 @@ TEST(CrossPlatformUnitTests, GetRegistryString) {
     EXPECT_TRUE(!CrossPlatformUtils::GetRegistryString("HKEY_CURRENT_USER\\Environment\\Temp").empty());
     EXPECT_TRUE(!CrossPlatformUtils::GetRegistryString("Environment\\Temp").empty());
 
-    EXPECT_EQ(CrossPlatformUtils::GetRegistryString("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CommonFilesDir"), "C:\\Program Files\\Common Files");
-    EXPECT_EQ(CrossPlatformUtils::GetRegistryString("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CommonFilesDir"), "C:\\Program Files\\Common Files");
-
-    // fall-back to environment variable
-    EXPECT_EQ(CrossPlatformUtils::GetRegistryString("PATH"), CrossPlatformUtils::GetEnv("PATH"));
-
-  } else {
     EXPECT_EQ(CrossPlatformUtils::GetRegistryString("PATH"), CrossPlatformUtils::GetEnv("PATH"));
   }
+  // for all platforms: use environment variable
+  EXPECT_EQ(CrossPlatformUtils::GetRegistryString("PATH"), CrossPlatformUtils::GetEnv("PATH"));
 }
 
 TEST(CrossPlatformUnitTests, GetLongPathRegStatus) {

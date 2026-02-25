@@ -14,6 +14,7 @@
 
 #include "RteFsUtils.h"
 
+#include "CrossPlatform.h"
 #include "CrossPlatformUtils.h"
 #include "RteUtils.h"
 #include "WildCards.h"
@@ -927,11 +928,7 @@ std::string RteFsUtils::FileTimeToString(const fs::file_time_type& timeStamp) {
        timeStamp - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
      std::time_t t = std::chrono::system_clock::to_time_t(sctp);
     std::tm tm{};
-#if defined(_WIN32)
     localtime_s(&tm, &t);      // Windows secure version
-#else
-    localtime_r(&t, &tm);      // POSIX thread-safe version
-#endif
     std::ostringstream oss;
     oss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
     strTime = oss.str();

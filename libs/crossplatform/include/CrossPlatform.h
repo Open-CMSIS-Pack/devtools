@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -30,6 +30,8 @@
 
 #define _popen popen
 #define _pclose pclose
+// localtime_r has inverted arguments as localtime_s, therfore define with parameters
+#define localtime_s(tm_ptr, time_ptr) localtime_r((time_ptr), (tm_ptr))
 
 /* Windows defines */
 #define MAX_PATH  260
