@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -44,15 +44,17 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
   SetNodeValue(node[YAML_OUTPUT_TMPDIR], FormatPath(parser->GetCsolution().directories.tmpdir, directory));
 
   // Image Only flag
-  bool imageOnlySolution = true;
-  for (const auto& processedContext : processedContexts) {
-    if (!processedContext->imageOnly) {
-      imageOnlySolution = false;
-      break;
+  if (!processedContexts.empty()) {
+    bool imageOnlySolution = true;
+    for (const auto& processedContext : processedContexts) {
+      if (!processedContext->imageOnly) {
+        imageOnlySolution = false;
+        break;
+      }
     }
-  }
-  if (imageOnlySolution) {
-    node[YAML_IMAGE_ONLY] = true;
+    if (imageOnlySolution) {
+      node[YAML_IMAGE_ONLY] = true;
+    }
   }
 
   // Generate layer info for each target
@@ -95,6 +97,9 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
       [&](const pair<std::string, CprojectItem>& elem) {
         return (fs::path(elem.first).filename().string() == fs::path(cprojectFile).filename().string());
       });
+    if (itr == cprojects.end()) {
+      continue;
+    }
     auto cproject = itr->second;
     YAML::Node cprojectNode;
     const string& cprojectFilename = fs::relative(cproject.path, directory, ec).generic_string();

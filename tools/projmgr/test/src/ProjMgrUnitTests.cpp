@@ -2863,6 +2863,10 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers_missing_project_file) {
   for (const auto& expected : expectedVec) {
     EXPECT_TRUE(errStr.find(expected) != string::npos) << "Missing Expected: " + expected;
   }
+
+  // Check generated cbuild-idx
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/test_missing_project.cbuild-idx.yml",
+    testinput_folder + "/TestSolution/ref/test_missing_project.cbuild-idx.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrLayers_pname) {
@@ -6202,7 +6206,7 @@ TEST_F(ProjMgrUnitTests, FailCreatedFor) {
   argv[4] = (char*)testoutput_folder.c_str();
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
   auto errMsg = streamRedirect.GetErrorString();
-  EXPECT_TRUE(regex_match(errMsg, regex(expectedErrMsg)));
+  EXPECT_TRUE(regex_search(errMsg, regex(expectedErrMsg)));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_FailedConvertShouldCreateRteDirInProjectFolder) {
@@ -6987,20 +6991,19 @@ TEST_F(ProjMgrUnitTests, Test_Check_Define_Value) {
 
   //Test2: Check Parsing errors
   streamRedirect.ClearStringStreams();
-  expected = "\
-error csolution: invalid define: \\\"No_ending_escape_quotes, improper quotes\n\
-error csolution: invalid define: Escape_quotes_in_\\\"middle\\\", improper quotes\n\
-error csolution: invalid define: \\\"Invalid_ending\"\\, improper quotes\n\
-error csolution: invalid define: \\\"No_ending_escape_quotes, improper quotes\n\
-error csolution: invalid define: \\\"sam.h\\, improper quotes\n\
-error csolution: invalid define: \\\"Invalid_ending\"\\, improper quotes\n\
-error csolution: invalid define: No_Starting_escaped_quotes\\\", improper quotes\n\
-error csolution: invalid define: \\\"Mixed_quotes\", improper quotes\n\
-";
+  expected = R"(error csolution: invalid define: \\\"No_ending_escape_quotes, improper quotes
+error csolution: invalid define: Escape_quotes_in_\\\"middle\\\", improper quotes
+error csolution: invalid define: \\\"Invalid_ending\"\\, improper quotes
+error csolution: invalid define: \\\"No_ending_escape_quotes, improper quotes
+error csolution: invalid define: \\\"sam.h\\, improper quotes
+error csolution: invalid define: \\\"Invalid_ending\"\\, improper quotes
+error csolution: invalid define: No_Starting_escaped_quotes\\\", improper quotes
+error csolution: invalid define: \\\"Mixed_quotes\", improper quotes
+)";
   argv[5] = (char*)"-n";
   EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
   errStr = streamRedirect.GetErrorString();
-  EXPECT_EQ(errStr, expected);
+  EXPECT_TRUE(regex_search(errStr, regex(expected)));
 }
 
 TEST_F(ProjMgrUnitTests, ComponentVersions) {
@@ -7228,13 +7231,13 @@ TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   argv[4] = (char*)"Type1@Unknown";
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
-  EXPECT_STREQ(errStr.c_str(), "error csolution: 'Type1@Unknown' is not selectable as active target-set\n");
+  EXPECT_TRUE(errStr.find("error csolution: 'Type1@Unknown' is not selectable as active target-set\n") != string::npos);
 
   streamRedirect.ClearStringStreams();
   argv[4] = (char*)"TypeUnknown";
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
   errStr = streamRedirect.GetErrorString();
-  EXPECT_STREQ(errStr.c_str(), "error csolution: 'TypeUnknown' is not selectable as active target-set\n");
+  EXPECT_TRUE(errStr.find("error csolution: 'TypeUnknown' is not selectable as active target-set\n") != string::npos);
 
   streamRedirect.ClearStringStreams();
   argv[4] = (char*)"Type1";

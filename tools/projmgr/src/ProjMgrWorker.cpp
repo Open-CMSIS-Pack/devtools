@@ -5006,7 +5006,9 @@ bool ProjMgrWorker::ParseContextSelection(
       else {
         m_selectedContexts.clear();
         //first context in yml ordered context should be processed
-        m_selectedContexts.push_back(ymlOrderedContexts.front());
+        if (!ymlOrderedContexts.empty()) {
+          m_selectedContexts.push_back(ymlOrderedContexts.front());
+        }
       }
     }
     else {
@@ -5036,6 +5038,11 @@ bool ProjMgrWorker::ParseContextSelection(
       string errMsg = "unknown selected context(s):";
       for (const auto& context : unknownContexts) {
         errMsg += "\n  " + context;
+        // 'remove' shifts unwanted element to the end, 'erase' actually shrinks the vector
+        m_selectedContexts.erase(
+          remove(m_selectedContexts.begin(), m_selectedContexts.end(), context),
+          m_selectedContexts.end()
+        );
       }
       ProjMgrLogger::Get().Error(errMsg);
       return false;

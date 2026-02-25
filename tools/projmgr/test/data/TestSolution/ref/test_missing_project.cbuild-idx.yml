@@ -1,0 +1,4 @@
+build-idx:
+  generated-by: csolution version 0.0.0
+  csolution: ../data/TestSolution/test_missing_project.csolution.yml
+  tmpdir: tmp

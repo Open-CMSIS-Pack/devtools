@@ -474,6 +474,8 @@ bool ProjMgr::SetLoadPacksPolicy(void) {
 }
 
 bool ProjMgr::PopulateContexts(void) {
+  bool result = true;
+
   if (!m_csolutionFile.empty()) {
     // Parse csolution
     if (!m_parser.ParseCsolution(m_csolutionFile, m_checkSchema, m_frozenPacks)) {
@@ -517,10 +519,10 @@ bool ProjMgr::PopulateContexts(void) {
       string const& cprojectFile = fs::canonical(m_rootDir + "/" + cproject, ec).generic_string();
       if (cprojectFile.empty()) {
         ProjMgrLogger::Get().Error("cproject file was not found", "", cproject);
-        return false;
+        result = false;
       }
-      if (!m_parser.ParseCproject(cprojectFile, m_checkSchema)) {
-        return false;
+      else if (!m_parser.ParseCproject(cprojectFile, m_checkSchema)) {
+        result = false;
       }
     }
   } else {
@@ -547,13 +549,13 @@ bool ProjMgr::PopulateContexts(void) {
     const string& cprojectFile = fs::path(descriptor.cproject).is_absolute() ?
       descriptor.cproject : fs::canonical(m_rootDir + "/" + descriptor.cproject, ec).generic_string();
     if (!m_worker.AddContexts(m_parser, descriptor, cprojectFile)) {
-      return false;
+      result = false;
     }
   }
 
   // Populate active target-set
   if (m_activeTargetSet.has_value() && !m_worker.PopulateActiveTargetSet(m_activeTargetSet.value())) {
-    return false;
+    result = false;
   }
 
   // Add image only context
@@ -562,7 +564,7 @@ bool ProjMgr::PopulateContexts(void) {
   // Retrieve all context types
   m_worker.RetrieveAllContextTypes();
 
-  return true;
+  return result;
 }
 
 bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
@@ -599,13 +601,13 @@ bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
     }
   }
 
+  // Get executes
+  map<string, ExecutesItem> executes;
+  m_worker.GetExecutes(executes);
+
   // Generate cbuild index file
-  if (!m_allContexts.empty()) {
-    map<string, ExecutesItem> executes;
-    m_worker.GetExecutes(executes);
-    if (!m_emitter.GenerateCbuildIndex(m_processedContexts, m_failedContext, executes)) {
-      return false;
-    }
+  if (!m_emitter.GenerateCbuildIndex(m_processedContexts, m_failedContext, executes)) {
+    return false;
   }
 
   return result;
@@ -635,13 +637,15 @@ bool ProjMgr::ParseAndValidateContexts() {
 }
 
 bool ProjMgr::Configure() {
+  bool result = true;
+
   // Parse all input files and populate contexts inputs
   if (!PopulateContexts()) {
-    return false;
+    result = false;
   }
 
   if (!ParseAndValidateContexts()) {
-    return false;
+    result = false;
   }
 
   if (m_worker.HasVarDefineError()) {
@@ -654,24 +658,26 @@ bool ProjMgr::Configure() {
   }
 
   // Process contexts
-  bool error = !ProcessContexts();
+  if (!ProcessContexts()) {
+    result = false;
+  }
 
   if (m_worker.HasToolchainErrors()) {
-    error = true;
+    result = false;
   }
 
   m_selectedToolchain = m_worker.GetSelectedToochain();
 
   // Process solution level executes
   if (!m_worker.ProcessSolutionExecutes()) {
-    error = true;
+    result = false;
   }
   // Process executes dependencies
   m_worker.ProcessExecutesDependencies();
 
   // Check missing files
   if (!m_worker.CheckMissingFiles()) {
-    error = true;
+    result = false;
   }
 
   // Collect unused packs
@@ -692,7 +698,7 @@ bool ProjMgr::Configure() {
     }
   }
 
-  return !error;
+  return result;
 }
 
 bool ProjMgr::ProcessContexts() {
