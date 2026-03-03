@@ -22,7 +22,7 @@ static constexpr const char* USAGE = "\n\
 Usage:\n\
   csolution <command> [<name>.csolution.yml] [options]\n\n\
 Commands:\n\
-  convert                       Convert user input *.yml files to *.cprj files\n\
+  convert                       Convert user input *.yml files to *.cbuild.yml files\n\
   list boards                   Print list of available board names\n\
   list configs                  Print list of configuration files\n\
   list contexts                 Print list of contexts in a <name>.csolution.yml\n\
