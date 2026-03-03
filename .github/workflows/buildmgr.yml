@@ -321,7 +321,7 @@ jobs:
 
       - name: Attach installer to release
         if: ${{ github.event_name == 'release' }}
-        uses: svenstaro/upload-release-action@6b7fa9f267e90b50a19fef07b3596790bb941741 # v2
+        uses: svenstaro/upload-release-action@b98a3b12e86552593f3e4e577ca8a62aa2f3f22b # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: tools/buildmgr/cbuildgen/installer/cbuild_install.sh
@@ -331,7 +331,7 @@ jobs:
 
       - name: Attach debian installer to release
         if: ${{ github.event_name == 'release' }}
-        uses: svenstaro/upload-release-action@6b7fa9f267e90b50a19fef07b3596790bb941741 # v2
+        uses: svenstaro/upload-release-action@b98a3b12e86552593f3e4e577ca8a62aa2f3f22b # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
