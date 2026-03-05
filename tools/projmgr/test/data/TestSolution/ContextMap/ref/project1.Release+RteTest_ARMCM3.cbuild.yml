@@ -35,6 +35,8 @@ build:
       file: project1.axf
     - type: comp-db
       file: compile_commands.json
+    - type: comp-db
+      file: compile_macros.h
   linker:
     script: ../data/TestSolution/ContextMap/RTE/Device/RteTest_ARMCM3/ac6_linker_script.sct.src
     regions: ../data/TestSolution/ContextMap/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h

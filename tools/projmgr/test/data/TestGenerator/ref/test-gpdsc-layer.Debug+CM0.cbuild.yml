@@ -30,6 +30,8 @@ build:
       file: test-gpdsc-layer.axf
     - type: comp-db
       file: compile_commands.json
+    - type: comp-db
+      file: compile_macros.h
   components:
     - component: ARM::Device:RteTest Generated Component:RteTest@1.1.0
       condition: RteTest

@@ -26,3 +26,5 @@ build:
       file: project.axf
     - type: comp-db
       file: compile_commands.json
+    - type: comp-db
+      file: compile_macros.h

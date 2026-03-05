@@ -38,6 +38,8 @@ build:
       file: single-core.axf
     - type: comp-db
       file: compile_commands.json
+    - type: comp-db
+      file: compile_macros.h
   components:
     - component: ARM::RteTest:GlobalLevel@0.0.2
       from-pack: ARM::RteTest@0.1.0

@@ -33,6 +33,8 @@ build:
       file: TestProject3_5.elf
     - type: comp-db
       file: compile_commands.json
+    - type: comp-db
+      file: compile_macros.h
   components:
     - component: ARM::Device:RteTest Generated Component:RteTestGenFiles@1.1.0
       from-pack: ARM::RteTestGenerator@0.1.0
