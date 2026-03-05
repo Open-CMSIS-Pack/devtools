@@ -45,6 +45,8 @@ build:
       file: instances.axf
     - type: comp-db
       file: compile_commands.json
+    - type: comp-db
+      file: compile_macros.h
   components:
     - component: ARM::RteTest:ComponentLevel@0.0.1
       instances: 2
