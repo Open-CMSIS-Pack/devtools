@@ -139,12 +139,16 @@ public:
   */
   virtual void Reparent(TITEM* newParent, bool addToChildren = true) {
     TITEM* parent = GetParent();
-    if (parent) {
+    if (newParent == parent) {
+      return;
+    }
+    if (addToChildren && parent) { //an item can have only one parent
       parent->RemoveChild(GetThis(), false);
     }
     m_parent = newParent;
-    if (addToChildren && newParent)
+    if (addToChildren && newParent) {
       newParent->AddChild(GetThis());
+    }
   }
 
   /**

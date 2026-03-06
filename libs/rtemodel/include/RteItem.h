@@ -1031,7 +1031,15 @@ public:
    * @return true if file has been modified and this item might represent outdated data
   */
   bool IsFileTimeModified() const {
-    return GetModificationTime() != RteFsUtils::GetModificationTime(m_rootFileName);
+    return GetModificationTime() != RteFsUtils::GetModificationTime(GetRootFileName());
+  }
+
+  /**
+   * @brief check if associated file exists
+   * @return true if file exists
+  */
+  bool Exists() const {
+    return !GetRootFileName().empty() && RteFsUtils::Exists(GetRootFileName());
   }
 
   /**

@@ -1336,6 +1336,12 @@ public:
   bool ErasePack(const std::string& pdscFile);
 
   /**
+   * @brief removes all non-existing packs
+   * @return true if at least one pack was removed
+  */
+  bool PurgePacks();
+
+  /**
    * @brief get collection of loaded packs
    * @return const map of loaded packs (filename to RtePackage)
   */

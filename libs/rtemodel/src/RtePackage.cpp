@@ -1480,6 +1480,7 @@ RtePackRegistry::~RtePackRegistry()
 
 void RtePackRegistry::Clear()
 {
+  ClearPdscMap();
   for(auto [_, p] : m_loadedPacks) {
     delete p;
   }
@@ -1519,6 +1520,25 @@ bool RtePackRegistry::ErasePack(const std::string& pdscFile)
     return true;
   }
   return false;
+}
+
+bool RtePackRegistry::PurgePacks() {
+  ClearPdscMap(); // clear because packs can be added or removed after this call
+
+  set<string> toErase;
+  // collect packs that no longer exist
+  for(auto& [pdscFile, pack] : m_loadedPacks) {
+    if(!pack || !pack->Exists()) {
+      toErase.insert(pdscFile);
+    }
+  }
+  if(toErase.empty()) {
+    return false;
+  }
+  for(auto& pdscFile : toErase) {
+    ErasePack(pdscFile);
+  }
+  return true;
 }
 
 

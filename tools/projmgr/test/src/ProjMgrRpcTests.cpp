@@ -173,21 +173,18 @@ TEST_F(ProjMgrRpcTests, RpcLoadSolutionNoPacks) {
   auto csolutionPath = testinput_folder + "/TestRpc/minimal.csolution.yml";
   const auto& requests = FormatRequest(1, "LoadSolution", json({{ "solution", csolutionPath }, { "activeTarget", "TestHW" }}));
   const auto& responses = RunRpcMethods(requests);
-  EXPECT_FALSE(responses[0]["result"]["success"]);
-  string msg = responses[0]["result"]["message"];
-  EXPECT_EQ(msg, "Packs must be loaded before loading solution");
+  EXPECT_TRUE(responses[0]["result"]["success"]);
 }
 
 TEST_F(ProjMgrRpcTests, RpcDeviceListNoPacks) {
   const auto requests = FormatRequest(1, "GetDeviceList", json({{"context", ""},{ "namePattern", ""}, {"vendor", ""}})) +
     FormatRequest(2, "GetDeviceInfo", json({{ "id", "ARM::RteTest_ARMCM0"}}));
   const auto& responses = RunRpcMethods(requests);
-  EXPECT_FALSE(responses[0]["result"]["success"]);
-  string msg = responses[0]["result"]["message"];
-  EXPECT_EQ(msg, "Packs must be loaded before accessing device info");
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+  EXPECT_TRUE(responses[0]["result"]["devices"].empty());
   EXPECT_FALSE(responses[1]["result"]["success"]);
-  msg = responses[1]["result"]["message"];
-  EXPECT_EQ(msg, "Packs must be loaded before accessing device info");
+  string msg = responses[1]["result"]["message"];
+  EXPECT_EQ(msg, "Device 'ARM::RteTest_ARMCM0' not found");
 }
 
 TEST_F(ProjMgrRpcTests, RpcDeviceListNoContext) {
@@ -312,14 +309,13 @@ TEST_F(ProjMgrRpcTests, RpcDeviceInfo) {
 
 TEST_F(ProjMgrRpcTests, RpcBoardListNoPacks) {
   const auto requests = FormatRequest(1, "GetBoardList", json({{"context", ""},{ "namePattern", ""}, {"vendor", ""}})) +
-    FormatRequest(2, "GetBoardInfo", json({{ "id", "ARM::RteTest_ARMCM0"}}));
+    FormatRequest(2, "GetBoardInfo", json({{ "id", "ARM::RteTestBoard"}}));
   const auto& responses = RunRpcMethods(requests);
-  EXPECT_FALSE(responses[0]["result"]["success"]);
-  string msg = responses[0]["result"]["message"];
-  EXPECT_EQ(msg, "Packs must be loaded before accessing board info");
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+  EXPECT_TRUE(responses[0]["result"]["boards"].empty());
   EXPECT_FALSE(responses[1]["result"]["success"]);
-  msg = responses[1]["result"]["message"];
-  EXPECT_EQ(msg, "Packs must be loaded before accessing board info");
+  string msg = responses[1]["result"]["message"];
+  EXPECT_EQ(msg, "Board 'ARM::RteTestBoard' not found");
 }
 
 TEST_F(ProjMgrRpcTests, RpcBoardListNoContext) {
@@ -1326,8 +1322,7 @@ TEST_F(ProjMgrRpcTests, RpcGetDraftProjects) {
   // without loading packs
   requests = FormatRequest(1, "GetDraftProjects", json{{ "filter", json::object() }});
   responses = RunRpcMethods(requests);
-  EXPECT_FALSE(responses[0]["result"]["success"]);
-  EXPECT_EQ(responses[0]["result"]["message"], "Packs must be loaded before retrieving draft projects");
+  EXPECT_TRUE(responses[0]["result"]["success"]);
 }
 
 TEST_F(ProjMgrRpcTests, RpcConvertSolution) {
