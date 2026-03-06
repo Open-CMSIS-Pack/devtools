@@ -481,6 +481,7 @@ struct VariablesConfiguration {
  *        layer variables configurations
  *        unresolved components
  *        map of available packs for locked packs
+ *        map of sequences to expanded absolute paths
 */
 struct ContextItem {
   CdefaultItem* cdefault = nullptr;
@@ -555,6 +556,7 @@ struct ContextItem {
   std::vector<VariablesConfiguration> variablesConfigurations;
   std::set<RteComponentInstance*> unresolvedComponents;
   StrMap availablePackVersions;
+  StrMap absPathSequences;
 };
 
 /**
@@ -1272,7 +1274,7 @@ protected:
   void SetDefaultLinkerScript(ContextItem& context);
   void CheckAndGenerateRegionsHeader(ContextItem& context);
   bool GenerateRegionsHeader(ContextItem& context, std::string& generatedRegionsFile);
-  void ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const std::string& sequence, const std::string& outdir, std::string& item, bool withHeadingDot);
+  void ExpandAccessSequence(ContextItem& context, const ContextItem& refContext, const std::string& sequence, const std::string& outdir, std::string& item, bool withHeadingDot);
   void ExpandPackDir(ContextItem& context, const std::string& pack, std::string& item);
   bool GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const std::string& layer, std::string& genDir);
   bool GetGeneratorOptions(ContextItem& context, const std::string& layer, GeneratorOptionsItem& options);

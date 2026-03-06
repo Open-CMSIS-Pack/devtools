@@ -2,5 +2,8 @@
 
 layer:
 
+  add-path:
+    - $OutDir()$
+
   define:
     - SolutionDir-Layer

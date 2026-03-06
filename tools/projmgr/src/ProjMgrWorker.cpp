@@ -3493,39 +3493,46 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem & context, bool rerun)
   return true;
 }
 
-void ProjMgrWorker::ExpandAccessSequence(const ContextItem& context, const ContextItem& refContext, const string& sequence, const string& outdir, string& item, bool withHeadingDot) {
-  const string refContextOutDir = refContext.directories.cprj + "/" + refContext.directories.outdir;
-  const string relOutDir = outdir.empty() ? refContextOutDir : RteFsUtils::RelativePath(refContextOutDir, outdir, withHeadingDot);
+void ProjMgrWorker::ExpandAccessSequence(ContextItem& context, const ContextItem& refContext, const string& sequence, const string& outdir, string& item, bool withHeadingDot) {
+  string refContextOutDir = refContext.directories.outdir;
+  RteFsUtils::NormalizePath(refContextOutDir, refContext.directories.cprj);
   string regExStr = "\\$";
   string replacement;
   if (sequence == RteConstants::AS_SOLUTION_DIR) {
     regExStr += RteConstants::AS_SOLUTION_DIR;
-    replacement = outdir.empty() ? refContext.csolution->directory : RteFsUtils::RelativePath(refContext.csolution->directory, outdir, withHeadingDot);
+    replacement = refContext.csolution->directory;
   } else if (sequence == RteConstants::AS_PROJECT_DIR) {
     regExStr += RteConstants::AS_PROJECT_DIR;
-    replacement = outdir.empty() ? refContext.cproject->directory : RteFsUtils::RelativePath(refContext.cproject->directory, outdir, withHeadingDot);
+    replacement = refContext.cproject->directory;
   } else if (sequence == RteConstants::AS_OUT_DIR) {
     regExStr += RteConstants::AS_OUT_DIR;
-    replacement = relOutDir;
+    replacement = refContextOutDir;
   } else if (sequence == RteConstants::AS_ELF) {
     regExStr += RteConstants::AS_ELF;
-    replacement = refContext.outputTypes.elf.on ? relOutDir + "/" + refContext.outputTypes.elf.filename : "";
+    replacement = refContext.outputTypes.elf.on ? refContextOutDir + "/" + refContext.outputTypes.elf.filename : "";
   } else if (sequence == RteConstants::AS_BIN) {
     regExStr += RteConstants::AS_BIN;
-    replacement = refContext.outputTypes.bin.on ? relOutDir + "/" + refContext.outputTypes.bin.filename : "";
+    replacement = refContext.outputTypes.bin.on ? refContextOutDir + "/" + refContext.outputTypes.bin.filename : "";
   } else if (sequence == RteConstants::AS_HEX) {
     regExStr += RteConstants::AS_HEX;
-    replacement = refContext.outputTypes.hex.on ? relOutDir + "/" + refContext.outputTypes.hex.filename : "";
+    replacement = refContext.outputTypes.hex.on ? refContextOutDir + "/" + refContext.outputTypes.hex.filename : "";
   } else if (sequence == RteConstants::AS_LIB) {
     regExStr += RteConstants::AS_LIB;
-    replacement = refContext.outputTypes.lib.on ? relOutDir + "/" + refContext.outputTypes.lib.filename : "";
+    replacement = refContext.outputTypes.lib.on ? refContextOutDir + "/" + refContext.outputTypes.lib.filename : "";
   } else if (sequence == RteConstants::AS_CMSE) {
     regExStr += RteConstants::AS_CMSE;
-    replacement = refContext.outputTypes.cmse.on ? relOutDir + "/" + refContext.outputTypes.cmse.filename : "";
+    replacement = refContext.outputTypes.cmse.on ? refContextOutDir + "/" + refContext.outputTypes.cmse.filename : "";
   } else if (sequence == RteConstants::AS_MAP) {
     regExStr += RteConstants::AS_MAP;
-    replacement = refContext.outputTypes.map.on ? relOutDir + "/" + refContext.outputTypes.map.filename : "";
+    replacement = refContext.outputTypes.map.on ? refContextOutDir + "/" + refContext.outputTypes.map.filename : "";
   }
+  // store sequence and its evaluated absolute path
+  context.absPathSequences[item.substr(1, item.size() - 2)] = replacement;
+  // get relative path
+  if (!replacement.empty() && !outdir.empty()) {
+    replacement = RteFsUtils::RelativePath(replacement, outdir, withHeadingDot);
+  }
+  // replace sequence
   regex regEx = regex(regExStr + "\\(.*\\)\\$");
   item = regex_replace(item, regEx, replacement);
 }
