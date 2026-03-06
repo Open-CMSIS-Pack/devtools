@@ -366,6 +366,7 @@ RpcArgs::ContextInfo RpcHandler::GetContextInfo(const string& context) {
 
   auto& contextItem = GetContext(context);
   contextInfo.variables = contextItem.variables;
+  contextInfo.variables.merge((StrMap)contextItem.absPathSequences);
   contextInfo.attributes = contextItem.targetAttributes;
   contextInfo.pname = contextItem.deviceItem.pname;
 
@@ -505,6 +506,7 @@ RpcArgs::VariablesResult RpcHandler::GetVariables(const string& context) {
   res.success = false;
   auto& contextItem = GetContext(context);
   res.variables = contextItem.variables;
+  res.variables.merge((StrMap)contextItem.absPathSequences);
   res.success = true;
   return res;
 }
