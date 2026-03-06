@@ -338,6 +338,7 @@ bool RteKernel::LoadPacks(const std::list<std::string>& pdscFiles, std::list<Rte
       packRegistry->ErasePack(pdscFile);
     } else {
       packs.push_back(pack);
+      pack->Reparent(model, false);
       continue;
     }
     bool result = xmlTree->AddFileName(pdscFile, true);
@@ -450,6 +451,8 @@ bool RteKernel::GetEffectivePdscFilesAsMap(map<string, string, RtePackageCompara
 
 bool RteKernel::GetEffectivePdscFiles(std::list<std::string>& pdscFiles, bool latest) const
 {
+  GetPackRegistry()->PurgePacks(); // remove non-existing files from the registry
+
   map<string, string, RtePackageComparator> pdscMap;
   if(!GetEffectivePdscFilesAsMap(pdscMap, latest)) {
     return false;
@@ -463,15 +466,15 @@ bool RteKernel::GetEffectivePdscFiles(std::list<std::string>& pdscFiles, bool la
 
 bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles) {
   RteGlobalModel* globalModel = GetGlobalModel();
-  if (!globalModel) {
+  if(!globalModel) {
     return false;
   }
   std::list<RtePackage*> newPacks;
   pdscFiles.unique();
-  for (const auto& pdscFile : pdscFiles) {
+  for(const auto& pdscFile : pdscFiles) {
     PackageState state = pdscFile.find(GetCmsisPackRoot()) == 0 ? PS_INSTALLED : PS_EXPLICIT_PATH;
     RtePackage* pack = LoadPack(pdscFile, state);
-    if (!pack) {
+    if(!pack) {
       return false;
     }
     // pack with explicit path must override installed pack
@@ -480,12 +483,11 @@ bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std:
       newPacks.push_back(pack);
     }
   }
-
   globalModel->InsertPacks(newPacks);
 
   // Track only packs that were actually inserted into the model
   packs.clear();
-  for (const auto& [_, pack] : globalModel->GetPackages()) {
+  for(const auto& [_, pack] : globalModel->GetPackages()) {
     packs.push_back(pack);
   }
   return true;

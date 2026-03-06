@@ -842,7 +842,7 @@ void RteGlobalModel::ClearModel()
 {
   ClearProjectTargets();
   RteModel::ClearModel();
-  m_packRegistry->Clear();
+  m_packRegistry->PurgePacks(); // pack loading is expensive, only remove deleted
 }
 
 

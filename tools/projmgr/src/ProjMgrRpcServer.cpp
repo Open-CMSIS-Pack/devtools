@@ -121,7 +121,6 @@ protected:
   ProjMgrRpcServer& m_server;
   ProjMgr& m_manager;
   ProjMgrWorker& m_worker;
-  bool m_packsLoaded = false;
   bool m_solutionLoaded = false;
   bool m_bUseAllPacks = false;
 
@@ -276,10 +275,9 @@ RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
   m_solutionLoaded = false;
   m_worker.InitializeModel();
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
-  m_packsLoaded = m_worker.LoadAllRelevantPacks();
+  result.success = m_worker.LoadAllRelevantPacks();
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::DEFAULT);
-  result.success = m_packsLoaded;
-  if(!m_packsLoaded) {
+  if(!result.success) {
     result.message = "Packs failed to load";
   }
   return result;
@@ -292,10 +290,6 @@ RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const st
   const auto csolutionFile = RteFsUtils::MakePathCanonical(solution);
   if(!regex_match(csolutionFile, regex(".*\\.csolution\\.(yml|yaml)"))) {
     result.message = solution + " is not a *.csolution.yml file";
-    return result;
-  }
-  if(!m_packsLoaded) {
-    result.message = "Packs must be loaded before loading solution";
     return result;
   }
   result.success = m_solutionLoaded = m_manager.LoadSolution(csolutionFile, activeTarget);
@@ -517,59 +511,40 @@ RpcArgs::VariablesResult RpcHandler::GetVariables(const string& context) {
 
 RpcArgs::DeviceList RpcHandler::GetDeviceList(const string& context, const string& namePattern, const string& vendor)
 {
-  RpcArgs::DeviceList deviceList{{false}};
-  if(!m_packsLoaded) {
-    deviceList.message = "Packs must be loaded before accessing device info";
-  } else {
-    RteTarget* rteTarget = context.empty() ? nullptr : GetActiveTarget(context);
-    RteModel* rteModel = rteTarget ? rteTarget->GetFilteredModel() : ProjMgrKernel::Get()->GetGlobalModel();
-    RpcDataCollector dc(rteTarget, rteModel);
-    dc.CollectDeviceList(deviceList, namePattern, vendor);
-    deviceList.success = true;
-  }
+  RpcArgs::DeviceList deviceList{{true}};
+  RteTarget* rteTarget = context.empty() ? nullptr : GetActiveTarget(context);
+  RteModel* rteModel = rteTarget ? rteTarget->GetFilteredModel() : ProjMgrKernel::Get()->GetGlobalModel();
+  RpcDataCollector dc(rteTarget, rteModel);
+  dc.CollectDeviceList(deviceList, namePattern, vendor);
   return deviceList;
 }
 
 RpcArgs::DeviceInfo RpcHandler::GetDeviceInfo(const string& id)
 {
   RpcArgs::DeviceInfo deviceInfo{{false}};
-  if(!m_packsLoaded) {
-    deviceInfo.message = "Packs must be loaded before accessing device info";
-  } else {
-    RpcDataCollector dc(nullptr, ProjMgrKernel::Get()->GetGlobalModel());
-    dc.CollectDeviceInfo(deviceInfo, id);
-  }
+  RpcDataCollector dc(nullptr, ProjMgrKernel::Get()->GetGlobalModel());
+  dc.CollectDeviceInfo(deviceInfo, id);
   return deviceInfo;
 }
 
 RpcArgs::BoardList RpcHandler::GetBoardList(const string& context, const string& namePattern, const string& vendor)
 {
   RpcArgs::BoardList boardList{{false}};
-  if(!m_packsLoaded) {
-    boardList.message = "Packs must be loaded before accessing board info";
-  } else {
-    RteTarget* rteTarget = context.empty() ? nullptr : GetActiveTarget(context);
-    RteModel* rteModel = rteTarget ? rteTarget->GetFilteredModel() : ProjMgrKernel::Get()->GetGlobalModel();
-    RpcDataCollector dc(rteTarget, rteModel);
-    dc.CollectBoardList(boardList, namePattern, vendor);
-    boardList.success = true;
-  }
+  RteTarget* rteTarget = context.empty() ? nullptr : GetActiveTarget(context);
+  RteModel* rteModel = rteTarget ? rteTarget->GetFilteredModel() : ProjMgrKernel::Get()->GetGlobalModel();
+  RpcDataCollector dc(rteTarget, rteModel);
+  dc.CollectBoardList(boardList, namePattern, vendor);
+  boardList.success = true;
   return boardList;
-
 }
 
 RpcArgs::BoardInfo RpcHandler::GetBoardInfo(const string& id)
 {
   RpcArgs::BoardInfo boardInfo{{false}};
-  if(!m_packsLoaded) {
-    boardInfo.message = "Packs must be loaded before accessing board info";
-  } else {
-    RpcDataCollector dc(nullptr, ProjMgrKernel::Get()->GetGlobalModel());
-    dc.CollectBoardInfo(boardInfo, id);
-  }
+  RpcDataCollector dc(nullptr, ProjMgrKernel::Get()->GetGlobalModel());
+  dc.CollectBoardInfo(boardInfo, id);
   return boardInfo;
 }
-
 
 RpcArgs::CtRoot RpcHandler::GetComponentsTree(const string& context, const bool& all) {
   RteTarget* rteTarget = GetActiveTarget(context);
@@ -751,11 +726,6 @@ RpcArgs::LogMessages RpcHandler::GetLogMessages(void) {
 RpcArgs::DraftProjectsInfo RpcHandler::GetDraftProjects(const RpcArgs::DraftProjectsFilter& filter) {
   RpcArgs::DraftProjectsInfo applications;
   applications.success = false;
-
-  if(!m_packsLoaded) {
-    applications.message = "Packs must be loaded before retrieving draft projects";
-    return applications;
-  }
 
   // initialize context and target attributes with board and device
   ContextItem context;

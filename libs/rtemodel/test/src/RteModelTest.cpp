@@ -33,8 +33,10 @@ TEST_F(RteModelTestConfig, PackRegistry) {
   RteModel testModel(PackageState::PS_AVAILABLE);
 
   RtePackage* pack = new RtePackage(&testModel);
+  EXPECT_FALSE(pack->Exists());
   pack->SetAttribute("name", "foo");
   pack->SetRootFileName("foo");
+  EXPECT_FALSE(pack->Exists());
   EXPECT_TRUE(packRegistry->AddPack(pack));
   EXPECT_FALSE(packRegistry->AddPack(pack)); // not second time
   EXPECT_EQ(packRegistry->GetPack("foo"), pack);
@@ -45,11 +47,10 @@ TEST_F(RteModelTestConfig, PackRegistry) {
   EXPECT_EQ(packRegistry->GetPack("foo"), pack);
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), 1);
 
-  EXPECT_TRUE(packRegistry->ErasePack("foo"));
+  EXPECT_TRUE(packRegistry->PurgePacks());
   EXPECT_EQ(packRegistry->GetPack("foo"), nullptr);
-  EXPECT_FALSE(packRegistry->ErasePack("foo")); // already erased
+  EXPECT_FALSE(packRegistry->ErasePack("foo")); // already erased via Purge
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), 0);
-
 }
 
 TEST_F(RteModelTestConfig, PackRegistryLoadPacks) {
@@ -80,6 +81,7 @@ TEST_F(RteModelTestConfig, PackRegistryLoadPacks) {
   ASSERT_NE(packs.begin(), packs.end());
   RtePackage* pack = *(packs.begin());
   ASSERT_TRUE(pack != nullptr);
+  EXPECT_TRUE(pack->Exists());
   RteItem* dummyChild = new RteItem("dummy_child", pack);
   pack->AddItem(dummyChild);
   // no reload of the same files by default
