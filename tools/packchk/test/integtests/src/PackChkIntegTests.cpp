@@ -12,6 +12,23 @@
 
 using namespace std;
 
+class CurrentFolderScope {
+public:
+  explicit CurrentFolderScope(const string& path) :
+    m_previousPath(RteFsUtils::GetCurrentFolder(false))
+  {
+    RteFsUtils::SetCurrentFolder(path);
+  }
+
+  ~CurrentFolderScope()
+  {
+    RteFsUtils::SetCurrentFolder(m_previousPath);
+  }
+
+private:
+  string m_previousPath;
+};
+
 class PackChkIntegTests : public ::testing::Test {
 public:
   void SetUp()    override;
@@ -133,6 +150,32 @@ TEST_F(PackChkIntegTests, CheckValidPack) {
 
   PackChk packChk;
   EXPECT_EQ(0, packChk.Check(2, argv, nullptr));
+}
+
+TEST_F(PackChkIntegTests, CheckValidPackDoesNotCreateRteDirectory) {
+  const char* argv[2];
+
+  const string& pdscFile = PackChkIntegTestEnv::globaltestdata_dir +
+    "/packs/ARM/RteTest_DFP/0.1.1/ARM.RteTest_DFP.pdsc";
+  ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
+
+  const string workDir = PackChkIntegTestEnv::testoutput_dir + "/NoRteSideEffects";
+  if (RteFsUtils::Exists(workDir)) {
+    RteFsUtils::RemoveDir(workDir);
+  }
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(workDir));
+  ASSERT_FALSE(RteFsUtils::Exists(workDir + "/RTE"));
+
+  argv[0] = (char*)"";
+  argv[1] = (char*)pdscFile.c_str();
+
+  {
+    CurrentFolderScope cwd(workDir);
+    PackChk packChk;
+    EXPECT_EQ(0, packChk.Check(2, argv, nullptr));
+  }
+
+  EXPECT_FALSE(RteFsUtils::Exists(workDir + "/RTE"));
 }
 
 // Validate invalid software pack
@@ -1301,4 +1344,3 @@ TEST_F(PackChkIntegTests, CheckConditionComponentDependency_Neg) {
     FAIL() << "error: warning M317 count != 4";
   }
 }
-
