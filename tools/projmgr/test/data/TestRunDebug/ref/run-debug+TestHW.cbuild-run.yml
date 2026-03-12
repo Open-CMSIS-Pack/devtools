@@ -43,6 +43,13 @@ cbuild-run:
         access: rwx
         start: 0x80000000
         size: 0x00010000
+    processors:
+      - core: Cortex-M4
+        revision: r0p1
+        endian: configurable
+        fpu: none
+        mpu: present
+        max-clock: 10000000
   system-descriptions:
     - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM4.svd
       type: svd

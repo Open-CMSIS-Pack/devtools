@@ -68,7 +68,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   const auto& pnames = context0->rteDevice->GetProcessors();
 
   // device collections
-  for (const auto& [pname, _] : pnames) {
+  for (const auto& [pname, processor] : pnames) {
     if (context0->devicePack) {
       m_runDebug.devicePack = context0->devicePack->GetPackageID(true);
       const auto& deviceAlgorithms = context0->rteDevice->GetEffectiveProperties("algorithm", pname);
@@ -96,6 +96,35 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
         PushBackUniquely(flashInfo, deviceFlashInfo, pname);
       }
     }
+
+    // processor capabilities: core, revision and max-clock are mandatory
+    ProcessorCapabilitiesType item;
+    item.core = processor->GetAttribute(RteConstants::RTE_DCORE);
+    item.revision = processor->GetAttribute(RteConstants::RTE_DCORE_VERSION);
+    item.maxClock = processor->GetAttributeAsUnsigned(RteConstants::RTE_DCLOCK);
+    item.pname = pname;
+    if (processor->HasAttribute("Punits")) {
+      item.punits = processor->GetAttributeAsUnsigned("Punits");
+    }
+    if (processor->HasAttribute("Dcdecp")) {
+      item.cdecp = processor->GetAttributeAsUnsigned("Dcdecp");
+    }
+    // Get processor attributes
+    const map<const string, string&> attrMap = {
+      { RteConstants::RTE_DENDIAN , item.endian    },
+      { RteConstants::RTE_DFPU    , item.fpu       },
+      { RteConstants::RTE_DMPU    , item.mpu       },
+      { RteConstants::RTE_DDSP    , item.dsp       },
+      { RteConstants::RTE_DTZ     , item.trustzone },
+      { RteConstants::RTE_DMVE    , item.mve       },
+      { RteConstants::RTE_DPACBTI , item.pacbti    },
+    };
+    for (auto& [key, value] : attrMap) {
+      if (processor->HasAttribute(key)) {
+        value = RteConstants::GetDeviceAttribute(key, processor->GetAttribute(key), RteConstants::ProcessorCapabilities);
+      }
+    }
+    m_runDebug.systemResources.processors.push_back(item);
   }
 
   // default ramstart/size: use the first memory with default=1 and rwx attribute

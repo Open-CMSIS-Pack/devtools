@@ -15,7 +15,9 @@ build-gen:
     - file: ${DEVTOOLS(data)}/ExternalGenerator/.cmsis/extgen+MultiCore.dbgconf
       version: 0.0.2
   processor:
-    fpu: off
+    dsp: on
+    fpu: dp
+    mve: int
     core: Cortex-M0
   packs:
     - pack: ARM::RteTestGenerator@0.1.0
