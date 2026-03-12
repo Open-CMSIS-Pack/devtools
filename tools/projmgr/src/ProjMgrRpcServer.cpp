@@ -126,7 +126,6 @@ protected:
 
   map<std::string, PackReferenceVector> m_packReferences; // packsInfo is used to simplify creation and access to references
 
-  void StoreSelectedComponents(RteTarget* rteTarget, map<RteComponent*, int>& selectedComponents);
   PackReferenceVector& GetPackReferences(const string& context);
   PackReferenceVector CollectPackReferences(const string& context);
   PackReferenceVector GetPackReferencesForPack(const string& context, const string& packId);
@@ -138,7 +137,6 @@ protected:
   const ContextItem& GetContext(const string& context) const;
   RteTarget* GetActiveTarget(const string& context) const;
   RteComponentAggregate* GetComponentAggregate(const string& context, const string& id) const;
-  bool SelectVariantOrVersion(const string& context, const string& id, const string& value, bool bVariant);
   bool CheckSolutionArg(string& solution, optional<string>& message) const;
 };
 
@@ -264,6 +262,7 @@ RpcArgs::SuccessResult RpcHandler::Resolve(const string& context) {
   auto rteProject = rteTarget->GetProject();
   if(rteProject) {
     result.success = rteProject->ResolveDependencies(rteTarget);
+    Apply(context);
   }
   return result;
 }
@@ -299,27 +298,11 @@ RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const st
   return result;
 }
 
-void RpcHandler::StoreSelectedComponents(RteTarget* rteTarget, map<RteComponent*, int>& selectedComponents)
-{
-  auto& selectedAggregates = rteTarget->CollectSelectedComponentAggregates();
-  for(auto [aggregate, count] : selectedAggregates) {
-    RteComponent* c = aggregate->GetComponent();
-    if(c) {
-      // consider only components, instances are added from project anyway
-      selectedComponents[c] = count;
-    }
-  }
-}
-
 void RpcHandler::UpdateFilter(const string& context, RteTarget* rteTarget, bool all) {
   if(m_bUseAllPacks == all) {
     return;
   }
   m_bUseAllPacks = all;
-  // store selected components, not aggregates: they will be destroyed
-  map<RteComponent*, int> selectedComponents;
-  StoreSelectedComponents(rteTarget, selectedComponents);
-
   RtePackageFilter packFilter;
   // construct and apply filter
   // use resolved pack ID's from selected references
@@ -337,10 +320,6 @@ void RpcHandler::UpdateFilter(const string& context, RteTarget* rteTarget, bool 
     rteTarget->SetPackageFilter(packFilter);
     rteTarget->UpdateFilterModel();  // updates available components
     rteTarget->GetProject()->UpdateModel(); // inserts already instantiated components
-    // restore selection
-    for(auto [c, count] : selectedComponents) {
-      rteTarget->SelectComponent(c, count, false, false);
-    }
     rteTarget->EvaluateComponentDependencies();
   }
 }
@@ -588,6 +567,7 @@ RpcArgs::SuccessResult RpcHandler::SelectComponent(const string& context, const 
     auto& packId = rteComponent->GetPackage()->GetID();
     EnsurePackReferenceForPack(context, packId, layer, !explicitVersion.empty());
   }
+  Apply(context);
   return result;
 }
 
@@ -609,34 +589,9 @@ RpcArgs::SuccessResult RpcHandler::SelectVariant(const string& context, const st
     GetActiveTarget(context)->EvaluateComponentDependencies();
   }
   result.success = true;
+  Apply(context);
   return result;
 }
-
-bool RpcHandler::SelectVariantOrVersion(const string& context, const string& id, const string& value, bool bVariant) {
-  RteComponentAggregate* rteAggregate = GetComponentAggregate(context, id);
-
-  auto& selectedValue = bVariant ? rteAggregate->GetSelectedVariant() : rteAggregate->GetSelectedVersion();
-  if(selectedValue == value) {
-    return false;
-  }
-
-  if(bVariant || !value.empty()) {
-    auto availableValues = bVariant ? rteAggregate->GetVariants() : rteAggregate->GetVersions(rteAggregate->GetSelectedVariant());
-    if(std::find(availableValues.begin(), availableValues.end(), value) == availableValues.end()) {
-      return false;
-    }
-  }
-  if(bVariant) {
-    rteAggregate->SetSelectedVariant(value);
-  } else {
-    rteAggregate->SetSelectedVersion(value);
-  }
-  if(rteAggregate->IsSelected()) {
-    GetActiveTarget(context)->EvaluateComponentDependencies();
-  }
-  return true;
-}
-
 
 RpcArgs::SuccessResult RpcHandler::SelectBundle(const string& context, const string& className, const string& bundleName) {
   RpcArgs::SuccessResult result = {false};
@@ -653,6 +608,7 @@ RpcArgs::SuccessResult RpcHandler::SelectBundle(const string& context, const str
     return result; // error => false
   }
   rteClass->SetSelectedBundleName(bundleName, true);
+  Apply(context);
   GetActiveTarget(context)->EvaluateComponentDependencies();
   result.success = true;
   return result;
