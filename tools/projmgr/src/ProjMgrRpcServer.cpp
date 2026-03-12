@@ -307,12 +307,17 @@ void RpcHandler::UpdateFilter(const string& context, RteTarget* rteTarget, bool 
   // construct and apply filter
   // use resolved pack ID's from selected references
   set<string> packIds;
+  set<string> latestIds;
   for(auto& ref : GetPackReferences(context)) {
     if(ref.selected && ref.resolvedPack.has_value()) {
-      packIds.insert(ref.resolvedPack.value());
+      auto& packId = ref.resolvedPack.value();
+      packIds.insert(packId);
+      string commonId = RtePackage::CommonIdFromId(packId);
+      latestIds.insert(commonId);
     }
   }
   packFilter.SetSelectedPackages(packIds);
+  packFilter.SetLatestPacks(latestIds);
   packFilter.SetUseAllPacks(all);
 
   // only update filter if differs from current state
