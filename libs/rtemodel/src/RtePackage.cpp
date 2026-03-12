@@ -1175,9 +1175,12 @@ bool RtePackageFilter::IsPackageFiltered(const string& packId) const
   }
   if (!IsUseAllPacks()) {
     string commonId = RtePackage::CommonIdFromId(packId);
-    if (m_latestPacks.find(commonId) == m_latestPacks.end())
+    if(IsPackageSelected(commonId) && contains_key(m_latestInstalledPacks, packId)) {
+      return true; // pack is explicitly selected as a common ID
+    }
+    if(!contains_key(m_latestPacks, commonId)) {
       return false;
-
+    }
     for (auto& it : m_selectedPacks) {
       string id = RtePackage::CommonIdFromId(it);
       if (id == commonId) {
@@ -1185,7 +1188,7 @@ bool RtePackageFilter::IsPackageFiltered(const string& packId) const
       }
     }
   }
-  if(m_latestInstalledPacks.find(packId) != m_latestInstalledPacks.end()) {
+  if(contains_key(m_latestInstalledPacks, packId)) {
     return true;
   }
   return false;
