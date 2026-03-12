@@ -8,7 +8,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -153,19 +153,26 @@ public:
 
   static constexpr const char* YAML_ON = "on";
   static constexpr const char* YAML_OFF = "off";
+  static constexpr const char* YAML_PRESENT = "present";
+  static constexpr const char* YAML_NONE = "none";
   static constexpr const char* YAML_FPU_DP = "dp";
   static constexpr const char* YAML_FPU_SP = "sp";
   static constexpr const char* YAML_MVE_FP = "fp";
   static constexpr const char* YAML_MVE_INT = "int";
   static constexpr const char* YAML_ENDIAN_BIG = "big";
   static constexpr const char* YAML_ENDIAN_LITTLE = "little";
+  static constexpr const char* YAML_ENDIAN_CONFIG = "configurable";
   static constexpr const char* YAML_BP_BTI = "bti";
   static constexpr const char* YAML_BP_BTI_SIGNRET = "bti-signret";
   static constexpr const char* YAML_TZ_SECURE = "secure";
   static constexpr const char* YAML_TZ_SECURE_ONLY = "secure-only";
   static constexpr const char* YAML_TZ_NON_SECURE = "non-secure";
 
+  static constexpr const char* RTE_DCLOCK = "Dclock";
+  static constexpr const char* RTE_DCORE = "Dcore";
+  static constexpr const char* RTE_DCORE_VERSION = "DcoreVersion";
   static constexpr const char* RTE_DFPU = "Dfpu";
+  static constexpr const char* RTE_DMPU = "Dmpu";
   static constexpr const char* RTE_DDSP = "Ddsp";
   static constexpr const char* RTE_DMVE = "Dmve";
   static constexpr const char* RTE_DENDIAN = "Dendian";
@@ -174,9 +181,14 @@ public:
   static constexpr const char* RTE_DBRANCHPROT = "DbranchProt";
   static constexpr const char* RTE_DPACBTI = "Dpacbti";
 
+  static constexpr const char* RTE_PNAME = "Pname";
+  static constexpr const char* RTE_PUNITS = "Punits";
+
   static constexpr const char* RTE_DP_FPU = "DP_FPU";
   static constexpr const char* RTE_SP_FPU = "SP_FPU";
   static constexpr const char* RTE_NO_FPU = "NO_FPU";
+  static constexpr const char* RTE_MPU = "MPU";
+  static constexpr const char* RTE_NO_MPU = "NO_MPU";
   static constexpr const char* RTE_DSP = "DSP";
   static constexpr const char* RTE_NO_DSP = "NO_DSP";
   static constexpr const char* RTE_MVE = "MVE";
@@ -194,19 +206,22 @@ public:
   static constexpr const char* RTE_BTI = "BTI";
   static constexpr const char* RTE_BTI_SIGNRET = "BTI_SIGNRET";
   static constexpr const char* RTE_NO_BRANCHPROT = "NO_BRANCHPROT";
+  static constexpr const char* RTE_PACBTI = "PACBTI";
   static constexpr const char* RTE_NO_PACBTI = "NO_PACBTI";
 
   static const StrMap        DeviceAttributesKeys;
   static const StrPairVecMap DeviceAttributesValues;
+  static const StrPairVecMap ProcessorCapabilities;
 
   /**
    * @brief get equivalent device attribute
    * @param key device attribute rte key
    * @param value device attribute value (rte or yaml)
+   * @param map of device attributes/capabilities
    * @return rte or yaml equivalent device value
   */
-  static const std::string& GetDeviceAttribute(const std::string& key, const std::string& value);
-
+  static const std::string& GetDeviceAttribute(const std::string& key, const std::string& value,
+    const StrPairVecMap& attr = DeviceAttributesValues);
 };
 
 #endif // RteConstants_H

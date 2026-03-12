@@ -295,7 +295,7 @@ TEST_F(ProjMgrRpcTests, RpcDeviceInfo) {
   EXPECT_TRUE(proc.attributes.has_value());
   XmlItem attributes(proc.attributes.value());
   EXPECT_EQ(attributes.GetAttributesString(),
-    "Dclock=10000000 Dcore=Cortex-M0 DcoreVersion=r0p0 Dendian=Configurable Dfpu=NO_FPU Dmpu=NO_MPU Pname=cm0_core0");
+    "Dcdecp=0x12 Dclock=10000000 Dcore=Cortex-M0 DcoreVersion=r0p0 Ddsp=NO_DSP Dendian=Configurable Dfpu=NO_FPU Dmpu=NO_MPU Dmve=FP_MVE Dpacbti=NO_PACBTI Dtz=NO_TZ Pname=cm0_core0");
 
   EXPECT_EQ(d1["memories"].size(), 4);
   auto m0 = d1["memories"][0];

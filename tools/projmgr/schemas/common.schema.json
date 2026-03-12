@@ -2185,7 +2185,7 @@
       "required": ["file", "type"]
     },
     "DebugSequencesType": {
-      "title": "system-resources:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#debug-sequences",
+      "title": "debug-sequences:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#debug-sequences",
       "description": "Tool actions for debugging, tracing, or programming.",
       "type": "array",
       "uniqueItems": true,
@@ -2227,7 +2227,8 @@
       "description": "List of the system resources available in target.",
       "type": "object",
       "properties": {
-        "memory": { "$ref": "#/definitions/SystemMemoriesType" }
+        "memory": { "$ref": "#/definitions/SystemMemoriesType" },
+        "processors": { "$ref": "#/definitions/ProcessorsCapabilitiesType" }
       },
       "additionalProperties": false
     },
@@ -2520,6 +2521,33 @@
       },
       "additionalProperties": false,
       "required": ["app-path"]
+    },
+    "ProcessorsCapabilitiesType": {
+      "title": "processors:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#processors",
+      "description": "Capabilities of the device processors.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/ProcessorCapabilitiesType" }
+    },
+    "ProcessorCapabilitiesType": {
+      "type": "object",
+      "properties": {
+        "core":      { "type": "string", "description": "Specifies the core type." },
+        "revision":  { "type": "string", "description": "Hardware revision of the processor core." },
+        "pname":     { "type": "string", "description": "Processor identifier. This attribute is mandatory for devices that embed multiple processors." },
+        "endian":    { "enum": [ "little", "big", "configurable" ], "description": "Specifies the endianess of the processor." },
+        "fpu":       { "enum": [ "sp", "dp", "none" ], "description": "Specifies whether a hardware Floating Point Unit is present in the processor." },
+        "mpu":       { "enum": [ "present", "none" ], "description": "Specifies whether an Arm-based Memory Protection Unit is present in the processor." },
+        "dsp":       { "enum": [ "present", "none" ], "description": "Specifies whether a device supports the DSP instructions set." },
+        "trustzone": { "enum": [ "present", "none" ], "description": "Specifies whether an Armv8-M based device implements TrustZone." },
+        "mve":       { "enum": [ "int", "fp", "none" ], "description": "Specifies whether a device supports the M-Profile Vector instruction set extension." },
+        "pacbti":    { "enum": [ "present", "none" ], "description": "Specifies whether a device implements Pointer Authentication/Branch Target Identification (PAC/BTI) instructions." },
+        "max-clock": { "type": "number", "description": "Specifies the max clock frequency of the processor subsystem." },
+        "punits":    { "type": "number", "description": "Specifies the number of processor units in a symmetric multi-processor core (MPCore)." },
+        "cdecp":     { "type": "number", "description": "Specifies whether a device implements Custom Datapath Extension Coprocessors and which coprocessor interfaces can be used." }
+      },
+      "additionalProperties": false,
+      "required": ["core", "revision", "max-clock"]
     }
   }
 }
