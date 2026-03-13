@@ -622,6 +622,7 @@ bool ValidateSemantic::CheckDeviceDependencies(RteDeviceItem *device, RteProject
         }
 
         rteProject->Clear();
+        rteProject->SetAttribute("update-rte-files", "0");
         rteProject->AddTarget("Test", filter.GetAttributes(), true, true);
         rteProject->SetActiveTarget("Test");
         RteTarget* target = rteProject->GetActiveTarget();
@@ -851,6 +852,7 @@ bool ValidateSemantic::TestMcuDependencies(RtePackage* pKg)
   if(!rteProject || !pKg) {
     return false;
   }
+  rteProject->SetAttribute("update-rte-files", "0");
 
   model.GetLatestPackage("ARM.CMSIS");
 
@@ -883,6 +885,7 @@ bool ValidateSemantic::TestComponentDependencies()
   if(!rteProject) {
     return true;
   }
+  rteProject->SetAttribute("update-rte-files", "0");
 
   bool bOk = true;
   for(auto &[compKey, component] : model.GetComponentList()) {
@@ -908,6 +911,7 @@ bool ValidateSemantic::TestComponentDependencies()
 
     XmlItem filter;
     rteProject->Clear();
+    rteProject->SetAttribute("update-rte-files", "0");
     rteProject->AddTarget("Test", filter.GetAttributes(), true, true);
     rteProject->SetActiveTarget("Test");
     RteTarget* target = rteProject->GetActiveTarget();

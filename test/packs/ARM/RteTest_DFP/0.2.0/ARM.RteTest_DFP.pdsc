@@ -141,8 +141,10 @@
       </device>
 
       <device Dname="RteTest_ARMCM0_Dual">
-        <processor Pname="cm0_core0" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000" />
-        <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
+        <processor Pname="cm0_core0" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"
+          Ddsp="NO_DSP" Dtz="NO_TZ" Dmve="FP_MVE" Dcdecp="0x12" Dpacbti="NO_PACBTI"/>
+        <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="DP_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"
+          Ddsp="DSP" Dtz="TZ" Dmve="MVE" Dcdecp="0x34" Dpacbti="PACBTI" Punits="1"/>
         <compile header="Device/ARM/ARMCM0/Include/ARMCM0.h" define="ARMCM0"/>
         <memory name="FLASH_DUAL" access="rx" start="0x00000000" size="0x00080000" startup="1" default="1" Pname="cm0_core0"/>
         <memory name="SRAM_DUAL"  access="rwx" start="0x80000000" size="0x00020000" uninit="1" default="1" Pname="cm0_core1"/>

@@ -295,7 +295,7 @@ TEST_F(ProjMgrRpcTests, RpcDeviceInfo) {
   EXPECT_TRUE(proc.attributes.has_value());
   XmlItem attributes(proc.attributes.value());
   EXPECT_EQ(attributes.GetAttributesString(),
-    "Dclock=10000000 Dcore=Cortex-M0 DcoreVersion=r0p0 Dendian=Configurable Dfpu=NO_FPU Dmpu=NO_MPU Pname=cm0_core0");
+    "Dcdecp=0x12 Dclock=10000000 Dcore=Cortex-M0 DcoreVersion=r0p0 Ddsp=NO_DSP Dendian=Configurable Dfpu=NO_FPU Dmpu=NO_MPU Dmve=FP_MVE Dpacbti=NO_PACBTI Dtz=NO_TZ Pname=cm0_core0");
 
   EXPECT_EQ(d1["memories"].size(), 4);
   auto m0 = d1["memories"][0];
@@ -605,6 +605,69 @@ TEST_F(ProjMgrRpcTests, RpcSelectComponent) {
   EXPECT_FALSE(responses[5]["result"].contains("validation"));
 }
 
+
+TEST_F(ProjMgrRpcTests, RpcSelectComponentLayer) {
+  string context = "selectable+CM0";
+  vector<string> contextList = {
+    context
+  };
+  RpcArgs::Options opt{"core.clayer.yml", "@>=0.1.0", true};
+  json param;
+  param["context"] = context;
+  param["id"] = "ARM::RteTest:CORE";
+  param["count"] = 1;
+  RpcArgs::to_json(param["options"], opt);
+
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(4, "SelectComponent", param);
+  requests += FormatRequest(5, "GetComponentsTree", json({{ "context", context }, {"all", false}}));
+  requests += FormatRequest(6, "GetComponentsTree", json({{ "context", context }, {"all", true}}));
+  requests += FormatRequest(7, "GetComponentsTree", json({{ "context", context }, {"all", false}}));
+  requests += FormatRequest(8, "Apply", json({{ "context", context }}));
+  requests += FormatRequest(9, "GetUsedItems", json({{ "context", context }}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto components = responses[2]["result"]["components"];
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 2);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(components[0]["id"], "Device:Startup&RteTest Startup");
+  EXPECT_EQ(components[0]["resolvedComponent"]["id"], "ARM::Device:Startup&RteTest Startup@2.0.3");
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // select successful
+
+  EXPECT_TRUE(responses[7]["result"]["success"]); // apply successful
+
+  components = responses[8]["result"]["components"];
+  packs = responses[8]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 3); // added reference to layer file
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@0.2.0");
+  string origin = packs[0]["origin"];
+  EXPECT_TRUE(origin.find(".csolution.yml") != string::npos);
+  EXPECT_TRUE(!!packs[0]["selected"]);
+  EXPECT_EQ(packs[2]["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs[2]["origin"], "core.clayer.yml");
+  EXPECT_TRUE(!!packs[2]["selected"]);
+
+  EXPECT_EQ(components[0]["id"], "Device:Startup&RteTest Startup");
+  EXPECT_EQ(components[0]["resolvedComponent"]["id"], "ARM::Device:Startup&RteTest Startup@2.0.3");
+
+  string id = components[1]["id"];
+  EXPECT_EQ(id, "ARM::RteTest:CORE@>=0.1.0");
+  EXPECT_EQ(RteUtils::ExtractPrefix(id, "::"), "ARM");
+  EXPECT_EQ(RteUtils::ExtractSuffix(id, "@", true), "@>=0.1.0");
+  EXPECT_EQ(components[1]["resolvedComponent"]["id"], "ARM::RteTest:CORE@0.1.1");
+  EXPECT_EQ(components[1]["options"]["layer"], "core.clayer.yml");
+  EXPECT_EQ(components[1]["options"]["explicitVersion"], "@>=0.1.0");
+  EXPECT_TRUE(components[1]["options"]["explicitVendor"]);
+}
+
+
+
 TEST_F(ProjMgrRpcTests, RpcSelectComponentMissing) {
   string context = "missing-component+CM0";
   vector<string> contextList = {
@@ -621,11 +684,11 @@ TEST_F(ProjMgrRpcTests, RpcSelectComponentMissing) {
   requests += FormatRequest(3, "ValidateComponents", json({{ "context", context }}));
   requests += FormatRequest(4, "GetComponentsTree", json({{ "context", context }, {"all", false}}));
   requests += FormatRequest(5, "GetUsedItems", json({{ "context", context }}));
-  // unselect component
-  requests += FormatRequest(6, "SelectComponent", param);
+  // change pack filter
+  requests += FormatRequest(6, "GetComponentsTree", json({{ "context", context }, {"all", true}}));
   requests += FormatRequest(7, "ValidateComponents", json({{ "context", context }}));
-  // select component again
-  param["count"] = 1;
+  // select component with another count
+  param["count"] = 2;
   requests += FormatRequest(8, "SelectComponent", param);
   requests += FormatRequest(9, "ValidateComponents", json({{ "context", context }}));
   // finally unselect and apply
@@ -651,8 +714,8 @@ TEST_F(ProjMgrRpcTests, RpcSelectComponentMissing) {
   EXPECT_EQ(components[0]["selectedCount"], 1);
 
   EXPECT_TRUE(responses[5]["result"]["success"]);
-  EXPECT_EQ(responses[6]["result"]["result"], "IGNORED");
-  EXPECT_FALSE(responses[6]["result"].contains("validation"));
+  EXPECT_EQ(responses[6]["result"]["result"], "MISSING");
+  EXPECT_TRUE(responses[6]["result"].contains("validation"));
 
   EXPECT_EQ(responses[8]["result"]["result"], "MISSING");
 

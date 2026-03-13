@@ -66,10 +66,30 @@ struct FlashInfoType {
 };
 
 /**
+  * @brief processor capabilities
+ */
+struct ProcessorCapabilitiesType {
+  std::string core;
+  std::string revision;
+  std::string pname;
+  std::string endian;
+  std::string fpu;
+  std::string mpu;
+  std::string dsp;
+  std::string trustzone;
+  std::string mve;
+  std::string pacbti;
+  unsigned int maxClock = 0;
+  std::optional<unsigned int> punits;
+  std::optional<unsigned int> cdecp;
+};
+
+/**
  * @brief system resources type
 */
 struct SystemResourcesType {
   std::vector<MemoryType> memories;
+  std::vector<ProcessorCapabilitiesType> processors;
 };
 
 /**
