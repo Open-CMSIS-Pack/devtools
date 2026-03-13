@@ -1006,7 +1006,6 @@
       "title": "components:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#components",
       "type": "array",
       "description": "List of software components that are added from packs. Can be applied in *.cproject.yml and *.clayer.yml files.",
-      "uniqueItems": true,
       "minItems": 1,
       "items": { "$ref": "#/definitions/ComponentType" }
     },

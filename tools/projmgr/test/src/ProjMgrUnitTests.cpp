@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -7383,4 +7383,31 @@ TEST_F(ProjMgrUnitTests, TargetSetDependencies) {
   const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/TestTargetSet/cross-dependency.cbuild-idx.yml");
   EXPECT_FALSE(cbuildIdx["build-idx"]["cbuilds"][0]["depends-on"].IsDefined());
   EXPECT_FALSE(cbuildIdx["build-idx"]["cbuilds"][1]["depends-on"].IsDefined());
+}
+
+TEST_F(ProjMgrUnitTests, DuplicateComponents) {
+    StdStreamRedirect streamRedirect;
+
+    const string csolution = testinput_folder + "/TestSolution/DuplicateComponents/duplicateComponents.csolution.yml";
+
+    char* argv[7];
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)"--solution";
+    argv[3] = (char*)csolution.c_str();
+    argv[4] = (char*)"-o";
+    argv[5] = (char*)testoutput_folder.c_str();
+    argv[6] = (char*)"--no-check-schema";
+
+    EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
+    auto errStr = streamRedirect.GetErrorString();
+    EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
+    EXPECT_NE(string::npos, errStr.find("error csolution: processing context 'duplicateComponents_cproject.Debug+CM0' failed"));
+    EXPECT_NE(string::npos, errStr.find("error csolution: processing context 'duplicateComponents_clayer.Debug+CM0' failed"));
+
+    // Run with "--no-check-schema"
+    EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
+    errStr = streamRedirect.GetErrorString();
+    EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
+    EXPECT_NE(string::npos, errStr.find("error csolution: processing context 'duplicateComponents_cproject.Debug+CM0' failed"));
+    EXPECT_NE(string::npos, errStr.find("error csolution: processing context 'duplicateComponents_clayer.Debug+CM0' failed"));
 }
