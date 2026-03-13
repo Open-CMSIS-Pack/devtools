@@ -2547,7 +2547,7 @@
         "cdecp":     { "type": "number", "description": "Specifies whether a device implements Custom Datapath Extension Coprocessors and which coprocessor interfaces can be used." }
       },
       "additionalProperties": false,
-      "required": ["core", "revision", "max-clock"]
+      "required": ["core", "max-clock"]
     }
   }
 }
