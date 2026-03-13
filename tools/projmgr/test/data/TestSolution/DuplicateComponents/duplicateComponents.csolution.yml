@@ -2,10 +2,6 @@ solution:
   target-types:
     - type: CM0
       device: RteTest_ARMCM0
-      target-set:
-        - set:
-          images:
-            - project-context: duplicateComponents_clayer.Debug
 
   build-types:
     - type: Debug

@@ -3,4 +3,3 @@ project:
     - component: Startup
     - component: RteTest:CORE
     - component: RteTest:CORE
-    
