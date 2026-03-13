@@ -46,6 +46,13 @@ cbuild-run:
         start: 0x70000000
         size: 0x04000000
         from-pack: ARM::RteTest_DFP@0.2.0
+    processors:
+      - core: Cortex-M3
+        revision: r2p1
+        endian: configurable
+        fpu: none
+        mpu: present
+        max-clock: 10000000
   system-descriptions:
     - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM3.svd
       type: svd

@@ -53,6 +53,32 @@ cbuild-run:
         start: 0x20000000
         size: 0x00020000
         from-pack: ARM::RteTest_DFP@0.2.0
+    processors:
+      - core: Cortex-M0
+        revision: r0p0
+        pname: cm0_core0
+        endian: configurable
+        fpu: none
+        mpu: none
+        dsp: none
+        trustzone: none
+        mve: fp
+        pacbti: none
+        max-clock: 10000000
+        cdecp: 0x12
+      - core: Cortex-M0
+        revision: r0p0
+        pname: cm0_core1
+        endian: configurable
+        fpu: dp
+        mpu: none
+        dsp: present
+        trustzone: present
+        mve: int
+        pacbti: present
+        max-clock: 10000000
+        punits: 1
+        cdecp: 0x34
   system-descriptions:
     - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/SVD/ARMCM0.svd
       type: svd

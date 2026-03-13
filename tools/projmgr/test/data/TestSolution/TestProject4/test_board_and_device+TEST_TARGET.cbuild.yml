@@ -15,7 +15,9 @@ build:
     - file: ../data/TestSolution/.cmsis/test_validate_project+TEST_TARGET.dbgconf
       version: 0.0.2
   processor:
-    fpu: off
+    dsp: on
+    fpu: dp
+    mve: int
     trustzone: non-secure
     core: Cortex-M0
   packs:

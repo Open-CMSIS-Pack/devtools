@@ -134,6 +134,32 @@ void ProjMgrCbuildRun::SetResourcesNode(YAML::Node node, const SystemResourcesTy
     SetNodeValue(memoryNode[YAML_FROM_PACK], item.fromPack);
     node[YAML_MEMORY].push_back(memoryNode);
   }
+  for (const auto& item : systemResources.processors) {
+    YAML::Node processorNode;
+    const vector<pair<const string, const string&>> attrMap = {
+      { YAML_CORE      , item.core      },
+      { YAML_REVISION  , item.revision  },
+      { YAML_PNAME     , item.pname     },
+      { YAML_ENDIAN    , item.endian    },
+      { YAML_FPU       , item.fpu       },
+      { YAML_MPU       , item.mpu       },
+      { YAML_DSP       , item.dsp       },
+      { YAML_TRUSTZONE , item.trustzone },
+      { YAML_MVE       , item.mve       },
+      { YAML_PACBTI    , item.pacbti    },
+    };
+    for (const auto& [key, attr] : attrMap) {
+      SetNodeValue(processorNode[key], attr);
+    }    
+    processorNode[YAML_MAX_CLOCK] = item.maxClock;
+    if (item.punits.has_value()) {
+      processorNode[YAML_PUNITS] = item.punits.value();
+    }
+    if (item.cdecp.has_value()) {
+      processorNode[YAML_CDECP] = ProjMgrUtils::ULLToHex(item.cdecp.value(), 2);
+    }
+    node[YAML_PROCESSORS].push_back(processorNode);
+  }
 }
 
 void ProjMgrCbuildRun::SetDebuggerNode(YAML::Node node, const DebuggerType& debugger) {

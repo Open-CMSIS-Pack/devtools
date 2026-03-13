@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -46,9 +46,29 @@ const StrPairVecMap RteConstants::DeviceAttributesValues = {
                       { RTE_NO_BRANCHPROT, YAML_OFF            }}},
 };
 
-const string& RteConstants::GetDeviceAttribute(const string& key, const string& value) {
-  auto it = DeviceAttributesValues.find(key);
-  if(it != DeviceAttributesValues.end()) {
+const StrPairVecMap RteConstants::ProcessorCapabilities = {
+  { RTE_DFPU       , {{ RTE_DP_FPU             , YAML_FPU_DP        },
+                      { RTE_SP_FPU             , YAML_FPU_SP        },
+                      { RTE_NO_FPU             , YAML_NONE          }}},
+  { RTE_DMPU       , {{ RTE_MPU                , YAML_PRESENT       },
+                      { RTE_NO_MPU             , YAML_NONE          }}},
+  { RTE_DDSP       , {{ RTE_DSP                , YAML_PRESENT       },
+                      { RTE_NO_DSP             , YAML_NONE          }}},
+  { RTE_DMVE       , {{ RTE_FP_MVE             , YAML_MVE_FP        },
+                      { RTE_MVE                , YAML_MVE_INT       },
+                      { RTE_NO_MVE             , YAML_NONE          }}},
+  { RTE_DENDIAN    , {{ RTE_ENDIAN_BIG         , YAML_ENDIAN_BIG    },
+                      { RTE_ENDIAN_LITTLE      , YAML_ENDIAN_LITTLE },
+                      { RTE_ENDIAN_CONFIGURABLE, YAML_ENDIAN_CONFIG }}},
+  { RTE_DTZ        , {{ RTE_TZ                 , YAML_PRESENT       },
+                      { RTE_NO_TZ              , YAML_NONE          }}},
+  { RTE_DPACBTI,     {{ RTE_PACBTI             , YAML_PRESENT       },
+                      { RTE_NO_PACBTI          , YAML_NONE          }}},
+};
+
+const string& RteConstants::GetDeviceAttribute(const string& key, const string& value, const StrPairVecMap& attr) {
+  auto it = attr.find(key);
+  if(it != attr.end()) {
     for(const auto& [rte, yaml] : it->second) {
       if(value == rte) {
         return yaml;
