@@ -1,0 +1,16 @@
+solution:
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+
+  packs:
+    - pack: ARM::RteTest
+    - pack: ARM::RteTest_DFP
+
+  projects:
+    - project: ./Cproject/duplicateComponents_cproject.cproject.yml
+    - project: ./Clayer/duplicateComponents_clayer.cproject.yml
