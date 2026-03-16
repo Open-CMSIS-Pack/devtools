@@ -1,0 +1,23 @@
+solution:
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0
+      target-set:
+        - set:
+          images:
+            - project-context: testProject1.Debug
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+
+  packs:
+    - pack: ARM::RteTest
+    - pack: ARM::RteTest_DFP@0.2.0
+    - pack: SomeVendor::RteTest@0.0.1
+
+  projects:
+    - project: ./TestProject1/testProject1.cproject.yml
+    - project: ./TestProject2/testProject2.cproject.yml
+    - project: ./TestProject3/testProject3.cproject.yml
+    - project: ./TestProject4/testProject4.cproject.yml

@@ -6461,6 +6461,41 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MultiVariantComponent) {
     errMsg.find("multiple variants of the same component are specified:\n  - Device:Test variant\n  - Device:Test variant&Variant name"));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_MultiBundleComponent) {
+  StdStreamRedirect streamRedirect;
+  char* argv[8];
+  string csolutionFile = testinput_folder + "/TestSolution/MultiBundleComponent/multiBundleComponent.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolutionFile.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"--context";
+
+  // testProject1 - successed
+  argv[7] = (char*)"testProject1";
+  EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
+  auto errMsg = streamRedirect.GetErrorString();
+  EXPECT_EQ(string::npos, errMsg.find("components from multiple bundles are specified:"));
+
+  // testProject2, 3, 4 - failed
+  const char* failProjects[] = { "testProject2", "testProject3", "testProject4" };
+  const char* expectedComponents[][2] = {
+    {"ARM::RteTestBundle&BundleOne:G0", "ARM::RteTestBundle&BundleTwo:G0"},
+    {"ARM::RteTestBundle&BundleOne:G0", "SomeVendor::RteTestBundle&BundleTwo:G0"},
+    {"ARM::RteTestBundle&BundleOne:G0", "SomeVendor::RteTestBundle:G0"}
+  };
+  for (int i = 0; i < 3; i++) {
+    argv[7] = (char*)failProjects[i];
+    EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
+    errMsg = streamRedirect.GetErrorString();
+    EXPECT_NE(string::npos, errMsg.find("components from multiple bundles are specified:"));
+    EXPECT_NE(string::npos, errMsg.find(expectedComponents[i][0]));
+    EXPECT_NE(string::npos, errMsg.find(expectedComponents[i][1]));
+    streamRedirect.ClearStringStreams();
+  }
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_ContextSet) {
   char* argv[6];
   StdStreamRedirect streamRedirect;
@@ -7401,37 +7436,26 @@ TEST_F(ProjMgrUnitTests, TargetSetDependencies) {
 }
 
 TEST_F(ProjMgrUnitTests, DuplicateComponents) {
-    StdStreamRedirect streamRedirect;
+  StdStreamRedirect streamRedirect;
+  const string csolution = testinput_folder + "/TestSolution/DuplicateComponents/duplicateComponents.csolution.yml";
+  char* argv[9];
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"-o";
+  argv[5] = (char*)testoutput_folder.c_str();
+  argv[6] = (char*)"--context";
+  argv[8] = (char*)"--no-check-schema";
 
-    const string csolution = testinput_folder + "/TestSolution/DuplicateComponents/duplicateComponents.csolution.yml";
-
-    char* argv[9];
-    argv[1] = (char*)"convert";
-    argv[2] = (char*)"--solution";
-    argv[3] = (char*)csolution.c_str();
-    argv[4] = (char*)"-o";
-    argv[5] = (char*)testoutput_folder.c_str();
-    argv[6] = (char*)"--context";
-    argv[7] = (char*)"duplicateComponents_cproject";
-    argv[8] = (char*)"--no-check-schema";
-
-    EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
-    auto errStr = streamRedirect.GetErrorString();
-    EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
- 
-    argv[7] = (char*)"duplicateComponents_clayer";
-    EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
-    errStr = streamRedirect.GetErrorString();
-    EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
-
-    // Run with "--no-check-schema"
-    argv[7] = (char*)"duplicateComponents_cproject";
-    EXPECT_EQ(1, RunProjMgr(9, argv, m_envp));
-    errStr = streamRedirect.GetErrorString();
-    EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
-
-    argv[7] = (char*)"duplicateComponents_clayer";
-    EXPECT_EQ(1, RunProjMgr(9, argv, m_envp));
-    errStr = streamRedirect.GetErrorString();
-    EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
+  const char* contexts[] = { "duplicateComponents_cproject", "duplicateComponents_clayer" };
+  int argCounts[] = { 8, 9 };  // without/with --no-check-schema
+  for (int argCount : argCounts) {
+    for (const char* context : contexts) {
+      argv[7] = (char*)context;
+      EXPECT_EQ(1, RunProjMgr(argCount, argv, m_envp));
+      auto errStr = streamRedirect.GetErrorString();
+      EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
+      streamRedirect.ClearStringStreams();
+    }
+  }
 }

@@ -1907,6 +1907,7 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
   }
 
   map<string, vector<string>> processedComponents;
+  map<string, map<string, vector<string>>> processedBundles;
   for (auto& [item, layer] : context.componentRequirements) {
     if (item.component.empty()) {
       continue;
@@ -1935,6 +1936,15 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     if (itr != processedComponents.end()) {
       // multiple variant of the same component found
       error = true;
+    }
+
+    string bundleId = matchedComponent->GetCbundleName();
+    string classId = matchedComponent->GetCclassName();
+    if (bundleId.empty()) { bundleId = "noBundle"; }
+    processedBundles[classId][bundleId].push_back(item.component);
+    if (processedBundles[classId].size() > 1) {
+        // multiple bundle of the same component found
+        error = true;
     }
 
     // Set layer's rtePath attribute
@@ -2021,6 +2031,19 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
         string errMsg = "multiple variants of the same component are specified:";
         for (const auto& comp : pair.second) {
           errMsg += ("\n  - " + comp);
+        }
+        ProjMgrLogger::Get().Error(errMsg, context.name);
+      }
+    }
+    // check if same component bundles are specified multiple times (without considering Cvendor)
+    for (const auto& [_, bundleMap] : processedBundles) {
+      if (bundleMap.size() > 1) {
+        string errMsg = "components from multiple bundles are specified:";
+        for (const auto& [bundleId, components] : bundleMap) {
+          errMsg += "\n  bundle '" + bundleId + "':";
+          for (const auto& comp : components) {
+            errMsg += "\n    - " + comp;
+          }
         }
         ProjMgrLogger::Get().Error(errMsg, context.name);
       }
