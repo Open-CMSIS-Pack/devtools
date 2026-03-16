@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -163,6 +163,25 @@ TEST_F(RteFsUtilsTest, BackupFile) {
   RteFsUtils::RemoveFile(filenameBackup0);
 
   RteFsUtils::RemoveFile(filenameRegular);
+}
+
+TEST_F(RteFsUtilsTest, CmpFiles) {
+  // Test files with same content
+  RteFsUtils::CreateTextFile(filenameRegular, bufferFoo);
+  RteFsUtils::CreateTextFile(filenameRegularCopy, bufferFoo);
+  EXPECT_TRUE(RteFsUtils::CmpFiles(filenameRegular, filenameRegularCopy));
+  
+  // Test files with different content
+  RteFsUtils::CreateTextFile(filenameRegularCopy, bufferBar);
+  EXPECT_FALSE(RteFsUtils::CmpFiles(filenameRegular, filenameRegularCopy));
+
+  // Test missing file2
+  RteFsUtils::RemoveFile(filenameRegularCopy);
+  EXPECT_FALSE(RteFsUtils::CmpFiles(filenameRegular, filenameRegularCopy));
+
+  // Test missing file1
+  RteFsUtils::RemoveFile(filenameRegular);
+  EXPECT_FALSE(RteFsUtils::CmpFiles(filenameRegular, filenameRegularCopy));
 }
 
 TEST_F(RteFsUtilsTest, CmpFileMem) {

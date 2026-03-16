@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -94,8 +94,8 @@ bool ProjMgrYamlEmitter::CompareFile(const string& filename, const YAML::Node& r
   }
   YAML::Emitter emitter;
   const auto& outBuffer = string((emitter << rootNode).c_str()) + '\n';
-  return ProjMgrUtils::NormalizeLineEndings(inBuffer) ==
-    ProjMgrUtils::NormalizeLineEndings(outBuffer);
+  return RteUtils::EnsureLf(inBuffer) ==
+    RteUtils::EnsureLf(outBuffer);
 }
 
 bool ProjMgrYamlEmitter::CompareNodes(const YAML::Node& lhs, const YAML::Node& rhs) {

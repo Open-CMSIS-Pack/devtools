@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -714,10 +714,11 @@ TEST_F(RteModelPrjTest, LoadCprjConfigVer) {
 
   const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
   EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct"));
-  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.base@1.0.0"));
+  // content of update file is equal to the base file, rebase the version to 1.2.0
+  EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.base@1.2.0"));
   // check if file version is taken from  base file (project contains "5.5.5")
   RteFileInstance* fi = loadedCprjProject->GetFileInstance("CONFIG_FOLDER/Device/RteTest_ARMCM3/ARMCM3_ac6.sct");
-  EXPECT_TRUE(fi && fi->GetVersionString() == "1.0.0");
+  EXPECT_TRUE(fi && fi->GetVersionString() == "1.2.0");
 
   EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "startup_ARMCM3.c.base@2.0.3"));
   EXPECT_TRUE(RteFsUtils::Exists(deviceDir + "system_ARMCM3.c.base@1.0.1"));

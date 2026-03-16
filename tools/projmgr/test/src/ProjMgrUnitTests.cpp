@@ -6627,6 +6627,21 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
   }
 }
 
+TEST_F(ProjMgrUnitTests, ConfigFilesUpdateRebase) {
+  StdStreamRedirect streamRedirect;
+  char* argv[6];
+  const string& csolution = testinput_folder + "/TestSolution/ConfigFilesUpdate/config.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-c";
+  argv[4] = (char*)".Rebase";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/ConfigFilesUpdate/Rebase/Device/RteTest_ARMCM3/startup_ARMCM3.c.base@2.0.3"));
+  EXPECT_FALSE(RteFsUtils::Exists(testinput_folder + "/TestSolution/ConfigFilesUpdate/Rebase/Device/RteTest_ARMCM3/startup_ARMCM3.c.base@1.0.0"));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_FALSE(regex_search(errStr, regex("startup_ARMCM3")));
+}
+
 TEST_F(ProjMgrUnitTests, RegionsFileGeneration) {
   char* argv[3];
   const string& csolution = testinput_folder + "/TestMemoryRegions/regions.csolution.yml";

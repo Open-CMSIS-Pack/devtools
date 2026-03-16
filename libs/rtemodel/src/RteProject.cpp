@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -696,8 +696,17 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteItem* f)
   // copy current file if version differs
   string updateFile = RteUtils::AppendFileUpdateVersion(absPath, updateVersion);
   if (!baseFile.empty() && baseVersion != updateVersion)  { // only copy update if base exists
-    RteFsUtils::CopyMergeFile(src, updateFile, fi->GetInstanceIndex(), false);
-    RteFsUtils::SetFileReadOnly(updateFile, true);
+    if (RteFsUtils::CmpFiles(baseFile, src)) {
+      // if base and update contents are equal, rebase it
+      const string rebaseFile = RteUtils::AppendFileBaseVersion(absPath, updateVersion);
+      RteFsUtils::MoveFileExAutoRetry(baseFile, rebaseFile);
+      fi->SetAttribute("version", updateVersion.c_str());
+      baseFile = rebaseFile;
+      updateFile.clear();
+    } else {
+      RteFsUtils::CopyMergeFile(src, updateFile, fi->GetInstanceIndex(), false);
+      RteFsUtils::SetFileReadOnly(updateFile, true);
+    }
   } else {
     updateFile.clear(); // no need in that
   }

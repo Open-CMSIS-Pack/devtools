@@ -7,8 +7,9 @@ solution:
     - type: Patch
     - type: Minor
     - type: Major
-    - type: BaseUnknown     
+    - type: BaseUnknown
     - type: Missing
+    - type: Rebase
       
   target-types:
     - type: RteTest_ARMCM3
