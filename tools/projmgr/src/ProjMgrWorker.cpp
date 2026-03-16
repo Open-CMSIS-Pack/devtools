@@ -3757,7 +3757,7 @@ bool ProjMgrWorker::AddComponent(const ComponentItem& src, const string& layer, 
   if (CheckContextFilters(src.type, context)) {
     for (auto& [dstNode, layer] : dst) {
       if (dstNode.component == src.component) {
-        ProjMgrLogger::Get().Error("conflict: component '" + dstNode.component + "' is declared multiple times", context.name);
+        ProjMgrLogger::Get().Error("conflict: component '" + dstNode.component + "' is listed multiple times", context.name);
         return false;
       }
     }

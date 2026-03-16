@@ -7384,3 +7384,39 @@ TEST_F(ProjMgrUnitTests, TargetSetDependencies) {
   EXPECT_FALSE(cbuildIdx["build-idx"]["cbuilds"][0]["depends-on"].IsDefined());
   EXPECT_FALSE(cbuildIdx["build-idx"]["cbuilds"][1]["depends-on"].IsDefined());
 }
+
+TEST_F(ProjMgrUnitTests, DuplicateComponents) {
+    StdStreamRedirect streamRedirect;
+
+    const string csolution = testinput_folder + "/TestSolution/DuplicateComponents/duplicateComponents.csolution.yml";
+
+    char* argv[9];
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)"--solution";
+    argv[3] = (char*)csolution.c_str();
+    argv[4] = (char*)"-o";
+    argv[5] = (char*)testoutput_folder.c_str();
+    argv[6] = (char*)"--context";
+    argv[7] = (char*)"duplicateComponents_cproject";
+    argv[8] = (char*)"--no-check-schema";
+
+    EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
+    auto errStr = streamRedirect.GetErrorString();
+    EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
+ 
+    argv[7] = (char*)"duplicateComponents_clayer";
+    EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
+    errStr = streamRedirect.GetErrorString();
+    EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
+
+    // Run with "--no-check-schema"
+    argv[7] = (char*)"duplicateComponents_cproject";
+    EXPECT_EQ(1, RunProjMgr(9, argv, m_envp));
+    errStr = streamRedirect.GetErrorString();
+    EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
+
+    argv[7] = (char*)"duplicateComponents_clayer";
+    EXPECT_EQ(1, RunProjMgr(9, argv, m_envp));
+    errStr = streamRedirect.GetErrorString();
+    EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
+}
