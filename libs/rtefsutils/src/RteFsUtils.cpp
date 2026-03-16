@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -104,6 +104,16 @@ bool RteFsUtils::ReadFile(const string& fileName, string& buffer) {
   return true;
 }
 
+bool RteFsUtils::CmpFiles(const string& fileName1, const string& fileName2) {
+
+  // Open files and read content
+  string fileBuffer1, fileBuffer2;
+  if (!ReadFile(fileName1, fileBuffer1) || !ReadFile(fileName2, fileBuffer2)) {
+    return false;
+  }
+  // Compare buffer contents with normalized line endings
+  return RteUtils::EnsureLf(fileBuffer1) == RteUtils::EnsureLf(fileBuffer2);
+}
 
 bool RteFsUtils::CmpFileMem(const string& fileName, const string& buffer) {
 

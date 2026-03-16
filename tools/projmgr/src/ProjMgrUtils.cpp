@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -484,19 +484,6 @@ const string ProjMgrUtils::FileTypeFromExtension(const string& file) {
     }
   }
   return RteUtils::EMPTY_STRING;
-}
-
-const std::string ProjMgrUtils::NormalizeLineEndings(const std::string& in) {
-  string out = in;
-  size_t pos = 0;
-  while ((pos = out.find("\r\n", pos)) != std::string::npos) {
-    out.replace(pos++, 2, "\n");
-  }
-  pos = 0;
-  while ((pos = out.find("\r", pos)) != std::string::npos) {
-    out.replace(pos, 1, "\n");
-  }
-  return out;
 }
 
 const std::string ProjMgrUtils::GetWestBoard(const std::string& board) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -313,13 +313,6 @@ public:
    * @return file type or empty string
   */
   static const std::string FileTypeFromExtension(const std::string& file);
-
-  /**
-   * @brief normalize line endings for consistent string comparison
-   * @param input string
-   * @return output normalized string
-  */
-  static const std::string NormalizeLineEndings(const std::string& in);
 
   /**
    * @brief convert board string to west board string
