@@ -1938,8 +1938,8 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       error = true;
     }
 
-    string bundleId = matchedComponent->GetCbundleName();
-    string classId = matchedComponent->GetCclassName();
+    string bundleId = matchedComponentInstance->GetCbundleName();
+    string classId = matchedComponentInstance->GetCclassName();
     if (!bundleId.empty()) {
       processedBundles[classId][bundleId].push_back(item.component);
       if (processedBundles[classId].size() > 1) {
