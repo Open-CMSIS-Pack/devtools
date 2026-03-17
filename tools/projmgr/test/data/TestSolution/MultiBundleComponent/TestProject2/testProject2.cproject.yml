@@ -3,5 +3,4 @@ project:
     - component: Startup
     - component: CORE
     - component: ARM::RteTestBundle&BundleOne:G0
-    - component: ARM::RteTestBundle&BundleOne:G1
     - component: ARM::RteTestBundle&BundleTwo:G0

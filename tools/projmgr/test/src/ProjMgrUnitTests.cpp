@@ -6477,15 +6477,15 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MultiBundleComponent) {
   EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
   auto errMsg = streamRedirect.GetErrorString();
   EXPECT_EQ(string::npos, errMsg.find("components from multiple bundles are specified:"));
+  streamRedirect.ClearStringStreams();
 
-  // testProject2, 3, 4 - failed
-  const char* failProjects[] = { "testProject2", "testProject3", "testProject4" };
+  // testProject2, 3 - failed
+  const char* failProjects[] = { "testProject2", "testProject3" };
   const char* expectedComponents[][2] = {
     {"ARM::RteTestBundle&BundleOne:G0", "ARM::RteTestBundle&BundleTwo:G0"},
-    {"ARM::RteTestBundle&BundleOne:G0", "SomeVendor::RteTestBundle&BundleTwo:G0"},
-    {"ARM::RteTestBundle&BundleOne:G0", "SomeVendor::RteTestBundle:G0"}
+    {"ARM::RteTestBundle&BundleOne:G0", "SomeVendor::RteTestBundle&BundleTwo:G0"}
   };
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 2; i++) {
     argv[7] = (char*)failProjects[i];
     EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
     errMsg = streamRedirect.GetErrorString();

@@ -1940,11 +1940,12 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
 
     string bundleId = matchedComponent->GetCbundleName();
     string classId = matchedComponent->GetCclassName();
-    if (bundleId.empty()) { bundleId = "noBundle"; }
-    processedBundles[classId][bundleId].push_back(item.component);
-    if (processedBundles[classId].size() > 1) {
+    if (!bundleId.empty()) {
+      processedBundles[classId][bundleId].push_back(item.component);
+      if (processedBundles[classId].size() > 1) {
         // multiple bundle of the same component found
         error = true;
+      }
     }
 
     // Set layer's rtePath attribute
@@ -2040,7 +2041,6 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       if (bundleMap.size() > 1) {
         string errMsg = "components from multiple bundles are specified:";
         for (const auto& [bundleId, components] : bundleMap) {
-          errMsg += "\n  bundle '" + bundleId + "':";
           for (const auto& comp : components) {
             errMsg += "\n    - " + comp;
           }
