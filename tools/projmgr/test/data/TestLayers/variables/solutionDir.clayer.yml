@@ -3,7 +3,7 @@
 layer:
 
   add-path:
-    - $OutDir()$
+    - $OutDir()$/subfolder
 
   define:
     - SolutionDir-Layer
