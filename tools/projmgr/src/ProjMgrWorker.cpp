@@ -205,6 +205,10 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
     context.variables[RteConstants::AS_BUILD_TYPE] = context.type.build;
     context.variables[RteConstants::AS_TARGET_TYPE] = context.type.target;
 
+    // solution and project access sequences with absolute paths
+    context.absPathSequences[RteConstants::AS_SOLUTION_DIR_BR] = context.csolution->directory;
+    context.absPathSequences[RteConstants::AS_PROJECT_DIR_BR] = context.cproject->directory;
+
     CollectionUtils::PushBackUniquely(m_ymlOrderedContexts, context.name);
     m_contexts[context.name] = context;
   }

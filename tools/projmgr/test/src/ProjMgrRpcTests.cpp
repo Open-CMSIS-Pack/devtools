@@ -1492,8 +1492,10 @@ TEST_F(ProjMgrRpcTests, RpcGetVariables) {
   EXPECT_EQ(vars["Dpack"], testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0/");
   EXPECT_EQ(vars["Pname"], "");
   EXPECT_EQ(vars["Project"], "variables");
+  EXPECT_EQ(vars["ProjectDir()"], testinput_folder + "/TestLayers");
   EXPECT_EQ(vars["OutDir()"], testinput_folder + "/TestLayers/out/variables/TargetType1/BuildType1");
   EXPECT_EQ(vars["Solution"], "variables");
+  EXPECT_EQ(vars["SolutionDir()"], testinput_folder + "/TestLayers");
   EXPECT_EQ(vars["TargetType"], "TargetType1");
   EXPECT_EQ(vars["VarBuildLayer"], "./variables/build1.clayer.yml");
   EXPECT_EQ(vars["VarSolution"], "./variables/app.clayer.yml");
