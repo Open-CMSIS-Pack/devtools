@@ -179,6 +179,29 @@ TEST(RteModelTest, LoadPacks) {
   // test recommended memory attributes: name and access
   summary = da->GetSummaryString();
   EXPECT_EQ(summary, "ARM Cortex-M4, 10 MHz, 128 KiB RAM, 256 KiB ROM");
+  auto di = da->GetDeviceItem();
+  EXPECT_EQ(di->GetProcessorCount(), 1);
+  EXPECT_TRUE(di->GetEffectiveProperties("foo").empty());
+  const auto& m4Properties = di->GetEffectiveProperties("");
+  EXPECT_FALSE(m4Properties.empty());
+
+  da = rteModel->GetDeviceAggregate("RteTest_ARMCM0_Dual", "ARM:82");
+  ASSERT_NE(da, nullptr);
+  // test recommended memory attributes: name and access
+  summary = da->GetSummaryString();
+  EXPECT_EQ(summary, "ARM Cortex-M0, 10 MHz, ARM Cortex-M0, 10 MHz, 256 KiB RAM, 768 KiB ROM");
+  di = da->GetDeviceItem();
+  ASSERT_NE(di, nullptr);
+  EXPECT_EQ(di->GetProcessorCount(), 2);
+  const auto& commonProperties = di->GetEffectiveProperties("");
+  const auto& core0Properties = di->GetEffectiveProperties("cm0_core0");
+  const auto& core1Properties = di->GetEffectiveProperties("cm0_core1");
+
+  EXPECT_TRUE(RteModelTestConfig::IsSubset(commonProperties, core0Properties));
+  EXPECT_TRUE(RteModelTestConfig::IsSubset(commonProperties, core1Properties));
+  EXPECT_FALSE(RteModelTestConfig::IsSubset(core0Properties, commonProperties));
+  EXPECT_FALSE(RteModelTestConfig::IsSubset(core1Properties, commonProperties));
+  EXPECT_FALSE(RteModelTestConfig::IsSubset(core0Properties, core1Properties));
 
   RteBoard* board = rteModel->FindBoard("RteTest board listing (Rev.C)");
   ASSERT_NE(board, nullptr);

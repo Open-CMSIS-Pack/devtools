@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <unordered_set>
 
 using namespace std;
 
@@ -59,6 +60,28 @@ void RteModelTestConfig::TearDown()
   RteFsUtils::DeleteTree(packsDir);
   RteFsUtils::DeleteTree(localPacks);
 }
+
+
+
+bool RteModelTestConfig::IsSubset( const RteDevicePropertyMap& subset, const RteDevicePropertyMap& superset)
+{
+  for(const auto& [key, subsetList] : subset) {
+    auto it = superset.find(key);
+    if(it == superset.end()) {
+      return false;
+    }
+    std::unordered_set<RteDeviceProperty*> supersetListAsSet(it->second.begin(), it->second.end());
+
+    for(auto* ptr : subsetList) {
+      if(supersetListAsSet.find(ptr) == supersetListAsSet.end()) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+
 
 void RteModelTestConfig::compareFile(const string& newFile, const string& refFile,
   const std::unordered_map<string, string>& expectedChangedFlags, const string& toolchain) const {
