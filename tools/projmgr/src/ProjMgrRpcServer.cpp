@@ -291,8 +291,23 @@ RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const st
     result.message = solution + " is not a *.csolution.yml file";
     return result;
   }
-  result.success = m_solutionLoaded = m_manager.LoadSolution(csolutionFile, activeTarget);
-  if(!m_solutionLoaded) {
+  // we disregard return value of m_manager.LoadSolution() here, because we tolerate some errors
+  m_manager.LoadSolution(csolutionFile, activeTarget);
+  map<string, ContextItem>* contexts = nullptr;
+  m_worker.GetContexts(contexts);
+  bool hasUsableContext = false;
+  if (contexts && !contexts->empty()) {
+    // ensure at least one context has a valid active target
+    for (const auto& contextItem : *contexts) {
+      if (contextItem.second.rteActiveTarget != nullptr) {
+        hasUsableContext = true;
+        break;
+      }
+    }
+  }
+  result.success = m_solutionLoaded = hasUsableContext;
+  if(!result.success) {
+    // severe situation: contexts were not populated or are unusable
     result.message = "failed to load and process solution " + csolutionFile;
   }
   return result;
