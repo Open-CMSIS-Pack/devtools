@@ -8,7 +8,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1132,7 +1132,7 @@ protected:
    * @brief collect effective properties for a supplied tag (e.g. "debug") and processor (e.g. "core_one")
    * @param tag property tag
    * @param properties reference to list of pointers to RteDeviceProperty to fill
-   * @param pName processor name, empty to collect properties for all processors
+   * @param pName processor name; if empty, collects only common properties (without Pname)
    * @param bRecursive flag to collect properties recursively from RteDeviceItem parent chain
   */
   void CollectEffectiveProperties(const std::string& tag, std::list<RteDeviceProperty*>& properties, const std::string& pName = EMPTY_STRING, bool bRecursive = true) const;
@@ -1140,16 +1140,16 @@ protected:
   /**
    * @brief collect all effective properties for given processor name
    * @param properties reference to RteDevicePropertyMap to fill
-   * @param pName processor name, empty to collect properties for all processors
+   * @param pName processor name; if empty, collects only common properties (without Pname)
   */
   void CollectEffectiveProperties(RteDevicePropertyMap& properties, const std::string& pName = EMPTY_STRING) const;
 
 
   /**
    * @brief fill m_effectiveProperties member by calling via CollectEffectiveProperties(RteDevicePropertyMap&, const std::string&)
-   * @param pName processor name, empty to collect properties for all processors
+   * @param pName processor name; if empty, collects only common properties (without Pname)
   */
-  void CollectEffectiveProperties(const std::string& pName = EMPTY_STRING);
+  const RteDevicePropertyMap& CollectEffectiveProperties(const std::string& pName = EMPTY_STRING);
 
 protected:
   std::map<std::string, RteDeviceProperty*> m_processors; // processor properties

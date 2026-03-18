@@ -6489,22 +6489,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MultiBundleComponent) {
   EXPECT_NE(string::npos, errMsg.find("  - 'BundleTwo' component(s):"));
   EXPECT_NE(string::npos, errMsg.find("    - SomeVendor::RteTestBundle&BundleTwo:G0"));
   EXPECT_NE(string::npos, errMsg.find("Conflicting Cbundle in Cclass 'RteTestBundle2':"));
-
-  // testProject2, 3 - failed
-  //const char* failProjects[] = { "testProject2", "testProject3" };
-  //const char* expectedComponents[][2] = {
-  //  {"ARM::RteTestBundle&BundleOne:G0", "ARM::RteTestBundle&BundleTwo:G0"},
-  //  {"ARM::RteTestBundle&BundleOne:G0", "SomeVendor::RteTestBundle&BundleTwo:G0"}
-  //};
-  //for (int i = 0; i < 2; i++) {
-  //  argv[7] = (char*)failProjects[i];
-  //  EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
-  //  errMsg = streamRedirect.GetErrorString();
-  //  EXPECT_NE(string::npos, errMsg.find("components in the same Cclass must belong to the same Cbundle"));
-  //  EXPECT_NE(string::npos, errMsg.find(expectedComponents[i][0]));
-  //  EXPECT_NE(string::npos, errMsg.find(expectedComponents[i][1]));
-  //  streamRedirect.ClearStringStreams();
-  //}
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_ContextSet) {
@@ -7363,9 +7347,8 @@ TEST_F(ProjMgrUnitTests, ImageOnlyMulticore) {
   argv[4] = (char*)"CM0";
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
 
-  const YAML::Node& cbuildRun = YAML::LoadFile(testinput_folder + "/ImageOnly/out/image-only-multicore+CM0.cbuild-run.yml");
-  EXPECT_EQ("cm0_core0", cbuildRun["cbuild-run"]["output"][0]["pname"].as<string>());
-  EXPECT_EQ("cm0_core1", cbuildRun["cbuild-run"]["output"][1]["pname"].as<string>());
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ImageOnly/out/image-only-multicore+CM0.cbuild-run.yml",
+    testinput_folder + "/ImageOnly/ref/image-only-multicore+CM0.cbuild-run.yml");
 }
 
 TEST_F(ProjMgrUnitTests, ListDebuggers) {
