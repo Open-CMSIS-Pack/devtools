@@ -2,5 +2,10 @@ project:
   components:
     - component: Startup
     - component: CORE
+    # Cclass RteTestBundle
     - component: ARM::RteTestBundle&BundleOne:G0
-    - component: ARM::RteTestBundle&BundleTwo:G0
+    - component: ARM::RteTestBundle&BundleOne:G1
+    - component: SomeVendor::RteTestBundle&BundleTwo:G0
+    # Cclass RteTestBundle2
+    - component: SomeVendor::RteTestBundle2&BundleOne:G0
+    - component: SomeVendor::RteTestBundle2&BundleTwo:G0

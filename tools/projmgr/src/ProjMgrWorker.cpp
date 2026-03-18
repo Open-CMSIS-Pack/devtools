@@ -1934,16 +1934,16 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
       return pair.first.compare(aggCompId) == 0;
       });
     if (itr != processedComponents.end()) {
-      // multiple variant of the same component found
+      // multiple variants of the same component found
       error = true;
     }
 
     string bundleId = matchedComponentInstance->GetCbundleName();
-    string classId = matchedComponentInstance->GetCclassName();
     if (!bundleId.empty()) {
+      string classId = matchedComponentInstance->GetCclassName();
       processedBundles[classId][bundleId].push_back(item.component);
       if (processedBundles[classId].size() > 1) {
-        // multiple bundle of the same component found
+        // multiple bundles of the same class found (without considering Cvendor)
         error = true;
       }
     }
@@ -2029,25 +2029,34 @@ bool ProjMgrWorker::ProcessComponents(ContextItem& context) {
     // check if same component variants are specified multiple times
     for (const auto& pair : processedComponents) {
       if (pair.second.size() > 1) {
-        string errMsg = "multiple variants of the same component are specified:";
+        string errMsg = "multiple Cvariants of the same component are mutually exclusive:";
         for (const auto& comp : pair.second) {
           errMsg += ("\n  - " + comp);
         }
         ProjMgrLogger::Get().Error(errMsg, context.name);
       }
     }
-    // check if same component bundles are specified multiple times (without considering Cvendor)
-    for (const auto& [_, bundleMap] : processedBundles) {
+		// check if different bundles are specified for the same class
+    string errMsg;
+    bool hasConflict = false;
+    for (const auto& [classId, bundleMap] : processedBundles) {
       if (bundleMap.size() > 1) {
-        string errMsg = "components from multiple bundles are specified:";
+        if (!hasConflict) {
+          errMsg = "components in the same Cclass must belong to the same Cbundle.";
+          hasConflict = true;
+        }
+        errMsg += "\nConflicting Cbundle in Cclass '" + classId + "':";
         for (const auto& [bundleId, components] : bundleMap) {
+          errMsg += "\n  - '" + bundleId + "' component(s):";
           for (const auto& comp : components) {
             errMsg += "\n    - " + comp;
           }
         }
-        ProjMgrLogger::Get().Error(errMsg, context.name);
       }
     }
+    if (hasConflict) {
+      ProjMgrLogger::Get().Error(errMsg, context.name);
+		}
   }
 
   // Add required components into RTE

@@ -15,4 +15,3 @@ solution:
   projects:
     - project: ./TestProject1/testProject1.cproject.yml
     - project: ./TestProject2/testProject2.cproject.yml
-    - project: ./TestProject3/testProject3.cproject.yml

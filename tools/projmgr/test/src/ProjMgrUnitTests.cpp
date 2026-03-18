@@ -6458,7 +6458,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MultiVariantComponent) {
 
   auto errMsg = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos,
-    errMsg.find("multiple variants of the same component are specified:\n  - Device:Test variant\n  - Device:Test variant&Variant name"));
+    errMsg.find("multiple Cvariants of the same component are mutually exclusive:\n  - Device:Test variant\n  - Device:Test variant&Variant name"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_MultiBundleComponent) {
@@ -6472,28 +6472,39 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MultiBundleComponent) {
   argv[5] = (char*)testoutput_folder.c_str();
   argv[6] = (char*)"--context";
 
-  // testProject1 - successed
   argv[7] = (char*)"testProject1";
   EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
   auto errMsg = streamRedirect.GetErrorString();
   EXPECT_EQ(string::npos, errMsg.find("components from multiple bundles are specified:"));
   streamRedirect.ClearStringStreams();
 
+  argv[7] = (char*)"testProject2";
+  EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
+  errMsg = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errMsg.find("components in the same Cclass must belong to the same Cbundle."));
+  EXPECT_NE(string::npos, errMsg.find("Conflicting Cbundle in Cclass 'RteTestBundle':"));
+  EXPECT_NE(string::npos, errMsg.find("  - 'BundleOne' component(s):"));
+  EXPECT_NE(string::npos, errMsg.find("    - ARM::RteTestBundle&BundleOne:G0"));
+  EXPECT_NE(string::npos, errMsg.find("- ARM::RteTestBundle&BundleOne:G1"));
+  EXPECT_NE(string::npos, errMsg.find("  - 'BundleTwo' component(s):"));
+  EXPECT_NE(string::npos, errMsg.find("    - SomeVendor::RteTestBundle&BundleTwo:G0"));
+  EXPECT_NE(string::npos, errMsg.find("Conflicting Cbundle in Cclass 'RteTestBundle2':"));
+
   // testProject2, 3 - failed
-  const char* failProjects[] = { "testProject2", "testProject3" };
-  const char* expectedComponents[][2] = {
-    {"ARM::RteTestBundle&BundleOne:G0", "ARM::RteTestBundle&BundleTwo:G0"},
-    {"ARM::RteTestBundle&BundleOne:G0", "SomeVendor::RteTestBundle&BundleTwo:G0"}
-  };
-  for (int i = 0; i < 2; i++) {
-    argv[7] = (char*)failProjects[i];
-    EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
-    errMsg = streamRedirect.GetErrorString();
-    EXPECT_NE(string::npos, errMsg.find("components from multiple bundles are specified:"));
-    EXPECT_NE(string::npos, errMsg.find(expectedComponents[i][0]));
-    EXPECT_NE(string::npos, errMsg.find(expectedComponents[i][1]));
-    streamRedirect.ClearStringStreams();
-  }
+  //const char* failProjects[] = { "testProject2", "testProject3" };
+  //const char* expectedComponents[][2] = {
+  //  {"ARM::RteTestBundle&BundleOne:G0", "ARM::RteTestBundle&BundleTwo:G0"},
+  //  {"ARM::RteTestBundle&BundleOne:G0", "SomeVendor::RteTestBundle&BundleTwo:G0"}
+  //};
+  //for (int i = 0; i < 2; i++) {
+  //  argv[7] = (char*)failProjects[i];
+  //  EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
+  //  errMsg = streamRedirect.GetErrorString();
+  //  EXPECT_NE(string::npos, errMsg.find("components in the same Cclass must belong to the same Cbundle"));
+  //  EXPECT_NE(string::npos, errMsg.find(expectedComponents[i][0]));
+  //  EXPECT_NE(string::npos, errMsg.find(expectedComponents[i][1]));
+  //  streamRedirect.ClearStringStreams();
+  //}
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_ContextSet) {
