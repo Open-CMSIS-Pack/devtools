@@ -1,0 +1,8 @@
+project:
+  components:
+    - component: Startup
+    - component: RteTest:CORE
+    - component: ARM::RteTestBundle:G0
+    - component: ARM::RteTestBundle&BundleOne:G0
+    - component: SomeVendor::RteTestBundle:G0
+    - component: SomeVendor::RteTestBundle&BundleOne:G0
