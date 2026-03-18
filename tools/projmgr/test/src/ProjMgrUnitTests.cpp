@@ -7317,9 +7317,8 @@ TEST_F(ProjMgrUnitTests, ImageOnlyMulticore) {
   argv[4] = (char*)"CM0";
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
 
-  const YAML::Node& cbuildRun = YAML::LoadFile(testinput_folder + "/ImageOnly/out/image-only-multicore+CM0.cbuild-run.yml");
-  EXPECT_EQ("cm0_core0", cbuildRun["cbuild-run"]["output"][0]["pname"].as<string>());
-  EXPECT_EQ("cm0_core1", cbuildRun["cbuild-run"]["output"][1]["pname"].as<string>());
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/ImageOnly/out/image-only-multicore+CM0.cbuild-run.yml",
+    testinput_folder + "/ImageOnly/ref/image-only-multicore+CM0.cbuild-run.yml");
 }
 
 TEST_F(ProjMgrUnitTests, ListDebuggers) {
@@ -7418,7 +7417,7 @@ TEST_F(ProjMgrUnitTests, DuplicateComponents) {
     EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
     auto errStr = streamRedirect.GetErrorString();
     EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
- 
+
     argv[7] = (char*)"duplicateComponents_clayer";
     EXPECT_EQ(1, RunProjMgr(8, argv, m_envp));
     errStr = streamRedirect.GetErrorString();

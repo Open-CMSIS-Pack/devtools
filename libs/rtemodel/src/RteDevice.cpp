@@ -6,7 +6,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -709,7 +709,7 @@ void RteDeviceItem::CollectEffectiveProperties(const string& tag, list<RteDevice
       RteDeviceProperty* p = dynamic_cast<RteDeviceProperty*>(child);
       if (p) {
         const string& propPname = p->GetProcessorName();
-        if (pName.empty() || propPname.empty() || propPname == pName) {
+        if (propPname.empty() || propPname == pName) {
           const string& id = p->GetID();
           RteDeviceProperty* pInserted = RteDeviceProperty::GetPropertyFromList(id, properties);
           if (p == pInserted)
@@ -736,8 +736,7 @@ void RteDeviceItem::CollectEffectiveProperties(const string& tag, list<RteDevice
 // more complicated - gets all available properties
 void RteDeviceItem::CollectEffectiveProperties(RteDevicePropertyMap& properties, const string& pName) const
 {
-  RteDevicePropertyMap::iterator dstIt;
-  for (auto [tag, props] : m_properties) {
+  for (const auto& [tag, props] : m_properties) {
     auto dstIt = properties.find(tag);
     // add top containers if not yet exist
     if (dstIt == properties.end()) {
@@ -754,17 +753,18 @@ void RteDeviceItem::CollectEffectiveProperties(RteDevicePropertyMap& properties,
 }
 
 
-void RteDeviceItem::CollectEffectiveProperties(const string& pName)
+const RteDevicePropertyMap& RteDeviceItem::CollectEffectiveProperties(const string& pName)
 {
   m_effectiveProperties[pName] = RteEffectiveProperties();
   auto it = m_effectiveProperties.find(pName);
   RteDevicePropertyMap& pmap = it->second.m_propertyMap;
   CollectEffectiveProperties(pmap, pName);
-  for (auto [_, l] : pmap) {
+  for (const auto& [_, l] : pmap) {
     for (auto p : l) {
       p->CalculateCachedValues();
     }
   }
+  return pmap;
 }
 
 
@@ -779,32 +779,21 @@ const list<RteDeviceProperty*>& RteEffectiveProperties::GetProperties(const stri
 
 const RteDevicePropertyMap& RteDeviceItem::GetEffectiveProperties(const string& pName)
 {
-  if (m_effectiveProperties.empty()) {
-    for (auto [pn, p] : m_processors) {
-      CollectEffectiveProperties(pn);
+  if(pName.empty() || contains_key(m_processors, pName)) {
+    auto itp = m_effectiveProperties.find(pName);
+    if(itp != m_effectiveProperties.end()) {
+      return itp->second.m_propertyMap;
     }
+    return CollectEffectiveProperties(pName);
   }
-
-  auto itp = m_effectiveProperties.find(pName);
-  if (itp != m_effectiveProperties.end()) {
-    return itp->second.m_propertyMap;
-  }
-
   static const RteDevicePropertyMap EMPTY_PROPERTY_MAP;
   return EMPTY_PROPERTY_MAP;
 }
 
 const list<RteDeviceProperty*>& RteDeviceItem::GetEffectiveProperties(const string& tag, const string& pName)
 {
-  if (m_effectiveProperties.empty()) {
-    GetEffectiveProperties(pName);
-  }
-  auto itp = m_effectiveProperties.find(pName);
-  if (itp != m_effectiveProperties.end()) {
-    const RteEffectiveProperties& effectiveProps = itp->second;
-    return effectiveProps.GetProperties(tag);
-  }
-  return EMPTY_PROPERTY_LIST;
+  const RteDevicePropertyMap& effectivePropMap = GetEffectiveProperties(pName);
+  return get_or_default_const_ref(effectivePropMap, tag, EMPTY_PROPERTY_LIST);
 }
 
 RteDeviceProperty* RteDeviceItem::GetSingleEffectiveProperty(const string& tag, const string& pName)
@@ -817,11 +806,11 @@ RteDeviceProperty* RteDeviceItem::GetSingleEffectiveProperty(const string& tag, 
 
 std::list<RteDeviceProperty*> RteDeviceItem::GetAllEffectiveProperties(const std::string& tag)
 {
-  // Make a copy, simpler to merge with potential processor specific memories
-  list<RteDeviceProperty*> properties = GetEffectiveProperties(tag, RteUtils::EMPTY_STRING);
+  // Collect a list of unique properties (by pointer) across all processors for the given tag, without merging/normalizing them
+  list<RteDeviceProperty*> properties;
   // Iterate over processors
-  for(auto [pname, _] : GetProcessors()) {
-    // Collect processor - unique memories
+  for (const auto& [pname, _] : GetProcessors()) {
+    // Collect processor-specific properties for this tag
     const list<RteDeviceProperty*>& procProps = GetEffectiveProperties(tag, pname);
     for(auto p : procProps) {
       if(std::find(properties.begin(), properties.end(), p) == properties.end()) {
@@ -1226,7 +1215,7 @@ string RteDeviceItemAggregate::GetSummaryString() const
   // Memory (RAM/ROM)
   unsigned long long ramSize = 0, romSize = 0;
   // Get all memory properties
-  list<RteDeviceProperty*> mems = item->GetAllEffectiveProperties("memory");
+  const list<RteDeviceProperty*>& mems = item->GetAllEffectiveProperties("memory");
   for (auto memsIt = mems.begin(); memsIt != mems.end(); ++memsIt) {
     RteDeviceMemory* mem = dynamic_cast<RteDeviceMemory*>(*memsIt);
     if (!mem) {

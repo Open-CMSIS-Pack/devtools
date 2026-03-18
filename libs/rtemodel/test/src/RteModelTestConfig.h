@@ -18,6 +18,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "RteDevice.h"
+
 class RteModelTestConfig : public ::testing::Test
 {
 public:
@@ -25,6 +27,8 @@ public:
 
   void compareFile(const std::string& newFile, const std::string& refFile,
     const std::unordered_map<std::string, std::string>& expectedChangedFlags, const std::string& toolchain) const;
+
+  static bool IsSubset(const RteDevicePropertyMap& subset, const RteDevicePropertyMap& superset);
 
 protected:
   void SetUp() override;
