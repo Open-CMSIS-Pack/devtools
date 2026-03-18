@@ -8,7 +8,7 @@
 */
 /******************************************************************************/
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -897,7 +897,7 @@ public:
 
   /**
    * @brief getter for list of boards compatible with target's device
-   * @param boards collection of RteBoad to fill
+   * @param boards collection of RteBoard to fill
   */
   void GetBoards(std::vector<RteBoard*>& boards) const;
 
@@ -1042,7 +1042,7 @@ protected:
 
   void CollectPreIncludeStrings(RteComponent* c, int count);
 
-  void AddBoadProperties(RteDeviceItem* device, const std::string& processorName);
+  void AddBoardProperties(RteDeviceItem* device, const std::string& processorName);
   void AddAlgorithm(RteItem* algo, RteItem* holder);
 
   std::string NormalizeIncPath(const std::string& path) const;

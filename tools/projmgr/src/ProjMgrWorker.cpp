@@ -3563,7 +3563,9 @@ void ProjMgrWorker::ExpandAccessSequence(ContextItem& context, const ContextItem
     replacement = refContext.outputTypes.map.on ? refContextOutDir + "/" + refContext.outputTypes.map.filename : "";
   }
   // store sequence and its evaluated absolute path
-  context.absPathSequences[item.substr(1, item.size() - 2)] = replacement;
+  const auto start = item.find_first_of('$') + 1;
+  const auto end = item.find_last_of('$') - start;
+  context.absPathSequences[item.substr(start, end)] = replacement;
   // get relative path
   if (!replacement.empty() && !outdir.empty()) {
     replacement = RteFsUtils::RelativePath(replacement, outdir, withHeadingDot);

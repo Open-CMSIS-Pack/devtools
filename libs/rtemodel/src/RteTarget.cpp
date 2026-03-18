@@ -211,7 +211,7 @@ void RteTarget::SetBoard(RteBoard* board) {
   if (project)
     project->SetBoardInfo(GetName(), board);
 
-  AddBoadProperties(GetDevice(), GetProcessorName());
+  AddBoardProperties(GetDevice(), GetProcessorName());
 }
 
 
@@ -622,7 +622,7 @@ void RteTarget::ProcessAttributes() // called from SetAttributes(), AddAttribute
   AddDeviceProperties(m_device, GetProcessorName());
 };
 
-void RteTarget::AddBoadProperties(RteDeviceItem* device, const string& processorName) {
+void RteTarget::AddBoardProperties(RteDeviceItem* device, const string& processorName) {
 
   // remove all board algos if any: target can only refer to a single board
   for (auto it = m_algos.begin(); it != m_algos.end();) {
@@ -658,14 +658,14 @@ void RteTarget::AddDeviceProperties(RteDeviceItem* d, const string& processorNam
     return;
   }
 
-  AddBoadProperties(d, processorName);
+  AddBoardProperties(d, processorName);
 
   string packagePath = RteUtils::ExtractFilePath(package->GetPackageFileName(), true);
   // get properties for given processor:
   const RteDevicePropertyMap& propMap = d->GetEffectiveProperties(processorName);
 
   for (auto itpm = propMap.begin(); itpm != propMap.end(); ++itpm) {
-    const string& propType = itpm->first; // processor, feature, mamory, etc.
+    const string& propType = itpm->first; // processor, feature, memory, etc.
     const list<RteDeviceProperty*>& props = itpm->second;
     for (auto itp = props.begin(); itp != props.end(); ++itp) {
       RteDeviceProperty *p = *itp;
