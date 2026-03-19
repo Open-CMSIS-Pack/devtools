@@ -230,6 +230,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     m_cbuildgen = parseResult.count("cbuildgen");
     m_worker.SetCbuild2Cmake(!m_cbuildgen);
     ProjMgrLogger::m_quiet = parseResult.count("quiet");
+    ProjMgrLogger::m_verbose = m_verbose;
     m_rpcServer.SetContentLengthHeader(parseResult.count("content-length"));
     m_rpcServer.SetDebug(m_debug);
     m_locked = parseResult.count("locked");

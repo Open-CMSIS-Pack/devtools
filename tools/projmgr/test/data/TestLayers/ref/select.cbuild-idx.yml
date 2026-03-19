@@ -27,3 +27,7 @@ build-idx:
       configuration: +RteTest_ARMCM3
       clayers:
         - clayer: select.clayer.yml
+      messages:
+        info:
+          - "valid configuration #1: (context 'select+RteTest_ARMCM3')\n  ${DEVTOOLS(data)}/TestLayers/select.cproject.yml\n    set: set1.select1 (project X - set 1 select 1)\n  ${DEVTOOLS(data)}/TestLayers/select.clayer.yml (layer type: Board)\n    set: set1.select1 (provided connections A and B - set 1 select 1)\n"
+          - "valid configuration #2: (context 'select+RteTest_ARMCM3')\n  ${DEVTOOLS(data)}/TestLayers/select.cproject.yml\n    set: set1.select2 (project Y - set 1 select 2)\n  ${DEVTOOLS(data)}/TestLayers/select.clayer.yml (layer type: Board)\n    set: set1.select2 (provided connections B and C - set 1 select 2)\n"

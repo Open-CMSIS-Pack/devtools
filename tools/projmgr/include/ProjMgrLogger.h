@@ -78,6 +78,12 @@ public:
   static bool IsQuiet() { return m_quiet || m_silent; }
 
   /**
+   * @brief check if in verbose mode
+   * @return true if verbose
+  */
+  static bool IsVerbose() { return m_verbose; }
+
+  /**
   * @brief flag to suppress infos and warnings
   */
   static bool m_quiet;
@@ -87,6 +93,10 @@ public:
   */
   static bool m_silent;
 
+ /**
+	* @brief flag to enable verbose for infos
+  */
+  static bool m_verbose;
 
   /**
    * @brief get errors

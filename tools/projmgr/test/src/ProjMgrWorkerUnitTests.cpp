@@ -1520,6 +1520,7 @@ TEST_F(ProjMgrWorkerUnitTests, CheckAndGenerateRegionsHeader) {
   ContextItem context;
   LoadPacks(context);
   InitializeTarget(context);
+  ProjMgrLogger::m_verbose = true;
 
   // Generation fails
   context.directories.cprj = testoutput_folder;
@@ -1547,6 +1548,8 @@ warning csolution: regions header file generation failed\n\
   context.linker.regions = "./Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h";
   CheckAndGenerateRegionsHeader(context);
   EXPECT_TRUE(streamRedirect.GetOutString().empty());
+  // return mode to normal to avoid affecting other tests
+  ProjMgrLogger::m_verbose = false;
 };
 
 TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDir) {

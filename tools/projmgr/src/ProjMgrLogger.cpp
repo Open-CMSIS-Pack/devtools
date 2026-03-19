@@ -22,6 +22,7 @@ static constexpr const char* PROJMGR_INFO = "info";
 
 bool ProjMgrLogger::m_quiet = false;
 bool ProjMgrLogger::m_silent = false;
+bool ProjMgrLogger::m_verbose = false;
 
 // singleton instance
 static unique_ptr<ProjMgrLogger> theProjMgrLogger = 0;
@@ -73,7 +74,7 @@ void ProjMgrLogger::Info(const string& msg, const string& context,
   const string mark = (line > 0 ? ":" + to_string(line) : "") + (column > 0 ? ":" + to_string(column) : "");
   CollectionUtils::PushBackUniquely(m_infos[context],
     (file.empty() ? "" : RteUtils::ExtractFileName(file) + mark + " - ") + msg);
-  if (!IsQuiet()  ) {
+  if (!IsQuiet() && IsVerbose()) {
     cout << (file.empty() ? "" : file + mark + " - ") << PROJMGR_INFO << PROJMGR_TOOL << msg << endl;
   }
 }
