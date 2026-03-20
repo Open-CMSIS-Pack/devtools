@@ -7503,7 +7503,7 @@ TEST_F(ProjMgrUnitTests, ParseCommandLine_MutualExclusionOptions) {
   argv[1] = (char*)"convert";
   argv[2] = (char*)"--solution";
   argv[3] = (char*)csolution.c_str();
-	argv[4] = (char*)"--quiet";
+  argv[4] = (char*)"--quiet";
   argv[5] = (char*)"--verbose";
 
   EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
