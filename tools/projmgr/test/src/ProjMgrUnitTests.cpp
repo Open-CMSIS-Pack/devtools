@@ -118,7 +118,7 @@ test.err:1:1 - error csolution: error-3 test message\n";
   EXPECT_EQ(ProjMgrLogger::Get().GetErrorsForContext().size(), 3);
   EXPECT_TRUE(ss.str().empty());
 
-	// Test quiet mode with verbose on
+  // Test quiet mode with verbose on
   ProjMgrLogger::Get().Clear();
   ProjMgrLogger::m_quiet = true;
   ProjMgrLogger::m_verbose = true;
