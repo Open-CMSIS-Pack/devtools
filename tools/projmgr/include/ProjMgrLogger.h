@@ -94,7 +94,7 @@ public:
   static bool m_silent;
 
   /**
-	 * @brief flag to enable verbose for infos
+   * @brief flag to enable verbose for infos
   */
   static bool m_verbose;
 
