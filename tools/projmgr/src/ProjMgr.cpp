@@ -314,6 +314,12 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     return PrintUsage(optionsDict, m_command, m_args) ? -1 : 1;
   }
 
+  // Validate mutually exclusive options
+  if (ProjMgrLogger::m_quiet && ProjMgrLogger::m_verbose) {
+    ProjMgrLogger::Get().Error("command line options '--quiet' and '--verbose' are mutually exclusive");
+    return ErrorCode::ERROR;
+  }
+
   // Set load packs policy
   if (!SetLoadPacksPolicy()) {
     return ErrorCode::ERROR;

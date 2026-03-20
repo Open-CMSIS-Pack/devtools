@@ -96,9 +96,10 @@ TEST_F(ProjMgrUnitTests, Validate_Logger) {
 
   auto& ss = ProjMgrLogger::Get().GetStringStream();
 
-  // Test non-verbose mode
+  // Test verbose mode
+  ProjMgrLogger::Get().Clear();
   ProjMgrLogger::m_quiet = false;
-  ProjMgrLogger::m_verbose = false;
+  ProjMgrLogger::m_verbose = true;
   string expErrMsg = "debug csolution: debug-1 test message\n\
 warning csolution: warning-1 test message\n\
 test.warn - warning csolution: warning-2 test message\n\
@@ -106,7 +107,10 @@ test.warn:1:1 - warning csolution: warning-3 test message\n\
 error csolution: error-1 test message\n\
 test.err - error csolution: error-2 test message\n\
 test.err:1:1 - error csolution: error-3 test message\n";
-  string expOutMsg = "cout test message\n";
+  string expOutMsg = "info csolution: info-1 test message\n\
+test.info - info csolution: info-2 test message\n\
+test.info:1:1 - info csolution: info-3 test message\n\
+cout test message\n";
 
   printLogMsgs();
   string outStr = streamRedirect.GetOutString();
@@ -118,10 +122,10 @@ test.err:1:1 - error csolution: error-3 test message\n";
   EXPECT_EQ(ProjMgrLogger::Get().GetErrorsForContext().size(), 3);
   EXPECT_TRUE(ss.str().empty());
 
-  // Test quiet mode with verbose on
+  // Test quiet mode
   ProjMgrLogger::Get().Clear();
   ProjMgrLogger::m_quiet = true;
-  ProjMgrLogger::m_verbose = true;
+  ProjMgrLogger::m_verbose = false;
   streamRedirect.ClearStringStreams();
   expErrMsg = "error csolution: error-1 test message\n\
 test.err - error csolution: error-2 test message\n\
@@ -138,7 +142,7 @@ test.err:1:1 - error csolution: error-3 test message\n";
   EXPECT_EQ(ProjMgrLogger::Get().GetInfosForContext().size(), 3);
   EXPECT_EQ(ProjMgrLogger::Get().GetErrorsForContext().size(), 3);
 
-  // Test non-quiet mode with verbose on
+  // Test normal mode (non-quiet and non-verbose)
   ProjMgrLogger::Get().Clear();
   ProjMgrLogger::m_quiet = false;
   streamRedirect.ClearStringStreams();
@@ -149,10 +153,7 @@ test.warn:1:1 - warning csolution: warning-3 test message\n\
 error csolution: error-1 test message\n\
 test.err - error csolution: error-2 test message\n\
 test.err:1:1 - error csolution: error-3 test message\n";
-  expOutMsg = "info csolution: info-1 test message\n\
-test.info - info csolution: info-2 test message\n\
-test.info:1:1 - info csolution: info-3 test message\n\
-cout test message\n";
+  expOutMsg = "cout test message\n";
 
   printLogMsgs();
   outStr = streamRedirect.GetOutString();
@@ -164,7 +165,7 @@ cout test message\n";
   EXPECT_EQ(ProjMgrLogger::Get().GetErrorsForContext().size(), 3);
   EXPECT_TRUE(ss.str().empty());
 
-  // Test silent mode with verbose on
+  // Test silent mode
   ProjMgrLogger::Get().Clear();
   ProjMgrLogger::m_silent = true;
   streamRedirect.ClearStringStreams();
@@ -188,7 +189,6 @@ cout test message\n";
   EXPECT_TRUE(ss.str().empty());
   // return mode to normal to avoid affecting other tests
   ProjMgrLogger::m_silent = false;
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_EmptyOptions) {
@@ -7492,4 +7492,19 @@ TEST_F(ProjMgrUnitTests, DuplicateComponents) {
       streamRedirect.ClearStringStreams();
     }
   }
+}
+
+TEST_F(ProjMgrUnitTests, ParseCommandLine_MutualExclusionOptions) {
+  StdStreamRedirect streamRedirect;
+  const string csolution = testinput_folder + "/TestSolution/test.csolution.yml";
+  char* argv[6];
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+	argv[4] = (char*)"--quiet";
+  argv[5] = (char*)"--verbose";
+
+  EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: command line options '--quiet' and '--verbose' are mutually exclusive"));
 }
