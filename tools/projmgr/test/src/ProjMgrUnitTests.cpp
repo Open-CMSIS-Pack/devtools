@@ -118,7 +118,7 @@ test.err:1:1 - error csolution: error-3 test message\n";
   EXPECT_EQ(ProjMgrLogger::Get().GetErrorsForContext().size(), 3);
   EXPECT_TRUE(ss.str().empty());
 
-	// Test quite mode with verbose on
+	// Test quiet mode with verbose on
   ProjMgrLogger::Get().Clear();
   ProjMgrLogger::m_quiet = true;
   ProjMgrLogger::m_verbose = true;
@@ -138,7 +138,7 @@ test.err:1:1 - error csolution: error-3 test message\n";
   EXPECT_EQ(ProjMgrLogger::Get().GetInfosForContext().size(), 3);
   EXPECT_EQ(ProjMgrLogger::Get().GetErrorsForContext().size(), 3);
 
-  // Test non-quite mode with verbose on
+  // Test non-quiet mode with verbose on
   ProjMgrLogger::Get().Clear();
   ProjMgrLogger::m_quiet = false;
   streamRedirect.ClearStringStreams();

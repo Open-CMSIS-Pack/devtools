@@ -59,7 +59,7 @@ public:
   void Info(const std::string& msg, const std::string& context = std::string(),
     const std::string& file = std::string(), const int line = 0, const int column = 0);
 
- /**
+  /**
    * @brief print debug
    * @param message
   */
@@ -84,17 +84,17 @@ public:
   static bool IsVerbose() { return m_verbose; }
 
   /**
-  * @brief flag to suppress infos and warnings
+   * @brief flag to suppress infos and warnings
   */
   static bool m_quiet;
 
- /**
-  * @brief flag to suppress all output and redirect cout to string buffer
+  /**
+   * @brief flag to suppress all output and redirect cout to string buffer
   */
   static bool m_silent;
 
- /**
-	* @brief flag to enable verbose for infos
+  /**
+	 * @brief flag to enable verbose for infos
   */
   static bool m_verbose;
 
