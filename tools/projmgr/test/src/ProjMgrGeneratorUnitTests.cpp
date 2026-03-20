@@ -6,6 +6,7 @@
 
 #include "ProjMgr.h"
 #include "ProjMgrTestEnv.h"
+#include "ProjMgrLogger.h"
 #include "RteFsUtils.h"
 #include "gtest/gtest.h"
 #include <regex>
@@ -17,6 +18,12 @@ class ProjMgrGeneratorUnitTests : public ProjMgrGenerator, public ::testing::Tes
 protected:
   ProjMgrGeneratorUnitTests() {}
   virtual ~ProjMgrGeneratorUnitTests() {}
+
+  void TearDown() {
+    // return mode to normal to avoid affecting other tests
+    ProjMgrLogger::m_quiet = false;
+    ProjMgrLogger::m_verbose = false;
+  }
 };
 
 TEST_F(ProjMgrGeneratorUnitTests, GetStringFromVector) {
@@ -159,7 +166,7 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRunIncapableGenerator) {
 }
 
 TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
-  char* argv[7], *envp[2];
+  char* argv[8], *envp[2];
   string gcc = "GCC_TOOLCHAIN_11_2_1=" + testinput_folder;
   envp[0] = (char*)gcc.c_str();
   envp[1] = (char*)'\0';
@@ -172,6 +179,7 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
   argv[4] = (char*)"-g";
   argv[5] = (char*)"RteTestGeneratorIdentifier";
   argv[6] = (char*)"--dry-run";
+  argv[7] = (char*)"--verbose";
 
   const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_1.Debug+TypeA.cbuild-gen.yml";
   const string generatorDestination = testinput_folder + "/TestSolution/TestProject3_1/gendir";
@@ -181,7 +189,7 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
   RteFsUtils::RemoveDir(generatorDestination);
   RteFsUtils::RemoveDir(rteDir);
 
-  EXPECT_EQ(0, ProjMgr::RunProjMgr(7, argv, envp));
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(8, argv, envp));
 
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/ref/TestProject3_1.Debug+TypeA.cbuild-gen.yml",  generatorInputFile, ProjMgrTestEnv::StripAbsoluteFunc);
 
@@ -208,7 +216,7 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRun) {
 }
 
 TEST_F(ProjMgrGeneratorUnitTests, DryRunNoLdScript) {
-  char* argv[7], *envp[2];
+  char* argv[8], *envp[2];
   string gcc = "GCC_TOOLCHAIN_11_2_1=" + testinput_folder;
   envp[0] = (char*)gcc.c_str();
   envp[1] = (char*)'\0';
@@ -221,6 +229,7 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRunNoLdScript) {
   argv[4] = (char*)"-g";
   argv[5] = (char*)"RteTestGeneratorIdentifier";
   argv[6] = (char*)"--dry-run";
+  argv[7] = (char*)"--verbose";
 
   const string generatorInputFile = testinput_folder + "/TestSolution/tmp/TestProject3_5.Debug+TypeA.cbuild-gen.yml";
   const string generatorDestination = testinput_folder + "/TestSolution/TestProject3_5/gendir";
@@ -230,7 +239,7 @@ TEST_F(ProjMgrGeneratorUnitTests, DryRunNoLdScript) {
   RteFsUtils::RemoveDir(generatorDestination);
   RteFsUtils::RemoveDir(rteDir);
 
-  EXPECT_EQ(0, ProjMgr::RunProjMgr(7, argv, envp));
+  EXPECT_EQ(0, ProjMgr::RunProjMgr(8, argv, envp));
 
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestSolution/ref/TestProject3_5.Debug+TypeA.cbuild-gen.yml",  generatorInputFile, ProjMgrTestEnv::StripAbsoluteFunc);
 

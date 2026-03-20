@@ -230,6 +230,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     m_cbuildgen = parseResult.count("cbuildgen");
     m_worker.SetCbuild2Cmake(!m_cbuildgen);
     ProjMgrLogger::m_quiet = parseResult.count("quiet");
+    ProjMgrLogger::m_verbose = m_verbose;
     m_rpcServer.SetContentLengthHeader(parseResult.count("content-length"));
     m_rpcServer.SetDebug(m_debug);
     m_locked = parseResult.count("locked");
@@ -311,6 +312,12 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
 
   if (parseResult.count("help")) {
     return PrintUsage(optionsDict, m_command, m_args) ? -1 : 1;
+  }
+
+  // Validate mutually exclusive options
+  if (ProjMgrLogger::m_quiet && ProjMgrLogger::m_verbose) {
+    ProjMgrLogger::Get().Error("command line options '--quiet' and '--verbose' are mutually exclusive");
+    return ErrorCode::ERROR;
   }
 
   // Set load packs policy

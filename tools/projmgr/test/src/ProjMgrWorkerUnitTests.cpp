@@ -21,6 +21,12 @@ protected:
   ProjMgrWorkerUnitTests() : ProjMgrWorker(&parser, nullptr) {}
   virtual ~ProjMgrWorkerUnitTests() {}
 
+  void TearDown() {
+    // return mode to normal to avoid affecting other tests
+    ProjMgrLogger::m_quiet = false;
+    ProjMgrLogger::m_verbose = false;
+  }
+
   void SetCsolutionPacks(CsolutionItem* csolution, std::vector<std::string> packs, std::string targetType);
 };
 
@@ -1520,6 +1526,7 @@ TEST_F(ProjMgrWorkerUnitTests, CheckAndGenerateRegionsHeader) {
   ContextItem context;
   LoadPacks(context);
   InitializeTarget(context);
+  ProjMgrLogger::m_verbose = true;
 
   // Generation fails
   context.directories.cprj = testoutput_folder;
