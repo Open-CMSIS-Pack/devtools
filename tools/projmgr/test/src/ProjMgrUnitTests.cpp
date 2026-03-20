@@ -36,7 +36,9 @@ protected:
   };
 
   void TearDown() {
-    // reserved
+    // return mode to normal to avoid affecting other tests
+    ProjMgrLogger::m_quiet = false;
+    ProjMgrLogger::m_verbose = false;
   }
 
   void GetFilesInTree(const string& dir, set<string>& files) {
@@ -1183,8 +1185,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFrozen) {
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestSolution/PackLocking/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c.base@1.2.2"));
 
   RteFsUtils::RemoveFile(expectedCbuildPack);
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFrozenNoPackFile) {
@@ -1311,8 +1311,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackLoadArgument) {
   EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
   EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file is already up-to-date"), string::npos);
   ProjMgrTestEnv::CompareFile(expectedCbuildPackRequired, cbuildPack);
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFindUnspecifiedPackUsingLoadArgument) {
@@ -1403,8 +1401,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFindUnspecifiedPackUsingLoad
   EXPECT_NE(streamRedirect.GetOutString().find(cbuildPack + " - info csolution: file is already up-to-date"), string::npos);
   EXPECT_NE(streamRedirect.GetErrorString().find("error csolution: component 'RteTest:ComponentLevel' not found in included packs"), string::npos);
   ProjMgrTestEnv::CompareFile(expectedCbuildPackRequired, cbuildPack);
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_CbuildPackLocalPackIgnored) {
@@ -1773,8 +1769,6 @@ info csolution: valid configuration #3: \\(context 'genericlayers.CompatibleLaye
 ";
   const string& outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 
@@ -1797,8 +1791,6 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_pack_layer) {
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/config.cbuild-idx.yml",
     testinput_folder + "/TestLayers/config.cbuild-idx.yml", ProjMgrTestEnv::StripAbsoluteFunc);
   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/config.cbuild-idx.yml"));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_local_layer) {
@@ -1819,8 +1811,6 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations_update_idx_local_layer) {
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/select.cbuild-idx.yml",
     testinput_folder + "/TestLayers/select.cbuild-idx.yml", ProjMgrTestEnv::StripAbsoluteFunc);
   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/select.cbuild-idx.yml"));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersConfigurations_Error) {
@@ -1873,8 +1863,6 @@ TEST_F(ProjMgrUnitTests, ListLayersConfigurations) {
   set: set3.select2 \\(connect G - set 3 select 2\\)\n\
 ";
   EXPECT_TRUE(regex_search(outStr, regex(expectedOutStr)));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersMultipleSelect) {
@@ -1908,8 +1896,6 @@ info csolution: valid configuration #2: \\(context 'select\\+RteTest_ARMCM3'\\)\
 
   const string& outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, ListToolchains) {
@@ -1992,8 +1978,6 @@ IAR@9.32.5\n\
 
   const string& outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, ListToolchainsSolution) {
@@ -2121,8 +2105,6 @@ info csolution: valid configuration #1: \\(context 'genericlayers.CompatibleLaye
 
   const string& outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_match(outStr, regex(expectedOutStr)));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, ListLayersIncompatible) {
@@ -2419,8 +2401,6 @@ error csolution: no compatible software layer found. Review required connections
   errStr = streamRedirect.GetErrorString();
   errStr.erase(std::remove(errStr.begin(), errStr.end(), '\n'), errStr.cend());
   EXPECT_TRUE(regex_match(errStr, regex(expectedErrStr)));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_quiet = false;
 }
 
 TEST_F(ProjMgrUnitTests, LayerVariablesNotDefined_SearchPath) {
@@ -4155,8 +4135,6 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Quiet_Mode) {
   EXPECT_EQ(string::npos, errStr.find("warning csolution"));
   EXPECT_EQ(string::npos, errStr.find("debug csolution"));
   EXPECT_STREQ(errStr.c_str(), expectedMsg.c_str());
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_quiet = false;
 }
 
 TEST_F(ProjMgrUnitTests, OutputDirs) {
@@ -4926,8 +4904,6 @@ info csolution: config files for each component:\n\
   outStr = streamRedirect.GetOutString();
   const string expected2 = "../.cmsis/test+CM0.dbgconf@0.0.2 (up to date)\n";
   EXPECT_EQ(outStr, expected2);
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListConfigsWithoutInput) {
@@ -5100,8 +5076,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrCovertMultipleContext) {
   EXPECT_NE(string::npos, outStr.find("test1.Release+CM0.cprj"));
   EXPECT_EQ(string::npos, outStr.find("test1.Debug+CM0.cprj"));
   EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM3.cprj"));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 /*
@@ -5155,8 +5129,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_Reverse_Context_Syntax) {
   EXPECT_NE(string::npos, outStr.find("test1.Release+CM0.cprj - info csolution: file generated successfully"));
   EXPECT_EQ(string::npos, outStr.find("test1.Debug+CM0.cprj"));
   EXPECT_EQ(string::npos, outStr.find("test2.Debug+CM3.cprj"));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, FileLanguageAndScope) {
@@ -5404,8 +5376,6 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_cbuildset_file) {
     EXPECT_NE(outStr.find("test1.Release+CM0.cbuild.yml - info csolution: file generated successfully"), string::npos);
     EXPECT_TRUE(RteFsUtils::Exists(cbuildSetFile));
     ProjMgrTestEnv::CompareFile(cbuildSetFile, testinput_folder + "/TestSolution/ref/cbuild/specific_contexts_test.cbuild-set.yml");
-    // return mode to normal to avoid affecting other tests
-    ProjMgrLogger::m_verbose = false;
   }
 
   {
@@ -5793,8 +5763,6 @@ RteTestExternalGenerator (Global Registered Generator)\n\
   EXPECT_TRUE(outStr.find(expected) != string::npos);
 
   RteFsUtils::RemoveFile(dstGlobalGenerator);
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, ClassicGeneratorListVerbose) {
@@ -5820,8 +5788,6 @@ RteTestGeneratorWithKey (RteTest Generator with Key Description)\n\
 ";
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(outStr.find(expected) != string::npos);
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, DeviceAttributes) {
@@ -6681,8 +6647,6 @@ TEST_F(ProjMgrUnitTests, ListLayers_update_idx_with_no_compiler_selected) {
   ProjMgrTestEnv::CompareFile(testinput_folder + "/TestLayers/ref/no_compiler.cbuild-idx.yml",
     testinput_folder + "/TestLayers/no_compiler.cbuild-idx.yml", ProjMgrTestEnv::StripAbsoluteFunc);
   EXPECT_TRUE(ProjMgrYamlSchemaChecker().Validate(testinput_folder + "/TestLayers/no_compiler.cbuild-idx.yml"));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
@@ -7263,8 +7227,6 @@ PreIncludeEnvFolder@1.0.0 \\(ARM::RteTest@0.1.0\\)\n\
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(outStr.empty());
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 
@@ -7321,8 +7283,6 @@ Board3 \\(ARM::RteTest_DFP@0.2.0\\)\n\
   file: .*/ARM/RteTest_DFP/0.2.0/Templates/board3.csolution.yml\n\
   copy-to: Template3\n\
 ")));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
@@ -7469,8 +7429,6 @@ CMSIS-DAP@pyOCD\n\
 CMSIS-DAP@Arm-Debugger\n\
   CMSIS-DAP@armdbg\n\
 ")));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 }
 
 TEST_F(ProjMgrUnitTests, WestSupport) {
@@ -7551,7 +7509,4 @@ TEST_F(ProjMgrUnitTests, ParseCommandLine_MutualExclusionOptions) {
   EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("error csolution: command line options '--quiet' and '--verbose' are mutually exclusive"));
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_quiet = false;
-  ProjMgrLogger::m_verbose = false;
 }

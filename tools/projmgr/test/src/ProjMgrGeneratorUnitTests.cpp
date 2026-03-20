@@ -6,6 +6,7 @@
 
 #include "ProjMgr.h"
 #include "ProjMgrTestEnv.h"
+#include "ProjMgrLogger.h"
 #include "RteFsUtils.h"
 #include "gtest/gtest.h"
 #include <regex>
@@ -17,6 +18,12 @@ class ProjMgrGeneratorUnitTests : public ProjMgrGenerator, public ::testing::Tes
 protected:
   ProjMgrGeneratorUnitTests() {}
   virtual ~ProjMgrGeneratorUnitTests() {}
+
+  void TearDown() {
+    // return mode to normal to avoid affecting other tests
+    ProjMgrLogger::m_quiet = false;
+    ProjMgrLogger::m_verbose = false;
+  }
 };
 
 TEST_F(ProjMgrGeneratorUnitTests, GetStringFromVector) {

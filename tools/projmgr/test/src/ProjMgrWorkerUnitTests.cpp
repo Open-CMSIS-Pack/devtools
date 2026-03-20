@@ -21,6 +21,12 @@ protected:
   ProjMgrWorkerUnitTests() : ProjMgrWorker(&parser, nullptr) {}
   virtual ~ProjMgrWorkerUnitTests() {}
 
+  void TearDown() {
+    // return mode to normal to avoid affecting other tests
+    ProjMgrLogger::m_quiet = false;
+    ProjMgrLogger::m_verbose = false;
+  }
+
   void SetCsolutionPacks(CsolutionItem* csolution, std::vector<std::string> packs, std::string targetType);
 };
 
@@ -1548,8 +1554,6 @@ warning csolution: regions header file generation failed\n\
   context.linker.regions = "./Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h";
   CheckAndGenerateRegionsHeader(context);
   EXPECT_TRUE(streamRedirect.GetOutString().empty());
-  // return mode to normal to avoid affecting other tests
-  ProjMgrLogger::m_verbose = false;
 };
 
 TEST_F(ProjMgrWorkerUnitTests, GetGeneratorDir) {
