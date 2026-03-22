@@ -303,7 +303,7 @@ jobs:
         working-directory: tools/projmgr/distribution
 
       - name: Attach zip archive to release assets
-        uses: svenstaro/upload-release-action@b98a3b12e86552593f3e4e577ca8a62aa2f3f22b # v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: tools/projmgr/distribution/projmgr.zip
@@ -335,7 +335,7 @@ jobs:
         working-directory: tools/testreport
 
       - name: Attach test report archive to release assets
-        uses: svenstaro/upload-release-action@b98a3b12e86552593f3e4e577ca8a62aa2f3f22b # v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: tools/testreport/testreport.zip
@@ -354,7 +354,7 @@ jobs:
         working-directory: tools/coverage
 
       - name: Attach coverage archive to release assets
-        uses: svenstaro/upload-release-action@b98a3b12e86552593f3e4e577ca8a62aa2f3f22b # v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: tools/coverage/coverage.zip
