@@ -4,11 +4,6 @@ project:
   components:
     - component: RteTestGeneratorNoUrl:Check Global Generator
 
-  groups:
-    - group: sources
-      files: 
-        - file: main.c
-
   generators:
     options:
       - generator: RteTestExternalGeneratorNoUrl
