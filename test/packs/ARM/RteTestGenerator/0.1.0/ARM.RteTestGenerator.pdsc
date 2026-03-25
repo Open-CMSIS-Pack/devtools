@@ -27,8 +27,6 @@
   RteTest ARM M Device Family
       </description>
       <subFamily DsubFamily="RteTestGen ARM Cortex M0">
-		<memory id="IROM1" start="0x00000000" size="0x00040000" startup="1" default="1"/>
-		<memory id="IRAM1" start="0x20000000" size="0x00020000" uninit="1" default="1"/>
         <device Dname="RteTestGen_ARMCM0">
           <processor Dcore="Cortex-M0" DcoreVersion="r0p1" Dmpu="MPU" Dendian="Configurable" Dclock="10000000"/>
         </device>

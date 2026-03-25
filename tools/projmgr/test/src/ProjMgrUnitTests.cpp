@@ -5711,7 +5711,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_PrintUrl) {
   RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
 
   StdStreamRedirect streamRedirect;
-	// test case where the URL returns an exit code of 1 (simulated by not copying the 'bridge tool.sh' script)
+  // test case where the URL returns an exit code of 1 (simulated by not copying the 'bridge tool.sh' script)
   char* argv[7];
   const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
   argv[1] = (char*)csolution.c_str();
@@ -5725,8 +5725,8 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_PrintUrl) {
   string errExpected = "check the URL for downloading the generator: https://raw.githubusercontent.com/Open-CMSIS-Pack";
   EXPECT_NE(string::npos, errStr.find(errExpected));
 
-	streamRedirect.ClearStringStreams();
-	// test case where the download-url is missing of a generator
+  streamRedirect.ClearStringStreams();
+  // test case where the download-url is missing of a generator
   argv[4] = (char*)"RteTestExternalGeneratorNoUrl";
   argv[6] = (char*)"test-url.Debug+CM0";
   EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
