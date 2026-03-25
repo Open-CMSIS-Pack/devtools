@@ -27,6 +27,8 @@
   RteTest ARM M Device Family
       </description>
       <subFamily DsubFamily="RteTestGen ARM Cortex M0">
+		<memory id="IROM1" start="0x00000000" size="0x00040000" startup="1" default="1"/>
+		<memory id="IRAM1" start="0x20000000" size="0x00020000" uninit="1" default="1"/>
         <device Dname="RteTestGen_ARMCM0">
           <processor Dcore="Cortex-M0" DcoreVersion="r0p1" Dmpu="MPU" Dendian="Configurable" Dclock="10000000"/>
         </device>
@@ -186,6 +188,16 @@
     </component>
     <component generator="RteTestExternalGenerator" Cclass="RteTestGenerator" Cgroup="Check Global Generator" Cversion="0.9.0">
       <description>Component addressing external</description>
+      <files>
+        <file category="header" name="Include/RteTestInc.h" version ="1.0.0"/>
+        <file category="genAsset" name="Templates/RteTest.gpdsc.template" version ="1.0.0"/>
+        <file category="genHeader" name="Templates/RteTestGen.h.template" version ="1.0.0"/>
+        <file category="genSource" name="Templates/RteTestGen.c.template" version ="1.0.0"/>
+        <file category="genParams" name="Generator with spaces/RteTestGen.params" version ="0.9.0" attr="config"/>
+      </files>
+    </component>
+	<component generator="RteTestExternalGeneratorNoUrl" Cclass="RteTestGeneratorNoUrl" Cgroup="Check Global Generator" Cversion="0.9.0">
+      <description>Component addressing external with exit code 1</description>
       <files>
         <file category="header" name="Include/RteTestInc.h" version ="1.0.0"/>
         <file category="genAsset" name="Templates/RteTest.gpdsc.template" version ="1.0.0"/>

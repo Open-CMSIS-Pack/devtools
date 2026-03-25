@@ -5650,11 +5650,21 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
   fs::current_path(genDir, ec);
   StrIntPair result = CrossPlatformUtils::ExecCommand(runCmd);
   fs::current_path(workingDir, ec);
-  ProjMgrLogger::Get().Info("generator '" + generatorId + "' for context '" + selectedContextId + "' reported:\n" + result.first);
   if (result.second) {
     ProjMgrLogger::Get().Error("executing generator '" + generatorId + "' for context '" + selectedContextId + "' failed");
+    ProjMgrLogger::Get().Info("generator '" + generatorId + "' for context '" + selectedContextId + "' reported:\n" + result.first);
+
+    const string downloadUrl = m_extGenerator->GetGlobalGenUrl(generatorId);
+    if (!downloadUrl.empty()) {
+      ProjMgrLogger::Get().Error("check the URL for downloading the generator: " + downloadUrl);
+    }
+    else {
+      ProjMgrLogger::Get().Error("download URL is not available for generator '" + generatorId + "' in generator.yml");
+    }
     return false;
   }
+
+  ProjMgrLogger::Get().Info("generator '" + generatorId + "' for context '" + selectedContextId + "' reported:\n" + result.first);
   return true;
 }
 

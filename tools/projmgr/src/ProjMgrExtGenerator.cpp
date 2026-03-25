@@ -49,6 +49,11 @@ const string& ProjMgrExtGenerator::GetGlobalGenRunCmd(const string& generatorId)
   return g ? g->GetRunAttribute() : RteUtils::EMPTY_STRING;
 }
 
+const string& ProjMgrExtGenerator::GetGlobalGenUrl(const string& generatorId) {
+  RteGenerator* g = ProjMgrKernel::Get()->GetExternalGenerator(generatorId);
+  return g ? g->GetURL() : RteUtils::EMPTY_STRING;
+}
+
 const string& ProjMgrExtGenerator::GetGlobalDescription(const string& generatorId) {
   RteGenerator* g = ProjMgrKernel::Get()->GetExternalGenerator(generatorId);
   return g ? g->GetDescription() : RteUtils::EMPTY_STRING;
