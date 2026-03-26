@@ -24,6 +24,8 @@ solution:
       for-context: +CM0
     - project: tz_ns/ns.cproject.yml
       for-context: +CM0
+    - project: test-url/test-url.cproject.yml
+      for-context: +CM0
     - project: multi_0/core0.cproject.yml
       for-context: +MultiCore
     - project: multi_1/core1.cproject.yml

@@ -4,3 +4,7 @@ generator:
     download-url: https://raw.githubusercontent.com/Open-CMSIS-Pack
     run: ../bin/bridge tool.sh
     path: $SolutionDir()$/generated/$TargetType$
+  - id: RteTestExternalGeneratorNoUrl
+    description: Global Registered Generator Without Url
+    run: ../bin/bridge tool.sh
+    path: $SolutionDir()$/generated/$TargetType$

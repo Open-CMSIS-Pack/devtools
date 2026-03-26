@@ -4025,7 +4025,8 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
     "ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestNoExe@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestOverlap@1.1.0 (ARM::RteTestGenerator@0.1.0)",
-    "ARM::RteTestGenerator:Check Global Generator@0.9.0 (ARM::RteTestGenerator@0.1.0)"
+    "ARM::RteTestGenerator:Check Global Generator@0.9.0 (ARM::RteTestGenerator@0.1.0)",
+    "ARM::RteTestGeneratorNoUrl:Check Global Generator@0.9.0 (ARM::RteTestGenerator@0.1.0)"
   };
   vector<string> components;
   m_csolutionFile = testinput_folder + "/TestSolution/pack_contexts.csolution.yml";
@@ -5700,6 +5701,38 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_NoCgenFile) {
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find("error csolution: cgen file was not found, run generator 'RteTestExternalGenerator' for context 'core0.Debug+MultiCore'") != string::npos);
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
+}
+
+TEST_F(ProjMgrUnitTests, ExternalGenerator_PrintUrl) {
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+
+  StdStreamRedirect streamRedirect;
+  // test case where the URL returns an exit code of 1 (simulated by not copying the 'bridge tool.sh' script)
+  char* argv[7];
+  const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"run";
+  argv[3] = (char*)"-g";
+  argv[4] = (char*)"RteTestExternalGenerator";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"single-core.Debug+CM0";
+  EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
+  string errStr = streamRedirect.GetErrorString();
+  string errExpected = "  check the URL for downloading the generator: https://raw.githubusercontent.com/Open-CMSIS-Pack";
+  EXPECT_NE(string::npos, errStr.find(errExpected));
+
+  streamRedirect.ClearStringStreams();
+  // test case where the download-url is missing of a generator
+  argv[4] = (char*)"RteTestExternalGeneratorNoUrl";
+  argv[6] = (char*)"test-url.Debug+CM0";
+  EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
+  errStr = streamRedirect.GetErrorString();
+  errExpected = "  download URL is not available for generator '" + string(argv[4]) + "' in generator.yml";
+  EXPECT_NE(string::npos, errStr.find(errExpected));
 
   RteFsUtils::RemoveFile(dstGlobalGenerator);
 }
