@@ -5657,15 +5657,15 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
     const string downloadUrl = m_extGenerator->GetGlobalGenUrl(generatorId);
     if (!downloadUrl.empty()) {
       errMsg += "  check the URL for downloading the generator: " + downloadUrl;
-    }
-    else {
+    } else {
       errMsg += "  download URL is not available for generator '" + generatorId + "' in generator.yml";
     }
     ProjMgrLogger::Get().Error(errMsg);
     return false;
+  } else {
+    ProjMgrLogger::Get().Info("generator '" + generatorId + "' for context '" + selectedContextId + "' reported:\n  " + result.first);
   }
-
-  ProjMgrLogger::Get().Info("generator '" + generatorId + "' for context '" + selectedContextId + "' reported:\n  " + result.first);
+  
   return true;
 }
 
