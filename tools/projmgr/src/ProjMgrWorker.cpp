@@ -137,9 +137,11 @@ void ProjMgrWorker::UpdateTmpDir() {
   auto& tmpdir = m_parser->GetCsolution().directories.tmpdir;
   auto& base = m_outputDir.empty() ? m_parser->GetCsolution().directory : m_outputDir;
   if (!tmpdir.empty()) {
-    if (ProjMgrUtils::HasAccessSequence(tmpdir) || !RteFsUtils::IsRelative(tmpdir)) {
-      ProjMgrLogger::Get().Warn("'tmpdir' does not support access sequences and must be relative to csolution.yml");
-      tmpdir.clear();
+    if (!m_activeTargetType.empty()) {
+      tmpdir = RteUtils::ExpandAccessSequences(tmpdir, {
+        { RteConstants::AS_TARGET_TYPE, m_activeTargetType },
+        { RteConstants::AS_TARGET_SET, m_activeTargetSet.set.empty() ? "default" : m_activeTargetSet.set } }
+      );
     }
   }
   tmpdir = base + "/" + (tmpdir.empty() ? "tmp" : tmpdir);
@@ -204,6 +206,7 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
     context.variables[RteConstants::AS_PROJECT] = context.cproject->name;
     context.variables[RteConstants::AS_BUILD_TYPE] = context.type.build;
     context.variables[RteConstants::AS_TARGET_TYPE] = context.type.target;
+    context.variables[RteConstants::AS_TARGET_SET] = context.targetSet.empty() ? "default" : context.targetSet;
 
     // solution and project access sequences with absolute paths
     context.absPathSequences[RteConstants::AS_SOLUTION_DIR_BR] = context.csolution->directory;
