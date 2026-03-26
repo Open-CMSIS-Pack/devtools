@@ -185,7 +185,7 @@
       <description>Configuration via RteTest script</description>
     </component>
     <component generator="RteTestExternalGenerator" Cclass="RteTestGenerator" Cgroup="Check Global Generator" Cversion="0.9.0">
-      <description>Component addressing external</description>
+      <description>Component addressing external generator</description>
       <files>
         <file category="header" name="Include/RteTestInc.h" version ="1.0.0"/>
         <file category="genAsset" name="Templates/RteTest.gpdsc.template" version ="1.0.0"/>
@@ -195,7 +195,7 @@
       </files>
     </component>
 	<component generator="RteTestExternalGeneratorNoUrl" Cclass="RteTestGeneratorNoUrl" Cgroup="Check Global Generator" Cversion="0.9.0">
-      <description>Component addressing external without URL</description>
+      <description>Component addressing external generator without URL</description>
     </component>
     <component generator="RteTestGeneratorIdentifier" Cvendor="ARM" Cclass="Device" Cgroup="RteTest Generated Component" Csub="RteTestOverlap" Cversion="1.1.0">
       <description>Component with overlaping file lists</description>

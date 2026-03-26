@@ -5722,7 +5722,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_PrintUrl) {
   argv[6] = (char*)"single-core.Debug+CM0";
   EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
   string errStr = streamRedirect.GetErrorString();
-  string errExpected = "check the URL for downloading the generator: https://raw.githubusercontent.com/Open-CMSIS-Pack";
+  string errExpected = "  check the URL for downloading the generator: https://raw.githubusercontent.com/Open-CMSIS-Pack";
   EXPECT_NE(string::npos, errStr.find(errExpected));
 
   streamRedirect.ClearStringStreams();
@@ -5731,7 +5731,7 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_PrintUrl) {
   argv[6] = (char*)"test-url.Debug+CM0";
   EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
   errStr = streamRedirect.GetErrorString();
-  errExpected = "download URL is not available for generator '" + string(argv[4]) + "' in generator.yml";
+  errExpected = "  download URL is not available for generator '" + string(argv[4]) + "' in generator.yml";
   EXPECT_NE(string::npos, errStr.find(errExpected));
 
   RteFsUtils::RemoveFile(dstGlobalGenerator);
