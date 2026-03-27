@@ -2341,10 +2341,11 @@ bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
         regex_match(baseVersion, base, regEx);
         regex_match(updateVersion, update, regEx);
         if (base.size() == 4 && update.size() == 4) {
+          const string componentId = fi.second->GetPartialComponentID(true).empty() ? "" : " from component '" + fi.second->GetPartialComponentID(true) + "'";
           auto GetUpdateMsg = [&](const string& severity) {
-            return "file '" + file + "' " + severity +
+            return severity + " for file '" + file + "'" + componentId +
               (!RteFsUtils::Exists(file + '.' + RteUtils::UPDATE_STRING + '@' + updateVersion) ? "; use --update-rte" :
-              "; merge content from update file, rename update file to base file and remove previous base file");
+              ".\nMerge content from update file, rename update file to base file and remove previous base file");
           };
           if (base[1] != update[1]) {
             // major
