@@ -1590,9 +1590,16 @@ public:
    std::string GetComponentUniqueID() const override;
 
   /**
+   * @brief get partial component ID (without vendor)
+   * @param withBundle flag to include bundle in the ID
+   * @return partial component ID
+  */
+   std::string GetPartialComponentID(bool withBundle) const override;
+
+  /**
    * @brief get component aggregate ID
    * @param withVersion
-   * @return
+   * @return component aggregate ID
   */
    std::string GetComponentAggregateID() const override;
 
