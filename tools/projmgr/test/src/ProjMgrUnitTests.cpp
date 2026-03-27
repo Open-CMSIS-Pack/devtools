@@ -4164,16 +4164,17 @@ TEST_F(ProjMgrUnitTests, OutputDirs) {
 }
 
 TEST_F(ProjMgrUnitTests, OutputDirsTmpdirAccessSequence) {
-  StdStreamRedirect streamRedirect;
-  char* argv[4];
+  char* argv[5];
   const string& csolution = testinput_folder + "/TestSolution/tmpdir-as.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
-  argv[3] = (char*)"--cbuildgen";
-  EXPECT_EQ(0, RunProjMgr(4, argv, m_envp));
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"TypeA@Set1";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
 
-  auto errStr = streamRedirect.GetErrorString();
-  EXPECT_TRUE(regex_search(errStr, regex("warning csolution: 'tmpdir' does not support access sequences and must be relative to csolution.yml")));
+  // Check custom tmp directory
+  const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestSolution/tmpdir-as.cbuild-idx.yml");
+  EXPECT_EQ("tmp/TypeA/Set1", cbuild["build-idx"]["tmpdir"].as<string>());
 }
 
 TEST_F(ProjMgrUnitTests, OutputDirsAbsolutePath) {

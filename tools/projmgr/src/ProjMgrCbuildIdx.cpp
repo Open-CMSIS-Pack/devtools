@@ -247,7 +247,8 @@ bool ProjMgrYamlEmitter::GenerateCbuildIndex(const vector<ContextItem*>& context
     rootNode[YAML_BUILD_IDX], contexts, m_parser, m_worker, m_outputDir, m_cbuildRun, failedContexts, executes);
 
   // set rebuild flags
-  if (NeedRebuild(filename, rootNode)) {
+  bool defaultTmpdir = RteFsUtils::Equivalent(m_parser->GetCsolution().directories.tmpdir, m_outputDir + "/tmp");
+  if (defaultTmpdir && NeedRebuild(filename, rootNode)) {
     rootNode[YAML_BUILD_IDX][YAML_REBUILD] = true;
   }
   else {

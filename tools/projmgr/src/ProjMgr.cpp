@@ -544,9 +544,6 @@ bool ProjMgr::PopulateContexts(void) {
   m_worker.SetOutputDir(m_outputDir);
   m_emitter.SetOutputDir(m_outputDir.empty() ? m_rootDir : RteFsUtils::AbsolutePath(m_outputDir).generic_string());
 
-  // Update tmp directory
-  m_worker.UpdateTmpDir();
-
   // Set root directory
   m_worker.SetRootDir(m_rootDir);
 
@@ -564,6 +561,9 @@ bool ProjMgr::PopulateContexts(void) {
   if (m_activeTargetSet.has_value() && !m_worker.PopulateActiveTargetSet(m_activeTargetSet.value())) {
     result = false;
   }
+
+  // Update tmp directory
+  m_worker.UpdateTmpDir();
 
   // Add image only context
   m_worker.AddImageOnlyContext();
