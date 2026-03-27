@@ -1594,7 +1594,7 @@ public:
    * @param withBundle flag to include bundle in the ID
    * @return partial component ID
   */
-   virtual std::string GetPartialComponentID(bool withBundle) const override;
+   std::string GetPartialComponentID(bool withBundle) const override;
 
   /**
    * @brief get component aggregate ID
