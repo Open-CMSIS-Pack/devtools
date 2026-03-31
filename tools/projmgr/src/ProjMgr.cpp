@@ -657,9 +657,9 @@ bool ProjMgr::Configure() {
 
   if (m_worker.HasVarDefineError()) {
     auto undefVars = m_worker.GetUndefLayerVars();
-    string errMsg = "undefined variables in "+ fs::path(m_csolutionFile).filename().generic_string() +":\n";
+    string errMsg = "undefined variables in "+ fs::path(m_csolutionFile).filename().generic_string() +":";
     for (const string& var : undefVars) {
-      errMsg += "  - $" + var + "$\n";
+      errMsg += "\n  - $" + var + "$";
     }
     ProjMgrLogger::Get().Error(errMsg);
   }
@@ -1097,9 +1097,9 @@ bool ProjMgr::RunListLayers(void) {
   bool error = m_worker.HasVarDefineError() && !m_updateIdx;
   if (error) {
     auto undefVars = m_worker.GetUndefLayerVars();
-    string errMsg = "undefined variables in " + fs::path(m_csolutionFile).filename().generic_string() + ":\n";
+    string errMsg = "undefined variables in " + fs::path(m_csolutionFile).filename().generic_string() + ":";
     for (const string& var : undefVars) {
-      errMsg += "  - $" + var + "$\n";
+      errMsg += "\n  - $" + var + "$";
     }
     ProjMgrLogger::Get().Error(errMsg);
   }
@@ -1123,13 +1123,8 @@ bool ProjMgr::RunListLayers(void) {
   // Update the cbuild-idx.yml file with layer information
   if (m_updateIdx) {
     // Generate Cbuild index
-    const auto& processedContexts = m_worker.GetProcessedContexts();
-    if (!processedContexts.empty()) {
-      m_worker.ElaborateVariablesConfigurations();
-      if (!m_emitter.GenerateCbuildIndex(processedContexts,
-        m_failedContext, map<string, ExecutesItem>())) {
-        return false;
-      }
+    if (!CallGenerateCbuildIndex()) {
+      return false;
     }
   }
   return !error;
@@ -1373,3 +1368,16 @@ bool ProjMgr::IsSolutionImageOnly() {
   }
   return imageOnly;
 }
+
+bool ProjMgr::CallGenerateCbuildIndex() {
+  const auto& processedContexts = m_worker.GetProcessedContexts();
+  if (!processedContexts.empty()) {
+    m_worker.ElaborateVariablesConfigurations();
+    if (!m_emitter.GenerateCbuildIndex(processedContexts,
+      m_failedContext, map<string, ExecutesItem>())) {
+      return false;
+    }
+  }
+	return true;
+}
+

@@ -88,6 +88,12 @@ public:
   bool RunConvert(const std::string&csolution = RteUtils::EMPTY_STRING,
     const std::string& activeTargetSet = RteUtils::EMPTY_STRING, const bool& updateRte = false);
 
+  /**
+   * @brief call function to (re-)generate cbuild-idx.yml
+   * @return true if executed successfully
+   */
+  bool CallGenerateCbuildIndex();
+
 protected:
   /**
    * @brief parse command line options

@@ -826,6 +826,8 @@ RpcArgs::DiscoverLayersInfo RpcHandler::DiscoverLayers(const string& solution, c
   }
   if(!m_manager.SetupContexts(csolutionFile, activeTarget)) {
     result.message = "Setup of solution contexts failed";
+		ProjMgrLogger::Get().Error(result.message.value());
+    m_manager.CallGenerateCbuildIndex();
     return result;
   }
   m_worker.SetUpCommand(true);
@@ -833,6 +835,8 @@ RpcArgs::DiscoverLayersInfo RpcHandler::DiscoverLayers(const string& solution, c
   StrSet fails;
   if(!m_worker.ListLayers(layers, "", fails) || !m_worker.ElaborateVariablesConfigurations()) {
     result.message = "No compatible software layer found. Review required connections of the project";
+		ProjMgrLogger::Get().Error(result.message.value());
+    m_manager.CallGenerateCbuildIndex();
     return result;
   } else {
     // retrieve valid configurations

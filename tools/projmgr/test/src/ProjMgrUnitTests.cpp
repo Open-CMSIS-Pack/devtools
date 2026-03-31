@@ -4415,7 +4415,7 @@ TEST_F(ProjMgrUnitTests, RunCheckContextProcessing) {
   EXPECT_EQ(2, RunProjMgr(8, argv, 0));
 
   // Check error for processed context
-  const string expected = "error csolution: undefined variables in contexts.csolution.yml:\n  - $LayerVar$\n\n";
+  const string expected = "error csolution: undefined variables in contexts.csolution.yml:\n  - $LayerVar$\n";
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find(expected) != string::npos);
 
