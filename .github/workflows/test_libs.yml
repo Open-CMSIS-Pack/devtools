@@ -56,7 +56,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build all libs
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         id: devtools-build
         with:
           add_cmake_variables: '-DLIBS_ONLY=ON'
@@ -66,9 +66,7 @@ jobs:
       - name: Install macos deps
         if: ${{ startsWith(matrix.runs_on, 'macos') }}
         run: |
-          brew install \
-            dos2unix \
-            wget
+          brew bundle install --file="${{ github.workspace }}/.github/Brewfile" --no-upgrade
 
       - name: Install linux deps
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}

@@ -80,7 +80,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build packchk
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           target: packchkdist
           arch: ${{ matrix.arch }}
@@ -168,7 +168,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -182,7 +182,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           arch: ${{ matrix.arch }}
           build_type: Debug
@@ -243,7 +243,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
@@ -252,7 +252,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackChkIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64

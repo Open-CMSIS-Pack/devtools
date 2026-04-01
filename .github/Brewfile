@@ -1,0 +1,3 @@
+brew "dos2unix"
+brew "ninja"
+brew "wget"
