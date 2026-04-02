@@ -329,7 +329,7 @@ jobs:
           overwrite: true
           asset_name: cbuild_install.sh
 
-      - name: Attach debian installer to release
+      - name: Attach Debian installer to release
         if: ${{ github.event_name == 'release' }}
         uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
         with:
@@ -363,7 +363,7 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Install linux deps
+      - name: Install Linux deps
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
         run: |
           sudo apt-get update
@@ -394,7 +394,6 @@ jobs:
         run: |
           test -f ${installer_name} || wget -q ${arm_gcc_install_base}/${installer_name}
           tar -xvf ${installer_name}
-
       - name: Setup ARM GCC for Windows
         if: ${{ startsWith(matrix.runs_on, 'windows') }}
         env:
