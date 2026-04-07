@@ -641,6 +641,7 @@ void ValidateSyntax::InitFeatures()
   m_featureTableDevice["SON"] = FeatureEntry("SON", "<feature type=\"SON\" n=\"16\" name=\"SSON Package\"/>", "16-no-lead SSON Package");
   m_featureTableDevice["SOP"] = FeatureEntry("SOP", "<feature type=\"SOP\" n=\"16\" name=\"SSOP Package\"/>", "16-lead SSOP Package");
   m_featureTableDevice["DIP"] = FeatureEntry("DIP", "<feature type=\"DIP\" n=\"16\" name=\"Dual In-Line Package\"/>", "16-lead Dual In-Line Package");
+  m_featureTableDevice["LGA"] = FeatureEntry("LGA", "<feature type=\"LGA\" n=\"141\" name=\"LGA Package\"/>", "141-lead LGA Package");
   m_featureTableDevice["PackageOther"] = FeatureEntry("Other Package Type", "<feature type=\"PackageOther\" n=\"44\" name=\"My other Package\"/>", "44-contacts My other Package");
   m_featureTableDevice["IOs"] = FeatureEntry("Inputs/Outputs", "<feature type=\"IOs\" n=\"112\" name=\"General Purpose I/Os, 5V tolerant\"/>", "112 General Purpose I/Os, 5V tolerant");
   m_featureTableDevice["ExtInt"] = FeatureEntry("External Interrupts", "<feature type=\"ExtInt\" n=\"12\"/>", "12 External Interrupts");
@@ -687,6 +688,7 @@ void ValidateSyntax::InitFeatures()
   m_featureTableDevice["LTE Cat-M"] = FeatureEntry("LTE Cat-M", "<feature type=\"LTE Cat-M\"/>", "LTE Cat-M");
   m_featureTableDevice["NB-IoT"] = FeatureEntry("NB-IoT", "<feature type=\"NB-IoT\"/>", "NB-IoT");
   m_featureTableDevice["NFC"] = FeatureEntry("NFC", "<feature type=\"NFC\"/>", "NFC");
+  m_featureTableDevice["NPU"] = FeatureEntry("NPU", "<feature type=\"NPU\" n=\"Ethos-U85\" m=\"256MACs\"/>", "NPU");
   m_featureTableDevice["WirelessOther"] = FeatureEntry("WirelessOther", "<feature type=\"WirelessOther\"/>", "WirelessOther");
   m_featureTableDevice["I/O"] = FeatureEntry("I/O", "<feature type=\"I/O\"/>", "I/O");
   m_featureTableDevice["D/A"] = FeatureEntry("D/A", "<feature type=\"D/A\"/>", "D/A");
