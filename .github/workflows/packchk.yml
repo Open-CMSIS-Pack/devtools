@@ -43,6 +43,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   setup:
     uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
