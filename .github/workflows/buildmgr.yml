@@ -73,7 +73,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         id: devtools-build
         with:
           target: cbuildgen
@@ -329,7 +329,7 @@ jobs:
           overwrite: true
           asset_name: cbuild_install.sh
 
-      - name: Attach debian installer to release
+      - name: Attach Debian installer to release
         if: ${{ github.event_name == 'release' }}
         uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
         with:
@@ -363,15 +363,7 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.runs_on, 'macos') }}
-        run: |
-          brew install \
-            dos2unix \
-            ninja \
-            wget
-
-      - name: Install linux deps
+      - name: Install Linux deps
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
         run: |
           sudo apt-get update
@@ -438,11 +430,16 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CbuildUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           target: CbuildUnitTests
           build_type: Debug
           arch: ${{ matrix.arch }}
+
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.runs_on, 'macos') }}
+        run: |
+          brew bundle install --file="${{ github.workspace }}/.github/Brewfile" --no-upgrade
 
       - name: Run CbuildUnitTests
         if: matrix.arch != 'arm64'
@@ -460,7 +457,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CbuildIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           target: CbuildIntegTests
           build_type: Debug
