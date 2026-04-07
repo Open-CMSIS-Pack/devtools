@@ -1182,6 +1182,56 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfoLayer) {
 }
 
 
+TEST_F(ProjMgrRpcTests, RpcGetPacksInfoLocal) {
+  string context = "incompatible.Debug+CM0";
+  vector<string> contextList = {
+    context
+  };
+
+  auto requests = CreateLoadRequests("/TestSolution/PackRequirements/incompatible.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 2);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTestRequired");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTestRequired");
+
+  string path = packs[0]["path"];
+  RteUtils::ReplaceAll(path, testinput_folder, "TEST"); ;
+  EXPECT_EQ(path, "TEST/TestSolution/PackRequirements/packs/required");
+  EXPECT_EQ(RteUtils::ExtractFileName(packs[0]["origin"]), "incompatible.csolution.yml");
+
+  EXPECT_EQ(packs[1]["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs[1]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(RteUtils::ExtractFileName(packs[1]["origin"]), "incompatible.csolution.yml");
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
+  auto packInfos = responses[3]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 2);
+
+  EXPECT_EQ(packInfos[0]["id"], "ARM::RteTestRequired@1.0.0");
+  EXPECT_FALSE(packInfos[0].contains("used"));
+  auto refs = packInfos[0]["references"];
+  EXPECT_EQ(refs.size(), 1);
+  EXPECT_TRUE(refs[0].contains("path"));
+
+  path = refs[0]["path"];
+  RteUtils::ReplaceAll(path, testinput_folder, "TEST");
+
+  EXPECT_EQ(refs[0]["pack"], "ARM::RteTestRequired");
+  EXPECT_EQ(refs[0]["resolvedPack"], "ARM::RteTestRequired");
+  EXPECT_EQ(path, "TEST/TestSolution/PackRequirements/packs/required");
+
+  EXPECT_EQ(packInfos[1]["id"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_TRUE(packInfos[1].contains("used"));
+  refs = packInfos[1]["references"];
+  EXPECT_EQ(refs.size(),1);
+  EXPECT_FALSE(refs[1].contains("path"));
+}
 
 TEST_F(ProjMgrRpcTests, RpcSelectPack) {
   string context = "test1.Release+CM0";

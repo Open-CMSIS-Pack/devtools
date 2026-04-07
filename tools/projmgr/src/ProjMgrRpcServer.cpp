@@ -128,7 +128,7 @@ protected:
 
   PackReferenceVector& GetPackReferences(const string& context);
   PackReferenceVector CollectPackReferences(const string& context);
-  PackReferenceVector GetPackReferencesForPack(const string& context, const string& packId);
+  PackReferenceVector GetPackReferencesForPack(const string& context, const RtePackage* pack);
   RpcArgs::PackReference& EnsurePackReferenceForPack(const string& context, const string& packId, const string& origin, bool bVersion);
   RpcArgs::PackReference& EnsurePackReference(const string& context, const RpcArgs::PackReference& packRef);
 
@@ -411,7 +411,7 @@ PackReferenceVector RpcHandler::CollectPackReferences(const string& context) {
     packRef.origin = packItem.origin;
     packRef.path = packItem.path;
     packRef.selected = true; // initially pack is selected;
-    if (!contextItem.availablePackVersions[packId].empty()) {
+    if (packItem.path.empty() && !contextItem.availablePackVersions[packId].empty()) {
       packRef.upgrade = contextItem.availablePackVersions[packId];
     }
     packRefs.push_back(packRef);
@@ -419,10 +419,14 @@ PackReferenceVector RpcHandler::CollectPackReferences(const string& context) {
   return packRefs;
 }
 
-PackReferenceVector RpcHandler::GetPackReferencesForPack(const string& context, const string& packId) {
+PackReferenceVector RpcHandler::GetPackReferencesForPack(const string& context, const RtePackage* pack) {
   PackReferenceVector packRefs;
+  auto& packId = pack->GetID();
+  auto path = pack->GetRootFilePath(false);
+
   for(auto& ref : GetPackReferences(context)) {
-    if(ref.resolvedPack.has_value() && ref.resolvedPack == packId) {
+    if(ref.resolvedPack.has_value() && ref.resolvedPack == packId ||
+       ref.path.has_value() && RteFsUtils::Equivalent(ref.path.value(), path)) {
       packRefs.push_back(ref);
     }
   }
@@ -487,7 +491,7 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& a
     if(contains_key(usedPacks, p.id)) {
       p.used = true;
     }
-    auto packRefs = GetPackReferencesForPack(context, p.id);
+    auto packRefs = GetPackReferencesForPack(context, rtePackage);
 
     if(!packRefs.empty()) {
       p.references = packRefs;
