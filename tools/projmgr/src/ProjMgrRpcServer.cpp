@@ -836,7 +836,8 @@ RpcArgs::DiscoverLayersInfo RpcHandler::DiscoverLayers(const string& solution, c
   StrVec layers;
   StrSet fails;
   if(!m_worker.ListLayers(layers, "", fails) || !m_worker.ElaborateVariablesConfigurations()) {
-    result.message = "No compatible software layer found. Review required connections of the project";
+    result.message = "No compatible software layer was found in the installed packs. "
+                     "Install additional packs containing suitable layers before restarting the \"Create Solution\" flow.";
     return result;
   } else {
     // retrieve valid configurations
