@@ -1498,8 +1498,7 @@ TEST_F(ProjMgrRpcTests, RpcDiscoverLayers) {
     json({{ "solution", csolutionPath }, { "activeTarget", "" }}));
   responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
-  EXPECT_EQ(responses[0]["result"]["message"], "No compatible software layer was found in the installed packs. "
-    "Install additional packs containing suitable layers before restarting the \"Create Solution\" flow.");
+  EXPECT_EQ(responses[0]["result"]["message"], "No compatible software layer was found in the installed packs.\nInstall additional packs containing suitable layers before restarting the 'Create Solution' flow.");
 }
 
 TEST_F(ProjMgrRpcTests, RpcListMissingPacks) {
