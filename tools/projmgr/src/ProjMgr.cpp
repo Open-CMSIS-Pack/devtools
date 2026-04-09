@@ -44,7 +44,7 @@ Commands:\n\
 Options:\n\
   -a, --active arg              Select active target-set: <target-type>[@<set>]\n\
   -c, --context arg [...]       Input context names [<project-name>][.<build-type>][+<target-type>]\n\
-  -d, --debug                   Enable debug messages\n\
+  -d, --debug                   Enable debug messages of the cmsis build tools\n\
   -D, --dry-run                 Enable dry-run\n\
   -e, --export arg              Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
   -f, --filter arg              Filter words\n\
@@ -55,10 +55,10 @@ Options:\n\
   -n, --no-check-schema         Skip schema check\n\
   -N, --no-update-rte           Skip creation of RTE directory and files\n\
   -o,-O --output arg            Base folder for output files, 'outdir' and 'tmpdir' (default \"Same as '*.csolution.yml'\")\n\
-  -q, --quiet                   Run silently, printing only error messages\n\
+  -q, --quiet                   Run silently, printing only error messages of the cmsis build tools\n\
   -S, --context-set             Select the context names from cbuild-set.yml for generating the target application\n\
   -t, --toolchain arg           Selection of the toolchain used in the project optionally with version\n\
-  -v, --verbose                 Enable verbose messages\n\
+  -v, --verbose                 Enable verbose messages of the cmsis build tools\n\
   -V, --version                 Print version\n\n\
 Use 'csolution <command> -h' for more information about a command.\n\
 ";
@@ -156,8 +156,8 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option output("o,output", "Add prefix to 'outdir' and 'tmpdir'", cxxopts::value<string>());
   cxxopts::Option outputAlt("O", "Add prefix to 'outdir' and 'tmpdir'", cxxopts::value<string>());
   cxxopts::Option version("V,version", "Print version");
-  cxxopts::Option verbose("v,verbose", "Enable verbose messages", cxxopts::value<bool>()->default_value("false"));
-  cxxopts::Option debug("d,debug", "Enable debug messages", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option verbose("v,verbose", "Enable verbose messages of the cmsis build tools", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option debug("d,debug", "Enable debug messages of the cmsis build tools", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option dryRun("D,dry-run", "Enable dry-run", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option exportSuffix("e,export", "Set suffix for exporting <context><suffix>.cprj retaining only specified versions", cxxopts::value<string>());
   cxxopts::Option toolchain("t,toolchain", "Selection of the toolchain used in the project optionally with version", cxxopts::value<string>());
@@ -166,7 +166,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option relativePaths("R,relative-paths", "Output paths relative to csolution.yml or to CMSIS_PACK_ROOT", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option frozenPacks("frozen-packs", "The list of packs from cbuild-pack.yml is frozen and raises error if not up-to-date", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option updateIdx("update-idx", "Update cbuild-idx file with layer info", cxxopts::value<bool>()->default_value("false"));
-  cxxopts::Option quiet("q,quiet", "Run silently, printing only error messages", cxxopts::value<bool>()->default_value("false"));
+  cxxopts::Option quiet("q,quiet", "Run silently, printing only error messages of the cmsis build tools", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option cbuildgen("cbuildgen", "Generate legacy *.cprj files", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option contentLength("content-length", "Prepend 'Content-Length' header to JSON RPC requests and responses", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option activeTargetSet("a,active", "Select active target-set: <target-type>[@<set>]", cxxopts::value<string>());
