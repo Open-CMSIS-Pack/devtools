@@ -46,6 +46,7 @@ static constexpr const char* YAML_BUILD = "build";
 static constexpr const char* YAML_BUILD_GEN = "build-gen";
 static constexpr const char* YAML_BUILD_IDX = "build-idx";
 static constexpr const char* YAML_BUILD_GEN_IDX = "build-gen-idx";
+static constexpr const char* YAML_BUILDSCOPE = "build-scope";
 static constexpr const char* YAML_BUILDTYPES = "build-types";
 static constexpr const char* YAML_CATEGORY = "category";
 static constexpr const char* YAML_CBUILDS = "cbuilds";

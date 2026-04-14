@@ -65,14 +65,6 @@ build:
           category: linkerScript
           attr: config
           version: 2.2.0
-        - file: ../data/TestSolution/StandardLibrary/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
-          category: sourceC
-          attr: config
-          version: 2.0.3
-        - file: ../data/TestSolution/StandardLibrary/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
-          category: sourceC
-          attr: config
-          version: 1.2.2
     - component: ARM::RteTest:CORE@0.1.1
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0

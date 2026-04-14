@@ -153,6 +153,7 @@ void ProjMgrCbuild::SetComponentsNode(YAML::Node node, const ContextItem* contex
       SetNodeValue(componentNode[YAML_IMPLEMENTS], api->ConstructComponentID(true));
     }
     SetControlsNode(componentNode, context, componentItem->build);
+    SetNodeValue(componentNode[YAML_BUILDSCOPE], componentItem->buildScope);
     SetComponentFilesNode(componentNode[YAML_FILES], context, componentId);
     if (!component.generator.empty()) {
       SetNodeValue(componentNode[YAML_GENERATOR][YAML_ID], component.generator);
@@ -189,7 +190,24 @@ void ProjMgrCbuild::SetDebugConfigNode(YAML::Node node, const ContextItem* conte
 
 void ProjMgrCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem* context, const string& componentId) {
   if (context->componentFiles.find(componentId) != context->componentFiles.end()) {
+    // Default behavior:
+    // - executable build: include component source files
+    // - library    build: exclude component source files
+    bool includeComponentSourceFiles = !context->outputTypes.lib.on;
+    const string& buildScope = context->components.at(componentId).item->buildScope;
+    if (buildScope == "include") {
+      includeComponentSourceFiles = true;
+    }
+    else if (buildScope == "exclude") {
+      includeComponentSourceFiles = false;
+    }
+
     for (const auto& [file, attr, category, language, scope, version, select] : context->componentFiles.at(componentId)) {
+      // Skip source files if build-scope excludes them
+      if ( !includeComponentSourceFiles && RteFile::IsSourceCategory(RteFile::CategoryFromString(category)) ) {
+        continue;
+      }
+
       YAML::Node fileNode;
       SetNodeValue(fileNode[YAML_FILE], FormatPath(file, context->directories.cbuild));
       SetNodeValue(fileNode[YAML_CATEGORY], category);
