@@ -128,6 +128,13 @@ public:
   bool IsAddToProject() const override;
 
   /**
+   * @brief helper static method to check if category is a compilable source file
+   * @param category file category
+   * @return true if source category
+  */
+  static bool IsSourceCategory(Category category);
+
+  /**
    * @brief get file category
    * @return RteFile::Category
   */

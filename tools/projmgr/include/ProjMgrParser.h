@@ -295,6 +295,7 @@ struct ComponentItem {
   std::string component;
   std::string condition;
   std::string fromPack;
+  std::string buildScope;
   BuildType build;
   TypeFilter type;
   int instances = 1;

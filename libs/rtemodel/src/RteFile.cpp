@@ -88,6 +88,15 @@ bool RteFile::IsAddToProject() const
   return false;
 }
 
+bool RteFile::IsSourceCategory(Category category) {
+  static const set<Category> sourceCategories = {
+    Category::SOURCE,
+    Category::SOURCE_C,
+    Category::SOURCE_CPP,
+    Category::SOURCE_ASM
+  };
+  return sourceCategories.find(category) != sourceCategories.end();
+}
 
 RteFile::Category RteFile::GetCategory() const
 {

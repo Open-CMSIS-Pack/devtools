@@ -1,8 +1,8 @@
 build:
-  generated-by: csolution version 0.0.0+g8f3e0bb6
-  solution: ../data/TestSolution/StandardLibrary/library.csolution.yml
-  project: ../data/TestSolution/StandardLibrary/library.cproject.yml
-  context: library.Debug+RteTest_ARMCM3
+  generated-by: csolution version 2.13.0+p46-g645108a5
+  solution: ../../../../../data/TestSolution/StandardLibrary/library.csolution.yml
+  project: ../../../../../data/TestSolution/StandardLibrary/executable_componentBuildScope/executable_componentBuildScope.cproject.yml
+  context: executable_componentBuildScope.Debug+RteTest_ARMCM3
   compiler: GCC
   device: ARM::RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
@@ -10,12 +10,14 @@ build:
     - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html
       title: Cortex-M3 Device Generic Users Guide
   dbgconf:
-    - file: ../data/TestSolution/StandardLibrary/.cmsis/library+RteTest_ARMCM3.dbgconf
+    - file: ../../../../../data/TestSolution/StandardLibrary/.cmsis/library+RteTest_ARMCM3.dbgconf
       version: 0.0.2
   processor:
     fpu: off
     core: Cortex-M3
   packs:
+    - pack: ARM::RteTest@0.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0
     - pack: ARM::RteTest_DFP@0.2.0
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   misc:
@@ -33,18 +35,18 @@ build:
     - ARMCM3
     - _RTE_
   add-path:
-    - ../data/TestSolution/StandardLibrary/RTE/_Debug_RteTest_ARMCM3
+    - ../../../../../data/TestSolution/StandardLibrary/executable_componentBuildScope/RTE/_Debug_RteTest_ARMCM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   add-path-asm:
-    - ../data/TestSolution/StandardLibrary/RTE/_Debug_RteTest_ARMCM3
+    - ../../../../../data/TestSolution/StandardLibrary/executable_componentBuildScope/RTE/_Debug_RteTest_ARMCM3
     - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Include
   output-dirs:
-    intdir: tmp/library/RteTest_ARMCM3/Debug
-    outdir: out/library/RteTest_ARMCM3/Debug
-    rtedir: ../data/TestSolution/StandardLibrary/RTE
+    intdir: ../../../../tmp
+    outdir: .
+    rtedir: ../../../../../data/TestSolution/StandardLibrary/executable_componentBuildScope/RTE
   output:
-    - type: lib
-      file: liblibrary.a
+    - type: elf
+      file: executable_componentBuildScope.elf
     - type: comp-db
       file: compile_commands.json
     - type: comp-db
@@ -61,10 +63,18 @@ build:
         - file: https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
           category: doc
           version: 2.0.3
-        - file: ../data/TestSolution/StandardLibrary/RTE/Device/RteTest_ARMCM3/gcc_arm.ld
+        - file: ../../../../../data/TestSolution/StandardLibrary/executable_componentBuildScope/RTE/Device/RteTest_ARMCM3/gcc_arm.ld
           category: linkerScript
           attr: config
           version: 2.2.0
+        - file: ../../../../../data/TestSolution/StandardLibrary/executable_componentBuildScope/RTE/Device/RteTest_ARMCM3/startup_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 2.0.3
+        - file: ../../../../../data/TestSolution/StandardLibrary/executable_componentBuildScope/RTE/Device/RteTest_ARMCM3/system_ARMCM3.c
+          category: sourceC
+          attr: config
+          version: 1.2.2
     - component: ARM::RteTest:CORE@0.1.1
       condition: Cortex-M Device
       from-pack: ARM::RteTest_DFP@0.2.0
@@ -74,6 +84,14 @@ build:
         - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
           category: doc
           version: 0.1.1
+    - component: ARM::RteTest:LocalFile@0.0.3
+      from-pack: ARM::RteTest@0.1.0
+      selected-by: RteTest:LocalFile@0.0.3
+      build-scope: exclude
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0/PreInclude/MyLocalPreInclude.h
+          category: preIncludeLocal
+          version: 0.0.3
   apis:
     - api: RteTest:CORE@1.1.2
       from-pack: ARM::RteTest_DFP@0.2.0
@@ -82,8 +100,10 @@ build:
         - file: https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_apis_pg.html
           category: doc
           version: 1.1.2
+  linker:
+    script: ../../../../../data/TestSolution/StandardLibrary/executable_componentBuildScope/RTE/Device/RteTest_ARMCM3/gcc_arm.ld
   constructed-files:
-    - file: ../data/TestSolution/StandardLibrary/RTE/_Debug_RteTest_ARMCM3/RTE_Components.h
+    - file: ../../../../../data/TestSolution/StandardLibrary/executable_componentBuildScope/RTE/_Debug_RteTest_ARMCM3/RTE_Components.h
       category: header
   licenses:
     - license: <unknown>
@@ -94,3 +114,13 @@ build:
         - component: ARM::Device:Startup&RteTest Startup@2.0.3
         - component: ARM::RteTest:CORE@0.1.1
         - component: RteTest:CORE(API)
+    - license: BSD-3-Clause
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:LocalFile@0.0.3
+    - license: MIT
+      packs:
+        - pack: ARM::RteTest@0.1.0
+      components:
+        - component: ARM::RteTest:LocalFile@0.0.3
