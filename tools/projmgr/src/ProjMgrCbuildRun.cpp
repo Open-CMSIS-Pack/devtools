@@ -131,6 +131,9 @@ void ProjMgrCbuildRun::SetResourcesNode(YAML::Node node, const SystemResourcesTy
     SetNodeValue(memoryNode[YAML_SIZE], ProjMgrUtils::ULLToHex(item.size));
     SetNodeValue(memoryNode[YAML_PNAME], item.pname);
     SetNodeValue(memoryNode[YAML_ALIAS], item.alias);
+    if (item.bDefault.has_value()) {
+      memoryNode[YAML_DEFAULT] = item.bDefault.value();
+    }
     SetNodeValue(memoryNode[YAML_FROM_PACK], item.fromPack);
     node[YAML_MEMORY].push_back(memoryNode);
   }
