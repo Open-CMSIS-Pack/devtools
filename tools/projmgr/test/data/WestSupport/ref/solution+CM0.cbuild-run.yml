@@ -36,22 +36,26 @@ cbuild-run:
         start: 0x00000000
         size: 0x00080000
         pname: cm0_core0
+        default: true
         from-pack: ARM::RteTest_DFP@0.2.0
       - name: SRAM_DUAL
         access: rwx
         start: 0x80000000
         size: 0x00020000
         pname: cm0_core1
+        default: true
         from-pack: ARM::RteTest_DFP@0.2.0
       - name: IROM1
         access: rx
         start: 0x00000000
         size: 0x00040000
+        default: true
         from-pack: ARM::RteTest_DFP@0.2.0
       - name: IRAM1
         access: rwx
         start: 0x20000000
         size: 0x00020000
+        default: true
         from-pack: ARM::RteTest_DFP@0.2.0
     processors:
       - core: Cortex-M0
