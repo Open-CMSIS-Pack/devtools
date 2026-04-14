@@ -3,10 +3,10 @@
 project:
 
   output:
-    type: lib
+    type: elf
 
   components:
     - component: CORE
     - component: Device:Startup&RteTest Startup
     - component: RteTest:LocalFile@0.0.3
-      build-scope: include
+      build-scope: exclude
