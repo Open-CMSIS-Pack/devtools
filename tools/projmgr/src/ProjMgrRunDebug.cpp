@@ -212,6 +212,9 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
     item.size = memory->GetAttributeAsULL("size");
     item.fromPack = memory->GetPackageID(true);
     item.pname = memory->GetProcessorName();
+    if (memory->HasAttribute("default")) {
+      item.default = memory->IsDefault();
+    }
     m_runDebug.systemResources.memories.push_back(item);
   }
 

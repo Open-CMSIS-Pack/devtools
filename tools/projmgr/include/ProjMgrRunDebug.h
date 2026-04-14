@@ -36,6 +36,7 @@ struct MemoryType {
   std::string access;
   std::string alias;
   std::string fromPack;
+  std::optional<bool> default;
   unsigned long long start = 0;
   unsigned long long size = 0;
   std::string pname;
