@@ -204,7 +204,7 @@ void ProjMgrCbuild::SetComponentFilesNode(YAML::Node node, const ContextItem* co
 
     for (const auto& [file, attr, category, language, scope, version, select] : context->componentFiles.at(componentId)) {
       // Skip source files if build-scope excludes them
-      if ( !includeComponentSourceFiles && RteFile::IsSourceCategory(RteFile::CategoryFromString(category)) ) {
+      if (!includeComponentSourceFiles && RteFile::IsSourceCategory(RteFile::CategoryFromString(category))) {
         continue;
       }
 
