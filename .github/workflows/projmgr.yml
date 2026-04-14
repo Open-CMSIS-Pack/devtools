@@ -107,7 +107,7 @@ jobs:
           fi
 
       - name: Archive projmgr
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/projmgr/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}
@@ -116,7 +116,7 @@ jobs:
 
       - name: Archive projmgr schemas
         if: matrix.arch == 'amd64' && matrix.target == 'linux'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: projmgr-schemas
           path: ./tools/projmgr/schemas
@@ -125,7 +125,7 @@ jobs:
 
       - name: Archive projmgr templates
         if: matrix.arch == 'amd64' && matrix.target == 'linux'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: projmgr-templates
           path: ./tools/projmgr/templates
@@ -180,7 +180,7 @@ jobs:
 
       - name: Archive projmgr swig python libs
         if: always() && matrix.pyswig
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
           path: |
@@ -191,7 +191,7 @@ jobs:
 
       - name: Archive projmgr swig go libs
         if: always() && matrix.goswig
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: projmgr-swig-go-${{ matrix.target }}-${{ matrix.arch }}
           path: |
@@ -399,7 +399,7 @@ jobs:
 
       - name: Archive unit tests results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unittest-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/Testing/Temporary/LastTest.log
@@ -408,7 +408,7 @@ jobs:
 
       - name: Archive gtest report
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/projmgrunittests-*.xml
@@ -466,7 +466,7 @@ jobs:
 
       - name: Archive test report
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_projmgr-linux-amd64
           path: ./build/test_reports/projmgrunittests-*.xml
@@ -504,7 +504,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-report-projmgr
           path: |
@@ -525,7 +525,7 @@ jobs:
           egress-policy: audit
 
       - name: Event File
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Event File projmgr
           path: ${{ github.event_path }}
