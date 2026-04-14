@@ -4728,6 +4728,20 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_StandardLibrary) {
   // Check there is no cbuild-run (target-set has only lib contexts)
   const YAML::Node& cbuildIdx = YAML::LoadFile(testoutput_folder + "/library.cbuild-idx.yml");
   EXPECT_FALSE(cbuildIdx["build-idx"]["cbuild-run"].IsDefined());
+
+  // Check generated cbuild YMLs for componentBuildScope - library builds with include build-scope
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"library_componentBuildScope";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/library_componentBuildScope/RteTest_ARMCM3/Debug/library_componentBuildScope.Debug+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/StandardLibrary/ref/library_componentBuildScope.Debug+RteTest_ARMCM3.cbuild.yml");
+  // Check generated cbuild YMLs for componentBuildScope - executable builds with exclude build-scope
+  argv[6] = (char*)"executable_componentBuildScope";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/executable_componentBuildScope/RteTest_ARMCM3/Debug/executable_componentBuildScope.Debug+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/StandardLibrary/ref/executable_componentBuildScope.Debug+RteTest_ARMCM3.cbuild.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleProject_SameFolder) {
