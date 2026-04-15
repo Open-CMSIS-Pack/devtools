@@ -70,8 +70,6 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   // device collections
   for (const auto& [pname, processor] : pnames) {
     if (context0->devicePack) {
-      m_runDebug.devicePack = context0->devicePack->GetPackageID(true);
-      m_runDebug.devicePackPath = context0->devicePack->GetAbsolutePackagePath();
       const auto& deviceAlgorithms = context0->rteDevice->GetEffectiveProperties("algorithm", pname);
       for (const auto& deviceAlgorithm : deviceAlgorithms) {
         PushBackUniquely(algorithms, deviceAlgorithm, pname);
@@ -126,6 +124,10 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
       }
     }
     m_runDebug.systemResources.processors.push_back(item);
+  }
+  if (context0->devicePack) {
+    m_runDebug.devicePack = context0->devicePack->GetPackageID(true);
+    m_runDebug.devicePackPath = context0->devicePack->GetAbsolutePackagePath();
   }
 
   // default ramstart/size: use the first memory with default=1 and rwx attribute
