@@ -32,7 +32,6 @@ ProjMgrRunDebug::~ProjMgrRunDebug(void) {
 }
 
 bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, const DebugAdaptersItem& adapters) {
-  m_runDebug = RunDebugType{};  // reset all fields to avoid carry-over between runs
 
   // get target settings
   const auto& context0 = contexts.front();
