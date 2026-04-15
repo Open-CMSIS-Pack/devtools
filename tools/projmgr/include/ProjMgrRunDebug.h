@@ -211,8 +211,10 @@ struct RunDebugType {
   std::string compiler;
   std::string board;
   std::string boardPack;
+  std::string boardPackPath;
   std::string device;
   std::string devicePack;
+  std::string devicePackPath;
   std::vector<AlgorithmType> algorithms;
   std::vector<FlashInfoType> flashInfo;
   std::vector<FilesType> outputs;

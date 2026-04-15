@@ -47,8 +47,10 @@ ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
   SetNodeValue(node[YAML_COMPILER], debugRun.compiler);
   SetNodeValue(node[YAML_BOARD], debugRun.board);
   SetNodeValue(node[YAML_BOARD_PACK], debugRun.boardPack);
+  SetNodeValue(node[YAML_BOARD_PACK_PATH], FormatPath(debugRun.boardPackPath, m_directory));
   SetNodeValue(node[YAML_DEVICE], debugRun.device);
   SetNodeValue(node[YAML_DEVICE_PACK], debugRun.devicePack);
+  SetNodeValue(node[YAML_DEVICE_PACK_PATH], FormatPath(debugRun.devicePackPath, m_directory));
   SetFilesNode(node[YAML_OUTPUT], debugRun.outputs);
   SetResourcesNode(node[YAML_SYSTEM_RESOURCES], debugRun.systemResources);
   SetFilesNode(node[YAML_SYSTEM_DESCRIPTIONS], debugRun.systemDescriptions);

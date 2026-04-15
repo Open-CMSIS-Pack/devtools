@@ -5,6 +5,7 @@ cbuild-run:
   target-set: <default>
   device: ARM::RteTest_ARMCM0
   device-pack: ARM::RteTest_DFP@0.2.0
+  device-pack-path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   output:
     - file: ../images/image1.elf
       type: elf

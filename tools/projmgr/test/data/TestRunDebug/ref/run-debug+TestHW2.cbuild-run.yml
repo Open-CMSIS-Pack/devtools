@@ -6,8 +6,10 @@ cbuild-run:
   compiler: AC6
   board: Keil::RteTest-Test-board With.Memory:1.1.1
   board-pack: ARM::RteTest_DFP@0.2.0
+  board-pack-path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   device: ARM::RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
+  device-pack-path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   output:
     - file: run-debug/TestHW2/run-debug.axf
       info: generate by run-debug+TestHW2

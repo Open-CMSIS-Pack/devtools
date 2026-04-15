@@ -71,6 +71,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   for (const auto& [pname, processor] : pnames) {
     if (context0->devicePack) {
       m_runDebug.devicePack = context0->devicePack->GetPackageID(true);
+      m_runDebug.devicePackPath = context0->devicePack->GetAbsolutePackagePath();
       const auto& deviceAlgorithms = context0->rteDevice->GetEffectiveProperties("algorithm", pname);
       for (const auto& deviceAlgorithm : deviceAlgorithms) {
         PushBackUniquely(algorithms, deviceAlgorithm, pname);
@@ -156,6 +157,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   // board collections
   if (context0->boardPack) {
     m_runDebug.boardPack = context0->boardPack->GetPackageID(true);
+    m_runDebug.boardPackPath = context0->boardPack->GetAbsolutePackagePath();
     Collection<RteItem*> boardAlgorithms;
     context0->rteBoard->GetChildrenByTag("algorithm", boardAlgorithms);
     for (const auto& boardAlgorithm : boardAlgorithms) {
