@@ -58,7 +58,7 @@ jobs:
     needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     name: build (${{ matrix.runs_on }},${{ matrix.arch }})
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       # fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
@@ -136,7 +136,7 @@ jobs:
     needs: [ setup, matrix_prep ]
     name: build-swig (${{ matrix.runs_on }}, ${{ matrix.arch }})
     runs-on: ${{ matrix.runs_on }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       # fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
