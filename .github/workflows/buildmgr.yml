@@ -43,13 +43,13 @@ env:
 
 jobs:
   setup:
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+    uses: ./.github/workflows/shared_setup_env.yml
     with:
       run_if: ${{ fromJSON((github.event_name == 'pull_request') || (github.event_name == 'workflow_dispatch') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) || ((github.event.schedule != '') && (!github.event.repository.private))) }}
 
   matrix_prep:
     needs: setup
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
+    uses: ./.github/workflows/shared_matrix_prep.yml
     with:
       workflow_name: buildmgr
 
@@ -143,7 +143,7 @@ jobs:
           sudo apt-get install ninja-build python3
           wget -q http://security.ubuntu.com/ubuntu/pool/main//d/doxygen/doxygen_1.8.6-2_amd64.deb
           sudo dpkg -i doxygen_1.8.6-2_amd64.deb
-          sudo pip install LinkChecker
+          sudo pip install LinkChecker==10.6.0
       - name: Create build folder
         run: mkdir build
 

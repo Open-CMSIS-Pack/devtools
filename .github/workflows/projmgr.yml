@@ -47,13 +47,13 @@ env:
 
 jobs:
   setup:
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+    uses: ./.github/workflows/shared_setup_env.yml
     with:
       run_if: ${{ fromJSON((github.event_name == 'pull_request') || (github.event_name == 'workflow_dispatch') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/projmgr/')) || ((github.event.schedule != '') && (!github.event.repository.private))) }}
 
   matrix_prep:
     needs: setup
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
+    uses: ./.github/workflows/shared_matrix_prep.yml
     with:
       workflow_name: projmgr
 
@@ -61,7 +61,7 @@ jobs:
     needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     name: build (${{ matrix.runs_on }},${{ matrix.arch }})
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       # fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
@@ -139,7 +139,7 @@ jobs:
     needs: [ setup, matrix_prep ]
     name: build-swig (${{ matrix.runs_on }}, ${{ matrix.arch }})
     runs-on: ${{ matrix.runs_on }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       # fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
