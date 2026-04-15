@@ -598,6 +598,12 @@
       "type": "integer",
       "description": "Maximum allowed instances of a component in a project. Default is 1 for one instance."
     },
+    "BuildScope": {
+      "title": "build-scope:",
+      "type": "string",
+      "enum": [ "include", "exclude" ],
+      "description": "Select build scope.\nDefault: include component source files for executable builds, exclude for library builds."
+    },
     "TargetTypes": {
       "title": "target-types:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#target-types",
       "type": "array",
@@ -1033,7 +1039,8 @@
         "not-for-context": { "$ref": "#/definitions/NotForContext" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
-        "warnings":     { "$ref": "#/definitions/WarningsType" }
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
+        "build-scope":  { "$ref": "#/definitions/BuildScope" }
       },
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
@@ -1710,7 +1717,8 @@
         "generator":    { "$ref": "#/definitions/ComponentGeneratorType" },
         "from-pack":    { "$ref": "#/definitions/PackID" },
         "instances":    { "$ref": "#/definitions/InstancesType" },
-        "maxInstances": { "$ref": "#/definitions/MaxInstancesType" }
+        "maxInstances": { "$ref": "#/definitions/MaxInstancesType" },
+        "build-scope":  { "$ref": "#/definitions/BuildScope" }
       },
       "additionalProperties": false
     },
@@ -2239,12 +2247,13 @@
     "SystemMemoryType": {
       "type": "object",
       "properties": {
-        "name":      { "type": "string", "description": "Name of the memory region." },
+        "name":      { "type": "string",  "description": "Name of the memory region." },
         "access":    { "$ref": "#/definitions/MemoryAccessType" },
-        "start":     { "type": "number", "description": "Base address of the memory." },
-        "size":      { "type": "number", "description": "Size of the memory." },
-        "pname":     { "type": "string", "description": "Only accessible by the specified processor." },
-        "alias":     { "type": "string", "description": "Name of identical memory exposed at different address." },
+        "start":     { "type": "number",  "description": "Base address of the memory." },
+        "size":      { "type": "number",  "description": "Size of the memory." },
+        "pname":     { "type": "string",  "description": "Only accessible by the specified processor." },
+        "alias":     { "type": "string",  "description": "Name of identical memory exposed at different address." },
+        "default":   { "type": "boolean", "description": "Marks a general-purpose default memory region." },
         "from-pack": { "$ref": "#/definitions/PackID" }
       },
       "additionalProperties": false,

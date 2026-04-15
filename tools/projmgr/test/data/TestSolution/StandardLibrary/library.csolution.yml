@@ -20,6 +20,8 @@ solution:
 
   projects:
     - project: library.cproject.yml
+    - project: library_componentBuildScope/library_componentBuildScope.cproject.yml
+    - project: executable_componentBuildScope/executable_componentBuildScope.cproject.yml
 
   packs:
     - pack: ARM::RteTest
