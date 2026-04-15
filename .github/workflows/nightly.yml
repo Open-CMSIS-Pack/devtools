@@ -11,27 +11,27 @@ permissions:
 jobs:
   buildmgr:
     if: github.repository == 'Open-CMSIS-Pack/devtools'
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/buildmgr.yml@main
+    uses: ./.github/workflows/buildmgr.yml
     secrets: inherit
   packchk:
     needs: [buildmgr]
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/packchk.yml@main
+    uses: ./.github/workflows/packchk.yml
     secrets: inherit
   packgen:
     needs: [packchk]
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/packgen.yml@main
+    uses: ./.github/workflows/packgen.yml
     secrets: inherit
   projmgr:
     needs: [packgen]
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/projmgr.yml@main
+    uses: ./.github/workflows/projmgr.yml
     secrets: inherit
   svdconv:
     needs: [projmgr]
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/svdconv.yml@main
+    uses: ./.github/workflows/svdconv.yml
     secrets: inherit
   test_libs:
     needs: [svdconv]
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/test_libs.yml@main
+    uses: ./.github/workflows/test_libs.yml
   coverage:
     runs-on: ubuntu-22.04
     needs: [ buildmgr, packchk, packgen, projmgr, svdconv, test_libs ]
