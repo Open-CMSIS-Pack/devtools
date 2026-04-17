@@ -84,11 +84,11 @@ SECTIONS
 {
     .init : {
         KEEP (*(.vectors))
-        #if 0
+#if 0
         /* Remove the interrupt vector table provided by picolibc, as CMSIS already provides one */
         KEEP (*(.text.init.enter))
-        #endif
         KEEP (*(.data.init.enter))
+#endif
         KEEP (*(SORT_BY_NAME(.init) SORT_BY_NAME(.init.*)))
     } >ROM0 AT>ROM0 :text
 
