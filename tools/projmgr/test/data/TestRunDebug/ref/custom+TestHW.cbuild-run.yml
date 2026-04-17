@@ -6,6 +6,7 @@ cbuild-run:
   compiler: AC6
   device: ARM::RteTest_ARMCM4_NOFP
   device-pack: ARM::RteTest_DFP@0.2.0
+  device-pack-path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   output:
     - file: custom/TestHW/custom.axf
       info: generate by custom+TestHW

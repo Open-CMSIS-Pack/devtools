@@ -6,8 +6,10 @@ cbuild-run:
   compiler: AC6
   board: Keil::RteTest Dummy board:1.2.3
   board-pack: ARM::RteTest_DFP@0.2.0
+  board-pack-path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   device: ARM::RteTest_ARMCM0_Dual
   device-pack: ARM::RteTest_DFP@0.2.0
+  device-pack-path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   output:
     - file: core0/CM0/Debug/zephyr/zephyr.elf
       info: generate by core0.Debug+CM0
