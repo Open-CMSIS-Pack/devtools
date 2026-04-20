@@ -35,6 +35,7 @@ Commands:\n\
   list templates                Print list of templates\n\
   list generators               Print list of code generators of a given context\n\
   list layers                   Print list of available, referenced and compatible layers\n\
+  list npus                     Print list of available NPUs\n\
   list packs                    Print list of used packs from the pack repository\n\
   list target-sets              Print list of target-sets in a <name>.csolution.yml\n\
   list toolchains               Print list of supported toolchains\n\
@@ -181,6 +182,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"list packs",        { true,  {context, contextSet, activeTargetSet, debug, filter, load, missing, locked, quiet, schemaCheck, toolchain, verbose}}},
     {"list boards",       { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list devices",      { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list npus",         { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list configs",      { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list components",   { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list dependencies", { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
@@ -355,75 +357,7 @@ int ProjMgr::RunProjMgr(int argc, char** argv, char** envp) {
 
 int ProjMgr::ProcessCommands() {
   if (m_command == "list") {
-    // Process 'list' command
-    if (m_args.empty()) {
-      ProjMgrLogger::Get().Error("list <args> was not specified");
-      return ErrorCode::ERROR;
-    }
-    // Process argument
-    if (m_args == "packs") {
-      if (!RunListPacks()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "boards") {
-      if (!RunListBoards()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "devices") {
-      if (!RunListDevices()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "components") {
-      if (!RunListComponents()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "configs") {
-      if (!RunListConfigs()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "dependencies") {
-      if (!RunListDependencies()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "examples") {
-      if (!RunListExamples()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "templates") {
-      if (!RunListTemplates()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "contexts") {
-      if (!RunListContexts()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "target-sets") {
-      if (!RunListTargetSets()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "debuggers") {
-      if (!RunListDebuggers()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "generators") {
-      if (!RunListGenerators()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "layers") {
-      if (!RunListLayers()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "toolchains") {
-      if (!RunListToolchains()) {
-        return ErrorCode::ERROR;
-      }
-    } else if (m_args == "environment") {
-      RunListEnvironment();
-    }
-    else {
-      ProjMgrLogger::Get().Error("list <args> was not found");
-      return ErrorCode::ERROR;
-    }
+    return ProcessListCommand();
   } else if (m_command == "update-rte") {
     // Process 'update-rte' command
     if (!RunConfigure()) {
@@ -461,6 +395,40 @@ int ProjMgr::ProcessCommands() {
     return ErrorCode::ERROR;
   }
   return ErrorCode::SUCCESS;
+}
+
+int ProjMgr::ProcessListCommand() {
+  // Process 'list' command
+  if (m_args.empty()) {
+    ProjMgrLogger::Get().Error("list <args> was not specified");
+    return ErrorCode::ERROR;
+  }
+  // Process argument
+  const std::map<std::string, std::function<bool()>> handlers = {
+    { "packs",        [this]() { return RunListPacks(); } },
+    { "boards",       [this]() { return RunListBoards(); } },
+    { "devices",      [this]() { return RunListDevices(); } },
+    { "npus",         [this]() { return RunListNpus(); } },
+    { "components",   [this]() { return RunListComponents(); } },
+    { "configs",      [this]() { return RunListConfigs(); } },
+    { "dependencies", [this]() { return RunListDependencies(); } },
+    { "examples",     [this]() { return RunListExamples(); } },
+    { "templates",    [this]() { return RunListTemplates(); } },
+    { "contexts",     [this]() { return RunListContexts(); } },
+    { "target-sets",  [this]() { return RunListTargetSets(); } },
+    { "debuggers",    [this]() { return RunListDebuggers(); } },
+    { "generators",   [this]() { return RunListGenerators(); } },
+    { "layers",       [this]() { return RunListLayers(); } },
+    { "toolchains",   [this]() { return RunListToolchains(); } },
+    { "environment",  [this]() { RunListEnvironment(); return true; } }
+  };
+  const auto it = handlers.find(m_args);
+  if (it == handlers.end()) {
+    ProjMgrLogger::Get().Error("list <args> was not found");
+    return ErrorCode::ERROR;
+  }
+
+  return it->second() ? ErrorCode::SUCCESS : ErrorCode::ERROR;
 }
 
 // Set load packs policy
@@ -828,152 +796,44 @@ bool ProjMgr::RunListPacks(void) {
 }
 
 bool ProjMgr::RunListBoards(void) {
-  if (!m_csolutionFile.empty()) {
-    // Parse all input files and create contexts
-    if (!PopulateContexts()) {
-      return false;
-    }
-  }
-
-  // Parse context selection
-  if (!ParseAndValidateContexts()) {
-    return false;
-  }
-
-  vector<string> boards;
-  if (!m_worker.ListBoards(boards, m_filter)) {
-    ProjMgrLogger::Get().Error("processing boards list failed");
-    return false;
-  }
-  for (const auto& device : boards) {
-    ProjMgrLogger::out() << device << endl;
-  }
-  return true;
+  return RunListCommand(&ProjMgrWorker::ListBoards, "processing boards list failed", false);
 }
 
 bool ProjMgr::RunListDevices(void) {
-  if (!m_csolutionFile.empty()) {
-    // Parse all input files and create contexts
-    if (!PopulateContexts()) {
-      return false;
-    }
-  }
+  return RunListCommand(&ProjMgrWorker::ListDevices, "processing devices list failed", false);
+}
 
-  // Parse context selection
-  if (!ParseAndValidateContexts()) {
-    return false;
-  }
-
-  vector<string> devices;
-  if (!m_worker.ListDevices(devices, m_filter)) {
-    ProjMgrLogger::Get().Error("processing devices list failed");
-    return false;
-  }
-  for (const auto& device : devices) {
-    ProjMgrLogger::out() << device << endl;
-  }
-  return true;
+bool ProjMgr::RunListNpus(void) {
+  return RunListCommand(&ProjMgrWorker::ListNpus, "processing NPUs list failed", false);
 }
 
 bool ProjMgr::RunListComponents(void) {
-  if (!m_csolutionFile.empty()) {
-    // Parse all input files and create contexts
-    if (!PopulateContexts()) {
-      return false;
-    }
-  }
-
-  // Parse context selection
-  if (!ParseAndValidateContexts()) {
-    return false;
-  }
-
-  vector<string> components;
-  if (!m_worker.ListComponents(components, m_filter)) {
-    ProjMgrLogger::Get().Error("processing components list failed");
-    return false;
-  }
-
-  for (const auto& component : components) {
-    ProjMgrLogger::out() << component << endl;
-  }
-  return true;
+  return RunListCommand(&ProjMgrWorker::ListComponents, "processing components list failed", false);
 }
 
-bool ProjMgr::RunListConfigs() {
-  // Parse all input files and create contexts
-  if (!PopulateContexts()) {
-    return false;
-  }
-
-  // Parse context selection
-  if (!ParseAndValidateContexts()) {
-    return false;
-  }
-
-  vector<string> configFiles;
-  if (!m_worker.ListConfigs(configFiles, m_filter)) {
-    ProjMgrLogger::Get().Error("processing config list failed");
-    return false;
-  }
-
-  for (const auto& configFile : configFiles) {
-    ProjMgrLogger::out() << configFile << endl;
-  }
-  return true;
+bool ProjMgr::RunListConfigs(void) {
+  return RunListCommand(&ProjMgrWorker::ListConfigs, "processing config list failed", true);
 }
 
 bool ProjMgr::RunListDependencies(void) {
-  // Parse all input files and create contexts
-  if (!PopulateContexts()) {
-    return false;
-  }
-
-  // Parse context selection
-  if (!ParseAndValidateContexts()) {
-    return false;
-  }
-
-  vector<string> dependencies;
-  if (!m_worker.ListDependencies(dependencies, m_filter)) {
-    ProjMgrLogger::Get().Error("processing dependencies list failed");
-    return false;
-  }
-
-  for (const auto& dependency : dependencies) {
-    ProjMgrLogger::out() << dependency << endl;
-  }
-  return true;
+  return RunListCommand(&ProjMgrWorker::ListDependencies, "processing dependencies list failed", true);
 }
 
 bool ProjMgr::RunListExamples(void) {
-  if (!m_csolutionFile.empty()) {
-    // Parse all input files and create contexts
-    if (!PopulateContexts()) {
-      return false;
-    }
-  }
-
-  // Parse context selection
-  if (!ParseAndValidateContexts()) {
-    return false;
-  }
-
-  vector<string> examples;
-  if (!m_worker.ListExamples(examples, m_filter)) {
-    ProjMgrLogger::Get().Error("processing examples list failed");
-    return false;
-  }
-
-  for (const auto& example : examples) {
-    ProjMgrLogger::out() << example << endl;
-  }
-  return true;
+  return RunListCommand(&ProjMgrWorker::ListExamples, "processing examples list failed", false);
 }
 
 bool ProjMgr::RunListTemplates(void) {
-  if (!m_csolutionFile.empty()) {
-    // Parse all input files and create contexts
+  return RunListCommand(&ProjMgrWorker::ListTemplates, "processing templates list failed", false);
+}
+
+bool ProjMgr::RunListCommand(
+  bool (ProjMgrWorker::* listMethod)(vector<string>&, const string&),
+  const string& errorMessage,
+  bool alwaysPopulate)
+{
+  // Parse all input files and create contexts
+  if (alwaysPopulate || !m_csolutionFile.empty()) {
     if (!PopulateContexts()) {
       return false;
     }
@@ -984,14 +844,14 @@ bool ProjMgr::RunListTemplates(void) {
     return false;
   }
 
-  vector<string> csolutionTemplates;
-  if (!m_worker.ListTemplates(csolutionTemplates, m_filter)) {
-    ProjMgrLogger::Get().Error("processing templates list failed");
+  vector<string> items;
+  if (!(m_worker.*listMethod)(items, m_filter)) {
+    ProjMgrLogger::Get().Error(errorMessage);
     return false;
   }
 
-  for (const auto& csolutionTemplate : csolutionTemplates) {
-    ProjMgrLogger::out() << csolutionTemplate << endl;
+  for (const auto& item : items) {
+    ProjMgrLogger::out() << item << endl;
   }
   return true;
 }

@@ -566,6 +566,29 @@ ARM::RteTest_ARMCM4_NOFP (ARM::RteTest_DFP@0.2.0)\n"
   );
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListNpus) {
+  char* argv[3];
+  StdStreamRedirect streamRedirect;
+
+  // list npus
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"npus";
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+ARM::RteTest_ARMCM0_Dual:\n\
+  Ethos-U55, 128MACs, \\[cm0_core0\\] Cortex-M0\n\
+  Ethos-U85, 512MACs, \\[cm0_core0\\] Cortex-M0\n\
+  Ethos-U55, 256MACs, \\[cm0_core1\\] Cortex-M0\n\
+  Ethos-U85, 512MACs, \\[cm0_core1\\] Cortex-M0\n\
+  VELA config: .*vela_deviceLevel\\.ini\n\
+ARM::RteTest_ARMCM0_Single:\n\
+  Ethos-U55, 128MACs, \\[cm0_core1\\] Cortex-M0\n\
+  VELA config: .*vela_subfamilyLevel\\.ini\n\
+ARM::RteTest_ARMCM3:\n\
+  Ethos-U55, 128MACs\n")));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {
   char* argv[3];
 

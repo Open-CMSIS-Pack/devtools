@@ -654,6 +654,14 @@ public:
   bool ListDevices(std::vector<std::string>& devices, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
+   * @brief list available NPUs
+   * @param reference to list of NPUs
+   * @param filter words to filter results
+   * @return true if executed successfully
+  */
+  bool ListNpus(std::vector<std::string>& npus, const std::string& filter = RteUtils::EMPTY_STRING);
+
+  /**
    * @brief list available components
    * @param reference to list of components
    * @param filter words to filter results

@@ -4178,7 +4178,7 @@ bool ProjMgrWorker::ListBoards(vector<string>& boards, const string& filter) {
   if (boardsSet.empty()) {
     ProjMgrLogger::Get().Error("no installed board was found");
     return false;
-  }
+}
   vector<string> boardsVec(boardsSet.begin(), boardsSet.end());
   if (!filter.empty()) {
     vector<string> matchedBoards;
@@ -4235,6 +4235,99 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& filter) {
     devicesVec = matchedDevices;
   }
   devices.assign(devicesVec.begin(), devicesVec.end());
+  return true;
+}
+
+bool ProjMgrWorker::ListNpus(vector<string>& npus, const string& filter) {
+  map<string, pair<vector<string>, string>> deviceNpuMap;
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (!LoadPacks(context)) {
+      return false;
+    }
+    list<RteDevice*> filteredModelDevices;
+    context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
+    for (const auto& deviceItem : filteredModelDevices) {
+      if (!deviceItem->GetDeviceItems().empty()) {
+        // skip not end-leaf item
+        continue;
+      }
+      const string deviceFullName = deviceItem->GetVendorName() + "::" + deviceItem->GetFullDeviceName();
+      auto& [npuInfos, velaConfig] = deviceNpuMap[deviceFullName];
+      // collect NPU features for each processor
+      for (const auto& [pname, processor] : deviceItem->GetProcessors()) {
+        const auto& features = deviceItem->GetEffectiveProperties("feature", pname);
+        for (const auto& feature : features) {
+          if (feature->GetAttribute("type") != "NPU") {
+            continue;
+          }
+          const string& npuPname = feature->GetAttribute("Pname");
+          if (!npuPname.empty() && npuPname != pname) {
+            // Skip if this NPU pname is for a different processor pname
+            continue;
+          }
+          string npuInfo = feature->GetAttribute("n") + ", " + feature->GetAttribute("m");
+          if (!pname.empty()) {
+            npuInfo += ", [" + pname + "] " + processor->GetAttribute("Dcore");
+          }
+          npuInfos.push_back(npuInfo);
+        }
+      }
+      // Only process VELA if this device has NPU features, and skip if one VELA config is already found
+      if (!npuInfos.empty() && velaConfig.empty()) {
+        const auto& envList = deviceItem->GetEffectiveProperties("environment", "");
+        for (auto env : envList) {
+          if (env->GetAttribute("name") != "VELA") {
+            continue;
+          }
+          for (auto child : env->GetChildren()) {
+            const string fileName = child->GetAttribute("name");
+            if (child->GetTag() == "file" && child->GetAttribute("type") == "ini" && !fileName.empty()) {
+              const string velaPath = child->GetOriginalAbsolutePath(fileName);
+              if (RteFsUtils::Exists(velaPath)) {
+                velaConfig = velaPath;
+              }
+              break;
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+  set<string> npusSet;
+  for (const auto& [deviceFullName, npuVelaPair] : deviceNpuMap) {
+    const auto& npuInfos = npuVelaPair.first;
+    const auto& velaConfig = npuVelaPair.second;
+    if (npuInfos.empty()) {
+      // Skip devices without NPU
+      continue;
+    }
+    string entry = deviceFullName + ":";
+    for (const auto& npuInfo : npuInfos) {
+      entry += "\n  " + npuInfo;
+    }
+    if (!velaConfig.empty()) {
+      entry += "\n  VELA config: " + velaConfig;
+    }
+    npusSet.insert(entry);
+  }
+
+  if (npusSet.empty()) {
+    ProjMgrLogger::Get().Error("no installed NPU was found");
+    return false;
+  }
+  vector<string> npusVec(npusSet.begin(), npusSet.end());
+  if (!filter.empty()) {
+    vector<string> matchedNpus;
+    RteUtils::ApplyFilter(npusVec, RteUtils::SplitStringToSet(filter), matchedNpus);
+    if (matchedNpus.empty()) {
+      ProjMgrLogger::Get().Error("no NPU was found with filter '" + filter + "'");
+      return false;
+    }
+    npusVec = matchedNpus;
+  }
+  npus.assign(npusVec.begin(), npusVec.end());
   return true;
 }
 

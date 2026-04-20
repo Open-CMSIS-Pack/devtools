@@ -104,6 +104,24 @@ protected:
   int ProcessCommands();
 
   /**
+   * @brief process requested list arguments specified in command line
+   * @return program exit code as an integer, 0 for success
+  */
+  int ProcessListCommand();
+
+  /**
+   * @brief helper method to execute common list commands
+   * @param pointer to ProjMgrWorker list method
+   * @param error message to display on failure
+   * @param true to always populate contexts
+   * @return true if executed successfully
+  */
+  bool RunListCommand(
+    bool (ProjMgrWorker::* listMethod)(std::vector<std::string>&, const std::string&),
+    const std::string& errorMessage,
+    bool alwaysPopulate);
+
+  /**
    * @brief print usage
    * @param cmdOptionsDict map of command and options
    * @param cmd command for which usage is to be generated
@@ -209,6 +227,7 @@ protected:
   bool RunListPacks();
   bool RunListBoards();
   bool RunListDevices();
+  bool RunListNpus();
   bool RunListComponents();
   bool RunListConfigs();
   bool RunListDependencies();
