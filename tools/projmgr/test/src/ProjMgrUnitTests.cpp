@@ -567,7 +567,7 @@ ARM::RteTest_ARMCM4_NOFP (ARM::RteTest_DFP@0.2.0)\n"
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListNpus) {
-  char* argv[3];
+  char* argv[8];
   StdStreamRedirect streamRedirect;
 
   // list npus
@@ -576,17 +576,37 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListNpus) {
   EXPECT_EQ(0, RunProjMgr(3, argv, 0));
   auto outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_search(outStr, regex("\
-ARM::RteTest_ARMCM0_Dual:\n\
-  Ethos-U55, 128MACs, \\[cm0_core0\\] Cortex-M0\n\
-  Ethos-U85, 512MACs, \\[cm0_core0\\] Cortex-M0\n\
-  Ethos-U55, 256MACs, \\[cm0_core1\\] Cortex-M0\n\
-  Ethos-U85, 512MACs, \\[cm0_core1\\] Cortex-M0\n\
-  VELA config: .*vela_deviceLevel\\.ini\n\
-ARM::RteTest_ARMCM0_Single:\n\
-  Ethos-U55, 128MACs, \\[cm0_core1\\] Cortex-M0\n\
-  VELA config: .*vela_subfamilyLevel\\.ini\n\
-ARM::RteTest_ARMCM3:\n\
-  Ethos-U55, 128MACs\n")));
+Ethos-U55 \\(128MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+  ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n\
+Ethos-U55 \\(256MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core1\\] Cortex-M0\n\
+Ethos-U85 \\(Unknown mType\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core1\\] Cortex-M0\n")));
+
+  streamRedirect.ClearStringStreams();
+  argv[3] = (char*)"-f";
+  argv[4] = (char*)"Ethos-U55";
+  argv[5] = (char*)"-f";
+  argv[6] = (char*)"128MACs";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Ethos-U55 \\(128MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+  ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n")));
+
+  streamRedirect.ClearStringStreams();
+  argv[7] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Ethos-U55 \\(128MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+    VELA config: .*Scripts/vela/vela_deviceLevel.ini\n\
+  ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n\
+    VELA config: .*Scripts/vela/vela_subfamilyLevel.ini\n")));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {

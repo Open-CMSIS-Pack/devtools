@@ -163,7 +163,7 @@
         </flashinfo>
         <feature type="NPU" n="Ethos-U55" m="128MACs" Pname="cm0_core0"/>
         <feature type="NPU" n="Ethos-U55" m="256MACs" Pname="cm0_core1"/>
-        <feature type="NPU" n="Ethos-U85" m="512MACs"/> 
+        <feature type="NPU" n="Ethos-U85"/> 
         <environment name="VELA">
           <file name="scripts/vela/vela_deviceLevel.ini" type="ini"/>
         </environment>
@@ -197,7 +197,6 @@
       <device Dname="RteTest_ARMCM3">
         <processor Dcore="Cortex-M3" DcoreVersion="r2p1" Dfpu="NO_FPU" Dmpu="MPU" Dendian="Configurable" Dclock="10000000"/>
         <compile header="Device/ARM/ARMCM3/Include/ARMCM3.h" define="ARMCM3"/>
-        <feature type="NPU" n="Ethos-U55" m="128MACs"/>
       </device>
     </subFamily>
 
