@@ -84,11 +84,17 @@ SECTIONS
 {
     .init : {
         KEEP (*(.vectors))
-#if 0
-        /* Remove the interrupt vector table provided by picolibc, as CMSIS already provides one */
+
+        /* Disable by default
+         *
+         * *.init.enter contains a vector table provided by picolibc,
+         * whereas CMSIS already provides a vector table via .vectors
+         */
+        /*
         KEEP (*(.text.init.enter))
         KEEP (*(.data.init.enter))
-#endif
+        */
+
         KEEP (*(SORT_BY_NAME(.init) SORT_BY_NAME(.init.*)))
     } >ROM0 AT>ROM0 :text
 
@@ -132,7 +138,7 @@ SECTIONS
         KEEP (*(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)))
         KEEP (*(.init_array .ctors))
         PROVIDE_HIDDEN ( __init_array_end = . );
-        PROVIDE_HIDDEN ( __bothinit_array_end = . ); 
+        PROVIDE_HIDDEN ( __bothinit_array_end = . );
 
         PROVIDE_HIDDEN ( __fini_array_start = . );
         KEEP (*(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*)))
@@ -154,7 +160,7 @@ SECTIONS
     } >ROM0 AT>ROM0 :text
 
     /* additional sections when compiling with C++ exception support */
-    
+
     .except_ordered : {
         *(.gcc_except_table *.gcc_except_table.*)
         KEEP (*(.eh_frame .eh_frame.*))
@@ -168,7 +174,7 @@ SECTIONS
         *(.ARM.exidx*)
         PROVIDE(__exidx_end = .);
     } >ROM0 AT>ROM0 :text
-    
+
 
     /*
      * Data values which are preserved across reset
