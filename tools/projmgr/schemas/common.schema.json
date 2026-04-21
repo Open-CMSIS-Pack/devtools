@@ -2120,7 +2120,7 @@
     "FlashInfoBlocksType": {
       "description": "An ordered list of subsequent blocks (block is the smallest unit that can be erased).",
       "type": "array",
-      "uniqueItems": true,
+      "uniqueItems": false,
       "items": { "$ref": "#/definitions/FlashInfoBlockType" }
     },
     "FlashInfoBlockType": {
