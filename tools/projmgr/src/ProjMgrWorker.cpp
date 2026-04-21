@@ -4309,13 +4309,16 @@ bool ProjMgrWorker::ListNpus(vector<string>& npus, const string& filter) {
     ProjMgrLogger::Get().Error("no installed NPU was found");
     return false;
   }
-
   vector<string> npusVec;
+  // build and append one formatted NPU output entry consisting of the NPU info and its associated device info lines.
   auto AddEntry = [&npusVec](const string& npuString, const auto& deviceInfos) {
     string entry = npuString;
-    for (const auto& deviceInfoString : deviceInfos) { entry += "\n" + deviceInfoString; }
+    for (const auto& deviceInfoString : deviceInfos) {
+      entry += "\n" + deviceInfoString;
+    }
     npusVec.push_back(entry);
     };
+
   if (filter.empty()) {
     for (const auto& [npuString, deviceInfoSet] : npuInfos) {
       AddEntry(npuString, deviceInfoSet);
@@ -4323,15 +4326,29 @@ bool ProjMgrWorker::ListNpus(vector<string>& npus, const string& filter) {
   } else {
     const auto filterSet = RteUtils::SplitStringToSet(filter);
     for (const auto& [npuString, deviceInfoSet] : npuInfos) {
-      vector<string> matchedNpus;
-      RteUtils::ApplyFilter(vector<string>{ npuString }, filterSet, matchedNpus);
-      if (!matchedNpus.empty()) {
+      set<string> remainingFilterSet;
+      // Apply Filter words matched by the NPU info are considered already satisfied. Only the remaining filter words must be matched by device lines.
+      for (const auto& filterWord : filterSet) {
+        if (filterWord.empty()) {
+          continue;
+        }
+        if (RteUtils::ToLower(npuString).find(RteUtils::ToLower(filterWord)) == string::npos) {
+          remainingFilterSet.insert(filterWord);
+        }
+      }
+      if (remainingFilterSet.empty()) {
         AddEntry(npuString, deviceInfoSet);
         continue;
       }
-      vector<string> deviceInfoVec(deviceInfoSet.begin(), deviceInfoSet.end());
       vector<string> matchedDevices;
-      RteUtils::ApplyFilter(deviceInfoVec, filterSet, matchedDevices);
+      for (const auto& deviceInfoString : deviceInfoSet) {
+        vector<string> deviceVec = { deviceInfoString };
+        vector<string> matched;
+        RteUtils::ApplyFilter(deviceVec, remainingFilterSet, matched);
+        if (!matched.empty()) {
+          matchedDevices.push_back(deviceInfoString);
+        }
+      }
       if (!matchedDevices.empty()) {
         AddEntry(npuString, matchedDevices);
       }

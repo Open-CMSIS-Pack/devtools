@@ -146,7 +146,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
 
   cxxopts::Option solution("s,solution", "Input csolution.yml file", cxxopts::value<string>());
   cxxopts::Option context("c,context", "Input context names [<project-name>][.<build-type>][+<target-type>]", cxxopts::value<std::vector<std::string>>());
-  cxxopts::Option filter("f,filter", "Filter words", cxxopts::value<string>());
+  cxxopts::Option filter("f,filter", "Filter words", cxxopts::value<vector<string>>());
   cxxopts::Option help("h,help", "Print usage");
   cxxopts::Option generator("g,generator", "Code generator identifier", cxxopts::value<string>());
   cxxopts::Option load("l,load", "Set policy for packs loading [latest | all | required]", cxxopts::value<string>());
@@ -279,7 +279,14 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
       m_context = parseResult["context"].as<vector<string>>();
     }
     if (parseResult.count("filter")) {
-      m_filter = parseResult["filter"].as<string>();
+      const auto filters = parseResult["filter"].as<vector<string>>();
+      m_filter.clear();
+      for (const auto& f : filters) {
+        if (!m_filter.empty()) {
+          m_filter += " ";
+        }
+        m_filter += f;
+      }
     }
     if (parseResult.count("generator")) {
       m_codeGenerator = parseResult["generator"].as<string>();
