@@ -581,7 +581,7 @@ Ethos-U55 \\(128MACs\\):\n\
   ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n\
 Ethos-U55 \\(256MACs\\):\n\
   ARM::RteTest_ARMCM0_Dual, \\[cm0_core1\\] Cortex-M0\n\
-Ethos-U85 \\(Unknown mType\\):\n\
+Ethos-U85 \\(Unknown MACs\\):\n\
   ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
   ARM::RteTest_ARMCM0_Dual, \\[cm0_core1\\] Cortex-M0\n")));
 

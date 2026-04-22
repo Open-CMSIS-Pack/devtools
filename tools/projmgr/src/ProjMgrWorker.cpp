@@ -4292,8 +4292,8 @@ bool ProjMgrWorker::ListNpus(vector<string>& npus, const string& filter) {
           }
           string nType = feature->GetAttribute("n");
           string mType = feature->GetAttribute("m");
-          if (nType.empty()) { nType = "Unknown nType"; }
-          if (mType.empty()) { mType = "Unknown mType"; }
+          if (nType.empty()) { nType = "Unknown NPU"; }
+          if (mType.empty()) { mType = "Unknown MACs"; }
 
           string npuString = nType + " (" + mType + "):";
           string deviceInfoString = "  " + deviceItem->GetVendorName() + "::" + deviceItem->GetFullDeviceName() + ",";
