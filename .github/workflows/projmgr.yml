@@ -36,7 +36,7 @@ on:
     types: [published]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  group: projmgr-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 permissions:
@@ -61,7 +61,7 @@ jobs:
     needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     name: build (${{ matrix.runs_on }},${{ matrix.arch }})
-    timeout-minutes: 20
+    timeout-minutes: 25
     strategy:
       # fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
@@ -139,7 +139,7 @@ jobs:
     needs: [ setup, matrix_prep ]
     name: build-swig (${{ matrix.runs_on }}, ${{ matrix.arch }})
     runs-on: ${{ matrix.runs_on }}
-    timeout-minutes: 20
+    timeout-minutes: 25
     strategy:
       # fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
@@ -208,7 +208,7 @@ jobs:
         startsWith(github.ref, 'refs/tags/tools/projmgr/')
     needs: [ build, build-swig, unittest, coverage ]
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     permissions:
       contents: write
 
@@ -369,7 +369,7 @@ jobs:
     needs: [ setup, matrix_prep ]
     name: unittest (${{ matrix.runs_on }}, ${{ matrix.arch }})
     runs-on: ${{ matrix.runs_on }}
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
@@ -429,7 +429,7 @@ jobs:
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
         lcov_installer: lcov-1.15.tar.gz
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
@@ -518,6 +518,7 @@ jobs:
 
   test-results-preparation:
     name: "Publish Tests Results"
+    if: ${{ always() }}
     needs: [ unittest ]
     runs-on: ubuntu-22.04
     steps:

@@ -21,7 +21,7 @@ on:
       - 'test/**'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  group: test_libs-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 permissions:
@@ -46,7 +46,7 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     name: test_libs (${{ matrix.runs_on }}, ${{ matrix.arch }})
     needs: [ setup, matrix_prep ]
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
@@ -97,6 +97,7 @@ jobs:
 
   test-results-preparation:
     name: "Publish Tests Results"
+    if: ${{ always() }}
     needs: [ test_libs ]
     runs-on: ubuntu-22.04
     steps:
