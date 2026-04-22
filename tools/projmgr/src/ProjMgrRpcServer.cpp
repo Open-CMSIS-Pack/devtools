@@ -80,7 +80,7 @@ public:
   RpcArgs::GetVersionResult GetVersion(void) override;
   RpcArgs::SuccessResult Shutdown(void) override;
   RpcArgs::SuccessResult Apply(const string& context) override;
-  RpcArgs::SuccessResult Resolve(const string& context) override;
+  RpcArgs::SuccessResult Resolve(const string& context, const RpcArgs::Options& options) override;
   RpcArgs::SuccessResult LoadPacks(void) override;
   RpcArgs::SuccessResult LoadSolution(const string& solution, const string& activeTarget) override;
   RpcArgs::ContextInfo GetContextInfo(const string& context) override;
@@ -137,6 +137,8 @@ protected:
   const ContextItem& GetContext(const string& context) const;
   RteTarget* GetActiveTarget(const string& context) const;
   RteComponentAggregate* GetComponentAggregate(const string& context, const string& id) const;
+  void SetAggregateOptions(const string& context, RteComponentAggregate* rteAggregate, const RpcArgs::Options& options);
+  void SetOptionsForNewlySelectedAggregates(const string& context, RteTarget* rteTarget, const RpcArgs::Options& options);
   bool CheckSolutionArg(string& solution, optional<string>& message) const;
 };
 
@@ -224,6 +226,35 @@ RteComponentAggregate* RpcHandler::GetComponentAggregate(const string& context, 
   return rteAggregate;
 }
 
+void RpcHandler::SetAggregateOptions(const string& context, RteComponentAggregate* rteAggregate, const RpcArgs::Options& options) {
+  auto& layer = options.layer.has_value() ? options.layer.value() : RteUtils::EMPTY_STRING;
+  rteAggregate->AddAttribute("layer", layer, false);
+
+  const bool explicitVendor = options.explicitVendor.has_value() ? options.explicitVendor.value() : false;
+  rteAggregate->AddAttribute("explicitVendor", explicitVendor ? "1" : "", false);
+
+  auto& explicitVersion = options.explicitVersion.has_value() ? options.explicitVersion.value() : RteUtils::EMPTY_STRING;
+  // TODO: check if version is plausible
+  rteAggregate->AddAttribute("explicitVersion", explicitVersion, false);
+  auto rteComponent = rteAggregate->GetComponent();
+// ensure Pack reference is added when component is selected
+  int count = rteAggregate->IsSelected();
+  if(count > 0 && rteComponent) {
+    auto& packId = rteComponent->GetPackage()->GetID();
+    EnsurePackReferenceForPack(context, packId, layer, !explicitVersion.empty());
+  }
+}
+
+void RpcHandler::SetOptionsForNewlySelectedAggregates(const string& context, RteTarget* rteTarget, const RpcArgs::Options& options) {
+  const auto& selectedAggregates = rteTarget->CollectSelectedComponentAggregates();
+  for(const auto& [rteAggregate, _] : selectedAggregates) {
+    if(!rteAggregate->GetComponentInstance()) {
+      // only set options to newly selected components
+      SetAggregateOptions(context, rteAggregate, options);
+    }
+  }
+}
+
 RpcArgs::GetVersionResult RpcHandler::GetVersion(void) {
   RpcArgs::GetVersionResult res = {{true}};
   res.message = string("Running ") + INTERNAL_NAME + " " + VERSION_STRING;
@@ -256,17 +287,18 @@ RpcArgs::SuccessResult RpcHandler::Apply(const string& context) {
   return result;
 }
 
-RpcArgs::SuccessResult RpcHandler::Resolve(const string& context) {
+RpcArgs::SuccessResult RpcHandler::Resolve(const string& context, const RpcArgs::Options& options) {
   RpcArgs::SuccessResult result = {false};
   auto rteTarget = GetActiveTarget(context);
   auto rteProject = rteTarget->GetProject();
   if(rteProject) {
     result.success = rteProject->ResolveDependencies(rteTarget);
+    SetOptionsForNewlySelectedAggregates(context, rteTarget, options);
+
     Apply(context);
   }
   return result;
 }
-
 
 RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
   RpcArgs::SuccessResult result = {false};
@@ -576,21 +608,7 @@ RpcArgs::SuccessResult RpcHandler::SelectComponent(const string& context, const 
     result.success = activeTarget->SelectComponent(rteAggregate, count, true);
     rteComponent = rteAggregate->GetComponent();
   }
-  // set options
-  auto& layer = options.layer.has_value() ? options.layer.value() : RteUtils::EMPTY_STRING;
-  rteAggregate->AddAttribute("layer", layer, false);
-  bool explicitVendor = options.explicitVendor.has_value() ? options.explicitVendor.value() : false;
-  rteAggregate->AddAttribute("explicitVendor", explicitVendor ? "1" : "", false);
-
-  auto& explicitVersion = options.explicitVersion.has_value() ? options.explicitVersion.value() : RteUtils::EMPTY_STRING;
-  // TODO: check if version is plausible
-  rteAggregate->AddAttribute("explicitVersion", explicitVersion, false);
-
-  // ensure Pack reference is added when component is selected
-  if(count > 0 && rteComponent) {
-    auto& packId = rteComponent->GetPackage()->GetID();
-    EnsurePackReferenceForPack(context, packId, layer, !explicitVersion.empty());
-  }
+  SetAggregateOptions(context, rteAggregate, options);
   Apply(context);
   return result;
 }
