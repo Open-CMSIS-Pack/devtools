@@ -566,6 +566,60 @@ ARM::RteTest_ARMCM4_NOFP (ARM::RteTest_DFP@0.2.0)\n"
   );
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListNpus) {
+  char* argv[8];
+  StdStreamRedirect streamRedirect;
+
+  // verify full NPU listing without any filter
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"npus";
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Ethos-U55 \\(128MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+  ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n\
+Ethos-U55 \\(256MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core1\\] Cortex-M0\n\
+Ethos-U85 \\(Unknown MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core1\\] Cortex-M0\n")));
+
+  // verify filtering with two filter words that are both matched by the NPU info
+  streamRedirect.ClearStringStreams();
+  argv[3] = (char*)"-f";
+  argv[4] = (char*)"Ethos-U55";
+  argv[5] = (char*)"-f";
+  argv[6] = (char*)"128MACs";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Ethos-U55 \\(128MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+  ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n")));
+
+  // verify verbose mode for config files
+  streamRedirect.ClearStringStreams();
+  argv[7] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Ethos-U55 \\(128MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+    VELA config: .*Scripts/vela/vela_deviceLevel\\.ini\n\
+  ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n\
+    VELA config: .*Scripts/vela/vela_subfamilyLevel\\.ini\n")));
+
+  // verify mixed npu/device infos filtering
+  streamRedirect.ClearStringStreams();
+  argv[6] = (char*)"RteTest_ARMCM0_Single";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Ethos-U55 \\(128MACs\\):\n\
+  ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n")));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {
   char* argv[3];
 

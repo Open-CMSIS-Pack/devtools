@@ -134,7 +134,9 @@
       <debug svd="Device/ARM/SVD/ARMCM0.svd"/>  <!-- SVD files do not contain any peripheral -->
       <memory id="IROM1" start="0x00000000" size="0x00040000" startup="1" default="1"/>
       <memory id="IRAM1" start="0x20000000" size="0x00020000" uninit="1" default="1"/>
-
+      <environment name="VELA">
+        <file name="Scripts/vela/vela_subfamilyLevel.ini" type="ini"/>
+      </environment>
       <device Dname="RteTest_ARMCM0">
         <processor Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
         <compile header="Device/ARM/ARMCM0/Include/ARMCM0.h" define="ARMCM0"/>
@@ -159,10 +161,17 @@
         <flashinfo name="Internal Flash 16KB" start="0x0000F000" blankval="0x0000000000000000" filler="0xCCCCCCCCCCCCCCCC" pagesize="0x00000040" ptime="100000" etime="1000000" Pname="cm0_core1">
           <block count="64" size="0x100" arg="0"/>
         </flashinfo>
+        <feature type="NPU" n="Ethos-U55" m="128MACs" Pname="cm0_core0"/>
+        <feature type="NPU" n="Ethos-U55" m="256MACs" Pname="cm0_core1"/>
+        <feature type="NPU" n="Ethos-U85"/> 
+        <environment name="VELA">
+          <file name="Scripts/vela/vela_deviceLevel.ini" type="ini"/>
+        </environment>
       </device>
       <device Dname="RteTest_ARMCM0_Single">
         <processor Pname="cm0_core1" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
         <compile header="Device/ARM/ARMCM0/Include/ARMCM0.h" define="ARMCM0"/>
+        <feature type="NPU" n="Ethos-U55" m="128MACs"/>
       </device>
       <device Dname="RteTest_ARMCM0_Test">
         <processor Pname="cm0_core2" Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
