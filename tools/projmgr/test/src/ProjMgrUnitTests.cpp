@@ -7583,19 +7583,17 @@ TEST_F(ProjMgrUnitTests, DuplicateComponents) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   argv[6] = (char*)"--context";
+  argv[7] = (char*)"duplicateComponents_cproject";
   argv[8] = (char*)"--no-check-schema";
-
-  const char* contexts[] = { "duplicateComponents_cproject", "duplicateComponents_clayer" };
-  int argCounts[] = { 8, 9 };  // without/with --no-check-schema
-  for (int argCount : argCounts) {
-    for (const char* context : contexts) {
-      argv[7] = (char*)context;
-      EXPECT_EQ(1, RunProjMgr(argCount, argv, m_envp));
-      auto errStr = streamRedirect.GetErrorString();
-      EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
-      streamRedirect.ClearStringStreams();
-    }
-  }
+  EXPECT_EQ(1, RunProjMgr(9, argv, m_envp));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
+  
+  streamRedirect.ClearStringStreams();
+  argv[7] = (char*)"duplicateComponents_clayer";
+  EXPECT_EQ(0, RunProjMgr(9, argv, m_envp));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("warning csolution: ignoring conflict: component 'RteTest:CORE' is listed multiple times"));
 }
 
 TEST_F(ProjMgrUnitTests, ParseCommandLine_MutualExclusionOptions) {

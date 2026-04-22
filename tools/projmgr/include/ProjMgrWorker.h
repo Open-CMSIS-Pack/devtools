@@ -1243,7 +1243,8 @@ protected:
   void AddMiscUniquely(MiscItem& dst, std::vector<MiscItem>& srcVec);
   bool AddGroup(const GroupNode& src, std::vector<GroupNode>& dst, ContextItem& context, const std::string root);
   bool AddFile(const FileNode& src, std::vector<FileNode>& dst, ContextItem& context, const std::string root);
-  bool AddComponent(const ComponentItem& src, const std::string& layer, std::vector<std::pair<ComponentItem, std::string>>& dst, TypePair type, ContextItem& context);
+  bool AddComponent(const ComponentItem& src, const std::string& layer, std::vector<std::pair<ComponentItem,
+    std::string>>& dst, TypePair type, ContextItem& context, bool ignoreDuplicates = false);
   void GetDeviceItem(const std::string& element, DeviceItem& device) const;
   void GetBoardItem (const std::string& element, BoardItem& board) const;
   bool GetPrecedentValue(std::string& outValue, const std::string& element) const;

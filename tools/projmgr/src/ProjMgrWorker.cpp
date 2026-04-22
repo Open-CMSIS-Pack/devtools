@@ -3525,7 +3525,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem & context, bool rerun)
       if (!ProcessSequencesRelatives(context, component.build, clayer->directory)) {
         return false;
       }
-      if (!AddComponent(component, name, context.componentRequirements, context.type, context)) {
+      if (!AddComponent(component, name, context.componentRequirements, context.type, context, true)) {
         return false;
       }
     }
@@ -3795,10 +3795,15 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
   return true;
 }
 
-bool ProjMgrWorker::AddComponent(const ComponentItem& src, const string& layer, vector<pair<ComponentItem, string>>& dst, TypePair type, ContextItem& context) {
+bool ProjMgrWorker::AddComponent(const ComponentItem& src, const string& layer, vector<pair<ComponentItem, string>>& dst,
+  TypePair type, ContextItem& context, bool ignoreDuplicates) {
   if (CheckContextFilters(src.type, context)) {
     for (auto& [dstNode, layer] : dst) {
       if (dstNode.component == src.component) {
+        if (ignoreDuplicates) {
+          ProjMgrLogger::Get().Warn("ignoring conflict: component '" + dstNode.component + "' is listed multiple times", context.name);
+          return true;
+        }
         ProjMgrLogger::Get().Error("conflict: component '" + dstNode.component + "' is listed multiple times", context.name);
         return false;
       }
