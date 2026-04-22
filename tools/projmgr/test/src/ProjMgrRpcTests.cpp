@@ -701,7 +701,7 @@ TEST_F(ProjMgrRpcTests, RpcResolveComponentLayer) {
   EXPECT_EQ(components[0]["id"], "Device:Startup&RteTest Startup");
   EXPECT_EQ(components[0]["resolvedComponent"]["id"], "ARM::Device:Startup&RteTest Startup@2.0.3");
 
-  EXPECT_TRUE(responses[3]["result"]["success"]); // select successful
+  EXPECT_TRUE(responses[3]["result"]["success"]); // resolve successful
 
   EXPECT_TRUE(responses[7]["result"]["success"]); // apply successful
 
