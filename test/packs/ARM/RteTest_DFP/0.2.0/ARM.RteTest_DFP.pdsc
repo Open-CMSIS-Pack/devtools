@@ -135,7 +135,7 @@
       <memory id="IROM1" start="0x00000000" size="0x00040000" startup="1" default="1"/>
       <memory id="IRAM1" start="0x20000000" size="0x00020000" uninit="1" default="1"/>
       <environment name="VELA">
-        <file name="scripts/vela/vela_subfamilyLevel.ini" type="ini"/>
+        <file name="Scripts/vela/vela_subfamilyLevel.ini" type="ini"/>
       </environment>
       <device Dname="RteTest_ARMCM0">
         <processor Dcore="Cortex-M0" DcoreVersion="r0p0" Dfpu="NO_FPU" Dmpu="NO_MPU" Dendian="Configurable" Dclock="10000000"/>
@@ -165,7 +165,7 @@
         <feature type="NPU" n="Ethos-U55" m="256MACs" Pname="cm0_core1"/>
         <feature type="NPU" n="Ethos-U85"/> 
         <environment name="VELA">
-          <file name="scripts/vela/vela_deviceLevel.ini" type="ini"/>
+          <file name="Scripts/vela/vela_deviceLevel.ini" type="ini"/>
         </environment>
       </device>
       <device Dname="RteTest_ARMCM0_Single">

@@ -48,7 +48,7 @@ Options:\n\
   -d, --debug                   Enable debug messages\n\
   -D, --dry-run                 Enable dry-run\n\
   -e, --export arg              Set suffix for exporting <context><suffix>.cprj retaining only specified versions\n\
-  -f, --filter arg              Filter words\n\
+  -f, --filter arg [...]        Filter words, repeat options or quote for words\n\
   -g, --generator arg           Code generator identifier\n\
   -l, --load arg                Set policy for packs loading [latest | all | required]\n\
   -L, --clayer-path arg         Set search path for external clayers\n\
@@ -146,7 +146,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
 
   cxxopts::Option solution("s,solution", "Input csolution.yml file", cxxopts::value<string>());
   cxxopts::Option context("c,context", "Input context names [<project-name>][.<build-type>][+<target-type>]", cxxopts::value<std::vector<std::string>>());
-  cxxopts::Option filter("f,filter", "Filter words", cxxopts::value<vector<string>>());
+  cxxopts::Option filter("f,filter", "Filter words, repeat options or quote for words", cxxopts::value<vector<string>>());
   cxxopts::Option help("h,help", "Print usage");
   cxxopts::Option generator("g,generator", "Code generator identifier", cxxopts::value<string>());
   cxxopts::Option load("l,load", "Set policy for packs loading [latest | all | required]", cxxopts::value<string>());

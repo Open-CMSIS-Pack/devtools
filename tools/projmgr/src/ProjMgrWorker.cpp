@@ -4311,7 +4311,7 @@ bool ProjMgrWorker::ListNpus(vector<string>& npus, const string& filter) {
   }
 
   vector<string> npusVec;
-  // build and append one formatted NPU output entry consisting of the NPU info and its associated device info lines.
+  // build and append one formatted NPU output entry consisting of the NPU info and its associated device info lines
   auto AddEntry = [&npusVec](const string& npuString, const auto& deviceInfos) {
     string entry = npuString;
     for (const auto& deviceInfoString : deviceInfos) {
@@ -4328,7 +4328,7 @@ bool ProjMgrWorker::ListNpus(vector<string>& npus, const string& filter) {
     const auto filterSet = RteUtils::SplitStringToSet(filter);
     for (const auto& [npuString, deviceInfoSet] : npuInfos) {
       set<string> remainingFilterSet;
-      // Apply Filter words matched by the NPU info are considered already satisfied. Only the remaining Filter words must be matched by device lines.
+      // Apply Filter words matched by the NPU info are considered already satisfied. Only the remaining Filter words must be matched by device lines
       for (const auto& filterWord : filterSet) {
         if (filterWord.empty()) {
           continue;
