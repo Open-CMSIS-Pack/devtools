@@ -4260,8 +4260,8 @@ bool ProjMgrWorker::ListNpus(vector<string>& npus, const string& filter) {
           if (env->GetAttribute("name") != "VELA") {
             continue;
           }
-          for (auto child : env->GetChildren()) {
-            const string fileName = child->GetAttribute("name");
+          for (auto child : env->GetEffectiveContent()) {
+            const string& fileName = child->GetAttribute("name");
             if (child->GetTag() == "file" && child->GetAttribute("type") == "ini" && !fileName.empty()) {
               const string velaPath = child->GetOriginalAbsolutePath(fileName);
               if (RteFsUtils::Exists(velaPath)) {
