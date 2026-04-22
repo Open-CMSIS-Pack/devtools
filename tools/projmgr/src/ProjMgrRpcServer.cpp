@@ -237,7 +237,7 @@ void RpcHandler::SetAggregateOptions(const string& context, RteComponentAggregat
   // TODO: check if version is plausible
   rteAggregate->AddAttribute("explicitVersion", explicitVersion, false);
   auto rteComponent = rteAggregate->GetComponent();
-// ensure Pack reference is added when component is selected
+  // ensure Pack reference is added when component is selected
   int count = rteAggregate->IsSelected();
   if(count > 0 && rteComponent) {
     auto& packId = rteComponent->GetPackage()->GetID();
