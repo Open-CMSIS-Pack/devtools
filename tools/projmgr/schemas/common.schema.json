@@ -2553,7 +2553,8 @@
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
-        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" }
+        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
+        "rtt":             { "$ref": "#/definitions/RttOptionsType" }
       },
       "additionalProperties": true,
       "required": ["name"]
