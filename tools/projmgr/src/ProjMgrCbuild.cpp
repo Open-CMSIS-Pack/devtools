@@ -561,13 +561,15 @@ void ProjMgrCbuild::SetProcessorNode(YAML::Node node, const map<string, string>&
 void ProjMgrCbuild::SetNpuInfoNode(YAML::Node node, const ContextItem* context) {
   static const regex macsPattern(R"(^\s*(\d+)\s*MACs\s*$)");
   for (const auto& npu : context->npuInfoItems) {
-    if (context->deviceItem.pname == npu.pname) {
+    if (context->rteActiveTarget->GetProcessorName() == npu.pname) {
       YAML::Node npuNode;
       SetNodeValue(npuNode[YAML_TYPE], npu.type);
 
       smatch match;
       if (std::regex_match(npu.macs, match, macsPattern)) {
         npuNode[YAML_MACS] = std::stoi(match[1].str());
+      } else {
+        SetNodeValue(npuNode[YAML_MACS], npu.macs);
       }
 
       if (!npu.velaAbsolutePath.empty()) {

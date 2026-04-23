@@ -24,6 +24,7 @@ build-gen:
       macs: 128
       vela-ini: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Scripts/vela/vela_deviceLevel.ini
     - type: Ethos-U85
+      macs: Unknown MACs
       vela-ini: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Scripts/vela/vela_deviceLevel.ini
   packs:
     - pack: ARM::RteTestGenerator@0.1.0

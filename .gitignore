@@ -22,4 +22,3 @@
 /build*/
 **/cmake-*
 /.cache
-/tools/projmgr/schemas/debug-adapters.schema.json
