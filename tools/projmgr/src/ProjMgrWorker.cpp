@@ -4046,7 +4046,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   ret &= ProcessDebuggers(context);
   ret &= ProcessImages(context);
   CheckMissingPackRequirements(context.name);
-  CollectNpuInfo(context, false);
+  CollectNpuInfo(context);
   return ret;
 }
 
@@ -4251,7 +4251,7 @@ bool ProjMgrWorker::ListNpus(vector<string>& npus, const string& filter) {
     if (!LoadPacks(context)) {
       return false;
     }
-    CollectNpuInfo(context, true);
+    CollectNpuInfo(context);
     for (const auto& npuInfoItem : context.npuInfoItems) {
       string npuString = npuInfoItem.type + " (" + npuInfoItem.macs + "):";
       string deviceInfoString = "  " + npuInfoItem.vendorName + "::" + npuInfoItem.deviceName + ",";
@@ -6178,13 +6178,10 @@ void ProjMgrWorker::FormatResolvedPackIds() {
   }
 }
 
-void ProjMgrWorker::CollectNpuInfo(ContextItem& context, bool collectAllDevices) {
+void ProjMgrWorker::CollectNpuInfo(ContextItem& context) {
   context.npuInfoItems.clear();
 
   list<RteDevice*> filteredModelDevices;
-  //if (collectAllDevices) {
-    //context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
-  //} else {
   context.rteFilteredModel->GetDevices(filteredModelDevices, context.rteActiveTarget->GetDeviceName(), context.rteActiveTarget->GetVendorName(), RteDeviceItem::VARIANT);
   for (const auto& device : filteredModelDevices) {
     if (!device->GetDeviceItems().empty()) {

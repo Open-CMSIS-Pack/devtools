@@ -1083,9 +1083,8 @@ public:
   /**
    * @brief collect NPU information
    * @param context item
-   * @param collectAllDevices to collect all devices or only the selected target
   */
-  void CollectNpuInfo(ContextItem& context, bool collectAllDevices);
+  void CollectNpuInfo(ContextItem& context);
 
   /**
    * @brief add required components
