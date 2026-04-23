@@ -4046,6 +4046,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   ret &= ProcessDebuggers(context);
   ret &= ProcessImages(context);
   CheckMissingPackRequirements(context.name);
+  CollectNpuInfo(context, false);
   return ret;
 }
 
@@ -4250,63 +4251,18 @@ bool ProjMgrWorker::ListNpus(vector<string>& npus, const string& filter) {
     if (!LoadPacks(context)) {
       return false;
     }
-    list<RteDevice*> filteredModelDevices;
-    context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
-    for (const auto& deviceItem : filteredModelDevices) {
-      if (!deviceItem->GetDeviceItems().empty()) {
-        // skip not end-leaf item
-        continue;
+    CollectNpuInfo(context, true);
+    for (const auto& npuInfoItem : context.npuInfoItems) {
+      string npuString = npuInfoItem.type + " (" + npuInfoItem.macs + "):";
+      string deviceInfoString = "  " + npuInfoItem.vendorName + "::" + npuInfoItem.deviceName + ",";
+      if (!npuInfoItem.pname.empty()) {
+        deviceInfoString += " [" + npuInfoItem.pname + "]";
       }
-      // find VELA config for this device (only once per device)
-      string velaConfig;
-      if (m_verbose) {
-        const auto& envList = deviceItem->GetEffectiveProperties("environment", "");
-        for (auto env : envList) {
-          if (env->GetAttribute("name") != "VELA") {
-            continue;
-          }
-          for (auto child : env->GetEffectiveContent()) {
-            const string& fileName = child->GetAttribute("name");
-            if (child->GetTag() == "file" && child->GetAttribute("type") == "ini" && !fileName.empty()) {
-              const string velaPath = child->GetOriginalAbsolutePath(fileName);
-              if (RteFsUtils::Exists(velaPath)) {
-                velaConfig = velaPath;
-              }
-              break;
-            }
-          }
-          break;
-        }
+      deviceInfoString += " " + npuInfoItem.dcore;
+      if (m_verbose && !npuInfoItem.velaAbsolutePath.empty()) {
+        deviceInfoString += "\n    VELA config: " + npuInfoItem.velaAbsolutePath;
       }
-      // collect NPU features for each processor
-      for (const auto& [pname, processor] : deviceItem->GetProcessors()) {
-        const auto& features = deviceItem->GetEffectiveProperties("feature", pname);
-        for (const auto& feature : features) {
-          if (feature->GetAttribute("type") != "NPU") {
-            continue;
-          }
-          const string& npuPname = feature->GetAttribute("Pname");
-          if (!npuPname.empty() && npuPname != pname) {
-            // Skip if this NPU pname is for a different processor pname
-            continue;
-          }
-          string nType = feature->GetAttribute("n");
-          string mType = feature->GetAttribute("m");
-          if (nType.empty()) { nType = "Unknown NPU"; }
-          if (mType.empty()) { mType = "Unknown MACs"; }
-
-          string npuString = nType + " (" + mType + "):";
-          string deviceInfoString = "  " + deviceItem->GetVendorName() + "::" + deviceItem->GetFullDeviceName() + ",";
-          if (!pname.empty()) {
-            deviceInfoString += " [" + pname + "]";
-          }
-          deviceInfoString += " " + processor->GetAttribute("Dcore");
-          if (!velaConfig.empty()) {
-            deviceInfoString += "\n    VELA config: " + velaConfig;
-          }
-          npuInfos[npuString].insert(deviceInfoString);
-        }
-      }
+      npuInfos[npuString].insert(deviceInfoString);
     }
   }
 
@@ -6222,3 +6178,64 @@ void ProjMgrWorker::FormatResolvedPackIds() {
   }
 }
 
+void ProjMgrWorker::CollectNpuInfo(ContextItem& context, bool collectAllDevices) {
+  context.npuInfoItems.clear();
+
+  list<RteDevice*> filteredModelDevices;
+  if (collectAllDevices) {
+    context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
+  } else {
+    context.rteFilteredModel->GetDevices(filteredModelDevices, context.rteActiveTarget->GetDeviceName(), context.rteActiveTarget->GetVendorName(), RteDeviceItem::VARIANT);
+  }
+  for (const auto& device : filteredModelDevices) {
+    if (!device->GetDeviceItems().empty()) {
+      // skip not end-leaf item
+      continue;
+    }
+    // find VELA config for this device (only once per device)
+    string velaAbsolutePath;
+    const auto& envList = device->GetEffectiveProperties("environment", "");
+    for (auto env : envList) {
+      if (env->GetAttribute("name") != "VELA") {
+        continue;
+      }
+      for (auto child : env->GetEffectiveContent()) {
+        const string& fileName = child->GetAttribute("name");
+        if (child->GetTag() == "file" && child->GetAttribute("type") == "ini" && !fileName.empty()) {
+          const string velaPath = child->GetOriginalAbsolutePath(fileName);
+          if (RteFsUtils::Exists(velaPath)) {
+            velaAbsolutePath = velaPath;
+          }
+          break;
+        }
+      }
+      break;
+    }
+    // collect NPU features for each processor
+    for (const auto& [pname, processor] : device->GetProcessors()) {
+      const auto& features = device->GetEffectiveProperties("feature", pname);
+      for (const auto& feature : features) {
+        if (feature->GetAttribute("type") != "NPU") {
+          continue;
+        }
+        const string& npuPname = feature->GetAttribute("Pname");
+        if (!npuPname.empty() && npuPname != pname) {
+          // Skip if this NPU pname is for a different processor pname
+          continue;
+        }
+        string nType = feature->GetAttribute("n");
+        string mType = feature->GetAttribute("m");
+        if (nType.empty()) { nType = "Unknown NPU"; }
+        if (mType.empty()) { mType = "Unknown MACs"; }
+        context.npuInfoItems.push_back({
+          device->GetVendorName(),
+          device->GetFullDeviceName(),
+          pname,
+          processor->GetAttribute("Dcore"),
+          nType,
+          mType,
+          velaAbsolutePath});
+      }
+    }
+  }
+}

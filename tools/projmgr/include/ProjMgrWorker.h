@@ -173,6 +173,26 @@ struct ComponentFileItem {
 };
 
 /**
+ * @brief NPU info item containing
+ *        vendor name
+ *        device name
+ *        processor name
+ *        core name
+ *        NPU type
+ *        NPU MACs
+ *        absolute path of VELA config file
+*/
+struct NpuInfoItem {
+  std::string vendorName;
+  std::string deviceName;
+  std::string pname;
+  std::string dcore;
+  std::string type;
+  std::string macs;
+  std::string velaAbsolutePath;
+};
+
+/**
  * @brief gpdsc item containing
  *        component id
  *        generator id
@@ -513,6 +533,7 @@ struct ContextItem {
   std::string compiler;
   ToolchainItem toolchain;
   std::map<std::string, std::string> targetAttributes;
+  std::vector<NpuInfoItem> npuInfoItems;
   std::map<std::string, RtePackage*> packages;
   std::map<std::string, SelectedComponentItem> components;
   std::map<std::string, std::pair<RteApi*, std::vector<std::string>>> apis;
@@ -1058,6 +1079,13 @@ public:
    * @return true if there is no error
   */
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
+
+  /**
+   * @brief collect NPU information
+   * @param context item
+   * @param collectAllDevices to collect all devices or only the selected target
+  */
+  void CollectNpuInfo(ContextItem& context, bool collectAllDevices);
 
   /**
    * @brief add required components
