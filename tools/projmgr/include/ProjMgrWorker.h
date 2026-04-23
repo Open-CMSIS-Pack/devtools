@@ -492,6 +492,7 @@ struct VariablesConfiguration {
  *        debugger
  *        default dbgconf
  *        images
+ *        vector of NPUs
  *        selected target-set
  *        load offset for generated binary
  *        elf load mode
@@ -533,7 +534,6 @@ struct ContextItem {
   std::string compiler;
   ToolchainItem toolchain;
   std::map<std::string, std::string> targetAttributes;
-  std::vector<NpuInfoItem> npuInfoItems;
   std::map<std::string, RtePackage*> packages;
   std::map<std::string, SelectedComponentItem> components;
   std::map<std::string, std::pair<RteApi*, std::vector<std::string>>> apis;
@@ -568,6 +568,7 @@ struct ContextItem {
   DebuggerType debugger;
   std::pair<std::string, RteFileInstance*> dbgconf;
   std::vector<ImageItem> images;
+  std::vector<NpuInfoItem> npuInfoItems;
   std::string targetSet;
   std::string loadOffset;
   std::string elfLoadMode;
