@@ -2271,13 +2271,59 @@
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
         "gdbserver":       { "$ref": "#/definitions/GdbServersType" },
-        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" }
+        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
+        "rtt":             { "$ref": "#/definitions/RttOptionsType" }
       },
       "additionalProperties": true,
       "required": ["name"]
     },
+    "RttOptionsType": {
+      "title": "rtt:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#rtt",
+      "description": "Configuration for RTT features.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/RttOptionType" }
+    },
+    "RttOptionType": {
+      "type": "object",
+      "properties": {
+        "pname":         { "type": "string", "description": "Name of the processor (only required for multi-core systems)." },
+        "control-block": { "$ref": "#/definitions/RttControlBlockType" },
+        "channel":       { "$ref": "#/definitions/RttChannelsType" }
+      },
+      "additionalProperties": false,
+      "required": ["channel"]
+    },
+    "RttControlBlockType": {
+      "title": "control-block:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#control-block",
+      "description": "Configuration for RTT control block features.",
+      "type": "object",
+      "properties": {
+        "auto-detect": { "type": "boolean", "description": "Scan default memory regions for the RTT control block signature (true or false)." },
+        "address":     { "type": "number", "description": "Control block address, acts as scan start address." },
+        "size":        { "type": "number", "description": "Scan length in bytes." }
+      },
+      "additionalProperties": false
+    },
+    "RttChannelsType": {
+      "title": "channel:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#channel",
+      "description": "Configuration for RTT features.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/RttChannelType" }
+    },
+    "RttChannelType": {
+      "type": "object",
+      "properties": {
+        "number":   { "type": "number", "description": "RTT channel number." },
+        "mode":     { "enum": [ "stdio", "server", "systemview", "systemview-server" ], "description": "RTT channel mode." },
+        "port":     { "type": "number", "description": "TCP port number (required for server and systemview-server)." }
+      },
+      "additionalProperties": false,
+      "required": [ "number", "mode" ]
+    },
     "TelnetOptionsType": {
-      "title": "telnet:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#telnet-for-pyocd",
+      "title": "telnet:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#telnet",
       "description": "Telnet port for connecting remote tools.",
       "type": "array",
       "uniqueItems": true,
