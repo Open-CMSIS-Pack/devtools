@@ -6182,11 +6182,10 @@ void ProjMgrWorker::CollectNpuInfo(ContextItem& context, bool collectAllDevices)
   context.npuInfoItems.clear();
 
   list<RteDevice*> filteredModelDevices;
-  if (collectAllDevices) {
-    context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
-  } else {
-    context.rteFilteredModel->GetDevices(filteredModelDevices, context.rteActiveTarget->GetDeviceName(), context.rteActiveTarget->GetVendorName(), RteDeviceItem::VARIANT);
-  }
+  //if (collectAllDevices) {
+    //context.rteFilteredModel->GetDevices(filteredModelDevices, "", "", RteDeviceItem::VARIANT);
+  //} else {
+  context.rteFilteredModel->GetDevices(filteredModelDevices, context.rteActiveTarget->GetDeviceName(), context.rteActiveTarget->GetVendorName(), RteDeviceItem::VARIANT);
   for (const auto& device : filteredModelDevices) {
     if (!device->GetDeviceItems().empty()) {
       // skip not end-leaf item
