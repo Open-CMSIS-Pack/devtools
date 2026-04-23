@@ -618,3 +618,30 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_CbuildSet_Contexts) {
     EXPECT_TRUE(errList.end() != errItr);
   }
 }
+
+TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_CbuildRun) {
+    vector<std::pair<int, int>> expectedErrPos = {
+        // line, col
+        {  109  ,  9 },
+        {  110  ,  9 },
+        {  122  , 13 },
+        {  124  , 13 },
+        {  127  , 13 },
+        {  128  , 9  }
+    };
+
+    const string& filename = testinput_folder +
+        "/TestRunDebug/invalid_telnet_rtt_schema.cbuild-run.yml";
+    EXPECT_FALSE(Validate(filename));
+
+    // Check errors
+    auto errList = GetErrors();
+    ASSERT_EQ(errList.size(), expectedErrPos.size());
+    for (auto& errPos : expectedErrPos) {
+        auto errItr = find_if(errList.begin(), errList.end(),
+            [&](const RteError& err) {
+                return err.m_line == errPos.first && err.m_col == errPos.second;
+            });
+        EXPECT_TRUE(errList.end() != errItr);
+    }
+}
