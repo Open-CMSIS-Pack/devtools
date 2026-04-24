@@ -2289,7 +2289,8 @@
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
         "gdbserver":       { "$ref": "#/definitions/GdbServersType" },
         "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
-        "rtt":             { "$ref": "#/definitions/RttOptionsType" }
+        "rtt":             { "$ref": "#/definitions/RttOptionsType" },
+        "systemview":      { "$ref": "#/definitions/SystemViewOptionType" }
       },
       "additionalProperties": true,
       "required": ["name"]
@@ -2319,6 +2320,17 @@
         "auto-detect": { "type": "boolean", "description": "Scan default memory regions for the RTT control block signature (true or false)." },
         "address":     { "type": "number", "description": "Control block address, acts as scan start address." },
         "size":        { "type": "number", "description": "Scan length in bytes." }
+      },
+      "additionalProperties": false
+    },
+    "SystemViewOptionType": {
+      "title": "systemview:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#systemview",
+      "description": "Configuration for SystemView features.",
+      "type": "object",
+      "properties": {
+        "file":             { "type": "string", "description": "Path to the SystemView capture file." },
+        "auto-start":       { "type": "boolean", "description": "Send SystemView start command automatically.", "default": true },
+        "auto-stop":        { "type": "boolean", "description": "Send SystemView stop command automatically.", "default": true }
       },
       "additionalProperties": false
     },
@@ -2571,7 +2583,8 @@
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
         "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
-        "rtt":             { "$ref": "#/definitions/RttOptionsType" }
+        "rtt":             { "$ref": "#/definitions/RttOptionsType" },
+        "systemview":      { "$ref": "#/definitions/SystemViewOptionType" }
       },
       "additionalProperties": true,
       "required": ["name"]

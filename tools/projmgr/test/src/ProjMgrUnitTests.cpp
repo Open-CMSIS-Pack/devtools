@@ -7073,13 +7073,31 @@ TEST_F(ProjMgrUnitTests, TestRunDebugTelnet) {
   // single core without port, with file mode
   argv[6] = (char*)"SingleCore";
   EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  stringstream sstream0;
+  stringstream sstream0, sstreamRTT, sstreamSystemView;
   const YAML::Node& cbuildrun0 = YAML::LoadFile(testoutput_folder + "/out/telnet+SingleCore.cbuild-run.yml");
   sstream0 << cbuildrun0["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
 R"(- mode: file
   port: 4444
   file: telnet+SingleCore)", sstream0.str());
+
+  sstreamRTT << cbuildrun0["cbuild-run"]["debugger"]["rtt"];
+  EXPECT_EQ(
+      R"(- pname: test
+  control-block:
+    address: 0x20000000
+    size: 0x10000
+    auto-detect: true
+  channel:
+    - number: 2
+      mode: server
+      port: 4453)", sstreamRTT.str());
+
+  sstreamSystemView << cbuildrun0["cbuild-run"]["debugger"]["systemview"];
+  EXPECT_EQ(
+      R"(auto-start: false
+auto-stop: false
+file: test_x8.SVDat)", sstreamSystemView.str());
 
   // dual core without ports
   argv[6] = (char*)"DualCore";

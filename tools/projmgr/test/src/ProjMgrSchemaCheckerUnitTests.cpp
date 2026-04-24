@@ -627,7 +627,8 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_CbuildRun) {
         {  122  , 13 },
         {  124  , 13 },
         {  127  , 13 },
-        {  128  , 9  }
+        {  128  ,  9 },
+        {  133  ,  5 }
     };
 
     const string& filename = testinput_folder +
