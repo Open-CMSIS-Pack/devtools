@@ -378,6 +378,22 @@
       "minItems": 1,
       "items": { "$ref": "#/definitions/OutputFileType" }
     },
+    "NpuInfoType": {
+      "title": "npu-info:",
+      "type": "array",
+      "description": "List of available Neural Processing Units (NPUs).",
+      "items": {
+        "type": "object",
+        "description": "Information about an available Neural Processing Unit (NPU).",
+        "properties": {
+          "type": { "type": "string", "description": "Type of the NPU." },
+          "macs": { "type": ["integer", "string"], "description": "Number of MACs (Multiply-Accumulate units)." },
+          "vela-ini": { "type": "string", "description": "Path to the Vela configuration file." }
+        },
+        "additionalProperties": false,
+        "required": [ "type" ]
+      }
+    },
     "BuildDefinesType": {
       "type": "array",
       "description": "List of #define symbol settings for the code generation.",
@@ -1454,6 +1470,7 @@
         "add-path-asm":      { "$ref": "#/definitions/AddAsmPathsType" },
         "output-dirs":       { "$ref": "#/definitions/BuildOutputDirectoriesType" },
         "output":            { "$ref": "#/definitions/OutputFilesType" },
+        "npu-info":          { "$ref": "#/definitions/NpuInfoType" },
         "components":        {
           "title": "components:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#components",
           "$ref": "#/definitions/ResolvedComponentsType"
@@ -2553,7 +2570,8 @@
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
-        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" }
+        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
+        "rtt":             { "$ref": "#/definitions/RttOptionsType" }
       },
       "additionalProperties": true,
       "required": ["name"]
