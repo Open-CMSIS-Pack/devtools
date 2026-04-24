@@ -2329,8 +2329,8 @@
       "type": "object",
       "properties": {
         "file":             { "type": "string", "description": "Path to the SystemView capture file." },
-        "auto-start":       { "type": "boolean", "description": "Send SystemView start command automatically.", "default": true },
-        "auto-stop":        { "type": "boolean", "description": "Send SystemView stop command automatically.", "default": true }
+        "auto-start":       { "type": "boolean", "description": "Send SystemView start command automatically." },
+        "auto-stop":        { "type": "boolean", "description": "Send SystemView stop command automatically." }
       },
       "additionalProperties": false
     },
