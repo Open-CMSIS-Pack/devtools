@@ -390,7 +390,8 @@
           "macs": { "type": ["integer", "string"], "description": "Number of MACs (Multiply-Accumulate units)." },
           "vela-ini": { "type": "string", "description": "Path to the Vela configuration file." }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "required": [ "type" ]
       }
     },
     "BuildDefinesType": {

@@ -568,10 +568,7 @@ void ProjMgrCbuild::SetNpuInfoNode(YAML::Node node, const ContextItem* context) 
       smatch match;
       if (std::regex_match(npu.macs, match, macsPattern)) {
         npuNode[YAML_MACS] = std::stoi(match[1].str());
-      } else {
-        SetNodeValue(npuNode[YAML_MACS], npu.macs);
       }
-
       if (!npu.velaAbsolutePath.empty()) {
         std::string velaConfigPath = npu.velaAbsolutePath;
         SetNodeValue(npuNode[YAML_VELA_INI], FormatPath(velaConfigPath, context->directories.cbuild));

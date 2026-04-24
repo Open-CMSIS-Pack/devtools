@@ -25,7 +25,6 @@ build:
       macs: 256
       vela-ini: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Scripts/vela/vela_deviceLevel.ini
     - type: Ethos-U85
-      macs: Unknown MACs
       vela-ini: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Scripts/vela/vela_deviceLevel.ini
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
