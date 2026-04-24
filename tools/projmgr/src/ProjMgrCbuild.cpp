@@ -11,6 +11,8 @@
 #include "ProjMgrYamlParser.h"
 #include "RteFsUtils.h"
 
+#include <regex>
+
 using namespace std;
 
 // cbuild and cbuild-gen
@@ -34,6 +36,7 @@ private:
   void SetLicenseInfoNode(YAML::Node node, const ContextItem* context);
   void SetControlsNode(YAML::Node Node, const ContextItem* context, const BuildType& controls);
   void SetProcessorNode(YAML::Node node, const map<string, string>& targetAttributes);
+  void SetNpuInfoNode(YAML::Node node, const ContextItem* context);
   void SetMiscNode(YAML::Node miscNode, const MiscItem& misc);
   void SetMiscNode(YAML::Node miscNode, const vector<MiscItem>& misc);
   void SetDefineNode(YAML::Node node, const vector<string>& vec);
@@ -88,6 +91,7 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
   SetDebugConfigNode(contextNode[YAML_DBGCONF], context);
   if (!context->imageOnly && !context->westOn) {
     SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
+    SetNpuInfoNode(contextNode[YAML_NPU_INFO], context);
   }
   SetPacksNode(contextNode[YAML_PACKS], context);
   if (!context->imageOnly && !context->westOn) {
@@ -551,6 +555,26 @@ void ProjMgrCbuild::SetProcessorNode(YAML::Node node, const map<string, string>&
   if (targetAttributes.find("Dcore") != targetAttributes.end()) {
     const string& core = targetAttributes.at("Dcore");
     SetNodeValue(node[YAML_CORE], core);
+  }
+}
+
+void ProjMgrCbuild::SetNpuInfoNode(YAML::Node node, const ContextItem* context) {
+  static const regex macsPattern(R"(^\s*(\d+)\s*MACs\s*$)");
+  for (const auto& npu : context->npuInfoItems) {
+    if (context->rteActiveTarget->GetProcessorName() == npu.pname) {
+      YAML::Node npuNode;
+      SetNodeValue(npuNode[YAML_TYPE], npu.type);
+
+      smatch match;
+      if (std::regex_match(npu.macs, match, macsPattern)) {
+        npuNode[YAML_MACS] = std::stoi(match[1].str());
+      }
+      if (!npu.velaAbsolutePath.empty()) {
+        std::string velaConfigPath = npu.velaAbsolutePath;
+        SetNodeValue(npuNode[YAML_VELA_INI], FormatPath(velaConfigPath, context->directories.cbuild));
+      }
+      node.push_back(npuNode);
+    }
   }
 }
 
