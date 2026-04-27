@@ -610,9 +610,17 @@ bool RteKernel::GetLocalPdscFiles(const XmlItem& attr, std::map<std::string, std
 
 XMLTreeElement* RteKernel::ParseLocalRepositoryIdx() const
 {
-  // Parse local repository index file
-  const string indexPath = GetCmsisPackRoot() + "/.Local/local_repository.pidx";
+  return ParseRepositoryIdx(GetCmsisPackRoot() + "/.Local/local_repository.pidx");
+}
 
+XMLTreeElement* RteKernel::ParseWebRepositoryIdx() const
+{
+  return ParseRepositoryIdx(GetCmsisPackRoot() + "/.Web/index.pidx");
+}
+
+XMLTreeElement* RteKernel::ParseRepositoryIdx(const string& indexPath) const
+{
+  // Parse local repository index file
   if (!RteFsUtils::Exists(indexPath)) {
     return nullptr;
   }
@@ -632,6 +640,49 @@ XMLTreeElement* RteKernel::ParseLocalRepositoryIdx() const
   return pIndexChild;
 }
 
+bool RteKernel::ReadPackLatestVerAndPath(map<string, pair<string, string>>& latestPacks) const {
+  // read latest public pack versions from /.Web/index.pidx and the corresponding latest Web PDSC file paths
+  unique_ptr<XMLTreeElement> webPIndexChild(ParseWebRepositoryIdx());
+  if (webPIndexChild) {
+    for (auto& child : webPIndexChild->GetChildren()) {
+      if (!child || child->GetTag() != "pdsc") {
+        continue;
+      }
+      const string& vendor = child->GetAttribute("vendor");
+      const string& name = child->GetAttribute("name");
+      const string& version = child->GetAttribute("version");
+      if (vendor.empty() || name.empty() || version.empty()) {
+        continue;
+      }
+      const string packId = vendor + "::" + name;
+      const string pdscFile = GetCmsisPackRoot() + "/.Web/" + vendor + "." + name + ".pdsc";
+      latestPacks[packId] = { version, pdscFile };
+    }
+  }
+  // read effective PDSC files (installed + local), keeping only the latest ones. Override the current entry if the local version is newer than the web version
+  XmlItem attributes;
+  map<string, string, RtePackageComparator> effectivePdscMap;
+  if (GetEffectivePdscFilesAsMap(effectivePdscMap, true)) {
+    for (const auto& [_, localPdscFile] : effectivePdscMap) {
+      RtePackage* pack = LoadPack(localPdscFile);
+      if (!pack) {
+        continue;
+      }
+      const string& vendor = pack->GetVendorString();
+      const string& name = pack->GetName();
+      const string& version = pack->GetVersionString();
+      if (vendor.empty() || name.empty() || version.empty()) {
+        continue;
+      }
+      const string packId = vendor + "::" + name;
+      auto it = latestPacks.find(packId);
+      if (it == latestPacks.end() || VersionCmp::Compare(it->second.first, version) < 0) {
+        latestPacks[packId] = { version, localPdscFile };
+      }
+    }
+  }
+  return !latestPacks.empty();
+}
 
 unique_ptr<XMLTree> RteKernel::CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder, const std::string& ext) const
 {

@@ -320,6 +320,13 @@ public:
   */
   void SetToolInfo(const XmlItem& attr) { m_toolInfo = attr; }
 
+  /**
+   * @brief read the latest available pack version and resolved PDSC file for each pack.
+   * @param Output map of pack ID to latest version and resolved PDSC file path
+   * @return true if at least one latest pack entry was found, otherwise false
+   */
+  bool ReadPackLatestVerAndPath(std::map<std::string, std::pair<std::string, std::string>>& latestPacks) const;
+
 protected:
   /**
    * @brief get local pdsc files, optionally filtered

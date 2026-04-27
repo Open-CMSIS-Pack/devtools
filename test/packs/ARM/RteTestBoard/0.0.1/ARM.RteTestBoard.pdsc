@@ -7,8 +7,8 @@
 
   <releases>
     <release version="0.0.1" date="2026-04-24">
-			Pre-initial version 0.0.1 forS testing CheckPackVersionCmd
-		</release>
+      Pre-initial version 0.0.1 forS testing CheckPackVersionCmd
+    </release>
   </releases>
 
   <requirements>
