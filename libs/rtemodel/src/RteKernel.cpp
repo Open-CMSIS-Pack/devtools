@@ -656,7 +656,7 @@ bool RteKernel::ReadPackLatestVerAndPath(map<string, pair<string, string>>& late
       }
       const string packId = vendor + "::" + name;
       const string pdscFile = GetCmsisPackRoot() + "/.Web/" + vendor + "." + name + ".pdsc";
-      latestPacks[packId] = { version, pdscFile };
+      latestPacks[packId] = { version, RteFsUtils::Exists(pdscFile) ? pdscFile : string() };
     }
   }
   // read effective PDSC files (installed + local). Override the current entry if the local version is newer than the web version

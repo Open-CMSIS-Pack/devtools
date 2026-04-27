@@ -6050,6 +6050,8 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
 }
 
 bool ProjMgrWorker::ReadPackReleaseNotes(const string& pdscFile, const string& currentVersion, const string& latestVersion, vector<string>& releaseNotes) {
+  if (pdscFile.empty() || !RteFsUtils::Exists(pdscFile)) { return false; }
+
   RtePackage* pack = m_kernel->LoadPack(pdscFile);
   if (!pack) { return false; }
 
