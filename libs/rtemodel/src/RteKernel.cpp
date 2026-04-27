@@ -659,7 +659,7 @@ bool RteKernel::ReadPackLatestVerAndPath(map<string, pair<string, string>>& late
       latestPacks[packId] = { version, pdscFile };
     }
   }
-  // read effective PDSC files (installed + local), keeping only the latest ones. Override the current entry if the local version is newer than the web version
+  // read effective PDSC files (installed + local). Override the current entry if the local version is newer than the web version
   XmlItem attributes;
   map<string, string, RtePackageComparator> effectivePdscMap;
   if (GetEffectivePdscFilesAsMap(effectivePdscMap, true)) {

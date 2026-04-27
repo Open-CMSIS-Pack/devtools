@@ -6037,7 +6037,6 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
     if (!LoadPacks(context)) {
       return false;
     }
-
     for (const auto& pack : m_loadedPacks) {
       const string packId = pack->GetVendorString() + "::" + pack->GetName();
       const string& currentVersion = pack->GetVersionString();

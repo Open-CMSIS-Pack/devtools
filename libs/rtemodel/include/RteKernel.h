@@ -360,7 +360,17 @@ protected:
   */
   virtual YmlTree* CreateYmlTree(IXmlItemBuilder* itemBuilder) const;
 
+  /**
+   * @brief get this pointer to use in const methods
+   * @return this
+  */
   RteKernel* GetThisKernel() const { return const_cast<RteKernel*>(this); }
+
+  /**
+   * @brief parses a repository index file
+   * @param absolute path to the repository index file
+   * @return pointer to "pindex" element if successful, nullptr otherwise
+  */
   XMLTreeElement* ParseRepositoryIdx(const std::string& indexPath) const;
 
 // data
