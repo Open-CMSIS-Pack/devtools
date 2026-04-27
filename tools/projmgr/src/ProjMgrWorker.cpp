@@ -572,18 +572,33 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   }
   // Filter context specific packs
   set<string> selectedPacks;
+  map<string, set<string>> selectedPackVersions;
   const bool allOrLatest = (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST);
   for (const auto& pack : m_loadedPacks) {
     if (context.pdscFiles.find(pack->GetPackageFileName()) != context.pdscFiles.end()) {
       selectedPacks.insert(pack->GetPackageID());
+      selectedPackVersions[pack->GetPackageID(false)].insert(pack->GetVersionString());
+    }
+  }
+  // check if multiple versions are selected
+  for (const auto& [pack, versions] : selectedPackVersions) {
+    if (versions.size() > 1) {
+      string msg = "selected multiple versions of pack '" + pack + "':";
+      for (const auto& version : versions) {
+        msg += " '" + version + "',";
+      }
+      msg.pop_back();
+      msg += "\nReview pack requirements";
+      ProjMgrLogger::Get().Warn(msg, context.name);
     }
   }
   RtePackageFilter filter;
-   // use all packs is enabled by default, by default policy it should be disabled if selectedPacks is not empty
+  // use all packs is enabled by default, by default policy it should be disabled if selectedPacks is not empty
   filter.SetUseAllPacks(allOrLatest || selectedPacks.empty());
   filter.SetSelectedPackages(selectedPacks);
   context.rteActiveTarget->SetPackageFilter(filter);
   context.rteActiveTarget->UpdateFilterModel();
+  context.rteFilteredModel->GetPackages();
   return CheckRteErrors();
 }
 
