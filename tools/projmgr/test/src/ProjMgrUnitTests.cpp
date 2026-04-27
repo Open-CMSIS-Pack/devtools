@@ -672,10 +672,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_CheckPackVerCmd) {
   EXPECT_EQ(0, RunProjMgr(3, argv, 0));
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "\
-ARM::RteTest@0.1.0 (not found in pack index)\n\
+ARM::RteTest@0.1.0 (up-to-date)\n\
 ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
-ARM::RteTest_DFP@0.1.1+metadata -> 0.2.0\n\
-LocalVendor::LocalPack@1.0.1 (up-to-date)\n");
+ARM::RteTest_DFP@0.1.1+metadata -> 0.2.0\n");
 
   // check verbose output
   streamRedirect.ClearStringStreams();
@@ -683,15 +682,15 @@ LocalVendor::LocalPack@1.0.1 (up-to-date)\n");
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
   outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "\
-ARM::RteTest@0.1.0 (not found in pack index)\n\
+ARM::RteTest@0.1.0 (up-to-date)\n\
 ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
   Release notes for v0.1.0:\n\
       Initial version\n\
   Release notes for v0.0.2:\n\
-      Pre-initial version 0.0.2 for testing CheckPackVersionCmd\n\
+      Pre-initial version 0.0.2 for testing CheckPackVerCmd\n\
 ARM::RteTest_DFP@0.1.1+metadata -> 0.2.0\n\
-  Release notes: unavailable (latest PDSC not found in .Web/.Local)\n\
-LocalVendor::LocalPack@1.0.1 (up-to-date)\n");
+  Release notes for v0.2.0:\n\
+      Added a new device 'RteTest_ARMCM0_Dual'\n");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject_1) {

@@ -610,17 +610,9 @@ bool RteKernel::GetLocalPdscFiles(const XmlItem& attr, std::map<std::string, std
 
 XMLTreeElement* RteKernel::ParseLocalRepositoryIdx() const
 {
-  return ParseRepositoryIdx(GetCmsisPackRoot() + "/.Local/local_repository.pidx");
-}
-
-XMLTreeElement* RteKernel::ParseWebRepositoryIdx() const
-{
-  return ParseRepositoryIdx(GetCmsisPackRoot() + "/.Web/index.pidx");
-}
-
-XMLTreeElement* RteKernel::ParseRepositoryIdx(const string& indexPath) const
-{
   // Parse local repository index file
+  const string indexPath = GetCmsisPackRoot() + "/.Local/local_repository.pidx";
+
   if (!RteFsUtils::Exists(indexPath)) {
     return nullptr;
   }
@@ -640,35 +632,6 @@ XMLTreeElement* RteKernel::ParseRepositoryIdx(const string& indexPath) const
   return pIndexChild;
 }
 
-bool RteKernel::ReadPackLatestVersions(map<string, string>& latestPacks) const {
-  auto mergePackVersions = [&latestPacks](XMLTreeElement* index) {
-    if (!index) {
-      return;
-    }
-    for (auto& child : index->GetChildren()) {
-      if (!child || child->GetTag() != "pdsc") {
-        continue;
-      }
-      const string& vendor = child->GetAttribute("vendor");
-      const string& name = child->GetAttribute("name");
-      const string& version = child->GetAttribute("version");
-      // ignore incomplete pack entries
-      if (vendor.empty() || name.empty() || version.empty()) {
-        continue;
-      }
-      const string packId = vendor + "::" + name;
-      auto it = latestPacks.find(packId);
-      if (it == latestPacks.end() || VersionCmp::Compare(it->second, version) < 0) {
-        latestPacks[packId] = version;
-      }
-    }
-  };
-  unique_ptr<XMLTreeElement> webPIndexChild(ParseWebRepositoryIdx());
-  mergePackVersions(webPIndexChild.get());
-  unique_ptr<XMLTreeElement> localPIndexChild(ParseLocalRepositoryIdx());
-  mergePackVersions(localPIndexChild.get());
-  return !latestPacks.empty();
-}
 
 unique_ptr<XMLTree> RteKernel::CreateUniqueXmlTree(IXmlItemBuilder* itemBuilder, const std::string& ext) const
 {

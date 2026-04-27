@@ -1042,13 +1042,14 @@ public:
   bool CheckPackVerAndCollectRelNotes(std::vector<std::string>& results, const std::string& filter = RteUtils::EMPTY_STRING);
 
   /**
-   * @brief reads release notes between current and latest pack versions
-   * @param current pack information
-   * @param latest pack version
-   * @param output release notes
-   * @return true if release notes were found, false otherwise
-  */
-  bool ReadPackReleaseNotes(const PackInfo& currentPack, const std::string& latestVersion, std::vector<std::string>& releaseNotes);
+   * @brief read release notes for versions newer than the current version and up to the latest version
+   * @param resolved path to the PDSC file of the latest effective pack
+   * @param version currently used by the project
+   * @param latest available version resolved for the pack
+   * @param output list of collected release note strings for versions
+   * @return true if at least one matching release note was found, otherwise false
+   */
+  bool ReadPackReleaseNotes(const std::string& pdscFile, const std::string& currentVersion, const std::string& latestVersion, std::vector<std::string>& releaseNotes);
 
   /**
    * @brief collect unused packs for each selected context

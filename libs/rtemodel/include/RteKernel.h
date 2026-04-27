@@ -320,13 +320,6 @@ public:
   */
   void SetToolInfo(const XmlItem& attr) { m_toolInfo = attr; }
 
-  /**
-   * @brief reads latest pack versions from repository indices
-   * @param map of pack IDs to latest available versions to fill
-   * @return true if at least one repository index was parsed successfully, false otherwise
-  */
-  bool ReadPackLatestVersions(std::map<std::string, std::string>& latestPacks) const;
-
 protected:
   /**
    * @brief get local pdsc files, optionally filtered

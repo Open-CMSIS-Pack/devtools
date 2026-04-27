@@ -6023,9 +6023,13 @@ void ProjMgrWorker::CheckMissingLinkerScript(ContextItem& context) {
   }
 }
 
-bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(vector<string>& results, const string& filter) {
-  map<string, PackInfo> usedPacks; // string (Vendor::Name) -> PackInfo (name, vendor, version)
-  map<string, string> latestPacks; // string (Vendor::Name) -> string (latest pack version)
+bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& results, const std::string& filter) {
+  struct LatestPackInfo {
+    string version;
+    string pdscFile;
+  };
+  map<string, PackInfo> usedPacks;
+  map<string, LatestPackInfo> latestPacks;
   vector<string> selectedContexts = m_selectedContexts;
   if (selectedContexts.empty()) {
     for (const auto& [contextName, _] : m_contexts) {
@@ -6043,31 +6047,56 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(vector<string>& results, cons
       usedPacks[packId] = { pack->GetName(), pack->GetVendorString(), currentVersion };
     }
   }
+  map<string, string, RtePackageComparator> effectivePdscMap;
+  if (!m_kernel->GetEffectivePdscFilesAsMap(effectivePdscMap, true)) {
+    ProjMgrLogger::Get().Error("failed to get effective PDSC files");
+    return false;
+  }
+  if (effectivePdscMap.empty()) {
+    ProjMgrLogger::Get().Error("no effective PDSC files found");
+    return false;
+  }
+  for (const auto& [_, pdscFile] : effectivePdscMap) {
+    RtePackage* pack = m_kernel->LoadPack(pdscFile);
+    if (!pack) {
+      continue;
+    }
+    const string& vendor = pack->GetVendorString();
+    const string& name = pack->GetName();
+    const string& version = pack->GetVersionString();
+    // Ignore incomplete pack entries
+    if (vendor.empty() || name.empty() || version.empty()) {
+      continue;
+    }
+    const string packId = vendor + "::" + name;
+    latestPacks[packId] = { version, pdscFile };
+  }
 
-  if (!m_kernel->ReadPackLatestVersions(latestPacks)) {
-    ProjMgrLogger::Get().Error("failed to read latest pack versions from pack index");
+  if (latestPacks.empty()) {
+    ProjMgrLogger::Get().Error("failed to resolve latest pack information from effective PDSC files");
     return false;
   }
 
   vector<string> checkPackResults;
   for (const auto& [packId, currentPack] : usedPacks) {
-    auto latestPack = latestPacks.find(packId);
-    if (latestPack == latestPacks.end()) {
-      checkPackResults.push_back(packId + "@" + currentPack.version + " (not found in pack index)");
+    auto latestPackIt = latestPacks.find(packId);
+    if (latestPackIt == latestPacks.end()) {
+      checkPackResults.push_back(packId + "@" + currentPack.version + " (not found in CMSIS pack root)");
       continue;
     }
-    const string& latestVersion = latestPack->second;
+    const LatestPackInfo& latestPack = latestPackIt->second;
+    const string& latestVersion = latestPack.version;
     const int cmp = VersionCmp::Compare(currentPack.version, latestVersion);
     if (cmp < 0) {
       string outStr = packId + "@" + currentPack.version + " -> " + latestVersion;
       if (m_verbose) {
         vector<string> releaseNotes;
-        if (ReadPackReleaseNotes(currentPack, latestVersion, releaseNotes)) {
+        if (ReadPackReleaseNotes(latestPack.pdscFile, currentPack.version, latestVersion, releaseNotes)) {
           for (const auto& note : releaseNotes) {
             outStr += note;
           }
         } else {
-          outStr += "\n  Release notes: unavailable (latest PDSC not found in .Web/.Local)";
+          outStr += "\n  Release notes: unavailable";
         }
       }
       checkPackResults.push_back(outStr);
@@ -6092,33 +6121,30 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(vector<string>& results, cons
   return true;
 }
 
-bool ProjMgrWorker::ReadPackReleaseNotes(const PackInfo& currentPack, const string& latestVersion, vector<string>& releaseNotes) {
-  string pdscFile = m_kernel->GetCmsisPackRoot() + "/.Web/" + currentPack.vendor + "." + currentPack.name + ".pdsc";
-  if (!RteFsUtils::Exists(pdscFile)) {
-    // fall back to .Local if the PDSC is not present in .Web
-    pdscFile = m_kernel->GetCmsisPackRoot() + "/.Local/" + currentPack.vendor + "." + currentPack.name + ".pdsc";
+bool ProjMgrWorker::ReadPackReleaseNotes(const string& pdscFile, const string& currentVersion, const string& latestVersion, vector<string>& releaseNotes) {
+  RtePackage* pack = m_kernel->LoadPack(pdscFile);
+  if (!pack) {
+    return false;
   }
-  if (!RteFsUtils::Exists(pdscFile)) { return false; }
-
-  RtePackage* pack(m_kernel->LoadPack(pdscFile));
-  if (!pack) { return false; }
-
   RteItem* releases = pack->GetFirstChild("releases");
-  if (!releases) { return false; }
-
+  if (!releases) {
+    return false;
+  }
   for (auto& child : releases->GetChildren()) {
     if (!child || child->GetTag() != "release") {
       continue;
     }
-    const string& releaseVersion = child->GetAttribute("version");
-    const string& text = child->GetText();
+    const std::string& releaseVersion = child->GetAttribute("version");
+    const std::string& text = child->GetText();
     if (releaseVersion.empty() || text.empty()) {
       continue;
     }
+    // skip versions newer than the resolved latest version
     if (VersionCmp::Compare(releaseVersion, latestVersion) > 0) {
       continue;
     }
-    if (VersionCmp::Compare(releaseVersion, currentPack.version) <= 0) {
+    // stop when reaching current version or older
+    if (VersionCmp::Compare(releaseVersion, currentVersion) <= 0) {
       break;
     }
     releaseNotes.push_back("\n  Release notes for v" + releaseVersion + ":\n      " + text);
