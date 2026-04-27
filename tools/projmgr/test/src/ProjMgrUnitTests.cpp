@@ -658,7 +658,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_CheckPackVerCmd) {
-  char* argv[4];
+  char* argv[6];
   StdStreamRedirect streamRedirect;
   string csolutionFile = testinput_folder + "/TestSolution/CheckPackVerCmd/checkPackVerCmd.csolution.yml";
   // no csolution file provided
@@ -691,6 +691,19 @@ ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
 ARM::RteTest_DFP@0.1.1+metadata -> 0.2.0\n\
   Release notes for v0.2.0:\n\
       Added a new device 'RteTest_ARMCM0_Dual'\n");
+
+  // check verbose output with filtering
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"-f";
+  argv[5] = (char*)"RteTestBoard";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "\
+ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
+  Release notes for v0.1.0:\n\
+      Initial version\n\
+  Release notes for v0.0.2:\n\
+      Pre-initial version 0.0.2 for testing CheckPackVerCmd\n");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject_1) {

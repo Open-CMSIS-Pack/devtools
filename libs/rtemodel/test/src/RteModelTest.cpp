@@ -143,7 +143,7 @@ TEST(RteModelTest, LoadPacks) {
 
   list<string> files;
   rteKernel.GetEffectivePdscFiles(files, false);
-  EXPECT_EQ(files.size(), 11);
+  EXPECT_EQ(files.size(), 12);
 
   RteModel* rteModel = rteKernel.GetGlobalModel();
   ASSERT_NE(rteModel, nullptr);
