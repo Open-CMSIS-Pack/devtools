@@ -663,7 +663,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_CheckPackVerCmd) {
   string csolutionFile = testinput_folder + "/TestSolution/CheckPackVerCmd/checkPackVerCmd.csolution.yml";
   // no csolution file provided
   argv[1] = (char*)"check";
-  EXPECT_EQ(1, RunProjMgr(3, argv, 0));
+  EXPECT_EQ(1, RunProjMgr(2, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_STREQ(errStr.c_str(), "error csolution: input csolution.yml was not specified\n");
 
