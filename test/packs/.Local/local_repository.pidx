@@ -12,6 +12,7 @@
     <pdsc name="RteTest"  url="../../local_packs/S/" vendor="SomeVendor" version="0.1.0"/>
     <pdsc name="RteTestRequired" url="../../local_packs/A/" vendor="ARM" version="0.1.0"/>
     <pdsc name="RteTestRequiredRecursive" url="../../local_packs/R/" vendor="ARM" version="0.1.0"/>
+	<!-- for testing CheckPackVersionCmd -->
     <pdsc name="RteTest_DFP" url="../ARM/RteTest_DFP/0.2.0/" vendor="ARM" version="0.2.0"/>
     <pdsc name="RteTestBoard" url="../ARM/RteTestBoard/0.1.0/" vendor="ARM" version="0.1.0"/>
   </pindex>

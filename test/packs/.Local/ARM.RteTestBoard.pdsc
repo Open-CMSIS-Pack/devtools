@@ -10,11 +10,11 @@
       Initial version
     </release>
     <release version="0.0.2" date="2026-04-24">
-			Pre-initial version 0.0.2 for testing CheckPackVersionCmd
-		</release>
+      Pre-initial version 0.0.2 for testing CheckPackVersionCmd
+    </release>
     <release version="0.0.1" date="2022-04-24">
-			Pre-initial version 0.0.1 for testing CheckPackVersionCmd
-		</release>
+      Pre-initial version 0.0.1 for testing CheckPackVersionCmd
+    </release>
   </releases>
 
   <requirements>
