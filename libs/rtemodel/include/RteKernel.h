@@ -320,6 +320,13 @@ public:
   */
   void SetToolInfo(const XmlItem& attr) { m_toolInfo = attr; }
 
+  /**
+   * @brief reads latest pack versions from repository indices
+   * @param map of pack IDs to latest available versions to fill
+   * @return true if at least one repository index was parsed successfully, false otherwise
+  */
+  bool ReadPackLatestVersions(std::map<std::string, std::string>& latestPacks) const;
+
 protected:
   /**
    * @brief get local pdsc files, optionally filtered
@@ -330,9 +337,14 @@ protected:
   bool GetLocalPdscFiles(const XmlItem& attr, std::map<std::string, std::string, RtePackageComparator>& pdscMap) const;
   /**
    * @brief parses $CMSIS_PACK_ROOT/.Local/loacl_repository.pidx file
-   * @return pointer to "index" element if successful, nullptr otherwise
+   * @return pointer to "pindex" element if successful, nullptr otherwise
   */
   XMLTreeElement* ParseLocalRepositoryIdx() const;
+  /**
+   * @brief parses $CMSIS_PACK_ROOT/.Web/index.pidx file
+   * @return pointer to "pindex" element if successful, nullptr otherwise
+  */
+  XMLTreeElement* ParseWebRepositoryIdx() const;
 
   /**
    * @brief create an XMLTree object to parse XML files
@@ -348,12 +360,8 @@ protected:
   */
   virtual YmlTree* CreateYmlTree(IXmlItemBuilder* itemBuilder) const;
 
-  /**
-   * @brief get this pointer to use in const methods
-   * @return this
-  */
   RteKernel* GetThisKernel() const { return const_cast<RteKernel*>(this); }
-
+  XMLTreeElement* ParseRepositoryIdx(const std::string& indexPath) const;
 
 // data
 protected:
@@ -366,6 +374,6 @@ protected:
   std::string m_cmsisToolboxDir;
   std::map<std::string, RteItem*> m_externalGeneratorFiles;
   std::map<std::string, RteGenerator*> m_externalGenerators;
-
+  
 };
 #endif // RteKernel_H

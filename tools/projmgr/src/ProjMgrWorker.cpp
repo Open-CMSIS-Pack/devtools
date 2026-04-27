@@ -6023,6 +6023,109 @@ void ProjMgrWorker::CheckMissingLinkerScript(ContextItem& context) {
   }
 }
 
+bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(vector<string>& results, const string& filter) {
+  map<string, PackInfo> usedPacks; // string (Vendor::Name) -> PackInfo (name, vendor, version)
+  map<string, string> latestPacks; // string (Vendor::Name) -> string (latest pack version)
+  vector<string> selectedContexts = m_selectedContexts;
+  if (selectedContexts.empty()) {
+    for (const auto& [contextName, _] : m_contexts) {
+      selectedContexts.push_back(contextName);
+    }
+  }
+  for (const auto& contextName : selectedContexts) {
+    ContextItem& context = m_contexts.at(contextName);
+    if (!LoadPacks(context)) {
+      return false;
+    }
+    for (const auto& pack : m_loadedPacks) {
+      const string packId = pack->GetVendorString() + "::" + pack->GetName();
+      const string& currentVersion = pack->GetVersionString();
+      usedPacks[packId] = { pack->GetName(), pack->GetVendorString(), currentVersion };
+    }
+  }
+
+  if (!m_kernel->ReadPackLatestVersions(latestPacks)) {
+    ProjMgrLogger::Get().Error("failed to read latest pack versions from pack index");
+    return false;
+  }
+
+  vector<string> checkPackResults;
+  for (const auto& [packId, currentPack] : usedPacks) {
+    auto latestPack = latestPacks.find(packId);
+    if (latestPack == latestPacks.end()) {
+      checkPackResults.push_back(packId + "@" + currentPack.version + " (not found in pack index)");
+      continue;
+    }
+    const string& latestVersion = latestPack->second;
+    const int cmp = VersionCmp::Compare(currentPack.version, latestVersion);
+    if (cmp < 0) {
+      string outStr = packId + "@" + currentPack.version + " -> " + latestVersion;
+      if (m_verbose) {
+        vector<string> releaseNotes;
+        if (ReadPackReleaseNotes(currentPack, latestVersion, releaseNotes)) {
+          for (const auto& note : releaseNotes) {
+            outStr += note;
+          }
+        } else {
+          outStr += "\n  Release notes: unavailable (latest PDSC not found in .Web/.Local)";
+        }
+      }
+      checkPackResults.push_back(outStr);
+    } else {
+      checkPackResults.push_back(packId + "@" + currentPack.version + " (up-to-date)");
+    }
+  }
+  if (checkPackResults.empty()) {
+    ProjMgrLogger::Get().Error("no packs were found for version check");
+    return false;
+  }
+  if (!filter.empty()) {
+    std::vector<std::string> matchedPacks;
+    RteUtils::ApplyFilter(checkPackResults, RteUtils::SplitStringToSet(filter), matchedPacks);
+    if (matchedPacks.empty()) {
+      ProjMgrLogger::Get().Error("no packs were found for version check with filter '" + filter + "'");
+      return false;
+    }
+    checkPackResults = matchedPacks;
+  }
+  results.assign(checkPackResults.begin(), checkPackResults.end());
+  return true;
+}
+
+bool ProjMgrWorker::ReadPackReleaseNotes(const PackInfo& currentPack, const string& latestVersion, vector<string>& releaseNotes) {
+  string pdscFile = m_kernel->GetCmsisPackRoot() + "/.Web/" + currentPack.vendor + "." + currentPack.name + ".pdsc";
+  if (!RteFsUtils::Exists(pdscFile)) {
+    // fall back to .Local if the PDSC is not present in .Web
+    pdscFile = m_kernel->GetCmsisPackRoot() + "/.Local/" + currentPack.vendor + "." + currentPack.name + ".pdsc";
+  }
+  if (!RteFsUtils::Exists(pdscFile)) { return false; }
+
+  RtePackage* pack(m_kernel->LoadPack(pdscFile));
+  if (!pack) { return false; }
+
+  RteItem* releases = pack->GetFirstChild("releases");
+  if (!releases) { return false; }
+
+  for (auto& child : releases->GetChildren()) {
+    if (!child || child->GetTag() != "release") {
+      continue;
+    }
+    const string& releaseVersion = child->GetAttribute("version");
+    const string& text = child->GetText();
+    if (releaseVersion.empty() || text.empty()) {
+      continue;
+    }
+    if (VersionCmp::Compare(releaseVersion, latestVersion) > 0) {
+      continue;
+    }
+    if (VersionCmp::Compare(releaseVersion, currentPack.version) <= 0) {
+      break;
+    }
+    releaseNotes.push_back("\n  Release notes for v" + releaseVersion + ":\n      " + text);
+  }
+  return !releaseNotes.empty();
+}
+
 void ProjMgrWorker::CollectUnusedPacks() {
   for (const auto& contextName : m_selectedContexts) {
     auto& context = m_contexts[contextName];

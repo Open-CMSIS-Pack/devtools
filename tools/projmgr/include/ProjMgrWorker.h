@@ -1034,6 +1034,23 @@ public:
   bool CheckMissingFiles();
 
   /**
+   * @brief check selected packs against latest versions
+   * @param vector of output lines describing pack update status
+   * @param optional filter
+   * @return true if check completed successfully
+  */
+  bool CheckPackVerAndCollectRelNotes(std::vector<std::string>& results, const std::string& filter = RteUtils::EMPTY_STRING);
+
+  /**
+   * @brief reads release notes between current and latest pack versions
+   * @param current pack information
+   * @param latest pack version
+   * @param output release notes
+   * @return true if release notes were found, false otherwise
+  */
+  bool ReadPackReleaseNotes(const PackInfo& currentPack, const std::string& latestVersion, std::vector<std::string>& releaseNotes);
+
+  /**
    * @brief collect unused packs for each selected context
   */
   void CollectUnusedPacks();
