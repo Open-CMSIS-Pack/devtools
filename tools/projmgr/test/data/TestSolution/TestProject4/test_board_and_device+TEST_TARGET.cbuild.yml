@@ -20,6 +20,12 @@ build:
     mve: int
     trustzone: non-secure
     core: Cortex-M0
+  npu-info:
+    - type: Ethos-U55
+      macs: 256
+      vela-ini: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Scripts/vela/vela_deviceLevel.ini
+    - type: Ethos-U85
+      vela-ini: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Scripts/vela/vela_deviceLevel.ini
   packs:
     - pack: ARM::RteTest_DFP@0.2.0
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0

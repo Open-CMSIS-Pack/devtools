@@ -5,24 +5,34 @@ coverage:
     patch: false
     project:
       default: false
+
       packchk-cov:
         target: auto
+        threshold: 0.1%
         flags:
           - packchk-cov
+
       projmgr-cov:
         target: auto
+        threshold: 0.1%
         flags:
           - projmgr-cov
+
       packgen-cov:
         target: auto
+        threshold: 0.1%
         flags:
           - packgen-cov
+
       buildmgr-cov:
         target: auto
+        threshold: 0.1%
         flags:
           - buildmgr-cov
+
       svdconv-cov:
         target: auto
+        threshold: 0.1%
         flags:
           - svdconv-cov
 

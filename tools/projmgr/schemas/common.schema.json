@@ -378,6 +378,22 @@
       "minItems": 1,
       "items": { "$ref": "#/definitions/OutputFileType" }
     },
+    "NpuInfoType": {
+      "title": "npu-info:",
+      "type": "array",
+      "description": "List of available Neural Processing Units (NPUs).",
+      "items": {
+        "type": "object",
+        "description": "Information about an available Neural Processing Unit (NPU).",
+        "properties": {
+          "type": { "type": "string", "description": "Type of the NPU." },
+          "macs": { "type": ["integer", "string"], "description": "Number of MACs (Multiply-Accumulate units)." },
+          "vela-ini": { "type": "string", "description": "Path to the Vela configuration file." }
+        },
+        "additionalProperties": false,
+        "required": [ "type" ]
+      }
+    },
     "BuildDefinesType": {
       "type": "array",
       "description": "List of #define symbol settings for the code generation.",
@@ -1454,6 +1470,7 @@
         "add-path-asm":      { "$ref": "#/definitions/AddAsmPathsType" },
         "output-dirs":       { "$ref": "#/definitions/BuildOutputDirectoriesType" },
         "output":            { "$ref": "#/definitions/OutputFilesType" },
+        "npu-info":          { "$ref": "#/definitions/NpuInfoType" },
         "components":        {
           "title": "components:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#components",
           "$ref": "#/definitions/ResolvedComponentsType"
@@ -2271,13 +2288,59 @@
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
         "gdbserver":       { "$ref": "#/definitions/GdbServersType" },
-        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" }
+        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
+        "rtt":             { "$ref": "#/definitions/RttOptionsType" }
       },
       "additionalProperties": true,
       "required": ["name"]
     },
+    "RttOptionsType": {
+      "title": "rtt:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#rtt",
+      "description": "Configuration for RTT features.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/RttOptionType" }
+    },
+    "RttOptionType": {
+      "type": "object",
+      "properties": {
+        "pname":         { "type": "string", "description": "Name of the processor (only required for multi-core systems)." },
+        "control-block": { "$ref": "#/definitions/RttControlBlockType" },
+        "channel":       { "$ref": "#/definitions/RttChannelsType" }
+      },
+      "additionalProperties": false,
+      "required": ["channel"]
+    },
+    "RttControlBlockType": {
+      "title": "control-block:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#control-block",
+      "description": "Configuration for RTT control block features.",
+      "type": "object",
+      "properties": {
+        "auto-detect": { "type": "boolean", "description": "Scan default memory regions for the RTT control block signature (true or false)." },
+        "address":     { "type": "number", "description": "Control block address, acts as scan start address." },
+        "size":        { "type": "number", "description": "Scan length in bytes." }
+      },
+      "additionalProperties": false
+    },
+    "RttChannelsType": {
+      "title": "channel:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#channel",
+      "description": "Configuration for RTT features.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/RttChannelType" }
+    },
+    "RttChannelType": {
+      "type": "object",
+      "properties": {
+        "number":   { "type": "number", "description": "RTT channel number." },
+        "mode":     { "enum": [ "stdio", "server", "systemview", "systemview-server" ], "description": "RTT channel mode." },
+        "port":     { "type": "number", "description": "TCP port number (required for server and systemview-server)." }
+      },
+      "additionalProperties": false,
+      "required": [ "number", "mode" ]
+    },
     "TelnetOptionsType": {
-      "title": "telnet:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#telnet-for-pyocd",
+      "title": "telnet:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#telnet",
       "description": "Telnet port for connecting remote tools.",
       "type": "array",
       "uniqueItems": true,
@@ -2507,7 +2570,8 @@
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
-        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" }
+        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
+        "rtt":             { "$ref": "#/definitions/RttOptionsType" }
       },
       "additionalProperties": true,
       "required": ["name"]

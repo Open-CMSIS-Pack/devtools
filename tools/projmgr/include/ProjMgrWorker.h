@@ -173,6 +173,26 @@ struct ComponentFileItem {
 };
 
 /**
+ * @brief NPU info item containing
+ *        vendor name
+ *        device name
+ *        processor name
+ *        core name
+ *        NPU type
+ *        NPU MACs
+ *        absolute path of VELA config file
+*/
+struct NpuInfoItem {
+  std::string vendorName;
+  std::string deviceName;
+  std::string pname;
+  std::string dcore;
+  std::string type;
+  std::string macs;
+  std::string velaAbsolutePath;
+};
+
+/**
  * @brief gpdsc item containing
  *        component id
  *        generator id
@@ -472,6 +492,7 @@ struct VariablesConfiguration {
  *        debugger
  *        default dbgconf
  *        images
+ *        vector of NPUs
  *        selected target-set
  *        load offset for generated binary
  *        elf load mode
@@ -547,6 +568,7 @@ struct ContextItem {
   DebuggerType debugger;
   std::pair<std::string, RteFileInstance*> dbgconf;
   std::vector<ImageItem> images;
+  std::vector<NpuInfoItem> npuInfoItems;
   std::string targetSet;
   std::string loadOffset;
   std::string elfLoadMode;
@@ -1076,6 +1098,12 @@ public:
    * @return true if there is no error
   */
   bool SetTargetAttributes(ContextItem& context, std::map<std::string, std::string>& attributes);
+
+  /**
+   * @brief collect NPU information
+   * @param context item
+  */
+  void CollectNpuInfo(ContextItem& context);
 
   /**
    * @brief add required components
