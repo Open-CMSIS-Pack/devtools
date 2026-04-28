@@ -6002,7 +6002,7 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
       const string& version = pack->GetVersionString();
       usedPacks[packId].first = version;
       if (pack->GetPackageState() == PS_EXPLICIT_PATH) {
-        usedPacks[packId].second = pack->GetAbsolutePackagePath();
+        usedPacks[packId].second = RteFsUtils::RelativePath(pack->GetAbsolutePackagePath(), context.csolution->directory);
         auto latestPack = latestPacks.find(packId);
         if (latestPack == latestPacks.end() || VersionCmp::Compare(latestPack->second.first, version) < 0) {
           latestPacks[packId] = { version, pack->GetPackageFileName() };
