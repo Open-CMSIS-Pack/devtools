@@ -5980,14 +5980,17 @@ void ProjMgrWorker::CheckMissingLinkerScript(ContextItem& context) {
 }
 
 bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& results, const std::string& filter) {
-  map<string, string> usedPacks;                 // Vendor::Name -> currently used version
+  map<string, pair<string, string>> usedPacks;   // Vendor::Name -> (currently used version, project-specified path if any)
   map<string, pair<string, string>> latestPacks; // Vendor::Name -> (latest available version, resolved PDSC file path)
-  map<string, string> workspacePacks;            // Vendor::Name -> local pack path specified in project '- pack: path:' section
   vector<string> selectedContexts = m_selectedContexts;
   if (selectedContexts.empty()) {
     for (const auto& [contextName, _] : m_contexts) {
       selectedContexts.push_back(contextName);
     }
+  }
+  if (!m_kernel->ReadPackLatestVerAndPath(latestPacks)) {
+    ProjMgrLogger::Get().Error("failed to read latest pack information from pack index");
+    return false;
   }
   for (const auto& contextName : selectedContexts) {
     ContextItem& context = m_contexts.at(contextName);
@@ -5996,44 +5999,21 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
     }
     for (const auto& pack : m_loadedPacks) {
       const string packId = pack->GetVendorString() + "::" + pack->GetName();
-      usedPacks[packId] = pack->GetVersionString();
-    }
-  }
-
-  if (!m_kernel->ReadPackLatestVerAndPath(latestPacks)) {
-    ProjMgrLogger::Get().Error("failed to read latest pack information from pack index");
-    return false;
-  }
-  // merge project-specified path packs into latestPacks
-  for (const auto& contextName : selectedContexts) {
-    ContextItem& context = m_contexts.at(contextName);
-    for (const auto& [pdscFile, pathVersion] : context.pdscFiles) {
-      const string& packPath = pathVersion.first;
-      // skip packs without specified local path and therefore pathVersion.first is empty
-      if (packPath.empty()) {
-        continue;
-      }
-      RtePackage* pack = m_kernel->LoadPack(pdscFile);
-      if (!pack) {
-        continue;
-      }
-      const string& vendor = pack->GetVendorString();
-      const string& name = pack->GetName();
       const string& version = pack->GetVersionString();
-      if (vendor.empty() || name.empty() || version.empty()) {
-        continue;
-      }
-      const string packId = vendor + "::" + name;
-      auto latestPack = latestPacks.find(packId);
-      workspacePacks[packId] = packPath;
-      if (latestPack == latestPacks.end() || VersionCmp::Compare(latestPack->second.first, version) < 0) {
-        latestPacks[packId] = { version, pdscFile };
+      usedPacks[packId].first = version;
+      if (pack->GetPackageState() == PS_EXPLICIT_PATH) {
+        usedPacks[packId].second = pack->GetAbsolutePackagePath();
+        auto latestPack = latestPacks.find(packId);
+        if (latestPack == latestPacks.end() || VersionCmp::Compare(latestPack->second.first, version) < 0) {
+          latestPacks[packId] = { version, pack->GetPackageFileName() };
+        }
       }
     }
   }
 
   vector<string> checkPackResults;
-  for (const auto& [packId, currentVersion] : usedPacks) {
+  for (const auto& [packId, packInfo] : usedPacks) {
+    const string& currentVersion = packInfo.first;  
     auto latestPack = latestPacks.find(packId);
     if (latestPack == latestPacks.end()) {
       checkPackResults.push_back(packId + "@" + currentVersion + " (not found in CMSIS pack root or project-specified pack paths)");
@@ -6046,9 +6026,9 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
       packId + "@" + currentVersion + " -> " + latestVersion :
       packId + "@" + currentVersion + " (up-to-date)";
     if (m_verbose) {
-      auto workspacePack = workspacePacks.find(packId);
-      if (workspacePack != workspacePacks.end()) {
-        outStr += "\n  Local path: " + workspacePack->second;
+      const string& specifiedPackPath = packInfo.second;
+      if (!specifiedPackPath.empty()) {
+        outStr += "\n  Local path: " + specifiedPackPath;
       }
       if (isOutdated) {
         vector<string> releaseNotes;
@@ -6084,7 +6064,7 @@ bool ProjMgrWorker::ReadPackReleaseNotes(const string& pdscFile, const string& c
   RtePackage* pack = m_kernel->LoadPack(pdscFile);
   if (!pack) { return false; }
 
-  RteItem* releases = pack->GetFirstChild("releases");
+  RteItem* releases = pack->GetReleases();
   if (!releases) { return false; }
 
   for (auto& child : releases->GetChildren()) {

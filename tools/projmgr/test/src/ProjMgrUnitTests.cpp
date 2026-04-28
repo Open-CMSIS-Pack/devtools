@@ -713,7 +713,7 @@ ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
   outStr = streamRedirect.GetOutString();
   const string expectedStr = "\
 ARM::RteTestBoard@0.2.0-dev (up-to-date)\n\
-  Local path: " + testinput_folder + "/TestSolution/CheckPackVerCmd/my-packs/RteTestPack\n";
+  Local path: " + testinput_folder + "/TestSolution/CheckPackVerCmd/my-packs/RteTestPack/\n";
   EXPECT_STREQ(outStr.c_str(), expectedStr.c_str());
 }
 
