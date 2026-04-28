@@ -1159,6 +1159,46 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfo) {
   EXPECT_FALSE(packInfos[7].contains("used"));
 }
 
+TEST_F(ProjMgrRpcTests, RpcGetPacksInfoMissing) {
+  string context = "project+Miss";
+  vector<string> contextList = {
+    context
+  };
+
+  auto requests = CreateLoadRequests("/TestSolution/PackMissing/missing_pack.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 4);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest@3.0.1");
+  EXPECT_FALSE(packs[0].contains("resolvedPack"));
+
+  EXPECT_EQ(packs[1]["pack"], "ARM::Missing_DFP@>=0.0.5");
+  EXPECT_FALSE(packs[1].contains("resolvedPack"));
+
+  EXPECT_EQ(packs[2]["pack"], "ARM::Missing_PACK");
+  EXPECT_FALSE(packs[2].contains("resolvedPack"));
+
+  EXPECT_EQ(packs[3]["pack"], "ARM::RteTest_DFP");
+  EXPECT_EQ(packs[3]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+
+
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
+  auto packInfos = responses[3]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 4);
+
+  EXPECT_EQ(packInfos[0]["id"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packInfos[1]["id"], "ARM::RteTest@3.0.1");
+  EXPECT_EQ(packInfos[2]["id"], "ARM::Missing_DFP@>=0.0.5");
+  EXPECT_EQ(packInfos[3]["id"], "ARM::Missing_PACK");
+}
+
+
 
 TEST_F(ProjMgrRpcTests, RpcGetPacksNotLatest) {
   string context = "test1.DebugOldDfp+CM0";

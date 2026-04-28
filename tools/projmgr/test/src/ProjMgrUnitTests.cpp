@@ -1189,7 +1189,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFrozen) {
   argv[6] = (char*)"--cbuildgen";
   argv[7] = (char*)"--verbose";
   argv[8] = (char*)"--frozen-packs";
-  
+
   // Ensure clean state when starting test
   ASSERT_TRUE(RteFsUtils::RemoveDir(rtePath));
 
@@ -6009,6 +6009,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing) {
   string expectedErr1 = "error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed";
   string expectedErr2 = "error csolution: required pack: ARM::Missing_PACK@0.0.1 not installed";
   const string& csolution = testinput_folder + "/TestSolution/PackMissing/missing_pack.csolution.yml";
+  const string cbuild_pack = testinput_folder + "/TestSolution/PackMissing/missing_pack.cbuild-pack.yml";
+  RteFsUtils::RemoveFile(cbuild_pack);
+
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"-o";
@@ -6033,8 +6036,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing_specific_con
   StdStreamRedirect streamRedirect;
   string expectedErr1 = "error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed";
   string expectedErr2 = "error csolution: required pack: ARM::Missing_PACK@0.0.1 not installed";
-  const string& csolution = testinput_folder + "/TestSolution/PackMissing/missing_pack.csolution.yml";
-  const string& cbuildidx = testoutput_folder + "/missing_pack.cbuild-idx.yml";
+  const string csolution = testinput_folder + "/TestSolution/PackMissing/missing_pack.csolution.yml";
+  const string cbuildidx = testoutput_folder + "/missing_pack.cbuild-idx.yml";
+  const string cbuild_pack = testinput_folder + "/TestSolution/PackMissing/missing_pack.cbuild-pack.yml";
+  RteFsUtils::RemoveFile(cbuild_pack);
+
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"-o";
@@ -7588,7 +7594,7 @@ TEST_F(ProjMgrUnitTests, DuplicateComponents) {
   EXPECT_EQ(1, RunProjMgr(9, argv, m_envp));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
-  
+
   streamRedirect.ClearStringStreams();
   argv[7] = (char*)"duplicateComponents_clayer";
   EXPECT_EQ(0, RunProjMgr(9, argv, m_envp));
