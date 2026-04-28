@@ -222,6 +222,7 @@ protected:
   std::vector<ContextItem*> m_allContexts;
   std::set<std::string> m_failedContext;
 
+  bool RunCheckPackVerCmd();
   bool RunConfigure();
   bool RunCodeGenerator();
   bool RunListPacks();

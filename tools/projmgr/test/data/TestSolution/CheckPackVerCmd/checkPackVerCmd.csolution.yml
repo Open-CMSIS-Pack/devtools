@@ -1,0 +1,16 @@
+solution:
+  target-types:
+    - type: CM0
+      device: RteTest_ARMCM0
+
+  build-types:
+    - type: Debug
+      compiler: AC6
+
+  packs:
+    - pack: ARM::RteTest
+    - pack: ARM::RteTest_DFP@0.1.1
+    - pack: ARM::RteTestBoard@0.0.1
+
+  projects:
+    - project: ./checkPackVerCmd.cproject.yml

@@ -22,6 +22,7 @@ static constexpr const char* USAGE = "\n\
 Usage:\n\
   csolution <command> [<name>.csolution.yml] [options]\n\n\
 Commands:\n\
+  check                         Check existing project for potential pack updates\n\
   convert                       Convert user input *.yml files to *.cbuild.yml files\n\
   list boards                   Print list of available board names\n\
   list configs                  Print list of configuration files\n\
@@ -179,6 +180,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"update-rte",        { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose, frozenPacks}}},
     {"convert",           { false, {context, contextSet, activeTargetSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, outputAlt, toolchain, verbose, frozenPacks, cbuildgen}}},
     {"run",               { false, {context, contextSet, activeTargetSet, debug, generator, load, quiet, schemaCheck, verbose, dryRun}}},
+    {"check",             { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, verbose}}},
     {"list packs",        { true,  {context, contextSet, activeTargetSet, debug, filter, load, missing, locked, quiet, schemaCheck, toolchain, verbose}}},
     {"list boards",       { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list devices",      { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
@@ -395,6 +397,10 @@ int ProjMgr::ProcessCommands() {
     m_rpcMode = true;
     m_worker.RpcMode(true);
     if (!m_rpcServer.Run()) {
+      return ErrorCode::ERROR;
+    }
+  } else if (m_command == "check") {
+    if (!RunCheckPackVerCmd()) {
       return ErrorCode::ERROR;
     }
   } else {
@@ -1032,6 +1038,29 @@ bool ProjMgr::RunCodeGenerator(void) {
     return false;
   }
   return true;
+}
+
+bool ProjMgr::RunCheckPackVerCmd(void) {
+  if (m_csolutionFile.empty()) {
+    ProjMgrLogger::Get().Error("input csolution.yml was not specified");
+    return false;
+  }
+  // Check input options
+  if (!PopulateContexts()) {
+    return false;
+  }
+  // Parse all input files and create contexts
+  if (!ParseAndValidateContexts()) {
+    return false;
+  }
+
+  vector<string> outputs;
+  const bool result = m_worker.CheckPackVerAndCollectRelNotes(outputs, m_filter);
+
+  for (const auto& line : outputs) {
+    ProjMgrLogger::out() << line << std::endl;
+  }
+  return result;
 }
 
 bool ProjMgr::RunListToolchains(void) {
