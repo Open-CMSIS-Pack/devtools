@@ -5982,6 +5982,7 @@ void ProjMgrWorker::CheckMissingLinkerScript(ContextItem& context) {
 bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& results, const std::string& filter) {
   map<string, string> usedPacks;                 // Vendor::Name -> currently used version
   map<string, pair<string, string>> latestPacks; // Vendor::Name -> (latest available version, resolved PDSC file path)
+  map<string, string> workspacePacks;            // Vendor::Name -> local pack path specified in project '- pack: path:' section
   vector<string> selectedContexts = m_selectedContexts;
   if (selectedContexts.empty()) {
     for (const auto& [contextName, _] : m_contexts) {
@@ -5995,8 +5996,7 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
     }
     for (const auto& pack : m_loadedPacks) {
       const string packId = pack->GetVendorString() + "::" + pack->GetName();
-      const string& currentVersion = pack->GetVersionString();
-      usedPacks[packId] = currentVersion;
+      usedPacks[packId] = pack->GetVersionString();
     }
   }
 
@@ -6004,20 +6004,53 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
     ProjMgrLogger::Get().Error("failed to read latest pack information from pack index");
     return false;
   }
+  // merge project-specified path packs into latestPacks
+  for (const auto& contextName : selectedContexts) {
+    ContextItem& context = m_contexts.at(contextName);
+    for (const auto& [pdscFile, pathVersion] : context.pdscFiles) {
+      const string& packPath = pathVersion.first;
+      // skip packs without specified local path and therefore pathVersion.first is empty
+      if (packPath.empty()) {
+        continue;
+      }
+      RtePackage* pack = m_kernel->LoadPack(pdscFile);
+      if (!pack) {
+        continue;
+      }
+      const string& vendor = pack->GetVendorString();
+      const string& name = pack->GetName();
+      const string& version = pack->GetVersionString();
+      if (vendor.empty() || name.empty() || version.empty()) {
+        continue;
+      }
+      const string packId = vendor + "::" + name;
+      auto latestPack = latestPacks.find(packId);
+      workspacePacks[packId] = packPath;
+      if (latestPack == latestPacks.end() || VersionCmp::Compare(latestPack->second.first, version) < 0) {
+        latestPacks[packId] = { version, pdscFile };
+      }
+    }
+  }
 
   vector<string> checkPackResults;
   for (const auto& [packId, currentVersion] : usedPacks) {
     auto latestPack = latestPacks.find(packId);
     if (latestPack == latestPacks.end()) {
-      checkPackResults.push_back(packId + "@" + currentVersion + " (not found in CMSIS pack root)");
+      checkPackResults.push_back(packId + "@" + currentVersion + " (not found in CMSIS pack root or project-specified pack paths)");
       continue;
     }
     const string& latestVersion = latestPack->second.first;
     const string& latestPdscFile = latestPack->second.second;
-    const int cmp = VersionCmp::Compare(currentVersion, latestVersion);
-    if (cmp < 0) {
-      string outStr = packId + "@" + currentVersion + " -> " + latestVersion;
-      if (m_verbose) {
+    const bool isOutdated = VersionCmp::Compare(currentVersion, latestVersion) < 0;
+    string outStr = isOutdated ?
+      packId + "@" + currentVersion + " -> " + latestVersion :
+      packId + "@" + currentVersion + " (up-to-date)";
+    if (m_verbose) {
+      auto workspacePack = workspacePacks.find(packId);
+      if (workspacePack != workspacePacks.end()) {
+        outStr += "\n  Local path: " + workspacePack->second;
+      }
+      if (isOutdated) {
         vector<string> releaseNotes;
         if (ReadPackReleaseNotes(latestPdscFile, currentVersion, latestVersion, releaseNotes)) {
           for (const auto& note : releaseNotes) {
@@ -6027,10 +6060,8 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
           outStr += "\n  Release notes: unavailable";
         }
       }
-      checkPackResults.push_back(outStr);
-    } else {
-      checkPackResults.push_back(packId + "@" + currentVersion + " (up-to-date)");
     }
+    checkPackResults.push_back(outStr);
   }
   if (checkPackResults.empty()) {
     ProjMgrLogger::Get().Error("no packs were found for version check");

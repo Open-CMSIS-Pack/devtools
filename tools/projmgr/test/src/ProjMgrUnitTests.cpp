@@ -704,6 +704,17 @@ ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
       Initial version\n\
   Release notes for v0.0.2:\n\
       Pre-initial version 0.0.2 for testing CheckPackVerCmd\n");
+
+  // check verbose output for a project-specified pack
+  streamRedirect.ClearStringStreams();
+  csolutionFile = testinput_folder + "/TestSolution/CheckPackVerCmd/checkPackVerCmd_my-packs.csolution.yml";
+  argv[2] = (char*)csolutionFile.c_str();
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  const string expectedStr = "\
+ARM::RteTestBoard@0.2.0-dev (up-to-date)\n\
+  Local path: " + testinput_folder + "/TestSolution/CheckPackVerCmd/my-packs/RteTestPack\n";
+  EXPECT_STREQ(outStr.c_str(), expectedStr.c_str());
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject_1) {
