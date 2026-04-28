@@ -3781,7 +3781,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
 TEST_F(ProjMgrUnitTests, MultiplePackVersions) {
   char* argv[5];
   StdStreamRedirect streamRedirect;
-  const string expected = "warning csolution: selected multiple versions of pack 'ARM::RteTest_DFP': '0.1.1+metadata', '0.2.0'\n\Review pack requirements";
+  const string expected = "warning csolution: selected multiple versions of pack 'ARM::RteTest_DFP': '0.1.1+metadata', '0.2.0'\nReview pack requirements";
   const string& csolution = testinput_folder + "/TestSolution/pack_multiple_versions.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();

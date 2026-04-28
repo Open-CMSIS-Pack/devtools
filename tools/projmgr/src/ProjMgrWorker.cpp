@@ -598,7 +598,6 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   filter.SetSelectedPackages(selectedPacks);
   context.rteActiveTarget->SetPackageFilter(filter);
   context.rteActiveTarget->UpdateFilterModel();
-  context.rteFilteredModel->GetPackages();
   return CheckRteErrors();
 }
 
