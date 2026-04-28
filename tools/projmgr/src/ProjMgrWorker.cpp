@@ -5980,7 +5980,7 @@ void ProjMgrWorker::CheckMissingLinkerScript(ContextItem& context) {
 }
 
 bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& results, const std::string& filter) {
-  map<string, PackInfo> usedPacks;               // Vendor::Name -> pack name, vendor and currently used version
+  map<string, string> usedPacks;                 // Vendor::Name -> currently used version
   map<string, pair<string, string>> latestPacks; // Vendor::Name -> (latest available version, resolved PDSC file path)
   vector<string> selectedContexts = m_selectedContexts;
   if (selectedContexts.empty()) {
@@ -5996,7 +5996,7 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
     for (const auto& pack : m_loadedPacks) {
       const string packId = pack->GetVendorString() + "::" + pack->GetName();
       const string& currentVersion = pack->GetVersionString();
-      usedPacks[packId] = { pack->GetName(), pack->GetVendorString(), currentVersion };
+      usedPacks[packId] = currentVersion;
     }
   }
 
@@ -6006,20 +6006,20 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
   }
 
   vector<string> checkPackResults;
-  for (const auto& [packId, currentPack] : usedPacks) {
+  for (const auto& [packId, currentVersion] : usedPacks) {
     auto latestPack = latestPacks.find(packId);
     if (latestPack == latestPacks.end()) {
-      checkPackResults.push_back(packId + "@" + currentPack.version + " (not found in CMSIS pack root)");
+      checkPackResults.push_back(packId + "@" + currentVersion + " (not found in CMSIS pack root)");
       continue;
     }
     const string& latestVersion = latestPack->second.first;
     const string& latestPdscFile = latestPack->second.second;
-    const int cmp = VersionCmp::Compare(currentPack.version, latestVersion);
+    const int cmp = VersionCmp::Compare(currentVersion, latestVersion);
     if (cmp < 0) {
-      string outStr = packId + "@" + currentPack.version + " -> " + latestVersion;
+      string outStr = packId + "@" + currentVersion + " -> " + latestVersion;
       if (m_verbose) {
         vector<string> releaseNotes;
-        if (ReadPackReleaseNotes(latestPdscFile, currentPack.version, latestVersion, releaseNotes)) {
+        if (ReadPackReleaseNotes(latestPdscFile, currentVersion, latestVersion, releaseNotes)) {
           for (const auto& note : releaseNotes) {
             outStr += note;
           }
@@ -6029,7 +6029,7 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
       }
       checkPackResults.push_back(outStr);
     } else {
-      checkPackResults.push_back(packId + "@" + currentPack.version + " (up-to-date)");
+      checkPackResults.push_back(packId + "@" + currentVersion + " (up-to-date)");
     }
   }
   if (checkPackResults.empty()) {

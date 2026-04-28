@@ -384,6 +384,5 @@ protected:
   std::string m_cmsisToolboxDir;
   std::map<std::string, RteItem*> m_externalGeneratorFiles;
   std::map<std::string, RteGenerator*> m_externalGenerators;
-  
 };
 #endif // RteKernel_H

@@ -1065,10 +1065,10 @@ public:
 
   /**
    * @brief read release notes for versions newer than the current version and up to the latest version
-   * @param resolved path to the PDSC file of the latest effective pack
+   * @param resolved path to the latest PDSC file
    * @param version currently used by the project
-   * @param latest available version resolved for the pack
-   * @param output list of collected release note strings for versions
+   * @param latest available version resolved for the latest pack or the .pidx file
+   * @param output list of collected release note strings for versions to be filled
    * @return true if at least one matching release note was found, otherwise false
    */
   bool ReadPackReleaseNotes(const std::string& pdscFile, const std::string& currentVersion, const std::string& latestVersion, std::vector<std::string>& releaseNotes);
