@@ -446,6 +446,9 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
   // collect telnet options
   CollectTelnetOptions(context, adapter, pnames);
 
+  // collect system view options
+  CollectSystemViewOptions(context, adapter, pnames);
+
   // merge custom options
   MergeCustomItems(context.debugger.custom, m_runDebug.debugger.custom);
 
@@ -518,6 +521,18 @@ void ProjMgrRunDebug::SetTelnetPort(TelnetOptionsItem& item, unsigned long long&
     }
     item.ullPort = port;
     usedPorts.insert(port);
+  }
+}
+
+void ProjMgrRunDebug::CollectSystemViewOptions(const ContextItem& context, DebugAdapterItem& adapter,
+    const std::map<std::string, RteDeviceProperty*>& pnames)
+{
+  if (adapter.defaults.systemView.active) {
+    SystemViewItem options;
+    options.file = context.debugger.systemView.file;
+    options.autoStart = context.debugger.systemView.autoStart;
+    options.autoStop = context.debugger.systemView.autoStop;
+    m_runDebug.debugger.systemView = options;
   }
 }
 

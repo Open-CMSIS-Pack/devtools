@@ -2699,6 +2699,7 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
       }
       context.debugger.telnet[telnet.pname] = { telnet };
     }
+	context.debugger.systemView = m_activeTargetSet.debugger.systemView;
     context.debugger.custom = m_activeTargetSet.debugger.custom;
   }
   for (const auto& [filename, fi] : context.rteActiveProject->GetFileInstances()) {

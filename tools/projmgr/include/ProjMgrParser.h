@@ -10,6 +10,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <optional>
 
 /**
 * @brief type pair containing
@@ -143,6 +144,18 @@ struct TelnetItem {
 };
 
 /**
+ * @brief system view item containing
+ *        file
+ *        auto start
+ *        auto stop
+*/
+struct SystemViewItem {
+  std::string file;
+  std::optional<bool> autoStart;
+  std::optional<bool> autoStop;
+};
+
+/**
  * @brief custom item containing
  *        scalar
  *        array
@@ -162,6 +175,7 @@ struct CustomItem {
  *        debug configuration file
  *        start pname
  *        telnet options
+ *        systemview options
  *        custom properties
 */
 struct DebuggerItem {
@@ -171,6 +185,7 @@ struct DebuggerItem {
   std::string dbgconf;
   std::string startPname;
   std::vector<TelnetItem> telnet;
+  SystemViewItem systemView;
   CustomItem custom;
 };
 
@@ -675,16 +690,24 @@ struct TelnetDefaults {
   bool active = false;
 };
 
+struct SystemViewDefaults {
+  bool autoStart;
+  bool autoStop;
+  bool active = false;
+};
+
 /**
  * @brief debug-adapter defaults item containing
  *        gdbserver defaults
  *        telnet defaults
+ *        system view defaults
  *        debug protocol(jtag or swd)
  *        debug clock speed
 */
 struct DebugAdapterDefaultsItem {
   GdbServerDefaults gdbserver;
   TelnetDefaults telnet;
+  SystemViewDefaults systemView;
   std::string protocol;
   std::string clock;
   CustomItem custom;
