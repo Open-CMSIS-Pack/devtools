@@ -3838,6 +3838,21 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
   EXPECT_TRUE(regex_search(errStr, regex(errExpected)));
 }
 
+TEST_F(ProjMgrUnitTests, MultiplePackVersions) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string expected = "warning csolution: selected multiple versions of pack 'ARM::RteTest_DFP': '0.1.1+metadata', '0.2.0'\nReview pack requirements";
+  const string& csolution = testinput_folder + "/TestSolution/pack_multiple_versions.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_List_Board_Pack) {
   char* argv[7];
   const string& csolution = testinput_folder + "/TestSolution/test_list_board_package.csolution.yml";
