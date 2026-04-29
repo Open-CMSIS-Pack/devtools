@@ -657,6 +657,67 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
   EXPECT_NE(errStr.find(expectedErr), string::npos);
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_CheckPackVerCmd) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  string csolutionFile = testinput_folder + "/TestSolution/CheckPackVerCmd/checkPackVerCmd.csolution.yml";
+  // no csolution file provided
+  argv[1] = (char*)"check";
+  argv[2] = (char*)"pack-updates";
+  EXPECT_EQ(1, RunProjMgr(3, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(errStr.c_str(), "error csolution: input csolution.yml was not specified\n");
+
+  // standard check output
+  argv[3] = (char*)csolutionFile.c_str();
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "\
+ARM::RteTest@0.1.0 (up-to-date)\n\
+ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
+ARM::RteTest_DFP@0.1.1+metadata -> 0.2.0\n");
+
+  // check verbose output
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"--verbose";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "\
+ARM::RteTest@0.1.0 (up-to-date)\n\
+ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
+  Release notes for v0.1.0:\n\
+      Initial version\n\
+  Release notes for v0.0.2:\n\
+      Pre-initial version 0.0.2 for testing CheckPackVerCmd\n\
+ARM::RteTest_DFP@0.1.1+metadata -> 0.2.0\n\
+  Release notes for v0.2.0:\n\
+      Added a new device 'RteTest_ARMCM0_Dual'\n");
+
+  // check verbose output with filtering
+  streamRedirect.ClearStringStreams();
+  argv[5] = (char*)"-f";
+  argv[6] = (char*)"RteTestBoard";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "\
+ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
+  Release notes for v0.1.0:\n\
+      Initial version\n\
+  Release notes for v0.0.2:\n\
+      Pre-initial version 0.0.2 for testing CheckPackVerCmd\n");
+
+  // check verbose output for a project-specified pack
+  streamRedirect.ClearStringStreams();
+  csolutionFile = testinput_folder + "/TestSolution/CheckPackVerCmd/checkPackVerCmd_my-packs.csolution.yml";
+  argv[3] = (char*)csolutionFile.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  const string expectedStr = "\
+ARM::RteTestBoard@0.2.0-dev (up-to-date)\n\
+  Local path: my-packs/RteTestPack\n";
+  EXPECT_STREQ(outStr.c_str(), expectedStr.c_str());
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject_1) {
   char* argv[7];
   string csolutionFile = UpdateTestSolutionFile("./TestProject4/test.cproject.yml");
@@ -3776,6 +3837,21 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
 
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_search(errStr, regex(errExpected)));
+}
+
+TEST_F(ProjMgrUnitTests, MultiplePackVersions) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string expected = "warning csolution: selected multiple versions of pack 'ARM::RteTest_DFP': '0.1.1+metadata', '0.2.0'\nReview pack requirements";
+  const string& csolution = testinput_folder + "/TestSolution/pack_multiple_versions.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_List_Board_Pack) {
@@ -7095,9 +7171,9 @@ R"(- mode: file
 
   sstreamSystemView << cbuildrun0["cbuild-run"]["debugger"]["systemview"];
   EXPECT_EQ(
-      R"(auto-start: false
-auto-stop: false
-file: test_x8.SVDat)", sstreamSystemView.str());
+      R"(file: test_x8.SVDat
+auto-start: false
+auto-stop: false)", sstreamSystemView.str());
 
   // dual core without ports
   argv[6] = (char*)"DualCore";

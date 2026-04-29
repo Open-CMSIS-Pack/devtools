@@ -22,6 +22,7 @@ static constexpr const char* USAGE = "\n\
 Usage:\n\
   csolution <command> [<name>.csolution.yml] [options]\n\n\
 Commands:\n\
+  check pack-updates            Check existing project for potential pack updates\n\
   convert                       Convert user input *.yml files to *.cbuild.yml files\n\
   list boards                   Print list of available board names\n\
   list configs                  Print list of configuration files\n\
@@ -176,26 +177,27 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   // command options dictionary
   map<string, std::pair<bool, vector<cxxopts::Option>>> optionsDict = {
     // command, optional args, options
-    {"update-rte",        { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose, frozenPacks}}},
-    {"convert",           { false, {context, contextSet, activeTargetSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, outputAlt, toolchain, verbose, frozenPacks, cbuildgen}}},
-    {"run",               { false, {context, contextSet, activeTargetSet, debug, generator, load, quiet, schemaCheck, verbose, dryRun}}},
-    {"list packs",        { true,  {context, contextSet, activeTargetSet, debug, filter, load, missing, locked, quiet, schemaCheck, toolchain, verbose}}},
-    {"list boards",       { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list devices",      { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list npus",         { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list configs",      { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list components",   { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list dependencies", { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list examples",     { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list templates",    { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list contexts",     { false, {debug, filter, quiet, schemaCheck, verbose, ymlOrder}}},
-    {"list target-sets",  { false, {debug, filter, quiet, schemaCheck, verbose}}},
-    {"list debuggers",    { false, {debug, filter, quiet, schemaCheck, verbose}}},
-    {"list generators",   { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose}}},
-    {"list layers",       { false, {context, contextSet, activeTargetSet, debug, load, clayerSearchPath, quiet, schemaCheck, toolchain, verbose, updateIdx}}},
-    {"list toolchains",   { false, {context, contextSet, activeTargetSet, debug, quiet, toolchain, verbose}}},
-    {"list environment",  { true,  {}}},
-    {"rpc",               { true,  {contentLength}}},
+    {"update-rte",         { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose, frozenPacks}}},
+    {"convert",            { false, {context, contextSet, activeTargetSet, debug, exportSuffix, load, quiet, schemaCheck, noUpdateRte, output, outputAlt, toolchain, verbose, frozenPacks, cbuildgen}}},
+    {"run",                { false, {context, contextSet, activeTargetSet, debug, generator, load, quiet, schemaCheck, verbose, dryRun}}},
+    {"check pack-updates", { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, verbose}}},
+    {"list packs",         { true,  {context, contextSet, activeTargetSet, debug, filter, load, missing, locked, quiet, schemaCheck, toolchain, verbose}}},
+    {"list boards",        { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list devices",       { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list npus",          { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list configs",       { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list components",    { true,  {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list dependencies",  { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list examples",      { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list templates",     { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list contexts",      { false, {debug, filter, quiet, schemaCheck, verbose, ymlOrder}}},
+    {"list target-sets",   { false, {debug, filter, quiet, schemaCheck, verbose}}},
+    {"list debuggers",     { false, {debug, filter, quiet, schemaCheck, verbose}}},
+    {"list generators",    { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose}}},
+    {"list layers",        { false, {context, contextSet, activeTargetSet, debug, load, clayerSearchPath, quiet, schemaCheck, toolchain, verbose, updateIdx}}},
+    {"list toolchains",    { false, {context, contextSet, activeTargetSet, debug, quiet, toolchain, verbose}}},
+    {"list environment",   { true,  {}}},
+    {"rpc",                { true,  {contentLength}}},
   };
 
   try {
@@ -365,6 +367,8 @@ int ProjMgr::RunProjMgr(int argc, char** argv, char** envp) {
 int ProjMgr::ProcessCommands() {
   if (m_command == "list") {
     return ProcessListCommand();
+  } else if (m_command == "check") {
+    return ProcessCheckCommand();
   } else if (m_command == "update-rte") {
     // Process 'update-rte' command
     if (!RunConfigure()) {
@@ -411,7 +415,7 @@ int ProjMgr::ProcessListCommand() {
     return ErrorCode::ERROR;
   }
   // Process argument
-  const std::map<std::string, std::function<bool()>> handlers = {
+  const map<string, function<bool()>> handlers = {
     { "packs",        [this]() { return RunListPacks(); } },
     { "boards",       [this]() { return RunListBoards(); } },
     { "devices",      [this]() { return RunListDevices(); } },
@@ -432,6 +436,25 @@ int ProjMgr::ProcessListCommand() {
   const auto it = handlers.find(m_args);
   if (it == handlers.end()) {
     ProjMgrLogger::Get().Error("list <args> was not found");
+    return ErrorCode::ERROR;
+  }
+
+  return it->second() ? ErrorCode::SUCCESS : ErrorCode::ERROR;
+}
+
+int ProjMgr::ProcessCheckCommand() {
+  // Process 'check' command
+  if (m_args.empty()) {
+    ProjMgrLogger::Get().Error("check <args> was not specified");
+    return ErrorCode::ERROR;
+  }
+  // Process argument
+  const map<string, function<bool()>> handlers = {
+    { "pack-updates", [this]() { return RunCheckPackVerCmd(); } }
+  };
+  const auto it = handlers.find(m_args);
+  if (it == handlers.end()) {
+    ProjMgrLogger::Get().Error("check <args> was not found");
     return ErrorCode::ERROR;
   }
 
@@ -1032,6 +1055,29 @@ bool ProjMgr::RunCodeGenerator(void) {
     return false;
   }
   return true;
+}
+
+bool ProjMgr::RunCheckPackVerCmd(void) {
+  if (m_csolutionFile.empty()) {
+    ProjMgrLogger::Get().Error("input csolution.yml was not specified");
+    return false;
+  }
+  // Check input options
+  if (!PopulateContexts()) {
+    return false;
+  }
+  // Parse all input files and create contexts
+  if (!ParseAndValidateContexts()) {
+    return false;
+  }
+
+  vector<string> outputs;
+  const bool result = m_worker.CheckPackVerAndCollectRelNotes(outputs, m_filter);
+
+  for (const auto& line : outputs) {
+    ProjMgrLogger::out() << line << std::endl;
+  }
+  return result;
 }
 
 bool ProjMgr::RunListToolchains(void) {

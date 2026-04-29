@@ -620,8 +620,12 @@ void ProjMgrYamlParser::ParseSystemView(const YAML::Node& parent, const std::str
   if (parent[YAML_SYSTEMVIEW].IsDefined()) {
     const YAML::Node& systemViewNode = parent[YAML_SYSTEMVIEW];
     ParseString(systemViewNode, YAML_FILE, systemView.file);
-    ParseBoolean(systemViewNode, YAML_AUTO_START, systemView.autoStart.value(), true);
-    ParseBoolean(systemViewNode, YAML_AUTO_STOP, systemView.autoStop.value(), true);
+
+    bool autoStart = false, autoStop = false;
+    ParseBoolean(systemViewNode, YAML_AUTO_START, autoStart, true);
+    ParseBoolean(systemViewNode, YAML_AUTO_STOP, autoStop, true);
+    systemView.autoStart = autoStart;
+    systemView.autoStop = autoStop;
   }
 }
 
