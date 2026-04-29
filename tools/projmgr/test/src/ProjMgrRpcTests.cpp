@@ -1192,10 +1192,10 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfoMissing) {
   auto packInfos = responses[3]["result"]["packs"];
   EXPECT_EQ(packInfos.size(), 4);
 
-  EXPECT_EQ(packInfos[0]["id"], "ARM::RteTest_DFP@0.2.0");
-  EXPECT_EQ(packInfos[1]["id"], "ARM::RteTest@3.0.1");
-  EXPECT_EQ(packInfos[2]["id"], "ARM::Missing_DFP@>=0.0.5");
-  EXPECT_EQ(packInfos[3]["id"], "ARM::Missing_PACK");
+  EXPECT_EQ(packInfos[0]["id"], "ARM::Missing_DFP@>=0.0.5");
+  EXPECT_EQ(packInfos[1]["id"], "ARM::Missing_PACK");
+  EXPECT_EQ(packInfos[2]["id"], "ARM::RteTest@3.0.1");
+  EXPECT_EQ(packInfos[3]["id"], "ARM::RteTest_DFP@0.2.0");
 }
 
 
