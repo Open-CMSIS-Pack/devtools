@@ -658,18 +658,19 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_CheckPackVerCmd) {
-  char* argv[6];
+  char* argv[7];
   StdStreamRedirect streamRedirect;
   string csolutionFile = testinput_folder + "/TestSolution/CheckPackVerCmd/checkPackVerCmd.csolution.yml";
   // no csolution file provided
   argv[1] = (char*)"check";
-  EXPECT_EQ(1, RunProjMgr(2, argv, 0));
+  argv[2] = (char*)"pack-updates";
+  EXPECT_EQ(1, RunProjMgr(3, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_STREQ(errStr.c_str(), "error csolution: input csolution.yml was not specified\n");
 
   // standard check output
-  argv[2] = (char*)csolutionFile.c_str();
-  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+  argv[3] = (char*)csolutionFile.c_str();
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
   auto outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "\
 ARM::RteTest@0.1.0 (up-to-date)\n\
@@ -678,8 +679,8 @@ ARM::RteTest_DFP@0.1.1+metadata -> 0.2.0\n");
 
   // check verbose output
   streamRedirect.ClearStringStreams();
-  argv[3] = (char*)"--verbose";
-  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+  argv[4] = (char*)"--verbose";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
   outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "\
 ARM::RteTest@0.1.0 (up-to-date)\n\
@@ -694,9 +695,9 @@ ARM::RteTest_DFP@0.1.1+metadata -> 0.2.0\n\
 
   // check verbose output with filtering
   streamRedirect.ClearStringStreams();
-  argv[4] = (char*)"-f";
-  argv[5] = (char*)"RteTestBoard";
-  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  argv[5] = (char*)"-f";
+  argv[6] = (char*)"RteTestBoard";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
   outStr = streamRedirect.GetOutString();
   EXPECT_STREQ(outStr.c_str(), "\
 ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
@@ -708,8 +709,8 @@ ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
   // check verbose output for a project-specified pack
   streamRedirect.ClearStringStreams();
   csolutionFile = testinput_folder + "/TestSolution/CheckPackVerCmd/checkPackVerCmd_my-packs.csolution.yml";
-  argv[2] = (char*)csolutionFile.c_str();
-  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  argv[3] = (char*)csolutionFile.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
   outStr = streamRedirect.GetOutString();
   const string expectedStr = "\
 ARM::RteTestBoard@0.2.0-dev (up-to-date)\n\

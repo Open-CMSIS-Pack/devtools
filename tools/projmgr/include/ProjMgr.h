@@ -110,6 +110,12 @@ protected:
   int ProcessListCommand();
 
   /**
+   * @brief process requested check arguments specified in command line
+   * @return program exit code as an integer, 0 for success
+  */
+  int ProcessCheckCommand();
+
+  /**
    * @brief helper method to execute common list commands
    * @param pointer to ProjMgrWorker list method
    * @param error message to display on failure
