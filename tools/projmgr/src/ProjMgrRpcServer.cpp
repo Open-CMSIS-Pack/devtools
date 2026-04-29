@@ -518,7 +518,7 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& a
   RpcDataCollector dc(GetActiveTarget(context));
   auto usedPacks = dc.GetUsedPacks();
 
-  RpcArgs::PacksInfo packsInfo;
+  map<string, RpcArgs::Pack> packsMap;
   for(auto& [packId, rtePackage] : rteTarget->GetFilteredModel()->GetPackages()) {
     RpcArgs::Pack p;
     p.id = rtePackage->GetPackageID(true);
@@ -538,12 +538,18 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& a
     if(!packRefs.empty()) {
       p.references = packRefs;
     }
-    packsInfo.packs.push_back(p);
+    packsMap[p.id] = p;
   }
 
   // add unresolved packs from unresolved references
   for(auto& ref : GetPackReferences(context)) {
     if(!ref.resolvedPack.has_value() && !ref.path.has_value()) {
+      auto it = packsMap.find(ref.pack);
+      if(it != packsMap.end()) {
+        // only add reference, the optional references already exists
+        it->second.references.value().push_back(ref);
+        continue;
+      }
       RpcArgs::Pack p;
       p.id = ref.pack; // use original ID
       p.used = true;
@@ -552,9 +558,15 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& a
       PackReferenceVector packRefs;
       packRefs.push_back(ref);
       p.references = packRefs;
-      packsInfo.packs.push_back(p);
+      packsMap[ref.pack] = p;
     }
   }
+
+  RpcArgs::PacksInfo packsInfo;
+  for(auto& [_, p] : packsMap) {
+    packsInfo.packs.push_back(p);
+  }
+
   packsInfo.success = true;
   return packsInfo;
 }
