@@ -7138,19 +7138,17 @@ TEST_F(ProjMgrUnitTests, TestRunDebugMulticore) {
 }
 
 TEST_F(ProjMgrUnitTests, TestRunDebugTelnet) {
-  char* argv[7];
+  char* argv[5];
   const string& csolution = testinput_folder + "/TestRunDebug/telnet.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
-  argv[3] = (char*)"-o";
-  argv[4] = (char*)testoutput_folder.c_str();
-  argv[5] = (char*)"--active";
+  argv[3] = (char*)"--active";
 
   // single core without port, with file mode
-  argv[6] = (char*)"SingleCore";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  argv[4] = (char*)"SingleCore";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
   stringstream sstream0, sstreamRTT, sstreamSystemView;
-  const YAML::Node& cbuildrun0 = YAML::LoadFile(testoutput_folder + "/out/telnet+SingleCore.cbuild-run.yml");
+  const YAML::Node& cbuildrun0 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+SingleCore.cbuild-run.yml");
   sstream0 << cbuildrun0["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
 R"(- mode: file
@@ -7159,7 +7157,7 @@ R"(- mode: file
 
   sstreamRTT << cbuildrun0["cbuild-run"]["debugger"]["rtt"];
   EXPECT_EQ(
-      R"(- pname: test
+R"(- pname: test
   control-block:
     address: 0x20000000
     size: 0x10000
@@ -7171,14 +7169,14 @@ R"(- mode: file
 
   sstreamSystemView << cbuildrun0["cbuild-run"]["debugger"]["systemview"];
   EXPECT_EQ(
-      R"(file: test_x8.SVDat
+R"(file: test_x8.SVDat
 auto-start: false
 auto-stop: false)", sstreamSystemView.str());
 
   // dual core without ports
-  argv[6] = (char*)"DualCore";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  const YAML::Node& cbuildrun1 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  argv[4] = (char*)"DualCore";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuildrun1 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream1;
   sstream1 << cbuildrun1["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
@@ -7190,9 +7188,9 @@ R"(- mode: server
   port: 4444)", sstream1.str());
 
   // dual core with start port and file mode
-  argv[6] = (char*)"DualCore@TelnetFile";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  const YAML::Node& cbuildrun2 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  argv[4] = (char*)"DualCore@TelnetFile";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuildrun2 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream2;
   sstream2 << cbuildrun2["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
@@ -7205,9 +7203,9 @@ R"(- mode: monitor
   file: telnet+DualCore.cm0_core1)", sstream2.str());
 
   // dual core with jlink and no telnet
-  argv[6] = (char*)"DualCore@JLinkNoTelnet";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  const YAML::Node& cbuildrun3 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  argv[4] = (char*)"DualCore@JLinkNoTelnet";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuildrun3 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream3;
   sstream3 << cbuildrun3["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
@@ -7219,9 +7217,9 @@ R"(- mode: off
   port: 4444)", sstream3.str());
 
   // dual core with custom port numbers
-  argv[6] = (char*)"DualCore@CustomPorts";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  const YAML::Node& cbuildrun4 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  argv[4] = (char*)"DualCore@CustomPorts";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuildrun4 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream4;
   sstream4 << cbuildrun4["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
@@ -7234,8 +7232,8 @@ R"(- mode: off
 
   // warnings
   StdStreamRedirect streamRedirect;
-  argv[6] = (char*)"DualCore@Warnings";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  argv[4] = (char*)"DualCore@Warnings";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
   string expected = "\
 warning csolution: \\'telnet:\\' pname is required \\(multicore device\\)\n\
 warning csolution: pname \\'unknown\\' does not match any device pname\n\

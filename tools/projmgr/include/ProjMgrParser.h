@@ -690,6 +690,12 @@ struct TelnetDefaults {
   bool active = false;
 };
 
+/**
+ * @brief systemview defaults item containing
+ *        autoStart flag
+ *        autoStop flag
+ *        active flag
+*/
 struct SystemViewDefaults {
   bool autoStart;
   bool autoStop;
@@ -700,7 +706,7 @@ struct SystemViewDefaults {
  * @brief debug-adapter defaults item containing
  *        gdbserver defaults
  *        telnet defaults
- *        system view defaults
+ *        systemview defaults
  *        debug protocol(jtag or swd)
  *        debug clock speed
 */

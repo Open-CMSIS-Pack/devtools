@@ -2713,7 +2713,13 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
       }
       context.debugger.telnet[telnet.pname] = { telnet };
     }
-	context.debugger.systemView = m_activeTargetSet.debugger.systemView;
+    auto systemView = m_activeTargetSet.debugger.systemView;
+    if (!systemView.file.empty()) {
+      if (!ProcessSequenceRelative(context, systemView.file, context.csolution->directory, false)) {
+        return false;
+      }
+    }
+    context.debugger.systemView = systemView;
     context.debugger.custom = m_activeTargetSet.debugger.custom;
   }
   for (const auto& [filename, fi] : context.rteActiveProject->GetFileInstances()) {
