@@ -371,12 +371,11 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
     return false;
   }
   bool errFound = false;
-  for (auto packItem : context.packRequirements) {
+  for (auto& packItem : context.packRequirements) {
     // parse required version range
     const auto& pack = packItem.pack;
     const auto& reqVersion = pack.version;
     string reqVersionRange = ProjMgrUtils::ConvertToVersionRange(reqVersion);
-
     if (packItem.path.empty()) {
       bool bPackFilter = (pack.name.empty() || WildCards::IsWildcardPattern(pack.name));
       auto filteredPackItems = GetFilteredPacks(packItem, packRoot);
@@ -390,6 +389,7 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
         // get installed and local pdsc that satisfy the version range requirements
         auto pdsc = m_kernel->GetEffectivePdscFile(attributes);
         const string& pdscFile = pdsc.second;
+        packItem.resolvedTo = pdsc.first; // store resolved ID if any
         if (pdscFile.empty()) {
           if (!bPackFilter) {
             std::string packageName =
@@ -420,8 +420,7 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
         m_contextErrMap[context.name].insert("no match found for pack filter: " + filterStr);
         errFound = true;
       }
-    }
-    else {
+    } else {
       if (!reqVersion.empty()) {
         m_contextErrMap[context.name].insert("pack '" + (pack.vendor.empty() ? "" : pack.vendor + "::") + pack.name
           + "' specified with 'path' must not have a version");
@@ -565,10 +564,14 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   }
   if (!CollectAllRequiredPdscFiles()) {
     PrintContextErrors(context.name);
-    return false;
+    if(!m_rpcMode) {
+      return false;
+    }
   }
   if ((m_loadedPacks.empty() || m_rpcMode) && !LoadAllRelevantPacks()) {
-    return false;
+    if(!m_rpcMode) {
+      return false;
+    }
   }
   // Filter context specific packs
   set<string> selectedPacks;
@@ -5757,7 +5760,7 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
   if (result.second) {
     string errMsg = "executing generator '" + generatorId + "' for context '" + selectedContextId + "' failed:\n";
     errMsg += "  " + result.first;
-    
+
     const string downloadUrl = m_extGenerator->GetGlobalGenUrl(generatorId);
     if (!downloadUrl.empty()) {
       errMsg += "  check the URL for downloading the generator: " + downloadUrl;
@@ -5769,7 +5772,7 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
   } else {
     ProjMgrLogger::Get().Info("generator '" + generatorId + "' for context '" + selectedContextId + "' reported:\n  " + result.first);
   }
-  
+
   return true;
 }
 

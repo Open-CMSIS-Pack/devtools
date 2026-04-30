@@ -392,7 +392,7 @@ RpcArgs::ContextInfo RpcHandler::GetContextInfo(const string& context) {
   RpcDataCollector dc(GetActiveTarget(context));
   contextInfo.success = true;
   dc.CollectUsedComponents(contextInfo.components);
-  // get all references, even if they are not selected , because it is useful for client to remove them from files
+  // get all references, even if they are not selected because it is useful for client to remove them from files
   contextInfo.packs = GetPackReferences(context);
 
   auto& contextItem = GetContext(context);
@@ -426,6 +426,11 @@ RpcArgs::UsedItems RpcHandler::GetUsedItems(const string& context) {
 
 
 PackReferenceVector& RpcHandler::GetPackReferences(const string& context) {
+  auto it = m_packReferences.find(context);
+  if(it != m_packReferences.end()) {
+    return it->second;
+  }
+  // collect references
   // emplace returns pair<iterator, bool>
   // return the value from the iterator
   return m_packReferences.emplace(context, RpcHandler::CollectPackReferences(context)).first->second;
@@ -435,16 +440,23 @@ PackReferenceVector RpcHandler::CollectPackReferences(const string& context) {
   PackReferenceVector packRefs;
   auto contextItem = GetContext(context);
   for(const auto& packItem : contextItem.packRequirements) {
-    const auto packId = RtePackage::ComposePackageID(packItem.pack.vendor, packItem.pack.name, packItem.pack.version);
+    const auto& packId = packItem.resolvedTo;
 
     RpcArgs::PackReference packRef;
     packRef.pack = packItem.selectedBy;
-    packRef.resolvedPack = packId;
+    if(!packItem.path.empty()) {
+      packRef.resolvedPack = packItem.selectedBy;
+      packRef.path = packItem.path;
+    } else if(!packId.empty()) {
+      packRef.resolvedPack = packId;
+    }
     packRef.origin = packItem.origin;
-    packRef.path = packItem.path;
     packRef.selected = true; // initially pack is selected;
-    if (packItem.path.empty() && !contextItem.availablePackVersions[packId].empty()) {
-      packRef.upgrade = contextItem.availablePackVersions[packId];
+    if(packItem.path.empty() && !packId.empty()) {
+      const auto availableVersionIt = contextItem.availablePackVersions.find(packId);
+      if(availableVersionIt != contextItem.availablePackVersions.end() && !availableVersionIt->second.empty()) {
+        packRef.upgrade = availableVersionIt->second;
+      }
     }
     packRefs.push_back(packRef);
   }
@@ -457,8 +469,9 @@ PackReferenceVector RpcHandler::GetPackReferencesForPack(const string& context, 
   auto path = pack->GetRootFilePath(false);
 
   for(auto& ref : GetPackReferences(context)) {
-    if(ref.resolvedPack.has_value() && ref.resolvedPack == packId ||
-       ref.path.has_value() && RteFsUtils::Equivalent(ref.path.value(), path)) {
+    if((ref.resolvedPack.has_value() && ref.resolvedPack == packId) ||
+       (ref.path.has_value() && RteFsUtils::Equivalent(ref.path.value(), path)) ||
+       ref.pack == packId) {
       packRefs.push_back(ref);
     }
   }
@@ -508,7 +521,7 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& a
   RpcDataCollector dc(GetActiveTarget(context));
   auto usedPacks = dc.GetUsedPacks();
 
-  RpcArgs::PacksInfo packsInfo;
+  map<string, RpcArgs::Pack> packsMap;
   for(auto& [packId, rtePackage] : rteTarget->GetFilteredModel()->GetPackages()) {
     RpcArgs::Pack p;
     p.id = rtePackage->GetPackageID(true);
@@ -528,9 +541,34 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& a
     if(!packRefs.empty()) {
       p.references = packRefs;
     }
+    packsMap[p.id] = p;
+  }
+
+  // add unresolved packs from unresolved references
+  for(auto& ref : GetPackReferences(context)) {
+    if(!ref.resolvedPack.has_value() && !ref.path.has_value()) {
+      auto it = packsMap.find(ref.pack);
+      if(it != packsMap.end()) {
+        // only add reference, the optional references already exists
+        it->second.references.value().push_back(ref);
+        continue;
+      }
+      RpcArgs::Pack p;
+      p.id = ref.pack; // use original ID
+      p.used = true;
+      p.description = "Pack not installed";
+
+      PackReferenceVector packRefs;
+      packRefs.push_back(ref);
+      p.references = packRefs;
+      packsMap[ref.pack] = p;
+    }
+  }
+
+  RpcArgs::PacksInfo packsInfo;
+  for(auto& [_, p] : packsMap) {
     packsInfo.packs.push_back(p);
   }
-  // TODO: add unresolved packs from unresolved references
 
   packsInfo.success = true;
   return packsInfo;
