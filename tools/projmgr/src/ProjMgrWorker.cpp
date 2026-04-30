@@ -591,7 +591,7 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
         msg += " '" + version + "',";
       }
       msg.pop_back();
-      msg += "\nReview pack requirements";
+      msg += "\nReview pack selection";
       ProjMgrLogger::Get().Warn(msg, context.name);
     }
   }
