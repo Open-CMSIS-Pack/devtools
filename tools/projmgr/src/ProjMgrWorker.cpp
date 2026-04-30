@@ -591,7 +591,7 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
         msg += " '" + version + "',";
       }
       msg.pop_back();
-      msg += "\nReview pack requirements";
+      msg += "\nReview pack selection";
       ProjMgrLogger::Get().Warn(msg, context.name);
     }
   }
@@ -2713,9 +2713,9 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
         if (!ProcessSequenceRelative(context, telnet.file, context.csolution->directory, false)) {
           return false;
         }
-      }
-      if (RteFsUtils::IsRelative(telnet.file)) {
-        RteFsUtils::NormalizePath(telnet.file, context.directories.cprj);
+        if (RteFsUtils::IsRelative(telnet.file)) {
+          RteFsUtils::NormalizePath(telnet.file, context.directories.cprj);
+        }
       }
       context.debugger.telnet[telnet.pname] = { telnet };
     }
