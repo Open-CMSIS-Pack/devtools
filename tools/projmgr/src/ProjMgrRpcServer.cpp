@@ -466,8 +466,8 @@ PackReferenceVector RpcHandler::GetPackReferencesForPack(const string& context, 
   auto path = pack->GetRootFilePath(false);
 
   for(auto& ref : GetPackReferences(context)) {
-    if(ref.resolvedPack.has_value() && ref.resolvedPack == packId ||
-       ref.path.has_value() && RteFsUtils::Equivalent(ref.path.value(), path) ||
+    if((ref.resolvedPack.has_value() && ref.resolvedPack == packId) ||
+       (ref.path.has_value() && RteFsUtils::Equivalent(ref.path.value(), path)) ||
        ref.pack == packId) {
       packRefs.push_back(ref);
     }
