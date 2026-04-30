@@ -2714,12 +2714,18 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
           return false;
         }
       }
+      if (RteFsUtils::IsRelative(telnet.file)) {
+        RteFsUtils::NormalizePath(telnet.file, context.directories.cprj);
+      }
       context.debugger.telnet[telnet.pname] = { telnet };
     }
     auto systemView = m_activeTargetSet.debugger.systemView;
     if (!systemView.file.empty()) {
       if (!ProcessSequenceRelative(context, systemView.file, context.csolution->directory, false)) {
         return false;
+      }
+      if (RteFsUtils::IsRelative(systemView.file)) {
+        RteFsUtils::NormalizePath(systemView.file, context.directories.cprj);
       }
     }
     context.debugger.systemView = systemView;

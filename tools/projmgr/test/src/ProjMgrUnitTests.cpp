@@ -7159,7 +7159,7 @@ TEST_F(ProjMgrUnitTests, TestRunDebugTelnet) {
   EXPECT_EQ(
 R"(- mode: file
   port: 4444
-  file: ../../../telnet+SingleCore)", sstream0.str());
+  file: telnet/SingleCore/telnet+SingleCore)", sstream0.str());
 
   sstreamRTT << cbuildrun0["cbuild-run"]["debugger"]["rtt"];
   EXPECT_EQ(
@@ -7175,7 +7175,7 @@ R"(- pname: test
 
   sstreamSystemView << cbuildrun0["cbuild-run"]["debugger"]["systemview"];
   EXPECT_EQ(
-R"(file: ../../../test_x8.SVDat
+R"(file: telnet/SingleCore/test_x8.SVDat
 auto-start: false
 auto-stop: false)", sstreamSystemView.str());
 
@@ -7663,7 +7663,7 @@ TEST_F(ProjMgrUnitTests, TargetSetDependencies) {
   EXPECT_EQ("project/CM4/project.bin", cbuildRun["cbuild-run"]["output"][2]["file"].as<string>());
   EXPECT_EQ("project2/CM4/project2.bin", cbuildRun["cbuild-run"]["output"][3]["file"].as<string>());
   EXPECT_EQ("../RteTest_ARMCM4_NOFP.dbgconf", cbuildRun["cbuild-run"]["debugger"]["dbgconf"].as<string>());
-  EXPECT_EQ("../../../../../project2/CM4/telnet.log", cbuildRun["cbuild-run"]["debugger"]["telnet"][0]["file"].as<string>());
+  EXPECT_EQ("project2/CM4/telnet.log", cbuildRun["cbuild-run"]["debugger"]["telnet"][0]["file"].as<string>());
 
   // ensure dependencies are not set
   const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/TestTargetSet/cross-dependency.cbuild-idx.yml");
