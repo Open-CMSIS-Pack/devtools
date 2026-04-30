@@ -130,7 +130,10 @@ cbuild-run:
           auto-detect: true
           address: 0x20000000
           size: 4096
-
+    systemview:
+      - file: test_x8.SVDat
+        auto-start: false
+        auto-stop: test              # Error: Expected boolean
   debug-vars:
     vars: |
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY

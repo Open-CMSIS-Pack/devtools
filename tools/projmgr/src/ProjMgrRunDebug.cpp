@@ -446,6 +446,9 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
   // collect telnet options
   CollectTelnetOptions(context, adapter, pnames);
 
+  // collect system view options
+  CollectSystemViewOptions(context.debugger.systemView);
+
   // merge custom options
   MergeCustomItems(context.debugger.custom, m_runDebug.debugger.custom);
 
@@ -519,6 +522,11 @@ void ProjMgrRunDebug::SetTelnetPort(TelnetOptionsItem& item, unsigned long long&
     item.ullPort = port;
     usedPorts.insert(port);
   }
+}
+
+void ProjMgrRunDebug::CollectSystemViewOptions(const SystemViewItem& systemView)
+{
+  m_runDebug.debugger.systemView = systemView;
 }
 
 void ProjMgrRunDebug::CollectDebugTopology(const ContextItem& context, const vector<pair<const RteItem*, vector<string>>> debugs,

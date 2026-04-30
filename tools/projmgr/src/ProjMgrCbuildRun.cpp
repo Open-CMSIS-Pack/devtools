@@ -34,6 +34,7 @@ protected:
   void SetDatapatchNode(YAML::Node node, const std::vector<DatapatchType>& datapatch);
   void SetGdbServerNode(YAML::Node node, const std::vector<GdbServerItem>& gdbserver);
   void SetTelnetNode(YAML::Node node, const std::map<std::string, TelnetOptionsItem>& telnet);
+  void SetSystemViewNode(YAML::Node node, const SystemViewItem& systemView);
   void SetCustomNodes(YAML::Node node, const CustomItem& debugger);
   YAML::Node GetCustomNode(const CustomItem& value);
 };
@@ -185,6 +186,7 @@ void ProjMgrCbuildRun::SetDebuggerNode(YAML::Node node, const DebuggerType& debu
     SetNodeValue(node[YAML_START_PNAME], debugger.startPname);
     SetGdbServerNode(node[YAML_GDBSERVER], debugger.gdbserver);
     SetTelnetNode(node[YAML_TELNET], debugger.telnet);
+    SetSystemViewNode(node[YAML_SYSTEMVIEW], debugger.systemView);
     SetCustomNodes(node, debugger.custom);
   }
 }
@@ -232,6 +234,18 @@ void ProjMgrCbuildRun::SetTelnetNode(YAML::Node node, const std::map<std::string
       SetNodeValue(telnetNode[YAML_FILE], FormatPath(item.file, m_directory));
     }
     node.push_back(telnetNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetSystemViewNode(YAML::Node node, const SystemViewItem& systemView) {
+  if (!systemView.file.empty()) {
+    SetNodeValue(node[YAML_FILE], FormatPath(systemView.file, m_directory));
+  }
+  if (systemView.autoStart.has_value()) {
+    node[YAML_AUTO_START] = systemView.autoStart.value();
+  }
+  if (systemView.autoStop.has_value()) {
+    node[YAML_AUTO_STOP] = systemView.autoStop.value();
   }
 }
 
