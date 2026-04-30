@@ -280,7 +280,7 @@ When starting the process of generating a new pack, the following workflow is re
        description: "TestPack description"
        vendor: "ARM"
        license: "LICENSE"
-       url: "http://arm.com/"
+       url: "https://arm.com/"
        releases:
          - version: "1.0.0"
            date: "2021-08-10"

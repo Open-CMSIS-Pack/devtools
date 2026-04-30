@@ -243,7 +243,7 @@ This version is used in its exact form in:
     \$CMSIS_PACK_ROOT/ARM/CMSIS/5.7.0/
 
 - in index.pidx file entry:  \<pdsc
-  url=\"<http://www.keil.com/pack/>\" vendor=\"ARM\" name=\"CMSIS\"
+  url=\"<https://www.keil.com/pack/>\" vendor=\"ARM\" name=\"CMSIS\"
   version=\"5.7.0\" />
 
 - RtePackageFilter to define \"FIXED\" and \"EXCLUDED\" packs.
