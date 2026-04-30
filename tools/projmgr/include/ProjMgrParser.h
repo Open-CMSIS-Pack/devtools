@@ -691,18 +691,6 @@ struct TelnetDefaults {
 };
 
 /**
- * @brief systemview defaults item containing
- *        autoStart flag
- *        autoStop flag
- *        active flag
-*/
-struct SystemViewDefaults {
-  bool autoStart;
-  bool autoStop;
-  bool active = false;
-};
-
-/**
  * @brief debug-adapter defaults item containing
  *        gdbserver defaults
  *        telnet defaults
@@ -713,7 +701,6 @@ struct SystemViewDefaults {
 struct DebugAdapterDefaultsItem {
   GdbServerDefaults gdbserver;
   TelnetDefaults telnet;
-  SystemViewDefaults systemView;
   std::string protocol;
   std::string clock;
   CustomItem custom;

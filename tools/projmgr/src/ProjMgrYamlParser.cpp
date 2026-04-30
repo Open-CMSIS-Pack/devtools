@@ -664,12 +664,6 @@ void ProjMgrYamlParser::ParseDebugDefaults(const YAML::Node& parent, const strin
       ParseString(telnetNode, YAML_MODE, defaults.telnet.mode);
       defaults.telnet.active = telnetNode[YAML_ACTIVE].IsDefined();
     }
-    if (defaultsNode[YAML_SYSTEMVIEW].IsDefined()) {
-      const YAML::Node& systemViewNode = defaultsNode[YAML_SYSTEMVIEW];
-      ParseBoolean(systemViewNode, YAML_AUTO_START, defaults.systemView.autoStart, true);
-      ParseBoolean(systemViewNode, YAML_AUTO_STOP, defaults.systemView.autoStop, true);
-      defaults.systemView.active = systemViewNode[YAML_ACTIVE].IsDefined();
-    }
     ParseString(defaultsNode, YAML_PROTOCOL, defaults.protocol);
     ParseNumber(defaultsNode, file, YAML_CLOCK, defaults.clock);
     ParseCustom(defaultsNode, { YAML_GDBSERVER, YAML_TELNET, YAML_SYSTEMVIEW, YAML_PROTOCOL, YAML_CLOCK }, defaults.custom);
