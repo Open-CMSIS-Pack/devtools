@@ -452,8 +452,11 @@ PackReferenceVector RpcHandler::CollectPackReferences(const string& context) {
     }
     packRef.origin = packItem.origin;
     packRef.selected = true; // initially pack is selected;
-    if(packItem.path.empty() && !contextItem.availablePackVersions[packId].empty()) {
-      packRef.upgrade = contextItem.availablePackVersions[packId];
+    if(packItem.path.empty() && !packId.empty()) {
+      const auto availableVersionIt = contextItem.availablePackVersions.find(packId);
+      if(availableVersionIt != contextItem.availablePackVersions.end() && !availableVersionIt->second.empty()) {
+        packRef.upgrade = availableVersionIt->second;
+      }
     }
     packRefs.push_back(packRef);
   }
