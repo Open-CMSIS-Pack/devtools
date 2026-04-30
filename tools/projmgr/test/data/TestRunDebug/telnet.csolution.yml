@@ -13,6 +13,7 @@ solution:
             name: CMSIS-DAP
             telnet:
               - mode: file
+                file: $OutDir(telnet)$/telnet+SingleCore
             rtt:
               - pname: test
                 control-block:

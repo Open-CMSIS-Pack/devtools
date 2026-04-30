@@ -7159,7 +7159,7 @@ TEST_F(ProjMgrUnitTests, TestRunDebugTelnet) {
   EXPECT_EQ(
 R"(- mode: file
   port: 4444
-  file: telnet+SingleCore)", sstream0.str());
+  file: ../../../telnet+SingleCore)", sstream0.str());
 
   sstreamRTT << cbuildrun0["cbuild-run"]["debugger"]["rtt"];
   EXPECT_EQ(
@@ -7175,7 +7175,7 @@ R"(- pname: test
 
   sstreamSystemView << cbuildrun0["cbuild-run"]["debugger"]["systemview"];
   EXPECT_EQ(
-R"(file: test_x8.SVDat
+R"(file: ../../../test_x8.SVDat
 auto-start: false
 auto-stop: false)", sstreamSystemView.str());
 
