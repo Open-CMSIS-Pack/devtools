@@ -102,6 +102,7 @@ struct PackageItem {
   std::string path;
   std::string origin;
   std::string selectedBy;
+  std::string resolvedTo;
 };
 
 /**

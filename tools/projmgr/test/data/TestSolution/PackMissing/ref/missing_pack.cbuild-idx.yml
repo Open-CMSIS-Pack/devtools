@@ -1,5 +1,5 @@
 build-idx:
-  generated-by: csolution version 0.0.0+g74cb4601
+  generated-by: csolution version 0.0.0+g79b66b5f
   csolution: ../data/TestSolution/PackMissing/missing_pack.csolution.yml
   tmpdir: tmp
   cprojects:
@@ -15,7 +15,7 @@ build-idx:
           - "specified device 'RteTest_ARMCM0' not found in the installed packs. Use:\n  cpackget add Vendor::PackName"
           - processing context 'project+CM0' failed
         info:
-          - missing_pack.cbuild-pack.yml - file skipped
+          - missing_pack.cbuild-pack.yml - file generated successfully
           - project+CM0.cbuild.yml - file generated successfully
       packs-missing:
         - pack: ARM::Missing_DFP@0.0.9
@@ -29,7 +29,25 @@ build-idx:
           - "specified device 'RteTest_ARMCM3' not found in the installed packs. Use:\n  cpackget add Vendor::PackName"
           - processing context 'project+Gen' failed
         info:
-          - missing_pack.cbuild-pack.yml - file skipped
+          - missing_pack.cbuild-pack.yml - file generated successfully
           - project+Gen.cbuild.yml - file generated successfully
       packs-missing:
         - pack: ARM::Missing_PACK@0.0.1
+    - cbuild: project+Miss.cbuild.yml
+      project: project
+      configuration: +Miss
+      errors: true
+      messages:
+        errors:
+          - "required pack: ARM::Missing_DFP@>=0.0.5 not installed"
+          - "required pack: ARM::Missing_PACK not installed"
+          - "required pack: ARM::RteTest@3.0.1 not installed"
+          - "specified device 'RteTest_ARMCM0' not found in the installed packs. Use:\n  cpackget add Vendor::PackName"
+          - processing context 'project+Miss' failed
+        info:
+          - missing_pack.cbuild-pack.yml - file generated successfully
+          - project+Miss.cbuild.yml - file generated successfully
+      packs-missing:
+        - pack: ARM::RteTest@3.0.1
+        - pack: ARM::Missing_DFP@>=0.0.5
+        - pack: ARM::Missing_PACK
