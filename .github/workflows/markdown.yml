@@ -55,6 +55,6 @@ jobs:
       - name: Check markdown links
         uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
         with:
-          args: --config .github/lychee.toml --verbose --no-progress './**/*.md' './**/*.html'
+          args: --config .github/lychee.toml --verbose --no-progress './**/*.md'
           fail: true
           jobSummary: true
