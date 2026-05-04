@@ -5,6 +5,7 @@ on:
       - '.github/workflows/markdown.yml'
       - '.github/markdownlint.json'
       - '.github/markdownlint.jsonc'
+      - '.github/lychee.toml'
       - '**/*.md'
 
 concurrency:
