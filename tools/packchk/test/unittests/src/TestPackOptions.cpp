@@ -26,7 +26,7 @@ public:
 TEST(TestPackOptions, SetUrlRef) {
   CPackOptions packOptions;
 
-  EXPECT_TRUE(packOptions.SetUrlRef("\"https://keil.com/packs\""));
+  EXPECT_TRUE(packOptions.SetUrlRef("\"http://keil.com/packs\""));
   EXPECT_FALSE(packOptions.SetUrlRef("\"\""));
   EXPECT_FALSE(packOptions.SetUrlRef(""));
 }

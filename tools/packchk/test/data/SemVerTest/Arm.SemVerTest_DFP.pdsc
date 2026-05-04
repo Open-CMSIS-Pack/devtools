@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<package schemaVersion="1.3" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+<package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
   <name>SemVerTest_DFP</name>
   <description>Test for semantic versioning</description>
   <vendor>Arm</vendor>
   <!-- <license>license.txt</license> -->
-  <url>https://www.keil.com/pack/</url>
+  <url>http://www.keil.com/pack/</url>
 
   <releases>
     <release version="4.7.1" date="2021-04-16">

@@ -7,7 +7,7 @@ build:
   device: ARM::RteTest_ARMCM3
   device-pack: ARM::RteTest_DFP@0.2.0
   device-books:
-    - name: https://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html
       title: Cortex-M3 Device Generic Users Guide
   dbgconf:
     - file: ../data/TestSolution/LanguageAndScope/.cmsis/lang-scope+RteTest_ARMCM3.dbgconf

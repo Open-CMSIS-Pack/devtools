@@ -20,7 +20,7 @@ static constexpr const char* packName = "TestPack";
 static constexpr const char* packDescription = "TestPack description";
 static constexpr const char* packVendor = "ARM";
 static constexpr const char* packLicense = "LICENSE";
-static constexpr const char* packUrl = "https://arm.com/";
+static constexpr const char* packUrl = "http://arm.com/";
 static constexpr const char* packRepositoryUrl = "https://github.com/ARM-software/CMSIS-Driver.git";
 static constexpr const char* packRepositoryType = "git";
 

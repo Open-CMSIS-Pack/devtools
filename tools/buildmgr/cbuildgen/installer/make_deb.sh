@@ -161,7 +161,7 @@ chmod -R +x etc/profile.d
 
 # Defines Documentation
 #----------------------
-# https://www.fifi.org/doc/doc-base/doc-base.html/ch2.html
+# http://www.fifi.org/doc/doc-base/doc-base.html/ch2.html
 # TODO register documents
 mkdir -p usr/doc/doc-base
 cat > usr/doc/doc-base/${PACKAGE_NAME} << Documentation

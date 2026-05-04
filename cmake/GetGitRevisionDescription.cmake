@@ -33,7 +33,7 @@
 #
 # Original Author:
 # 2009-2020 Ryan Pavlik <ryan.pavlik@gmail.com> <abiryan@ryand.net>
-# https://academic.cleardefinition.com
+# http://academic.cleardefinition.com
 #
 # Copyright 2009-2013, Iowa State University.
 # Copyright 2013-2020, Ryan Pavlik

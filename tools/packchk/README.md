@@ -78,7 +78,7 @@ verify the URL to the Pack Server, and generate a ASCII text file with the
 standardized name of the Software Pack.
 
 ```bash
-packchk "MyVendor.MVCM3.pdsc" -u "https://www.myvendor.com/pack" -n packname.txt
+packchk "MyVendor.MVCM3.pdsc" -u "http://www.myvendor.com/pack" -n packname.txt
 ```
 
 Run `packchk` on the package description file called MyVendor.MVCM3.pdsc.

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<device schemaVersion="fooBar" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd">
+<device schemaVersion="fooBar" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd">
   <vendor>ARM</vendor>                                            <!-- Name for DoxyGroup -->
   <vendorID>ARM</vendorID>                                        <!-- Vendor ID -->
   <name>SVDTiny</name>                                         <!-- name of part or part series -->

@@ -13,7 +13,7 @@ packs:
     description: "TestPackMultipleBuilds description"
     vendor: "ARM"
     license: "LICENSE"
-    url: "https://arm.com/"
+    url: "http://arm.com/"
 
     releases:
       - version: "1.0.0"

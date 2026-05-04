@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<device xmlns:xs="https://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd" schemaVersion="1.3">
+<device xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd" schemaVersion="1.3">
   <name>test</name>
   <version>1.0</version>
   <description>Test_Example device</description>

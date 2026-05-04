@@ -13,7 +13,7 @@ static string utfInfo = "한€ह";
 static string schemaFile = "CPRJ.xsd";
 static string schemaVer = "0.0.9";
 static string theXmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n"
-"<cprj schemaVersion=\"" + schemaVer + "\" xmlns:xsi=\"https://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"" + schemaFile + "\">\n" +
+"<cprj schemaVersion=\"" + schemaVer + "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"" + schemaFile + "\">\n" +
 "  <info>"+ utfInfo+"</info>\n" +
 "\n" +
 "  <child number=\"1\">\n" +
@@ -112,7 +112,7 @@ TEST(XmlReaderTest, ReadAttributes)
   EXPECT_EQ(schemaVer, reader.GetAttributeData());
   EXPECT_TRUE(reader.ReadNextAttribute(true));
   EXPECT_EQ("xsi", reader.GetAttributeTag());
-  EXPECT_EQ("https://www.w3.org/2001/XMLSchema-instance", reader.GetAttributeData());
+  EXPECT_EQ("http://www.w3.org/2001/XMLSchema-instance", reader.GetAttributeData());
   EXPECT_TRUE(reader.ReadNextAttribute(false));
   EXPECT_EQ("xsi:noNamespaceSchemaLocation", reader.GetAttributeTag());
   EXPECT_EQ("CPRJ.xsd", reader.GetAttributeData());

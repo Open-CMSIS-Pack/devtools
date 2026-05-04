@@ -4,17 +4,14 @@
 # Accepts log level: "error", "warn", "info", "debug", "trace"
 verbose = "info"
 
-# Output display mode
-mode = "emoji"
-
 # Interactive progress bar while checking links.
+# Disabled for CI usage
 no_progress = true
 
 # Enable link caching. This can be helpful to avoid checking the same links on
 # multiple runs.
 cache = true
 
-# Accept 200 (OK) and 403 (Forbidden) responses as valid
 accept = [
   "200"
 ]
@@ -25,14 +22,15 @@ max_redirects = 2
 # Maximum number of allowed retries before a link is declared dead.
 max_retries = 2
 
-# Only test links with the given schemes (e.g. https, https).
+# Only test links with the given schemes
 # Omit to check links with any other scheme.
-scheme = ["https", "file"]
+scheme = ["http", "https", "file"]
 
 # Exclude links
 exclude = [
   # Exclude links as cookies needed to be accepted
-  'https://developer.arm.com'
+  'https://developer.arm.com',
+  'http://www.keil.com/pack'
 ]
 
 # Exclude paths from getting checked. The values are treated as regular expressions

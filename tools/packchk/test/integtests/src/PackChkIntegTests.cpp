@@ -338,7 +338,7 @@ TEST_F(PackChkIntegTests, AddRefPacks) {
   refPack3 += "/" + refName3 + ".pdsc";
   refPack4 += "/" + refName4 + ".pdsc";
   const string contentBegin = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"\
-                              "<package schemaVersion=\"1.3\" xmlns:xs=\"https://www.w3.org/2001/XMLSchema-instance\" xs:noNamespaceSchemaLocation=\"PACK.xsd\">\n"\
+                              "<package schemaVersion=\"1.3\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\" xs:noNamespaceSchemaLocation=\"PACK.xsd\">\n"\
                               "  <name>";
   const string contentEnd =   "  </name>\n"\
                               "</package>\n";

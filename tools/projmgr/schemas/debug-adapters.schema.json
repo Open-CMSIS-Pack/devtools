@@ -1,0 +1,224 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/debug-adapter-registry/v2.13.0/schemas/debug-adapters.schema.json",
+  "title": "CMSIS debug-adapters registry",
+  "description": "Contains the list of supported debug adapters",
+  "version": "2.13.0",
+  "type": "object",
+  "properties": {
+    "debug-adapters": {
+      "$ref": "#/definitions/DebugAdaptersDescType"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "debug-adapters"
+  ],
+  "definitions": {
+    "DebugAdaptersDescType": {
+      "title": "debug-adapters:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/build-operation/#debug-adapter-integration",
+      "description": "Contains the list of supported debug adapters.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/DebugAdapterDescType"
+      }
+    },
+    "DebugAdapterDescType": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Debugger adapter name."
+        },
+        "alias-name": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of names (in input node or BSP) that map to this debug adapter."
+        },
+        "template": {
+          "type": "string",
+          "description": "Used only by the VS Code CMSIS Solution extension for configuration."
+        },
+        "defaults": {
+          "$ref": "#/definitions/DebugAdaptersDefaultsType"
+        },
+        "user-interface": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UserInterfaceType"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
+    },
+    "DebugAdaptersDefaultsType": {
+      "description": "List of default options to use when not specified in the target-set: node.",
+      "type": "object",
+      "properties": {
+        "port": {
+          "type": "number",
+          "description": "Port number."
+        },
+        "protocol": {
+          "enum": [
+            "jtag",
+            "swd"
+          ],
+          "description": "Selected debug protocol (jtag or swd)."
+        },
+        "clock": {
+          "type": "number",
+          "description": "Selected debug clock speed (in Hz)."
+        },
+        "gdbserver": {
+          "type": "object",
+          "properties": {
+            "active": {
+              "type": "null",
+              "description": "Add the gdbserver: node in the cbuild-run.yml file."
+            },
+            "port": {
+              "type": "number",
+              "description": "Port number."
+            }
+          }
+        },
+        "telnet": {
+          "type": "object",
+          "properties": {
+            "active": {
+              "type": "null",
+              "description": "Add the telnet: node in the cbuild-run.yml file."
+            },
+            "port": {
+              "type": "number",
+              "description": "Port number."
+            },
+            "mode": {
+              "type": [ "string" , "boolean" ],
+              "description": "Redirect output mode."
+            }
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "UserInterfaceType": {
+      "description": "User interface configuration.",
+      "type": "object",
+      "properties": {
+        "section": {
+          "type": "string",
+          "description": "Section name for the user interface."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the section."
+        },
+        "yml-node": {
+          "type": "string",
+          "description": "YAML node in the cbuild-run.yml file."
+        },
+        "type": {
+          "enum": [
+            "number",
+            "enum",
+            "string",
+            "file"
+          ],
+          "description": "Type of the user interface element."
+        },
+        "select": {
+          "enum": [
+            "on",
+            "off"
+          ],
+          "description": "Whether to show or hide this section in the user interface."
+        },
+        "options": {
+          "$ref": "#/definitions/SectionOptionsType"
+        },
+        "pname-options": {
+          "type": "null",
+          "description": "Allows each option to be configured independently for every CPU core."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "section",
+        "options",
+        "description"
+      ]
+    },
+    "SectionOptionsType": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Option name."
+          },
+          "description": {
+            "type": "string",
+            "description": "Option description."
+          },
+          "yml-node": {
+            "type": "string",
+            "description": "YAML node in the cbuild-run.yml file."
+          },
+          "type": {
+            "enum": [
+              "number",
+              "enum",
+              "string",
+              "file"
+            ],
+            "description": "Type of the option."
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "object"
+              ],
+              "properties": {
+                "name": { "type": "string", "description": "Display name of the value." },
+                "value": { "type": [ "string", "number", "boolean" ], "description": "Actual value to use in the YAML file." },
+                "description": { "type": "string", "description": "Description of the value." }
+              },
+              "required": [ "name" ]
+            },
+            "description": "List of possible values (for enum type)."
+          },
+          "range": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Range of valid values in display scale (for number type)."
+          },
+          "default": {
+            "type": [
+              "string",
+              "number",
+              "null"
+            ],
+            "description": "Default value for the option (for number types in display scale)."
+          },
+          "scale": {
+            "type": "number",
+            "description": "Display scaling of the option (for number type). E.g. 1000 to display a value stored in Hz as kHz."
+          }
+        }
+      }
+    }
+  }
+}

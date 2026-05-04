@@ -141,7 +141,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install ninja-build python3
-          wget -q https://security.ubuntu.com/ubuntu/pool/main//d/doxygen/doxygen_1.8.6-2_amd64.deb
+          wget -q http://security.ubuntu.com/ubuntu/pool/main//d/doxygen/doxygen_1.8.6-2_amd64.deb
           sudo dpkg -i doxygen_1.8.6-2_amd64.deb
           sudo pip install LinkChecker==10.6.0
       - name: Create build folder

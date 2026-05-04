@@ -115,7 +115,7 @@ The high level structure of a project is constructed from:
 \b Example CMSIS Project File (*.cprj):
 \code
 <?xml version="1.0" encoding="UTF-8" ?>
-<cprj schemaVersion="1.0.0" xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
+<cprj schemaVersion="1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
   <created tool="µVision V5.29.0.13" timestamp="2020-01-21T11:38:01" />
  
   <info isLayer="false" >
@@ -295,7 +295,7 @@ The high level structure of a project is constructed from:
 \page element_created /cprj/created
 \b Example <em>created</em> element
 \code
-<cprj schemaVersion="1.0.0" xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
+<cprj schemaVersion="1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
   <created tool="µVision V5.29.0.13" timestamp="2020-01-21T11:38:01" />
   ...
 </cprj>
@@ -452,7 +452,7 @@ Note: The compiler referenced by the above command line flags is required to be 
 \b Example <em>target</em> section:
 
 \code
-<cprj xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd"/>
+<cprj xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd"/>
   ...
   <compilers>
     <compiler name="AC5" version="5.6.0"
@@ -993,7 +993,7 @@ This element lists all software components that are selected within the Manage R
 
 \b Example <em>components</em> section:
 \code
-<cprj xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd"/>
+<cprj xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd"/>
   ...
   <components>
     <component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
@@ -1447,7 +1447,7 @@ commandline flags can also be applied on a group level.
 
 \b Example <em>files</em> section:
 \code
-<cprj xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd"/>
+<cprj xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd"/>
   ...
   <components>
     ...
@@ -1551,7 +1551,7 @@ The group's name must be unique, multiple groups at the same level with the same
 
 \b Example <em>files</em> section:
 \code
-<cprj xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd"/>
+<cprj xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd"/>
   ...
   <files>
     <group name="Source">
@@ -1931,7 +1931,7 @@ See: \ref element_asflags
 
 \b Example packages section:
 \code
-<package xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd"/>
+<package xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd"/>
   ...
   <packages>
     <package name="STM32F4xx_DFP" vendor="Keil" version="2.8.0:2.8.0"/>

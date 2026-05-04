@@ -505,8 +505,8 @@ Note: \b cbuildgen does not update the *.cprj for commands \c packlist, \c cmake
 \verbatim
 $ cbuildgen Simulation.cprj packlist
 (cbuildgen): Build Process Manager 1.0.0 (C) 2022 ARM
-M654: URL 'https://www.keil.com/pack/ARM.CMSIS.5.6.0.pack' was added to the list of missing packages.
-M654: URL 'https://www.keil.com/pack/Keil.ARM_Compiler.1.6.1.pack' was added to the list of missing packages.
+M654: URL 'http://www.keil.com/pack/ARM.CMSIS.5.6.0.pack' was added to the list of missing packages.
+M654: URL 'http://www.keil.com/pack/Keil.ARM_Compiler.1.6.1.pack' was added to the list of missing packages.
 M650: Command completed successfully.
 \endverbatim
 
@@ -688,12 +688,12 @@ $ cpackget -v init --pack-root packroot https://www.keil.com/pack/index.pidx
 I: Using pack root: "packroot"
 Downloading index.pidx 100% |███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| (97/97 kB, 189.317 kB/s)
 $ cat Simulation.cpinstall
-https://www.keil.com/pack/ARM.CMSIS.5.6.0.pack
-https://www.keil.com/pack/Keil.ARM_Compiler.1.6.1.pack
+http://www.keil.com/pack/ARM.CMSIS.5.6.0.pack
+http://www.keil.com/pack/Keil.ARM_Compiler.1.6.1.pack
 $ cpackget -v pack add -f Simulation.cpinstall --pack-root packroot
 I: Using pack root: "packroot"
 I: Parsing packs urls via file Simulation.cpinstall
-I: Adding [https://www.keil.com/pack/ARM.CMSIS.5.6.0.pack https://www.keil.com/pack/Keil.ARM_Compiler.1.6.1.pack]
+I: Adding [http://www.keil.com/pack/ARM.CMSIS.5.6.0.pack http://www.keil.com/pack/Keil.ARM_Compiler.1.6.1.pack]
 Downloading ARM.CMSIS.5.6.0.pack 100% |████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| (101/101 MB, 8.141 MB/s)
 Downloading Keil.ARM_Compiler.1.6.1.pack 100% |█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| (3.8/3.8 MB, 2.443 MB/s)
 \endverbatim

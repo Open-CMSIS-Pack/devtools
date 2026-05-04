@@ -155,7 +155,7 @@ int VersionCmp::Compare(const string& v1, const string& v2, bool cs) {
   if (v1 == v2) {
     return 0;
   }
-  // Split v1 and v2 according to https://semver.org/ and compare individually
+  // Split v1 and v2 according to http://semver.org/ and compare individually
   Version ver1(v1);
   Version ver2(v2);
   int res = ver1.compareTo(ver2, cs);

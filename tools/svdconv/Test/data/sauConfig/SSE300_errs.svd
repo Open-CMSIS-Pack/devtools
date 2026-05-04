@@ -30,7 +30,7 @@
   POSSIBILITY OF SUCH DAMAGE.
  -->
 <!-- This file is derivative from IOTKit_CM33.svd -->
-<device schemaVersion="1.3" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd">
+<device schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd">
     <vendor>ARM Ltd.</vendor>
     <vendorID>ARM</vendorID>
     <name>SSE300_errs</name>

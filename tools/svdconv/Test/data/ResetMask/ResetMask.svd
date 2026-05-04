@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<device xmlns:xsi="https://www.w3.org/2001/XMLSchema" schemaVersion="0">
+<device xmlns:xsi="http://www.w3.org/2001/XMLSchema" schemaVersion="0">
   <vendor>TestVendor</vendor>
   <vendorID>Arm</vendorID>
   <name>ResetMask</name>

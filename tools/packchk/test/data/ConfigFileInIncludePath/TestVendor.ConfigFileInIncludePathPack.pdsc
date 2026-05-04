@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<package schemaVersion="1.4" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+<package schemaVersion="1.4" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
   <vendor>TestVendor</vendor>
-  <url>https://www.testurl.com/pack/</url>
+  <url>http://www.testurl.com/pack/</url>
   <name>ConfigFileInIncludePathPack</name>
   <description>Include Path vs Config File. Files that have attr=config in the *.pdsc are copied to the project. An include path is automatically generated.
 It is a potential risk to add an additional include path to original location in the *.pdsc file. This file does not contain configuration settings. 

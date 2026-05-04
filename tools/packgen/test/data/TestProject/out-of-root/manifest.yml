@@ -9,7 +9,7 @@ packs:
     description: "TestPack description"
     vendor: "TestVendor"
     license: "LICENSE"
-    url: "https://test-URL.com/"
+    url: "http://test-URL.com/"
 
     releases:
       - version: "1.0.0"

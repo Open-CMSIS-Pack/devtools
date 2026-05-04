@@ -276,7 +276,7 @@ public:
 
   /**
    * @brief returns previous read attribute value
-   *        attribute-Value Normalization: https://www.w3.org/TR/REC-xml/#AVNormalize
+   *        attribute-Value Normalization: http://www.w3.org/TR/REC-xml/#AVNormalize
   *         deletes leading and trailing white spaces
 
    * @return string containing attribute value

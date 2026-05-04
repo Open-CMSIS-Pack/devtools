@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<package schemaVersion="1.7.2" xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
+<package schemaVersion="1.7.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PACK.xsd">
   <name>TestPackMultipleBuilds</name>
 
   <description>TestPackMultipleBuilds description</description>
@@ -8,7 +8,7 @@
 
   <license>LICENSE</license>
 
-  <url>https://arm.com/</url>
+  <url>http://arm.com/</url>
 
   <releases>
     <release date="2021-08-12" version="1.0.0">Initial release</release>

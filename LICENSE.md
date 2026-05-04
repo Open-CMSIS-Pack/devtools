@@ -41,8 +41,8 @@ or testing purposes.
 |Google C++ Testing Framework|1.11.0|[BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause)|https://github.com/google/googletest.git| Testing |
 |cxxopts|2.2.1|[MIT](https://opensource.org/licenses/MIT)|https://github.com/jarro2783/cxxopts.git| packgen |
 |yaml-cpp|0.7.0|[MIT](https://opensource.org/licenses/MIT)|https://github.com/jbeder/yaml-cpp.git| packgen |
-|[GetGitRevisionDescription.cmake](./cmake/GetGitRevisionDescription.cmake)||[Boost Software License, Version 1.0](https://www.boost.org/LICENSE_1_0.txt)||Continuous integration|
-|[GetGitRevisionDescription.cmake.in](./cmake/GetGitRevisionDescription.cmake.in)||[Boost Software License, Version 1.0](https://www.boost.org/LICENSE_1_0.txt)||Continuous integration|
+|[GetGitRevisionDescription.cmake](./cmake/GetGitRevisionDescription.cmake)||[Boost Software License, Version 1.0](http://www.boost.org/LICENSE_1_0.txt)||Continuous integration|
+|[GetGitRevisionDescription.cmake.in](./cmake/GetGitRevisionDescription.cmake.in)||[Boost Software License, Version 1.0](http://www.boost.org/LICENSE_1_0.txt)||Continuous integration|
 |json|3.10.5|[MIT](https://opensource.org/licenses/MIT)|https://github.com/nlohmann/json| yml-schema-checker |
 |json-schema-validator|2.1.0|[MIT](https://opensource.org/licenses/MIT)|https://github.com/pboettch/json-schema-validator| yml-schema-checker |
 
