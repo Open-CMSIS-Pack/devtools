@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<package schemaVersion="1.2" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+<package schemaVersion="1.2" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
   <vendor>Keil</vendor>
   <name>BulbBoard_BSP</name>
   <description>Glyn Bulb Board Development Board Support Package</description>
-  <url>http://www.keil.com/pack</url>
+  <url>https://www.keil.com/pack</url>
 
   <releases>
     <release version="1.1.0" date="2019-05-28">
@@ -26,10 +26,10 @@
   </keywords>
 
   <boards>
-    <board vendor="Glyn" name="Bulb Board" revision="v1.1" salesContact="mcu@glyn.de" orderForm="http://www.glyn.de/ideen-board">
+    <board vendor="Glyn" name="Bulb Board" revision="v1.1" salesContact="mcu@glyn.de" orderForm="https://www.glyn.de/ideen-board">
       <description>Glyn Bulb Board Support</description>
       <image small="Images/BulbBoard_rot_small.jpg" large="Images/BulbBoard_rot_165px.jpg"/>
-      <book category="overview"  name="http://www.glyn.de/ideen-board" title="Bulb Board Web Page"/>
+      <book category="overview"  name="https://www.glyn.de/ideen-board" title="Bulb Board Web Page"/>
       <book category="schematic" name="Documents/schematic_BULB-BOARD-MINI_V11.pdf"  title="Schematics"/>
       <book category="setup"     name="Documents/readme_cmsisdap.pdf"                title="How to use CMSIS-DAP debugger"/>
       <book category="setup"     name="Documents/readme_keil.pdf"                    title="How to use Keil uVision with Cypress templates"/>
@@ -69,7 +69,7 @@
   <components>
     <bundle Cbundle="Bulb Board" Cclass="Board Support" Cversion="1.0.0">
       <description>Glyn Bulb Development Board</description>
-      <doc>http://www.glyn.de/ideen-board</doc>
+      <doc>https://www.glyn.de/ideen-board</doc>
       <component Cgroup="LED" Capiversion="1.00" condition="Cypress FM0+ CMSIS Device">
       <description>LED driver for Glyn Bulb Development Board</description>
         <files>

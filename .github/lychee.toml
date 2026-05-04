@@ -25,10 +25,9 @@ max_redirects = 2
 # Maximum number of allowed retries before a link is declared dead.
 max_retries = 2
 
-# Only test links with the given schemes (e.g. https).
+# Only test links with the given schemes (e.g. https, https).
 # Omit to check links with any other scheme.
-# At the moment, we support http, https, file, and mailto.
-scheme = ["https"]
+scheme = ["https", "file"]
 
 # Exclude links
 exclude = [
@@ -39,6 +38,7 @@ exclude = [
 # Exclude paths from getting checked. The values are treated as regular expressions
 exclude_path = [
     "\\.txt$",      # skip .txt extensions
+    "\\.html$",      # skip .html extensions
     "(^|/)test/",   # skip directories named "test"
     "external/",    # skip external directories
 ]

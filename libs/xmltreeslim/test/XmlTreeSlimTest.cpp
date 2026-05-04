@@ -29,7 +29,7 @@ const string xmlOut = dirnameFiles + "/out.xml";
 static string schemaFile = "CPRJ.xsd";
 static string schemaVer = "0.0.9";
 static string theXmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n"
-"<cprj schemaVersion=\"" + schemaVer + "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"" + schemaFile + "\">\n" +
+"<cprj schemaVersion=\"" + schemaVer + "\" xmlns:xsi=\"https://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"" + schemaFile + "\">\n" +
 "  <info>information</info>\n" +
 "\n" +
 "  <child number=\"1\">\n" +
@@ -79,7 +79,7 @@ TEST_F(XmlTreeSlimTest, ReadFileDefault) {
   string xsi = root ?  root->GetAttribute("xsi") : XmlItem::EMPTY_STRING;
   string xsd = root ?  root->GetAttribute("noNamespaceSchemaLocation") : XmlItem::EMPTY_STRING;
 
-   EXPECT_EQ(xsi,"http://www.w3.org/2001/XMLSchema-instance");
+   EXPECT_EQ(xsi,"https://www.w3.org/2001/XMLSchema-instance");
    EXPECT_EQ(xsd, schemaFile);
 
    if (root) {

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+<package schemaVersion="1.3" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
   <name>RteTest_DFP</name>
   <description>RTE test of DFP pack, extraction from ARM.CMSIS</description>
   <vendor>ARM</vendor>
   <!-- <license>license.txt</license> -->
-  <url>http://www.keil.com/pack/</url>
+  <url>https://www.keil.com/pack/</url>
 
   <releases>
     <release version="0.1.1+metadata" date="2021-02-17">
@@ -115,7 +115,7 @@
 
     <!-- ******************************  Cortex-M0  ****************************** -->
     <subFamily DsubFamily="RteTest ARM Cortex M0">
-      <book name="http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html" title="Cortex-M0 Device Generic Users Guide"/>
+      <book name="https://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html" title="Cortex-M0 Device Generic Users Guide"/>
       <description>
 	 RteTest ARM Cortex M0 is a clone description from ARM.CMSIS pack.
       </description>
@@ -131,7 +131,7 @@
 
     <!-- ******************************  Cortex-M3  ****************************** -->
     <subFamily DsubFamily="RteTest ARM Cortex M3">
-      <book name="http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html" title="Cortex-M3 Device Generic Users Guide"/>
+      <book name="https://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/index.html" title="Cortex-M3 Device Generic Users Guide"/>
       <description>
     RteTest ARM Cortex M3 is a clone description from ARM.CMSIS pack.
       </description>
@@ -147,7 +147,7 @@
 
     <!-- ******************************  Cortex-M4  ****************************** -->
     <subFamily DsubFamily="RteTest ARM Cortex M4">
-      <book name="http://infocenter.arm.com/help/topic/com.arm.doc.dui0553a/index.html" title="Cortex-M4 Device Generic Users Guide"/>
+      <book name="https://infocenter.arm.com/help/topic/com.arm.doc.dui0553a/index.html" title="Cortex-M4 Device Generic Users Guide"/>
       <description>
     RteTest ARM Cortex M4 is a clone description from ARM.CMSIS pack.
       </description>

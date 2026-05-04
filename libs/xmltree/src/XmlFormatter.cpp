@@ -13,7 +13,7 @@
 using namespace std;
 
 const string SCHEMAATTR = "xmlns:xsi";
-const string SCHEMAINSTANCE = "http://www.w3.org/2001/XMLSchema-instance";
+const string SCHEMAINSTANCE = "https://www.w3.org/2001/XMLSchema-instance";
 const string OWNNAMESPACE = "xsi:noNamespaceSchemaLocation";
 const string VERSIONATTR = "schemaVersion";
 

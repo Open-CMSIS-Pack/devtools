@@ -56,7 +56,7 @@
 
 -->
 
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="qualified" version="1.0.0">
+<xs:schema xmlns:xs="https://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="qualified" version="1.0.0">
 
   <xs:simpleType name="RestrictedString">
     <xs:restriction base="xs:string">
