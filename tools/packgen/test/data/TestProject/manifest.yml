@@ -9,7 +9,7 @@ packs:
     description: "TestPack description"
     vendor: "TestVendor"
     license: "LICENSE"
-    url: "http://test-URL.com/"
+    url: "https://test-URL.com/"
     repository:
       type: git
       url: https://github.com/ARM-software/CMSIS-Driver.git

@@ -9,7 +9,7 @@ packs:
     description: "TestPack description"
     vendor: "ARM"
     license: "LICENSE"
-    url: "http://arm.com/"
+    url: "https://arm.com/"
 
     requirements:
       packages:

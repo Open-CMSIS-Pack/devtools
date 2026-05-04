@@ -4,7 +4,7 @@
 /* RTE - CMSIS Run-Time Environment */
 /******************************************************************************/
 /** @file VersionCmp.h
-* @brief Semantic Version comparison according to http://semver.org/
+* @brief Semantic Version comparison according to https://semver.org/
 */
 /******************************************************************************/
 /*
@@ -39,7 +39,7 @@ public:
 
 public:
   /**
-   * @brief Split v1 and v2 according to http://semver.org/ and compare individually
+   * @brief Split v1 and v2 according to https://semver.org/ and compare individually
    * @param v1 version to be compared
    * @param v2 version to be compared
    * @param cs true in case of case sensitive comparison

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<package schemaVersion="1.2" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+<package schemaVersion="1.2" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
   <vendor>Keil</vendor>
-  <url>http://www.keil.com/pack/</url>
+  <url>https://www.keil.com/pack/</url>
   <name>FM0plus_DFP</name>
   <description>Cypress FM0+ Series Device Support</description>
 

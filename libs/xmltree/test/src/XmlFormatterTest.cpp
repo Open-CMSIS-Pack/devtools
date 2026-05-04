@@ -22,7 +22,7 @@ static const string xmlSchemaFile = "CPRJ.xsd";
 static const string xmlSchemaVer = "0.0.9";
 
 static const string xmlResExpected = string("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n") +
-"<cprj schemaVersion=\"" + xmlSchemaVer + "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"" + xmlSchemaFile + "\">\n" +
+"<cprj schemaVersion=\"" + xmlSchemaVer + "\" xmlns:xsi=\"https://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"" + xmlSchemaFile + "\">\n" +
 "  <info>information</info>\n" +
 "\n" +
 "  <info attr1=\"someAttr\" attr2=\"anotherAttr\">information with attributes</info>\n" +

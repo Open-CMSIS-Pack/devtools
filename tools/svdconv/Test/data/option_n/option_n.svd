@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 
 <device schemaVersion="1.1"
-xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:xs="https://www.w3.org/2001/XMLSchema-instance"
 xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
   <name>option_n</name>
   <version>1.5</version>
