@@ -1176,6 +1176,42 @@ public:
   bool ElaborateVariablesConfigurations();
 
   /**
+   * @brief Resolve access sequences and normalize a path relative to a reference directory.
+   *
+   * This expands static and dynamic access sequences in `item`, optionally records
+   * context dependencies for cross-context references, and converts the final path
+   * to be relative to `outDir` using `ref` as the input base directory when no
+   * context-based replacement is performed.
+   *
+   * @param context current context used for variable expansion and dependency tracking
+   * @param item input string to process; replaced in-place with the resolved value
+   * @param ref base directory used to resolve relative paths
+   * @param genDep add referenced contexts to `context.dependsOn` when true
+   * @param outDir output directory used when rebasing the resulting path; defaults to the context cprj directory when empty
+   * @param withHeadingDot preserve a leading `./` when generating relative paths
+   * @param solutionLevel allow solution-level context matching for access sequences
+   * @return true if the sequence was resolved successfully, otherwise false
+  */
+  bool ProcessSequenceRelative(ContextItem& context, std::string& item, const std::string& ref = std::string(),
+    bool genDep = true, std::string outDir = std::string(), bool withHeadingDot = false, bool solutionLevel = false);
+
+  /**
+   * @brief parse and load context layers
+   * @param context item
+   * @return true if there is no error
+  */
+  bool ParseContextLayers(ContextItem& context);
+
+  /**
+   * @brief process context precedences
+   * @param context item
+   * @param scope: process board, device or both
+   * @param rerun flag to reprocess
+   * @return true if there is no error
+  */
+  bool ProcessPrecedences(ContextItem& context, BoardOrDevice process = BoardOrDevice::None, bool rerun = false);
+
+  /**
    * @brief clear worker members for reloading a solution
    * @return true if there is no error
   */
@@ -1259,7 +1295,6 @@ protected:
   bool CheckContextFilters(const TypeFilter& typeFilter, const ContextItem& context);
   bool GetTypeContent(ContextItem& context);
   bool GetProjectSetup(ContextItem& context);
-  bool ProcessPrecedences(ContextItem& context, BoardOrDevice process = BoardOrDevice::None, bool rerun = false);
   bool ProcessPrecedence(StringCollection& item);
   bool ProcessCompilerPrecedence(StringCollection& item, bool acceptRedefinition = false);
   bool ProcessDevicePrecedence(StringCollection& item);
@@ -1279,8 +1314,7 @@ protected:
   bool ProcessSequencesRelatives(ContextItem& context, bool rerun);
   bool ProcessSequencesRelatives(ContextItem& context, std::vector<std::string>& src, const std::string& ref = std::string(), std::string outDir = std::string(), bool withHeadingDot = false, bool solutionLevel = false);
   bool ProcessSequencesRelatives(ContextItem& context, BuildType& build, const std::string& ref = std::string());
-  bool ProcessSequenceRelative(ContextItem& context, std::string& item, const std::string& ref = std::string(), bool genDep = true, std::string outDir = std::string(), bool withHeadingDot = false, bool solutionLevel = false);
-  bool ProcessOutputFilenames(ContextItem& context);
+ bool ProcessOutputFilenames(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context, const LinkerItem& linker, const std::string& ref);
   bool ProcessProcessorOptions(ContextItem& context);
@@ -1336,7 +1370,6 @@ protected:
   bool GetGeneratorDir(const RteGenerator* generator, ContextItem& context, const std::string& layer, std::string& genDir);
   bool GetGeneratorOptions(ContextItem& context, const std::string& layer, GeneratorOptionsItem& options);
   bool GetExtGeneratorOptions(ContextItem& context, const std::string& layer, GeneratorOptionsItem& options);
-  bool ParseContextLayers(ContextItem& context);
   bool AddPackRequirements(ContextItem& context, const std::vector<PackItem>& packRequirements);
   void InsertPackRequirements(const std::vector<PackItem>& src, std::vector<PackItem>& dst, std::string base);
   void CheckTypeFilterSpelling(const TypeFilter& typeFilter);

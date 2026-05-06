@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  compiler: AC6
+
+  mlops:                          # enable *.cbuild-mlops.yml
+    description: ML model with extended configuration
+    npu:
+      type: Ethos-U85             # specify NPU (default: first NPU from DFP device features)
+      macs: 256                   # specify MACs (default: first NPU from DFP device features)
+    vela:     
+      ini: vela/custom.ini        # explicit INI file (default: use INI file from DFP)
+      system: System_Config       # system configuration from INI file
+      memory: Memory_Mode         # memory configuration from INI file
+      misc: --extra-options       # string with additional options for Vela
+    model:    
+      clayer: $AI-Layer$          # path to layer or variable
+      name: Algorithm             # optional model name (default Algorithm), serves as namespace
+    hardware:                     # hardware target for testing
+      target: Hardware            # explicit <target-type>[@<set>] (default: first target-type, first set)
+    simulator:                    # simulator target for testing
+      target: Simulator@FVP-Test  # explicit <target-type>[@<set>] (default: last target-type, first set, check if debugger name: Arm-FVP)
+
+  target-types:
+    - type: Hardware
+      device: RteTest_ARMCM0_Dual
+      variables:
+        - AI-Layer: $SolutionDir()$/ai_layer/ai_layer.clayer.yml
+      target-set:
+        - set:
+          images:
+            - project-context: core0
+            - project-context: core1
+
+    - type: Simulator
+      device: RteTest_ARMCM0_Dual
+      define:
+        - SIMULATOR
+      variables:
+        - AI-Layer: $SolutionDir()$/ai_layer/ai_layer.clayer.yml
+      target-set:
+        - set: FVP-Test
+          debugger:
+            name: Arm-FVP
+            model: FVP_Corstone_SSE-320
+            config-file: fvp/fvp_config.txt
+          images:
+            - project-context: core0
+            - project-context: core1
+
+  projects:
+    - project: core0/core0.cproject.yml
+    - project: core1/core1.cproject.yml

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -7,6 +7,7 @@
 #ifndef PROJMGRYAMLEMITTER_H
 #define PROJMGRYAMLEMITTER_H
 
+#include "ProjMgrMlops.h"
 #include "ProjMgrRunDebug.h"
 #include "ProjMgrWorker.h"
 
@@ -102,6 +103,13 @@ public:
    * @return true if executed successfully
   */
   bool GenerateCbuildRun(const RunDebugType& debugRun);
+
+  /**
+   * @brief generate cbuild mlops file
+   * @param reference to struct with mlops info
+   * @return true if executed successfully
+  */
+  bool GenerateMlops(const MlopsType& mlops);
 
 protected:
   ProjMgrParser* m_parser = nullptr;
