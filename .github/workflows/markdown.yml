@@ -57,4 +57,4 @@ jobs:
         with:
           args: --config .github/lychee.toml --verbose --no-progress './**/*.md'
           fail: true
-          jobSummary: true
+          jobSummary: false
