@@ -124,7 +124,7 @@ jobs:
   # Triggers the cmsis-toolbox nightly workflow in the separate repository
   trigger-toolbox-nightly:
     needs: [ publish-test-results, coverage ]
-    if: success() && (github.event_name == 'schedule' || github.event.inputs.build_toolbox == 'true')
+    if: success() && github.repository == 'Open-CMSIS-Pack/devtools' && (github.event_name == 'schedule' || github.event.inputs.build_toolbox == 'true')
     runs-on: ubuntu-latest
     steps:
       - name: Trigger cmsis-toolbox Nightly
@@ -132,5 +132,6 @@ jobs:
           curl --fail-with-body --show-error --silent -X POST \
             -H "Authorization: Bearer ${{ secrets.CROSS_REPO_TOOLBOX_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
             https://api.github.com/repos/Open-CMSIS-Pack/cmsis-toolbox/actions/workflows/nightly.yml/dispatches \
             -d '{"ref":"main"}'
