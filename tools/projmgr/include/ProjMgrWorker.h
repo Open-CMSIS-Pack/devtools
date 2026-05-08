@@ -1314,7 +1314,7 @@ protected:
   bool ProcessSequencesRelatives(ContextItem& context, bool rerun);
   bool ProcessSequencesRelatives(ContextItem& context, std::vector<std::string>& src, const std::string& ref = std::string(), std::string outDir = std::string(), bool withHeadingDot = false, bool solutionLevel = false);
   bool ProcessSequencesRelatives(ContextItem& context, BuildType& build, const std::string& ref = std::string());
- bool ProcessOutputFilenames(ContextItem& context);
+  bool ProcessOutputFilenames(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context);
   bool ProcessLinkerOptions(ContextItem& context, const LinkerItem& linker, const std::string& ref);
   bool ProcessProcessorOptions(ContextItem& context);
