@@ -39,13 +39,14 @@ SET(PROJMGR_SOURCE_FILES ProjMgr.cpp ProjMgrKernel.cpp ProjMgrCallback.cpp
   ProjMgrCbuildBase.cpp ProjMgrCbuild.cpp ProjMgrCbuildIdx.cpp
   ProjMgrCbuildGenIdx.cpp ProjMgrCbuildPack.cpp ProjMgrCbuildSet.cpp
   ProjMgrCbuildRun.cpp ProjMgrRunDebug.cpp
+  ProjMgrCbuildMlops.cpp ProjMgrMlops.cpp
   ProjMgrRpcServer.cpp ProjMgrRpcServerData.cpp
 )
 SET(PROJMGR_HEADER_FILES ProjMgr.h ProjMgrKernel.h ProjMgrCallback.h
   ProjMgrParser.h ProjMgrWorker.h ProjMgrGenerator.h ProjMgrXmlParser.h
   ProjMgrYamlParser.h ProjMgrLogger.h ProjMgrYamlSchemaChecker.h
   ProjMgrYamlEmitter.h ProjMgrUtils.h ProjMgrExtGenerator.h
-  ProjMgrCbuildBase.h ProjMgrRunDebug.h
+  ProjMgrCbuildBase.h ProjMgrRunDebug.h ProjMgrMlops.h
   ProjMgrRpcServer.h ProjMgrRpcServerData.h
 )
 

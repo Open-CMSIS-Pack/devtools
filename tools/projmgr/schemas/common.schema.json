@@ -1213,6 +1213,7 @@
         "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "link-time-optimize": { "$ref": "#/definitions/LinkTimeOptimizeType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" },
+        "mlops":           { "$ref": "#/definitions/MlopsType" },
         "optimize":        { "$ref": "#/definitions/OptimizeType" },
         "output-dirs":     { "$ref": "#/definitions/OutputDirectoriesType" },
         "packs":           { "$ref": "#/definitions/PacksType" },
@@ -2635,6 +2636,121 @@
       },
       "additionalProperties": false,
       "required": ["core", "max-clock"]
+    },
+    "MlopsTargetType": {
+      "type": "object",
+      "description": "Target selection for hardware or simulator.",
+      "properties": {
+        "target": { "type": "string", "description": "Explicit <target-type>[@<set>] selection." }
+      },
+      "additionalProperties": false
+    },
+    "MlopsType": {
+      "title": "mlops:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#mlops-management",
+      "description": "Configuration for MLOps features.",
+      "type": ["null", "object"],
+      "properties": {
+        "description": { "type": "string", "description": "Brief description of the MLOps configuration." },
+        "npu": {
+          "type": "object",
+          "description": "NPU configuration.",
+          "properties": {
+            "type": { "type": "string", "description": "NPU type (default: first NPU from DFP device features)." },
+            "macs": { "type": "number", "description": "Number of MACs (default: first NPU from DFP device features)." }
+          },
+          "additionalProperties": false
+        },
+        "vela": {
+          "type": "object",
+          "description": "Vela compiler configuration.",
+          "properties": {
+            "ini":    { "type": "string", "description": "Path to Vela INI configuration file (default: use INI file from DFP)." },
+            "system": { "type": "string", "description": "System configuration name from the INI file." },
+            "memory": { "type": "string", "description": "Memory mode name from the INI file." },
+            "misc":   { "type": "string", "description": "Additional options string for Vela." }
+          },
+          "additionalProperties": false
+        },
+        "model": {
+          "type": "object",
+          "description": "AI model configuration.",
+          "properties": {
+            "clayer": { "type": "string", "description": "Path to the AI clayer file or variable." },
+            "name":   { "type": "string", "description": "Model name used as namespace (default: Algorithm)." }
+          },
+          "additionalProperties": false
+        },
+        "hardware":    { "$ref": "#/definitions/MlopsTargetType" },
+        "simulator":   { "$ref": "#/definitions/MlopsTargetType" }
+      },
+      "additionalProperties": false
+    },
+    "MlopsDescType": {
+      "title": "cbuild-mlops:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#mlops-management",
+      "type": ["null", "object"],
+      "properties": {
+        "description": { "type": "string", "description": "Brief description of the MLOps configuration." },
+        "processor": {
+          "type": "object",
+          "description": "Processor information.",
+          "properties": {
+            "type": { "type": "string", "description": "Processor core type (e.g. Cortex-M55)." }
+          },
+          "additionalProperties": false
+        },
+        "npu": {
+          "type": "object",
+          "description": "NPU information.",
+          "properties": {
+            "type": { "type": "string", "description": "NPU type." },
+            "macs": { "type": "number", "description": "Number of MACs." }
+          },
+          "additionalProperties": false
+        },
+        "vela": {
+          "type": "object",
+          "description": "Vela compiler information.",
+          "properties": {
+            "ini":     { "type": "string", "description": "Path to Vela INI configuration file." },
+            "options": { "type": "string", "description": "Resolved Vela command-line options string." }
+          },
+          "additionalProperties": false
+        },
+        "model": {
+          "type": "object",
+          "description": "AI model information.",
+          "properties": {
+            "clayer": { "type": "string", "description": "Path to the AI clayer file." },
+            "name":   { "type": "string", "description": "Model name used as namespace." }
+          },
+          "additionalProperties": false
+        },
+        "hardware":  { "$ref": "#/definitions/MlopsRunDescType" },
+        "simulator": { "$ref": "#/definitions/MlopsRunDescType" }
+      },
+      "additionalProperties": false
+    },
+    "MlopsOutputType": {
+      "type": "object",
+      "description": "Output image file.",
+      "properties": {
+        "file": { "type": "string", "description": "Path to the output file." },
+        "type": { "type": "string", "description": "Output file type." }
+      },
+      "additionalProperties": false,
+      "required": ["file", "type"]
+    },
+    "MlopsRunDescType": {
+      "type": "object",
+      "description": "Run configuration.",
+      "properties": {
+        "active":       { "type": "string", "description": "Active target-set in the form <target-type>[@<set>]." },
+        "cbuild-run":   { "type": "string", "description": "Path to the *.cbuild-run.yml file." },
+        "output":       { "type": "array", "description": "List of output image files.", "items": { "$ref": "#/definitions/MlopsOutputType" } },
+        "model":        { "type": "string", "description": "Simulator model executable (e.g. FVP_Corstone_SSE-320)." },
+        "config-file":  { "type": "string", "description": "Path to the simulator configuration file." }
+      },
+      "additionalProperties": false
     }
   }
 }

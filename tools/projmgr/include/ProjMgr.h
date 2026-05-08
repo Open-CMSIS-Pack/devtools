@@ -12,6 +12,7 @@
 #include "ProjMgrGenerator.h"
 #include "ProjMgrYamlEmitter.h"
 #include "ProjMgrRunDebug.h"
+#include "ProjMgrMlops.h"
 #include "ProjMgrRpcServer.h"
 
 #include <cxxopts.hpp>
@@ -192,6 +193,7 @@ protected:
   ProjMgrGenerator m_generator;
   ProjMgrYamlEmitter m_emitter;
   ProjMgrRunDebug m_runDebug;
+  ProjMgrMlops m_mlops;
   ProjMgrRpcServer m_rpcServer;
 
   std::string m_csolutionFile;

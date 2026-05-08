@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  compiler: AC6
+
+  mlops:
+
+  target-types:
+    - type: Hardware
+      device: RteTest_ARMCM0_Dual
+      target-set:
+        - set:
+          images:
+            - project-context: core0
+            - project-context: core1
+
+    - type: Simulator
+      device: RteTest_ARMCM0_Dual
+      target-set:
+        - set: FVP-Test
+          debugger:
+            name: Arm-FVP
+          images:
+            - project-context: wrong_context
+
+  projects:
+    - project: core0/core0.cproject.yml
+    - project: core1/core1.cproject.yml

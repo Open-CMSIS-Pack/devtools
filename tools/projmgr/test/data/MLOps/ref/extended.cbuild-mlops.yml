@@ -1,0 +1,31 @@
+cbuild-mlops:
+  description: ML model with extended configuration
+  processor:
+    type: Cortex-M0
+  npu:
+    type: Ethos-U85
+    macs: 256
+  vela:
+    ini: vela/custom.ini
+    options: --accelerator-config ethos-u85-256 --system-config System_Config --memory-mode Memory_Mode --extra-options
+  model:
+    clayer: ai_layer/ai_layer.clayer.yml
+    name: Algorithm
+  hardware:
+    active: Hardware
+    cbuild-run: out/extended+Hardware.cbuild-run.yml
+    output:
+      - file: out/core0/Hardware/core0.axf
+        type: elf
+      - file: out/core1/Hardware/core1.axf
+        type: elf
+  simulator:
+    active: Simulator@FVP-Test
+    cbuild-run: out/extended+Simulator.cbuild-run.yml
+    output:
+      - file: out/core0/Simulator/core0.axf
+        type: elf
+      - file: out/core1/Simulator/core1.axf
+        type: elf
+    model: FVP_Corstone_SSE-320
+    config-file: fvp/fvp_config.txt

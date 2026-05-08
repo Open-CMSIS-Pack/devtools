@@ -1,0 +1,31 @@
+cbuild-mlops:
+  description: ML model with minimal configuration
+  processor:
+    type: Cortex-M0
+  npu:
+    type: Ethos-U55
+    macs: 128
+  vela:
+    ini: .cmsis/vela_deviceLevel.ini
+    options: --accelerator-config ethos-u55-128
+  model:
+    clayer: ai_layer/ai_layer.clayer.yml
+    name: Algorithm
+  hardware:
+    active: Hardware
+    cbuild-run: out/minimal+Hardware.cbuild-run.yml
+    output:
+      - file: out/core0/Hardware/core0.axf
+        type: elf
+      - file: out/core1/Hardware/core1.axf
+        type: elf
+  simulator:
+    active: Simulator@FVP-Test
+    cbuild-run: out/minimal+Simulator.cbuild-run.yml
+    output:
+      - file: out/core0/Simulator/core0.axf
+        type: elf
+      - file: out/core1/Simulator/core1.axf
+        type: elf
+    model: FVP_Corstone_SSE-320
+    config-file: fvp/fvp_config.txt

@@ -70,6 +70,7 @@ ProjMgr::ProjMgr() :
   m_extGenerator(&m_parser),
   m_worker(&m_parser, &m_extGenerator),
   m_emitter(&m_parser, &m_worker),
+  m_mlops(&m_worker),
   m_rpcServer(*this),
   m_checkSchema(false),
   m_missingPacks(false),
@@ -609,6 +610,17 @@ bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
   // Get executes
   map<string, ExecutesItem> executes;
   m_worker.GetExecutes(executes);
+
+  // Generate cbuild-mlops file
+  if (m_parser.GetCsolution().mlops.enabled) {
+    MlopsType mlops;
+    if (!m_mlops.CollectSettings(m_parser.GetCsolution(), mlops)) {
+      result = false;
+    }
+    if (!m_emitter.GenerateMlops(mlops)) {
+      result = false;
+    }
+  }
 
   // Generate cbuild index file
   if (!m_emitter.GenerateCbuildIndex(m_processedContexts, m_failedContext, executes)) {
