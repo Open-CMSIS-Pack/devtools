@@ -3,14 +3,11 @@ name: nightly
 on:
   workflow_dispatch:
     inputs:
-      build_toolbox:
-        description: 'Trigger cmsis-toolbox Nightly Workflow'
+      trigger_toolbox_build:
+        description: 'Trigger cmsis-toolbox build as a part of this workflow'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
+        default: false
+        type: boolean
   schedule:
     - cron: '0 0 * * *'
 
@@ -124,7 +121,10 @@ jobs:
   # Triggers the cmsis-toolbox nightly workflow in the separate repository
   trigger-toolbox-nightly:
     needs: [ publish-test-results, coverage ]
-    if: success() && github.repository == 'Open-CMSIS-Pack/devtools' && (github.event_name == 'schedule' || github.event.inputs.build_toolbox == 'true')
+    if: >-
+      success() &&
+      github.repository == 'Open-CMSIS-Pack/devtools' &&
+      (github.event_name == 'schedule' || github.event.inputs.trigger_toolbox_build)
     runs-on: ubuntu-latest
     steps:
       - name: Trigger cmsis-toolbox Nightly
@@ -134,4 +134,4 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Content-Type: application/json" \
             https://api.github.com/repos/Open-CMSIS-Pack/cmsis-toolbox/actions/workflows/nightly.yml/dispatches \
-            -d '{"ref":"main","inputs":{"build_solution_extn":"true","include_nightly":"${{ github.event_name == 'schedule' && 'true' || 'false' }}"}}'
+            -d '{"ref":"main","inputs":{"trigger_extension_build":"true","use_nightly_devtools":"${{ github.event_name == 'schedule' && 'true' || 'false' }}"}}'
