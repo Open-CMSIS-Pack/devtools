@@ -27,38 +27,62 @@ bool ProjMgrMlops::FindTargetType(const CsolutionItem& csolution, const string& 
       return true;
     }
   }
-  ProjMgrLogger::Get().Error("mlops: target-type '" + typeName + "' not found");
   return false;
 }
 
-bool ProjMgrMlops::GetTargetSetItemRef(const TargetType& targetType, const string& targetTypeName,
-  const string& targetSetName, bool simulatorDefault, TargetSetItem& targetSet) const {
-  if (targetSetName.empty()) {
-    if (simulatorDefault) {
-      for (const auto& set : targetType.targetSet) {
-        if (set.debugger.name == "Arm-FVP") {
-          targetSet = set;
-          return true;
-        }
+bool ProjMgrMlops::GetTargetSetItemRef(const TargetType& targetType, optional<const string> targetSetName,
+  bool simulator, TargetSetItem& targetSet) const {
+  if (!targetSetName.has_value()) {
+    for (const auto& set : targetType.targetSet) {
+      if ((simulator && set.debugger.name == "Arm-FVP") ||
+        (!simulator && set.debugger.name != "Arm-FVP")) {
+        // default simulator or hardware target set
+        targetSet = set;
+        return true;
       }
-      ProjMgrLogger::Get().Error("mlops: simulator target with debugger 'Arm-FVP' not found");
-      return false;
-    }
-    if (!targetType.targetSet.empty()) {
-      targetSet = targetType.targetSet.front();
-      return true;
     }
   } else {
     for (const auto& set : targetType.targetSet) {
-      if (set.set == targetSetName) {
+      if (set.set == targetSetName.value()) {
+        // specified target set
         targetSet = set;
         return true;
       }
     }
   }
-  ProjMgrLogger::Get().Error("mlops: target-type '" + targetTypeName + "' target-set '" +
-    (targetSetName.empty() ? "<default>" : targetSetName) + "' not found");
+  // target set could not be determined
   return false;
+}
+
+bool ProjMgrMlops::ResolveTargetSet(const CsolutionItem& csolution, const MlopsTargetItem target,
+  bool simulatorDefault, string& typeName, TargetSetItem& targetSetItem) const {
+  TargetType targetType;
+  if (target.targetType.empty()) {
+    if (!csolution.targetTypes.empty()) {
+      // default simulator: last target-type, default hardware: first target-type
+      typeName = simulatorDefault ? csolution.targetTypes.back().first : csolution.targetTypes.front().first;
+      targetType = simulatorDefault ? csolution.targetTypes.back().second : csolution.targetTypes.front().second;
+    }
+  } else {
+    typeName = target.targetType; 
+    if (!FindTargetType(csolution, target.targetType, targetType)) {
+      // print error if specified target type was not found
+      ProjMgrLogger::Get().Error("mlops: target type '" + target.targetType + "' not found");
+      return false;
+    }
+  }
+  // target set name = nullopt if target type is not specified, to differentiate from default (unnamed) target set
+  auto targetSetName = target.targetType.empty() ? nullopt : make_optional(target.targetSet);
+  if (!GetTargetSetItemRef(targetType, targetSetName, simulatorDefault, targetSetItem)) {
+    if (targetSetName.has_value()) {
+      // print error if specified target set was not found
+      ProjMgrLogger::Get().Error("mlops: " + (target.targetSet.empty() ?
+        ("no default unnamed target set for '" + target.targetType + "'") :
+        ("target set '" + target.targetType + '@' + target.targetSet + "' not found")));
+      return false;
+    }
+  }
+  return true;
 }
 
 string ProjMgrMlops::BuildActive(const string& targetType, const string& targetSet) const {
@@ -110,31 +134,21 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
 
   const auto& solutionMlops = csolution.mlops;
 
-  // hardware and simulator target types
-  const string hardwareType = !solutionMlops.hardware.targetType.empty() ? solutionMlops.hardware.targetType :
-    (!csolution.targetTypes.empty() ? csolution.targetTypes.front().first : RteUtils::EMPTY_STRING);
-  const string simulatorType = !solutionMlops.simulator.targetType.empty() ? solutionMlops.simulator.targetType :
-    (!csolution.targetTypes.empty() ? csolution.targetTypes.back().first : RteUtils::EMPTY_STRING);
-
-  // get hardware set
-  TargetType hardwareTargetType;
-  TargetSetItem hardwareTargetSet;
-  if (!FindTargetType(csolution, hardwareType, hardwareTargetType) ||
-    !GetTargetSetItemRef(hardwareTargetType, hardwareType, solutionMlops.hardware.targetSet, false, hardwareTargetSet)) {
-    return false;
-  }
-  
-  // get simulator set
-  TargetType simulatorTargetType;
-  TargetSetItem simulatorTargetSet;
-  if (!FindTargetType(csolution, simulatorType, simulatorTargetType) ||
-    !GetTargetSetItemRef(simulatorTargetType, simulatorType, solutionMlops.simulator.targetSet, true, simulatorTargetSet)) {
+  // resolve hardware and simulator targets and get references for their items
+  string hardwareType, simulatorType;
+  TargetSetItem hardwareTargetSet, simulatorTargetSet;
+  if (!ResolveTargetSet(csolution, solutionMlops.hardware, false, hardwareType, hardwareTargetSet) ||
+      !ResolveTargetSet(csolution, solutionMlops.simulator, true, simulatorType, simulatorTargetSet)) {
+    // throw error if target is explicit specified but target set cannot be determined
     return false;
   }
 
   // get all context items
   map<string, ContextItem>* contexts = nullptr;
   m_worker->GetContexts(contexts);
+  if (contexts->empty()) {
+    return false;
+  }
 
   // find hardware and simulator contexts
   vector<ContextItem> hardwareContexts, simulatorContexts;
@@ -142,9 +156,9 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   vector<tuple<const TargetSetItem&, const string&, vector<ContextItem>&>> refs = {
     {hardwareTargetSet, hardwareType, hardwareContexts}, {simulatorTargetSet, simulatorType, simulatorContexts}};
   for (auto& [targetSet, targetType, ref] : refs) {
-    for (const auto& image : targetSet.images) {
-      if (!image.context.empty()) {
-        const string contextName = image.context + "+" + targetType;
+    for (const auto& entry : targetSet.images) {
+      if (!entry.context.empty()) {
+        const string contextName = entry.context + "+" + targetType;
         if (contexts->find(contextName) != contexts->end()) {
           // process context precedences if needed
           auto& context = contexts->at(contextName);
@@ -164,27 +178,35 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   }
 
   // check if hardware and simulator contexts were found
-  vector<tuple<const vector<ContextItem>&, const string&, const string&>> contextRefs = {
-    {hardwareContexts, hardwareType, hardwareTargetSet.set},
-    {simulatorContexts, simulatorType, simulatorTargetSet.set}
+  vector<tuple<const vector<ContextItem>&, const MlopsTargetItem&>> contextRefs = {
+    {hardwareContexts, solutionMlops.hardware},
+    {simulatorContexts, solutionMlops.simulator}
   };
-  for (const auto& [ref, targetType, targetSet] : contextRefs) {
-    if (ref.empty()) {
-      ProjMgrLogger::Get().Error("mlops: target-type '" + targetType + "' target-set '" +
-        (targetSet.empty() ? "<default>" : targetSet) + "' project-contexts not found");
+  for (const auto& [ref, t] : contextRefs) {
+    if (!t.targetType.empty() && ref.empty()) {
+      // print error if context for specified target type was not found
+      ProjMgrLogger::Get().Error("mlops: no project-context specified for target '" +
+        t.targetType + (t.targetSet.empty() ? "" : '@' + t.targetSet) + "'");
       return false;
     }
   }
 
-  auto& hardwareContext = hardwareContexts.front();
-  auto& simulatorContext = simulatorContexts.front();
+  // get hardware and simulator context references
+  bool hardwareFound = !hardwareContexts.empty();
+  bool simulatorFound = !simulatorContexts.empty();
+  ContextItem emptyContext;
+  ContextItem& hardwareContext = hardwareFound ? hardwareContexts.front() : emptyContext;
+  ContextItem& simulatorContext = simulatorFound ? simulatorContexts.front() : emptyContext;
+
+  // if hardware is not determined use first default context for processor type and access sequences
+  ContextItem& context = hardwareFound ? hardwareContext : contexts->begin()->second;
 
   // mlops description
   mlops.description = solutionMlops.description;
 
   // get hardware processor type ("Dcore")
-  if (hardwareContext.targetAttributes.find("Dcore") != hardwareContext.targetAttributes.end()) {
-    mlops.processor.type = hardwareContext.targetAttributes.at("Dcore");
+  if (context.targetAttributes.find("Dcore") != context.targetAttributes.end()) {
+    mlops.processor.type = context.targetAttributes.at("Dcore");
   }
 
   // npu type and macs
@@ -244,40 +266,47 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   } else {
     // explicit vela ini
     mlops.vela.ini = solutionMlops.vela.ini;
-    if (!m_worker->ProcessSequenceRelative(hardwareContext, mlops.vela.ini, csolution.directory, false)) {
+    if (!m_worker->ProcessSequenceRelative(context, mlops.vela.ini, csolution.directory, false)) {
       return false;
     }
     if (RteFsUtils::IsRelative(mlops.vela.ini)) {
-      RteFsUtils::NormalizePath(mlops.vela.ini, hardwareContext.directories.cprj);
+      RteFsUtils::NormalizePath(mlops.vela.ini, context.directories.cprj);
     }
   }
-  
+
   // model name and clayer
   if (!solutionMlops.model.clayer.empty()) {
     mlops.model.name = solutionMlops.model.name.empty() ? "Algorithm" : solutionMlops.model.name;
     mlops.model.clayer = solutionMlops.model.clayer;
-    if (!m_worker->ProcessSequenceRelative(hardwareContext, mlops.model.clayer, csolution.directory, false)) {
+    if (!m_worker->ProcessSequenceRelative(context, mlops.model.clayer, csolution.directory, false)) {
       return false;
     }
     if (RteFsUtils::IsRelative(mlops.model.clayer)) {
-      RteFsUtils::NormalizePath(mlops.model.clayer, hardwareContext.directories.cprj);
+      RteFsUtils::NormalizePath(mlops.model.clayer, context.directories.cprj);
     }    
   }
   
-  // set hardware and simulator run types
-  const string outBaseDir = hardwareContext.directories.cprj + "/" + hardwareContext.directories.outBaseDir;
-  SetMlopsRunType(mlops.hardware, hardwareType, hardwareTargetSet.set, hardwareContexts, outBaseDir, csolution.name);
-  SetMlopsRunType(mlops.simulator, simulatorType, simulatorTargetSet.set, simulatorContexts, outBaseDir, csolution.name);
+  if (hardwareFound) {
+    // set hardware run types
+    const string outBaseDir = hardwareContext.directories.cprj + "/" + hardwareContext.directories.outBaseDir;
+    SetMlopsRunType(mlops.hardware, hardwareType, hardwareTargetSet.set, hardwareContexts, outBaseDir, csolution.name);
+  }
 
-  // get debugger model and config-file
-  mlops.simulator.model = GetCustomScalar(simulatorTargetSet.debugger.custom, "model");
-  mlops.simulator.configFile = GetCustomScalar(simulatorTargetSet.debugger.custom, "config-file");
-  if (!mlops.simulator.configFile.empty()) {
-    if (!m_worker->ProcessSequenceRelative(simulatorContext, mlops.simulator.configFile, csolution.directory, false)) {
-      return false;
-    }
-    if (RteFsUtils::IsRelative(mlops.simulator.configFile)) {
-      RteFsUtils::NormalizePath(mlops.simulator.configFile, simulatorContext.directories.cprj);
+  if (simulatorFound) {
+    // set simulator run types
+    const string outBaseDir = simulatorContext.directories.cprj + "/" + simulatorContext.directories.outBaseDir;
+    SetMlopsRunType(mlops.simulator, simulatorType, simulatorTargetSet.set, simulatorContexts, outBaseDir, csolution.name);
+
+    // get debugger model and config-file
+    mlops.simulator.model = GetCustomScalar(simulatorTargetSet.debugger.custom, "model");
+    mlops.simulator.configFile = GetCustomScalar(simulatorTargetSet.debugger.custom, "config-file");
+    if (!mlops.simulator.configFile.empty()) {
+      if (!m_worker->ProcessSequenceRelative(simulatorContext, mlops.simulator.configFile, csolution.directory, false)) {
+        return false;
+      }
+      if (RteFsUtils::IsRelative(mlops.simulator.configFile)) {
+        RteFsUtils::NormalizePath(mlops.simulator.configFile, simulatorContext.directories.cprj);
+      }
     }
   }
 

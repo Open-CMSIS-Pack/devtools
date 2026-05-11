@@ -21,8 +21,6 @@ solution:
 
     - type: Simulator
       device: RteTest_ARMCM0_Dual
-      define:
-        - SIMULATOR
       variables:
         - AI-Layer: $SolutionDir()$/ai_layer/ai_layer.clayer.yml
       target-set:

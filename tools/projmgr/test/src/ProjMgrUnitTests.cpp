@@ -7749,12 +7749,27 @@ TEST_F(ProjMgrUnitTests, GenerateMLOps) {
   EXPECT_EQ("Ethos-U55", mlopsMacsOnly["cbuild-mlops"]["npu"]["type"].as<string>());
   EXPECT_EQ("128", mlopsMacsOnly["cbuild-mlops"]["npu"]["macs"].as<string>());
 
+  // hardware target is not present
+  csolution = testinput_folder + "/MLOps/no_hardware.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& mlopsNoHardware = YAML::LoadFile(testinput_folder + "/MLOps/no_hardware.cbuild-mlops.yml");
+  EXPECT_FALSE(mlopsNoHardware["cbuild-mlops"]["hardware"].IsDefined());
+  EXPECT_TRUE(mlopsNoHardware["cbuild-mlops"]["simulator"].IsDefined());
+
+  // simulator target is not present
+  csolution = testinput_folder + "/MLOps/no_simulator.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& mlopsNoSimulator = YAML::LoadFile(testinput_folder + "/MLOps/no_simulator.cbuild-mlops.yml");
+  EXPECT_TRUE(mlopsNoSimulator["cbuild-mlops"]["hardware"].IsDefined());
+  EXPECT_FALSE(mlopsNoSimulator["cbuild-mlops"]["simulator"].IsDefined());
+
   // test error cases: {csolution file, expected error message}
   const vector<pair<string, string>> failureCases = {
-    { "failure1", "mlops: target-type 'OtherHardware' not found" },
-    { "failure2", "mlops: target-type 'Hardware' target-set '<default>' not found" },
-    { "failure3", "mlops: simulator target with debugger 'Arm-FVP' not found" },
-    { "failure4", "mlops: target-type 'Simulator' target-set 'FVP-Test' project-contexts not found" },
+    { "failure1", "mlops: target type 'OtherHardware' not found" },
+    { "failure2", "mlops: target set 'Simulator@OtherSet' not found" },
+    { "failure3", "mlops: no project-context specified for target 'Simulator@FVP-Test'" },
   };
   for (const auto& [name, expectedError] : failureCases) {
     csolution = testinput_folder + "/MLOps/" + name + ".csolution.yml";
@@ -7765,12 +7780,14 @@ TEST_F(ProjMgrUnitTests, GenerateMLOps) {
   }
 
   // file cannot be written
-  const string mlopsOutput = testinput_folder + "/MLOps/failure4.cbuild-mlops.yml";
-  RteFsUtils::RemoveFile(mlopsOutput);
+  csolution = testinput_folder + "/MLOps/failure.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  RteFsUtils::CopyCheckFile(testinput_folder + "/MLOps/minimal.csolution.yml", csolution, false);
+  const string mlopsOutput = testinput_folder + "/MLOps/failure.cbuild-mlops.yml";
   EXPECT_TRUE(RteFsUtils::CreateDirectories(mlopsOutput));
   EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
-  const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/MLOps/failure4.cbuild-idx.yml");
-  EXPECT_EQ("failure4.cbuild-mlops.yml - file cannot be written",
-    cbuildIdx["build-idx"]["cbuilds"][0]["messages"]["errors"][1].as<string>());
+  const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/MLOps/failure.cbuild-idx.yml");
+  EXPECT_EQ("failure.cbuild-mlops.yml - file cannot be written",
+    cbuildIdx["build-idx"]["cbuilds"][0]["messages"]["errors"][0].as<string>());
   RteFsUtils::RemoveDir(mlopsOutput);
 }

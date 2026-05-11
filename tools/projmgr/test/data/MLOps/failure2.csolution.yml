@@ -5,7 +5,7 @@ solution:
 
   mlops:
     simulator:
-      target: OtherSimulator
+      target: Simulator@OtherSet
 
   target-types:
     - type: Hardware

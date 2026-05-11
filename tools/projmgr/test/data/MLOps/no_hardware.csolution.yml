@@ -4,24 +4,24 @@ solution:
   compiler: AC6
 
   mlops:
+    description: hardware target not present
+    model:    
+      clayer: $AI-Layer$
 
   target-types:
-    - type: Hardware
-      device: RteTest_ARMCM0_Dual
-      target-set:
-        - set:
-          images:
-            - project-context: core0
-            - project-context: core1
-
     - type: Simulator
       device: RteTest_ARMCM0_Dual
+      variables:
+        - AI-Layer: $SolutionDir()$/ai_layer/ai_layer.clayer.yml
       target-set:
         - set: FVP-Test
           debugger:
             name: Arm-FVP
+            model: FVP_Corstone_SSE-320
+            config-file: fvp/fvp_config.txt
           images:
-            - project-context: wrong_context
+            - project-context: core0
+            - project-context: core1
 
   projects:
     - project: core0/core0.cproject.yml
