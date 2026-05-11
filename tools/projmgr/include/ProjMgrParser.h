@@ -542,6 +542,71 @@ struct CdefaultItem {
 
 typedef std::vector<std::pair<std::string, BuildType>> BuildTypes;
 typedef std::vector<std::pair<std::string, TargetType>> TargetTypes;
+
+/**
+ * @brief mlops NPU item containing
+ *        NPU type,
+ *        number of MACs
+*/
+struct MlopsNpuItem {
+  std::string type;
+  std::string macs;
+};
+
+/**
+ * @brief mlops Vela item containing
+ *        path to INI file,
+ *        system configuration selector,
+ *        memory configuration selector,
+ *        additional Vela options string
+*/
+struct MlopsVelaItem {
+  std::string ini;
+  std::string system;
+  std::string memory;
+  std::string misc;
+};
+
+/**
+ * @brief mlops model item containing
+ *        path to AI clayer,
+ *        model name
+*/
+struct MlopsModelItem {
+  std::string clayer;
+  std::string name;
+};
+
+/**
+ * @brief mlops hardware/simulator target item containing
+ *        explicit target-type name,
+ *        explicit target-set name
+*/
+struct MlopsTargetItem {
+  std::string targetType;
+  std::string targetSet;
+};
+
+/**
+ * @brief mlops item containing
+ *        enable flag
+ *        description,
+ *        NPU configuration,
+ *        Vela compiler configuration,
+ *        ML model configuration,
+ *        hardware target for testing,
+ *        simulator target for testing
+*/
+struct MlopsItem {
+  bool enabled = false;
+  std::string description;
+  MlopsNpuItem npu;
+  MlopsVelaItem vela;
+  MlopsModelItem model;
+  MlopsTargetItem hardware;
+  MlopsTargetItem simulator;
+};
+
 /**
  * @brief solution item containing
  *        csolution name,
@@ -583,6 +648,7 @@ struct CsolutionItem {
   std::vector<ExecutesItem> executes;
   std::vector<std::string> ymlOrderedBuildTypes;
   std::vector<std::string> ymlOrderedTargetTypes;
+  MlopsItem mlops;
 };
 
 /**

@@ -19,7 +19,7 @@ bool ProjMgrYamlSchemaChecker::Validate(const std::string& file)
 {
   // Check if the input file exist
   if (!RteFsUtils::Exists(file)) {
-    ProjMgrLogger::Get().Error("file doesn't exist", "", file);
+    ProjMgrLogger::Get().Error("file doesn't exist: '" + file + "'");
     return false;
   }
 

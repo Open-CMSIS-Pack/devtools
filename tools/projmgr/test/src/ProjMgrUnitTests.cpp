@@ -7708,3 +7708,69 @@ TEST_F(ProjMgrUnitTests, ParseCommandLine_MutualExclusionOptions) {
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("error csolution: command line options '--quiet' and '--verbose' are mutually exclusive"));
 }
+
+TEST_F(ProjMgrUnitTests, GenerateMLOps) {
+  char* argv[5];
+  string csolution = testinput_folder + "/MLOps/minimal.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"Simulator";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/MLOps/minimal.cbuild-mlops.yml",
+    testinput_folder + "/MLOps/ref/minimal.cbuild-mlops.yml");
+
+  // different active target should not change mlops
+  argv[4] = (char*)"";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/MLOps/minimal.cbuild-mlops.yml",
+    testinput_folder + "/MLOps/ref/minimal.cbuild-mlops.yml");
+
+  // extended mlops configuration
+  csolution = testinput_folder + "/MLOps/extended.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/MLOps/extended.cbuild-mlops.yml",
+    testinput_folder + "/MLOps/ref/extended.cbuild-mlops.yml");
+
+  // infer macs from explicit npu type
+  csolution = testinput_folder + "/MLOps/npu_type_only.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& mlopsTypeOnly = YAML::LoadFile(testinput_folder + "/MLOps/npu_type_only.cbuild-mlops.yml");
+  EXPECT_EQ("Ethos-U55", mlopsTypeOnly["cbuild-mlops"]["npu"]["type"].as<string>());
+  EXPECT_EQ("128", mlopsTypeOnly["cbuild-mlops"]["npu"]["macs"].as<string>());
+
+  // infer type from explicit npu macs
+  csolution = testinput_folder + "/MLOps/npu_macs_only.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& mlopsMacsOnly = YAML::LoadFile(testinput_folder + "/MLOps/npu_macs_only.cbuild-mlops.yml");
+  EXPECT_EQ("Ethos-U55", mlopsMacsOnly["cbuild-mlops"]["npu"]["type"].as<string>());
+  EXPECT_EQ("128", mlopsMacsOnly["cbuild-mlops"]["npu"]["macs"].as<string>());
+
+  // test error cases: {csolution file, expected error message}
+  const vector<pair<string, string>> failureCases = {
+    { "failure1", "mlops: target-type 'OtherHardware' not found" },
+    { "failure2", "mlops: target-type 'Hardware' target-set '<default>' not found" },
+    { "failure3", "mlops: simulator target with debugger 'Arm-FVP' not found" },
+    { "failure4", "mlops: target-type 'Simulator' target-set 'FVP-Test' project-contexts not found" },
+  };
+  for (const auto& [name, expectedError] : failureCases) {
+    csolution = testinput_folder + "/MLOps/" + name + ".csolution.yml";
+    argv[2] = (char*)csolution.c_str();
+    EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+    const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/MLOps/" + name + ".cbuild-idx.yml");
+    EXPECT_EQ(expectedError, cbuildIdx["build-idx"]["cbuilds"][0]["messages"]["errors"][0].as<string>());
+  }
+
+  // file cannot be written
+  const string mlopsOutput = testinput_folder + "/MLOps/failure4.cbuild-mlops.yml";
+  RteFsUtils::RemoveFile(mlopsOutput);
+  EXPECT_TRUE(RteFsUtils::CreateDirectories(mlopsOutput));
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/MLOps/failure4.cbuild-idx.yml");
+  EXPECT_EQ("failure4.cbuild-mlops.yml - file cannot be written",
+    cbuildIdx["build-idx"]["cbuilds"][0]["messages"]["errors"][1].as<string>());
+  RteFsUtils::RemoveDir(mlopsOutput);
+}
