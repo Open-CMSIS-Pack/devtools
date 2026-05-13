@@ -9,6 +9,8 @@
 
 #include "ProjMgrWorker.h"
 
+#include <optional>
+
 struct CsolutionItem;
 struct ContextItem;
 struct CustomItem;
