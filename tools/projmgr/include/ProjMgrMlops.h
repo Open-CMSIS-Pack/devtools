@@ -9,6 +9,8 @@
 
 #include "ProjMgrWorker.h"
 
+#include <optional>
+
 struct CsolutionItem;
 struct ContextItem;
 struct CustomItem;
@@ -126,8 +128,10 @@ public:
 private:
   ProjMgrWorker* m_worker = nullptr;
   bool FindTargetType(const CsolutionItem& csolution, const std::string& typeName, TargetType& targetType) const;
-  bool GetTargetSetItemRef(const TargetType& targetType, const std::string& targetTypeName,
-    const std::string& targetSetName, bool simulatorDefault, TargetSetItem& targetSet) const;
+  bool ResolveTargetSet(const CsolutionItem& csolution, const MlopsTargetItem target,
+    bool simulatorDefault, std::string& typeName, TargetSetItem& targetSetItem) const;
+  bool GetTargetSetItemRef(const TargetType& targetType, std::optional<const std::string> targetSetName,
+    bool simulatorDefault, TargetSetItem& targetSet) const;
   std::string BuildActive(const std::string& targetType, const std::string& targetSet) const;
   std::string GetCustomScalar(const CustomItem& custom, const std::string& key) const;
   std::string BuildVelaOptions(const MlopsNpuType& npu, const MlopsVelaItem& vela) const;
