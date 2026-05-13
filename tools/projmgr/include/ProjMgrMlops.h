@@ -135,7 +135,7 @@ private:
   std::string BuildActive(const std::string& targetType, const std::string& targetSet) const;
   std::string GetCustomScalar(const CustomItem& custom, const std::string& key) const;
   std::string BuildVelaOptions(const MlopsNpuType& npu, const MlopsVelaItem& vela) const;
-  void SetMlopsRunType(MlopsRunType& run, const std::string& targetType, const std::string& targetSet,
+  bool SetMlopsRunType(MlopsRunType& run, const std::string& targetType, const TargetSetItem& targetSet,
     const std::vector<ContextItem>& contexts, const std::string& outBaseDir, const std::string& solutionName) const;
 };
 

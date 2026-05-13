@@ -64,13 +64,31 @@ ProjMgrWorker::~ProjMgrWorker(void) {
   }
 }
 
+bool ProjMgrWorker::PushImageOnlyTargetType(const string& targetType, const vector<ImageItem>& images, StrVec& imageOnlyTargetTypes) {
+  for (const auto& item : images) {
+    if (!item.context.empty()) {
+      return false;
+    }
+  }
+  CollectionUtils::PushBackUniquely(imageOnlyTargetTypes, targetType);
+  return true;  
+}
+
 void ProjMgrWorker::AddImageOnlyContext() {
+  StrVec imageOnlyTargetTypes;
+  // add image-only context for active target-set
   if (!m_activeTargetSet.images.empty()) {
-    for (const auto& item : m_activeTargetSet.images) {
-      if (!item.context.empty()) {
-        return;
+    PushImageOnlyTargetType(m_activeTargetType, m_activeTargetSet.images, imageOnlyTargetTypes);
+  }
+  // add other image-only contexts (if any)
+  for (const auto& [targetType, item] : m_parser->GetCsolution().targetTypes) {
+    for (const auto& targetSet : item.targetSet) {
+      if (PushImageOnlyTargetType(targetType, targetSet.images, imageOnlyTargetTypes)) {
+        break;
       }
     }
+  }
+  for (const auto& targetType : imageOnlyTargetTypes) {
     ContextDesc descriptor;
     ContextItem context;
     context.imageOnly = true;
@@ -79,7 +97,7 @@ void ProjMgrWorker::AddImageOnlyContext() {
     context.cproject = &m_imageOnly;
     context.cproject->name = name;
     context.cproject->directory = context.csolution->directory;
-    AddContext(descriptor, { "", m_activeTargetType }, context);
+    AddContext(descriptor, { "", targetType }, context);
   }
 }
 

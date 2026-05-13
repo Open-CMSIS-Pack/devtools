@@ -7,23 +7,22 @@ solution:
     - pack: ARM::RteTest_DFP
 
   mlops:
-    description: ML model with minimal configuration
+    description: ML model with minimal image-only configuration
     model:
       clayer: $AI-Layer$
 
   target-types:
     - type: Hardware
-      device: RteTest_ARMCM0_Dual
+      device: RteTest_ARMCM0_Dual:cm0_core0
       variables:
         - AI-Layer: $SolutionDir()$/ai_layer/ai_layer.clayer.yml
       target-set:
         - set:
           images:
-            - project-context: core0
-            - project-context: core1
+            - image: images/hardware.elf
 
     - type: Simulator
-      device: RteTest_ARMCM0_Dual
+      device: RteTest_ARMCM0_Dual:cm0_core0
       variables:
         - AI-Layer: $SolutionDir()$/ai_layer/ai_layer.clayer.yml
       target-set:
@@ -33,9 +32,4 @@ solution:
             model: FVP_Corstone_SSE-320
             config-file: fvp/fvp_config.txt
           images:
-            - project-context: core0
-            - project-context: core1
-
-  projects:
-    - project: core0/core0.cproject.yml
-    - project: core1/core1.cproject.yml
+            - image: images/simulator.elf

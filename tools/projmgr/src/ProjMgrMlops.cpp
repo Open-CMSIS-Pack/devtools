@@ -115,18 +115,37 @@ string ProjMgrMlops::BuildVelaOptions(const MlopsNpuType& npu, const MlopsVelaIt
   return options;
 }
 
-void ProjMgrMlops::SetMlopsRunType(MlopsRunType& run, const string& targetType, const string& targetSet,
+bool ProjMgrMlops::SetMlopsRunType(MlopsRunType& run, const string& targetType, const TargetSetItem& targetSet,
   const vector<ContextItem>& contexts, const string& outBaseDir, const string& solutionName) const {
-  run.active = BuildActive(targetType, targetSet);
+  run.active = BuildActive(targetType, targetSet.set);
   run.cbuildRun = outBaseDir + '/' + solutionName + '+' + targetType + ".cbuild-run.yml";
-  for (const auto& context : contexts) {
+  for (auto context : contexts) {
     if (context.outputTypes.elf.on) {
       MlopsOutputType output;
       output.file = context.directories.cprj + '/' + context.directories.outdir + '/' + context.outputTypes.elf.filename;
       output.type = RteConstants::OUTPUT_TYPE_ELF;
       run.output.push_back(output);
     }
+    if (context.imageOnly) {
+      for (auto item : targetSet.images) {
+        if (!item.image.empty()) {
+          if (!m_worker->ProcessSequenceRelative(context, item.image, context.csolution->directory, false)) {
+            return false;
+          }
+          if (RteFsUtils::IsRelative(item.image)) {
+            RteFsUtils::NormalizePath(item.image, context.directories.cprj);
+          }
+          if (ProjMgrUtils::FileTypeFromExtension(item.image) == RteConstants::OUTPUT_TYPE_ELF) {
+            MlopsOutputType output;
+            output.file = item.image;
+            output.type = RteConstants::OUTPUT_TYPE_ELF;
+            run.output.push_back(output);
+          }
+        }
+      }
+    }
   }
+  return true;
 }
 
 bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& mlops) {
@@ -157,22 +176,20 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
     {hardwareTargetSet, hardwareType, hardwareContexts}, {simulatorTargetSet, simulatorType, simulatorContexts}};
   for (auto& [targetSet, targetType, ref] : refs) {
     for (const auto& entry : targetSet.images) {
-      if (!entry.context.empty()) {
-        const string contextName = entry.context + "+" + targetType;
-        if (contexts->find(contextName) != contexts->end()) {
-          // process context precedences if needed
-          auto& context = contexts->at(contextName);
-          if (!context.precedences) {
-            if (!m_worker->ParseContextLayers(context) || !m_worker->LoadPacks(context) ||
-              !m_worker->ProcessPrecedences(context, BoardOrDevice::Both) ||
-              !m_worker->SetTargetAttributes(context, context.targetAttributes)) {
-              return false;
-            }
-            m_worker->CollectNpuInfo(context);
+      const string contextName = (entry.context.empty() ? csolution.name : entry.context) + "+" + targetType;
+      if (contexts->find(contextName) != contexts->end()) {
+        // process context precedences if needed
+        auto& context = contexts->at(contextName);
+        if (!context.precedences) {
+          if (!m_worker->ParseContextLayers(context) || !m_worker->LoadPacks(context) ||
+            !m_worker->ProcessPrecedences(context, BoardOrDevice::Both) ||
+            !m_worker->SetTargetAttributes(context, context.targetAttributes)) {
+            return false;
           }
-          ref.push_back(context);
-          pnames.insert(context.deviceItem.pname);
+          m_worker->CollectNpuInfo(context);
         }
+        ref.push_back(context);
+        pnames.insert(context.deviceItem.pname);
       }
     }
   }
@@ -185,7 +202,7 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   for (const auto& [ref, t] : contextRefs) {
     if (!t.targetType.empty() && ref.empty()) {
       // print error if context for specified target type was not found
-      ProjMgrLogger::Get().Error("mlops: no project-context specified for target '" +
+      ProjMgrLogger::Get().Error("mlops: no image or project-context specified for target '" +
         t.targetType + (t.targetSet.empty() ? "" : '@' + t.targetSet) + "'");
       return false;
     }
@@ -289,13 +306,17 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   if (hardwareFound) {
     // set hardware run types
     const string outBaseDir = hardwareContext.directories.cprj + "/" + hardwareContext.directories.outBaseDir;
-    SetMlopsRunType(mlops.hardware, hardwareType, hardwareTargetSet.set, hardwareContexts, outBaseDir, csolution.name);
+    if (!SetMlopsRunType(mlops.hardware, hardwareType, hardwareTargetSet, hardwareContexts, outBaseDir, csolution.name)) {
+      return false;
+    }
   }
 
   if (simulatorFound) {
     // set simulator run types
     const string outBaseDir = simulatorContext.directories.cprj + "/" + simulatorContext.directories.outBaseDir;
-    SetMlopsRunType(mlops.simulator, simulatorType, simulatorTargetSet.set, simulatorContexts, outBaseDir, csolution.name);
+    if (!SetMlopsRunType(mlops.simulator, simulatorType, simulatorTargetSet, simulatorContexts, outBaseDir, csolution.name)) {
+      return false;
+    }
 
     // get debugger model and config-file
     mlops.simulator.model = GetCustomScalar(simulatorTargetSet.debugger.custom, "model");
