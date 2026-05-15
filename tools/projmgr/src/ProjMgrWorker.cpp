@@ -65,6 +65,9 @@ ProjMgrWorker::~ProjMgrWorker(void) {
 }
 
 bool ProjMgrWorker::PushImageOnlyTargetType(const string& targetType, const vector<ImageItem>& images, StrVec& imageOnlyTargetTypes) {
+  if (images.empty()) {
+    return false;
+  }
   for (const auto& item : images) {
     if (!item.context.empty()) {
       return false;

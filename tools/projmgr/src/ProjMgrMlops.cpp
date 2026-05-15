@@ -215,8 +215,8 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   ContextItem& hardwareContext = hardwareFound ? hardwareContexts.front() : emptyContext;
   ContextItem& simulatorContext = simulatorFound ? simulatorContexts.front() : emptyContext;
 
-  // if hardware is not determined use first default context for processor type and access sequences
-  ContextItem& context = hardwareFound ? hardwareContext : contexts->begin()->second;
+  // if hardware is not determined use first selected context for processor type and access sequences
+  ContextItem& context = hardwareFound ? hardwareContext : contexts->at(m_worker->GetSelectedContexts().front());
 
   // mlops description
   mlops.description = solutionMlops.description;
