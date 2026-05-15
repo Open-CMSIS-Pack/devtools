@@ -1397,6 +1397,8 @@ protected:
   void ResolvePackRequirement(ContextItem& context, const PackItem& packEntry, bool ignoreCBuildPack);
   void FormatResolvedPackIds();
   void RetrieveToolchainConfigFiles();
+  bool PushImageOnlyTargetType(const std::string& targetType, const std::vector<ImageItem>& images, StrVec& imageOnlyTargetTypes);
+
 };
 
 #endif  // PROJMGRWORKER_H

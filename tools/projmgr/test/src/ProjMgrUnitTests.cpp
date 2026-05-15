@@ -7769,7 +7769,7 @@ TEST_F(ProjMgrUnitTests, GenerateMLOps) {
   const vector<pair<string, string>> failureCases = {
     { "failure1", "mlops: target type 'OtherHardware' not found" },
     { "failure2", "mlops: target set 'Simulator@OtherSet' not found" },
-    { "failure3", "mlops: no project-context specified for target 'Simulator@FVP-Test'" },
+    { "failure3", "mlops: no image or project-context specified for target 'Simulator@FVP-Test'" },
   };
   for (const auto& [name, expectedError] : failureCases) {
     csolution = testinput_folder + "/MLOps/" + name + ".csolution.yml";
@@ -7790,4 +7790,26 @@ TEST_F(ProjMgrUnitTests, GenerateMLOps) {
   EXPECT_EQ("failure.cbuild-mlops.yml - file cannot be written",
     cbuildIdx["build-idx"]["cbuilds"][0]["messages"]["errors"][0].as<string>());
   RteFsUtils::RemoveDir(mlopsOutput);
+}
+
+TEST_F(ProjMgrUnitTests, GenerateMLOps_ImageOnly) {
+  char* argv[5];
+  string csolution = testinput_folder + "/MLOps/minimal_image_only.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/MLOps/minimal_image_only.cbuild-mlops.yml",
+    testinput_folder + "/MLOps/ref/minimal_image_only.cbuild-mlops.yml");
+
+  // SetMlopsRunType failure for hardware: malformed access sequence in hardware image path
+  csolution = testinput_folder + "/MLOps/failure_image_only_hw.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+
+  // SetMlopsRunType failure for simulator: malformed access sequence in simulator image path
+  csolution = testinput_folder + "/MLOps/failure_image_only_sim.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
 }
