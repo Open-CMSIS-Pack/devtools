@@ -522,7 +522,7 @@ bool ProjMgrWorker::CollectAllRequiredPdscFiles() {
 }
 
 bool ProjMgrWorker::LoadAllRelevantPacks() {
-  m_loadedPacks.clear(); // the list will be updated, is should not contain dangling pointers
+  m_loadedPacks.clear(); // the list will be updated, it should not contain dangling pointers
   // Get required pdsc files
   std::list<std::string> pdscFiles;
   for (const auto& context : m_selectedContexts) {
