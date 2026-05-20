@@ -74,7 +74,7 @@ bool ProjMgrWorker::PushImageOnlyTargetType(const string& targetType, const vect
     }
   }
   CollectionUtils::PushBackUniquely(imageOnlyTargetTypes, targetType);
-  return true;  
+  return true;
 }
 
 void ProjMgrWorker::AddImageOnlyContext() {
@@ -522,6 +522,7 @@ bool ProjMgrWorker::CollectAllRequiredPdscFiles() {
 }
 
 bool ProjMgrWorker::LoadAllRelevantPacks() {
+  m_loadedPacks.clear(); // the list will be updated, is should not contain dangling pointers
   // Get required pdsc files
   std::list<std::string> pdscFiles;
   for (const auto& context : m_selectedContexts) {
@@ -6064,7 +6065,7 @@ bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& res
 
   vector<string> checkPackResults;
   for (const auto& [packId, packInfo] : usedPacks) {
-    const string& currentVersion = packInfo.first;  
+    const string& currentVersion = packInfo.first;
     auto latestPack = latestPacks.find(packId);
     if (latestPack == latestPacks.end()) {
       checkPackResults.push_back(packId + "@" + currentVersion + " (not found in CMSIS pack root or project-specified pack paths)");

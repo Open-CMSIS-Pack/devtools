@@ -304,6 +304,7 @@ RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
   RpcArgs::SuccessResult result = {false};
   m_manager.Clear();
   m_solutionLoaded = false;
+  ProjMgrKernel::Get()->GetGlobalModel()->Clear();
   m_worker.InitializeModel();
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
   result.success = m_worker.LoadAllRelevantPacks();
