@@ -1,4 +1,5 @@
 cbuild-mlops:
+  generated-by: csolution version 0.0.0
   description: ML model with extended configuration
   processor:
     type: Cortex-M0
