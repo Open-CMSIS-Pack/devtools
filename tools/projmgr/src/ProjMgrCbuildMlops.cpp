@@ -31,6 +31,7 @@ protected:
 
 ProjMgrCbuildMlops::ProjMgrCbuildMlops(YAML::Node node,
   const MlopsType& mlops, const std::string& directory) : m_directory(directory) {
+  SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
   SetNodeValue(node[YAML_DESCRIPTION], mlops.description);
   SetProcessorNode(node[YAML_PROCESSOR], mlops.processor);
   SetNpuNode(node[YAML_NPU], mlops.npu);

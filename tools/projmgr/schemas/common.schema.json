@@ -1495,7 +1495,8 @@
         },
         "west": { "$ref": "#/definitions/WestProjectType" }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": ["generated-by"]
     },
     "BuildPacksInfoType": {
       "type": "array",
@@ -2524,7 +2525,7 @@
         "debug-topology":      { "$ref": "#/definitions/DebugTopologyType" }
       },
       "additionalProperties": false,
-      "required": ["output", "debugger"]
+      "required": ["generated-by", "output", "debugger"]
     },
     "TargetSetsType": {
       "title": "target-set:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#target-set",
@@ -2690,6 +2691,7 @@
       "type": ["null", "object"],
       "properties": {
         "description": { "type": "string", "description": "Brief description of the MLOps configuration." },
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file." },
         "processor": {
           "type": "object",
           "description": "Processor information.",
@@ -2728,7 +2730,8 @@
         "hardware":  { "$ref": "#/definitions/MlopsRunDescType" },
         "simulator": { "$ref": "#/definitions/MlopsRunDescType" }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": ["generated-by"]
     },
     "MlopsOutputType": {
       "type": "object",
