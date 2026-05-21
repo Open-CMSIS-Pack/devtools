@@ -57,6 +57,15 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.14.0</td>
+    <td>Release notes:
+      - added support for compile macros generation
+      - fixed CLANG support: re-added '-mfpu' option
+      - updated cbuild2cmake utility v0.11.0
+      - updated cbuild utility v2.14.0
+      - updated cpackget utility v2.2.1
+      - updated csolution utility v2.14.0
+    </td>
     <td>2.13.0</td>
     <td>Release notes:
       - added support for Microchip XC32 toolchain
