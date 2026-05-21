@@ -861,7 +861,7 @@ RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solutio
   }
   m_bUseAllPacks = false; // loading solution will first use only listed packs
   m_packReferences.clear(); // will be updated
-  m_solutionLoaded = false;// assume not loaded
+  m_solutionLoaded = false; // assume not loaded
   // clear only projects, RTE data and packs stay loaded
   ProjMgrKernel::Get()->GetGlobalModel()->ClearProjects();
 
