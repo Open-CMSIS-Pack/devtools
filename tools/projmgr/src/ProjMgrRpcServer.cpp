@@ -304,6 +304,7 @@ RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
   RpcArgs::SuccessResult result = {false};
   m_manager.Clear();
   m_solutionLoaded = false;
+  // clear project and global RTE data, packs stay loaded
   ProjMgrKernel::Get()->GetGlobalModel()->Clear();
   m_worker.InitializeModel();
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
@@ -317,7 +318,10 @@ RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
 
 RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const string& activeTarget) {
   m_bUseAllPacks = false; // loading solution will first use only listed packs
-  m_packReferences.clear();
+  m_packReferences.clear(); // will be updated
+  m_solutionLoaded = false; // assume not loaded yet
+  // clear only projects, global RTE data and packs stay loaded
+  ProjMgrKernel::Get()->GetGlobalModel()->ClearProjects();
   RpcArgs::SuccessResult result = {false};
   const auto csolutionFile = RteFsUtils::MakePathCanonical(solution);
   if(!regex_match(csolutionFile, regex(".*\\.csolution\\.(yml|yaml)"))) {
@@ -857,6 +861,9 @@ RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solutio
   }
   m_bUseAllPacks = false; // loading solution will first use only listed packs
   m_packReferences.clear(); // will be updated
+  m_solutionLoaded = false; // assume not loaded
+  // clear only projects, RTE data and packs stay loaded
+  ProjMgrKernel::Get()->GetGlobalModel()->ClearProjects();
 
   if(!m_manager.RunConvert(csolutionFile, activeTarget, updateRte) || !ProjMgrLogger::Get().GetErrors().empty()) {
     if(m_worker.HasVarDefineError()) {
