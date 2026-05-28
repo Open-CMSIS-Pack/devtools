@@ -1089,6 +1089,39 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItemsLocked) {
   EXPECT_EQ(packs[0]["upgrade"], "0.2.0");
 }
 
+TEST_F(ProjMgrRpcTests, PackReferenceLocked) {
+  string context = "project_with_dfp_components+CM0";
+  vector<string> contextList = { context };
+  auto requests = CreateLoadRequests("/TestSolution/PackLocking/pack_reference_locked.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({ { "context", context } }));
+  const auto& responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 1);
+  // Locked field should be present as string containing packId
+  EXPECT_TRUE(packs[0].contains("locked"));
+  EXPECT_TRUE(packs[0]["locked"].is_string());
+  EXPECT_FALSE(packs[0]["locked"].get<string>().empty());
+}
+
+TEST_F(ProjMgrRpcTests, PackReferenceMissing) {
+  string context = "project+Miss";
+  vector<string> contextList = { context };
+  auto requests = CreateLoadRequests("/TestSolution/PackMissing/missing_pack.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  const auto& responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];  
+  // Verify missing field for unresolved packs
+  for(const auto& pack : packs) {
+    if(!pack.contains("resolvedPack")) {
+      EXPECT_TRUE(pack.contains("missing"));
+      EXPECT_TRUE(pack["missing"].is_boolean());
+      EXPECT_TRUE(pack["missing"].get<bool>());
+    }
+  }
+}
+
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfoSimple) {
   string context = "selectable+CM0";
   vector<string> contextList = {
