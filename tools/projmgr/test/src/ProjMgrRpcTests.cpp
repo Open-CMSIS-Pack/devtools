@@ -1098,10 +1098,9 @@ TEST_F(ProjMgrRpcTests, PackReferenceLocked) {
   EXPECT_TRUE(responses[2]["result"]["success"]);
   auto packs = responses[2]["result"]["packs"];
   EXPECT_EQ(packs.size(), 1);
-  // Locked field should be present as string containing packId
+  // Locked field should be present as string containing locked packId
   EXPECT_TRUE(packs[0].contains("locked"));
-  EXPECT_TRUE(packs[0]["locked"].is_string());
-  EXPECT_FALSE(packs[0]["locked"].get<string>().empty());
+  EXPECT_EQ(packs[0]["locked"], "ARM::RteTest_DFP@0.1.0");
 }
 
 TEST_F(ProjMgrRpcTests, PackReferenceMissing) {
