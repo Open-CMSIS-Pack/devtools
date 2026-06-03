@@ -445,23 +445,31 @@ PackReferenceVector RpcHandler::CollectPackReferences(const string& context) {
   PackReferenceVector packRefs;
   auto contextItem = GetContext(context);
   for(const auto& packItem : contextItem.packRequirements) {
-    const auto& packId = packItem.resolvedTo;
-
     RpcArgs::PackReference packRef;
     packRef.pack = packItem.selectedBy;
     if(!packItem.path.empty()) {
       packRef.resolvedPack = packItem.selectedBy;
       packRef.path = packItem.path;
-    } else if(!packId.empty()) {
-      packRef.resolvedPack = packId;
+    } else if(!packItem.resolvedTo.empty()) {
+      packRef.resolvedPack = packItem.resolvedTo;
     }
     packRef.origin = packItem.origin;
     packRef.selected = true; // initially pack is selected;
+    const auto& packId = packItem.pack.vendor + "::" + packItem.pack.name + "@" + packItem.pack.version;
     if(packItem.path.empty() && !packId.empty()) {
       const auto availableVersionIt = contextItem.availablePackVersions.find(packId);
       if(availableVersionIt != contextItem.availablePackVersions.end() && !availableVersionIt->second.empty()) {
         packRef.upgrade = availableVersionIt->second;
       }
+    }
+    // set optional 'locked' pack identifier if pack is not resolved and locked pack identifier is tracked
+    if (packItem.resolvedTo.empty() && find(contextItem.lockedPacks.begin(),
+      contextItem.lockedPacks.end(), packId) != contextItem.lockedPacks.end()) {
+      packRef.locked = packId;
+    }
+    // set optional 'missing' if pack is not found
+    if (packItem.missing) {
+      packRef.missing = true;
     }
     packRefs.push_back(packRef);
   }
