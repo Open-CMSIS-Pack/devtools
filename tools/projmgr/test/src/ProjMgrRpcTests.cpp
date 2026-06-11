@@ -160,6 +160,18 @@ TEST_F(ProjMgrRpcTests, RpcLoadUndefinedSolution) {
   EXPECT_TRUE(msg.find("failed to load and process solution") == 0);
 }
 
+TEST_F(ProjMgrRpcTests, RpcLoadSolutionResetActiveTargetSet) {
+  auto csolutionPath = testinput_folder + "/TestRpc/minimal.csolution.yml";
+  auto csolutionPath2 = testinput_folder + "/TestRpc/minimal2.csolution.yml";
+  const auto requests =
+    FormatRequest(1, "LoadPacks") +
+    FormatRequest(2, "LoadSolution", json({{ "solution", csolutionPath }, { "activeTarget", "TestHW" }})) +
+    FormatRequest(3, "LoadSolution", json({{ "solution", csolutionPath2 }, { "activeTarget", "TestHW" }}));
+  const auto& responses = RunRpcMethods(requests);
+  // ensure loading 'minimal2' solution does fail due to m_activeTargetSet set when previously loading 'minimal'
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+}
+
 TEST_F(ProjMgrRpcTests, RpcLoadNotSolution) {
   const auto& requests = CreateLoadRequests("/TestRpc/undefined.yml");
   const auto& responses = RunRpcMethods(requests);

@@ -1242,6 +1242,7 @@ public:
     m_missingFiles.clear();
     m_types = {};
     m_activeTargetType.clear();
+    m_activeTargetSet = {};
     m_missingToolchains.clear();
     m_undefCompiler = false;
     m_isSetupCommand = false;
