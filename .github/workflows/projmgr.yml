@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/projmgr.yml'
       - '.github/matrix_includes_projmgr.json'
+      - 'cmake/**'
       - 'CMakeLists.txt'
       - 'libs/crossplatform/**'
       - 'libs/rtefsutils/**'
@@ -22,6 +23,7 @@ on:
     paths:
       - '.github/workflows/projmgr.yml'
       - '.github/matrix_includes_projmgr.json'
+      - 'cmake/**'
       - 'CMakeLists.txt'
       - 'libs/crossplatform/**'
       - 'libs/rtefsutils/**'

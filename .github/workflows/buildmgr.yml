@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/buildmgr.yml'
       - '.github/matrix_includes_buildmgr.json'
+      - 'cmake/**'
       - 'CMakeLists.txt'
       - 'libs/crossplatform/**'
       - 'libs/errlog/**'
@@ -23,6 +24,7 @@ on:
     paths:
       - '.github/workflows/buildmgr.yml'
       - '.github/matrix_includes_buildmgr.json'
+      - 'cmake/**'
       - 'CMakeLists.txt'
       - 'libs/**'
       - 'tools/buildmgr/**'
@@ -91,7 +93,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install binutils-aarch64-linux-gnu
 
-      - name: Strip projmgr release binary
+      - name: Strip cbuildgen release binary
         if: |
           github.event_name == 'release' &&
           (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu'))
