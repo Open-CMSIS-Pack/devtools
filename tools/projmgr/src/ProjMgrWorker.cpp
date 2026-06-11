@@ -411,6 +411,7 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
         auto pdsc = m_kernel->GetEffectivePdscFile(attributes);
         const string& pdscFile = pdsc.second;
         packItem.resolvedTo = pdsc.first; // store resolved ID if any
+        packItem.missing = pdsc.first.empty();
         if (pdscFile.empty()) {
           if (!bPackFilter) {
             std::string packageName =
@@ -1861,9 +1862,12 @@ void ProjMgrWorker::ResolvePackRequirement(ContextItem& context, const PackItem&
     if (!locked.empty()) {
       // TODO: When wildcards will be fully stored in cbuild-pack there may be multiple matches
       const auto& lockedId = locked.front();
+      CollectionUtils::PushBackUniquely(context.lockedPacks, lockedId);
       if (lockedId != packId) {
         // Save available version if different from locked
-        context.availablePackVersions[lockedId] = package.pack.version;
+        if (!packId.empty()) {
+          context.availablePackVersions[lockedId] = package.pack.version;
+        }
         // Keep the locked pack
         packId = lockedId;
         package.pack.version = RtePackage::VersionFromId(lockedId);

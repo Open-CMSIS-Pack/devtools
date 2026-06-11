@@ -96,6 +96,9 @@ struct ToolchainItem {
  *        pack information pack,
  *        path to pack path,
  *        origin file,
+ *        selected-by entry,
+ *        resolved pack identifier,
+ *        missing flag,
 */
 struct PackageItem {
   PackInfo    pack;
@@ -103,6 +106,7 @@ struct PackageItem {
   std::string origin;
   std::string selectedBy;
   std::string resolvedTo;
+  bool missing = false;
 };
 
 /**
@@ -581,6 +585,7 @@ struct ContextItem {
   std::set<RteComponentInstance*> unresolvedComponents;
   StrMap availablePackVersions;
   StrMap absPathSequences;
+  StrVec lockedPacks;
 };
 
 /**
