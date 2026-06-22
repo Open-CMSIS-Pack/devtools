@@ -446,7 +446,7 @@ endif()
 
 if(CLANG_ARCH STREQUAL "armv8")
   set(CLANG_TARGET "aarch64-none-elf")
-  set(CLANG_CPU "-mcpu=${CLANG_MCPU} ${CLANG_ABI}")
+  set(CLANG_CPU "--target=${CLANG_TARGET} -mcpu=${CLANG_MCPU} ${CLANG_ABI}")
 else()
   if(CPU MATCHES "^Cortex-[AMR]")
     set(CLANG_TARGET "arm-none-eabi")
