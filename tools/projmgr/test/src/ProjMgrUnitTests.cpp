@@ -921,6 +921,22 @@ TEST_F(ProjMgrUnitTests, RunProjMgrLayers) {
   EXPECT_TRUE(RteFsUtils::Exists(testinput_folder + "/TestLayers/Layer3/RTE/RteTest/MyDir"));
 }
 
+TEST_F(ProjMgrUnitTests, MiscRelativePathsAtAllLevels) {
+  char* argv[5];
+
+  const string csolution = testinput_folder + "/TestMiscRelativePaths/misc-relative.csolution.yml";
+  const string output = testoutput_folder + "/misc-relative";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)output.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  const string cbuildFile = output + "/out/misc-relative/TEST_TARGET/Debug/misc-relative.Debug+TEST_TARGET.cbuild.yml";
+  ProjMgrTestEnv::CompareFile(cbuildFile,
+    testinput_folder + "/TestMiscRelativePaths/ref/misc-relative.Debug+TEST_TARGET.cbuild.yml");
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_CbuildFailedToCreate) {
   char* argv[7];
   StdStreamRedirect streamRedirect;

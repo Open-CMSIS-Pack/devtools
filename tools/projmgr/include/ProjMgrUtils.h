@@ -285,6 +285,14 @@ public:
   static const std::string FormatPath(const std::string& original, const std::string& directory, bool useAbsolutePaths = false);
 
   /**
+   * @brief adjust relative path fragments in a list of values
+   * @param vec list of strings that may contain relative paths
+   * @param ref reference path for formatting
+   * @param outDir output directory for path formatting
+  */
+  static void AdjustRelativePaths(std::vector<std::string>& vec, const std::string& ref, const std::string& outDir);
+
+  /**
    * @brief check if list contains incompatible version of pack requirement
    * @param list of packs
    * @param string pack requirement

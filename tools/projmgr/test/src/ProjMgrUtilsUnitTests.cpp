@@ -459,6 +459,28 @@ TEST_F(ProjMgrUtilsUnitTests, ReplaceDelimiters) {
   EXPECT_EQ("path_with_spaces", ProjMgrUtils::ReplaceDelimiters("path/with spaces"));
 }
 
+TEST_F(ProjMgrUtilsUnitTests, AdjustRelativePaths) {
+  const string baseDir = testoutput_folder + "/AdjustRelativePaths";
+  const string refDir = baseDir + "/ref";
+  const string outDir = baseDir + "/out/sub";
+
+  RteFsUtils::CreateDirectories(refDir + "/assets");
+  RteFsUtils::CreateDirectories(baseDir + "/shared");
+  RteFsUtils::CreateDirectories(outDir);
+
+  vector<string> paths = {
+    "prefix ./assets/file.txt suffix",
+    "copy ../shared/config.yml",
+    "absolute/path/unchanged",
+  };
+
+  ProjMgrUtils::AdjustRelativePaths(paths, refDir, outDir);
+
+  EXPECT_EQ("prefix ../../ref/assets/file.txt suffix", paths[0]);
+  EXPECT_EQ("copy ../../shared/config.yml", paths[1]);
+  EXPECT_EQ("absolute/path/unchanged", paths[2]);
+}
+
 TEST_F(ProjMgrUtilsUnitTests, FindReferencedContext) {
   const vector<string> selectedContexts = {
     "Project1.Debug+Target",

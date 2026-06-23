@@ -493,3 +493,16 @@ const std::string ProjMgrUtils::GetWestBoard(const std::string& board) {
   std::replace(westBoard.begin(), westBoard.end(), '-', '_');
   return westBoard;
 }
+
+void ProjMgrUtils::AdjustRelativePaths(vector<string>& vec, const string& ref, const string& outDir) {
+  static const regex pattern(R"((\.{1,2}/.*))");
+  for (string& value : vec) {
+    if (!value.empty()) {
+      smatch match;
+      if (regex_search(value, match, pattern)) {
+        const auto& replacement = RteFsUtils::RelativePath(ref + "/" + match.str(), outDir, true);
+        value.replace(match.position(), match.length(), replacement);
+      }
+    }
+  }
+}

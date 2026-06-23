@@ -1,0 +1,89 @@
+build:
+  generated-by: csolution version 0.0.0
+  solution: ../../../../../../data/TestMiscRelativePaths/misc-relative.csolution.yml
+  project: ../../../../../../data/TestMiscRelativePaths/project/misc-relative.cproject.yml
+  context: misc-relative.Debug+TEST_TARGET
+  compiler: AC6
+  device: ARM::RteTest_ARMCM0
+  device-pack: ARM::RteTest_DFP@0.2.0
+  device-books:
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
+      title: Cortex-M0 Device Generic Users Guide
+  dbgconf:
+    - file: ../../../../../../data/TestMiscRelativePaths/.cmsis/misc-relative+TEST_TARGET.dbgconf
+      version: 0.0.2
+  processor:
+    fpu: off
+    core: Cortex-M0
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  misc:
+    C:
+      - --misc-proj=../../../../../../data/TestMiscRelativePaths/project/relative/from-project
+      - --misc-sol=../../../../../../data/TestMiscRelativePaths/relative/from-solution
+      - --misc-layer=../../../../../../data/TestMiscRelativePaths/layers/relative/from-layer
+    CPP:
+      - --misc-proj=../../../../../../data/TestMiscRelativePaths/project/relative/from-project
+      - --misc-sol=../../../../../../data/TestMiscRelativePaths/relative/from-solution
+      - --misc-layer=../../../../../../data/TestMiscRelativePaths/layers/relative/from-layer
+  define:
+    - ARMCM0
+    - _RTE_
+  define-asm:
+    - ARMCM0
+    - _RTE_
+  add-path:
+    - ../../../../../../data/TestMiscRelativePaths/project/RTE/_Debug_TEST_TARGET
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ../../../../../../data/TestMiscRelativePaths/project/RTE/_Debug_TEST_TARGET
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  output-dirs:
+    intdir: ../../../../tmp
+    outdir: .
+    rtedir: ../../../../../../data/TestMiscRelativePaths/project/RTE
+  output:
+    - type: elf
+      file: misc-relative.axf
+    - type: comp-db
+      file: compile_commands.json
+    - type: comp-db
+      file: compile_macros.h
+  components:
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: CORE
+      implements: RteTest:CORE@1.1.2
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
+          category: doc
+          version: 0.1.1
+  apis:
+    - api: RteTest:CORE@1.1.2
+      from-pack: ARM::RteTest_DFP@0.2.0
+      implemented-by: ARM::RteTest:CORE@0.1.1
+      files:
+        - file: https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_apis_pg.html
+          category: doc
+          version: 1.1.2
+  linker:
+    script: ../../../../../../data/TestMiscRelativePaths/project/RTE/Device/RteTest_ARMCM0/ac6_linker_script.sct.src
+    regions: ../../../../../../data/TestMiscRelativePaths/project/RTE/Device/RteTest_ARMCM0/regions_RteTest_ARMCM0.h
+  groups:
+    - group: Sources
+      files:
+        - file: ../../../../../../data/TestMiscRelativePaths/main.c
+          category: sourceC
+  constructed-files:
+    - file: ../../../../../../data/TestMiscRelativePaths/project/RTE/_Debug_TEST_TARGET/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ARM::RteTest:CORE@0.1.1
+        - component: RteTest:CORE(API)
