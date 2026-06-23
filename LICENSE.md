@@ -6,7 +6,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+   https://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,12 +20,12 @@ Individual files contain the following tag instead of the full license text.
 
 SPDX-License-Identifier: Apache-2.0
 
-This enables machine processing of license information based on the SPDX License Identifiers that are here available: http://spdx.org/licenses/
+This enables machine processing of license information based on the SPDX License Identifiers that are here available: https://spdx.org/licenses/
 
 ## Third Party Licenses
 
 All files listed in the path `test/packs/ARM/RteTest_DFP/0.1.1/Device` are licensed under
-[Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0) and are attributed to ARM Limited. The files originate
+[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) and are attributed to ARM Limited. The files originate
 from https://github.com/ARM-software/CMSIS_5/tree/develop/Device/ARM.
 
 ## External Dependencies

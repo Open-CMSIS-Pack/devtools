@@ -74,6 +74,13 @@ public:
   const std::string& GetGlobalGenRunCmd(const std::string& generatorId);
 
   /**
+   * @brief get URL for generator download
+   * @param generatorId generator identifier
+   * @return string with URL for generator download
+  */
+  const std::string& GetGlobalGenUrl(const std::string& generatorId);
+
+  /**
    * @brief get generator description
    * @param generatorId generator identifier
    * @return string with generator description

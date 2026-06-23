@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/buildmgr.yml'
       - '.github/matrix_includes_buildmgr.json'
+      - 'cmake/**'
       - 'CMakeLists.txt'
       - 'libs/crossplatform/**'
       - 'libs/errlog/**'
@@ -23,6 +24,7 @@ on:
     paths:
       - '.github/workflows/buildmgr.yml'
       - '.github/matrix_includes_buildmgr.json'
+      - 'cmake/**'
       - 'CMakeLists.txt'
       - 'libs/**'
       - 'tools/buildmgr/**'
@@ -32,21 +34,24 @@ on:
     types: [ published ]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: buildmgr-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   setup:
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+    uses: ./.github/workflows/shared_setup_env.yml
     with:
       run_if: ${{ fromJSON((github.event_name == 'pull_request') || (github.event_name == 'workflow_dispatch') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) || ((github.event.schedule != '') && (!github.event.repository.private))) }}
 
   matrix_prep:
     needs: setup
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
+    uses: ./.github/workflows/shared_matrix_prep.yml
     with:
       workflow_name: buildmgr
 
@@ -54,26 +59,26 @@ jobs:
     name: build (${{ matrix.runs_on }}, ${{ matrix.arch }})
     needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Checkout devtools
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           submodules: true
           fetch-depth: 0
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         id: devtools-build
         with:
           target: cbuildgen
@@ -88,7 +93,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install binutils-aarch64-linux-gnu
 
-      - name: Strip projmgr release binary
+      - name: Strip cbuildgen release binary
         if: |
           github.event_name == 'release' &&
           (startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu'))
@@ -103,7 +108,7 @@ jobs:
           fi
 
       - name: Archive cbuildgen
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cbuildgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/buildmgr/cbuildgen/${{ matrix.target }}-${{ matrix.arch }}/Release/cbuildgen${{ matrix.binary_extension }}
@@ -118,18 +123,18 @@ jobs:
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) ||
         ((github.event.schedule != '') && (!github.event.repository.private))
     runs-on: ubuntu-22.04
-    timeout-minutes: 5
+    timeout-minutes: 25
     permissions:
       contents: write
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Checkout devtools
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           submodules: true
           fetch-depth: ${{ github.event_name == 'push' && '0' || '1' }}
@@ -140,7 +145,7 @@ jobs:
           sudo apt-get install ninja-build python3
           wget -q http://security.ubuntu.com/ubuntu/pool/main//d/doxygen/doxygen_1.8.6-2_amd64.deb
           sudo dpkg -i doxygen_1.8.6-2_amd64.deb
-          sudo pip install LinkChecker
+          sudo pip install LinkChecker==10.6.0
       - name: Create build folder
         run: mkdir build
 
@@ -165,7 +170,7 @@ jobs:
           echo "retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
 
       - name: Upload documentation
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: documentation
           path: ./build/tools/buildmgr/docs/doxygen/output/
@@ -177,7 +182,7 @@ jobs:
         run: tar -cvjf /tmp/doc.tbz2 .
         working-directory: ./build/tools/buildmgr/docs/doxygen/output/html/
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
         with:
           ref: gh-pages
@@ -219,13 +224,13 @@ jobs:
     needs: [ setup, build, docs ]
     # Debian package generation in ubuntu 22.04 produces incompatible metadata
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     permissions:
       contents: write
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
@@ -239,7 +244,7 @@ jobs:
             python3
 
       - name: Checkout devtools
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Create distribution folders
         run: |
@@ -304,7 +309,7 @@ jobs:
         working-directory: tools/buildmgr/cbuildgen/installer
 
       - name: Archive cbuild_install.sh
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cbuild_install
           path: tools/buildmgr/cbuildgen/installer/cbuild_install.sh
@@ -312,7 +317,7 @@ jobs:
           if-no-files-found: error
 
       - name: Archive deb package
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: deb_package
           path: tools/buildmgr/cbuildgen/installer/cmsis-build*.deb
@@ -329,7 +334,7 @@ jobs:
           overwrite: true
           asset_name: cbuild_install.sh
 
-      - name: Attach debian installer to release
+      - name: Attach Debian installer to release
         if: ${{ github.event_name == 'release' }}
         uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
         with:
@@ -341,7 +346,7 @@ jobs:
 
   test:
     needs: [ setup, matrix_prep, create_installer ]
-    timeout-minutes: 15
+    timeout-minutes: 25
     runs-on: ${{ matrix.runs_on }}
     name: test (${{ matrix.runs_on }}, ${{ matrix.arch }})
     env:
@@ -359,19 +364,11 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
-      - name: Install macos deps
-        if: ${{ startsWith(matrix.runs_on, 'macos') }}
-        run: |
-          brew install \
-            dos2unix \
-            ninja \
-            wget
-
-      - name: Install linux deps
+      - name: Install Linux deps
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
         run: |
           sudo apt-get update
@@ -385,12 +382,12 @@ jobs:
         run: choco install -y unzip wget ninja
 
       - name: Checkout devtools
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           submodules: true
 
       - name: Cache ARM GCC
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           key: "${{ matrix.arm_gcc_install_base }}/${{ matrix.installer_name }}"
           path: ${{ matrix.installer_name }}
@@ -413,7 +410,7 @@ jobs:
           unzip -o $Env:installer_name
 
       - name: Cache CMSIS Pack
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         env:
           CACHE_NAME: cmsis_pack
         with:
@@ -438,11 +435,16 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CbuildUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           target: CbuildUnitTests
           build_type: Debug
           arch: ${{ matrix.arch }}
+
+      - name: Install macos deps
+        if: ${{ startsWith(matrix.runs_on, 'macos') }}
+        run: |
+          brew bundle install --file="${{ github.workspace }}/.github/Brewfile" --no-upgrade
 
       - name: Run CbuildUnitTests
         if: matrix.arch != 'arm64'
@@ -451,7 +453,7 @@ jobs:
 
       - name: Archive unittest
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_buildmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildunittests-*.xml
@@ -460,7 +462,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CbuildIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           target: CbuildIntegTests
           build_type: Debug
@@ -488,7 +490,7 @@ jobs:
 
       - name: Archive Cbuild Integration Tests
         if: always() && ((matrix.arch == 'amd64') || (startsWith(matrix.runs_on, 'ubuntu')))
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: integ_test_result_buildmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
@@ -512,12 +514,12 @@ jobs:
         GCC_TOOLCHAIN_10_3_1: ${{ github.workspace }}/${{ matrix.toolchain_root }}
         AC6_TOOLCHAIN_6_18_0: ${{ github.workspace }}/${{ matrix.toolchain_root }}
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
       - name: Install dependencies
@@ -530,7 +532,7 @@ jobs:
             lcov
 
       - name: Checkout devtools
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           submodules: recursive
 
@@ -538,7 +540,7 @@ jobs:
         run: mkdir build
 
       - name: Cache ARM GCC
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           key: "${{ env.arm_gcc_install_base }}/${{ env.installer_name }}"
           path: ${{ env.installer_name }}
@@ -549,7 +551,7 @@ jobs:
           tar -xvf ${{ env.installer_name }}
 
       - name: Cache CMSIS Pack
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         env:
           CACHE_NAME: cmsis_pack
         with:
@@ -572,7 +574,7 @@ jobs:
 
       - name: Archive unittest
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_buildmgr-linux-amd64
           path: ./build/test_reports/cbuildunittests-*.xml
@@ -581,7 +583,7 @@ jobs:
 
       - name: Archive Cbuild Integration Tests
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: integ_test_result_buildmgr-linux-amd64
           path: ./build/test_reports/cbuildintegtests-*.xml
@@ -619,7 +621,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-report-buildmgr
           path: |
@@ -630,7 +632,7 @@ jobs:
 
   sanity-check-native:
     needs: [ matrix_prep, create_installer ]
-    timeout-minutes: 15
+    timeout-minutes: 25
     runs-on: ${{ matrix.runs_on }}
     name: sanity check native (${{ matrix.runs_on }}, ${{ matrix.arch }})
     env:
@@ -644,7 +646,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
@@ -674,7 +676,7 @@ jobs:
 
   sanity-check-docker:
     needs: create_installer
-    timeout-minutes: 15
+    timeout-minutes: 25
     runs-on: ubuntu-22.04
     container:
       image: ${{ matrix.image }}
@@ -690,7 +692,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
@@ -720,17 +722,18 @@ jobs:
 
   test-results-preparation:
     name: "Publish Tests Results"
+    if: ${{ always() }}
     needs: [ test ]
     runs-on: ubuntu-22.04
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Event File
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Event File buildmgr
           path: ${{ github.event_path }}

@@ -13,6 +13,21 @@ solution:
             name: CMSIS-DAP
             telnet:
               - mode: file
+                file: $OutDir(telnet)$/telnet+SingleCore
+            rtt:
+              - pname: test
+                control-block:
+                  address: 0x20000000
+                  size: 0x10000
+                  auto-detect: true
+                channel:
+                  - number: 2
+                    mode: server
+                    port: 4453
+            systemview:
+              auto-start: false
+              auto-stop: false
+              file: $OutDir(telnet)$/test_x8.SVDat
           images:
             - project-context: telnet
   

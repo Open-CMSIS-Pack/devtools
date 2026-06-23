@@ -80,7 +80,7 @@ public:
   RpcArgs::GetVersionResult GetVersion(void) override;
   RpcArgs::SuccessResult Shutdown(void) override;
   RpcArgs::SuccessResult Apply(const string& context) override;
-  RpcArgs::SuccessResult Resolve(const string& context) override;
+  RpcArgs::SuccessResult Resolve(const string& context, const RpcArgs::Options& options) override;
   RpcArgs::SuccessResult LoadPacks(void) override;
   RpcArgs::SuccessResult LoadSolution(const string& solution, const string& activeTarget) override;
   RpcArgs::ContextInfo GetContextInfo(const string& context) override;
@@ -128,7 +128,7 @@ protected:
 
   PackReferenceVector& GetPackReferences(const string& context);
   PackReferenceVector CollectPackReferences(const string& context);
-  PackReferenceVector GetPackReferencesForPack(const string& context, const string& packId);
+  PackReferenceVector GetPackReferencesForPack(const string& context, const RtePackage* pack);
   RpcArgs::PackReference& EnsurePackReferenceForPack(const string& context, const string& packId, const string& origin, bool bVersion);
   RpcArgs::PackReference& EnsurePackReference(const string& context, const RpcArgs::PackReference& packRef);
 
@@ -137,6 +137,8 @@ protected:
   const ContextItem& GetContext(const string& context) const;
   RteTarget* GetActiveTarget(const string& context) const;
   RteComponentAggregate* GetComponentAggregate(const string& context, const string& id) const;
+  void SetAggregateOptions(const string& context, RteComponentAggregate* rteAggregate, const RpcArgs::Options& options);
+  void SetOptionsForNewlySelectedAggregates(const string& context, RteTarget* rteTarget, const RpcArgs::Options& options);
   bool CheckSolutionArg(string& solution, optional<string>& message) const;
 };
 
@@ -224,6 +226,35 @@ RteComponentAggregate* RpcHandler::GetComponentAggregate(const string& context, 
   return rteAggregate;
 }
 
+void RpcHandler::SetAggregateOptions(const string& context, RteComponentAggregate* rteAggregate, const RpcArgs::Options& options) {
+  auto& layer = options.layer.has_value() ? options.layer.value() : RteUtils::EMPTY_STRING;
+  rteAggregate->AddAttribute("layer", layer, false);
+
+  const bool explicitVendor = options.explicitVendor.has_value() ? options.explicitVendor.value() : false;
+  rteAggregate->AddAttribute("explicitVendor", explicitVendor ? "1" : "", false);
+
+  auto& explicitVersion = options.explicitVersion.has_value() ? options.explicitVersion.value() : RteUtils::EMPTY_STRING;
+  // TODO: check if version is plausible
+  rteAggregate->AddAttribute("explicitVersion", explicitVersion, false);
+  auto rteComponent = rteAggregate->GetComponent();
+  // ensure Pack reference is added when component is selected
+  int count = rteAggregate->IsSelected();
+  if(count > 0 && rteComponent) {
+    auto& packId = rteComponent->GetPackage()->GetID();
+    EnsurePackReferenceForPack(context, packId, layer, !explicitVersion.empty());
+  }
+}
+
+void RpcHandler::SetOptionsForNewlySelectedAggregates(const string& context, RteTarget* rteTarget, const RpcArgs::Options& options) {
+  const auto& selectedAggregates = rteTarget->CollectSelectedComponentAggregates();
+  for(const auto& [rteAggregate, _] : selectedAggregates) {
+    if(!rteAggregate->GetComponentInstance()) {
+      // only set options to newly selected components
+      SetAggregateOptions(context, rteAggregate, options);
+    }
+  }
+}
+
 RpcArgs::GetVersionResult RpcHandler::GetVersion(void) {
   RpcArgs::GetVersionResult res = {{true}};
   res.message = string("Running ") + INTERNAL_NAME + " " + VERSION_STRING;
@@ -256,22 +287,25 @@ RpcArgs::SuccessResult RpcHandler::Apply(const string& context) {
   return result;
 }
 
-RpcArgs::SuccessResult RpcHandler::Resolve(const string& context) {
+RpcArgs::SuccessResult RpcHandler::Resolve(const string& context, const RpcArgs::Options& options) {
   RpcArgs::SuccessResult result = {false};
   auto rteTarget = GetActiveTarget(context);
   auto rteProject = rteTarget->GetProject();
   if(rteProject) {
     result.success = rteProject->ResolveDependencies(rteTarget);
+    SetOptionsForNewlySelectedAggregates(context, rteTarget, options);
+
     Apply(context);
   }
   return result;
 }
 
-
 RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
   RpcArgs::SuccessResult result = {false};
   m_manager.Clear();
   m_solutionLoaded = false;
+  // clear project and global RTE data, packs stay loaded
+  ProjMgrKernel::Get()->GetGlobalModel()->Clear();
   m_worker.InitializeModel();
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
   result.success = m_worker.LoadAllRelevantPacks();
@@ -284,7 +318,10 @@ RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
 
 RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const string& activeTarget) {
   m_bUseAllPacks = false; // loading solution will first use only listed packs
-  m_packReferences.clear();
+  m_packReferences.clear(); // will be updated
+  m_solutionLoaded = false; // assume not loaded yet
+  // clear only projects, global RTE data and packs stay loaded
+  ProjMgrKernel::Get()->GetGlobalModel()->ClearProjects();
   RpcArgs::SuccessResult result = {false};
   const auto csolutionFile = RteFsUtils::MakePathCanonical(solution);
   if(!regex_match(csolutionFile, regex(".*\\.csolution\\.(yml|yaml)"))) {
@@ -360,7 +397,7 @@ RpcArgs::ContextInfo RpcHandler::GetContextInfo(const string& context) {
   RpcDataCollector dc(GetActiveTarget(context));
   contextInfo.success = true;
   dc.CollectUsedComponents(contextInfo.components);
-  // get all references, even if they are not selected , because it is useful for client to remove them from files
+  // get all references, even if they are not selected because it is useful for client to remove them from files
   contextInfo.packs = GetPackReferences(context);
 
   auto& contextItem = GetContext(context);
@@ -394,6 +431,11 @@ RpcArgs::UsedItems RpcHandler::GetUsedItems(const string& context) {
 
 
 PackReferenceVector& RpcHandler::GetPackReferences(const string& context) {
+  auto it = m_packReferences.find(context);
+  if(it != m_packReferences.end()) {
+    return it->second;
+  }
+  // collect references
   // emplace returns pair<iterator, bool>
   // return the value from the iterator
   return m_packReferences.emplace(context, RpcHandler::CollectPackReferences(context)).first->second;
@@ -403,26 +445,46 @@ PackReferenceVector RpcHandler::CollectPackReferences(const string& context) {
   PackReferenceVector packRefs;
   auto contextItem = GetContext(context);
   for(const auto& packItem : contextItem.packRequirements) {
-    const auto packId = RtePackage::ComposePackageID(packItem.pack.vendor, packItem.pack.name, packItem.pack.version);
-
     RpcArgs::PackReference packRef;
     packRef.pack = packItem.selectedBy;
-    packRef.resolvedPack = packId;
+    if(!packItem.path.empty()) {
+      packRef.resolvedPack = packItem.selectedBy;
+      packRef.path = packItem.path;
+    } else if(!packItem.resolvedTo.empty()) {
+      packRef.resolvedPack = packItem.resolvedTo;
+    }
     packRef.origin = packItem.origin;
-    packRef.path = packItem.path;
     packRef.selected = true; // initially pack is selected;
-    if (!contextItem.availablePackVersions[packId].empty()) {
-      packRef.upgrade = contextItem.availablePackVersions[packId];
+    const auto& packId = packItem.pack.vendor + "::" + packItem.pack.name + "@" + packItem.pack.version;
+    if(packItem.path.empty() && !packId.empty()) {
+      const auto availableVersionIt = contextItem.availablePackVersions.find(packId);
+      if(availableVersionIt != contextItem.availablePackVersions.end() && !availableVersionIt->second.empty()) {
+        packRef.upgrade = availableVersionIt->second;
+      }
+    }
+    // set optional 'locked' pack identifier if pack is not resolved and locked pack identifier is tracked
+    if (packItem.resolvedTo.empty() && find(contextItem.lockedPacks.begin(),
+      contextItem.lockedPacks.end(), packId) != contextItem.lockedPacks.end()) {
+      packRef.locked = packId;
+    }
+    // set optional 'missing' if pack is not found
+    if (packItem.missing) {
+      packRef.missing = true;
     }
     packRefs.push_back(packRef);
   }
   return packRefs;
 }
 
-PackReferenceVector RpcHandler::GetPackReferencesForPack(const string& context, const string& packId) {
+PackReferenceVector RpcHandler::GetPackReferencesForPack(const string& context, const RtePackage* pack) {
   PackReferenceVector packRefs;
+  auto& packId = pack->GetID();
+  auto path = pack->GetRootFilePath(false);
+
   for(auto& ref : GetPackReferences(context)) {
-    if(ref.resolvedPack.has_value() && ref.resolvedPack == packId) {
+    if((ref.resolvedPack.has_value() && ref.resolvedPack == packId) ||
+       (ref.path.has_value() && RteFsUtils::Equivalent(ref.path.value(), path)) ||
+       ref.pack == packId) {
       packRefs.push_back(ref);
     }
   }
@@ -472,7 +534,7 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& a
   RpcDataCollector dc(GetActiveTarget(context));
   auto usedPacks = dc.GetUsedPacks();
 
-  RpcArgs::PacksInfo packsInfo;
+  map<string, RpcArgs::Pack> packsMap;
   for(auto& [packId, rtePackage] : rteTarget->GetFilteredModel()->GetPackages()) {
     RpcArgs::Pack p;
     p.id = rtePackage->GetPackageID(true);
@@ -487,14 +549,39 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& a
     if(contains_key(usedPacks, p.id)) {
       p.used = true;
     }
-    auto packRefs = GetPackReferencesForPack(context, p.id);
+    auto packRefs = GetPackReferencesForPack(context, rtePackage);
 
     if(!packRefs.empty()) {
       p.references = packRefs;
     }
+    packsMap[p.id] = p;
+  }
+
+  // add unresolved packs from unresolved references
+  for(auto& ref : GetPackReferences(context)) {
+    if(!ref.resolvedPack.has_value() && !ref.path.has_value()) {
+      auto it = packsMap.find(ref.pack);
+      if(it != packsMap.end()) {
+        // only add reference, the optional references already exists
+        it->second.references.value().push_back(ref);
+        continue;
+      }
+      RpcArgs::Pack p;
+      p.id = ref.pack; // use original ID
+      p.used = true;
+      p.description = "Pack not installed";
+
+      PackReferenceVector packRefs;
+      packRefs.push_back(ref);
+      p.references = packRefs;
+      packsMap[ref.pack] = p;
+    }
+  }
+
+  RpcArgs::PacksInfo packsInfo;
+  for(auto& [_, p] : packsMap) {
     packsInfo.packs.push_back(p);
   }
-  // TODO: add unresolved packs from unresolved references
 
   packsInfo.success = true;
   return packsInfo;
@@ -572,21 +659,7 @@ RpcArgs::SuccessResult RpcHandler::SelectComponent(const string& context, const 
     result.success = activeTarget->SelectComponent(rteAggregate, count, true);
     rteComponent = rteAggregate->GetComponent();
   }
-  // set options
-  auto& layer = options.layer.has_value() ? options.layer.value() : RteUtils::EMPTY_STRING;
-  rteAggregate->AddAttribute("layer", layer, false);
-  bool explicitVendor = options.explicitVendor.has_value() ? options.explicitVendor.value() : false;
-  rteAggregate->AddAttribute("explicitVendor", explicitVendor ? "1" : "", false);
-
-  auto& explicitVersion = options.explicitVersion.has_value() ? options.explicitVersion.value() : RteUtils::EMPTY_STRING;
-  // TODO: check if version is plausible
-  rteAggregate->AddAttribute("explicitVersion", explicitVersion, false);
-
-  // ensure Pack reference is added when component is selected
-  if(count > 0 && rteComponent) {
-    auto& packId = rteComponent->GetPackage()->GetID();
-    EnsurePackReferenceForPack(context, packId, layer, !explicitVersion.empty());
-  }
+  SetAggregateOptions(context, rteAggregate, options);
   Apply(context);
   return result;
 }
@@ -796,6 +869,9 @@ RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solutio
   }
   m_bUseAllPacks = false; // loading solution will first use only listed packs
   m_packReferences.clear(); // will be updated
+  m_solutionLoaded = false; // assume not loaded
+  // clear only projects, RTE data and packs stay loaded
+  ProjMgrKernel::Get()->GetGlobalModel()->ClearProjects();
 
   if(!m_manager.RunConvert(csolutionFile, activeTarget, updateRte) || !ProjMgrLogger::Get().GetErrors().empty()) {
     if(m_worker.HasVarDefineError()) {
@@ -832,7 +908,7 @@ RpcArgs::DiscoverLayersInfo RpcHandler::DiscoverLayers(const string& solution, c
   StrVec layers;
   StrSet fails;
   if(!m_worker.ListLayers(layers, "", fails) || !m_worker.ElaborateVariablesConfigurations()) {
-    result.message = "No compatible software layer found. Review required connections of the project";
+    result.message = "No compatible software layer was found in the installed packs.\nInstall additional packs containing suitable layers before restarting the 'Create Solution' flow.";
     return result;
   } else {
     // retrieve valid configurations

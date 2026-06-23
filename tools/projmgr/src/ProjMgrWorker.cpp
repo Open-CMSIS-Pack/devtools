@@ -64,13 +64,34 @@ ProjMgrWorker::~ProjMgrWorker(void) {
   }
 }
 
+bool ProjMgrWorker::PushImageOnlyTargetType(const string& targetType, const vector<ImageItem>& images, StrVec& imageOnlyTargetTypes) {
+  if (images.empty()) {
+    return false;
+  }
+  for (const auto& item : images) {
+    if (!item.context.empty()) {
+      return false;
+    }
+  }
+  CollectionUtils::PushBackUniquely(imageOnlyTargetTypes, targetType);
+  return true;
+}
+
 void ProjMgrWorker::AddImageOnlyContext() {
+  StrVec imageOnlyTargetTypes;
+  // add image-only context for active target-set
   if (!m_activeTargetSet.images.empty()) {
-    for (const auto& item : m_activeTargetSet.images) {
-      if (!item.context.empty()) {
-        return;
+    PushImageOnlyTargetType(m_activeTargetType, m_activeTargetSet.images, imageOnlyTargetTypes);
+  }
+  // add other image-only contexts (if any)
+  for (const auto& [targetType, item] : m_parser->GetCsolution().targetTypes) {
+    for (const auto& targetSet : item.targetSet) {
+      if (PushImageOnlyTargetType(targetType, targetSet.images, imageOnlyTargetTypes)) {
+        break;
       }
     }
+  }
+  for (const auto& targetType : imageOnlyTargetTypes) {
     ContextDesc descriptor;
     ContextItem context;
     context.imageOnly = true;
@@ -79,7 +100,7 @@ void ProjMgrWorker::AddImageOnlyContext() {
     context.cproject = &m_imageOnly;
     context.cproject->name = name;
     context.cproject->directory = context.csolution->directory;
-    AddContext(descriptor, { "", m_activeTargetType }, context);
+    AddContext(descriptor, { "", targetType }, context);
   }
 }
 
@@ -137,9 +158,11 @@ void ProjMgrWorker::UpdateTmpDir() {
   auto& tmpdir = m_parser->GetCsolution().directories.tmpdir;
   auto& base = m_outputDir.empty() ? m_parser->GetCsolution().directory : m_outputDir;
   if (!tmpdir.empty()) {
-    if (ProjMgrUtils::HasAccessSequence(tmpdir) || !RteFsUtils::IsRelative(tmpdir)) {
-      ProjMgrLogger::Get().Warn("'tmpdir' does not support access sequences and must be relative to csolution.yml");
-      tmpdir.clear();
+    if (!m_activeTargetType.empty()) {
+      tmpdir = RteUtils::ExpandAccessSequences(tmpdir, {
+        { RteConstants::AS_TARGET_TYPE, m_activeTargetType },
+        { RteConstants::AS_TARGET_SET, m_activeTargetSet.set.empty() ? "default" : m_activeTargetSet.set } }
+      );
     }
   }
   tmpdir = base + "/" + (tmpdir.empty() ? "tmp" : tmpdir);
@@ -204,6 +227,7 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
     context.variables[RteConstants::AS_PROJECT] = context.cproject->name;
     context.variables[RteConstants::AS_BUILD_TYPE] = context.type.build;
     context.variables[RteConstants::AS_TARGET_TYPE] = context.type.target;
+    context.variables[RteConstants::AS_TARGET_SET] = context.targetSet.empty() ? "default" : context.targetSet;
 
     // solution and project access sequences with absolute paths
     context.absPathSequences[RteConstants::AS_SOLUTION_DIR_BR] = context.csolution->directory;
@@ -368,12 +392,11 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
     return false;
   }
   bool errFound = false;
-  for (auto packItem : context.packRequirements) {
+  for (auto& packItem : context.packRequirements) {
     // parse required version range
     const auto& pack = packItem.pack;
     const auto& reqVersion = pack.version;
     string reqVersionRange = ProjMgrUtils::ConvertToVersionRange(reqVersion);
-
     if (packItem.path.empty()) {
       bool bPackFilter = (pack.name.empty() || WildCards::IsWildcardPattern(pack.name));
       auto filteredPackItems = GetFilteredPacks(packItem, packRoot);
@@ -387,6 +410,8 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
         // get installed and local pdsc that satisfy the version range requirements
         auto pdsc = m_kernel->GetEffectivePdscFile(attributes);
         const string& pdscFile = pdsc.second;
+        packItem.resolvedTo = pdsc.first; // store resolved ID if any
+        packItem.missing = pdsc.first.empty();
         if (pdscFile.empty()) {
           if (!bPackFilter) {
             std::string packageName =
@@ -417,8 +442,7 @@ bool ProjMgrWorker::CollectRequiredPdscFiles(ContextItem& context, const std::st
         m_contextErrMap[context.name].insert("no match found for pack filter: " + filterStr);
         errFound = true;
       }
-    }
-    else {
+    } else {
       if (!reqVersion.empty()) {
         m_contextErrMap[context.name].insert("pack '" + (pack.vendor.empty() ? "" : pack.vendor + "::") + pack.name
           + "' specified with 'path' must not have a version");
@@ -499,6 +523,7 @@ bool ProjMgrWorker::CollectAllRequiredPdscFiles() {
 }
 
 bool ProjMgrWorker::LoadAllRelevantPacks() {
+  m_loadedPacks.clear(); // the list will be updated, it should not contain dangling pointers
   // Get required pdsc files
   std::list<std::string> pdscFiles;
   for (const auto& context : m_selectedContexts) {
@@ -562,21 +587,39 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   }
   if (!CollectAllRequiredPdscFiles()) {
     PrintContextErrors(context.name);
-    return false;
+    if(!m_rpcMode) {
+      return false;
+    }
   }
   if ((m_loadedPacks.empty() || m_rpcMode) && !LoadAllRelevantPacks()) {
-    return false;
+    if(!m_rpcMode) {
+      return false;
+    }
   }
   // Filter context specific packs
   set<string> selectedPacks;
+  map<string, set<string>> selectedPackVersions;
   const bool allOrLatest = (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST);
   for (const auto& pack : m_loadedPacks) {
     if (context.pdscFiles.find(pack->GetPackageFileName()) != context.pdscFiles.end()) {
       selectedPacks.insert(pack->GetPackageID());
+      selectedPackVersions[pack->GetPackageID(false)].insert(pack->GetVersionString());
+    }
+  }
+  // check if multiple versions are selected
+  for (const auto& [pack, versions] : selectedPackVersions) {
+    if (versions.size() > 1) {
+      string msg = "selected multiple versions of pack '" + pack + "':";
+      for (const auto& version : versions) {
+        msg += " '" + version + "',";
+      }
+      msg.pop_back();
+      msg += "\nReview pack selection";
+      ProjMgrLogger::Get().Warn(msg, context.name);
     }
   }
   RtePackageFilter filter;
-   // use all packs is enabled by default, by default policy it should be disabled if selectedPacks is not empty
+  // use all packs is enabled by default, by default policy it should be disabled if selectedPacks is not empty
   filter.SetUseAllPacks(allOrLatest || selectedPacks.empty());
   filter.SetSelectedPackages(selectedPacks);
   context.rteActiveTarget->SetPackageFilter(filter);
@@ -1819,9 +1862,12 @@ void ProjMgrWorker::ResolvePackRequirement(ContextItem& context, const PackItem&
     if (!locked.empty()) {
       // TODO: When wildcards will be fully stored in cbuild-pack there may be multiple matches
       const auto& lockedId = locked.front();
+      CollectionUtils::PushBackUniquely(context.lockedPacks, lockedId);
       if (lockedId != packId) {
         // Save available version if different from locked
-        context.availablePackVersions[lockedId] = package.pack.version;
+        if (!packId.empty()) {
+          context.availablePackVersions[lockedId] = package.pack.version;
+        }
         // Keep the locked pack
         packId = lockedId;
         package.pack.version = RtePackage::VersionFromId(lockedId);
@@ -2341,10 +2387,11 @@ bool ProjMgrWorker::CheckConfigPLMFiles(ContextItem& context) {
         regex_match(baseVersion, base, regEx);
         regex_match(updateVersion, update, regEx);
         if (base.size() == 4 && update.size() == 4) {
+          const string componentId = fi.second->GetPartialComponentID(true).empty() ? "" : " from component '" + fi.second->GetPartialComponentID(true) + "'";
           auto GetUpdateMsg = [&](const string& severity) {
-            return "file '" + file + "' " + severity +
+            return severity + " for file '" + file + "'" + componentId +
               (!RteFsUtils::Exists(file + '.' + RteUtils::UPDATE_STRING + '@' + updateVersion) ? "; use --update-rte" :
-              "; merge content from update file, rename update file to base file and remove previous base file");
+              ".\nMerge content from update file, rename update file to base file and remove previous base file");
           };
           if (base[1] != update[1]) {
             // major
@@ -2692,9 +2739,22 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
         if (!ProcessSequenceRelative(context, telnet.file, context.csolution->directory, false)) {
           return false;
         }
+        if (RteFsUtils::IsRelative(telnet.file)) {
+          RteFsUtils::NormalizePath(telnet.file, context.directories.cprj);
+        }
       }
       context.debugger.telnet[telnet.pname] = { telnet };
     }
+    auto systemView = m_activeTargetSet.debugger.systemView;
+    if (!systemView.file.empty()) {
+      if (!ProcessSequenceRelative(context, systemView.file, context.csolution->directory, false)) {
+        return false;
+      }
+      if (RteFsUtils::IsRelative(systemView.file)) {
+        RteFsUtils::NormalizePath(systemView.file, context.directories.cprj);
+      }
+    }
+    context.debugger.systemView = systemView;
     context.debugger.custom = m_activeTargetSet.debugger.custom;
   }
   for (const auto& [filename, fi] : context.rteActiveProject->GetFileInstances()) {
@@ -3521,7 +3581,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem & context, bool rerun)
       if (!ProcessSequencesRelatives(context, component.build, clayer->directory)) {
         return false;
       }
-      if (!AddComponent(component, name, context.componentRequirements, context.type, context)) {
+      if (!AddComponent(component, name, context.componentRequirements, context.type, context, true)) {
         return false;
       }
     }
@@ -3791,10 +3851,15 @@ bool ProjMgrWorker::AddFile(const FileNode& src, vector<FileNode>& dst, ContextI
   return true;
 }
 
-bool ProjMgrWorker::AddComponent(const ComponentItem& src, const string& layer, vector<pair<ComponentItem, string>>& dst, TypePair type, ContextItem& context) {
+bool ProjMgrWorker::AddComponent(const ComponentItem& src, const string& layer, vector<pair<ComponentItem, string>>& dst,
+  TypePair type, ContextItem& context, bool ignoreDuplicates) {
   if (CheckContextFilters(src.type, context)) {
     for (auto& [dstNode, layer] : dst) {
       if (dstNode.component == src.component) {
+        if (ignoreDuplicates) {
+          ProjMgrLogger::Get().Warn("ignoring conflict: component '" + dstNode.component + "' is listed multiple times", context.name);
+          return true;
+        }
         ProjMgrLogger::Get().Error("conflict: component '" + dstNode.component + "' is listed multiple times", context.name);
         return false;
       }
@@ -4037,6 +4102,7 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
   ret &= ProcessDebuggers(context);
   ret &= ProcessImages(context);
   CheckMissingPackRequirements(context.name);
+  CollectNpuInfo(context);
   return ret;
 }
 
@@ -4231,6 +4297,86 @@ bool ProjMgrWorker::ListDevices(vector<string>& devices, const string& filter) {
     devicesVec = matchedDevices;
   }
   devices.assign(devicesVec.begin(), devicesVec.end());
+  return true;
+}
+
+bool ProjMgrWorker::ListNpus(vector<string>& npus, const string& filter) {
+  map<string, set<string>> npuInfos;
+  for (const auto& selectedContext : m_selectedContexts) {
+    ContextItem& context = m_contexts[selectedContext];
+    if (!LoadPacks(context)) {
+      return false;
+    }
+    CollectNpuInfo(context);
+    for (const auto& npuInfoItem : context.npuInfoItems) {
+      string npuString = npuInfoItem.type + " (" + npuInfoItem.macs + "):";
+      string deviceInfoString = "  " + npuInfoItem.vendorName + "::" + npuInfoItem.deviceName + ",";
+      if (!npuInfoItem.pname.empty()) {
+        deviceInfoString += " [" + npuInfoItem.pname + "]";
+      }
+      deviceInfoString += " " + npuInfoItem.dcore;
+      if (m_verbose && !npuInfoItem.velaAbsolutePath.empty()) {
+        deviceInfoString += "\n    VELA config: " + npuInfoItem.velaAbsolutePath;
+      }
+      npuInfos[npuString].insert(deviceInfoString);
+    }
+  }
+
+  if (npuInfos.empty()) {
+    ProjMgrLogger::Get().Error("no installed NPU was found");
+    return false;
+  }
+
+  vector<string> npusVec;
+  // build and append one formatted NPU output entry consisting of the NPU info and its associated device info lines
+  auto AddEntry = [&npusVec](const string& npuString, const auto& deviceInfos) {
+    string entry = npuString;
+    for (const auto& deviceInfoString : deviceInfos) {
+      entry += "\n" + deviceInfoString;
+    }
+    npusVec.push_back(entry);
+    };
+
+  if (filter.empty()) {
+    for (const auto& [npuString, deviceInfoSet] : npuInfos) {
+      AddEntry(npuString, deviceInfoSet);
+    }
+  } else {
+    const auto filterSet = RteUtils::SplitStringToSet(filter);
+    for (const auto& [npuString, deviceInfoSet] : npuInfos) {
+      set<string> remainingFilterSet;
+      // Apply Filter words matched by the NPU info are considered already satisfied. Only the remaining Filter words must be matched by device lines
+      for (const auto& filterWord : filterSet) {
+        if (filterWord.empty()) {
+          continue;
+        }
+        if (RteUtils::ToLower(npuString).find(RteUtils::ToLower(filterWord)) == string::npos) {
+          remainingFilterSet.insert(filterWord);
+        }
+      }
+      if (remainingFilterSet.empty()) {
+        AddEntry(npuString, deviceInfoSet);
+        continue;
+      }
+      vector<string> matchedDevices;
+      for (const auto& deviceInfoString : deviceInfoSet) {
+        vector<string> deviceVec = { deviceInfoString };
+        vector<string> matched;
+        RteUtils::ApplyFilter(deviceVec, remainingFilterSet, matched);
+        if (!matched.empty()) {
+          matchedDevices.push_back(deviceInfoString);
+        }
+      }
+      if (!matchedDevices.empty()) {
+        AddEntry(npuString, matchedDevices);
+      }
+    }
+  }
+  if (npusVec.empty()) {
+    ProjMgrLogger::Get().Error("no NPU was found with filter '" + filter + "'");
+    return false;
+  }
+  npus.assign(npusVec.begin(), npusVec.end());
   return true;
 }
 
@@ -5645,11 +5791,22 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
   fs::current_path(genDir, ec);
   StrIntPair result = CrossPlatformUtils::ExecCommand(runCmd);
   fs::current_path(workingDir, ec);
-  ProjMgrLogger::Get().Info("generator '" + generatorId + "' for context '" + selectedContextId + "' reported:\n" + result.first);
   if (result.second) {
-    ProjMgrLogger::Get().Error("executing generator '" + generatorId + "' for context '" + selectedContextId + "' failed");
+    string errMsg = "executing generator '" + generatorId + "' for context '" + selectedContextId + "' failed:\n";
+    errMsg += "  " + result.first;
+
+    const string downloadUrl = m_extGenerator->GetGlobalGenUrl(generatorId);
+    if (!downloadUrl.empty()) {
+      errMsg += "  check the URL for downloading the generator: " + downloadUrl;
+    } else {
+      errMsg += "  download URL is not available for generator '" + generatorId + "' in generator.yml";
+    }
+    ProjMgrLogger::Get().Error(errMsg);
     return false;
+  } else {
+    ProjMgrLogger::Get().Info("generator '" + generatorId + "' for context '" + selectedContextId + "' reported:\n  " + result.first);
   }
+
   return true;
 }
 
@@ -5873,6 +6030,116 @@ void ProjMgrWorker::CheckMissingLinkerScript(ContextItem& context) {
   }
 }
 
+bool ProjMgrWorker::CheckPackVerAndCollectRelNotes(std::vector<std::string>& results, const std::string& filter) {
+  map<string, pair<string, string>> usedPacks;   // Vendor::Name -> (currently used version, project-specified path if any)
+  map<string, pair<string, string>> latestPacks; // Vendor::Name -> (latest available version, resolved PDSC file path)
+  vector<string> selectedContexts = m_selectedContexts;
+  if (selectedContexts.empty()) {
+    for (const auto& [contextName, _] : m_contexts) {
+      selectedContexts.push_back(contextName);
+    }
+  }
+  if (!m_kernel->ReadPackLatestVerAndPath(latestPacks)) {
+    ProjMgrLogger::Get().Error("failed to read latest pack information from pack index");
+    return false;
+  }
+  for (const auto& contextName : selectedContexts) {
+    ContextItem& context = m_contexts.at(contextName);
+    if (!LoadPacks(context)) {
+      return false;
+    }
+    for (const auto& pack : m_loadedPacks) {
+      const string packId = pack->GetVendorString() + "::" + pack->GetName();
+      const string& version = pack->GetVersionString();
+      usedPacks[packId].first = version;
+      if (pack->GetPackageState() == PS_EXPLICIT_PATH) {
+        usedPacks[packId].second = RteFsUtils::RelativePath(pack->GetAbsolutePackagePath(), context.csolution->directory);
+        auto latestPack = latestPacks.find(packId);
+        if (latestPack == latestPacks.end() || VersionCmp::Compare(latestPack->second.first, version) < 0) {
+          latestPacks[packId] = { version, pack->GetPackageFileName() };
+        }
+      }
+    }
+  }
+
+  vector<string> checkPackResults;
+  for (const auto& [packId, packInfo] : usedPacks) {
+    const string& currentVersion = packInfo.first;
+    auto latestPack = latestPacks.find(packId);
+    if (latestPack == latestPacks.end()) {
+      checkPackResults.push_back(packId + "@" + currentVersion + " (not found in CMSIS pack root or project-specified pack paths)");
+      continue;
+    }
+    const string& latestVersion = latestPack->second.first;
+    const string& latestPdscFile = latestPack->second.second;
+    const bool isOutdated = VersionCmp::Compare(currentVersion, latestVersion) < 0;
+    string outStr = isOutdated ?
+      packId + "@" + currentVersion + " -> " + latestVersion :
+      packId + "@" + currentVersion + " (up-to-date)";
+    if (m_verbose) {
+      const string& specifiedPackPath = packInfo.second;
+      if (!specifiedPackPath.empty()) {
+        outStr += "\n  Local path: " + specifiedPackPath;
+      }
+      if (isOutdated) {
+        vector<string> releaseNotes;
+        if (ReadPackReleaseNotes(latestPdscFile, currentVersion, latestVersion, releaseNotes)) {
+          for (const auto& note : releaseNotes) {
+            outStr += note;
+          }
+        } else {
+          outStr += "\n  Release notes: unavailable";
+        }
+      }
+    }
+    checkPackResults.push_back(outStr);
+  }
+  if (checkPackResults.empty()) {
+    ProjMgrLogger::Get().Error("no packs were found for version check");
+    return false;
+  }
+  if (!filter.empty()) {
+    std::vector<std::string> matchedPacks;
+    RteUtils::ApplyFilter(checkPackResults, RteUtils::SplitStringToSet(filter), matchedPacks);
+    if (matchedPacks.empty()) {
+      ProjMgrLogger::Get().Error("no packs were found for version check with filter '" + filter + "'");
+      return false;
+    }
+    checkPackResults = matchedPacks;
+  }
+  results.assign(checkPackResults.begin(), checkPackResults.end());
+  return true;
+}
+
+bool ProjMgrWorker::ReadPackReleaseNotes(const string& pdscFile, const string& currentVersion, const string& latestVersion, vector<string>& releaseNotes) {
+  RtePackage* pack = m_kernel->LoadPack(pdscFile);
+  if (!pack) { return false; }
+
+  RteItem* releases = pack->GetReleases();
+  if (!releases) { return false; }
+
+  for (auto& child : releases->GetChildren()) {
+    if (!child || child->GetTag() != "release") {
+      continue;
+    }
+    const string& releaseVersion = child->GetAttribute("version");
+    const string& text = child->GetText();
+    if (releaseVersion.empty() || text.empty()) {
+      continue;
+    }
+    // ignore releases newer than the resolved latest version
+    if (VersionCmp::Compare(releaseVersion, latestVersion) > 0) {
+      continue;
+    }
+    // stop once the current version or an older version is reached
+    if (VersionCmp::Compare(releaseVersion, currentVersion) <= 0) {
+      break;
+    }
+    releaseNotes.push_back("\n  Release notes for v" + releaseVersion + ":\n      " + text);
+  }
+  return !releaseNotes.empty();
+}
+
 void ProjMgrWorker::CollectUnusedPacks() {
   for (const auto& contextName : m_selectedContexts) {
     auto& context = m_contexts[contextName];
@@ -6072,3 +6339,60 @@ void ProjMgrWorker::FormatResolvedPackIds() {
   }
 }
 
+void ProjMgrWorker::CollectNpuInfo(ContextItem& context) {
+  context.npuInfoItems.clear();
+
+  list<RteDevice*> filteredModelDevices;
+  context.rteFilteredModel->GetDevices(filteredModelDevices, context.rteActiveTarget->GetDeviceName(), context.rteActiveTarget->GetVendorName(), RteDeviceItem::VARIANT);
+  for (const auto& device : filteredModelDevices) {
+    if (!device->GetDeviceItems().empty()) {
+      // skip not end-leaf item
+      continue;
+    }
+    // find VELA config for this device (only once per device)
+    string velaAbsolutePath;
+    const auto& envList = device->GetEffectiveProperties("environment", "");
+    for (auto env : envList) {
+      if (env->GetAttribute("name") != "VELA") {
+        continue;
+      }
+      for (auto child : env->GetEffectiveContent()) {
+        const string& fileName = child->GetAttribute("name");
+        if (child->GetTag() == "file" && child->GetAttribute("type") == "ini" && !fileName.empty()) {
+          const string velaPath = child->GetOriginalAbsolutePath(fileName);
+          if (RteFsUtils::Exists(velaPath)) {
+            velaAbsolutePath = velaPath;
+          }
+          break;
+        }
+      }
+      break;
+    }
+    // collect NPU features for each processor
+    for (const auto& [pname, processor] : device->GetProcessors()) {
+      const auto& features = device->GetEffectiveProperties("feature", pname);
+      for (const auto& feature : features) {
+        if (feature->GetAttribute("type") != "NPU") {
+          continue;
+        }
+        const string& npuPname = feature->GetAttribute("Pname");
+        if (!npuPname.empty() && npuPname != pname) {
+          // Skip if this NPU pname is for a different processor pname
+          continue;
+        }
+        string nType = feature->GetAttribute("n");
+        string mType = feature->GetAttribute("m");
+        if (nType.empty()) { nType = "Unknown NPU"; }
+        if (mType.empty()) { mType = "Unknown MACs"; }
+        context.npuInfoItems.push_back({
+          device->GetVendorName(),
+          device->GetFullDeviceName(),
+          pname,
+          processor->GetAttribute("Dcore"),
+          nType,
+          mType,
+          velaAbsolutePath});
+      }
+    }
+  }
+}

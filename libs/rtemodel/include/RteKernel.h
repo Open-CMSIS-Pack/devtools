@@ -320,6 +320,13 @@ public:
   */
   void SetToolInfo(const XmlItem& attr) { m_toolInfo = attr; }
 
+  /**
+   * @brief read the latest available pack version and resolved PDSC file for each pack.
+   * @param Output map of pack ID to latest version and resolved PDSC file path
+   * @return true if at least one latest pack entry was found, otherwise false
+   */
+  bool ReadPackLatestVerAndPath(std::map<std::string, std::pair<std::string, std::string>>& latestPacks) const;
+
 protected:
   /**
    * @brief get local pdsc files, optionally filtered
@@ -330,9 +337,14 @@ protected:
   bool GetLocalPdscFiles(const XmlItem& attr, std::map<std::string, std::string, RtePackageComparator>& pdscMap) const;
   /**
    * @brief parses $CMSIS_PACK_ROOT/.Local/loacl_repository.pidx file
-   * @return pointer to "index" element if successful, nullptr otherwise
+   * @return pointer to "pindex" element if successful, nullptr otherwise
   */
   XMLTreeElement* ParseLocalRepositoryIdx() const;
+  /**
+   * @brief parses $CMSIS_PACK_ROOT/.Web/index.pidx file
+   * @return pointer to "pindex" element if successful, nullptr otherwise
+  */
+  XMLTreeElement* ParseWebRepositoryIdx() const;
 
   /**
    * @brief create an XMLTree object to parse XML files
@@ -354,6 +366,12 @@ protected:
   */
   RteKernel* GetThisKernel() const { return const_cast<RteKernel*>(this); }
 
+  /**
+   * @brief parses a repository index file
+   * @param absolute path to the repository index file
+   * @return pointer to "pindex" element if successful, nullptr otherwise
+  */
+  XMLTreeElement* ParseRepositoryIdx(const std::string& indexPath) const;
 
 // data
 protected:

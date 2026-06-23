@@ -36,6 +36,7 @@ struct MemoryType {
   std::string access;
   std::string alias;
   std::string fromPack;
+  std::optional<bool> bDefault;
   unsigned long long start = 0;
   unsigned long long size = 0;
   std::string pname;
@@ -210,8 +211,10 @@ struct RunDebugType {
   std::string compiler;
   std::string board;
   std::string boardPack;
+  std::string boardPackPath;
   std::string device;
   std::string devicePack;
+  std::string devicePackPath;
   std::vector<AlgorithmType> algorithms;
   std::vector<FlashInfoType> flashInfo;
   std::vector<FilesType> outputs;
@@ -272,6 +275,7 @@ protected:
     const std::map<std::string, RteDeviceProperty*>& pnames);
   void CollectTelnetOptions(const ContextItem& context, DebugAdapterItem& adapter,
     const std::map<std::string, RteDeviceProperty*>& pnames);
+  void CollectSystemViewOptions(const SystemViewItem& context);
   void SetTelnetPort(TelnetOptionsItem& item, unsigned long long& port, std::set<unsigned long long>& usedPorts);
   CustomItem& CustomMapFind(std::vector<std::pair<std::string, CustomItem>>& customMap, const std::string& key);
   void MergeCustomItems(const CustomItem& src, CustomItem& dst);

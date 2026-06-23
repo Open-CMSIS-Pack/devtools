@@ -70,7 +70,6 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   // device collections
   for (const auto& [pname, processor] : pnames) {
     if (context0->devicePack) {
-      m_runDebug.devicePack = context0->devicePack->GetPackageID(true);
       const auto& deviceAlgorithms = context0->rteDevice->GetEffectiveProperties("algorithm", pname);
       for (const auto& deviceAlgorithm : deviceAlgorithms) {
         PushBackUniquely(algorithms, deviceAlgorithm, pname);
@@ -126,6 +125,10 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
     }
     m_runDebug.systemResources.processors.push_back(item);
   }
+  if (context0->devicePack) {
+    m_runDebug.devicePack = context0->devicePack->GetPackageID(true);
+    m_runDebug.devicePackPath = context0->devicePack->GetAbsolutePackagePath();
+  }
 
   // default ramstart/size: use the first memory with default=1 and rwx attribute
   // if not found, use ramstart/size from other algorithm in DFP
@@ -156,6 +159,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   // board collections
   if (context0->boardPack) {
     m_runDebug.boardPack = context0->boardPack->GetPackageID(true);
+    m_runDebug.boardPackPath = context0->boardPack->GetAbsolutePackagePath();
     Collection<RteItem*> boardAlgorithms;
     context0->rteBoard->GetChildrenByTag("algorithm", boardAlgorithms);
     for (const auto& boardAlgorithm : boardAlgorithms) {
@@ -212,6 +216,9 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
     item.size = memory->GetAttributeAsULL("size");
     item.fromPack = memory->GetPackageID(true);
     item.pname = memory->GetProcessorName();
+    if (memory->HasAttribute("default")) {
+      item.bDefault = memory->IsDefault();
+    }
     m_runDebug.systemResources.memories.push_back(item);
   }
 
@@ -439,6 +446,9 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
   // collect telnet options
   CollectTelnetOptions(context, adapter, pnames);
 
+  // collect system view options
+  CollectSystemViewOptions(context.debugger.systemView);
+
   // merge custom options
   MergeCustomItems(context.debugger.custom, m_runDebug.debugger.custom);
 
@@ -512,6 +522,11 @@ void ProjMgrRunDebug::SetTelnetPort(TelnetOptionsItem& item, unsigned long long&
     item.ullPort = port;
     usedPorts.insert(port);
   }
+}
+
+void ProjMgrRunDebug::CollectSystemViewOptions(const SystemViewItem& systemView)
+{
+  m_runDebug.debugger.systemView = systemView;
 }
 
 void ProjMgrRunDebug::CollectDebugTopology(const ContextItem& context, const vector<pair<const RteItem*, vector<string>>> debugs,

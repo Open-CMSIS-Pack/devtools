@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  compiler: AC6
+
+  mlops:
+    description: simulator target not present
+    model:    
+      clayer: $AI-Layer$
+
+  target-types:
+    - type: Hardware
+      device: RteTest_ARMCM0_Dual
+      variables:
+        - AI-Layer: $SolutionDir()$/ai_layer/ai_layer.clayer.yml
+      target-set:
+        - set:
+          images:
+            - project-context: core0
+            - project-context: core1
+
+  projects:
+    - project: core0/core0.cproject.yml
+    - project: core1/core1.cproject.yml

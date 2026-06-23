@@ -6,12 +6,22 @@ solution:
       device: RteTest_ARMCM0
     - type: Gen
       device: RteTest_ARMCM3
+    - type: Miss
+      device: RteTest_ARMCM0
 
   packs:
     - pack: ARM::Missing_DFP@0.0.9
       for-context: +CM0
     - pack: ARM::Missing_PACK@0.0.1
       for-context: +Gen
+    - pack: ARM::Missing_PACK
+      for-context: +Miss
+    - pack: ARM::Missing_DFP@>=0.0.5
+      for-context: +Miss
+    - pack: ARM::RteTest@3.0.1
+      for-context: +Miss
+    - pack: ARM::RteTest_DFP
+      for-context: +Miss
 
   projects:
     - project: ./project.cproject.yml

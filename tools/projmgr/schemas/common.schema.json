@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.13.0/tools/projmgr/schemas/common.schema.json",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.14.0/tools/projmgr/schemas/common.schema.json",
   "title": "CMSIS common",
   "description": "Common and reusable properties for other schemas.",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "definitions": {
     "ArrayOfStrings": {
       "type": "array",
@@ -378,6 +378,22 @@
       "minItems": 1,
       "items": { "$ref": "#/definitions/OutputFileType" }
     },
+    "NpuInfoType": {
+      "title": "npu-info:",
+      "type": "array",
+      "description": "List of available Neural Processing Units (NPUs).",
+      "items": {
+        "type": "object",
+        "description": "Information about an available Neural Processing Unit (NPU).",
+        "properties": {
+          "type": { "type": "string", "description": "Type of the NPU." },
+          "macs": { "type": ["integer", "string"], "description": "Number of MACs (Multiply-Accumulate units)." },
+          "vela-ini": { "type": "string", "description": "Path to the Vela configuration file." }
+        },
+        "additionalProperties": false,
+        "required": [ "type" ]
+      }
+    },
     "BuildDefinesType": {
       "type": "array",
       "description": "List of #define symbol settings for the code generation.",
@@ -597,6 +613,12 @@
       "title": "maxInstances:",
       "type": "integer",
       "description": "Maximum allowed instances of a component in a project. Default is 1 for one instance."
+    },
+    "BuildScope": {
+      "title": "build-scope:",
+      "type": "string",
+      "enum": [ "include", "exclude" ],
+      "description": "Select build scope.\nDefault: include component source files for executable builds, exclude for library builds."
     },
     "TargetTypes": {
       "title": "target-types:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#target-types",
@@ -1033,7 +1055,8 @@
         "not-for-context": { "$ref": "#/definitions/NotForContext" },
         "optimize":     { "$ref": "#/definitions/OptimizeType" },
         "undefine":     { "$ref": "#/definitions/UndefinesType" },
-        "warnings":     { "$ref": "#/definitions/WarningsType" }
+        "warnings":     { "$ref": "#/definitions/WarningsType" },
+        "build-scope":  { "$ref": "#/definitions/BuildScope" }
       },
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
@@ -1190,6 +1213,7 @@
         "language-CPP":    { "$ref": "#/definitions/LanguageCppType" },
         "link-time-optimize": { "$ref": "#/definitions/LinkTimeOptimizeType" },
         "misc":            { "$ref": "#/definitions/MiscTypes" },
+        "mlops":           { "$ref": "#/definitions/MlopsType" },
         "optimize":        { "$ref": "#/definitions/OptimizeType" },
         "output-dirs":     { "$ref": "#/definitions/OutputDirectoriesType" },
         "packs":           { "$ref": "#/definitions/PacksType" },
@@ -1447,6 +1471,7 @@
         "add-path-asm":      { "$ref": "#/definitions/AddAsmPathsType" },
         "output-dirs":       { "$ref": "#/definitions/BuildOutputDirectoriesType" },
         "output":            { "$ref": "#/definitions/OutputFilesType" },
+        "npu-info":          { "$ref": "#/definitions/NpuInfoType" },
         "components":        {
           "title": "components:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#components",
           "$ref": "#/definitions/ResolvedComponentsType"
@@ -1470,7 +1495,8 @@
         },
         "west": { "$ref": "#/definitions/WestProjectType" }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": ["generated-by"]
     },
     "BuildPacksInfoType": {
       "type": "array",
@@ -1710,7 +1736,8 @@
         "generator":    { "$ref": "#/definitions/ComponentGeneratorType" },
         "from-pack":    { "$ref": "#/definitions/PackID" },
         "instances":    { "$ref": "#/definitions/InstancesType" },
-        "maxInstances": { "$ref": "#/definitions/MaxInstancesType" }
+        "maxInstances": { "$ref": "#/definitions/MaxInstancesType" },
+        "build-scope":  { "$ref": "#/definitions/BuildScope" }
       },
       "additionalProperties": false
     },
@@ -2112,7 +2139,7 @@
     "FlashInfoBlocksType": {
       "description": "An ordered list of subsequent blocks (block is the smallest unit that can be erased).",
       "type": "array",
-      "uniqueItems": true,
+      "uniqueItems": false,
       "items": { "$ref": "#/definitions/FlashInfoBlockType" }
     },
     "FlashInfoBlockType": {
@@ -2239,12 +2266,13 @@
     "SystemMemoryType": {
       "type": "object",
       "properties": {
-        "name":      { "type": "string", "description": "Name of the memory region." },
+        "name":      { "type": "string",  "description": "Name of the memory region." },
         "access":    { "$ref": "#/definitions/MemoryAccessType" },
-        "start":     { "type": "number", "description": "Base address of the memory." },
-        "size":      { "type": "number", "description": "Size of the memory." },
-        "pname":     { "type": "string", "description": "Only accessible by the specified processor." },
-        "alias":     { "type": "string", "description": "Name of identical memory exposed at different address." },
+        "start":     { "type": "number",  "description": "Base address of the memory." },
+        "size":      { "type": "number",  "description": "Size of the memory." },
+        "pname":     { "type": "string",  "description": "Only accessible by the specified processor." },
+        "alias":     { "type": "string",  "description": "Name of identical memory exposed at different address." },
+        "default":   { "type": "boolean", "description": "Marks a general-purpose default memory region." },
         "from-pack": { "$ref": "#/definitions/PackID" }
       },
       "additionalProperties": false,
@@ -2262,13 +2290,71 @@
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
         "gdbserver":       { "$ref": "#/definitions/GdbServersType" },
-        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" }
+        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
+        "rtt":             { "$ref": "#/definitions/RttOptionsType" },
+        "systemview":      { "$ref": "#/definitions/SystemViewOptionType" }
       },
       "additionalProperties": true,
       "required": ["name"]
     },
+    "RttOptionsType": {
+      "title": "rtt:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#rtt",
+      "description": "Configuration for RTT features.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/RttOptionType" }
+    },
+    "RttOptionType": {
+      "type": "object",
+      "properties": {
+        "pname":         { "type": "string", "description": "Name of the processor (only required for multi-core systems)." },
+        "control-block": { "$ref": "#/definitions/RttControlBlockType" },
+        "channel":       { "$ref": "#/definitions/RttChannelsType" }
+      },
+      "additionalProperties": false,
+      "required": ["channel"]
+    },
+    "RttControlBlockType": {
+      "title": "control-block:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#control-block",
+      "description": "Configuration for RTT control block features.",
+      "type": "object",
+      "properties": {
+        "auto-detect": { "type": "boolean", "description": "Scan default memory regions for the RTT control block signature (true or false)." },
+        "address":     { "type": "number", "description": "Control block address, acts as scan start address." },
+        "size":        { "type": "number", "description": "Scan length in bytes." }
+      },
+      "additionalProperties": false
+    },
+    "SystemViewOptionType": {
+      "title": "systemview:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#systemview",
+      "description": "Configuration for SystemView features.",
+      "type": "object",
+      "properties": {
+        "file":             { "type": "string", "description": "Path to the SystemView capture file." },
+        "auto-start":       { "type": "boolean", "description": "Send SystemView start command automatically." },
+        "auto-stop":        { "type": "boolean", "description": "Send SystemView stop command automatically." }
+      },
+      "additionalProperties": false
+    },
+    "RttChannelsType": {
+      "title": "channel:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#channel",
+      "description": "Configuration for RTT features.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/RttChannelType" }
+    },
+    "RttChannelType": {
+      "type": "object",
+      "properties": {
+        "number":   { "type": "number", "description": "RTT channel number." },
+        "mode":     { "enum": [ "stdio", "server", "systemview", "systemview-server" ], "description": "RTT channel mode." },
+        "port":     { "type": "number", "description": "TCP port number (required for server and systemview-server)." }
+      },
+      "additionalProperties": false,
+      "required": [ "number", "mode" ]
+    },
     "TelnetOptionsType": {
-      "title": "telnet:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#telnet-for-pyocd",
+      "title": "telnet:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#telnet",
       "description": "Telnet port for connecting remote tools.",
       "type": "array",
       "uniqueItems": true,
@@ -2424,8 +2510,10 @@
         "compiler":            { "type": "string", "description": "Compiler toolchain used for code generation." },
         "board":               { "$ref": "#/definitions/BoardType" },
         "board-pack":          { "$ref": "#/definitions/PackID" },
+        "board-pack-path":     { "type": "string", "description": "Local path to the board pack." },
         "device":              { "$ref": "#/definitions/DeviceType" },
         "device-pack":         { "$ref": "#/definitions/PackID" },
+        "device-pack-path":    { "type": "string", "description": "Local path to the device pack." },
         "output":              { "$ref": "#/definitions/RunOutputFilesType" },
         "system-resources":    { "$ref": "#/definitions/SystemResourcesType" },
         "system-descriptions": { "$ref": "#/definitions/RunSystemFilesType" },
@@ -2437,7 +2525,7 @@
         "debug-topology":      { "$ref": "#/definitions/DebugTopologyType" }
       },
       "additionalProperties": false,
-      "required": ["output", "debugger"]
+      "required": ["generated-by", "output", "debugger"]
     },
     "TargetSetsType": {
       "title": "target-set:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#target-set",
@@ -2496,7 +2584,9 @@
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
-        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" }
+        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
+        "rtt":             { "$ref": "#/definitions/RttOptionsType" },
+        "systemview":      { "$ref": "#/definitions/SystemViewOptionType" }
       },
       "additionalProperties": true,
       "required": ["name"]
@@ -2547,6 +2637,123 @@
       },
       "additionalProperties": false,
       "required": ["core", "max-clock"]
+    },
+    "MlopsTargetType": {
+      "type": "object",
+      "description": "Target selection for hardware or simulator.",
+      "properties": {
+        "target": { "type": "string", "description": "Explicit <target-type>[@<set>] selection." }
+      },
+      "additionalProperties": false
+    },
+    "MlopsType": {
+      "title": "mlops:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#mlops-management",
+      "description": "Configuration for MLOps features.",
+      "type": ["null", "object"],
+      "properties": {
+        "description": { "type": "string", "description": "Brief description of the MLOps configuration." },
+        "npu": {
+          "type": "object",
+          "description": "NPU configuration.",
+          "properties": {
+            "type": { "type": "string", "description": "NPU type (default: first NPU from DFP device features)." },
+            "macs": { "type": "number", "description": "Number of MACs (default: first NPU from DFP device features)." }
+          },
+          "additionalProperties": false
+        },
+        "vela": {
+          "type": "object",
+          "description": "Vela compiler configuration.",
+          "properties": {
+            "ini":    { "type": "string", "description": "Path to Vela INI configuration file (default: use INI file from DFP)." },
+            "system": { "type": "string", "description": "System configuration name from the INI file." },
+            "memory": { "type": "string", "description": "Memory mode name from the INI file." },
+            "misc":   { "type": "string", "description": "Additional options string for Vela." }
+          },
+          "additionalProperties": false
+        },
+        "model": {
+          "type": "object",
+          "description": "AI model configuration.",
+          "properties": {
+            "clayer": { "type": "string", "description": "Path to the AI clayer file or variable." },
+            "name":   { "type": "string", "description": "Model name used as namespace (default: Algorithm)." }
+          },
+          "additionalProperties": false
+        },
+        "hardware":    { "$ref": "#/definitions/MlopsTargetType" },
+        "simulator":   { "$ref": "#/definitions/MlopsTargetType" }
+      },
+      "additionalProperties": false
+    },
+    "MlopsDescType": {
+      "title": "cbuild-mlops:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#mlops-management",
+      "type": ["null", "object"],
+      "properties": {
+        "description": { "type": "string", "description": "Brief description of the MLOps configuration." },
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file." },
+        "processor": {
+          "type": "object",
+          "description": "Processor information.",
+          "properties": {
+            "type": { "type": "string", "description": "Processor core type (e.g. Cortex-M55)." }
+          },
+          "additionalProperties": false
+        },
+        "npu": {
+          "type": "object",
+          "description": "NPU information.",
+          "properties": {
+            "type": { "type": "string", "description": "NPU type." },
+            "macs": { "type": "number", "description": "Number of MACs." }
+          },
+          "additionalProperties": false
+        },
+        "vela": {
+          "type": "object",
+          "description": "Vela compiler information.",
+          "properties": {
+            "ini":     { "type": "string", "description": "Path to Vela INI configuration file." },
+            "options": { "type": "string", "description": "Resolved Vela command-line options string." }
+          },
+          "additionalProperties": false
+        },
+        "model": {
+          "type": "object",
+          "description": "AI model information.",
+          "properties": {
+            "clayer": { "type": "string", "description": "Path to the AI clayer file." },
+            "name":   { "type": "string", "description": "Model name used as namespace." }
+          },
+          "additionalProperties": false
+        },
+        "hardware":  { "$ref": "#/definitions/MlopsRunDescType" },
+        "simulator": { "$ref": "#/definitions/MlopsRunDescType" }
+      },
+      "additionalProperties": false,
+      "required": ["generated-by"]
+    },
+    "MlopsOutputType": {
+      "type": "object",
+      "description": "Output image file.",
+      "properties": {
+        "file": { "type": "string", "description": "Path to the output file." },
+        "type": { "type": "string", "description": "Output file type." }
+      },
+      "additionalProperties": false,
+      "required": ["file", "type"]
+    },
+    "MlopsRunDescType": {
+      "type": "object",
+      "description": "Run configuration.",
+      "properties": {
+        "active":       { "type": "string", "description": "Active target-set in the form <target-type>[@<set>]." },
+        "cbuild-run":   { "type": "string", "description": "Path to the *.cbuild-run.yml file." },
+        "output":       { "type": "array", "description": "List of output image files.", "items": { "$ref": "#/definitions/MlopsOutputType" } },
+        "model":        { "type": "string", "description": "Simulator model executable (e.g. FVP_Corstone_SSE-320)." },
+        "config-file":  { "type": "string", "description": "Path to the simulator configuration file." }
+      },
+      "additionalProperties": false
     }
   }
 }

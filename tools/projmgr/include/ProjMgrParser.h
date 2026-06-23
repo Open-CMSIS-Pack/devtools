@@ -10,6 +10,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <optional>
 
 /**
 * @brief type pair containing
@@ -143,6 +144,18 @@ struct TelnetItem {
 };
 
 /**
+ * @brief system view item containing
+ *        file
+ *        auto start
+ *        auto stop
+*/
+struct SystemViewItem {
+  std::string file;
+  std::optional<bool> autoStart;
+  std::optional<bool> autoStop;
+};
+
+/**
  * @brief custom item containing
  *        scalar
  *        array
@@ -162,6 +175,7 @@ struct CustomItem {
  *        debug configuration file
  *        start pname
  *        telnet options
+ *        systemview options
  *        custom properties
 */
 struct DebuggerItem {
@@ -171,6 +185,7 @@ struct DebuggerItem {
   std::string dbgconf;
   std::string startPname;
   std::vector<TelnetItem> telnet;
+  SystemViewItem systemView;
   CustomItem custom;
 };
 
@@ -295,6 +310,7 @@ struct ComponentItem {
   std::string component;
   std::string condition;
   std::string fromPack;
+  std::string buildScope;
   BuildType build;
   TypeFilter type;
   int instances = 1;
@@ -526,6 +542,71 @@ struct CdefaultItem {
 
 typedef std::vector<std::pair<std::string, BuildType>> BuildTypes;
 typedef std::vector<std::pair<std::string, TargetType>> TargetTypes;
+
+/**
+ * @brief mlops NPU item containing
+ *        NPU type,
+ *        number of MACs
+*/
+struct MlopsNpuItem {
+  std::string type;
+  std::string macs;
+};
+
+/**
+ * @brief mlops Vela item containing
+ *        path to INI file,
+ *        system configuration selector,
+ *        memory configuration selector,
+ *        additional Vela options string
+*/
+struct MlopsVelaItem {
+  std::string ini;
+  std::string system;
+  std::string memory;
+  std::string misc;
+};
+
+/**
+ * @brief mlops model item containing
+ *        path to AI clayer,
+ *        model name
+*/
+struct MlopsModelItem {
+  std::string clayer;
+  std::string name;
+};
+
+/**
+ * @brief mlops hardware/simulator target item containing
+ *        explicit target-type name,
+ *        explicit target-set name
+*/
+struct MlopsTargetItem {
+  std::string targetType;
+  std::string targetSet;
+};
+
+/**
+ * @brief mlops item containing
+ *        enable flag
+ *        description,
+ *        NPU configuration,
+ *        Vela compiler configuration,
+ *        ML model configuration,
+ *        hardware target for testing,
+ *        simulator target for testing
+*/
+struct MlopsItem {
+  bool enabled = false;
+  std::string description;
+  MlopsNpuItem npu;
+  MlopsVelaItem vela;
+  MlopsModelItem model;
+  MlopsTargetItem hardware;
+  MlopsTargetItem simulator;
+};
+
 /**
  * @brief solution item containing
  *        csolution name,
@@ -567,6 +648,7 @@ struct CsolutionItem {
   std::vector<ExecutesItem> executes;
   std::vector<std::string> ymlOrderedBuildTypes;
   std::vector<std::string> ymlOrderedTargetTypes;
+  MlopsItem mlops;
 };
 
 /**
@@ -678,6 +760,7 @@ struct TelnetDefaults {
  * @brief debug-adapter defaults item containing
  *        gdbserver defaults
  *        telnet defaults
+ *        systemview defaults
  *        debug protocol(jtag or swd)
  *        debug clock speed
 */

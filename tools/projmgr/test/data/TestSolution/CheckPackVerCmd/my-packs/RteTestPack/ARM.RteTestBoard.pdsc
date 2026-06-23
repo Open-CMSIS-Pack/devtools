@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <name>RteTestBoard</name>
+  <description>Testing packages listing</description>
+  <vendor>ARM</vendor>
+
+  <releases>
+    <release version="0.2.0-dev" date="2026-04-24">
+      Active development... (a project-specified pack for testing CheckPackVerCmd)
+    </release>
+    <release version="0.1.0" date="2022-03-11">
+      Initial version
+    </release>
+    <release version="0.0.2" date="2026-04-24">
+      Pre-initial version 0.0.2 for testing CheckPackVerCmd
+    </release>
+    <release version="0.0.1" date="2026-04-24">
+      Pre-initial version 0.0.1 for testing CheckPackVerCmd
+    </release>
+  </releases>
+
+  <requirements>
+    <packages>
+      <package vendor="ARM" name="RteTest_DFP" version="0.1.1:0.2.0"/>
+    </packages>
+  </requirements>
+
+</package>

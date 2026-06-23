@@ -12,6 +12,7 @@
 #include "ProjMgrGenerator.h"
 #include "ProjMgrYamlEmitter.h"
 #include "ProjMgrRunDebug.h"
+#include "ProjMgrMlops.h"
 #include "ProjMgrRpcServer.h"
 
 #include <cxxopts.hpp>
@@ -104,6 +105,30 @@ protected:
   int ProcessCommands();
 
   /**
+   * @brief process requested list arguments specified in command line
+   * @return program exit code as an integer, 0 for success
+  */
+  int ProcessListCommand();
+
+  /**
+   * @brief process requested check arguments specified in command line
+   * @return program exit code as an integer, 0 for success
+  */
+  int ProcessCheckCommand();
+
+  /**
+   * @brief helper method to execute common list commands
+   * @param pointer to ProjMgrWorker list method
+   * @param error message to display on failure
+   * @param true to always populate contexts
+   * @return true if executed successfully
+  */
+  bool RunListCommand(
+    bool (ProjMgrWorker::* listMethod)(std::vector<std::string>&, const std::string&),
+    const std::string& errorMessage,
+    bool alwaysPopulate);
+
+  /**
    * @brief print usage
    * @param cmdOptionsDict map of command and options
    * @param cmd command for which usage is to be generated
@@ -168,6 +193,7 @@ protected:
   ProjMgrGenerator m_generator;
   ProjMgrYamlEmitter m_emitter;
   ProjMgrRunDebug m_runDebug;
+  ProjMgrMlops m_mlops;
   ProjMgrRpcServer m_rpcServer;
 
   std::string m_csolutionFile;
@@ -204,11 +230,13 @@ protected:
   std::vector<ContextItem*> m_allContexts;
   std::set<std::string> m_failedContext;
 
+  bool RunCheckPackVerCmd();
   bool RunConfigure();
   bool RunCodeGenerator();
   bool RunListPacks();
   bool RunListBoards();
   bool RunListDevices();
+  bool RunListNpus();
   bool RunListComponents();
   bool RunListConfigs();
   bool RunListDependencies();

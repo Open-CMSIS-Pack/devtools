@@ -18,7 +18,7 @@ documentation. You can submit a pull request to our
 
 ### Report an Issue
 
-Please feel free to raise an [issue on GitHub](https://github.com/Open-CMSIS-Pack/Open-CMSIS-Pack/issues)
+Please feel free to raise an [issue on GitHub](https://github.com/Open-CMSIS-Pack/devtools/issues)
 to report misbehavior (i.e. bugs)
 
 Issues are your best way to interact directly with the maintenance team and the community.

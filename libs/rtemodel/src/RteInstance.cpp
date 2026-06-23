@@ -853,6 +853,10 @@ string RteFileInstance::GetComponentID(bool withVersion) const
   return m_componentAttributes.GetComponentID(withVersion);
 }
 
+string RteFileInstance::GetPartialComponentID(bool withBundle) const
+{
+  return m_componentAttributes.GetPartialComponentID(withBundle);
+}
 
 string RteFileInstance::GetComponentAggregateID() const
 {

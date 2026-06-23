@@ -12,8 +12,8 @@ include(FetchContent)
 FetchContent_Declare(
   debug-adapter-registry
   DOWNLOAD_EXTRACT_TIMESTAMP ON
-  URL https://github.com/Open-CMSIS-Pack/debug-adapter-registry/releases/download/v2.13.0/debug-adapter-registry.zip
-  URL_HASH SHA256=44295329f83ddd60524ab8a40e859e22f12e13eaba2260a1278cea060b42a750
+  URL https://github.com/Open-CMSIS-Pack/debug-adapter-registry/releases/download/v2.14.0/debug-adapter-registry.zip
+  URL_HASH SHA256=09b7a3ecacfe9fb2dadcb97279b5bd63e82dd1ab141c7b5d89062cc60948e0e1
 )
 FetchContent_MakeAvailable(debug-adapter-registry)
 file(COPY ${debug-adapter-registry_SOURCE_DIR}/schemas/debug-adapters.schema.json DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/schemas)
@@ -24,8 +24,8 @@ include(FetchContent)
 FetchContent_Declare(
   rpc-interface
   DOWNLOAD_EXTRACT_TIMESTAMP ON
-  URL https://github.com/Open-CMSIS-Pack/csolution-rpc/releases/download/v0.0.9/csolution-rpc.zip
-  URL_HASH SHA256=2be58020a28b7f8cda5da8f6cba8f605f93346beb32805919c5872b8fbc0d541
+  URL https://github.com/Open-CMSIS-Pack/csolution-rpc/releases/download/v0.0.11/csolution-rpc.zip
+  URL_HASH SHA256=1999e1a158922c319626959384643a8490bac4a716a88fa8868b2fd6701097df
 )
 FetchContent_MakeAvailable(rpc-interface)
 
@@ -39,13 +39,14 @@ SET(PROJMGR_SOURCE_FILES ProjMgr.cpp ProjMgrKernel.cpp ProjMgrCallback.cpp
   ProjMgrCbuildBase.cpp ProjMgrCbuild.cpp ProjMgrCbuildIdx.cpp
   ProjMgrCbuildGenIdx.cpp ProjMgrCbuildPack.cpp ProjMgrCbuildSet.cpp
   ProjMgrCbuildRun.cpp ProjMgrRunDebug.cpp
+  ProjMgrCbuildMlops.cpp ProjMgrMlops.cpp
   ProjMgrRpcServer.cpp ProjMgrRpcServerData.cpp
 )
 SET(PROJMGR_HEADER_FILES ProjMgr.h ProjMgrKernel.h ProjMgrCallback.h
   ProjMgrParser.h ProjMgrWorker.h ProjMgrGenerator.h ProjMgrXmlParser.h
   ProjMgrYamlParser.h ProjMgrLogger.h ProjMgrYamlSchemaChecker.h
   ProjMgrYamlEmitter.h ProjMgrUtils.h ProjMgrExtGenerator.h
-  ProjMgrCbuildBase.h ProjMgrRunDebug.h
+  ProjMgrCbuildBase.h ProjMgrRunDebug.h ProjMgrMlops.h
   ProjMgrRpcServer.h ProjMgrRpcServerData.h
 )
 

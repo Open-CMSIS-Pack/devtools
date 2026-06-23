@@ -566,6 +566,60 @@ ARM::RteTest_ARMCM4_NOFP (ARM::RteTest_DFP@0.2.0)\n"
   );
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_ListNpus) {
+  char* argv[8];
+  StdStreamRedirect streamRedirect;
+
+  // verify full NPU listing without any filter
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"npus";
+  EXPECT_EQ(0, RunProjMgr(3, argv, 0));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Ethos-U55 \\(128MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+  ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n\
+Ethos-U55 \\(256MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core1\\] Cortex-M0\n\
+Ethos-U85 \\(Unknown MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core1\\] Cortex-M0\n")));
+
+  // verify filtering with two filter words that are both matched by the NPU info
+  streamRedirect.ClearStringStreams();
+  argv[3] = (char*)"-f";
+  argv[4] = (char*)"Ethos-U55";
+  argv[5] = (char*)"-f";
+  argv[6] = (char*)"128MACs";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Ethos-U55 \\(128MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+  ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n")));
+
+  // verify verbose mode for config files
+  streamRedirect.ClearStringStreams();
+  argv[7] = (char*)"-v";
+  EXPECT_EQ(0, RunProjMgr(8, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Ethos-U55 \\(128MACs\\):\n\
+  ARM::RteTest_ARMCM0_Dual, \\[cm0_core0\\] Cortex-M0\n\
+    VELA config: .*Scripts/vela/vela_deviceLevel\\.ini\n\
+  ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n\
+    VELA config: .*Scripts/vela/vela_subfamilyLevel\\.ini\n")));
+
+  // verify mixed npu/device infos filtering
+  streamRedirect.ClearStringStreams();
+  argv[6] = (char*)"RteTest_ARMCM0_Single";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_TRUE(regex_search(outStr, regex("\
+Ethos-U55 \\(128MACs\\):\n\
+  ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n")));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {
   char* argv[3];
 
@@ -601,6 +655,67 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListDependencies) {
 
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(errStr.find(expectedErr), string::npos);
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_CheckPackVerCmd) {
+  char* argv[7];
+  StdStreamRedirect streamRedirect;
+  string csolutionFile = testinput_folder + "/TestSolution/CheckPackVerCmd/checkPackVerCmd.csolution.yml";
+  // no csolution file provided
+  argv[1] = (char*)"check";
+  argv[2] = (char*)"pack-updates";
+  EXPECT_EQ(1, RunProjMgr(3, argv, 0));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_STREQ(errStr.c_str(), "error csolution: input csolution.yml was not specified\n");
+
+  // standard check output
+  argv[3] = (char*)csolutionFile.c_str();
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+  auto outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "\
+ARM::RteTest@0.1.0 (up-to-date)\n\
+ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
+ARM::RteTest_DFP@0.1.1+metadata -> 0.2.0\n");
+
+  // check verbose output
+  streamRedirect.ClearStringStreams();
+  argv[4] = (char*)"--verbose";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "\
+ARM::RteTest@0.1.0 (up-to-date)\n\
+ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
+  Release notes for v0.1.0:\n\
+      Initial version\n\
+  Release notes for v0.0.2:\n\
+      Pre-initial version 0.0.2 for testing CheckPackVerCmd\n\
+ARM::RteTest_DFP@0.1.1+metadata -> 0.2.0\n\
+  Release notes for v0.2.0:\n\
+      Added a new device 'RteTest_ARMCM0_Dual'\n");
+
+  // check verbose output with filtering
+  streamRedirect.ClearStringStreams();
+  argv[5] = (char*)"-f";
+  argv[6] = (char*)"RteTestBoard";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "\
+ARM::RteTestBoard@0.0.1 -> 0.1.0\n\
+  Release notes for v0.1.0:\n\
+      Initial version\n\
+  Release notes for v0.0.2:\n\
+      Pre-initial version 0.0.2 for testing CheckPackVerCmd\n");
+
+  // check verbose output for a project-specified pack
+  streamRedirect.ClearStringStreams();
+  csolutionFile = testinput_folder + "/TestSolution/CheckPackVerCmd/checkPackVerCmd_my-packs.csolution.yml";
+  argv[3] = (char*)csolutionFile.c_str();
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  const string expectedStr = "\
+ARM::RteTestBoard@0.2.0-dev (up-to-date)\n\
+  Local path: my-packs/RteTestPack\n";
+  EXPECT_STREQ(outStr.c_str(), expectedStr.c_str());
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ConvertProject_1) {
@@ -1151,7 +1266,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_LockPackFrozen) {
   argv[6] = (char*)"--cbuildgen";
   argv[7] = (char*)"--verbose";
   argv[8] = (char*)"--frozen-packs";
-  
+
   // Ensure clean state when starting test
   ASSERT_TRUE(RteFsUtils::RemoveDir(rtePath));
 
@@ -3740,6 +3855,21 @@ TEST_F(ProjMgrUnitTests, RunProjMgrSolution_Local_Pack_File_Not_Found) {
   EXPECT_TRUE(regex_search(errStr, regex(errExpected)));
 }
 
+TEST_F(ProjMgrUnitTests, MultiplePackVersions) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string expected = "warning csolution: selected multiple versions of pack 'ARM::RteTest_DFP': '0.1.1+metadata', '0.2.0'\nReview pack selection";
+  const string& csolution = testinput_folder + "/TestSolution/pack_multiple_versions.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expected));
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgrSolution_List_Board_Pack) {
   char* argv[7];
   const string& csolution = testinput_folder + "/TestSolution/test_list_board_package.csolution.yml";
@@ -4041,7 +4171,8 @@ TEST_F(ProjMgrUnitTests, ListComponents_MultiplePackSelection) {
     "ARM::Device:RteTest Generated Component:RteTestWithKey@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestNoExe@1.1.0 (ARM::RteTestGenerator@0.1.0)",
     "ARM::Device:RteTest Generated Component:RteTestOverlap@1.1.0 (ARM::RteTestGenerator@0.1.0)",
-    "ARM::RteTestGenerator:Check Global Generator@0.9.0 (ARM::RteTestGenerator@0.1.0)"
+    "ARM::RteTestGenerator:Check Global Generator@0.9.0 (ARM::RteTestGenerator@0.1.0)",
+    "ARM::RteTestGeneratorNoUrl:Check Global Generator@0.9.0 (ARM::RteTestGenerator@0.1.0)"
   };
   vector<string> components;
   m_csolutionFile = testinput_folder + "/TestSolution/pack_contexts.csolution.yml";
@@ -4179,16 +4310,17 @@ TEST_F(ProjMgrUnitTests, OutputDirs) {
 }
 
 TEST_F(ProjMgrUnitTests, OutputDirsTmpdirAccessSequence) {
-  StdStreamRedirect streamRedirect;
-  char* argv[4];
+  char* argv[5];
   const string& csolution = testinput_folder + "/TestSolution/tmpdir-as.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
-  argv[3] = (char*)"--cbuildgen";
-  EXPECT_EQ(0, RunProjMgr(4, argv, m_envp));
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"TypeA@Set1";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
 
-  auto errStr = streamRedirect.GetErrorString();
-  EXPECT_TRUE(regex_search(errStr, regex("warning csolution: 'tmpdir' does not support access sequences and must be relative to csolution.yml")));
+  // Check custom tmp directory
+  const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestSolution/tmpdir-as.cbuild-idx.yml");
+  EXPECT_EQ("tmp/TypeA/Set1", cbuild["build-idx"]["tmpdir"].as<string>());
 }
 
 TEST_F(ProjMgrUnitTests, OutputDirsAbsolutePath) {
@@ -4742,6 +4874,20 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_StandardLibrary) {
   // Check there is no cbuild-run (target-set has only lib contexts)
   const YAML::Node& cbuildIdx = YAML::LoadFile(testoutput_folder + "/library.cbuild-idx.yml");
   EXPECT_FALSE(cbuildIdx["build-idx"]["cbuild-run"].IsDefined());
+
+  // Check generated cbuild YMLs for componentBuildScope - library builds with include build-scope
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"library_componentBuildScope";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/library_componentBuildScope/RteTest_ARMCM3/Debug/library_componentBuildScope.Debug+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/StandardLibrary/ref/library_componentBuildScope.Debug+RteTest_ARMCM3.cbuild.yml");
+  // Check generated cbuild YMLs for componentBuildScope - executable builds with exclude build-scope
+  argv[6] = (char*)"executable_componentBuildScope";
+  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/executable_componentBuildScope/RteTest_ARMCM3/Debug/executable_componentBuildScope.Debug+RteTest_ARMCM3.cbuild.yml",
+    testinput_folder + "/TestSolution/StandardLibrary/ref/executable_componentBuildScope.Debug+RteTest_ARMCM3.cbuild.yml");
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleProject_SameFolder) {
@@ -5720,6 +5866,38 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_NoCgenFile) {
   RteFsUtils::RemoveFile(dstGlobalGenerator);
 }
 
+TEST_F(ProjMgrUnitTests, ExternalGenerator_PrintUrl) {
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+
+  StdStreamRedirect streamRedirect;
+  // test case where the URL returns an exit code of 1 (simulated by not copying the 'bridge tool.sh' script)
+  char* argv[7];
+  const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"run";
+  argv[3] = (char*)"-g";
+  argv[4] = (char*)"RteTestExternalGenerator";
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"single-core.Debug+CM0";
+  EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
+  string errStr = streamRedirect.GetErrorString();
+  string errExpected = "  check the URL for downloading the generator: https://raw.githubusercontent.com/Open-CMSIS-Pack";
+  EXPECT_NE(string::npos, errStr.find(errExpected));
+
+  streamRedirect.ClearStringStreams();
+  // test case where the download-url is missing of a generator
+  argv[4] = (char*)"RteTestExternalGeneratorNoUrl";
+  argv[6] = (char*)"test-url.Debug+CM0";
+  EXPECT_EQ(1, RunProjMgr(7, argv, m_envp));
+  errStr = streamRedirect.GetErrorString();
+  errExpected = "  download URL is not available for generator '" + string(argv[4]) + "' in generator.yml";
+  EXPECT_NE(string::npos, errStr.find(errExpected));
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
+}
+
 TEST_F(ProjMgrUnitTests, ExternalGeneratorBoard) {
   const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
   const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
@@ -5923,6 +6101,9 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing) {
   string expectedErr1 = "error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed";
   string expectedErr2 = "error csolution: required pack: ARM::Missing_PACK@0.0.1 not installed";
   const string& csolution = testinput_folder + "/TestSolution/PackMissing/missing_pack.csolution.yml";
+  const string cbuild_pack = testinput_folder + "/TestSolution/PackMissing/missing_pack.cbuild-pack.yml";
+  RteFsUtils::RemoveFile(cbuild_pack);
+
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"-o";
@@ -5947,8 +6128,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_packs_missing_specific_con
   StdStreamRedirect streamRedirect;
   string expectedErr1 = "error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed";
   string expectedErr2 = "error csolution: required pack: ARM::Missing_PACK@0.0.1 not installed";
-  const string& csolution = testinput_folder + "/TestSolution/PackMissing/missing_pack.csolution.yml";
-  const string& cbuildidx = testoutput_folder + "/missing_pack.cbuild-idx.yml";
+  const string csolution = testinput_folder + "/TestSolution/PackMissing/missing_pack.csolution.yml";
+  const string cbuildidx = testoutput_folder + "/missing_pack.cbuild-idx.yml";
+  const string cbuild_pack = testinput_folder + "/TestSolution/PackMissing/missing_pack.cbuild-pack.yml";
+  RteFsUtils::RemoveFile(cbuild_pack);
+
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"-o";
@@ -6674,11 +6858,11 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
 
   // --no-update-rte
   std::vector<std::tuple<std::string, int, std::string, std::string>> testDataVector1 = {
-    { "BaseUnknown", 0, "warning csolution: file '.*/startup_ARMCM3.c.base' not found; base version unknown", "missing base"       },
-    { "Patch",       0, "warning csolution: file '.*/startup_ARMCM3.c' update suggested; use --update-rte",   "update suggested"   },
-    { "Minor",       0, "warning csolution: file '.*/startup_ARMCM3.c' update recommended; use --update-rte", "update recommended" },
-    { "Major",       1, "error csolution: file '.*/startup_ARMCM3.c' update required; use --update-rte",      "update required"    },
-    { "Missing",     1, "error csolution: file '.*/startup_ARMCM3.c' not found; use --update-rte",            "missing file"       },
+    { "BaseUnknown", 0, "warning csolution: file '.*/startup_ARMCM3.c.base' not found; base version unknown",                                                     "missing base"       },
+    { "Patch",       0, "warning csolution: update suggested for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'; use --update-rte",   "update suggested"   },
+    { "Minor",       0, "warning csolution: update recommended for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'; use --update-rte", "update recommended" },
+    { "Major",       1, "error csolution: update required for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'; use --update-rte",      "update required"    },
+    { "Missing",     1, "error csolution: file '.*/startup_ARMCM3.c' not found; use --update-rte",                                                                "missing file"       },
   };
 
   for (const auto& [build, errCode, errMsg, status] : testDataVector1) {
@@ -6698,9 +6882,9 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
   // --update-rte
   std::vector<std::tuple<std::string, int, std::string>> testDataVector2 = {
     { "BaseUnknown", 0, "" },
-    { "Patch",       0, "warning csolution: file '.*/startup_ARMCM3.c' update suggested; merge content from update file, rename update file to base file and remove previous base file" },
-    { "Minor",       0, "warning csolution: file '.*/startup_ARMCM3.c' update recommended; merge content from update file, rename update file to base file and remove previous base file" },
-    { "Major",       1, "error csolution: file '.*/startup_ARMCM3.c' update required; merge content from update file, rename update file to base file and remove previous base file" },
+    { "Patch",       0, "warning csolution: update suggested for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'.\nMerge content from update file, rename update file to base file and remove previous base file" },
+    { "Minor",       0, "warning csolution: update recommended for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'.\nMerge content from update file, rename update file to base file and remove previous base file" },
+    { "Major",       1, "error csolution: update required for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'.\nMerge content from update file, rename update file to base file and remove previous base file" },
     { "Missing",     0, "" },
   };
 
@@ -6976,29 +7160,45 @@ TEST_F(ProjMgrUnitTests, TestRunDebugMulticore) {
 }
 
 TEST_F(ProjMgrUnitTests, TestRunDebugTelnet) {
-  char* argv[7];
+  char* argv[5];
   const string& csolution = testinput_folder + "/TestRunDebug/telnet.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
-  argv[3] = (char*)"-o";
-  argv[4] = (char*)testoutput_folder.c_str();
-  argv[5] = (char*)"--active";
+  argv[3] = (char*)"--active";
 
   // single core without port, with file mode
-  argv[6] = (char*)"SingleCore";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  stringstream sstream0;
-  const YAML::Node& cbuildrun0 = YAML::LoadFile(testoutput_folder + "/out/telnet+SingleCore.cbuild-run.yml");
+  argv[4] = (char*)"SingleCore";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  stringstream sstream0, sstreamRTT, sstreamSystemView;
+  const YAML::Node& cbuildrun0 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+SingleCore.cbuild-run.yml");
   sstream0 << cbuildrun0["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
 R"(- mode: file
   port: 4444
-  file: telnet+SingleCore)", sstream0.str());
+  file: telnet/SingleCore/telnet+SingleCore)", sstream0.str());
+
+  sstreamRTT << cbuildrun0["cbuild-run"]["debugger"]["rtt"];
+  EXPECT_EQ(
+R"(- pname: test
+  control-block:
+    address: 0x20000000
+    size: 0x10000
+    auto-detect: true
+  channel:
+    - number: 2
+      mode: server
+      port: 4453)", sstreamRTT.str());
+
+  sstreamSystemView << cbuildrun0["cbuild-run"]["debugger"]["systemview"];
+  EXPECT_EQ(
+R"(file: telnet/SingleCore/test_x8.SVDat
+auto-start: false
+auto-stop: false)", sstreamSystemView.str());
 
   // dual core without ports
-  argv[6] = (char*)"DualCore";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  const YAML::Node& cbuildrun1 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  argv[4] = (char*)"DualCore";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuildrun1 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream1;
   sstream1 << cbuildrun1["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
@@ -7010,9 +7210,9 @@ R"(- mode: server
   port: 4444)", sstream1.str());
 
   // dual core with start port and file mode
-  argv[6] = (char*)"DualCore@TelnetFile";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  const YAML::Node& cbuildrun2 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  argv[4] = (char*)"DualCore@TelnetFile";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuildrun2 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream2;
   sstream2 << cbuildrun2["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
@@ -7025,9 +7225,9 @@ R"(- mode: monitor
   file: telnet+DualCore.cm0_core1)", sstream2.str());
 
   // dual core with jlink and no telnet
-  argv[6] = (char*)"DualCore@JLinkNoTelnet";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  const YAML::Node& cbuildrun3 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  argv[4] = (char*)"DualCore@JLinkNoTelnet";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuildrun3 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream3;
   sstream3 << cbuildrun3["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
@@ -7039,9 +7239,9 @@ R"(- mode: off
   port: 4444)", sstream3.str());
 
   // dual core with custom port numbers
-  argv[6] = (char*)"DualCore@CustomPorts";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
-  const YAML::Node& cbuildrun4 = YAML::LoadFile(testoutput_folder + "/out/telnet+DualCore.cbuild-run.yml");
+  argv[4] = (char*)"DualCore@CustomPorts";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuildrun4 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream4;
   sstream4 << cbuildrun4["cbuild-run"]["debugger"]["telnet"];
   EXPECT_EQ(
@@ -7054,8 +7254,8 @@ R"(- mode: off
 
   // warnings
   StdStreamRedirect streamRedirect;
-  argv[6] = (char*)"DualCore@Warnings";
-  EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  argv[4] = (char*)"DualCore@Warnings";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
   string expected = "\
 warning csolution: \\'telnet:\\' pname is required \\(multicore device\\)\n\
 warning csolution: pname \\'unknown\\' does not match any device pname\n\
@@ -7479,7 +7679,7 @@ TEST_F(ProjMgrUnitTests, TargetSetDependencies) {
   EXPECT_EQ("project/CM4/project.bin", cbuildRun["cbuild-run"]["output"][2]["file"].as<string>());
   EXPECT_EQ("project2/CM4/project2.bin", cbuildRun["cbuild-run"]["output"][3]["file"].as<string>());
   EXPECT_EQ("../RteTest_ARMCM4_NOFP.dbgconf", cbuildRun["cbuild-run"]["debugger"]["dbgconf"].as<string>());
-  EXPECT_EQ("../../../../../project2/CM4/telnet.log", cbuildRun["cbuild-run"]["debugger"]["telnet"][0]["file"].as<string>());
+  EXPECT_EQ("project2/CM4/telnet.log", cbuildRun["cbuild-run"]["debugger"]["telnet"][0]["file"].as<string>());
 
   // ensure dependencies are not set
   const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/TestTargetSet/cross-dependency.cbuild-idx.yml");
@@ -7497,19 +7697,17 @@ TEST_F(ProjMgrUnitTests, DuplicateComponents) {
   argv[4] = (char*)"-o";
   argv[5] = (char*)testoutput_folder.c_str();
   argv[6] = (char*)"--context";
+  argv[7] = (char*)"duplicateComponents_cproject";
   argv[8] = (char*)"--no-check-schema";
+  EXPECT_EQ(1, RunProjMgr(9, argv, m_envp));
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
 
-  const char* contexts[] = { "duplicateComponents_cproject", "duplicateComponents_clayer" };
-  int argCounts[] = { 8, 9 };  // without/with --no-check-schema
-  for (int argCount : argCounts) {
-    for (const char* context : contexts) {
-      argv[7] = (char*)context;
-      EXPECT_EQ(1, RunProjMgr(argCount, argv, m_envp));
-      auto errStr = streamRedirect.GetErrorString();
-      EXPECT_NE(string::npos, errStr.find("error csolution: conflict: component 'RteTest:CORE' is listed multiple times"));
-      streamRedirect.ClearStringStreams();
-    }
-  }
+  streamRedirect.ClearStringStreams();
+  argv[7] = (char*)"duplicateComponents_clayer";
+  EXPECT_EQ(0, RunProjMgr(9, argv, m_envp));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("warning csolution: ignoring conflict: component 'RteTest:CORE' is listed multiple times"));
 }
 
 TEST_F(ProjMgrUnitTests, ParseCommandLine_MutualExclusionOptions) {
@@ -7525,4 +7723,109 @@ TEST_F(ProjMgrUnitTests, ParseCommandLine_MutualExclusionOptions) {
   EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find("error csolution: command line options '--quiet' and '--verbose' are mutually exclusive"));
+}
+
+TEST_F(ProjMgrUnitTests, GenerateMLOps) {
+  char* argv[5];
+  string csolution = testinput_folder + "/MLOps/minimal.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"Simulator";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/MLOps/minimal.cbuild-mlops.yml",
+    testinput_folder + "/MLOps/ref/minimal.cbuild-mlops.yml");
+
+  // different active target should not change mlops
+  argv[4] = (char*)"";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/MLOps/minimal.cbuild-mlops.yml",
+    testinput_folder + "/MLOps/ref/minimal.cbuild-mlops.yml");
+
+  // extended mlops configuration
+  csolution = testinput_folder + "/MLOps/extended.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/MLOps/extended.cbuild-mlops.yml",
+    testinput_folder + "/MLOps/ref/extended.cbuild-mlops.yml");
+
+  // infer macs from explicit npu type
+  csolution = testinput_folder + "/MLOps/npu_type_only.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& mlopsTypeOnly = YAML::LoadFile(testinput_folder + "/MLOps/npu_type_only.cbuild-mlops.yml");
+  EXPECT_EQ("Ethos-U55", mlopsTypeOnly["cbuild-mlops"]["npu"]["type"].as<string>());
+  EXPECT_EQ("128", mlopsTypeOnly["cbuild-mlops"]["npu"]["macs"].as<string>());
+
+  // infer type from explicit npu macs
+  csolution = testinput_folder + "/MLOps/npu_macs_only.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& mlopsMacsOnly = YAML::LoadFile(testinput_folder + "/MLOps/npu_macs_only.cbuild-mlops.yml");
+  EXPECT_EQ("Ethos-U55", mlopsMacsOnly["cbuild-mlops"]["npu"]["type"].as<string>());
+  EXPECT_EQ("128", mlopsMacsOnly["cbuild-mlops"]["npu"]["macs"].as<string>());
+
+  // hardware target is not present
+  csolution = testinput_folder + "/MLOps/no_hardware.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& mlopsNoHardware = YAML::LoadFile(testinput_folder + "/MLOps/no_hardware.cbuild-mlops.yml");
+  EXPECT_FALSE(mlopsNoHardware["cbuild-mlops"]["hardware"].IsDefined());
+  EXPECT_TRUE(mlopsNoHardware["cbuild-mlops"]["simulator"].IsDefined());
+
+  // simulator target is not present
+  csolution = testinput_folder + "/MLOps/no_simulator.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& mlopsNoSimulator = YAML::LoadFile(testinput_folder + "/MLOps/no_simulator.cbuild-mlops.yml");
+  EXPECT_TRUE(mlopsNoSimulator["cbuild-mlops"]["hardware"].IsDefined());
+  EXPECT_FALSE(mlopsNoSimulator["cbuild-mlops"]["simulator"].IsDefined());
+
+  // test error cases: {csolution file, expected error message}
+  const vector<pair<string, string>> failureCases = {
+    { "failure1", "mlops: target type 'OtherHardware' not found" },
+    { "failure2", "mlops: target set 'Simulator@OtherSet' not found" },
+    { "failure3", "mlops: no image or project-context specified for target 'Simulator@FVP-Test'" },
+  };
+  for (const auto& [name, expectedError] : failureCases) {
+    csolution = testinput_folder + "/MLOps/" + name + ".csolution.yml";
+    argv[2] = (char*)csolution.c_str();
+    EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+    const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/MLOps/" + name + ".cbuild-idx.yml");
+    EXPECT_EQ(expectedError, cbuildIdx["build-idx"]["cbuilds"][0]["messages"]["errors"][0].as<string>());
+  }
+
+  // file cannot be written
+  csolution = testinput_folder + "/MLOps/failure.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  RteFsUtils::CopyCheckFile(testinput_folder + "/MLOps/minimal.csolution.yml", csolution, false);
+  const string mlopsOutput = testinput_folder + "/MLOps/failure.cbuild-mlops.yml";
+  EXPECT_TRUE(RteFsUtils::CreateDirectories(mlopsOutput));
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+  const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/MLOps/failure.cbuild-idx.yml");
+  EXPECT_EQ("failure.cbuild-mlops.yml - file cannot be written",
+    cbuildIdx["build-idx"]["cbuilds"][0]["messages"]["errors"][0].as<string>());
+  RteFsUtils::RemoveDir(mlopsOutput);
+}
+
+TEST_F(ProjMgrUnitTests, GenerateMLOps_ImageOnly) {
+  char* argv[5];
+  string csolution = testinput_folder + "/MLOps/minimal_image_only.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/MLOps/minimal_image_only.cbuild-mlops.yml",
+    testinput_folder + "/MLOps/ref/minimal_image_only.cbuild-mlops.yml");
+
+  // SetMlopsRunType failure for hardware: malformed access sequence in hardware image path
+  csolution = testinput_folder + "/MLOps/failure_image_only_hw.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+
+  // SetMlopsRunType failure for simulator: malformed access sequence in simulator image path
+  csolution = testinput_folder + "/MLOps/failure_image_only_sim.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
 }

@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/packgen.yml'
       - '.github/matrix_includes_packgen.json'
+      - 'cmake/**'
       - 'CMakeLists.txt'
       - 'libs/crossplatform/**'
       - 'libs/rtefsutils/**'
@@ -20,6 +21,7 @@ on:
     paths:
       - '.github/workflows/packgen.yml'
       - '.github/matrix_includes_packgen.json'
+      - 'cmake/**'
       - 'CMakeLists.txt'
       - 'libs/crossplatform/**'
       - 'libs/rtefsutils/**'
@@ -32,21 +34,24 @@ on:
     types: [published]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: packgen-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   setup:
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+    uses: ./.github/workflows/shared_setup_env.yml
     with:
       run_if: ${{ fromJSON((github.event_name == 'pull_request') || (github.event_name == 'workflow_dispatch') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/packgen/')) || ((github.event.schedule != '') && (!github.event.repository.private))) }}
 
   matrix_prep:
     needs: setup
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
+    uses: ./.github/workflows/shared_matrix_prep.yml
     with:
       workflow_name: packgen
 
@@ -54,26 +59,26 @@ jobs:
     needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     name: build (${{ matrix.runs_on }}, ${{ matrix.arch }})
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Checkout devtools
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           submodules: true
           fetch-depth: 0
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         id: devtools-build
         with:
           target: packgen
@@ -103,7 +108,7 @@ jobs:
           fi
 
       - name: Archive packgen
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: packgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/packgen/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}
@@ -116,12 +121,12 @@ jobs:
         startsWith(github.ref, 'refs/tags/tools/packgen/')
     needs: [ build, unittest ]
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     permissions:
       contents: write
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Create distribution folders
         run: |
@@ -184,25 +189,25 @@ jobs:
     needs: [ setup, matrix_prep ]
     name: unittest (${{ matrix.runs_on }}, ${{ matrix.arch }})
     runs-on: ${{ matrix.runs_on }}
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: true
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Checkout devtools
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           submodules: true
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackGenUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           target: PackGenUnitTests
           build_type: Debug
@@ -216,7 +221,7 @@ jobs:
 
       - name: Archive unit tests results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_packgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packgenunittests-*.xml
@@ -234,11 +239,11 @@ jobs:
         lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
         lcov_installer: lcov-1.15.tar.gz
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
@@ -249,13 +254,13 @@ jobs:
             lcov
 
       - name: Checkout devtools
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           submodules: true
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build PackGenUnitTests
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           add_cmake_variables: -DCOVERAGE=ON
           arch: amd64
@@ -274,7 +279,7 @@ jobs:
 
       - name: Archive unit tests results
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_packgen-linux-amd64
           path: ./build/test_reports/packgenunittests-*.xml
@@ -312,7 +317,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-report-packgen
           path: |
@@ -323,17 +328,18 @@ jobs:
 
   test-results-preparation:
     name: "Publish Tests Results"
+    if: ${{ always() }}
     needs: [ unittest ]
     runs-on: ubuntu-22.04
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Event File
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Event File packgen
           path: ${{ github.event_path }}

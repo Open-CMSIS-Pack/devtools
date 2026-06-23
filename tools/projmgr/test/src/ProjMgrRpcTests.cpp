@@ -160,6 +160,18 @@ TEST_F(ProjMgrRpcTests, RpcLoadUndefinedSolution) {
   EXPECT_TRUE(msg.find("failed to load and process solution") == 0);
 }
 
+TEST_F(ProjMgrRpcTests, RpcLoadSolutionResetActiveTargetSet) {
+  auto csolutionPath = testinput_folder + "/TestRpc/minimal.csolution.yml";
+  auto csolutionPath2 = testinput_folder + "/TestRpc/minimal2.csolution.yml";
+  const auto requests =
+    FormatRequest(1, "LoadPacks") +
+    FormatRequest(2, "LoadSolution", json({{ "solution", csolutionPath }, { "activeTarget", "TestHW" }})) +
+    FormatRequest(3, "LoadSolution", json({{ "solution", csolutionPath2 }, { "activeTarget", "TestHW" }}));
+  const auto& responses = RunRpcMethods(requests);
+  // ensure loading 'minimal2' solution does fail due to m_activeTargetSet set when previously loading 'minimal'
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+}
+
 TEST_F(ProjMgrRpcTests, RpcLoadNotSolution) {
   const auto& requests = CreateLoadRequests("/TestRpc/undefined.yml");
   const auto& responses = RunRpcMethods(requests);
@@ -529,9 +541,14 @@ TEST_F(ProjMgrRpcTests, RpcResolveComponents) {
   vector<string> contextList = {
     context
   };
+  RpcArgs::Options opt{""};
+  json resolveParam;
+  resolveParam["context"] = context;
+  RpcArgs::to_json(resolveParam["options"], opt);
+
   auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
   requests += FormatRequest(3, "ValidateComponents", json({{ "context", context }}));
-  requests += FormatRequest(4, "Resolve", json({{ "context", context }}));
+  requests += FormatRequest(4, "Resolve", resolveParam);
   requests += FormatRequest(5, "ValidateComponents", json({{ "context", context }}));
 
   const auto& responses = RunRpcMethods(requests);
@@ -666,7 +683,63 @@ TEST_F(ProjMgrRpcTests, RpcSelectComponentLayer) {
   EXPECT_TRUE(components[1]["options"]["explicitVendor"]);
 }
 
+TEST_F(ProjMgrRpcTests, RpcResolveComponentLayer) {
+  string context = "selectable+CM0";
+  vector<string> contextList = {
+    context
+  };
+  RpcArgs::Options opt{"core.clayer.yml", "@>=0.1.0", true};
+  json param;
+  param["context"] = context;
+  RpcArgs::to_json(param["options"], opt);
 
+  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(4, "Resolve", param);
+  requests += FormatRequest(5, "GetComponentsTree", json({{ "context", context }, {"all", false}}));
+  requests += FormatRequest(6, "GetComponentsTree", json({{ "context", context }, {"all", true}}));
+  requests += FormatRequest(7, "GetComponentsTree", json({{ "context", context }, {"all", false}}));
+  requests += FormatRequest(8, "Apply", json({{ "context", context }}));
+  requests += FormatRequest(9, "GetUsedItems", json({{ "context", context }}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto components = responses[2]["result"]["components"];
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 2);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(components[0]["id"], "Device:Startup&RteTest Startup");
+  EXPECT_EQ(components[0]["resolvedComponent"]["id"], "ARM::Device:Startup&RteTest Startup@2.0.3");
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // resolve successful
+
+  EXPECT_TRUE(responses[7]["result"]["success"]); // apply successful
+
+  components = responses[8]["result"]["components"];
+  packs = responses[8]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 3); // added reference to layer file
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP@0.2.0");
+  string origin = packs[0]["origin"];
+  EXPECT_TRUE(origin.find(".csolution.yml") != string::npos);
+  EXPECT_TRUE(!!packs[0]["selected"]);
+  EXPECT_EQ(packs[2]["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs[2]["origin"], "core.clayer.yml");
+  EXPECT_TRUE(!!packs[2]["selected"]);
+
+  EXPECT_EQ(components[0]["id"], "Device:Startup&RteTest Startup");
+  EXPECT_EQ(components[0]["resolvedComponent"]["id"], "ARM::Device:Startup&RteTest Startup@2.0.3");
+
+  string id = components[1]["id"];
+  EXPECT_EQ(id, "ARM::RteTest:CORE@>=0.1.0");
+  EXPECT_EQ(RteUtils::ExtractPrefix(id, "::"), "ARM");
+  EXPECT_EQ(RteUtils::ExtractSuffix(id, "@", true), "@>=0.1.0");
+  EXPECT_EQ(components[1]["resolvedComponent"]["id"], "ARM::RteTest:CORE@0.1.1");
+  EXPECT_EQ(components[1]["options"]["layer"], "core.clayer.yml");
+  EXPECT_EQ(components[1]["options"]["explicitVersion"], "@>=0.1.0");
+  EXPECT_TRUE(components[1]["options"]["explicitVendor"]);
+}
 
 TEST_F(ProjMgrRpcTests, RpcSelectComponentMissing) {
   string context = "missing-component+CM0";
@@ -1028,6 +1101,38 @@ TEST_F(ProjMgrRpcTests, RpcGetUsedItemsLocked) {
   EXPECT_EQ(packs[0]["upgrade"], "0.2.0");
 }
 
+TEST_F(ProjMgrRpcTests, PackReferenceLocked) {
+  string context = "project_with_dfp_components+CM0";
+  vector<string> contextList = { context };
+  auto requests = CreateLoadRequests("/TestSolution/PackLocking/pack_reference_locked.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({ { "context", context } }));
+  const auto& responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 1);
+  // Locked field should be present as string containing locked packId
+  EXPECT_TRUE(packs[0].contains("locked"));
+  EXPECT_EQ(packs[0]["locked"], "ARM::RteTest_DFP@0.1.0");
+}
+
+TEST_F(ProjMgrRpcTests, PackReferenceMissing) {
+  string context = "project+Miss";
+  vector<string> contextList = { context };
+  auto requests = CreateLoadRequests("/TestSolution/PackMissing/missing_pack.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  const auto& responses = RunRpcMethods(requests);
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];  
+  // Verify missing field for unresolved packs
+  for(const auto& pack : packs) {
+    if(!pack.contains("resolvedPack")) {
+      EXPECT_TRUE(pack.contains("missing"));
+      EXPECT_TRUE(pack["missing"].is_boolean());
+      EXPECT_TRUE(pack["missing"].get<bool>());
+    }
+  }
+}
+
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfoSimple) {
   string context = "selectable+CM0";
   vector<string> contextList = {
@@ -1097,6 +1202,46 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfo) {
   EXPECT_EQ(packInfos[7]["id"], "SomeVendor::RteTest@0.0.1");
   EXPECT_FALSE(packInfos[7].contains("used"));
 }
+
+TEST_F(ProjMgrRpcTests, RpcGetPacksInfoMissing) {
+  string context = "project+Miss";
+  vector<string> contextList = {
+    context
+  };
+
+  auto requests = CreateLoadRequests("/TestSolution/PackMissing/missing_pack.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 4);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest@3.0.1");
+  EXPECT_FALSE(packs[0].contains("resolvedPack"));
+
+  EXPECT_EQ(packs[1]["pack"], "ARM::Missing_DFP@>=0.0.5");
+  EXPECT_FALSE(packs[1].contains("resolvedPack"));
+
+  EXPECT_EQ(packs[2]["pack"], "ARM::Missing_PACK");
+  EXPECT_FALSE(packs[2].contains("resolvedPack"));
+
+  EXPECT_EQ(packs[3]["pack"], "ARM::RteTest_DFP");
+  EXPECT_EQ(packs[3]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+
+
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
+  auto packInfos = responses[3]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 4);
+
+  EXPECT_EQ(packInfos[0]["id"], "ARM::Missing_DFP@>=0.0.5");
+  EXPECT_EQ(packInfos[1]["id"], "ARM::Missing_PACK");
+  EXPECT_EQ(packInfos[2]["id"], "ARM::RteTest@3.0.1");
+  EXPECT_EQ(packInfos[3]["id"], "ARM::RteTest_DFP@0.2.0");
+}
+
 
 
 TEST_F(ProjMgrRpcTests, RpcGetPacksNotLatest) {
@@ -1182,6 +1327,56 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfoLayer) {
 }
 
 
+TEST_F(ProjMgrRpcTests, RpcGetPacksInfoLocal) {
+  string context = "incompatible.Debug+CM0";
+  vector<string> contextList = {
+    context
+  };
+
+  auto requests = CreateLoadRequests("/TestSolution/PackRequirements/incompatible.csolution.yml", "", contextList);
+  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
+
+  const auto& responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs.size(), 2);
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTestRequired");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTestRequired");
+
+  string path = packs[0]["path"];
+  RteUtils::ReplaceAll(path, testinput_folder, "TEST"); ;
+  EXPECT_EQ(path, "TEST/TestSolution/PackRequirements/packs/required");
+  EXPECT_EQ(RteUtils::ExtractFileName(packs[0]["origin"]), "incompatible.csolution.yml");
+
+  EXPECT_EQ(packs[1]["pack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packs[1]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(RteUtils::ExtractFileName(packs[1]["origin"]), "incompatible.csolution.yml");
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
+  auto packInfos = responses[3]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 2);
+
+  EXPECT_EQ(packInfos[0]["id"], "ARM::RteTestRequired@1.0.0");
+  EXPECT_FALSE(packInfos[0].contains("used"));
+  auto refs = packInfos[0]["references"];
+  EXPECT_EQ(refs.size(), 1);
+  EXPECT_TRUE(refs[0].contains("path"));
+
+  path = refs[0]["path"];
+  RteUtils::ReplaceAll(path, testinput_folder, "TEST");
+
+  EXPECT_EQ(refs[0]["pack"], "ARM::RteTestRequired");
+  EXPECT_EQ(refs[0]["resolvedPack"], "ARM::RteTestRequired");
+  EXPECT_EQ(path, "TEST/TestSolution/PackRequirements/packs/required");
+
+  EXPECT_EQ(packInfos[1]["id"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_TRUE(packInfos[1].contains("used"));
+  refs = packInfos[1]["references"];
+  EXPECT_EQ(refs.size(),1);
+  EXPECT_FALSE(refs[1].contains("path"));
+}
 
 TEST_F(ProjMgrRpcTests, RpcSelectPack) {
   string context = "test1.Release+CM0";
@@ -1448,7 +1643,7 @@ TEST_F(ProjMgrRpcTests, RpcDiscoverLayers) {
     json({{ "solution", csolutionPath }, { "activeTarget", "" }}));
   responses = RunRpcMethods(requests);
   EXPECT_FALSE(responses[0]["result"]["success"]);
-  EXPECT_EQ(responses[0]["result"]["message"], "No compatible software layer found. Review required connections of the project");
+  EXPECT_EQ(responses[0]["result"]["message"], "No compatible software layer was found in the installed packs.\nInstall additional packs containing suitable layers before restarting the 'Create Solution' flow.");
 }
 
 TEST_F(ProjMgrRpcTests, RpcListMissingPacks) {

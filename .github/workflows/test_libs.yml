@@ -21,21 +21,24 @@ on:
       - 'test/**'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: test_libs-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   setup:
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_setup_env.yml@main
+    uses: ./.github/workflows/shared_setup_env.yml
     with:
       run_if: ${{ ((github.event.schedule != '') && github.event.repository.private) == false }}
 
   matrix_prep:
     needs: setup
-    uses: Open-CMSIS-Pack/devtools/.github/workflows/shared_matrix_prep.yml@main
+    uses: ./.github/workflows/shared_matrix_prep.yml
     with:
       workflow_name: test_libs
 
@@ -43,20 +46,20 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     name: test_libs (${{ matrix.runs_on }}, ${{ matrix.arch }})
     needs: [ setup, matrix_prep ]
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Checkout devtools
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           submodules: true
           fetch-depth: 0
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build all libs
-        uses: Open-CMSIS-Pack/devtools-build-action@1f131b70796337c98d4f680632bb4135d90f17f0 # arm64
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         id: devtools-build
         with:
           add_cmake_variables: '-DLIBS_ONLY=ON'
@@ -66,9 +69,7 @@ jobs:
       - name: Install macos deps
         if: ${{ startsWith(matrix.runs_on, 'macos') }}
         run: |
-          brew install \
-            dos2unix \
-            wget
+          brew bundle install --file="${{ github.workspace }}/.github/Brewfile" --no-upgrade
 
       - name: Install linux deps
         if: ${{ startsWith(matrix.runs_on, 'ubuntu') }}
@@ -87,7 +88,7 @@ jobs:
 
       - name: Archive libs unittest reports
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_test_libs-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/*${{ matrix.target }}-${{ matrix.arch }}.xml
@@ -96,11 +97,12 @@ jobs:
 
   test-results-preparation:
     name: "Publish Tests Results"
+    if: ${{ always() }}
     needs: [ test_libs ]
     runs-on: ubuntu-22.04
     steps:
       - name: Event File
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Event File test_libs
           path: ${{ github.event_path }}

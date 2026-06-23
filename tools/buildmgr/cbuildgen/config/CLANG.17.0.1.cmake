@@ -381,7 +381,7 @@ else()
   else()
     set(CLANG_TARGET "${CLANG_ARCH}-none-eabi")
   endif()
-  set(CLANG_CPU "--target=${CLANG_TARGET} -mcpu=${CLANG_MCPU} -mfloat-abi=${CLANG_MFLOATABI}")
+  set(CLANG_CPU "--target=${CLANG_TARGET} -mcpu=${CLANG_MCPU} -mfpu=${CLANG_MFPU} -mfloat-abi=${CLANG_MFLOATABI}")
 endif()
 
 set(CMAKE_CXX_COMPILER_TARGET "${CLANG_TARGET}")

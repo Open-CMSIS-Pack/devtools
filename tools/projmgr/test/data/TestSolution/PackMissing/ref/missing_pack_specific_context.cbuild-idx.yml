@@ -1,5 +1,5 @@
 build-idx:
-  generated-by: csolution version 0.0.0+g74cb4601
+  generated-by: csolution version 0.0.0+g79b66b5f
   csolution: ../data/TestSolution/PackMissing/missing_pack.csolution.yml
   tmpdir: tmp
   cprojects:
