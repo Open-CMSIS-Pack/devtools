@@ -5132,16 +5132,11 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
     return false;
   }
   for (auto& misc : build.misc) {
-    if (!ProcessSequencesRelatives(context, misc.as,       "", "", true) ||
-        !ProcessSequencesRelatives(context, misc.c,        "", "", true) ||
-        !ProcessSequencesRelatives(context, misc.cpp,      "", "", true) ||
-        !ProcessSequencesRelatives(context, misc.c_cpp,    "", "", true) ||
-        !ProcessSequencesRelatives(context, misc.lib,      "", "", true) ||
-        !ProcessSequencesRelatives(context, misc.library,  "", "", true) ||
-        !ProcessSequencesRelatives(context, misc.link,     "", "", true) ||
-        !ProcessSequencesRelatives(context, misc.link_c,   "", "", true) ||
-        !ProcessSequencesRelatives(context, misc.link_cpp, "", "", true)) {
-      return false;
+    for (auto* vec : { &misc.as, &misc.c, &misc.cpp, &misc.c_cpp, &misc.lib, &misc.library, &misc.link, &misc.link_c, &misc.link_cpp }) {
+      ProjMgrUtils::AdjustRelativePaths(*vec, ref, context.directories.cprj);
+      if (!ProcessSequencesRelatives(context, *vec, "", "", true)) {
+        return false;
+      }
     }
   }
   return true;
