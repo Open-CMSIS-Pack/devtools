@@ -526,8 +526,10 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
   m_loadedPacks.clear(); // the list will be updated, it should not contain dangling pointers
   // Get required pdsc files
   std::list<std::string> pdscFiles;
+  bool noPackRequirements = true;
   for (const auto& context : m_selectedContexts) {
     auto& contextItem = m_contexts.at(context);
+    noPackRequirements &= contextItem.packRequirements.empty();
     for (const auto& [pdscFile, pathVer] : contextItem.pdscFiles) {
       const string& path = pathVer.first;
       if (!path.empty()) {
@@ -543,12 +545,12 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
     }
   }
   // Check load packs policy
-  if (pdscFiles.empty() && (m_loadPacksPolicy == LoadPacksPolicy::REQUIRED)) {
+  if (noPackRequirements && (m_loadPacksPolicy == LoadPacksPolicy::REQUIRED)) {
     ProjMgrLogger::Get().Error("required packs must be specified");
     return false;
   }
   // Get installed packs
-  if (pdscFiles.empty() || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
+  if (m_rpcMode || noPackRequirements || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
     const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
     if (!m_kernel->GetEffectivePdscFiles(pdscFiles, latest)) {
       ProjMgrLogger::Get().Error("parsing installed packs failed");
@@ -585,16 +587,15 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   if (!InitializeTarget(context)) {
     return false;
   }
+  bool deferredFail = false;
   if (!CollectAllRequiredPdscFiles()) {
     PrintContextErrors(context.name);
-    if(!m_rpcMode) {
-      return false;
-    }
+    // defer return due to pdsc collection failure
+    deferredFail = true;
   }
   if ((m_loadedPacks.empty() || m_rpcMode) && !LoadAllRelevantPacks()) {
-    if(!m_rpcMode) {
-      return false;
-    }
+    // defer return due to pack loading failure
+    deferredFail = true;
   }
   // Filter context specific packs
   set<string> selectedPacks;
@@ -624,6 +625,10 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   filter.SetSelectedPackages(selectedPacks);
   context.rteActiveTarget->SetPackageFilter(filter);
   context.rteActiveTarget->UpdateFilterModel();
+  // report deferred failure; in rpc mode continue processing despite it
+  if (!m_rpcMode && deferredFail) {
+    return false;
+  }
   return CheckRteErrors();
 }
 
@@ -4807,12 +4812,12 @@ bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
   set<string> generatorsSet;
   map <string, map<string, map<string, StrVec>>> sortedGeneratorsMap;
   StrMap generatorsDescription;
+  bool deferredFail = false;
   // classic generators
   for (const auto& selectedContext : m_selectedContexts) {
     ContextItem& context = m_contexts[selectedContext];
-    if (!ProcessContext(context, false, true, false)) {
-      return false;
-    }
+    // defer failure report
+    deferredFail |= !ProcessContext(context, false, true, false);
     for (const auto& [id, generator] : context.generators) {
       for (const auto& [gpdsc, item] : context.gpdscs) {
         if (item.generator == id) {
@@ -4827,6 +4832,11 @@ bool ProjMgrWorker::ListGenerators(vector<string>& generators) {
       }
     }
   }
+  if (deferredFail) {
+    // report deferred failure
+    return false;
+  }
+
   // global generators
   for (const auto& [options, contexts] : m_extGenerator->GetUsedGenerators()) {
     sortedGeneratorsMap.insert({ options.id, {} });
@@ -5678,22 +5688,31 @@ std::string ProjMgrWorker::GetSelectedToochain(void) {
 bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const string& generatorId,
   string& projectType, StrVec& siblings) {
 
-  // iterate over contexts with same build and target types
-  m_selectedContexts.clear();
-  for (auto& [_, context] : m_contexts) {
-    if ((context.type.build != selectedContext->type.build) ||
-      (context.type.target != selectedContext->type.target)) {
-      continue;
+  if (m_activeTargetType.empty()) {
+    // if active target type is not given, select all contexts with same build and target types
+    m_selectedContexts.clear();
+    for (auto& [_, context] : m_contexts) {
+      if ((context.type.build != selectedContext->type.build) ||
+        (context.type.target != selectedContext->type.target)) {
+        continue;
+      }
+      m_selectedContexts.push_back(context.name);
     }
-    if (!ParseContextLayers(context)) {
-      return false;
-    }
-    m_selectedContexts.push_back(context.name);
   }
-  for (auto& context : m_selectedContexts) {
-    if (!ProcessContext(m_contexts.at(context), false, true, false)) {
-      return false;
-    }
+  // parse layers from selected contexts
+  bool deferredFail = false;
+  for (auto& contextName : m_selectedContexts) {
+    // defer failure report due to layers parsing
+    deferredFail |= !ParseContextLayers(m_contexts.at(contextName));
+  }
+  // after parsing layers for all selected contexts, process them
+  for (auto& contextName : m_selectedContexts) {
+    // defer failure report due to context processing
+    deferredFail |= !ProcessContext(m_contexts.at(contextName), false, true, false);
+  }
+  // report deferred failure
+  if (deferredFail) {
+    return false;
   }
   StrVec contextVec;
   const string& genDir = selectedContext->extGen[generatorId].path;
@@ -6147,7 +6166,8 @@ void ProjMgrWorker::CollectUnusedPacks() {
       continue;
     }
     context.unusedPacks.clear();
-    for (const auto& [packId, _] : context.rteFilteredModel->GetPackages()) {
+    for (const auto& [_, packItem] : context.rteFilteredModel->GetPackages()) {
+      const auto packId = packItem->GetPackageID();
       if (context.packages.find(packId) == context.packages.end()) {
         CollectionUtils::PushBackUniquely(context.unusedPacks, packId);
       }

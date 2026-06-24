@@ -3604,6 +3604,71 @@ TEST_F(ProjMgrUnitTests, ListMultipleGenerators) {
   EXPECT_EQ(expected, set<string>(generators.begin(), generators.end()));
 }
 
+TEST_F(ProjMgrUnitTests, ListGenerators_DeferredFailure) {
+  // When ProcessContext fails for a context (e.g. missing pack path),
+  // ListGenerators must still iterate over ALL selected contexts before
+  // returning false (deferred-failure semantics).
+  vector<string> generators;
+  m_csolutionFile = testinput_folder + "/TestSolution/test_local_pack_path_not_found.csolution.yml";
+  m_rootDir = fs::path(m_csolutionFile).parent_path().generic_string();
+  EXPECT_TRUE(PopulateContexts());
+  EXPECT_TRUE(m_worker.ParseContextSelection({}));  // all contexts
+  // Must return false (pack path not found) but must NOT assert/crash,
+  // proving all contexts were visited before the deferred failure is reported.
+  EXPECT_FALSE(m_worker.ListGenerators(generators));
+}
+
+TEST_F(ProjMgrUnitTests, ListGenerators_AllContextsIterated) {
+  // Verifies that ListGenerators iterates over ALL contexts before returning false (deferred-failure semantics)
+  StdStreamRedirect streamRedirect;
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/test_local_pack_path_not_found.csolution.yml";
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"generators";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+
+  // Each of the contexts must emit a pack-path error
+  const string expectedErr = "SolutionSpecificPack/ARM does not exist";
+  const string errStr = streamRedirect.GetErrorString();
+  size_t count = 0;
+  size_t pos = 0;
+  while ((pos = errStr.find(expectedErr, pos)) != string::npos) {
+    count++;
+    pos += expectedErr.length();
+  }
+  EXPECT_EQ(4U, count);
+}
+
+TEST_F(ProjMgrUnitTests, ProcessGlobalGenerators_ActiveTargetType) {
+  // Tests ProcessGlobalGenerators when m_activeTargetType is non-empty
+  // (set via --active), ProcessGlobalGenerators skips context re-derivation and
+  // uses the pre-populated m_selectedContexts as-is
+  const string& srcGlobalGenerator = testinput_folder + "/ExternalGenerator/global.generator.yml";
+  const string& dstGlobalGenerator = etc_folder + "/global.generator.yml";
+  RteFsUtils::CopyCheckFile(srcGlobalGenerator, dstGlobalGenerator, false);
+
+  const string& srcBridgeTool = testinput_folder + "/ExternalGenerator/bridge tool.sh";
+  const string& dstBridgeTool = bin_folder + "/bridge tool.sh";
+  RteFsUtils::CopyCheckFile(srcBridgeTool, dstBridgeTool, false);
+
+  StdStreamRedirect streamRedirect;
+  char* argv[7];
+  const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
+  argv[1] = (char*)csolution.c_str();
+  argv[2] = (char*)"run";
+  argv[3] = (char*)"-g";
+  argv[4] = (char*)"RteTestExternalGenerator";
+  argv[5] = (char*)"--active";
+  argv[6] = (char*)"CM0";
+  RunProjMgr(7, argv, m_envp);  // return code is host-dependent
+  EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find("one or more selected contexts are unrelated"));
+
+  RteFsUtils::RemoveFile(dstGlobalGenerator);
+  RteFsUtils::RemoveFile(dstBridgeTool);
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_MultipleGenerators) {
   char* argv[7];
   // convert --solution solution.yml
