@@ -125,6 +125,15 @@ void ProjMgrTestEnv::SetUp() {
   }
   RteFsUtils::CreateDirectories(destPackPath);
   fs::copy(fs::path(srcPackPath), fs::path(destPackPath), fs::copy_options::recursive, ec);
+
+  destPackPath = testinput_folder + "/SolutionSpecificPack1";
+  if (RteFsUtils::Exists(destPackPath)) {
+    RteFsUtils::RemoveDir(destPackPath);
+  }
+  RteFsUtils::CreateDirectories(destPackPath);
+  fs::copy(fs::path(srcPackPath), fs::path(destPackPath), fs::copy_options::recursive, ec);
+
+
   srcPackPath  = testcmsispack_folder + "/ARM/RteTest/0.1.0";
   destPackPath = testinput_folder + "/SolutionSpecificPack2";
   if (RteFsUtils::Exists(destPackPath)) {
@@ -243,7 +252,7 @@ std::map<std::string, std::string, RtePackageComparator> ProjMgrTestEnv::GetEffe
   rteKernel.SetCmsisPackRoot(GetCmsisPackRoot());
   std::list<std::string> pdscFiles;
   std::list<RtePackage*> packs;
-  rteKernel.GetEffectivePdscFiles(pdscFiles, bLatestsOnly);  
+  rteKernel.GetEffectivePdscFiles(pdscFiles, bLatestsOnly);
   rteKernel.LoadAndInsertPacks(packs, pdscFiles);
   for (const auto& pack : packs) {
     pdscMap[pack->GetID()] = pack->GetPackageFileName();

@@ -1531,7 +1531,7 @@ bool RtePackRegistry::PurgePacks() {
   set<string> toErase;
   // collect packs that no longer exist
   for(auto& [pdscFile, pack] : m_loadedPacks) {
-    if(!pack || !pack->Exists()) {
+    if(!pack || pack->GetPackageState() == PackageState::PS_EXPLICIT_PATH || !pack->Exists()) {
       toErase.insert(pdscFile);
     }
   }

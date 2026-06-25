@@ -392,17 +392,9 @@ void RteModel::InsertPack(RtePackage* package)
     }
     auto state = package->GetPackageState();
     if(insertedPack->GetPackageState() == state) {
-      string pdscPath = RteFsUtils::MakePathCanonical(package->GetAbsolutePackagePath());
-      if(pdscPath.find(m_rtePath) == 0) { // regular installed pack => error
       // duplicate, kept it in a temporary collection till validate;
-        m_packageDuplicates.push_back(package);
-        return;
-      }
-      string insertedPdscPath = RteFsUtils::MakePathCanonical(insertedPack->GetAbsolutePackagePath());
-      if(insertedPdscPath.find(m_rtePath) == string::npos) { // inserted pack is also from outside => error
-        m_packageDuplicates.push_back(package);
-        return;
-      }
+      m_packageDuplicates.push_back(package);
+      return;
     } else if(state != PS_EXPLICIT_PATH) {
       return; // pack with explicit path must override installed pack
     }

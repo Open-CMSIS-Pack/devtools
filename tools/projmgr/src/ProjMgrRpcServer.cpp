@@ -320,8 +320,17 @@ RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const st
   m_bUseAllPacks = false; // loading solution will first use only listed packs
   m_packReferences.clear(); // will be updated
   m_solutionLoaded = false; // assume not loaded yet
-  // clear only projects, global RTE data and packs stay loaded
-  ProjMgrKernel::Get()->GetGlobalModel()->ClearProjects();
+  auto globalModel = ProjMgrKernel::Get()->GetGlobalModel();
+                            // remove non-existing and explicit packs
+  bool purged = globalModel->GetPackRegistry()->PurgePacks();
+  if(purged) {
+    // clear project AND global RTE data, packs stay loaded
+    globalModel->Clear();
+  } else {
+    // clear only projects, global RTE data and packs stay loaded
+    globalModel->ClearProjects();
+  }
+
   RpcArgs::SuccessResult result = {false};
   const auto csolutionFile = RteFsUtils::MakePathCanonical(solution);
   if(!regex_match(csolutionFile, regex(".*\\.csolution\\.(yml|yaml)"))) {

@@ -33,10 +33,17 @@ protected:
 
   string CreateLoadRequests(const string& solution,
     const string& activeTarget = RteUtils::EMPTY_STRING,
-    const vector<string>& contextList = RteUtils::EMPTY_STRING_VECTOR
+    const vector<string>& contextList = RteUtils::EMPTY_STRING_VECTOR,
+    bool loadPacks = true
   );
+
+  string FormatPackInfoRequests(const string& solution, const string& context, bool loadPacks);
+
+  vector<json> RunPackInfoRequests(const string& solution, const string& context, bool loadPacks);
+
   bool CompareRpcResponse(const json& response, const string& ref);
 
+  int m_id = 0;
 };
 
 string ProjMgrRpcTests::FormatRequest(const int id, const string& method, const json& params = json()) {
@@ -50,12 +57,18 @@ string ProjMgrRpcTests::FormatRequest(const int id, const string& method, const 
   return request.dump();
 }
 
-string ProjMgrRpcTests::CreateLoadRequests(const string& solution, const string& activeTarget, const vector<string>& contextList)
+string ProjMgrRpcTests::CreateLoadRequests(const string& solution, const string& activeTarget, const vector<string>& contextList, bool loadPacks)
 {
-  string loadSolutionRequest;
+
+  string requests;
+  if(loadPacks) {
+    m_id = 0;
+    requests = FormatRequest(++m_id, "LoadPacks");
+  }
   if(!solution.empty()) {
+    string loadSolutionRequest;
     auto csolutionPath = testinput_folder + solution;
-    loadSolutionRequest = FormatRequest(2, "LoadSolution", json({{ "solution", csolutionPath }, { "activeTarget", activeTarget }}));
+    loadSolutionRequest = FormatRequest(++m_id, "LoadSolution", json({{ "solution", csolutionPath }, { "activeTarget", activeTarget }}));
     if(!contextList.empty()) {
       YAML::Node cbuildset;
       cbuildset["cbuild-set"]["generated-by"] = "ProjMrgUnitTests";
@@ -70,8 +83,24 @@ string ProjMgrRpcTests::CreateLoadRequests(const string& solution, const string&
       cbuildsetFile << cbuildset << std::endl;
       cbuildsetFile.close();
     }
+    requests += loadSolutionRequest;
   }
-  return FormatRequest(1, "LoadPacks") + loadSolutionRequest;
+  return requests;
+}
+
+string ProjMgrRpcTests::FormatPackInfoRequests(const string& solution, const string& context, bool loadPacks) {
+    vector<string> contextList = {
+    context
+  };
+  auto requests = CreateLoadRequests(solution, "", contextList, loadPacks);
+  requests += FormatRequest(++m_id, "GetUsedItems", json({{ "context", context }}));
+  requests += FormatRequest(++m_id, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
+  requests += FormatRequest(++m_id, "GetPacksInfo", json({{ "context", context }, {"all", true}}));
+  return requests;
+}
+
+vector<json> ProjMgrRpcTests::RunPackInfoRequests(const string& solution, const string& context, bool loadPacks = true) {
+  return RunRpcMethods( FormatPackInfoRequests(solution, context, loadPacks));
 }
 
 bool ProjMgrRpcTests::CompareRpcResponse(const json& response, const string& ref) {
@@ -92,6 +121,7 @@ vector<json> ProjMgrRpcTests::RunRpcMethods(const string& strIn) {
   while(getline(iss, line)) {
     responses.push_back(json::parse(line));
   }
+  m_id = 0;
   return responses;
 }
 
@@ -1122,7 +1152,7 @@ TEST_F(ProjMgrRpcTests, PackReferenceMissing) {
   requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
   const auto& responses = RunRpcMethods(requests);
   EXPECT_TRUE(responses[2]["result"]["success"]);
-  auto packs = responses[2]["result"]["packs"];  
+  auto packs = responses[2]["result"]["packs"];
   // Verify missing field for unresolved packs
   for(const auto& pack : packs) {
     if(!pack.contains("resolvedPack")) {
@@ -1135,16 +1165,8 @@ TEST_F(ProjMgrRpcTests, PackReferenceMissing) {
 
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfoSimple) {
   string context = "selectable+CM0";
-  vector<string> contextList = {
-    context
-  };
 
-  auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
-  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
-  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
-  requests += FormatRequest(5, "GetPacksInfo", json({{ "context", context }, {"all", true}}));
-
-  const auto& responses = RunRpcMethods(requests);
+  const auto& responses = RunPackInfoRequests("/Validation/dependencies.csolution.yml", context);
 
   EXPECT_TRUE(responses[2]["result"]["success"]);
   auto packs = responses[2]["result"]["packs"];
@@ -1174,16 +1196,7 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfoSimple) {
 
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfo) {
   string context = "test1.Release+CM0";
-  vector<string> contextList = {
-    context
-  };
-
-  auto requests = CreateLoadRequests("/TestSolution/test_pack_requirements.csolution.yml", "", contextList);
-  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
-  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
-  requests += FormatRequest(5, "GetPacksInfo", json({{ "context", context }, {"all", true}}));
-
-  const auto& responses = RunRpcMethods(requests);
+  const auto& responses = RunPackInfoRequests("/TestSolution/test_pack_requirements.csolution.yml", context);
 
   EXPECT_TRUE(responses[2]["result"]["success"]);
   auto packs = responses[2]["result"]["packs"];
@@ -1203,17 +1216,65 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfo) {
   EXPECT_FALSE(packInfos[7].contains("used"));
 }
 
+
+TEST_F(ProjMgrRpcTests, RpcGetPacksInfoPackPath) {
+  string context = "pack_path+CM0";
+
+  // first solution
+  auto requests = FormatPackInfoRequests("/TestSolution/pack_path.csolution.yml", context, true);
+  // second solution, same pack in a different directory
+  requests += FormatPackInfoRequests("/TestSolution/pack_path1.csolution.yml", context, false);
+
+  auto responses = RunRpcMethods(requests);
+
+  // first solution
+  auto expectedPackPath = testinput_folder + "/SolutionSpecificPack";
+  auto expectedDoc = testinput_folder + "/SolutionSpecificPack" + "/Doc/overview.md";
+
+  EXPECT_TRUE(responses[2]["result"]["success"]);
+  auto packs = responses[2]["result"]["packs"];
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP");
+  EXPECT_EQ(packs[0]["path"], expectedPackPath);
+  EXPECT_FALSE(packs[0].contains("upgrade"));
+
+  EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
+  auto packInfos = responses[3]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 1);
+  EXPECT_EQ(packInfos[0]["id"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packInfos[0]["doc"], expectedDoc);
+  EXPECT_TRUE(packInfos[0]["used"]);
+
+  packInfos = responses[4]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 8);
+
+// second solution
+
+  expectedPackPath = testinput_folder + "/SolutionSpecificPack1";
+  expectedDoc = testinput_folder + "/SolutionSpecificPack1" + "/Doc/overview.md";
+
+  EXPECT_TRUE(responses[6]["result"]["success"]);
+  packs = responses[6]["result"]["packs"];
+  EXPECT_EQ(packs[0]["pack"], "ARM::RteTest_DFP");
+  EXPECT_EQ(packs[0]["resolvedPack"], "ARM::RteTest_DFP");
+  EXPECT_EQ(packs[0]["path"], expectedPackPath);
+  EXPECT_FALSE(packs[0].contains("upgrade"));
+
+  EXPECT_TRUE(responses[7]["result"]["success"]); // get pack infos
+  packInfos = responses[7]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 1);
+  EXPECT_EQ(packInfos[0]["id"], "ARM::RteTest_DFP@0.2.0");
+  EXPECT_EQ(packInfos[0]["doc"], expectedDoc);
+  EXPECT_TRUE(packInfos[0]["used"]);
+
+  packInfos = responses[8]["result"]["packs"];
+  EXPECT_EQ(packInfos.size(), 8);
+}
+
+
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfoMissing) {
   string context = "project+Miss";
-  vector<string> contextList = {
-    context
-  };
-
-  auto requests = CreateLoadRequests("/TestSolution/PackMissing/missing_pack.csolution.yml", "", contextList);
-  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
-  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
-
-  const auto& responses = RunRpcMethods(requests);
+  const auto& responses = RunPackInfoRequests("/TestSolution/PackMissing/missing_pack.csolution.yml", context);
 
   EXPECT_TRUE(responses[2]["result"]["success"]);
   auto packs = responses[2]["result"]["packs"];
@@ -1230,8 +1291,6 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfoMissing) {
   EXPECT_EQ(packs[3]["pack"], "ARM::RteTest_DFP");
   EXPECT_EQ(packs[3]["resolvedPack"], "ARM::RteTest_DFP@0.2.0");
 
-
-
   EXPECT_TRUE(responses[3]["result"]["success"]); // get pack infos
   auto packInfos = responses[3]["result"]["packs"];
   EXPECT_EQ(packInfos.size(), 4);
@@ -1242,20 +1301,9 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfoMissing) {
   EXPECT_EQ(packInfos[3]["id"], "ARM::RteTest_DFP@0.2.0");
 }
 
-
-
 TEST_F(ProjMgrRpcTests, RpcGetPacksNotLatest) {
   string context = "test1.DebugOldDfp+CM0";
-  vector<string> contextList = {
-    context
-  };
-
-  auto requests = CreateLoadRequests("/TestSolution/test_pack_requirements.csolution.yml", "", contextList);
-  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
-  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
-  requests += FormatRequest(5, "GetPacksInfo", json({{ "context", context }, {"all", true}}));
-
-  const auto& responses = RunRpcMethods(requests);
+  const auto& responses = RunPackInfoRequests("/TestSolution/test_pack_requirements.csolution.yml", context);
 
   EXPECT_TRUE(responses[2]["result"]["success"]);
   auto packs = responses[2]["result"]["packs"];
@@ -1293,16 +1341,7 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksNotLatest) {
 
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfoLayer) {
   string context = "packs.CompatibleLayers+RteTest_ARMCM3";
-  vector<string> contextList = {
-    context
-  };
-
-  auto requests = CreateLoadRequests("/TestLayers/packs.csolution.yml", "", contextList);
-  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
-  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
-  requests += FormatRequest(5, "GetPacksInfo", json({{ "context", context }, {"all", true}}));
-
-  const auto& responses = RunRpcMethods(requests);
+  const auto& responses = RunPackInfoRequests("/TestLayers/packs.csolution.yml", context);
 
   EXPECT_TRUE(responses[2]["result"]["success"]);
   auto packs = responses[2]["result"]["packs"];
@@ -1329,15 +1368,7 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfoLayer) {
 
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfoLocal) {
   string context = "incompatible.Debug+CM0";
-  vector<string> contextList = {
-    context
-  };
-
-  auto requests = CreateLoadRequests("/TestSolution/PackRequirements/incompatible.csolution.yml", "", contextList);
-  requests += FormatRequest(3, "GetUsedItems", json({{ "context", context }}));
-  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", context }, {"all", false}}));
-
-  const auto& responses = RunRpcMethods(requests);
+  const auto& responses = RunPackInfoRequests("/TestSolution/PackRequirements/incompatible.csolution.yml", context);
 
   EXPECT_TRUE(responses[2]["result"]["success"]);
   auto packs = responses[2]["result"]["packs"];

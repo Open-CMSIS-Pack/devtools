@@ -477,11 +477,7 @@ bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std:
     if(!pack) {
       return false;
     }
-    // pack with explicit path must override installed pack
-    auto loadedPack = RtePackage::GetPackFromList(pack->GetID(), packs);
-    if(!loadedPack || (loadedPack->GetPackageState() == PS_INSTALLED && pack->GetPackageState() == PS_EXPLICIT_PATH)) {
-      newPacks.push_back(pack);
-    }
+    newPacks.push_back(pack);
   }
   globalModel->InsertPacks(newPacks);
 

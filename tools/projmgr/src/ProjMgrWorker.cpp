@@ -548,7 +548,7 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
     return false;
   }
   // Get installed packs
-  if (pdscFiles.empty() || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
+  if (m_rpcMode || pdscFiles.empty() || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
     const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
     if (!m_kernel->GetEffectivePdscFiles(pdscFiles, latest)) {
       ProjMgrLogger::Get().Error("parsing installed packs failed");
