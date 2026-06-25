@@ -328,7 +328,7 @@ RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const st
   // clear model and projects if at least one pack is deleted
   bool purged = globalModel->PurgeModel(true);
   if(!purged) {
-    // just only projects, global RTE data and packs stay loaded
+    // only projects, global RTE data and packs stay loaded
     globalModel->ClearProjects();
   }
 
