@@ -71,7 +71,7 @@ string ProjMgrRpcTests::CreateLoadRequests(const string& solution, const string&
     loadSolutionRequest = FormatRequest(++m_id, "LoadSolution", json({{ "solution", csolutionPath }, { "activeTarget", activeTarget }}));
     if(!contextList.empty()) {
       YAML::Node cbuildset;
-      cbuildset["cbuild-set"]["generated-by"] = "ProjMrgUnitTests";
+      cbuildset["cbuild-set"]["generated-by"] = "ProjMgrUnitTests";
       for(const auto& context : contextList) {
         cbuildset["cbuild-set"]["contexts"].push_back(map<string, string>{ { "context", context } });
       }
