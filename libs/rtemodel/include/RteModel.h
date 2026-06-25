@@ -617,9 +617,9 @@ public:
    void ClearModel() override;
 
   /**
-   * @brief purges non-existing and explicit packs, clears model and projects if at least one pack has been deleted
-   * @param purgeExplicit flag to remove all PackageState::PS_EXPLICIT_PATH packs
-   * @returns true if at leas one pack has been removed
+   * @brief purges non-existing packs and optionally explicit packs; clears model and projects if at least one pack was removed
+   * @param purgeExplicit when true, remove all PackageState::PS_EXPLICIT_PATH packs
+   * @returns true if at least one pack has been removed
   */
    bool PurgeModel(bool purgeExplicit);
 
