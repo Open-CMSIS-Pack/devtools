@@ -1525,13 +1525,13 @@ bool RtePackRegistry::ErasePack(const std::string& pdscFile)
   return false;
 }
 
-bool RtePackRegistry::PurgePacks() {
+bool RtePackRegistry::PurgePacks(bool purgeExplicit) {
   ClearPdscMap(); // clear because packs can be added or removed after this call
 
   set<string> toErase;
   // collect packs that no longer exist
   for(auto& [pdscFile, pack] : m_loadedPacks) {
-    if(!pack || pack->GetPackageState() == PackageState::PS_EXPLICIT_PATH || !pack->Exists()) {
+    if(!pack || !pack->Exists() || (purgeExplicit && pack->GetPackageState() == PackageState::PS_EXPLICIT_PATH )) {
       toErase.insert(pdscFile);
     }
   }

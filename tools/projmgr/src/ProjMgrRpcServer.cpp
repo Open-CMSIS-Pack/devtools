@@ -305,7 +305,10 @@ RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
   m_manager.Clear();
   m_solutionLoaded = false;
   // clear project and global RTE data, packs stay loaded
-  ProjMgrKernel::Get()->GetGlobalModel()->Clear();
+  auto globalModel = ProjMgrKernel::Get()->GetGlobalModel();
+  globalModel->Clear();
+  globalModel->PurgeModel(true); // clears also explicit and non-existing packs
+
   m_worker.InitializeModel();
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
   result.success = m_worker.LoadAllRelevantPacks();
@@ -321,13 +324,11 @@ RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const st
   m_packReferences.clear(); // will be updated
   m_solutionLoaded = false; // assume not loaded yet
   auto globalModel = ProjMgrKernel::Get()->GetGlobalModel();
-                            // remove non-existing and explicit packs
-  bool purged = globalModel->GetPackRegistry()->PurgePacks();
-  if(purged) {
-    // clear project AND global RTE data, packs stay loaded
-    globalModel->Clear();
-  } else {
-    // clear only projects, global RTE data and packs stay loaded
+  // remove non-existing and explicit packs
+  // clear model and projects if at least one pack is deleted
+  bool purged = globalModel->PurgeModel(true);
+  if(!purged) {
+    // just only projects, global RTE data and packs stay loaded
     globalModel->ClearProjects();
   }
 
@@ -879,8 +880,14 @@ RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solutio
   m_bUseAllPacks = false; // loading solution will first use only listed packs
   m_packReferences.clear(); // will be updated
   m_solutionLoaded = false; // assume not loaded
-  // clear only projects, RTE data and packs stay loaded
-  ProjMgrKernel::Get()->GetGlobalModel()->ClearProjects();
+  auto globalModel = ProjMgrKernel::Get()->GetGlobalModel();
+  // remove non-existing and explicit packs
+  // clear model and projects if at least one pack is deleted
+  bool purged = globalModel->PurgeModel(true);
+  if(!purged) {
+    // just only projects, global RTE data and packs stay loaded
+    globalModel->ClearProjects();
+  }
 
   if(!m_manager.RunConvert(csolutionFile, activeTarget, updateRte) || !ProjMgrLogger::Get().GetErrors().empty()) {
     if(m_worker.HasVarDefineError()) {

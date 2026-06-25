@@ -1336,10 +1336,11 @@ public:
   bool ErasePack(const std::string& pdscFile);
 
   /**
-   * @brief removes all non-existing packs
+   * @brief removes all non-existing packs and optionally explicitly specified packs
+   * @param purgeExplicit flag to remove all PackageState::PS_EXPLICIT_PATH packs
    * @return true if at least one pack was removed
   */
-  bool PurgePacks();
+  bool PurgePacks(bool purgeExplicit);
 
   /**
    * @brief get collection of loaded packs

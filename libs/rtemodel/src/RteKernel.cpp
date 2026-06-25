@@ -451,8 +451,6 @@ bool RteKernel::GetEffectivePdscFilesAsMap(map<string, string, RtePackageCompara
 
 bool RteKernel::GetEffectivePdscFiles(std::list<std::string>& pdscFiles, bool latest) const
 {
-  GetPackRegistry()->PurgePacks(); // remove non-existing files from the registry
-
   map<string, string, RtePackageComparator> pdscMap;
   if(!GetEffectivePdscFilesAsMap(pdscMap, latest)) {
     return false;
