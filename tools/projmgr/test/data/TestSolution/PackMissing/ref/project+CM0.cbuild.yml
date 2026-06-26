@@ -1,9 +1,23 @@
 build:
-  generated-by: csolution version 0.0.0+g658d82cc
+  generated-by: csolution version 0.0.0
   solution: ../data/TestSolution/PackMissing/missing_pack.csolution.yml
   project: ../data/TestSolution/PackMissing/project.cproject.yml
   context: project+CM0
   compiler: AC6
+  device: ARM::RteTest_ARMCM0
+  device-pack: ARM::RteTest_DFP@0.2.0
+  device-books:
+    - name: http://infocenter.arm.com/help/topic/com.arm.doc.dui0497a/index.html
+      title: Cortex-M0 Device Generic Users Guide
+  dbgconf:
+    - file: ../data/TestSolution/PackMissing/.cmsis/missing_pack+CM0.dbgconf
+      version: 0.0.2
+  processor:
+    fpu: off
+    core: Cortex-M0
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+      path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   misc:
     ASM:
       - -ASM-project
@@ -17,6 +31,17 @@ build:
       - -Link-project
   define:
     - DEF-project
+    - ARMCM0
+    - _RTE_
+  define-asm:
+    - ARMCM0
+    - _RTE_
+  add-path:
+    - ../data/TestSolution/PackMissing/RTE/_CM0
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
+  add-path-asm:
+    - ../data/TestSolution/PackMissing/RTE/_CM0
+    - ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include
   output-dirs:
     intdir: tmp/project/CM0
     outdir: out/project/CM0
@@ -28,3 +53,63 @@ build:
       file: compile_commands.json
     - type: comp-db
       file: compile_macros.h
+  components:
+    - component: ARM::Device:Startup&RteTest Startup@2.0.3
+      condition: ARMCM0 RteTest
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: Startup
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM0/Include/ARMCM0.h
+          category: header
+          version: 2.0.3
+        - file: https://arm-software.github.io/CMSIS_5/Core_A/html/startup_c_pg.html
+          category: doc
+          version: 2.0.3
+        - file: ../data/TestSolution/PackMissing/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
+          category: linkerScript
+          attr: config
+          version: 1.0.0
+        - file: ../data/TestSolution/PackMissing/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c
+          category: sourceC
+          attr: config
+          version: 2.0.3
+        - file: ../data/TestSolution/PackMissing/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c
+          category: sourceC
+          attr: config
+          version: 1.0.0
+    - component: ARM::RteTest:CORE@0.1.1
+      condition: Cortex-M Device
+      from-pack: ARM::RteTest_DFP@0.2.0
+      selected-by: RteTest:CORE@0.1.1
+      implements: RteTest:CORE@1.1.2
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/html/index.html
+          category: doc
+          version: 0.1.1
+  apis:
+    - api: RteTest:CORE@1.1.2
+      from-pack: ARM::RteTest_DFP@0.2.0
+      implemented-by: ARM::RteTest:CORE@0.1.1
+      files:
+        - file: https://arm-software.github.io/CMSIS_5/Pack/html/pdsc_apis_pg.html
+          category: doc
+          version: 1.1.2
+  linker:
+    script: ../data/TestSolution/PackMissing/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct
+  groups:
+    - group: Sources
+      files:
+        - file: ../data/TestSolution/PackMissing/main.c
+          category: sourceC
+  constructed-files:
+    - file: ../data/TestSolution/PackMissing/RTE/_CM0/RTE_Components.h
+      category: header
+  licenses:
+    - license: <unknown>
+      license-agreement: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Doc/license.txt
+      packs:
+        - pack: ARM::RteTest_DFP@0.2.0
+      components:
+        - component: ARM::Device:Startup&RteTest Startup@2.0.3
+        - component: ARM::RteTest:CORE@0.1.1
+        - component: RteTest:CORE(API)
