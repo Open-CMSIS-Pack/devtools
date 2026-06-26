@@ -5699,14 +5699,14 @@ bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const 
       m_selectedContexts.push_back(context.name);
     }
   }
-  // parse layers from selected contexts
+  // parse layers and process selected contexts
   bool deferredFail = false;
   for (auto& contextName : m_selectedContexts) {
-    // defer failure report due to layers parsing
-    deferredFail |= !ParseContextLayers(m_contexts.at(contextName));
-  }
-  // after parsing layers for all selected contexts, process them
-  for (auto& contextName : m_selectedContexts) {
+    if (!ParseContextLayers(m_contexts.at(contextName))) {
+      // defer failure report due to layers parsing
+      deferredFail = true;
+      continue;
+    }
     // defer failure report due to context processing
     deferredFail |= !ProcessContext(m_contexts.at(contextName), false, true, false);
   }
