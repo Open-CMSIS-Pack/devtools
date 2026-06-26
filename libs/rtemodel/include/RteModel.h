@@ -617,6 +617,13 @@ public:
    void ClearModel() override;
 
   /**
+   * @brief purges non-existing packs and optionally explicit packs; clears model and projects if at least one pack was removed
+   * @param purgeExplicit when true, remove all PackageState::PS_EXPLICIT_PATH packs
+   * @returns true if at least one pack has been removed
+  */
+   bool PurgeModel(bool purgeExplicit);
+
+  /**
    * @brief setter for RteCallback object
    * @param callback given RteCallback object to set
   */

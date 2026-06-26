@@ -305,7 +305,10 @@ RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
   m_manager.Clear();
   m_solutionLoaded = false;
   // clear project and global RTE data, packs stay loaded
-  ProjMgrKernel::Get()->GetGlobalModel()->Clear();
+  auto globalModel = ProjMgrKernel::Get()->GetGlobalModel();
+  globalModel->Clear();
+  globalModel->PurgeModel(true); // clears also explicit and non-existing packs
+
   m_worker.InitializeModel();
   m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
   result.success = m_worker.LoadAllRelevantPacks();
@@ -319,14 +322,29 @@ RpcArgs::SuccessResult RpcHandler::LoadPacks(void) {
 RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const string& activeTarget) {
   m_bUseAllPacks = false; // loading solution will first use only listed packs
   m_packReferences.clear(); // will be updated
+  m_manager.Clear();
   m_solutionLoaded = false; // assume not loaded yet
-  // clear only projects, global RTE data and packs stay loaded
-  ProjMgrKernel::Get()->GetGlobalModel()->ClearProjects();
+  auto globalModel = ProjMgrKernel::Get()->GetGlobalModel();
+  // remove non-existing and explicit packs
+  // clear model and projects if at least one pack is deleted
+  bool purged = globalModel->PurgeModel(true);
+  if(!purged) {
+    // only projects, global RTE data and packs stay loaded
+    globalModel->ClearProjects();
+  }
+
   RpcArgs::SuccessResult result = {false};
   const auto csolutionFile = RteFsUtils::MakePathCanonical(solution);
   if(!regex_match(csolutionFile, regex(".*\\.csolution\\.(yml|yaml)"))) {
     result.message = solution + " is not a *.csolution.yml file";
     return result;
+  }
+  if(purged) {
+    // we need to add available packs to model again (the packs are already loaded)
+    m_worker.InitializeModel();
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
+    result.success = m_worker.LoadAllRelevantPacks();
+    m_worker.SetLoadPacksPolicy(LoadPacksPolicy::DEFAULT);
   }
   // we disregard return value of m_manager.LoadSolution() here, because we tolerate some errors
   m_manager.LoadSolution(csolutionFile, activeTarget);
@@ -870,8 +888,15 @@ RpcArgs::ConvertSolutionResult RpcHandler::ConvertSolution(const string& solutio
   m_bUseAllPacks = false; // loading solution will first use only listed packs
   m_packReferences.clear(); // will be updated
   m_solutionLoaded = false; // assume not loaded
-  // clear only projects, RTE data and packs stay loaded
-  ProjMgrKernel::Get()->GetGlobalModel()->ClearProjects();
+  m_manager.Clear();
+  auto globalModel = ProjMgrKernel::Get()->GetGlobalModel();
+  // remove non-existing and explicit packs
+  // clear model and projects if at least one pack is deleted
+  bool purged = globalModel->PurgeModel(true);
+  if(!purged) {
+    // only projects, global RTE data and packs stay loaded
+    globalModel->ClearProjects();
+  }
 
   if(!m_manager.RunConvert(csolutionFile, activeTarget, updateRte) || !ProjMgrLogger::Get().GetErrors().empty()) {
     if(m_worker.HasVarDefineError()) {

@@ -451,8 +451,6 @@ bool RteKernel::GetEffectivePdscFilesAsMap(map<string, string, RtePackageCompara
 
 bool RteKernel::GetEffectivePdscFiles(std::list<std::string>& pdscFiles, bool latest) const
 {
-  GetPackRegistry()->PurgePacks(); // remove non-existing files from the registry
-
   map<string, string, RtePackageComparator> pdscMap;
   if(!GetEffectivePdscFilesAsMap(pdscMap, latest)) {
     return false;
@@ -477,11 +475,7 @@ bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std:
     if(!pack) {
       return false;
     }
-    // pack with explicit path must override installed pack
-    auto loadedPack = RtePackage::GetPackFromList(pack->GetID(), packs);
-    if(!loadedPack || (loadedPack->GetPackageState() == PS_INSTALLED && pack->GetPackageState() == PS_EXPLICIT_PATH)) {
-      newPacks.push_back(pack);
-    }
+    newPacks.push_back(pack);
   }
   globalModel->InsertPacks(newPacks);
 

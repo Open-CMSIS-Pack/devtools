@@ -40,14 +40,14 @@ TEST_F(RteModelTestConfig, PackRegistry) {
   EXPECT_TRUE(packRegistry->AddPack(pack));
   EXPECT_FALSE(packRegistry->AddPack(pack)); // not second time
   EXPECT_EQ(packRegistry->GetPack("foo"), pack);
-  pack = new RtePackage(&testModel);
+  pack = new RtePackage(&testModel, PackageState::PS_EXPLICIT_PATH);
   pack->SetAttribute("name", "bar");
   pack->SetRootFileName("foo");
   EXPECT_TRUE(packRegistry->AddPack(pack, true));
   EXPECT_EQ(packRegistry->GetPack("foo"), pack);
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), 1);
 
-  EXPECT_TRUE(packRegistry->PurgePacks());
+  EXPECT_TRUE(packRegistry->PurgePacks(false)); // deleted because not exists
   EXPECT_EQ(packRegistry->GetPack("foo"), nullptr);
   EXPECT_FALSE(packRegistry->ErasePack("foo")); // already erased via Purge
   EXPECT_EQ(packRegistry->GetLoadedPacks().size(), 0);
@@ -128,6 +128,13 @@ TEST_F(RteModelTestConfig, PackRegistryLoadPacks) {
   auto t1 = pack1->GetModificationTime();
   EXPECT_NE(t, t1);
   EXPECT_EQ(pack1->GetFirstChild("dummy_child"), nullptr); // pack got loaded again => no added child
+
+  // test RteGlobalModel::PurgeModel
+  pack1->SetPackageState(PackageState::PS_EXPLICIT_PATH); // simulate pack is explicit
+  auto globalModel = rteKernel.GetGlobalModel();
+
+  EXPECT_FALSE(globalModel->PurgeModel(false));
+  EXPECT_TRUE(globalModel->PurgeModel(true));
 }
 
 TEST(RteModelTest, LoadPacks) {
