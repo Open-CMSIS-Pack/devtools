@@ -287,6 +287,11 @@ jobs:
           chmod +x *
         working-directory: tools/buildmgr/cbuildgen/distribution/bin
 
+      - name: Debug installer
+        run: |
+          ls -R
+        working-directory: tools/buildmgr/cbuildgen
+
       - name: Download documentation
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -648,6 +653,14 @@ jobs:
         if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         run: chmod +x cbuild_install.sh
 
+      - name: Check installer content
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
+        run: |
+          mkdir -p temp
+          ./cbuild_install.sh -x temp
+          ls -R temp
+        working-directory: ${{ github.workspace }}
+
       - name: Run cbuild_install.sh
         shell: bash
         run: |
@@ -659,7 +672,7 @@ jobs:
           ./cbuild_install.sh < config
 
       - name: Debug
-        shell: bash
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         run: ls -R
         working-directory: ${{ github.workspace }}/cbuild/
 
