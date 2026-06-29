@@ -2,7 +2,7 @@ build-idx:
   generated-by: csolution version 0.0.0
   csolution: image-only.csolution.yml
   cbuild-run: out/image-only+CM0.cbuild-run.yml
-  tmpdir: tmp
+  tmpdir: tmp/CM0/default
   image-only: true
   cbuilds:
     - cbuild: out/image-only/CM0/image-only+CM0.cbuild.yml

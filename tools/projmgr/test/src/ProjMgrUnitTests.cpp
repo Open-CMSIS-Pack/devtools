@@ -4388,6 +4388,20 @@ TEST_F(ProjMgrUnitTests, OutputDirsTmpdirAccessSequence) {
   EXPECT_EQ("tmp/TypeA/Set1", cbuild["build-idx"]["tmpdir"].as<string>());
 }
 
+TEST_F(ProjMgrUnitTests, OutputDirsTmpdirDefault) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/tmpdir-default-active.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"TypeA@Set1";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  // Check default tmp directory for active target type and target set
+  const YAML::Node& cbuild = YAML::LoadFile(testinput_folder + "/TestSolution/tmpdir-default-active.cbuild-idx.yml");
+  EXPECT_EQ("tmp/TypeA/Set1", cbuild["build-idx"]["tmpdir"].as<string>());
+}
+
 TEST_F(ProjMgrUnitTests, OutputDirsAbsolutePath) {
   StdStreamRedirect streamRedirect;
   char* argv[5];
