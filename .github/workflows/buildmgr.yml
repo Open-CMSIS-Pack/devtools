@@ -669,6 +669,12 @@ jobs:
           echo "$AC5_TOOLCHAIN_ROOT" >> config
           echo "$GCC_TOOLCHAIN_ROOT" >> config
           ./cbuild_install.sh < config
+
+      - name: Debug install
+        run: |
+          ls -R
+        working-directory: ${{ github.workspace }}/cbuild
+
       - name: Test cbuildgen
         shell: bash
         run: |
