@@ -2,7 +2,7 @@ build-idx:
   generated-by: csolution version 0.0.0
   csolution: solution.csolution.yml
   cbuild-run: out/solution+CM0.cbuild-run.yml
-  tmpdir: tmp
+  tmpdir: tmp/CM0/default
   cbuilds:
     - cbuild: out/core0/CM0/Debug/core0.Debug+CM0.cbuild.yml
       west: true
