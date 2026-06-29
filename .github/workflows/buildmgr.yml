@@ -671,6 +671,7 @@ jobs:
           ./cbuild_install.sh < config
 
       - name: Debug install
+        if: ${{ startsWith(matrix.runs_on, 'macos') || startsWith(matrix.runs_on, 'ubuntu') }}
         run: |
           ls -R
         working-directory: ${{ github.workspace }}/cbuild
