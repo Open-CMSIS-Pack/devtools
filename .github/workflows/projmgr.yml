@@ -247,12 +247,6 @@ jobs:
           name: projmgr-linux-arm64
           path: tools/projmgr/distribution/bin/linux-arm64/
 
-      - name: Download projmgr macos-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: projmgr-darwin-amd64
-          path: tools/projmgr/distribution/bin/darwin-amd64/
-
       - name: Download projmgr macos-arm64
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -277,13 +271,6 @@ jobs:
           name: projmgr-swig-python-linux-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/python/
 
-      - name: Download projmgr-swig-python macos-amd64
-        if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: projmgr-swig-python-darwin-amd64
-          path: tools/projmgr/distribution/lib/darwin-amd64/python/
-
       - name: Download projmgr-swig-python windows-amd64
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -295,13 +282,6 @@ jobs:
         with:
           name: projmgr-swig-go-linux-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/go/
-
-      - name: Download projmgr-swig-go macos-amd64
-        if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: projmgr-swig-go-darwin-amd64
-          path: tools/projmgr/distribution/lib/darwin-amd64/go/
 
       - name: Zip distribution folder
         run: zip -r projmgr.zip *
@@ -327,13 +307,6 @@ jobs:
         with:
           name: unit_test_result_projmgr-linux-amd64
           path: tools/testreport/linux-amd64/
-
-      - name: Download test report macos-amd64
-        if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: unit_test_result_projmgr-darwin-amd64
-          path: tools/testreport/darwin-amd64/
 
       - name: Zip test reports
         run: zip -r testreport.zip *
