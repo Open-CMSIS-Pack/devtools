@@ -1,12 +1,5 @@
 [
     {
-        "runs_on":"macos-15-intel",
-        "target":"darwin",
-        "arch": "amd64",
-        "runOn": "publicRepo",
-        "binary": "svdconv"
-    },
-    {
         "runs_on":"macos-14",
         "target":"darwin",
         "arch": "arm64",

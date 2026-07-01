@@ -263,13 +263,6 @@ jobs:
           name: cbuildgen-linux-arm64
           path: tools/buildmgr/cbuildgen/distribution/bin/
 
-      - name: Download cbuildgen macos-amd64
-        if: ${{ !github.event.repository.private }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: cbuildgen-darwin-amd64
-          path: tools/buildmgr/cbuildgen/distribution/bin/
-
       - name: Download cbuildgen macos-arm64
         if: ${{ !github.event.repository.private }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -478,11 +471,6 @@ jobs:
         run: /usr/bin/qemu-aarch64 -L /usr/aarch64-linux-gnu ./tools/buildmgr/test/integrationtests/${{ matrix.target }}-${{ matrix.arch }}/Debug/CbuildIntegTests --gtest_filter=-*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
         working-directory: build
 
-      - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for macOS
-        if: ${{ startsWith(matrix.runs_on, 'macos') && matrix.arch == 'amd64' }}
-        run: ./tools/buildmgr/test/integrationtests/${{ matrix.target }}-${{ matrix.arch }}/Debug/CbuildIntegTests --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
-        working-directory: build
-
       - name: Run Cbuild Integration Tests (excl. DebPkgTests, AC5, AC6, MultiTargetAC6Tests) for Windows
         if: ${{ startsWith(matrix.runs_on, 'windows') && matrix.arch == 'amd64' }}
         run: .\tools\buildmgr\test\integrationtests\${{ matrix.target }}-${{ matrix.arch }}\Debug\CbuildIntegTests.exe --gtest_filter=-*DebPkgTests*:*AC5*:*AC6*:*MultiTargetAC6Tests* --gtest_output=xml:test_reports/cbuildintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
@@ -669,6 +657,7 @@ jobs:
           echo "$AC5_TOOLCHAIN_ROOT" >> config
           echo "$GCC_TOOLCHAIN_ROOT" >> config
           ./cbuild_install.sh < config
+
       - name: Test cbuildgen
         shell: bash
         run: |
