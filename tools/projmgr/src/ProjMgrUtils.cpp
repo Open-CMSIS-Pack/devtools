@@ -40,7 +40,8 @@ static string StripCComments(const string& input) {
   string output;
   bool inLineComment = false;
   bool inBlockComment = false;
-  for (size_t index = 0; index < input.length(); ++index) {
+  size_t index = 0;
+  while (index < input.length()) {
     const char current = input[index];
     const char next = index + 1 < input.length() ? input[index + 1] : '\0';
 
@@ -49,21 +50,26 @@ static string StripCComments(const string& input) {
         inLineComment = false;
         output += current;
       }
+      ++index;
     } else if (inBlockComment) {
       if (current == '*' && next == '/') {
         inBlockComment = false;
+        index += 2;
+      } else {
+        if (current == '\n' || current == '\r') {
+          output += current;
+        }
         ++index;
-      } else if (current == '\n' || current == '\r') {
-        output += current;
       }
     } else if (current == '/' && next == '/') {
       inLineComment = true;
-      ++index;
+      index += 2;
     } else if (current == '/' && next == '*') {
       inBlockComment = true;
-      ++index;
+      index += 2;
     } else {
       output += current;
+      ++index;
     }
   }
   return output;
