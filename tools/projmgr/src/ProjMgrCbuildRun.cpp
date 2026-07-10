@@ -24,6 +24,7 @@ protected:
   void SetFilesNode(YAML::Node node, const std::vector<FilesType>& outputs);
   void SetResourcesNode(YAML::Node node, const SystemResourcesType& systemResources);
   void SetDebuggerNode(YAML::Node node, const DebuggerType& debugger);
+  void SetDeviceSettingsNode(YAML::Node node, const std::map<std::string, std::string>& deviceSettings);
   void SetDebugVarsNode(YAML::Node node, const DebugVarsType& debugVars);
   void SetDebugSequencesNode(YAML::Node node, const std::vector<DebugSequencesType>& algorithms);
   void SetDebugSequencesBlockNode(YAML::Node node, const std::vector<DebugSequencesBlockType>& blocks);
@@ -183,11 +184,18 @@ void ProjMgrCbuildRun::SetDebuggerNode(YAML::Node node, const DebuggerType& debu
     if (!debugger.dbgconf.empty()) {
       SetNodeValue(node[YAML_DBGCONF], FormatPath(debugger.dbgconf, m_directory));
     }
+    SetDeviceSettingsNode(node[YAML_DEVICE_SETTINGS], debugger.deviceSettings);
     SetNodeValue(node[YAML_START_PNAME], debugger.startPname);
     SetGdbServerNode(node[YAML_GDBSERVER], debugger.gdbserver);
     SetTelnetNode(node[YAML_TELNET], debugger.telnet);
     SetSystemViewNode(node[YAML_SYSTEMVIEW], debugger.systemView);
     SetCustomNodes(node, debugger.custom);
+  }
+}
+
+void ProjMgrCbuildRun::SetDeviceSettingsNode(YAML::Node node, const map<string, string>& deviceSettings) {
+  for (const auto& [key, value] : deviceSettings) {
+    node[key] = value;
   }
 }
 

@@ -22,6 +22,9 @@ solution:
             protocol: jtag
             clock: 20000000
             dbgconf: RTE/Device/RteTest1/RteTest1.dbgconf
+            device-settings:
+              reset-mode: hardware
+              trace-port: enabled
           images:
             - project-context: run-debug
               load: none

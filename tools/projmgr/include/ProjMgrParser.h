@@ -173,6 +173,7 @@ struct CustomItem {
  *        debug protocol (jtag or swd)
  *        debug clock speed
  *        debug configuration file
+ *        device settings
  *        start pname
  *        telnet options
  *        systemview options
@@ -183,6 +184,7 @@ struct DebuggerItem {
   std::string protocol;
   std::string clock;
   std::string dbgconf;
+  std::map<std::string, std::string> deviceSettings;
   std::string startPname;
   std::vector<TelnetItem> telnet;
   SystemViewItem systemView;
