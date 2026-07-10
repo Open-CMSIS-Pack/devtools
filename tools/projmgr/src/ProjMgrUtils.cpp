@@ -23,6 +23,7 @@ static constexpr const char* HIGHER_OR_EQUAL_OPERATOR = ">=";
 static constexpr const char* TILDE_OPERATOR = "~";
 static constexpr const char* CARET_OPERATOR = "^";
 
+// Dbgconf assignment names follow C-style identifier rules.
 static bool IsDbgconfVariableName(const string& value) {
   if (value.empty() || (!isalpha(static_cast<unsigned char>(value[0])) && value[0] != '_')) {
     return false;
@@ -30,12 +31,14 @@ static bool IsDbgconfVariableName(const string& value) {
   return all_of(value.begin() + 1, value.end(), [](unsigned char c) { return isalnum(c) || c == '_'; });
 }
 
+// Remove surrounding whitespace without changing the assignment value content.
 static string Trim(const string& value) {
   const auto first = find_if_not(value.begin(), value.end(), [](unsigned char c) { return isspace(c); });
   const auto last = find_if_not(value.rbegin(), value.rend(), [](unsigned char c) { return isspace(c); }).base();
   return first < last ? string(first, last) : string();
 }
 
+// Strip C and C++ comments while preserving line breaks that separate statements.
 static string StripCComments(const string& input) {
   string output;
   bool inLineComment = false;
@@ -500,10 +503,13 @@ map<string, string> ProjMgrUtils::ParseDbgconfFile(const string& dbgconf) {
   }
 
   const string contentWithoutComments = StripCComments(content);
+  // Split semicolon-separated statements, also accepting a final unterminated assignment.
   size_t statementStart = 0;
   size_t statementEnd = contentWithoutComments.find(';');
-  while (statementEnd != string::npos) {
-    const string statement = contentWithoutComments.substr(statementStart, statementEnd - statementStart);
+  while (statementStart < contentWithoutComments.length()) {
+    const string statement = contentWithoutComments.substr(
+      statementStart,
+      statementEnd == string::npos ? string::npos : statementEnd - statementStart);
     const size_t assignment = statement.find('=');
     if (assignment != string::npos) {
       const string key = Trim(statement.substr(0, assignment));
@@ -511,6 +517,9 @@ map<string, string> ProjMgrUtils::ParseDbgconfFile(const string& dbgconf) {
       if (IsDbgconfVariableName(key)) {
         assignments[key] = value;
       }
+    }
+    if (statementEnd == string::npos) {
+      break;
     }
     statementStart = statementEnd + 1;
     statementEnd = contentWithoutComments.find(';', statementStart);

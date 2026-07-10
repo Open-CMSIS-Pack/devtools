@@ -553,6 +553,7 @@ TEST_F(ProjMgrUtilsUnitTests, ParseDbgconfFile) {
     {"RoutingTPIU", "0x00000000"},
     {"TracePins", "(1 << 18) | 3"},
     {"VecResetWithPeriph", "1"},
+    {"MissingTerminator", "2"},
   };
   EXPECT_EQ(expected, ProjMgrUtils::ParseDbgconfFile(dbgconf));
   EXPECT_TRUE(ProjMgrUtils::ParseDbgconfFile(testDir + "/missing.dbgconf").empty());
