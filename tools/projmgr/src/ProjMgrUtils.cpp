@@ -13,6 +13,7 @@
 #include "CrossPlatform.h"
 #include "CrossPlatformUtils.h"
 
+#include <cctype>
 #include <regex>
 #include <sstream>
 
@@ -21,6 +22,52 @@ using namespace std;
 static constexpr const char* HIGHER_OR_EQUAL_OPERATOR = ">=";
 static constexpr const char* TILDE_OPERATOR = "~";
 static constexpr const char* CARET_OPERATOR = "^";
+
+static bool IsDbgconfVariableName(const string& value) {
+  if (value.empty() || (!isalpha(static_cast<unsigned char>(value[0])) && value[0] != '_')) {
+    return false;
+  }
+  return all_of(value.begin() + 1, value.end(), [](unsigned char c) { return isalnum(c) || c == '_'; });
+}
+
+static string Trim(const string& value) {
+  const auto first = find_if_not(value.begin(), value.end(), [](unsigned char c) { return isspace(c); });
+  const auto last = find_if_not(value.rbegin(), value.rend(), [](unsigned char c) { return isspace(c); }).base();
+  return first < last ? string(first, last) : string();
+}
+
+static string StripCComments(const string& input) {
+  string output;
+  bool inLineComment = false;
+  bool inBlockComment = false;
+  for (size_t index = 0; index < input.length(); ++index) {
+    const char current = input[index];
+    const char next = index + 1 < input.length() ? input[index + 1] : '\0';
+
+    if (inLineComment) {
+      if (current == '\n' || current == '\r') {
+        inLineComment = false;
+        output += current;
+      }
+    } else if (inBlockComment) {
+      if (current == '*' && next == '/') {
+        inBlockComment = false;
+        ++index;
+      } else if (current == '\n' || current == '\r') {
+        output += current;
+      }
+    } else if (current == '/' && next == '/') {
+      inLineComment = true;
+      ++index;
+    } else if (current == '/' && next == '*') {
+      inBlockComment = true;
+      ++index;
+    } else {
+      output += current;
+    }
+  }
+  return output;
+}
 
 RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc, bool& valid) {
   fs::path path(gpdsc);
@@ -437,6 +484,32 @@ const string ProjMgrUtils::FormatPath(const string& original, const string& dire
     }
   }
   return path;
+}
+
+map<string, string> ProjMgrUtils::ParseDbgconfFile(const string& dbgconf) {
+  string content;
+  map<string, string> assignments;
+  if (!RteFsUtils::ReadFile(dbgconf, content)) {
+    return assignments;
+  }
+
+  const string contentWithoutComments = StripCComments(content);
+  size_t statementStart = 0;
+  size_t statementEnd = contentWithoutComments.find(';');
+  while (statementEnd != string::npos) {
+    const string statement = contentWithoutComments.substr(statementStart, statementEnd - statementStart);
+    const size_t assignment = statement.find('=');
+    if (assignment != string::npos) {
+      const string key = Trim(statement.substr(0, assignment));
+      const string value = Trim(statement.substr(assignment + 1));
+      if (IsDbgconfVariableName(key)) {
+        assignments[key] = value;
+      }
+    }
+    statementStart = statementEnd + 1;
+    statementEnd = contentWithoutComments.find(';', statementStart);
+  }
+  return assignments;
 }
 
 bool ProjMgrUtils::ContainsIncompatiblePack(const std::list<RtePackage*>& packs, const std::string& requirement) {

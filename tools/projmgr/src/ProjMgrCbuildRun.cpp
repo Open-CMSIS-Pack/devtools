@@ -184,11 +184,11 @@ void ProjMgrCbuildRun::SetDebuggerNode(YAML::Node node, const DebuggerType& debu
     if (!debugger.dbgconf.empty()) {
       SetNodeValue(node[YAML_DBGCONF], FormatPath(debugger.dbgconf, m_directory));
     }
-    SetDeviceSettingsNode(node[YAML_DEVICE_SETTINGS], debugger.deviceSettings);
     SetNodeValue(node[YAML_START_PNAME], debugger.startPname);
     SetGdbServerNode(node[YAML_GDBSERVER], debugger.gdbserver);
     SetTelnetNode(node[YAML_TELNET], debugger.telnet);
     SetSystemViewNode(node[YAML_SYSTEMVIEW], debugger.systemView);
+    SetDeviceSettingsNode(node[YAML_DEVICE_SETTINGS], debugger.deviceSettings);
     SetCustomNodes(node, debugger.custom);
   }
 }

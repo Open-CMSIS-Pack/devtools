@@ -285,6 +285,13 @@ public:
   static const std::string FormatPath(const std::string& original, const std::string& directory, bool useAbsolutePaths = false);
 
   /**
+   * @brief parse variable assignments from a dbgconf file
+   * @param dbgconf path to dbgconf file
+   * @return map of variable names to assigned values
+  */
+  static std::map<std::string, std::string> ParseDbgconfFile(const std::string& dbgconf);
+
+  /**
    * @brief adjust relative path fragments in a list of values
    * @param vec list of strings that may contain relative paths
    * @param ref reference path for formatting
