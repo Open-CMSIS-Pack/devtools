@@ -92,7 +92,6 @@ cbuild-run:
     name: CMSIS-DAP@pyOCD
     protocol: swd
     clock: 10000000
-    dbgconf: ../.cmsis/solution+CM0.dbgconf
     start-pname: cm0_core0
     gdbserver:
       - port: 3333

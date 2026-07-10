@@ -44,7 +44,6 @@ cbuild-run:
     name: CMSIS-DAP@pyOCD
     protocol: swd
     clock: 10000000
-    dbgconf: ../.cmsis/image-only+CM0.dbgconf
     gdbserver:
       - port: 3333
     device-settings:

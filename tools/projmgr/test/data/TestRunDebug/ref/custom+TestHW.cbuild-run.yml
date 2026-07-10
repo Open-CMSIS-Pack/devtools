@@ -40,7 +40,6 @@ cbuild-run:
     name: Test Custom Adapter
     protocol: jtag
     clock: 40000000
-    dbgconf: ../../data/TestRunDebug/.cmsis/custom+TestHW.dbgconf
     device-settings:
       ReleaseM0OnConnect: 1
       ReleaseM0SubOnConnect: 1

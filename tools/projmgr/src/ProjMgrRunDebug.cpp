@@ -415,6 +415,9 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
   if (m_runDebug.debugger.deviceSettings.empty() && !m_runDebug.debugger.dbgconf.empty()) {
     m_runDebug.debugger.deviceSettings = ProjMgrUtils::ParseDbgconfFile(m_runDebug.debugger.dbgconf);
   }
+  if (!m_runDebug.debugger.deviceSettings.empty()) {
+    m_runDebug.debugger.dbgconf.clear();
+  }
 
   // primary processor: pname of first cproject
   if (m_runDebug.debugger.startPname.empty()) {

@@ -62,7 +62,6 @@ cbuild-run:
     info: Info target-set
     protocol: jtag
     clock: 20000000
-    dbgconf: ../../data/TestRunDebug/RTE/Device/RteTest1/RteTest1.dbgconf
     gdbserver:
       - port: 3333
     device-settings:
