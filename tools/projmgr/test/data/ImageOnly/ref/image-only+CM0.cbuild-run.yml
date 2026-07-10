@@ -47,6 +47,11 @@ cbuild-run:
     dbgconf: ../.cmsis/image-only+CM0.dbgconf
     gdbserver:
       - port: 3333
+    device-settings:
+      ReleaseM0OnConnect: 1
+      ReleaseM0SubOnConnect: 1
+      RoutingTPIU: 0x00000000
+      VecResetWithPeriph: 1
   debug-vars:
     vars: |
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY

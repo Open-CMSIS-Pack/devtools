@@ -2302,7 +2302,7 @@
       "title": "device-settings:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#device-settings",
       "description": "Debugger device settings.",
       "type": "object",
-      "additionalProperties": { "type": [ "string", "number", "boolean", "null" ] }
+      "additionalProperties": { "type": [ "string", "number", "boolean" ] }
     },
     "RttOptionsType": {
       "title": "rtt:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#rtt",

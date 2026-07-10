@@ -285,7 +285,7 @@ public:
   static const std::string FormatPath(const std::string& original, const std::string& directory, bool useAbsolutePaths = false);
 
   /**
-   * @brief parse variable assignments from a dbgconf file
+   * @brief parse semicolon-terminated variable assignments from a dbgconf file
    * @param dbgconf path to dbgconf file
    * @return map of variable names to assigned values
   */
