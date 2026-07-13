@@ -336,7 +336,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
         item.load = item.type == RteConstants::OUTPUT_TYPE_ELF ? LOAD_IMAGE_SYMBOLS :
           item.type == RteConstants::OUTPUT_TYPE_LIB ? LOAD_NONE : LOAD_IMAGE;
       }
-      m_runDebug.outputs.push_back({ item.image, item.info, item.type, item.load, item.offset, item.pname });
+      m_runDebug.outputs.push_back({ item.image, item.info, item.type, item.load, item.offset, item.pname, RteUtils::EMPTY_STRING });
     }
   }
 
@@ -726,6 +726,7 @@ void ProjMgrRunDebug::AddGeneratedImage(const ContextItem* context, const string
     image.type = type;
     image.load = load;
     image.pname = context->deviceItem.pname;
+    image.project = context->cproject->name;
     image.offset = type == RteConstants::OUTPUT_TYPE_BIN ? context->loadOffset : RteUtils::EMPTY_STRING;
     m_runDebug.outputs.push_back(image);
   }

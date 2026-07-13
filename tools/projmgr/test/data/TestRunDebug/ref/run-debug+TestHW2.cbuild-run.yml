@@ -14,14 +14,17 @@ cbuild-run:
     - file: run-debug/TestHW2/run-debug.axf
       info: generate by run-debug+TestHW2
       type: elf
+      project: run-debug
       load: symbols
     - file: run-debug/TestHW2/run-debug.hex
       info: generate by run-debug+TestHW2
       type: hex
+      project: run-debug
       load: image
     - file: run-debug/TestHW2/run-debug.bin
       info: generate by run-debug+TestHW2
       type: bin
+      project: run-debug
       load: none
     - file: ../../data/TestRunDebug/customLibrary.x
       type: lib

@@ -14,21 +14,25 @@ cbuild-run:
     - file: core0/CM0/Debug/zephyr/zephyr.elf
       info: generate by core0.Debug+CM0
       type: elf
+      project: core0
       load: symbols
       pname: cm0_core0
     - file: core0/CM0/Debug/zephyr/zephyr.hex
       info: generate by core0.Debug+CM0
       type: hex
+      project: core0
       load: image
       pname: cm0_core0
     - file: core1/CM0/Debug/zephyr/zephyr.elf
       info: generate by core1.Debug+CM0
       type: elf
+      project: core1
       load: symbols
       pname: cm0_core1
     - file: core1/CM0/Debug/zephyr/zephyr.hex
       info: generate by core1.Debug+CM0
       type: hex
+      project: core1
       load: image
       pname: cm0_core1
   system-resources:

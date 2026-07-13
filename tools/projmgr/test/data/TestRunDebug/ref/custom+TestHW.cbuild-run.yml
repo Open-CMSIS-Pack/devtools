@@ -11,6 +11,7 @@ cbuild-run:
     - file: custom/TestHW/custom.axf
       info: generate by custom+TestHW
       type: elf
+      project: custom
       load: image+symbols
   system-resources:
     memory:

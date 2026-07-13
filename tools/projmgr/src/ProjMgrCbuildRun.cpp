@@ -121,6 +121,7 @@ void ProjMgrCbuildRun::SetFilesNode(YAML::Node node, const std::vector<FilesType
     SetNodeValue(fileNode[YAML_FILE], FormatPath(item.file, m_directory));
     SetNodeValue(fileNode[YAML_INFO], item.info);
     SetNodeValue(fileNode[YAML_TYPE], item.type);
+    SetNodeValue(fileNode[YAML_PROJECT], item.project);
     SetNodeValue(fileNode[YAML_LOAD], item.load);
     if (!item.offset.empty()) {
       fileNode[YAML_LOAD_OFFSET] = ProjMgrUtils::ULLToHex(RteUtils::StringToULL(item.offset));
