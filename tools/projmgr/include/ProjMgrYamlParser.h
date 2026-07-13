@@ -98,6 +98,7 @@ static constexpr const char* YAML_DEBUG_TOPOLOGY = "debug-topology";
 static constexpr const char* YAML_DEBUGGER = "debugger";
 static constexpr const char* YAML_DEBUGPORTS = "debugports";
 static constexpr const char* YAML_DBGCONF = "dbgconf";
+static constexpr const char* YAML_DEVICE_SETTINGS = "device-settings";
 static constexpr const char* YAML_DEFAULT = "default";
 static constexpr const char* YAML_DEFAULTS = "defaults";
 static constexpr const char* YAML_DEFINE = "define";
@@ -370,6 +371,7 @@ protected:
   void ParseString(const YAML::Node& parent, const std::string& key, std::string& value);
   void ParseNumber(const YAML::Node& parent, const std::string& file, const std::string& key, std::string& value);
   void ParseInt(const YAML::Node& parent, const std::string& key, int& value);
+  void ParseMapOfStrings(const YAML::Node& parent, const std::string& key, std::map<std::string, std::string>& value);
   void ParseVector(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);
   void ParseVectorOfStringPairs(const YAML::Node& parent, const std::string& key, std::vector<std::pair<std::string, std::string>>& value);
   void ParseVectorOrString(const YAML::Node& parent, const std::string& key, std::vector<std::string>& value);

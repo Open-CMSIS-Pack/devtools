@@ -2740,6 +2740,7 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
       }
     }
     context.debugger.startPname = m_activeTargetSet.debugger.startPname;
+    context.debugger.deviceSettings = m_activeTargetSet.debugger.deviceSettings;
     for (auto telnet : m_activeTargetSet.debugger.telnet) {
       if (!telnet.file.empty()) {
         if (!ProcessSequenceRelative(context, telnet.file, context.csolution->directory, false)) {

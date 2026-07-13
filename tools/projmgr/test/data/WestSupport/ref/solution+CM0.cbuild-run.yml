@@ -92,13 +92,17 @@ cbuild-run:
     name: CMSIS-DAP@pyOCD
     protocol: swd
     clock: 10000000
-    dbgconf: ../.cmsis/solution+CM0.dbgconf
     start-pname: cm0_core0
     gdbserver:
       - port: 3333
         pname: cm0_core0
       - port: 3334
         pname: cm0_core1
+    device-settings:
+      ReleaseM0OnConnect: 1
+      ReleaseM0SubOnConnect: 1
+      RoutingTPIU: 0x00000000
+      VecResetWithPeriph: 1
   debug-vars:
     vars: |
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY

@@ -386,6 +386,7 @@ struct TemplateItem {
  *        debug protocol (jtag or swd)
  *        debug clock speed
  *        debug configuration file
+ *        device settings
  *        start pname
  *        list of gdbserver items
  *        list of telnet options items
@@ -397,6 +398,7 @@ struct DebuggerType {
   std::string protocol;
   std::optional<unsigned long long> clock;
   std::string dbgconf;
+  std::map<std::string, std::string> deviceSettings;
   std::string startPname;
   std::vector<GdbServerItem> gdbserver;
   std::map<std::string, TelnetOptionsItem> telnet;
