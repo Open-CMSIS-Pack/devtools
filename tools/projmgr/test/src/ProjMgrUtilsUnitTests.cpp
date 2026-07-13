@@ -546,6 +546,10 @@ TEST_F(ProjMgrUtilsUnitTests, ParseDbgconfFile) {
     "  0x00000000;\n"
     "TracePins = (1 << 18) | 3;\n"
     "VecResetWithPeriph /* inline block comment */ = 1;\n"
+    "NestedBlockComment = 3 /* outer /* inner */ still outer */;\n"
+    "LineCommentInBlock = 4 /* // not a line comment\n"
+    "  still block comment */;\n"
+    "BlockCommentInLine = 5; // /* not a block comment */\n"
     "MissingTerminator = 2\n"));
 
   const map<string, string> expected = {
@@ -553,6 +557,9 @@ TEST_F(ProjMgrUtilsUnitTests, ParseDbgconfFile) {
     {"RoutingTPIU", "0x00000000"},
     {"TracePins", "(1 << 18) | 3"},
     {"VecResetWithPeriph", "1"},
+    {"NestedBlockComment", "3"},
+    {"LineCommentInBlock", "4"},
+    {"BlockCommentInLine", "5"},
     {"MissingTerminator", "2"},
   };
   EXPECT_EQ(expected, ProjMgrUtils::ParseDbgconfFile(dbgconf));

@@ -42,7 +42,7 @@ static string Trim(const string& value) {
 static string StripCComments(const string& input) {
   string output;
   bool inLineComment = false;
-  bool inBlockComment = false;
+  size_t blockCommentDepth = 0;
   size_t index = 0;
   while (index < input.length()) {
     const char current = input[index];
@@ -54,9 +54,12 @@ static string StripCComments(const string& input) {
         output += current;
       }
       ++index;
-    } else if (inBlockComment) {
-      if (current == '*' && next == '/') {
-        inBlockComment = false;
+    } else if (blockCommentDepth > 0) {
+      if (current == '/' && next == '*') {
+        ++blockCommentDepth;
+        index += 2;
+      } else if (current == '*' && next == '/') {
+        --blockCommentDepth;
         index += 2;
       } else {
         if (current == '\n' || current == '\r') {
@@ -68,7 +71,7 @@ static string StripCComments(const string& input) {
       inLineComment = true;
       index += 2;
     } else if (current == '/' && next == '*') {
-      inBlockComment = true;
+      blockCommentDepth = 1;
       index += 2;
     } else {
       output += current;
