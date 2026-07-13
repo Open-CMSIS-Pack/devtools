@@ -157,13 +157,14 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
 void ProjMgrWorker::UpdateTmpDir() {
   auto& tmpdir = m_parser->GetCsolution().directories.tmpdir;
   auto& base = m_outputDir.empty() ? m_parser->GetCsolution().directory : m_outputDir;
-  if (!tmpdir.empty()) {
-    if (!m_activeTargetType.empty()) {
-      tmpdir = RteUtils::ExpandAccessSequences(tmpdir, {
+  if (!m_activeTargetType.empty()) {
+    const auto& targetSet = m_activeTargetSet.set.empty() ? "default" : m_activeTargetSet.set;
+    // default tmpdir: tmp/$TargetType$/$TargetSet$
+    tmpdir = tmpdir.empty() ? "tmp/" + m_activeTargetType + "/" + targetSet :
+      RteUtils::ExpandAccessSequences(tmpdir, {
         { RteConstants::AS_TARGET_TYPE, m_activeTargetType },
-        { RteConstants::AS_TARGET_SET, m_activeTargetSet.set.empty() ? "default" : m_activeTargetSet.set } }
+        { RteConstants::AS_TARGET_SET, targetSet } }
       );
-    }
   }
   tmpdir = base + "/" + (tmpdir.empty() ? "tmp" : tmpdir);
 }
@@ -2739,6 +2740,7 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
       }
     }
     context.debugger.startPname = m_activeTargetSet.debugger.startPname;
+    context.debugger.deviceSettings = m_activeTargetSet.debugger.deviceSettings;
     for (auto telnet : m_activeTargetSet.debugger.telnet) {
       if (!telnet.file.empty()) {
         if (!ProcessSequenceRelative(context, telnet.file, context.csolution->directory, false)) {

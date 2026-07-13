@@ -154,8 +154,7 @@ case $OS in
     extn="exe-${arch}"
     ;;
   'Darwin')
-    # darwin arm64 native support is not available yet, temporary using amd64 instead
-    extn="mac-amd64"
+    extn="mac-${arch}"
     ;;
   *)
     echo "[ERROR] Unsupported OS $OS"
