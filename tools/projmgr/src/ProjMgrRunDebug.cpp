@@ -411,6 +411,14 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
     m_runDebug.debugger = defaultDebugger;
   }
 
+  // device-settings from dbgconf
+  if (m_runDebug.debugger.deviceSettings.empty() && !m_runDebug.debugger.dbgconf.empty()) {
+    m_runDebug.debugger.deviceSettings = ProjMgrUtils::ParseDbgconfFile(m_runDebug.debugger.dbgconf);
+  }
+  if (!m_runDebug.debugger.deviceSettings.empty()) {
+    m_runDebug.debugger.dbgconf.clear();
+  }
+
   // primary processor: pname of first cproject
   if (m_runDebug.debugger.startPname.empty()) {
     m_runDebug.debugger.startPname = context.deviceItem.pname;
@@ -451,7 +459,6 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
 
   // merge custom options
   MergeCustomItems(context.debugger.custom, m_runDebug.debugger.custom);
-
 }
 
 void ProjMgrRunDebug::CollectTelnetOptions(const ContextItem& context, DebugAdapterItem& adapter,

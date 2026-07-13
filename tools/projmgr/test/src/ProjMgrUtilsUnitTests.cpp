@@ -534,6 +534,38 @@ TEST_F(ProjMgrUtilsUnitTests, FormatPath) {
   }
 }
 
+TEST_F(ProjMgrUtilsUnitTests, ParseDbgconfFile) {
+  const string testDir = testoutput_folder + "/ParseDbgconfFile";
+  const string dbgconf = testDir + "/test.dbgconf";
+  RteFsUtils::CreateDirectories(testDir);
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(dbgconf,
+    "// leading comment\n"
+    "ReleaseM0OnConnect = 1; // trailing comment\n"
+    "/* block comment with ignored = assignment; */\n"
+    "RoutingTPIU =\n"
+    "  0x00000000;\n"
+    "TracePins = (1 << 18) | 3;\n"
+    "VecResetWithPeriph /* inline block comment */ = 1;\n"
+    "NestedBlockComment = 3 /* outer /* inner */ still outer */;\n"
+    "LineCommentInBlock = 4 /* // not a line comment\n"
+    "  still block comment */;\n"
+    "BlockCommentInLine = 5; // /* not a block comment */\n"
+    "MissingTerminator = 2\n"));
+
+  const map<string, string> expected = {
+    {"ReleaseM0OnConnect", "1"},
+    {"RoutingTPIU", "0x00000000"},
+    {"TracePins", "(1 << 18) | 3"},
+    {"VecResetWithPeriph", "1"},
+    {"NestedBlockComment", "3"},
+    {"LineCommentInBlock", "4"},
+    {"BlockCommentInLine", "5"},
+    {"MissingTerminator", "2"},
+  };
+  EXPECT_EQ(expected, ProjMgrUtils::ParseDbgconfFile(dbgconf));
+  EXPECT_TRUE(ProjMgrUtils::ParseDbgconfFile(testDir + "/missing.dbgconf").empty());
+}
+
 TEST_F(ProjMgrUtilsUnitTests, ContainsIncompatiblePack) {
   ProjMgrKernel::Get()->SetCmsisPackRoot(testcmsispack_folder);
   std::list<std::string> pdscFiles;
