@@ -40,7 +40,11 @@ cbuild-run:
     name: Test Custom Adapter
     protocol: jtag
     clock: 40000000
-    dbgconf: ../../data/TestRunDebug/.cmsis/custom+TestHW.dbgconf
+    device-settings:
+      ReleaseM0OnConnect: 1
+      ReleaseM0SubOnConnect: 1
+      RoutingTPIU: 0x00000000
+      VecResetWithPeriph: 1
     custom-adapter-key: custom adapter value
     custom-key-overwrite: custom value overwrite
     custom-map:

@@ -2292,10 +2292,17 @@
         "gdbserver":       { "$ref": "#/definitions/GdbServersType" },
         "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
         "rtt":             { "$ref": "#/definitions/RttOptionsType" },
-        "systemview":      { "$ref": "#/definitions/SystemViewOptionType" }
+        "systemview":      { "$ref": "#/definitions/SystemViewOptionType" },
+        "device-settings": { "$ref": "#/definitions/DeviceSettingsType" }
       },
       "additionalProperties": true,
       "required": ["name"]
+    },
+    "DeviceSettingsType": {
+      "title": "device-settings:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#device-settings",
+      "description": "Debugger device settings.",
+      "type": "object",
+      "additionalProperties": { "type": [ "string", "number", "boolean" ] }
     },
     "RttOptionsType": {
       "title": "rtt:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#rtt",
@@ -2586,7 +2593,8 @@
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
         "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
         "rtt":             { "$ref": "#/definitions/RttOptionsType" },
-        "systemview":      { "$ref": "#/definitions/SystemViewOptionType" }
+        "systemview":      { "$ref": "#/definitions/SystemViewOptionType" },
+        "device-settings": { "$ref": "#/definitions/DeviceSettingsType" }
       },
       "additionalProperties": true,
       "required": ["name"]

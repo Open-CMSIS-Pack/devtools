@@ -402,6 +402,14 @@ void ProjMgrYamlParser::ParseInt(const YAML::Node& parent, const string& key, in
   }
 }
 
+void ProjMgrYamlParser::ParseMapOfStrings(const YAML::Node& parent, const string& key, map<string, string>& value) {
+  if (parent[key].IsDefined() && parent[key].IsMap()) {
+    for (const auto& item : parent[key]) {
+      value[item.first.as<string>()] = YAML::IsNullString(item.second.as<string>()) ? "" : item.second.as<string>();
+    }
+  }
+}
+
 void ProjMgrYamlParser::ParseVector(const YAML::Node& parent, const string& key, vector<string>& value) {
   if (parent[key].IsDefined() && parent[key].IsSequence()) {
     value = parent[key].as<vector<string>>();
@@ -637,10 +645,11 @@ void ProjMgrYamlParser::ParseDebugger(const YAML::Node& parent, const string& fi
     ParseString(debuggerNode, YAML_PROTOCOL, debugger.protocol);
     ParseNumber(debuggerNode, file, YAML_CLOCK, debugger.clock);
     ParsePortablePath(debuggerNode, file, YAML_DBGCONF, debugger.dbgconf);
+    ParseMapOfStrings(debuggerNode, YAML_DEVICE_SETTINGS, debugger.deviceSettings);
     ParseString(debuggerNode, YAML_START_PNAME, debugger.startPname);
     ParseTelnet(debuggerNode, file, debugger.telnet);
 	ParseSystemView(debuggerNode, file, debugger.systemView);
-    ParseCustom(debuggerNode, { YAML_NAME, YAML_PROTOCOL, YAML_CLOCK, YAML_DBGCONF, YAML_START_PNAME, YAML_TELNET, YAML_SYSTEMVIEW }, debugger.custom);
+    ParseCustom(debuggerNode, { YAML_NAME, YAML_PROTOCOL, YAML_CLOCK, YAML_DBGCONF, YAML_DEVICE_SETTINGS, YAML_START_PNAME, YAML_TELNET, YAML_SYSTEMVIEW }, debugger.custom);
   }
 }
 
