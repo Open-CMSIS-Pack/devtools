@@ -34,7 +34,7 @@
         __var TraceD1_Pin    = 0x00040004;   // PE4
       </debugvars>
 
-      <sequences>
+      <sequences traceSetup="full">
         <!-- Override for Pre-Defined Sequences -->
         <sequence name="DebugDeviceUnlock">
           <block>

@@ -7200,6 +7200,8 @@ TEST_F(ProjMgrUnitTests, TestNoDbgconf) {
   EXPECT_FALSE(cbuild["build"]["dbgconf"].IsDefined());
   const YAML::Node& cbuildrun = YAML::LoadFile(testoutput_folder + "/out/no-dbgconf+ARMCM3.cbuild-run.yml");
   EXPECT_FALSE(cbuildrun["cbuild-run"]["debugger"]["dbgconf"].IsDefined());
+  EXPECT_TRUE(cbuildrun["cbuild-run"]["debug-sequences-conf"].IsDefined());
+  EXPECT_EQ("full", cbuildrun["cbuild-run"]["debug-sequences-conf"]["trace-setup"].as<string>());
 }
 
 TEST_F(ProjMgrUnitTests, MissingDbgconf) {

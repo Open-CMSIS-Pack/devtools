@@ -130,6 +130,13 @@ struct DebugSequencesType {
 };
 
 /**
+ * @brief debug sequences configuration type
+*/
+struct DebugSequencesConfType {
+  std::string traceSetup;
+};
+
+/**
  * @brief debug vars type
 */
 struct DebugVarsType {
@@ -223,6 +230,7 @@ struct RunDebugType {
   SystemResourcesType systemResources;
   DebuggerType debugger;
   DebugVarsType debugVars;
+  DebugSequencesConfType debugSequencesConf;
   std::vector<DebugSequencesType> debugSequences;
   DebugTopologyType debugTopology;
 };

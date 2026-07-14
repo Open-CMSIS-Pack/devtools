@@ -2230,6 +2230,15 @@
       "additionalProperties": false,
       "required": ["name"]
     },
+    "DebugSequencesConfType": {
+      "title": "debug-sequences-conf:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#debug-sequences-conf",
+      "description": "Debug sequence configuration.",
+      "type": "object",
+      "properties": {
+        "trace-setup": { "enum": ["legacy", "full"], "description": "Trace setup mode. If full, all trace sink and trace data path setup is done by debug access sequences; default is legacy." }
+      },
+      "additionalProperties": false
+    },
     "DebugBlocksType": {
       "type": "array",
       "uniqueItems": false,
@@ -2511,26 +2520,27 @@
       "description": "This section describes generated contents",
       "type": "object",
       "properties": {
-        "generated-by":        { "type": "string", "description": "Tool name that generated this file." },
-        "solution":            { "type": "string", "description": "Name of the `*.csolution.yml` file." },
-        "target-type":         { "type": "string", "description": "Name of the target-type that was selected." },
-        "target-set":          { "type": "string", "description": "Name of the target-set that was selected." },
-        "compiler":            { "type": "string", "description": "Compiler toolchain used for code generation." },
-        "board":               { "$ref": "#/definitions/BoardType" },
-        "board-pack":          { "$ref": "#/definitions/PackID" },
-        "board-pack-path":     { "type": "string", "description": "Local path to the board pack." },
-        "device":              { "$ref": "#/definitions/DeviceType" },
-        "device-pack":         { "$ref": "#/definitions/PackID" },
-        "device-pack-path":    { "type": "string", "description": "Local path to the device pack." },
-        "output":              { "$ref": "#/definitions/RunOutputFilesType" },
-        "system-resources":    { "$ref": "#/definitions/SystemResourcesType" },
-        "system-descriptions": { "$ref": "#/definitions/RunSystemFilesType" },
-        "debugger":            { "$ref": "#/definitions/DebuggerType" },
-        "debug-vars":          { "$ref": "#/definitions/DebugVarsType" },
-        "debug-sequences":     { "$ref": "#/definitions/DebugSequencesType" },
-        "programming":         { "$ref": "#/definitions/ProgrammingType" },
-        "flash-info":          { "$ref": "#/definitions/FlashInfoType" },
-        "debug-topology":      { "$ref": "#/definitions/DebugTopologyType" }
+        "generated-by":         { "type": "string", "description": "Tool name that generated this file." },
+        "solution":             { "type": "string", "description": "Name of the `*.csolution.yml` file." },
+        "target-type":          { "type": "string", "description": "Name of the target-type that was selected." },
+        "target-set":           { "type": "string", "description": "Name of the target-set that was selected." },
+        "compiler":             { "type": "string", "description": "Compiler toolchain used for code generation." },
+        "board":                { "$ref": "#/definitions/BoardType" },
+        "board-pack":           { "$ref": "#/definitions/PackID" },
+        "board-pack-path":      { "type": "string", "description": "Local path to the board pack." },
+        "device":               { "$ref": "#/definitions/DeviceType" },
+        "device-pack":          { "$ref": "#/definitions/PackID" },
+        "device-pack-path":     { "type": "string", "description": "Local path to the device pack." },
+        "output":               { "$ref": "#/definitions/RunOutputFilesType" },
+        "system-resources":     { "$ref": "#/definitions/SystemResourcesType" },
+        "system-descriptions":  { "$ref": "#/definitions/RunSystemFilesType" },
+        "debugger":             { "$ref": "#/definitions/DebuggerType" },
+        "debug-vars":           { "$ref": "#/definitions/DebugVarsType" },
+        "debug-sequences-conf": { "$ref": "#/definitions/DebugSequencesConfType" },
+        "debug-sequences":      { "$ref": "#/definitions/DebugSequencesType" },
+        "programming":          { "$ref": "#/definitions/ProgrammingType" },
+        "flash-info":           { "$ref": "#/definitions/FlashInfoType" },
+        "debug-topology":       { "$ref": "#/definitions/DebugTopologyType" }
       },
       "additionalProperties": false,
       "required": ["generated-by", "output", "debugger"]

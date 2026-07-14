@@ -231,6 +231,7 @@
         <processor Dcore="Cortex-M4" DcoreVersion="r0p1" Dmpu="MPU" Dendian="Configurable" Dclock="10000000"/>
         <compile header="Device/ARM/ARMCM4/Include/ARMCM4.h" define="ARMCM4"/>
         <algorithm name="Device/ARM/Flash/CortexM4Device.FLM" start="0x00000000" size="0x00040000" default="1"/>
+        <sequences traceSetup="full"/>
 
       <variant Dvariant="RteTest_ARMCM4_NOFP">
         <processor Dfpu="NO_FPU"/>

@@ -75,6 +75,8 @@ cbuild-run:
       __var DbgMCU_CR      = 0x00000007;   // DBGMCU_CR: DBG_SLEEP, DBG_STOP, DBG_STANDBY
       __var TraceClk_Pin   = 0x00040003;   // PE2
       __var TraceD0_Pin    = 0x00040003;   // PE4
+  debug-sequences-conf:
+    trace-setup: full
   debug-sequences:
     - name: DebugDeviceUnlock
       blocks:
