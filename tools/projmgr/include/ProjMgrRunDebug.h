@@ -103,6 +103,7 @@ struct FilesType {
   std::string load;
   std::string offset;
   std::string pname;
+  std::string project;
 };
 
 /**

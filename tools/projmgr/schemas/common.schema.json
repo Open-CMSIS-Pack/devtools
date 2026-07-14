@@ -2187,6 +2187,7 @@
         "info":        { "type": "string", "description": "Brief description of the file." },
         "load":        { "$ref": "#/definitions/TargetSetLoadType" },
         "load-offset": { "type": "number", "description": "Offset applied in *.csolution.yml when loading the image file." },
+        "project":     { "type": "string", "description": "Project context that generated the output artifact." },
         "pname":       { "type": "string", "description": "Image belongs to processor in a multi-core system." }
       },
       "additionalProperties": false,
