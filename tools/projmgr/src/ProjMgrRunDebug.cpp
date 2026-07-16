@@ -352,6 +352,11 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   }
 
   // debug sequences
+  const auto& traceSetup = static_cast<const RteDeviceElement*>(context0->rteDevice)->GetEffectiveAttribute("traceSetup");
+  if (traceSetup != "legacy") {
+    m_runDebug.debugSequencesConf.traceSetup = traceSetup;
+  }
+
   for (const auto& [debugSequence, _] : debugSequences) {
     DebugSequencesType sequence;
     sequence.name = debugSequence->GetName();

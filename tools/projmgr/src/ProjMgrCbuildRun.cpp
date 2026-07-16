@@ -26,6 +26,7 @@ protected:
   void SetDebuggerNode(YAML::Node node, const DebuggerType& debugger);
   void SetDeviceSettingsNode(YAML::Node node, const std::map<std::string, std::string>& deviceSettings);
   void SetDebugVarsNode(YAML::Node node, const DebugVarsType& debugVars);
+  void SetDebugSequencesConfNode(YAML::Node node, const DebugSequencesConfType& sequenceConf);
   void SetDebugSequencesNode(YAML::Node node, const std::vector<DebugSequencesType>& algorithms);
   void SetDebugSequencesBlockNode(YAML::Node node, const std::vector<DebugSequencesBlockType>& blocks);
   void SetDebugTopologyNode(YAML::Node node, const DebugTopologyType& topology);
@@ -62,6 +63,7 @@ ProjMgrCbuildRun::ProjMgrCbuildRun(YAML::Node node,
   SetFilesNode(node[YAML_SYSTEM_DESCRIPTIONS], debugRun.systemDescriptions);
   SetDebuggerNode(node[YAML_DEBUGGER], debugRun.debugger);
   SetDebugVarsNode(node[YAML_DEBUG_VARS], debugRun.debugVars);
+  SetDebugSequencesConfNode(node[YAML_DEBUG_SEQUENCES_CONF], debugRun.debugSequencesConf);
   SetDebugSequencesNode(node[YAML_DEBUG_SEQUENCES], debugRun.debugSequences);
   SetProgrammingNode(node[YAML_PROGRAMMING], debugRun.algorithms);
   SetFlashInfoNode(node[YAML_FLASH_INFO], debugRun.flashInfo);
@@ -262,6 +264,10 @@ void ProjMgrCbuildRun::SetDebugVarsNode(YAML::Node node, const DebugVarsType& de
   if (!debugVars.vars.empty()) {
     SetNodeValue(node[YAML_VARS], "|\n" + debugVars.vars);
   }
+}
+
+void ProjMgrCbuildRun::SetDebugSequencesConfNode(YAML::Node node, const DebugSequencesConfType& sequenceConf) {
+  SetNodeValue(node[YAML_TRACE_SETUP], sequenceConf.traceSetup);
 }
 
 void ProjMgrCbuildRun::SetDebugSequencesNode(YAML::Node node, const std::vector<DebugSequencesType>& sequences) {
