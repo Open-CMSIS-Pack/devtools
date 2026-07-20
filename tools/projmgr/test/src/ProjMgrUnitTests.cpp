@@ -4267,24 +4267,24 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
 
   map<string, string> testData = {
     {"conflict+CM0", "warning csolution: dependency validation for context 'conflict+CM0' failed:\n\
-CONFLICT RteTest:ApiExclusive@1.0.0\n\
-  ARM::RteTest:ApiExclusive:S1\n\
-  ARM::RteTest:ApiExclusive:S2" },
+API RteTest:ApiExclusive@1.0.0 : Conflict, select exactly one of available matches\n\
+  -component ARM::RteTest:ApiExclusive:S1 - conflicted selection\n\
+  -component ARM::RteTest:ApiExclusive:S2 - conflicted selection" },
     {"incompatible+CM0", "warning csolution: dependency validation for context 'incompatible+CM0' failed:\n\
-INCOMPATIBLE ARM::RteTest:Check:Incompatible@0.9.9\n\
-  deny RteTest:Dependency:Incompatible_component\n\
-  ARM::RteTest:Dependency:Incompatible_component" },
+component ARM::RteTest:Check:Incompatible@0.9.9 : Incompatible dependency selection\n\
+  failed deny RteTest:Dependency:Incompatible_component : Select compatible component\n\
+    -component ARM::RteTest:Dependency:Incompatible_component - incompatible selection" },
     {"incompatible-variant+CM0", "warning csolution: dependency validation for context 'incompatible-variant+CM0' failed:\n\
-INCOMPATIBLE_VARIANT ARM::RteTest:Check:IncompatibleVariant@0.9.9\n\
-  require RteTest:Dependency:Variant&Compatible\n\
-  ARM::RteTest:Dependency:Variant" },
+component ARM::RteTest:Check:IncompatibleVariant@0.9.9 : Incompatible dependency selection\n\
+  failed require RteTest:Dependency:Variant&Compatible : Select compatible component variant\n\
+    -component ARM::RteTest:Dependency:Variant - incompatible variant selection" },
     {"missing+CM0", "warning csolution: dependency validation for context 'missing+CM0' failed:\n\
-MISSING ARM::RteTest:Check:Missing@0.9.9\n\
-  require RteTest:Dependency:Missing" },
+component ARM::RteTest:Check:Missing@0.9.9 : Unresolved dependencies\n\
+  failed require RteTest:Dependency:Missing : Install missing component" },
     {"selectable+CM0", "warning csolution: dependency validation for context 'selectable+CM0' failed:\n\
-SELECTABLE ARM::Device:Startup&RteTest Startup@2.0.3\n\
-  require RteTest:CORE\n\
-  ARM::RteTest:CORE" }
+component ARM::Device:Startup&RteTest Startup@2.0.3 : Unresolved dependencies\n\
+  failed require RteTest:CORE : Select component from list\n\
+    -component ARM::RteTest:CORE - available selection" }
   };
 
   for (const auto& [context, expected] : testData) {

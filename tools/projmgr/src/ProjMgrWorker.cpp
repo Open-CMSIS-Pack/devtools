@@ -10,6 +10,7 @@
 
 #include "CrossPlatformUtils.h"
 #include "RteFsUtils.h"
+#include "RteUtils.h"
 
 #include <algorithm>
 #include <iostream>
@@ -2818,32 +2819,40 @@ bool ProjMgrWorker::IsPreIncludeByTarget(const RteTarget* activeTarget, const st
 RteItem::ConditionResult ProjMgrWorker::ValidateContext(ContextItem& context) {
   context.validationResults.clear();
   map<const RteItem*, RteDependencyResult> results;
-  auto depResult = context.rteActiveTarget->GetDepsResult(results, context.rteActiveTarget);
-  if(depResult >= RteItem::ConditionResult::FULFILLED) {
-    return depResult;
+  auto contextResult = context.rteActiveTarget->GetDepsResult(results, context.rteActiveTarget);
+  if(contextResult >= RteItem::ConditionResult::FULFILLED) {
+    return contextResult;
   }
-  for (const auto& [item, result] : results) {
+  for (const auto& [item, componentResult] : results) {
+    auto res = componentResult.GetResult();
+    if(res == RteItem::SELECTABLE && contextResult < RteItem::SELECTABLE) {
+      continue; // ignore selectable results when more important problems exist
+    }
     ValidationResult validation;
-    validation.result = result.GetResult();
+    validation.result = res;
     validation.id = item->ConstructComponentID(true);
 
-    for (const auto& aggregate : result.GetComponentAggregates()) {
+    for (const auto& aggregate : componentResult.GetComponentAggregates()) {
       validation.aggregates.insert(aggregate->ConstructComponentID(true));
     }
 
-    const auto& depResults = result.GetResults();
+    const auto& depResults = componentResult.GetResults();
     for (const auto& [item, result] : depResults) {
+      auto res = componentResult.GetResult();
+      if(res == RteItem::SELECTABLE && contextResult < RteItem::SELECTABLE) {
+        continue; // ignore selectable results when more important problems exist
+      }
       ValidationCondition condition;
+      condition.result = res;
       condition.expression = item->GetDependencyExpressionID();
       for (const auto& aggregate : result.GetComponentAggregates()) {
         condition.aggregates.insert(aggregate->ConstructComponentID(true));
       }
       validation.conditions.push_back(condition);
     }
-
     context.validationResults.push_back(validation);
   }
-  return depResult;
+  return contextResult;
 }
 
 bool ProjMgrWorker::ProcessGpdsc(ContextItem& context) {
@@ -4748,19 +4757,33 @@ bool ProjMgrWorker::ListTemplates(vector<string>& templates, const string& filte
   return true;
 }
 
+static string FormatAggregates(RteItem::ConditionResult result, const StrSet& aggregates, unsigned indent) {
+  string resultStr;
+  stringstream ss;
+  for(const auto& id : aggregates) {
+    ss << endl << RteUtils::GetIndent(indent);
+    ss << "-component " <<  id << " - "  << RteDependencyResult::GetAggregateExplanationText(result);
+  }
+  return ss.str();
+}
+
 bool ProjMgrWorker::FormatValidationResults(set<string>& results, const ContextItem& context) {
-  for (const auto& validation : context.validationResults) {
-    string resultStr = RteItem::ConditionResultToString(validation.result) + " " + validation.id;
-    for (const auto& condition : validation.conditions) {
-      resultStr += "\n  " + condition.expression;
-      for (const auto& id : condition.aggregates) {
-        resultStr += "\n  " + id;
-      }
+
+  for(const auto& validation : context.validationResults) {
+    stringstream ss;
+    if(validation.result == RteItem::CONFLICT) {
+      ss << "API ";
+    } else {
+       ss << "component ";
     }
-    for (const auto& id : validation.aggregates) {
-      resultStr += "\n  " + id;
+    ss << validation.id << " : " << RteDependencyResult::GetComponentExplanationText(validation.result);
+
+    for(const auto& condition : validation.conditions) {
+      ss << "\n  failed " << condition.expression << " : " << RteDependencyResult::GetExpressionExplanationText(validation.result);
+      ss << FormatAggregates(condition.result, condition.aggregates, 4);
     }
-    results.insert(resultStr);
+    ss << FormatAggregates(validation.result, validation.aggregates, 2); // API aggregates
+    results.insert(ss.str());
   }
   return true;
 }
