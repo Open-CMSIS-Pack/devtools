@@ -542,7 +542,7 @@ public:
    * @param res RteItem::ConditionResult
    * @return explanation text or empty string
   */
-  static std::string RteDependencyResult::GetAggregateExplanationText(RteItem::ConditionResult res);
+  static std::string GetAggregateExplanationText(RteItem::ConditionResult res);
 
 public:
   /**
