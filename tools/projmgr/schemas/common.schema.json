@@ -2666,7 +2666,7 @@
       "additionalProperties": false
     },
     "MlopsType": {
-      "title": "mlops:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#mlops-management",
+      "title": "mlops:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#mlops-management",
       "description": "Configuration for MLOps features.",
       "type": ["null", "object"],
       "properties": {
@@ -2706,7 +2706,7 @@
       "additionalProperties": false
     },
     "MlopsDescType": {
-      "title": "cbuild-mlops:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#mlops-management",
+      "title": "cbuild-mlops:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#cbuild-mlopsyml",
       "type": ["null", "object"],
       "properties": {
         "description": { "type": "string", "description": "Brief description of the MLOps configuration." },
