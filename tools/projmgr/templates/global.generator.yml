@@ -14,4 +14,13 @@ generator:
     download-url: https://softwaretools.infineon.com/tools/com.ifx.tb.tool.deviceconfigurator
     run: ../bin/launch-Infineon_Dev_Config
     path: $ProjectDir()$/RTE/Device_Configurator/$TargetType$
-    
+  - id: Infineon_Device_Configurator
+    description: Global Registered Generator for Infineon Device Configurator (MOTIX and LITIX devices)
+    download-url: https://softwaretools.infineon.com/tools/com.ifx.tb.tool.deviceconfigurator
+    run: ../bin/launch-Infineon_Dev_Config_motixlitix.bat
+    path: $SolutionDir()$/config
+  - id: InfineonMcuConfigWizard
+    description: Global Registered Generator for Infineon MCU Config Wizard (MOTIX and LITIX devices)
+    download-url: https://softwaretools.infineon.com/assets/com.ifx.tb.tool.ifxconfigwizardforembeddedpowerics
+    run: ../bin/launch-Infineon_MCU_Config_Wizard.bat
+    path: $SolutionDir()$/InfineonMcuConfigWizard/$TargetType$
