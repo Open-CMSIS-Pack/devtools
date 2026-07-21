@@ -279,6 +279,7 @@ struct ContextTypesItem {
  *        related aggregates
 */
 struct ValidationCondition {
+  RteItem::ConditionResult result;
   std::string expression;
   StrSet aggregates;
 };
