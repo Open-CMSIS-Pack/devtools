@@ -4762,7 +4762,7 @@ static string FormatAggregates(RteItem::ConditionResult result, const StrSet& ag
   stringstream ss;
   for(const auto& id : aggregates) {
     ss << endl << RteUtils::GetIndent(indent);
-    ss << "-component " <<  id << " - "  << RteDependencyResult::GetAggregateExplanationText(result);
+    ss << "- component " <<  id << " - "  << RteDependencyResult::GetAggregateExplanationText(result);
   }
   return ss.str();
 }
@@ -4779,7 +4779,7 @@ bool ProjMgrWorker::FormatValidationResults(set<string>& results, const ContextI
     ss << validation.id << " : " << RteDependencyResult::GetComponentExplanationText(validation.result);
 
     for(const auto& condition : validation.conditions) {
-      ss << "\n  failed " << condition.expression << " : " << RteDependencyResult::GetExpressionExplanationText(validation.result);
+      ss << "\n  failed '" << condition.expression << "' : " << RteDependencyResult::GetExpressionExplanationText(validation.result);
       ss << FormatAggregates(condition.result, condition.aggregates, 4);
     }
     ss << FormatAggregates(validation.result, validation.aggregates, 2); // API aggregates
