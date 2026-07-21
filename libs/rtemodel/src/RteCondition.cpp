@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-/******************************************************************************/
+ /******************************************************************************/
 #include "RteCondition.h"
 
 #include "RtePackage.h"
@@ -61,10 +61,10 @@ bool RteConditionExpression::IsDeviceExpression() const
 
 bool RteConditionExpression::IsDeviceDependent() const
 {
-  if (IsDeviceExpression()) {
+  if(IsDeviceExpression()) {
     return !GetAttribute("Dname").empty();
   }
-  if (GetExpressionDomain() == CONDITION_EXPRESSION) {
+  if(GetExpressionDomain() == CONDITION_EXPRESSION) {
     return RteItem::IsDeviceDependent();
   }
   return false;
@@ -77,10 +77,10 @@ bool RteConditionExpression::IsBoardExpression() const
 
 bool RteConditionExpression::IsBoardDependent() const
 {
-  if (IsBoardExpression()) {
+  if(IsBoardExpression()) {
     return !GetAttribute("Bname").empty();
   }
-  if (GetExpressionDomain() == CONDITION_EXPRESSION) {
+  if(GetExpressionDomain() == CONDITION_EXPRESSION) {
     return RteItem::IsBoardDependent();
   }
   return false;
@@ -90,13 +90,13 @@ bool RteConditionExpression::IsBoardDependent() const
 string RteConditionExpression::ConstructID()
 {
   auto it = m_attributes.begin();
-  if (it != m_attributes.end()) {
+  if(it != m_attributes.end()) {
     m_domain = it->first.at(0);
-    if (m_domain == 'P') {
+    if(m_domain == 'P') {
       m_domain = DEVICE_EXPRESSION;
     }
   }
-  if (IsDependencyExpression()) {
+  if(IsDependencyExpression()) {
     return GetDependencyExpressionID();
   } else {
     return GetTag() + " " + GetAttributesString();
@@ -122,7 +122,7 @@ RteComponentAggregate* RteConditionExpression::GetSingleComponentAggregate(RteTa
 
 RteComponentAggregate* RteConditionExpression::GetSingleComponentAggregate(RteTarget* target, const set<RteComponentAggregate*>& components)
 {
-  if (components.empty()) {
+  if(components.empty()) {
     return nullptr;
   }
   RtePackage* devicePack = target->GetEffectiveDevicePackage();
@@ -130,16 +130,16 @@ RteComponentAggregate* RteConditionExpression::GetSingleComponentAggregate(RteTa
   RteComponentAggregate* singleAggregate = nullptr;
   RtePackage* singleAggregatePack = nullptr;
   int nAggregates = 0;
-  for (auto a : components) {
-    if (a->IsFiltered()) {
+  for(auto a : components) {
+    if(a->IsFiltered()) {
       RtePackage* aPack = a->GetPackage();
-      if (!singleAggregate) {
+      if(!singleAggregate) {
         singleAggregate = a;
         singleAggregatePack = aPack;
         nAggregates = 1;
-      } else if (a != singleAggregate) {
-        if (aPack == devicePack) {
-          if (singleAggregatePack == devicePack) {
+      } else if(a != singleAggregate) {
+        if(aPack == devicePack) {
+          if(singleAggregatePack == devicePack) {
             // more than one aggregate comes from device package
             return nullptr;
           }
@@ -147,7 +147,7 @@ RteComponentAggregate* RteConditionExpression::GetSingleComponentAggregate(RteTa
           singleAggregate = a;
           singleAggregatePack = aPack;
           nAggregates = 1;
-        } else if (singleAggregatePack != devicePack) {
+        } else if(singleAggregatePack != devicePack) {
           nAggregates++;
         }
       }
@@ -160,7 +160,7 @@ RteComponentAggregate* RteConditionExpression::GetSingleComponentAggregate(RteTa
 bool RteConditionExpression::Validate()
 {
   m_bValid = RteItem::Validate();
-  if (m_attributes.empty()) {
+  if(m_attributes.empty()) {
     string msg = " '";
     msg += GetDisplayName() + "': Empty expression";
     m_errors.push_back(msg);
@@ -170,22 +170,22 @@ bool RteConditionExpression::Validate()
 
   set<char> domains;
   bool bComponent = false;
-  for (auto [a, v] : m_attributes) {
+  for(auto [a, v] : m_attributes) {
     char ch = a.at(0);
-    if (ch == COMPONENT_EXPRESSION) {
+    if(ch == COMPONENT_EXPRESSION) {
       bComponent = true;
-    } else if (ch == 'P') { // processor properties belong to Device domain
+    } else if(ch == 'P') { // processor properties belong to Device domain
       ch = 'D';
     }
     domains.insert(ch);
   }
-  if (domains.size() > 1) {
+  if(domains.size() > 1) {
     string msg = " '";
     msg += GetDisplayName() + "': mixed 'B', 'C', 'D', 'T' or 'condition' attributes";
     m_errors.push_back(msg);
     m_bValid = false;
   }
-  if (bComponent && (GetCclassName().empty() || GetCgroupName().empty())) {
+  if(bComponent && (GetCclassName().empty() || GetCgroupName().empty())) {
     string msg = " '";
     msg += GetDisplayName() + "': Cclass or Cgroup attribute is missing in expression";
     m_errors.push_back(msg);
@@ -207,37 +207,37 @@ RteItem::ConditionResult RteConditionExpression::GetConditionResult(RteCondition
 
 RteItem::ConditionResult RteConditionExpression::EvaluateExpression(RteTarget* target)
 {
-  if (!target)
+  if(!target)
     return FAILED;
   const map<string, string>& attributes = target->GetAttributes();
-  for (auto [a, v] : m_attributes) {
-    if (a.empty())
+  for(auto [a, v] : m_attributes) {
+    if(a.empty())
       continue;
-    if (a.at(0) == 'C') {
+    if(a.at(0) == 'C') {
       continue; // skip check for Cclass, Cgroup, Csub, ...
     }
-    if (a == "condition") {
+    if(a == "condition") {
       continue; // special handling for referred condition
     }
     auto ita = attributes.find(a);
-    if (ita != attributes.end()) {
+    if(ita != attributes.end()) {
       const string& va = ita->second;
-      if (a == "Dvendor" || a == "Bvendor" || a == "vendor") {
-        if (!DeviceVendor::Match(va, v))
+      if(a == "Dvendor" || a == "Bvendor" || a == "vendor") {
+        if(!DeviceVendor::Match(va, v))
           return FAILED;
         continue;
       }
-      if (a == "Dcdecp") {
+      if(a == "Dcdecp") {
         unsigned long uva = RteUtils::ToUL(va);
         unsigned long uv = RteUtils::ToUL(v);
-        if ((uva & uv) == 0) // alternatively we have considered if ((uva & uv) == uv)
+        if((uva & uv) == 0) // alternatively we have considered if ((uva & uv) == uv)
           return FAILED;
         continue;
       }
       // all other attributes
-      if (!WildCards::Match(va, v))
+      if(!WildCards::Match(va, v))
         return FAILED;
-    } else if (GetExpressionType() == DENY) {
+    } else if(GetExpressionType() == DENY) {
       return FAILED; // for denied attributes, all must be given
     }
   }
@@ -248,20 +248,20 @@ RteItem::ConditionResult RteConditionExpression::EvaluateExpression(RteTarget* t
 RteItem::ConditionResult RteConditionExpression::GetDepsResult(map<const RteItem*, RteDependencyResult>& results, RteTarget* target) const
 {
   ConditionResult r = RteDependencyResult::GetResult(this, results);
-  if (r != UNDEFINED)
+  if(r != UNDEFINED)
     return r;
   RteItem::ConditionResult result = GetConditionResult(target->GetDependencySolver());
-  if (result < FULFILLED && result > FAILED) {
+  if(result < FULFILLED && result > FAILED) {
     RteCondition* cond = GetCondition();
-    if (cond) {
+    if(cond) {
       return cond->GetDepsResult(results, target);
-    } else if (IsDependencyExpression()) {
+    } else if(IsDependencyExpression()) {
       // check if we already have result
-      if (HasDepsResult(results))
+      if(HasDepsResult(results))
         return result;
       RteDependencyResult depRes(this, result);
       const set<RteComponentAggregate*>& components = GetComponentAggregates(target);
-      for (auto a : components) {
+      for(auto a : components) {
         if(a) {
           depRes.AddComponentAggregate(a);
         }
@@ -275,13 +275,13 @@ RteItem::ConditionResult RteConditionExpression::GetDepsResult(map<const RteItem
 
 bool RteConditionExpression::HasDepsResult(map<const RteItem*, RteDependencyResult>& results) const
 {
-  if (results.empty())
+  if(results.empty())
     return false;
-  if (results.find(this) != results.end())
+  if(results.find(this) != results.end())
     return true;
 
-  for (auto [item, res] : results) {
-    if (item->GetTag() == GetTag() && item->EqualAttributes(this))
+  for(auto [item, res] : results) {
+    if(item->GetTag() == GetTag() && item->EqualAttributes(this))
       return true;
   }
 
@@ -292,12 +292,12 @@ bool RteConditionExpression::HasDepsResult(map<const RteItem*, RteDependencyResu
 RteItem::ConditionResult RteDenyExpression::Evaluate(RteConditionContext* context)
 {
   ConditionResult result = RteConditionExpression::Evaluate(context);
-  if (IsDependencyExpression()) {
+  if(IsDependencyExpression()) {
     return result; // already denied
   }
 
-  if (context->IsDependencyContext()) {
-    switch (result) {
+  if(context->IsDependencyContext()) {
+    switch(result) {
     case FULFILLED:
       return INCOMPATIBLE;
 
@@ -317,7 +317,7 @@ RteItem::ConditionResult RteDenyExpression::Evaluate(RteConditionContext* contex
       return IGNORED;
     };
   } else { // filtering
-    switch (result) {
+    switch(result) {
     case FULFILLED:
       return FAILED;
     case FAILED:
@@ -360,12 +360,12 @@ string RteCondition::GetDisplayName() const
 bool RteCondition::Validate()
 {
   m_bValid = RteItem::Validate();
-  if (!m_bValid) {
+  if(!m_bValid) {
     string msg = CreateErrorString("error", "502", "error(s) in condition definition:");
     m_errors.push_front(msg);
   }
   m_bInCheck = false;
-  if (!ValidateRecursion()) {
+  if(!ValidateRecursion()) {
     string msg = CreateErrorString("error", "503", "direct or indirect recursion detected");
     m_errors.push_back(msg);
     m_bValid = false;
@@ -375,21 +375,21 @@ bool RteCondition::Validate()
 
 bool RteCondition::ValidateRecursion()
 {
-  if (m_bInCheck) {
+  if(m_bInCheck) {
     return false;
   }
   m_bInCheck = true;
   bool noRecursion = true;
-  for (auto child : GetChildren()) {
+  for(auto child : GetChildren()) {
     RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(child);
-    if (!expr)
+    if(!expr)
       continue;
 
     RteCondition* cond = expr->GetCondition();
-    if (!cond)
+    if(!cond)
       continue;
 
-    if (!cond->ValidateRecursion()) { // will return false if m_bInCheck == true
+    if(!cond->ValidateRecursion()) { // will return false if m_bInCheck == true
       noRecursion = false;
       break;
     }
@@ -400,25 +400,25 @@ bool RteCondition::ValidateRecursion()
 
 void RteCondition::CalcDeviceAndBoardDependentFlags()
 {
-  if (m_bDeviceDependent < 0 || m_bBoardDependent < 0) { // not yet calculated
+  if(m_bDeviceDependent < 0 || m_bBoardDependent < 0) { // not yet calculated
     m_bDeviceDependent = 0;
     m_bBoardDependent = 0;
-    if (m_bInCheck) { // to prevent recursion
+    if(m_bInCheck) { // to prevent recursion
       return;
     }
     m_bInCheck = true;
-    for (auto child : GetChildren()) {
+    for(auto child : GetChildren()) {
       RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(child);
-      if (!expr) {
+      if(!expr) {
         continue;
       }
-      if (expr->IsDeviceDependent()) {
+      if(expr->IsDeviceDependent()) {
         m_bDeviceDependent = 1;
       }
-      if (expr->IsBoardDependent()) {
+      if(expr->IsBoardDependent()) {
         m_bBoardDependent = 1;
       }
-      if (m_bDeviceDependent > 0 && m_bBoardDependent > 0) {
+      if(m_bDeviceDependent > 0 && m_bBoardDependent > 0) {
         break;
       }
     }
@@ -428,7 +428,7 @@ void RteCondition::CalcDeviceAndBoardDependentFlags()
 
 bool RteCondition::IsDeviceDependent() const
 {
-  if (m_bDeviceDependent < 0) {
+  if(m_bDeviceDependent < 0) {
     RteCondition* that = const_cast<RteCondition*>(this);
     that->CalcDeviceAndBoardDependentFlags();
   }
@@ -437,7 +437,7 @@ bool RteCondition::IsDeviceDependent() const
 
 bool RteCondition::IsBoardDependent() const
 {
-  if (m_bBoardDependent < 0) {
+  if(m_bBoardDependent < 0) {
     RteCondition* that = const_cast<RteCondition*>(this);
     that->CalcDeviceAndBoardDependentFlags();
   }
@@ -450,17 +450,17 @@ RteItem::ConditionResult RteCondition::GetDepsResult(map<const RteItem*, RteDepe
   RteDependencySolver* solver = target->GetDependencySolver();
   RteItem::ConditionResult conditionResult = GetConditionResult(solver);
   ConditionResult resultAccept = FAILED;
-  if (conditionResult < FULFILLED && conditionResult > FAILED) {
+  if(conditionResult < FULFILLED && conditionResult > FAILED) {
     bool hasAcceptConditions = false;
     // first collect all results from require and deny expressions
-    for (auto child : GetChildren()) {
+    for(auto child : GetChildren()) {
       RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(child);
-      if (!expr)
+      if(!expr)
         continue;
-      if (expr->GetExpressionType() == RteConditionExpression::ACCEPT) {
+      if(expr->GetExpressionType() == RteConditionExpression::ACCEPT) {
         hasAcceptConditions = true;
         ConditionResult res = solver->GetConditionResult(expr);
-        if (res > resultAccept) {
+        if(res > resultAccept) {
           resultAccept = res;
         }
         continue;
@@ -468,26 +468,26 @@ RteItem::ConditionResult RteCondition::GetDepsResult(map<const RteItem*, RteDepe
       expr->GetDepsResult(results, target);
     }
 
-    if (hasAcceptConditions) {
+    if(hasAcceptConditions) {
       // now collect results of accept expressions
       // select only those with the results equal to acceptResult or the condition result
       map<const RteItem*, RteDependencyResult> acceptResults;
-      for (auto child : GetChildren()) {
+      for(auto child : GetChildren()) {
         RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(child);
-        if (!expr || expr->GetExpressionType() != RteConditionExpression::ACCEPT)
+        if(!expr || expr->GetExpressionType() != RteConditionExpression::ACCEPT)
           continue;
         ConditionResult res = solver->GetConditionResult(expr);
-        if (res == resultAccept || res == conditionResult) {
+        if(res == resultAccept || res == conditionResult) {
           expr->GetDepsResult(acceptResults, target);
         }
       }
       size_t nTotalAggregates = 0; // check is multiple selection is possible
-      if (!acceptResults.empty()) {
-        for (auto& [item, depRes] : acceptResults) {
+      if(!acceptResults.empty()) {
+        for(auto& [item, depRes] : acceptResults) {
           nTotalAggregates += depRes.GetComponentAggregates().size();
         }
-        for (auto& [item, depRes] : acceptResults) {
-          if (nTotalAggregates > 1) {
+        for(auto& [item, depRes] : acceptResults) {
+          if(nTotalAggregates > 1) {
             depRes.SetMultiple(true);
           }
           results[item] = depRes;
@@ -501,7 +501,7 @@ RteItem::ConditionResult RteCondition::GetDepsResult(map<const RteItem*, RteDepe
 
 RteItem::ConditionResult RteCondition::Evaluate(RteConditionContext* context)
 {
-  if (IsEvaluating(context)) {
+  if(IsEvaluating(context)) {
     return R_ERROR; // recursion error
   }
   SetEvaluating(context, true);
@@ -517,7 +517,7 @@ bool RteCondition::IsEvaluating(RteConditionContext* context) const
 
 void RteCondition::SetEvaluating(RteConditionContext* context, bool evaluating)
 {
-  if (evaluating) {
+  if(evaluating) {
     m_evaluating.insert(context);
   } else {
     m_evaluating.erase(context);
@@ -543,18 +543,18 @@ RteCondition* RteCondition::GetCondition() const
 
 RteCondition* RteCondition::GetCondition(const string& id) const
 {
-  if (id == GetName())
+  if(id == GetName())
     return GetCondition();
   return RteItem::GetCondition(id);
 }
 
 RteItem* RteCondition::CreateItem(const std::string& tag)
 {
-  if (tag == "accept") {
+  if(tag == "accept") {
     return new RteAcceptExpression(this);
-  } else if (tag == "require") {
+  } else if(tag == "require") {
     return new RteRequireExpression(this);
-  } else if (tag == "deny") {
+  } else if(tag == "deny") {
     return new RteDenyExpression(this);
   }
   return RteItem::CreateItem(tag);
@@ -568,7 +568,7 @@ RteConditionContainer::RteConditionContainer(RteItem* parent) :
 
 RteItem* RteConditionContainer::CreateItem(const std::string& tag)
 {
-  if (tag == "condition") {
+  if(tag == "condition") {
     return new RteCondition(this);
   }
   return RteItem::CreateItem(tag);
@@ -601,18 +601,113 @@ string RteDependencyResult::GetDisplayName() const
   const RteComponent* c = dynamic_cast<const RteComponent*>(m_item);
   const RteComponentInstance* ci = dynamic_cast<const RteComponentInstance*>(m_item);
   const RteComponentAggregate* a = dynamic_cast<const RteComponentAggregate*>(m_item);
-  if (c) {
+  if(c) {
     name = c->GetComponentAggregateID();
-  } else if (a) {
+  } else if(a) {
     name = a->GetFullDisplayName();
-  } else if (ci) {
+  } else if(ci) {
     name = ci->GetFullDisplayName();
-  } else if (m_item && m_item == m_item->GetModel()) { // [TdB: 07.07.2015] m_item can be nullptr pointer
+  } else if(m_item && m_item == m_item->GetModel()) { // [TdB: 07.07.2015] m_item can be nullptr pointer
     name = "Validate Run Time Environment";
-  } else if (m_item) {
+  } else if(m_item) {
     name = m_item->GetDisplayName();
   }
   return name;
+}
+
+std::string RteDependencyResult::GetComponentExplanationText(RteItem::ConditionResult res)
+{
+  string message;
+  switch(res) {
+  case RteItem::CONFLICT:
+    message = "Conflict, select exactly one of available matches";
+    break;
+  case RteItem::INSTALLED:
+  case RteItem::SELECTABLE:
+  case RteItem::MISSING:
+  case RteItem::UNAVAILABLE:
+  case RteItem::UNAVAILABLE_PACK:
+    message = "Unresolved dependencies";
+    break;
+  case RteItem::INCOMPATIBLE:
+  case RteItem::INCOMPATIBLE_VERSION:
+  case RteItem::INCOMPATIBLE_VARIANT:
+    message = "Incompatible dependency selection";
+    break;
+
+  default:
+    break;
+  };
+
+  return message;
+}
+
+std::string RteDependencyResult::GetExpressionExplanationText(RteItem::ConditionResult res)
+{
+  string message;
+  switch(res) {
+    case RteItem::INSTALLED:
+      message = "Select bundle and component from list";
+      break;
+    case RteItem::SELECTABLE:
+      message = "Select component from list";
+      break;
+    case RteItem::MISSING:
+      message = "Install missing component";
+      break;
+    case RteItem::UNAVAILABLE:
+      message = "Install missing component or change target settings";
+      break;
+    case RteItem::UNAVAILABLE_PACK:
+      message = "Update pack selection";
+      break;
+    case RteItem::MISSING_API:
+      message = "Install missing API";
+      break;
+    case RteItem::MISSING_API_VERSION:
+      message = "Install required API version";
+      break;
+    case RteItem::CONFLICT:
+      message = "Conflict, select exactly one component from list";
+      break;
+    case RteItem::INCOMPATIBLE:
+      message = "Select compatible component";
+      break;
+    case RteItem::INCOMPATIBLE_VERSION:
+      message = "Select compatible component version";
+      break;
+    case RteItem::INCOMPATIBLE_VARIANT:
+      message = "Select compatible component variant";
+      break;
+    default:
+      break;
+  };
+  return message;
+}
+
+std::string RteDependencyResult::GetAggregateExplanationText(RteItem::ConditionResult res)
+{
+  string message;
+  switch(res) {
+  case RteItem::CONFLICT:
+    message = "conflicted selection";
+    break;
+  case RteItem::SELECTABLE:
+    message = "available selection";
+    break;
+  case RteItem::INCOMPATIBLE:
+    message = "incompatible selection";
+    break;
+  case RteItem::INCOMPATIBLE_VERSION:
+    message = "incompatible version selection";
+    break;
+  case RteItem::INCOMPATIBLE_VARIANT:
+    message = "incompatible variant selection";
+    break;
+  default:
+    break;
+  };
+  return message;
 }
 
 
@@ -621,14 +716,14 @@ string RteDependencyResult::GetMessageText() const
   const RteComponent* c = dynamic_cast<const RteComponent*>(m_item);
   string message;
   // component or api
-  if (c)
+  if(c)
   {
     // check is we have several types of errors/warnings
     bool unresolved = false;
     bool conflicted = false;
-    for (auto [item, depRes] : m_results) {
+    for(auto [item, depRes] : m_results) {
       RteItem::ConditionResult res = depRes.GetResult();
-      switch (res) {
+      switch(res) {
       case RteItem::INSTALLED:
       case RteItem::SELECTABLE:
       case RteItem::UNAVAILABLE:
@@ -647,76 +742,15 @@ string RteDependencyResult::GetMessageText() const
         break;
       }
     }
-
-    if (unresolved && conflicted) {
+    if(unresolved && conflicted) {
       message = "Component conflicts with other selected components and has unresolved dependencies";
       return message;
     }
-
-    switch (m_result) {
-    case RteItem::CONFLICT:
-      message = "Conflict, select exactly one component from list:";
-      break;
-    case RteItem::INSTALLED:
-    case RteItem::SELECTABLE:
-    case RteItem::MISSING:
-    case RteItem::UNAVAILABLE:
-    case RteItem::UNAVAILABLE_PACK:
-      message = "Additional software components required";
-      break;
-    case RteItem::INCOMPATIBLE:
-      message = "Component is incompatible with other selected components";
-      break;
-    case RteItem::INCOMPATIBLE_VERSION:
-      message = "Component is incompatible with versions of other selected components";
-      break;
-    case RteItem::INCOMPATIBLE_VARIANT:
-      message = "Incompatible variant is selected";
-      break;
-
-    default:
-      break;
-    };
-  } else if (m_item && m_item->GetModel() == m_item) {
+    message = GetComponentExplanationText(m_result);
+  } else if(m_item && m_item->GetModel() == m_item) {
     message = "Errors/Warnings detected:";
   } else {
-    switch (m_result) {
-    case RteItem::INSTALLED:
-      message = "Select bundle and component from list";
-      break;
-    case RteItem::SELECTABLE:
-      message = "Select component from list";
-      break;
-    case RteItem::MISSING:
-      message = "Install missing component";
-      break;
-    case RteItem::UNAVAILABLE:
-      message = "Install missing component or change target settings";
-      break;
-    case RteItem::UNAVAILABLE_PACK:
-      message = "Update pack selection";
-      break;
-    case RteItem::MISSING_API:
-      message = "API is missing";
-      break;
-    case RteItem::MISSING_API_VERSION:
-      message = "API with required or compatible version is missing";
-      break;
-    case RteItem::CONFLICT:
-      message = "Conflict, select exactly one component from list";
-      break;
-    case RteItem::INCOMPATIBLE:
-      message = "Select compatible component or deselect incompatible one";
-      break;
-    case RteItem::INCOMPATIBLE_VERSION:
-      message = "Select compatible component version";
-      break;
-    case RteItem::INCOMPATIBLE_VARIANT:
-      message = "Select compatible component variant";
-      break;
-    default:
-      break;
-    }
+    message = GetExpressionExplanationText(m_result);
   }
   return message;
 }
@@ -726,8 +760,8 @@ string RteDependencyResult::GetErrorNum() const
 {
   string errNum;
   const RteComponent* c = dynamic_cast<const RteComponent*>(m_item);
-  if (c) {
-    switch (m_result) {
+  if(c) {
+    switch(m_result) {
     case RteItem::INSTALLED:
       errNum = "510";
       break;
@@ -760,8 +794,8 @@ string RteDependencyResult::GetSeverity() const
 {
   string severity;
   const RteComponent* c = dynamic_cast<const RteComponent*>(m_item);
-  if (c) {
-    if (m_result == RteItem::INSTALLED || m_result == RteItem::SELECTABLE)
+  if(c) {
+    if(m_result == RteItem::INSTALLED || m_result == RteItem::SELECTABLE)
       severity = "warning";
     else
       severity = "error";
@@ -774,16 +808,16 @@ string RteDependencyResult::GetOutputMessage() const
 {
   string output;
   const RteComponent* c = dynamic_cast<const RteComponent*>(m_item);
-  if (c)
+  if(c)
   {
     output = "'";
     output += c->GetFullDisplayName();
 
     output += "': " + GetSeverity() + " #" + GetErrorNum() + ": " + GetMessageText();
-  } else if (m_item && m_item->GetModel() == m_item) {
+  } else if(m_item && m_item->GetModel() == m_item) {
     output = "Validate Run Time Environment: errors/warnings detected:";
     return output;
-  } else if (m_item) {
+  } else if(m_item) {
     output = " ";
     output += m_item->GetDisplayName();
     output += ": " + GetMessageText();
@@ -800,7 +834,7 @@ void RteDependencyResult::AddComponentAggregate(RteComponentAggregate* a)
 RteItem::ConditionResult RteDependencyResult::GetResult(const RteItem* item, const map<const RteItem*, RteDependencyResult>& results)
 {
   auto it = results.find(item);
-  if (it != results.end())
+  if(it != results.end())
     return it->second.GetResult();
 
   return RteItem::UNDEFINED;
@@ -833,7 +867,7 @@ bool RteConditionContext::IsVerbose() const
 
 void RteConditionContext::VerboseIn(RteItem* item)
 {
-  if (IsVerbose()) {
+  if(IsVerbose()) {
     m_verboseIndent++;
     stringstream ss;
     ss << RteUtils::GetIndent(m_verboseIndent) << item->GetID() << endl;
@@ -843,7 +877,7 @@ void RteConditionContext::VerboseIn(RteItem* item)
 
 void RteConditionContext::VerboseOut(RteItem* item, RteItem::ConditionResult res)
 {
-  if (IsVerbose()) {
+  if(IsVerbose()) {
     stringstream ss;
     ss << RteUtils::GetIndent(m_verboseIndent) << "<--- " <<
       RteItem::ConditionResultToString(res) << " (" << item->GetID() << ")" << endl;
@@ -856,7 +890,7 @@ RteItem::ConditionResult RteConditionContext::Evaluate(RteItem* item)
 {
   VerboseIn(item);
   RteItem::ConditionResult res = GetConditionResult(item);
-  if (res == RteItem::UNDEFINED) {
+  if(res == RteItem::UNDEFINED) {
     res = item->Evaluate(this);
     m_cachedResults[item] = res;
   }
@@ -866,10 +900,10 @@ RteItem::ConditionResult RteConditionContext::Evaluate(RteItem* item)
 
 RteItem::ConditionResult RteConditionContext::GetConditionResult(RteItem* item) const
 {
-  if (!item)
+  if(!item)
     return RteItem::R_ERROR;
   auto it = m_cachedResults.find(item);
-  if (it != m_cachedResults.end())
+  if(it != m_cachedResults.end())
     return it->second;
   return RteItem::UNDEFINED;
 }
@@ -879,28 +913,28 @@ RteItem::ConditionResult RteConditionContext::EvaluateCondition(RteCondition* co
   RteItem::ConditionResult resultRequire = RteItem::IGNORED;
   RteItem::ConditionResult resultAccept = RteItem::UNDEFINED;
   // first check require and deny expressions
-  for (auto child : condition->GetChildren()) {
+  for(auto child : condition->GetChildren()) {
     RteConditionExpression* expr = dynamic_cast<RteConditionExpression*>(child);
-    if (!expr)
+    if(!expr)
       continue;
     RteItem::ConditionResult res = Evaluate(expr);
-    if (res == RteItem::R_ERROR)
+    if(res == RteItem::R_ERROR)
       return res;
-    if (res == RteItem::IGNORED || res == RteItem::UNDEFINED)
+    if(res == RteItem::IGNORED || res == RteItem::UNDEFINED)
       continue;
 
-    if (expr->GetExpressionType() == RteConditionExpression::ACCEPT) {
-      if (res > resultAccept) {
+    if(expr->GetExpressionType() == RteConditionExpression::ACCEPT) {
+      if(res > resultAccept) {
         resultAccept = res;
       }
     } else { // deny or require
-      if (res < resultRequire) {
+      if(res < resultRequire) {
         resultRequire = res;
       }
     }
   }
 
-  if (resultAccept != RteItem::UNDEFINED && resultAccept < resultRequire) {
+  if(resultAccept != RteItem::UNDEFINED && resultAccept < resultRequire) {
     return resultAccept;
   }
   return resultRequire;
@@ -908,10 +942,10 @@ RteItem::ConditionResult RteConditionContext::EvaluateCondition(RteCondition* co
 
 RteItem::ConditionResult RteConditionContext::EvaluateExpression(RteConditionExpression* expr)
 {
-  if (!expr)
+  if(!expr)
     return RteItem::R_ERROR;
   char domain = expr->GetExpressionDomain();
-  switch (domain)
+  switch(domain)
   {
   case BOARD_EXPRESSION:
   case DEVICE_EXPRESSION:
@@ -957,7 +991,7 @@ RteItem::ConditionResult RteDependencySolver::EvaluateCondition(RteCondition* co
   // new behavior - first check if filtering condition evaluates to FULFILLED or IGNORED
   RteConditionContext* filterContext = GetTarget()->GetFilterContext();
   RteItem::ConditionResult res = filterContext->Evaluate(condition);
-  switch (res) {
+  switch(res) {
   case RteItem::FAILED: //  ignore dependencies if filter context failed
     return RteItem::IGNORED;
   case RteItem::R_ERROR:
@@ -970,10 +1004,10 @@ RteItem::ConditionResult RteDependencySolver::EvaluateCondition(RteCondition* co
 
 RteItem::ConditionResult RteDependencySolver::EvaluateExpression(RteConditionExpression* expr)
 {
-  if (!expr)
+  if(!expr)
     return RteItem::R_ERROR;
   char domain = expr->GetExpressionDomain();
-  switch (domain)
+  switch(domain)
   {
   case COMPONENT_EXPRESSION:
     return CalculateDependencies(expr);
@@ -994,24 +1028,24 @@ RteItem::ConditionResult RteDependencySolver::CalculateDependencies(RteCondition
 {
   set<RteComponentAggregate*> components;
   RteItem::ConditionResult result;
-  if (expr->IsDenyExpression()) {
+  if(expr->IsDenyExpression()) {
     result = RteItem::FULFILLED;
     const map<RteComponentAggregate*, int>& selectedComponents = m_target->GetSelectedComponentAggregates();
-    for (auto [a, n] : selectedComponents) {
+    for(auto [a, n] : selectedComponents) {
       RteItem* c = a->GetComponent();
-      if (!c)
+      if(!c)
         c = a->GetComponentInstance();
-      if (c && c->MatchComponentAttributes(expr->GetAttributes())) {
+      if(c && c->MatchComponentAttributes(expr->GetAttributes())) {
         components.insert(a);
         result = RteItem::INCOMPATIBLE;
       }
     }
   } else {
     result = m_target->GetComponentAggregates(*expr, components);
-    if (components.size() > 1) {
+    if(components.size() > 1) {
       // leave only the component if it can be resolved automatically (current bundle, DFP)
       RteComponentAggregate* a = expr->GetSingleComponentAggregate(m_target, components);
-      if (a) {
+      if(a) {
         components.clear();
         components.insert(a);
       }
@@ -1024,7 +1058,7 @@ RteItem::ConditionResult RteDependencySolver::CalculateDependencies(RteCondition
 const set<RteComponentAggregate*>& RteDependencySolver::GetComponentAggregates(RteConditionExpression* expr) const
 {
   auto it = m_componentAggregates.find(expr);
-  if (it != m_componentAggregates.end())
+  if(it != m_componentAggregates.end())
     return it->second;
 
   static set<RteComponentAggregate*> emptyComponentSet;
@@ -1036,9 +1070,9 @@ RteItem::ConditionResult RteDependencySolver::EvaluateDependencies()
 {
   Clear();
   const map<RteComponentAggregate*, int>& selectedComponents = m_target->GetSelectedComponentAggregates();
-  for (auto [a, n] : selectedComponents) {
+  for(auto [a, n] : selectedComponents) {
     RteItem::ConditionResult res = a->Evaluate(this);
-    if (res > RteItem::UNDEFINED && m_result > res)
+    if(res > RteItem::UNDEFINED && m_result > res)
       m_result = res;
   }
   return GetConditionResult();
@@ -1046,8 +1080,8 @@ RteItem::ConditionResult RteDependencySolver::EvaluateDependencies()
 
 RteItem::ConditionResult RteDependencySolver::ResolveDependencies()
 {
-  for (RteItem::ConditionResult res = GetConditionResult(); res < RteItem::FULFILLED; res = GetConditionResult()) {
-    if (ResolveIteration() == false)
+  for(RteItem::ConditionResult res = GetConditionResult(); res < RteItem::FULFILLED; res = GetConditionResult()) {
+    if(ResolveIteration() == false)
       break;
   }
   return GetConditionResult();
@@ -1059,16 +1093,16 @@ RteItem::ConditionResult RteDependencySolver::ResolveDependencies()
 */
 bool RteDependencySolver::ResolveIteration()
 {
-  if (!m_target || !m_target->GetClasses())
+  if(!m_target || !m_target->GetClasses())
     return false;
   map<const RteItem*, RteDependencyResult> results;
   m_target->GetSelectedDepsResult(results, m_target);
 
-  for (auto [item, depsRes] : results) {
+  for(auto [item, depsRes] : results) {
     RteItem::ConditionResult r = depsRes.GetResult();
-    if (r != RteItem::SELECTABLE)
+    if(r != RteItem::SELECTABLE)
       continue;
-    if (ResolveDependency(depsRes))
+    if(ResolveDependency(depsRes))
       return true;
   }
   return false;
@@ -1079,24 +1113,24 @@ bool RteDependencySolver::ResolveDependency(const RteDependencyResult& depsRes)
 {
   // add sub-items if any
   const map<const RteItem*, RteDependencyResult>& results = depsRes.GetResults();
-  for (auto [_, dRes] : results) {
+  for(auto [_, dRes] : results) {
     RteItem::ConditionResult r = dRes.GetResult();
-    if (r != RteItem::SELECTABLE || dRes.IsMultiple()) {
+    if(r != RteItem::SELECTABLE || dRes.IsMultiple()) {
       continue;
     }
     const RteItem* item = dRes.GetItem();
 
     const RteConditionExpression* expr = dynamic_cast<const RteConditionExpression*>(item);
     RteComponentAggregate* a = expr->GetSingleComponentAggregate(m_target);
-    if (a) {
+    if(a) {
       RteComponent* c = a->GetComponent();
-      if (!c || c->IsCustom()) {
+      if(!c || c->IsCustom()) {
         // Disable "Resolve" function for components with 'custom=1' attribute
         continue;
       }
-      if (!c->MatchComponentAttributes(expr->GetAttributes())) {
+      if(!c->MatchComponentAttributes(expr->GetAttributes())) {
         c = a->FindComponent(expr->GetAttributes());
-        if (c) {
+        if(c) {
           a->SetSelectedVariant(c->GetCvariantName());
           a->SetSelectedVersion(c->GetVersionString());
         }
