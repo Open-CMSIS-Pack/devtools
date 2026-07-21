@@ -2838,12 +2838,12 @@ RteItem::ConditionResult ProjMgrWorker::ValidateContext(ContextItem& context) {
 
     const auto& depResults = componentResult.GetResults();
     for (const auto& [item, result] : depResults) {
-      auto res = componentResult.GetResult();
+      auto conditionRes = result.GetResult();
       if(res == RteItem::SELECTABLE && contextResult < RteItem::SELECTABLE) {
         continue; // ignore selectable results when more important problems exist
       }
       ValidationCondition condition;
-      condition.result = res;
+      condition.result = conditionRes;
       condition.expression = item->GetDependencyExpressionID();
       for (const auto& aggregate : result.GetComponentAggregates()) {
         condition.aggregates.insert(aggregate->ConstructComponentID(true));
@@ -4758,7 +4758,6 @@ bool ProjMgrWorker::ListTemplates(vector<string>& templates, const string& filte
 }
 
 static string FormatAggregates(RteItem::ConditionResult result, const StrSet& aggregates, unsigned indent) {
-  string resultStr;
   stringstream ss;
   for(const auto& id : aggregates) {
     ss << endl << RteUtils::GetIndent(indent);
@@ -4779,7 +4778,7 @@ bool ProjMgrWorker::FormatValidationResults(set<string>& results, const ContextI
     ss << validation.id << " : " << RteDependencyResult::GetComponentExplanationText(validation.result);
 
     for(const auto& condition : validation.conditions) {
-      ss << "\n  failed '" << condition.expression << "' : " << RteDependencyResult::GetExpressionExplanationText(validation.result);
+      ss << "\n  failed '" << condition.expression << "' : " << RteDependencyResult::GetExpressionExplanationText(condition.result);
       ss << FormatAggregates(condition.result, condition.aggregates, 4);
     }
     ss << FormatAggregates(validation.result, validation.aggregates, 2); // API aggregates
