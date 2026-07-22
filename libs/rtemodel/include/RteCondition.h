@@ -523,6 +523,27 @@ public:
   void SetMultiple(bool bMuiltiple) { m_bMultiple = bMuiltiple; }
 
 
+  /**
+   * @brief gets explanation text for the component/API whose dependency is failed
+   * @param res RteItem::ConditionResult
+   * @return explanation text or empty string
+  */
+  static std::string GetComponentExplanationText(RteItem::ConditionResult res);
+
+  /**
+   * @brief gets explanation text for failed condition expression based on provided condition result
+   * @param res RteItem::ConditionResult
+   * @return explanation text or empty string
+  */
+  static std::string GetExpressionExplanationText(RteItem::ConditionResult res);
+
+  /**
+   * @brief gets explanation text for available/incompatible selection
+   * @param res RteItem::ConditionResult
+   * @return explanation text or empty string
+  */
+  static std::string GetAggregateExplanationText(RteItem::ConditionResult res);
+
 public:
   /**
    * @brief add RteComponentAggregate to list of potential candidates to resolve a dependency
