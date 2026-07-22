@@ -5856,11 +5856,11 @@ bool ProjMgrWorker::ExecuteExtGenerator(std::string& generatorId) {
 bool ProjMgrWorker::ProcessGeneratedLayers(ContextItem& context) {
   bool success;
   ClayerItem* cgen = m_extGenerator->GetGeneratorImport(context.name, success);
-  if (!success) {
-    return false;
-  }
   if (cgen) {
     context.clayers[cgen->path] = cgen;
+    if (!success) {
+      return false;
+    }
     if (cgen->packs.size() > 0) {
       vector<PackItem> packRequirements;
       InsertPackRequirements(cgen->packs, packRequirements, cgen->directory);
@@ -5884,7 +5884,7 @@ bool ProjMgrWorker::ProcessGeneratedLayers(ContextItem& context) {
       return false;
     }
   }
-  return true;
+  return success;
 }
 
 void ProjMgrWorker::PrintContextErrors(const string& contextName) {

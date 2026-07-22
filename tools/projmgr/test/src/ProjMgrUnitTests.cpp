@@ -5934,6 +5934,8 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_NoCgenFile) {
   StdStreamRedirect streamRedirect;
   char* argv[5];
   const string& csolution = testinput_folder + "/ExternalGenerator/extgen.csolution.yml";
+  const string& cbuildIdxFile = testinput_folder + "/ExternalGenerator/extgen.cbuild-idx.yml";
+  RteFsUtils::RemoveFile(cbuildIdxFile);
   argv[1] = (char*)csolution.c_str();
   argv[2] = (char*)"convert";
   argv[3] = (char*)"-c";
@@ -5941,6 +5943,11 @@ TEST_F(ProjMgrUnitTests, ExternalGenerator_NoCgenFile) {
   EXPECT_EQ(1, RunProjMgr(5, argv, 0));
   auto errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(errStr.find("error csolution: cgen file was not found, run generator 'RteTestExternalGenerator' for context 'core0.Debug+MultiCore'") != string::npos);
+
+  const YAML::Node& cbuildIdx = YAML::LoadFile(cbuildIdxFile);
+  const YAML::Node& clayers = cbuildIdx["build-idx"]["cbuilds"][0]["clayers"];
+  ASSERT_EQ(1, clayers.size());
+  EXPECT_EQ("generated/MultiCore/core0.cgen.yml", clayers[0]["clayer"].as<string>());
 
   RteFsUtils::RemoveFile(dstGlobalGenerator);
 }
