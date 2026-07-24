@@ -1786,7 +1786,7 @@ TEST_F(ProjMgrWorkerUnitTests, CheckBoardDeviceInLayer) {
   {"DeviceVendor::DeviceName:ProcessorName", "OtherVendor::DeviceName:ProcessorName" , false},
   {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::OtherName:ProcessorName" , false},
   {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName:OtherName"    , false},
-  {""                                      ,               "DeviceName"              , false},
+  {""                                      ,               "DeviceName"              ,  true},
   {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName:ProcessorName",  true},
   {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName"              ,  true},
   {"DeviceVendor::DeviceName:ProcessorName",               "DeviceName"              ,  true},

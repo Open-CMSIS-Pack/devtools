@@ -3900,7 +3900,9 @@ bool ProjMgrWorker::CheckBoardDeviceInLayer(const ContextItem& context, const Cl
     DeviceItem forDevice, device;
     GetDeviceItem(clayer.forDevice, forDevice);
     GetDeviceItem(context.device, device);
-    if ((!forDevice.name.empty() && (forDevice.name != device.name)) ||
+    // Skip comparing the layer's 'for-device' name when the context has no device name
+    // (e.g. during layer discovery when only the board is specified)
+    if ((!forDevice.name.empty() && !device.name.empty() && (forDevice.name != device.name)) ||
         (!forDevice.vendor.empty() && !device.vendor.empty() && (forDevice.vendor != device.vendor)) ||
         (!forDevice.pname.empty()  && !device.pname.empty()  && (forDevice.pname != device.pname))) {
       return false;
