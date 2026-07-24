@@ -930,9 +930,15 @@ RpcArgs::DiscoverLayersInfo RpcHandler::DiscoverLayers(const string& solution, c
     return result;
   }
   m_worker.SetUpCommand(true);
+
+  // discover compatible layers considering all packs
   StrVec layers;
   StrSet fails;
-  if(!m_worker.ListLayers(layers, "", fails) || !m_worker.ElaborateVariablesConfigurations()) {
+  m_worker.SetLoadPacksPolicy(LoadPacksPolicy::ALL);
+  auto listLayersSuccess = m_worker.ListLayers(layers, "", fails);
+  m_worker.SetLoadPacksPolicy(LoadPacksPolicy::DEFAULT);
+
+  if(!listLayersSuccess || !m_worker.ElaborateVariablesConfigurations()) {
     result.message = "No compatible software layer was found in the installed packs.\nInstall additional packs containing suitable layers before restarting the 'Create Solution' flow.";
     return result;
   } else {
