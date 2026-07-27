@@ -1101,6 +1101,8 @@ bool ProjMgrYamlParser::ParseTargetType(const YAML::Node& parent, const string& 
       ParseString(memoryEntry, YAML_ALGORITHM, memoryItem.algorithm);
       ParseNumber(memoryEntry, file, YAML_START, memoryItem.start);
       ParseNumber(memoryEntry, file, YAML_SIZE, memoryItem.size);
+      ParseNumber(memoryEntry, file, YAML_RAM_START, memoryItem.ramStart);
+      ParseNumber(memoryEntry, file, YAML_RAM_SIZE, memoryItem.ramSize);
       targetType.memory.push_back(memoryItem);
     }
   }

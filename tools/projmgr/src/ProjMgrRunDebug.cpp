@@ -150,10 +150,6 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
         break;
       }
     }
-    if (defaultRam.size == 0) {
-      ProjMgrLogger::Get().Error("no default rwx memory nor algorithm with ramstart/size was found");
-      return false;
-    }
   }
 
   // board collections
@@ -199,6 +195,9 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
       item.ram.size = algorithm->GetAttributeAsULL("RAMsize");
       item.ram.pname = algorithm->GetProcessorName();
     } else {
+      if (!CheckDefaultRam(defaultRam)) {
+        return false;
+      }
       item.ram.start = defaultRam.start;
       item.ram.size = defaultRam.size;
       item.ram.pname = defaultRam.pname;
@@ -236,9 +235,12 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
       algoItem.algorithm = memory.algorithm;
       algoItem.start = memItem.start;
       algoItem.size = memItem.size;
-      algoItem.ram.start = defaultRam.start;
-      algoItem.ram.size = defaultRam.size;
-      algoItem.ram.pname = defaultRam.pname;
+      if ((memory.ramStart.empty() || memory.ramSize.empty()) && !CheckDefaultRam(defaultRam)) {
+        return false;
+      }
+      algoItem.ram.start = memory.ramStart.empty() ? defaultRam.start : RteUtils::StringToULL(memory.ramStart);
+      algoItem.ram.size = memory.ramSize.empty() ? defaultRam.size : RteUtils::StringToULL(memory.ramSize);
+      algoItem.ram.pname = memory.pname.empty() ? defaultRam.pname : memory.pname;
       m_runDebug.algorithms.push_back(algoItem);
     }
   }
@@ -378,6 +380,14 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
   CollectDebugTopology(*context0, debugs, pnames);
 
   return true;
+}
+
+bool ProjMgrRunDebug::CheckDefaultRam(const RamType& defaultRam) {
+  if (defaultRam.size != 0) {
+    return true;
+  }
+  ProjMgrLogger::Get().Error("no default rwx memory nor algorithm with ramstart/size was found");
+  return false;
 }
 
 void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const DebugAdaptersItem& adapters,
