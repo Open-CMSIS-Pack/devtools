@@ -46,6 +46,12 @@ solution:
             - image: customLibrary.x
               type: lib
     - type: TestHW3
+      memory:
+        - start: 0x40000000
+          size: 0x00020000
+          name: CustomMemoryCore0
+          access: rwx
+          pname: cm0_core0
       target-set:
         - set:
           images:

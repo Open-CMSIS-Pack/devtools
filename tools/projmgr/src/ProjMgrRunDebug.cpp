@@ -229,6 +229,7 @@ bool ProjMgrRunDebug::CollectSettings(const vector<ContextItem*>& contexts, cons
     memItem.access = memory.access;
     memItem.start = RteUtils::StringToULL(memory.start);
     memItem.size = RteUtils::StringToULL(memory.size);
+    memItem.pname = memory.pname;
     m_runDebug.systemResources.memories.push_back(memItem);
     if (!memory.algorithm.empty()) {
       AlgorithmType algoItem;
