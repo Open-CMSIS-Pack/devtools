@@ -14,6 +14,8 @@ solution:
           name: CustomMemory
           access: rwx
           algorithm: CustomAlgo.flm
+          ram-start: 0x80000000
+          ram-size: 0x00008000
       target-set:
         - set:
           info: Info target-set
