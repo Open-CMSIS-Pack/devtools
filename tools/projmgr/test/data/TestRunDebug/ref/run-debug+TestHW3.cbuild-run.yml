@@ -60,6 +60,11 @@ cbuild-run:
         size: 0x00020000
         default: true
         from-pack: ARM::RteTest_DFP@0.2.0
+      - name: CustomMemoryCore0
+        access: rwx
+        start: 0x40000000
+        size: 0x00020000
+        pname: cm0_core0
     processors:
       - core: Cortex-M0
         revision: r0p0

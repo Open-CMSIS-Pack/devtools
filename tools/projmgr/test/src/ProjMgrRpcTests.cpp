@@ -1677,6 +1677,16 @@ TEST_F(ProjMgrRpcTests, RpcDiscoverLayers) {
   EXPECT_EQ(responses[0]["result"]["message"], "No compatible software layer was found in the installed packs.\nInstall additional packs containing suitable layers before restarting the 'Create Solution' flow.");
 }
 
+TEST_F(ProjMgrRpcTests, RpcDiscoverLayersFromAllPacks) {
+  const auto csolutionPath = testinput_folder + "/TestLayers/config-discover-all-packs.csolution.yml";
+  const auto requests = FormatRequest(1, "DiscoverLayers",
+    json({{ "solution", csolutionPath }, { "activeTarget", "" }}));
+  const auto responses = RunRpcMethods(requests);
+
+  EXPECT_TRUE(CompareRpcResponse(responses[0], testinput_folder + "/TestLayers/ref/rpc-discover-layers.json"))
+    << "json response:\n" << ProjMgrTestEnv::StripAbsoluteFunc(responses[0].dump(2));
+}
+
 TEST_F(ProjMgrRpcTests, RpcListMissingPacks) {
   auto csolutionPath = testinput_folder + "/TestSolution/pack_missing.csolution.yml";
   auto requests =

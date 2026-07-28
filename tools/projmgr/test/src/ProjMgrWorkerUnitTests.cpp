@@ -145,6 +145,33 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
   EXPECT_TRUE(context.targetAttributes.find("Dendian") == context.targetAttributes.end());
 }
 
+TEST_F(ProjMgrWorkerUnitTests, CheckDefaultRam) {
+  ContextDesc descriptor;
+  const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
+  ASSERT_TRUE(parser.ParseCproject(filename, true));
+  ASSERT_TRUE(AddContexts(parser, descriptor, filename));
+  map<string, ContextItem>* contextMap;
+  GetContexts(contextMap);
+  ContextItem context = contextMap->begin()->second;
+  ASSERT_TRUE(LoadPacks(context));
+  ASSERT_TRUE(ProcessPrecedences(context));
+  ASSERT_TRUE(ProcessDevice(context));
+
+  context.devicePack = nullptr;
+  context.boardPack = nullptr;
+  context.memory = {{ "CustomMemory", "rwx", "0x80000000", "0x00010000",
+    "CustomAlgo.flm", {}, "0x80000000", {} }};
+  const vector<ContextItem*> contexts = { &context };
+  ProjMgrRunDebug runDebug;
+
+  ProjMgrLogger::Get().Clear();
+  EXPECT_FALSE(runDebug.CollectSettings(contexts, parser.GetDebugAdaptersItem()));
+  const auto& errors = ProjMgrLogger::Get().GetErrorsForContext();
+  ASSERT_EQ(1, errors.size());
+  EXPECT_EQ("no default rwx memory nor algorithm with ramstart/size was found", errors.front());
+  ProjMgrLogger::Get().Clear();
+}
+
 TEST_F(ProjMgrWorkerUnitTests, ProcessDeviceUndefLayerVar) {
   ContextItem context;
   EXPECT_TRUE(LoadPacks(context));
@@ -1786,7 +1813,7 @@ TEST_F(ProjMgrWorkerUnitTests, CheckBoardDeviceInLayer) {
   {"DeviceVendor::DeviceName:ProcessorName", "OtherVendor::DeviceName:ProcessorName" , false},
   {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::OtherName:ProcessorName" , false},
   {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName:OtherName"    , false},
-  {""                                      ,               "DeviceName"              , false},
+  {""                                      ,               "DeviceName"              ,  true},
   {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName:ProcessorName",  true},
   {"DeviceVendor::DeviceName:ProcessorName", "DeviceVendor::DeviceName"              ,  true},
   {"DeviceVendor::DeviceName:ProcessorName",               "DeviceName"              ,  true},

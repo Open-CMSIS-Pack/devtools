@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -71,14 +71,16 @@ ClayerItem* ProjMgrExtGenerator::GetGeneratorImport(const string& contextId, boo
   success = true;
   for (const auto& [options, contexts] : GetUsedGenerators()) {
     if (find(contexts.begin(), contexts.end(), contextId) != contexts.end()) {
-      if (!RteFsUtils::Exists(options.name)) {
+      if (RteFsUtils::Exists(options.name)) {
+        if (!m_parser->ParseClayer(options.name, m_checkSchema)) {
+          success = false;
+          return nullptr;
+        }
+      } else {
         ProjMgrLogger::Get().Error("cgen file was not found, run generator '" + options.id + "' for context '" + contextId + "'", contextId, options.name);
         success = false;
-        return nullptr;
-      }
-      if (!m_parser->ParseClayer(options.name, m_checkSchema)) {
-        success = false;
-        return nullptr;
+        // store cgen path also when the file does not exist
+        m_parser->GetClayers()[options.name].path = options.name;
       }
       return &m_parser->GetClayers().at(options.name);
     }
