@@ -2109,7 +2109,9 @@
         "start":    { "title": "start:", "type": "number", "description": "Base address of the memory." },
         "size":     { "title": "size:", "type": "number", "description": "Size of the memory." },
         "pname":    { "title": "pname:", "type": "string", "description": "Only accessible by the specified processor." },
-        "algorithm":{ "title": "algorithm:", "type": "string", "description": "Programming algorithm for download." }
+        "algorithm":{ "title": "algorithm:", "type": "string", "description": "Programming algorithm for download." },
+        "ram-start":{ "title": "ram-start:", "type": "number", "description": "Start address of RAM where the algorithm will be executed from." },
+        "ram-size": { "title": "ram-size:", "type": "number", "description": "Maximum size of RAM available for executing the programming algorithm." }
       },
       "additionalProperties": false,
       "required": ["name", "access", "start", "size"]
