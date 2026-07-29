@@ -574,21 +574,22 @@ TEST_F(ProjMgrRpcTests, RpcValidateComponents) {
   // mixed issues : selectable is not shown
   EXPECT_EQ(responses[7]["result"]["result"], "INCOMPATIBLE_VARIANT"); // overall result
 
-  auto& validations = responses[7]["result"]["validation"];
+  auto validations = responses[7]["result"]["validation"];
   EXPECT_EQ(validations.size(), 2);
 
-  validation = validations[0];
-  EXPECT_EQ("RteTest:ApiExclusive@1.0.0", validation["id"]);
-  EXPECT_EQ("CONFLICT", validation["result"]);
-  EXPECT_EQ("ARM::RteTest:ApiExclusive:S1", validation["aggregates"][0]);
-  EXPECT_EQ("ARM::RteTest:ApiExclusive:S2", validation["aggregates"][1]);
+  auto& conflict = ("RteTest:ApiExclusive@1.0.0" == validations[0]["id"]) ? validations[0] : validations[1];
+  auto& incompat = ("ARM::RteTest:Check:IncompatibleVariant@0.9.9" == validations[0]["id"]) ? validations[0] : validations[1];
 
-  validation = validations[1];
-  EXPECT_EQ("ARM::RteTest:Check:IncompatibleVariant@0.9.9", validation["id"]);
-  EXPECT_EQ("INCOMPATIBLE_VARIANT", validation["result"]);
-  EXPECT_EQ("INCOMPATIBLE_VARIANT", validation["conditions"][0]["result"]);
-  EXPECT_EQ("require RteTest:Dependency:Variant&Compatible", validation["conditions"][0]["expression"]);
-  EXPECT_EQ("ARM::RteTest:Dependency:Variant", validation["conditions"][0]["aggregates"][0]);
+  EXPECT_EQ("RteTest:ApiExclusive@1.0.0", conflict["id"]);
+  EXPECT_EQ("CONFLICT", conflict["result"]);
+  EXPECT_EQ("ARM::RteTest:ApiExclusive:S1", conflict["aggregates"][0]);
+  EXPECT_EQ("ARM::RteTest:ApiExclusive:S2", conflict["aggregates"][1]);
+
+  EXPECT_EQ("ARM::RteTest:Check:IncompatibleVariant@0.9.9", incompat["id"]);
+  EXPECT_EQ("INCOMPATIBLE_VARIANT", incompat["result"]);
+  EXPECT_EQ("INCOMPATIBLE_VARIANT", incompat["conditions"][0]["result"]);
+  EXPECT_EQ("require RteTest:Dependency:Variant&Compatible", incompat["conditions"][0]["expression"]);
+  EXPECT_EQ("ARM::RteTest:Dependency:Variant", incompat["conditions"][0]["aggregates"][0]);
 }
 
 TEST_F(ProjMgrRpcTests, RpcResolveComponents) {
