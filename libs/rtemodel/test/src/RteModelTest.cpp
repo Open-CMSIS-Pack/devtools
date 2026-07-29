@@ -239,7 +239,7 @@ TEST(RteModelTest, LoadPacks) {
                        {"Cgroup", "Check" },
                        {"Csub", "Missing"},
                        {"Cversion","0.9.9"},
-                       {"condition","Missing"}});
+                       {"condition","RequireMissing"}});
   RtePackageInstanceInfo packInfo(nullptr, "ARM::RteTest@0.1.0");
   item.SetPackageAttributes(packInfo);
   list<RteComponent*> components;
