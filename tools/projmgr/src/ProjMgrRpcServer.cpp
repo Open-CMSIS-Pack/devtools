@@ -746,6 +746,7 @@ RpcArgs::Results RpcHandler::ValidateComponents(const string& context) {
         r.conditions = vector<RpcArgs::Condition>{};
         for(const auto& condition : validation.conditions) {
           c.expression = condition.expression;
+          c.result = RteItem::ConditionResultToString(condition.result);
           if(!condition.aggregates.empty()) {
             c.aggregates = vector<string>(condition.aggregates.begin(), condition.aggregates.end());
           }

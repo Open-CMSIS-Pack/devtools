@@ -531,6 +531,7 @@ TEST_F(ProjMgrRpcTests, RpcValidateComponents) {
   EXPECT_EQ(responses[2]["result"]["result"], "SELECTABLE");
   EXPECT_EQ("ARM::Device:Startup&RteTest Startup@2.0.3", validation["id"]);
   EXPECT_EQ("SELECTABLE", validation["result"]);
+  EXPECT_EQ("SELECTABLE", validation["conditions"][0]["result"]);
   EXPECT_EQ("require RteTest:CORE", validation["conditions"][0]["expression"]);
   EXPECT_EQ("ARM::RteTest:CORE", validation["conditions"][0]["aggregates"][0]);
 
@@ -539,6 +540,7 @@ TEST_F(ProjMgrRpcTests, RpcValidateComponents) {
   EXPECT_EQ(responses[3]["result"]["result"], "MISSING");
   EXPECT_EQ("ARM::RteTest:Check:Missing@0.9.9", validation["id"]);
   EXPECT_EQ("MISSING", validation["result"]);
+  EXPECT_EQ("MISSING", validation["conditions"][0]["result"]);
   EXPECT_EQ("require RteTest:Dependency:Missing", validation["conditions"][0]["expression"]);
 
   // conflict
@@ -554,6 +556,7 @@ TEST_F(ProjMgrRpcTests, RpcValidateComponents) {
   EXPECT_EQ(responses[5]["result"]["result"], "INCOMPATIBLE");
   EXPECT_EQ("ARM::RteTest:Check:Incompatible@0.9.9", validation["id"]);
   EXPECT_EQ("INCOMPATIBLE", validation["result"]);
+  EXPECT_EQ("INCOMPATIBLE", validation["conditions"][0]["result"]);
   EXPECT_EQ("deny RteTest:Dependency:Incompatible_component", validation["conditions"][0]["expression"]);
   EXPECT_EQ("ARM::RteTest:Dependency:Incompatible_component", validation["conditions"][0]["aggregates"][0]);
 
@@ -562,6 +565,7 @@ TEST_F(ProjMgrRpcTests, RpcValidateComponents) {
   EXPECT_EQ(responses[6]["result"]["result"], "INCOMPATIBLE_VARIANT");
   EXPECT_EQ("ARM::RteTest:Check:IncompatibleVariant@0.9.9", validation["id"]);
   EXPECT_EQ("INCOMPATIBLE_VARIANT", validation["result"]);
+  EXPECT_EQ("INCOMPATIBLE_VARIANT", validation["conditions"][0]["result"]);
   EXPECT_EQ("require RteTest:Dependency:Variant&Compatible", validation["conditions"][0]["expression"]);
   EXPECT_EQ("ARM::RteTest:Dependency:Variant", validation["conditions"][0]["aggregates"][0]);
 }
