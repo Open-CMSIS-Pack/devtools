@@ -515,6 +515,7 @@ TEST_F(ProjMgrRpcTests, RpcValidateComponents) {
     "conflict+CM0",
     "incompatible+CM0",
     "incompatible-variant+CM0",
+    "mixed-issues+CM0"
   };
   auto requests = CreateLoadRequests("/Validation/dependencies.csolution.yml", "", contextList);
   int id = 3;
@@ -540,6 +541,7 @@ TEST_F(ProjMgrRpcTests, RpcValidateComponents) {
   EXPECT_EQ(responses[3]["result"]["result"], "MISSING");
   EXPECT_EQ("ARM::RteTest:Check:Missing@0.9.9", validation["id"]);
   EXPECT_EQ("MISSING", validation["result"]);
+  EXPECT_EQ(validation["conditions"].size(), 1);
   EXPECT_EQ("MISSING", validation["conditions"][0]["result"]);
   EXPECT_EQ("require RteTest:Dependency:Missing", validation["conditions"][0]["expression"]);
 
@@ -563,6 +565,25 @@ TEST_F(ProjMgrRpcTests, RpcValidateComponents) {
   // incompatible variant
   validation = responses[6]["result"]["validation"][0];
   EXPECT_EQ(responses[6]["result"]["result"], "INCOMPATIBLE_VARIANT");
+  EXPECT_EQ("ARM::RteTest:Check:IncompatibleVariant@0.9.9", validation["id"]);
+  EXPECT_EQ("INCOMPATIBLE_VARIANT", validation["result"]);
+  EXPECT_EQ("INCOMPATIBLE_VARIANT", validation["conditions"][0]["result"]);
+  EXPECT_EQ("require RteTest:Dependency:Variant&Compatible", validation["conditions"][0]["expression"]);
+  EXPECT_EQ("ARM::RteTest:Dependency:Variant", validation["conditions"][0]["aggregates"][0]);
+
+  // mixed issues : selectable is not shown
+  EXPECT_EQ(responses[7]["result"]["result"], "INCOMPATIBLE_VARIANT"); // overall result
+
+  auto& validations = responses[7]["result"]["validation"];
+  EXPECT_EQ(validations.size(), 2);
+
+  validation = validations[0];
+  EXPECT_EQ("RteTest:ApiExclusive@1.0.0", validation["id"]);
+  EXPECT_EQ("CONFLICT", validation["result"]);
+  EXPECT_EQ("ARM::RteTest:ApiExclusive:S1", validation["aggregates"][0]);
+  EXPECT_EQ("ARM::RteTest:ApiExclusive:S2", validation["aggregates"][1]);
+
+  validation = validations[1];
   EXPECT_EQ("ARM::RteTest:Check:IncompatibleVariant@0.9.9", validation["id"]);
   EXPECT_EQ("INCOMPATIBLE_VARIANT", validation["result"]);
   EXPECT_EQ("INCOMPATIBLE_VARIANT", validation["conditions"][0]["result"]);

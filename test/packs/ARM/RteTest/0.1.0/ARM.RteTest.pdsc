@@ -74,6 +74,10 @@
       <require condition="GlobalFile"/>
       <require condition="LocalFile"/>
     </condition>
+    <condition id="RequireMissing">
+      <require condition="Missing"/>
+      <require condition="AcceptDependency"/>
+    </condition>
     <condition id="DenyRequireDependency">
       <deny condition="RequireDependency"/>
     </condition>
@@ -370,7 +374,7 @@
       </files>
     </component>
 
-    <component Cclass="RteTest" Cgroup="Check" Csub="Missing" condition="Missing" Cversion="0.9.9">
+    <component Cclass="RteTest" Cgroup="Check" Csub="Missing" condition="RequireMissing" Cversion="0.9.9">
       <description>Component that has condition that checks for missing component</description>
       <files>
         <file category="other" name="Dummy/DummyFile.txt"/>
