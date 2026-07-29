@@ -1,4 +1,4 @@
-"@CMAKE_CURRENT_SOURCE_DIR@/../Test/SDCMSIS-1369/test.svd"
+"@CMAKE_CURRENT_SOURCE_DIR@/../test/SDCMSIS-1369/test.svd"
 -o "@CMAKE_CURRENT_BINARY_DIR@/Output"
 -b "@CMAKE_CURRENT_BINARY_DIR@/Output/error.log"
 --create-folder

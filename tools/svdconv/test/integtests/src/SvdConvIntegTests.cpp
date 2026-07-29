@@ -13,6 +13,7 @@
 #include <list>
 #include <fstream>
 #include <regex>
+#include <vector>
 
 using namespace std;
 using namespace testing;
@@ -203,3 +204,51 @@ TEST_F(SvdConvIntegTests, CheckResetMask) {
   }
 }
 
+TEST_F(SvdConvIntegTests, CheckPosMaskDimFields) {
+  const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/posMaskDim/PosMaskDim.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/posMaskDim";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=header", "--fields=macro", "--create-folder" });
+
+  SvdConv svdConv;
+  EXPECT_EQ(0, svdConv.Check(args, args, nullptr));
+
+  const string testOutHeader = testOut + "/PosMaskDim.h";
+  ASSERT_TRUE(RteFsUtils::Exists(testOutHeader));
+
+  string buf;
+  RteFsUtils::ReadFile(testOutHeader, buf);
+  ASSERT_FALSE(buf.empty());
+
+  const vector<pair<string, string>> expectedMacros = {
+    { "#define TIM_DATA_PIN0_Pos", "(0UL)" },
+    { "#define TIM_DATA_PIN0_Msk", "(0x1UL)" },
+    { "#define TIM_DATA_PIN1_Pos", "(1UL)" },
+    { "#define TIM_DATA_PIN1_Msk", "(0x2UL)" },
+    { "#define TIM_DATA_PIN2_Pos", "(2UL)" },
+    { "#define TIM_DATA_PIN2_Msk", "(0x4UL)" },
+    { "#define TIM_DATA_PIN3_Pos", "(3UL)" },
+    { "#define TIM_DATA_PIN3_Msk", "(0x8UL)" },
+    { "#define TIM_DATA_PIN4_Pos", "(4UL)" },
+    { "#define TIM_DATA_PIN4_Msk", "(0x10UL)" },
+    { "#define TIM_DATA_PIN5_Pos", "(5UL)" },
+    { "#define TIM_DATA_PIN5_Msk", "(0x20UL)" },
+    { "#define TIM_DATA_PIN6_Pos", "(6UL)" },
+    { "#define TIM_DATA_PIN6_Msk", "(0x40UL)" },
+    { "#define TIM_DATA_PIN7_Pos", "(7UL)" },
+    { "#define TIM_DATA_PIN7_Msk", "(0x80UL)" },
+  };
+  for(const auto& [name, value] : expectedMacros) {
+    const auto namePos = buf.find(name);
+    ASSERT_NE(string::npos, namePos) << name;
+    const auto lineEnd = buf.find('\n', namePos);
+    const auto valuePos = buf.find(value, namePos);
+    ASSERT_NE(string::npos, valuePos) << name;
+    EXPECT_LT(valuePos, lineEnd) << name;
+  }
+
+  EXPECT_EQ(string::npos, buf.find("#define TIM_DATA_PIN_Pos"));
+  EXPECT_EQ(string::npos, buf.find("#define TIM_DATA_PIN_Msk"));
+}
