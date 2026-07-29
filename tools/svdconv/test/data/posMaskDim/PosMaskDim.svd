@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<device schemaVersion="1.3" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="CMSIS-SVD.xsd">
+  <vendor>ARM Ltd.</vendor>
+  <vendorID>ARM</vendorID>
+  <name>PosMaskDim</name>
+  <series>ARM Cortex M3</series>
+  <version>1.0</version>
+  <description>Test device for dim fields in pos/mask generation.</description>
+
+  <cpu>
+    <name>CM3</name>
+    <revision>r2p1</revision>
+    <endian>little</endian>
+    <mpuPresent>true</mpuPresent>
+    <fpuPresent>false</fpuPresent>
+    <vtorPresent>true</vtorPresent>
+    <nvicPrioBits>3</nvicPrioBits>
+    <vendorSystickConfig>false</vendorSystickConfig>
+  </cpu>
+
+  <addressUnitBits>8</addressUnitBits>
+  <width>32</width>
+  <size>32</size>
+  <access>read-write</access>
+  <resetValue>0x00000000</resetValue>
+  <resetMask>0xFFFFFFFF</resetMask>
+
+  <peripherals>
+    <peripheral>
+      <name>TIM</name>
+      <description>Timer.</description>
+      <baseAddress>0x40000000</baseAddress>
+      <addressBlock>
+        <offset>0x0</offset>
+        <size>0x400</size>
+        <usage>registers</usage>
+      </addressBlock>
+      <registers>
+        <register>
+          <name>DATA[%s]</name>
+          <description>Data register.</description>
+          <addressOffset>0x0</addressOffset>
+          <dim>256</dim>
+          <dimIncrement>4</dimIncrement>
+          <size>32</size>
+          <fields>
+            <field>
+              <name>PIN%s</name>
+              <description>Pin data.</description>
+              <bitOffset>0</bitOffset>
+              <bitWidth>1</bitWidth>
+              <dim>8</dim>
+              <dimIncrement>1</dimIncrement>
+              <dimIndex>0-7</dimIndex>
+              <enumeratedValues>
+                <enumeratedValue>
+                  <name>Disabled</name>
+                  <description>Channel disabled.</description>
+                  <value>0</value>
+                </enumeratedValue>
+                <enumeratedValue>
+                  <name>Enabled</name>
+                  <description>Channel enabled.</description>
+                  <value>1</value>
+                </enumeratedValue>
+              </enumeratedValues>
+            </field>
+          </fields>
+        </register>
+      </registers>
+    </peripheral>
+  </peripherals>
+</device>

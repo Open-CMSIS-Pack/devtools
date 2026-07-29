@@ -183,6 +183,23 @@ bool HeaderData::CreateRegisterPosMask(SvdRegister* reg, PosMaskNames *posMaskNa
       continue;
     }
 
+    const auto dim = field->GetDimension();
+    if(dim) {
+      const auto expr = dim->GetExpression();
+      if(expr && expr->GetType() == SvdTypes::Expression::EXTEND) {
+        const auto& dimChilds = dim->GetChildren();
+        for(const auto dimChild : dimChilds) {
+          const auto dimField = dynamic_cast<SvdField*>(dimChild);
+          if(!dimField || !dimField->IsValid()) {
+            continue;
+          }
+
+          CreateFieldPosMask(dimField, posMaskNames);
+        }
+        continue;
+      }
+    }
+
     CreateFieldPosMask(field, posMaskNames);
   }
 

@@ -55,7 +55,7 @@ jobs:
           -i./tools/buildmgr/test -i./tools/packchk/test \
           -i./tools/ctrace/test \
           -i./tools/packgen/test -i./tools/projmgr/test \
-          -i./tools/svdconv/Test -i./test \
+          -i./tools/svdconv/test -i./test \
           --template="|{file}|{line}|{severity}|{message}|" \
           --output-file=./${{ env.linter_report }} .
 
