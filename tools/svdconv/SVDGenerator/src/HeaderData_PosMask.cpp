@@ -186,7 +186,7 @@ bool HeaderData::CreateRegisterPosMask(SvdRegister* reg, PosMaskNames *posMaskNa
     const auto dim = field->GetDimension();
     if(dim) {
       const auto expr = dim->GetExpression();
-      if(expr && expr->GetType() == SvdTypes::Expression::EXTEND) {
+      if(expr->GetType() == SvdTypes::Expression::EXTEND) {
         const auto& dimChilds = dim->GetChildren();
         for(const auto dimChild : dimChilds) {
           const auto dimField = dynamic_cast<SvdField*>(dimChild);
