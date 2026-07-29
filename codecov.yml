@@ -36,6 +36,12 @@ coverage:
         flags:
           - svdconv-cov
 
+      ctrace-cov:
+        target: auto
+        threshold: 0.1%
+        flags:
+          - ctrace-cov
+
 comment:
   layout: "diff, flags, files"
   behavior: new
@@ -64,4 +70,8 @@ flags:
   svdconv-cov:
     paths:
       - tools/svdconv
+    carryforward: true
+  ctrace-cov:
+    paths:
+      - tools/ctrace
     carryforward: true

@@ -53,6 +53,7 @@ jobs:
           --force -i./external --language=c++ --max-ctu-depth=20 \
           --platform=unix64 --std=c++17 --verbose --std=c++17 \
           -i./tools/buildmgr/test -i./tools/packchk/test \
+          -i./tools/ctrace/test \
           -i./tools/packgen/test -i./tools/projmgr/test \
           -i./tools/svdconv/Test -i./test \
           --template="|{file}|{line}|{severity}|{message}|" \
