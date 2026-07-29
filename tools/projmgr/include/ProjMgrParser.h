@@ -120,6 +120,9 @@ struct ProcessorItem {
  *        start
  *        size
  *        algorithm
+ *        pname
+ *        ram start
+ *        ram size
 */
 struct MemoryItem {
   std::string name;
@@ -127,6 +130,9 @@ struct MemoryItem {
   std::string start;
   std::string size;
   std::string algorithm;
+  std::string pname;
+  std::string ramStart;
+  std::string ramSize;
 };
 
 /**

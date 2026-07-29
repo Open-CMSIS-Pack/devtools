@@ -14,6 +14,8 @@ solution:
           name: CustomMemory
           access: rwx
           algorithm: CustomAlgo.flm
+          ram-start: 0x80000000
+          ram-size: 0x00008000
       target-set:
         - set:
           info: Info target-set
@@ -46,6 +48,12 @@ solution:
             - image: customLibrary.x
               type: lib
     - type: TestHW3
+      memory:
+        - start: 0x40000000
+          size: 0x00020000
+          name: CustomMemoryCore0
+          access: rwx
+          pname: cm0_core0
       target-set:
         - set:
           images:
