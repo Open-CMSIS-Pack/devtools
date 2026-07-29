@@ -24,6 +24,11 @@ jobs:
     uses: ./.github/workflows/buildmgr.yml
     secrets: inherit
 
+  ctrace:
+    if: github.repository == 'Open-CMSIS-Pack/devtools'
+    uses: ./.github/workflows/ctrace.yml
+    secrets: inherit
+
   packchk:
     if: github.repository == 'Open-CMSIS-Pack/devtools'
     uses: ./.github/workflows/packchk.yml
@@ -52,7 +57,7 @@ jobs:
   coverage:
     if: github.repository == 'Open-CMSIS-Pack/devtools'
     runs-on: ubuntu-22.04
-    needs: [ buildmgr, packchk, packgen, projmgr, svdconv, test_libs ]
+    needs: [ buildmgr, ctrace, packchk, packgen, projmgr, svdconv, test_libs ]
 
     steps:
       - name: Harden Runner
@@ -77,6 +82,7 @@ jobs:
         run: |
           lcov --rc lcov_branch_coverage=1 \
             --add-tracefile coverage_packchk.info \
+            -a coverage_ctrace.info \
             -a coverage_packgen.info \
             -a coverage_projmgr.info \
             -a coverage_buildmgr.info \
@@ -95,7 +101,7 @@ jobs:
     if: always() && github.repository == 'Open-CMSIS-Pack/devtools'
     name: Publish Test Results
     runs-on: ubuntu-22.04
-    needs: [ buildmgr, packchk, packgen, projmgr, svdconv, test_libs ]
+    needs: [ buildmgr, ctrace, packchk, packgen, projmgr, svdconv, test_libs ]
     permissions:
       checks: write
       pull-requests: write

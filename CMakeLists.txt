@@ -135,6 +135,7 @@ add_subdirectory(libs/xmlschemachecker)
 # Tools
 if(NOT LIBS_ONLY)
   add_subdirectory(tools/buildmgr)
+  add_subdirectory(tools/ctrace)
   add_subdirectory(tools/packchk)
   add_subdirectory(tools/packgen)
   add_subdirectory(tools/projmgr)
