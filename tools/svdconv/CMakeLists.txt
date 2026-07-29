@@ -14,5 +14,5 @@ add_subdirectory(SVDGenerator)
 add_subdirectory(SVDConv)
 
 add_subdirectory(test/data)
-add_subdirectory(test/UnitTests)
+add_subdirectory(test/unittests)
 add_subdirectory(test/integtests)

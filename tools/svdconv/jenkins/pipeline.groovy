@@ -12,7 +12,7 @@ def baseFolderWin       = baseFolder.replaceAll('/', '\\\\')
 def buildFolder         = 'build'
 def target              = "SVDConv"
 def unittest            = "SVDConvUnitTests"
-def unittestFolder      = "tools/svdconv/test/UnitTests"
+def unittestFolder      = "tools/svdconv/test/unittests"
 def unittestFolderWin   = unittestFolder.replaceAll('/', '\\\\')
 
 // pipeline controlling variables
