@@ -9,21 +9,34 @@ get_version_from_git_tag("tools/ctrace/")
 project(ctrace VERSION "${PROJECT_VERSION}")
 dump_cmake_project_version()
 
+set(CTRACE_VERSION_FULL "${PROJECT_VERSION_FULL}")
+set(CTRACE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT ctrace)
 
-# ctrace library
-add_library(ctracelib OBJECT src/CtraceMain.cpp include/CtraceMain.h)
-target_include_directories(ctracelib PUBLIC include)
+function(ctrace_configure_target target)
+  target_compile_definitions(${target} PRIVATE
+    $<$<PLATFORM_ID:Windows>:NOMINMAX>
+  )
+  target_compile_options(${target} PRIVATE
+    $<$<CXX_COMPILER_ID:AppleClang,Clang,GNU>:-Wall>
+    $<$<CXX_COMPILER_ID:AppleClang,Clang,GNU>:-Wextra>
+    $<$<CXX_COMPILER_ID:AppleClang,Clang,GNU>:-Wpedantic>
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+  )
+endfunction()
 
-set_property(TARGET ctracelib PROPERTY
-  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+add_subdirectory(src)
 
-# ctrace target
-add_executable(ctrace src/main.cpp)
-target_link_libraries(ctrace PRIVATE ctracelib)
-
-set_property(TARGET ctrace PROPERTY
-  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+add_executable(ctrace
+  src/CtraceMain.cpp
+  src/CtraceMain.hpp
+  src/main.cpp
+)
+target_link_libraries(ctrace PRIVATE
+  ctrace::control
+)
+ctrace_configure_target(ctrace)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")

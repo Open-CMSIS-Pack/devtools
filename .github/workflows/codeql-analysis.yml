@@ -6,11 +6,22 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/codeql-analysis.yml'
+      - '.github/codeql-config.yml'
+      - '.gitmodules'
       - '**/*.c'
+      - '**/*.cc'
       - '**/*.cpp'
       - '**/*.h'
+      - '**/*.hpp'
       - '**/*.in'
       - '**/CMakeLists.txt'
+      - '**/*.cmake'
+      - 'cmake/**'
+      - 'external/OpenCSD'
+      - 'external/cxxopts'
+      - 'external/cxxopts.patch'
+      - 'external/yaml-cpp'
+      - 'external/yaml-cpp.patch'
       - '!**/*.md'
   push:
     branches: [ main ]

@@ -32,3 +32,6 @@
 [submodule "external/json-rpc-cxx"]
 	path = external/json-rpc-cxx
 	url = https://github.com/jsonrpcx/json-rpc-cxx.git
+[submodule "external/OpenCSD"]
+	path = external/OpenCSD
+	url = https://github.com/Linaro/OpenCSD.git

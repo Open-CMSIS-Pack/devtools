@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 Arm Limited. All rights reserved.
+  SPDX-License-Identifier: Apache-2.0
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1080" viewBox="0 0 1280 1080" role="img"
+     aria-labelledby="title description">
+  <title id="title">ctrace software architecture</title>
+  <desc id="description">
+    Seven library modules and the first-release ITM and DWT data flow from command-line, trace-run YAML, and SWO raw
+    input through orchestration, decoding, the trace event model, diagnostics, and CSV and CTF output backends.
+  </desc>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#34495e"/>
+    </marker>
+    <marker id="arrow-muted" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#66788a"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#102a43" flood-opacity="0.14"/>
+    </filter>
+    <style>
+      text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #102a43; }
+      .title { font-size: 28px; font-weight: 700; }
+      .subtitle { font-size: 14px; fill: #52667a; }
+      .section { font-size: 14px; font-weight: 700; letter-spacing: 1.2px; fill: #52667a; }
+      .box { stroke-width: 1.5; rx: 9; filter: url(#shadow); }
+      .box-title { font-size: 16px; font-weight: 700; text-anchor: middle; }
+      .box-detail { font-size: 12px; text-anchor: middle; fill: #52667a; }
+      .input { fill: #f1f7ff; stroke: #4c8eda; }
+      .control { fill: #f2fbf7; stroke: #37a779; }
+      .decode { fill: #fff8e8; stroke: #d89a22; }
+      .model { fill: #f8f1ff; stroke: #9467bd; }
+      .output { fill: #fff2f3; stroke: #d65c67; }
+      .support { fill: #f4f6f8; stroke: #8395a7; }
+      .external { fill: #ffffff; stroke: #8395a7; stroke-dasharray: 5 4; }
+      .flow { fill: none; stroke: #34495e; stroke-width: 2.2; marker-end: url(#arrow); }
+      .dependency { fill: none; stroke: #66788a; stroke-width: 1.8; stroke-dasharray: 7 5;
+                    marker-end: url(#arrow-muted); }
+      .unsupported { fill: none; stroke: #66788a; stroke-width: 1.8; stroke-dasharray: 2 5;
+                     marker-end: url(#arrow-muted); }
+      .group { fill: none; stroke: #d5dde5; stroke-width: 1.2; rx: 14; }
+      .legend { font-size: 12px; fill: #52667a; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="1080" fill="#fbfcfe"/>
+  <text x="50" y="48" class="title">ctrace architecture</text>
+  <text x="50" y="73" class="subtitle">Seven library boundaries · initial ITM/DWT release profile</text>
+
+  <text x="50" y="108" class="section">INPUTS</text>
+
+  <rect x="50" y="125" width="220" height="72" class="box input"/>
+  <text x="160" y="155" class="box-title">Command line</text>
+  <text x="160" y="177" class="box-detail">trace directory, target, filters</text>
+
+  <rect x="315" y="125" width="250" height="72" class="box input"/>
+  <text x="440" y="155" class="box-title">*.ctrace-run.yml</text>
+  <text x="440" y="177" class="box-detail">setup, routes, source metadata</text>
+
+  <rect x="610" y="125" width="220" height="72" class="box input"/>
+  <text x="720" y="155" class="box-title">*.SWO.raw</text>
+  <text x="720" y="177" class="box-detail">ITM and DWT byte stream</text>
+
+  <rect x="880" y="125" width="220" height="72" class="box support"/>
+  <text x="990" y="155" class="box-title">*.TB.raw</text>
+  <text x="990" y="177" class="box-detail">discovered; not decoded yet</text>
+
+  <text x="50" y="245" class="section">ORCHESTRATION</text>
+  <rect x="40" y="260" width="1040" height="245" class="group"/>
+
+  <rect x="65" y="285" width="210" height="80" class="box control"/>
+  <text x="170" y="316" class="box-title">cli</text>
+  <text x="170" y="338" class="box-detail">options · cxxopts</text>
+
+  <rect x="330" y="285" width="220" height="80" class="box control"/>
+  <text x="440" y="316" class="box-title">tracerun</text>
+  <text x="440" y="338" class="box-detail">YAML · yaml-cpp</text>
+
+  <rect x="250" y="400" width="300" height="82" class="box control"/>
+  <text x="400" y="432" class="box-title">control</text>
+  <text x="400" y="454" class="box-detail">read raw files; compose decode jobs</text>
+
+  <rect x="760" y="400" width="250" height="82" class="box support"/>
+  <text x="885" y="432" class="box-title">diagnostics</text>
+  <text x="885" y="454" class="box-detail">structured issues and severity</text>
+
+  <path d="M 160 197 L 170 285" class="flow"/>
+  <path d="M 440 197 L 440 285" class="flow"/>
+  <path d="M 170 365 L 350 400" class="flow"/>
+  <path d="M 440 365 L 450 400" class="flow"/>
+  <path d="M 720 197 L 720 382 L 500 382 L 500 400" class="flow"/>
+  <path d="M 990 197 L 990 382 L 920 382 L 920 400" class="unsupported"/>
+  <path d="M 550 441 L 760 441" class="dependency"/>
+
+  <text x="50" y="550" class="section">DECODE PIPELINE</text>
+  <rect x="40" y="565" width="1040" height="220" class="group"/>
+
+  <rect x="65" y="590" width="210" height="86" class="box decode"/>
+  <text x="170" y="623" class="box-title">DecodePipeline</text>
+  <text x="170" y="645" class="box-detail">RawByteView · chunk continuity</text>
+
+  <rect x="320" y="590" width="210" height="86" class="box decode"/>
+  <text x="425" y="623" class="box-title">OpenCSD adapter</text>
+  <text x="425" y="645" class="box-detail">packets, errors, recovery</text>
+
+  <rect x="575" y="590" width="210" height="86" class="box decode"/>
+  <text x="680" y="623" class="box-title">Cortex-M decode</text>
+  <text x="680" y="645" class="box-detail">timestamps and DWT semantics</text>
+
+  <rect x="830" y="590" width="210" height="86" class="box model"/>
+  <text x="935" y="623" class="box-title">model</text>
+  <text x="935" y="645" class="box-detail">events, type mapping, selection</text>
+
+  <rect x="320" y="710" width="210" height="52" class="box external"/>
+  <text x="425" y="733" class="box-title">OpenCSD 1.8.3</text>
+  <text x="425" y="750" class="box-detail">pinned external library</text>
+
+  <path d="M 400 482 L 400 535 L 300 535 L 300 575 L 170 575 L 170 590" class="flow"/>
+  <path d="M 275 633 L 320 633" class="flow"/>
+  <path d="M 530 633 L 575 633" class="flow"/>
+  <path d="M 785 633 L 830 633" class="flow"/>
+  <path d="M 425 676 L 425 710" class="dependency"/>
+
+  <text x="50" y="835" class="section">OUTPUTS</text>
+  <rect x="40" y="850" width="1200" height="190" class="group"/>
+
+  <rect x="260" y="875" width="300" height="68" class="box output"/>
+  <text x="410" y="902" class="box-title">output orchestration</text>
+  <text x="410" y="924" class="box-detail">requirements, lifecycle, cleanup</text>
+
+  <rect x="170" y="970" width="220" height="58" class="box output"/>
+  <text x="280" y="995" class="box-title">CSV backend</text>
+  <text x="280" y="1016" class="box-detail">*.SWO.csv</text>
+
+  <rect x="610" y="970" width="270" height="58" class="box output"/>
+  <text x="745" y="995" class="box-title">CTF backend</text>
+  <text x="745" y="1016" class="box-detail">*.ctf + Trace Compass XML</text>
+
+  <path d="M 935 676 L 935 815 L 410 815 L 410 875" class="flow"/>
+  <path d="M 350 943 L 350 955 L 280 955 L 280 970" class="flow"/>
+  <path d="M 470 943 L 470 955 L 745 955 L 745 970" class="flow"/>
+
+  <line x1="950" y1="895" x2="1000" y2="895" class="flow"/>
+  <text x="1010" y="899" class="legend">runtime data flow</text>
+  <line x1="950" y1="925" x2="1000" y2="925" class="dependency"/>
+  <text x="1010" y="929" class="legend">service or library dependency</text>
+  <line x1="950" y1="955" x2="1000" y2="955" class="unsupported"/>
+  <text x="1010" y="959" class="legend">unsupported input path</text>
+</svg>

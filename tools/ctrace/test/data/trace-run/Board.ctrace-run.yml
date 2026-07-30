@@ -1,0 +1,36 @@
+format-version: ignored
+producer-extension:
+  malformed: [but, irrelevant]
+ctrace-run:
+  generated-by: ctrace integration test
+  created-by: ignored
+  vendor-extension: { arbitrary: [content] }
+  ctrace-setup:
+    - timestamps:
+        clock: 400000000
+        itm-prescaler: 1
+        timestamp-extension: [ignored]
+      itm:
+        enable: 0xFFFFFFFE
+        privileged: [ignored]
+      exceptions: [ignored]
+      pcsampling: { ignored: true }
+  ctrace-refs:
+    - ctrace-ref: ignored/etm
+      type: etm
+      source: [invalid]
+      regs: [ignored]
+    - ctrace-ref: opaque/printf-route
+      type: itm
+      info: configured ITM channel
+      stream: 1
+      source: 0
+      regs: [ignored]
+    - ctrace-ref: data#0
+      type: dwt
+      info: configured DWT data trace
+      warning: aligned DWT range
+      label: sample counter
+      stream: 1
+      source: [0, 1]
+      reference-extension: [ignored]

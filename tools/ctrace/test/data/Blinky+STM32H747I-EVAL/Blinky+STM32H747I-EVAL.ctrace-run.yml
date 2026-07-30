@@ -1,0 +1,59 @@
+ctrace-run:
+  generated-by: pyTS v0.1.0
+  created-by: CMSIS-Debugger v1.4.0
+  ctrace-setup:
+  - pname: CM7
+    data:
+    - location: Blinky_cm7|osRtxInfo.kernel.tick
+      access: W
+      output: PC+value
+      symbol-file: Blinky_cm7.axf
+      symbol: osRtxInfo.kernel.tick
+      address: 0x24000024
+      size: 4
+      type: unsigned int
+    synchronization:
+      DWT: 16M
+    timestamps:
+      itm-prescaler: 1
+  - pname: CM4
+    disable:
+    timestamps:
+      itm-prescaler: 1
+    data: []
+    exceptions:
+    pcsampling:
+      period: 16384
+  ctrace-refs:
+  - ctrace-ref: CM7/timestamps
+    type: dwt
+    pname: CM7
+    regs:
+    - name: ITM_TCR
+      value: 0x00000003
+      mask: 0x00000303
+  - ctrace-ref: CM7/data#0
+    type: dwt
+    pname: CM7
+    symbol-file: Blinky_cm7.axf
+    symbol-address: 0x24000024
+    regs:
+    - name: DWT_COMP0
+      value: 0x24000024
+    - name: DWT_MASK0
+      value: 0x00000002
+    - name: DWT_FUNCTION0
+      value: 0x0000000f
+    - name: ITM_TCR
+      value: 0x00000009
+      mask: 0x00000009
+  - ctrace-ref: CM7/synchronization#0
+    type: dwt
+    pname: CM7
+    regs:
+    - name: DWT_CTRL
+      value: 0x00000400
+      mask: 0x00000c00
+    - name: ITM_TCR
+      value: 0x00000005
+      mask: 0x00000005

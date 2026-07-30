@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "CtraceMain.h"
+#include "CtraceMain.hpp"
 
-int main() {
-  return CtraceMain();
+int main(int argc, const char* const argv[])
+{
+  return CtraceMain(argc, argv);
 }
