@@ -21,6 +21,57 @@ implemented.
 The architecture separates protocol decoding, semantic interpretation, and output generation. This keeps output
 formats independent of OpenCSD and allows another raw trace channel to reuse the event model and output backends.
 
+## How it works at a glance
+
+`ctrace` processes one solution set at a time. The common base name joins configuration and trace data; for example,
+`Board.ctrace-run.yml` describes the sources and timing metadata required to decode `Board.SWO.raw`. A matching
+`Board.TB.raw` is discovered as part of the same solution set but is skipped by the first release profile.
+
+The main in-memory path is:
+
+```text
+command line + trace-run YAML + SWO raw file
+                    |
+                    v
+        TraceDirectoryJob / FileDecodeJob
+          discovery, metadata, output plan
+                    |
+                    v
+           64 KiB non-owning byte views
+                    |
+                    v
+                OpenCSD
+       ITM framing, packets, recovery
+                    |
+                    v
+          OpenCsdTraceElement values
+                    |
+                    v
+ CortexMStreamDecoder / CortexMPostDecoder
+     timestamps, DWT pairing, quality
+                    |
+                    v
+             TraceEvent values
+                    |
+                    v
+              DecodeConsumers
+        /               |               \
+ diagnostics        CSV backend       CTF backend
+```
+
+The `TraceEvent` boundary is the central design point. Before it, code handles byte offsets, OpenCSD packets, decoder
+recovery, and Cortex-M state. After it, code sees backend-independent events in decode order and does not depend on
+OpenCSD types.
+
+| Stage | Owner | Transformation |
+| --- | --- | --- |
+| Discover | `TraceDirectoryJob` | Trace directory and target selection to solution-set configuration and raw inputs |
+| Prepare | `CtraceRunMeta`, `FileDecodeJob` | YAML representation to normalized runtime metadata and an output plan |
+| Decode protocol | `DecodePipeline`, `OpenCsdItmDecoder` | Raw byte chunks to recoverable OpenCSD trace elements |
+| Interpret | `CortexMStreamDecoder`, `CortexMPostDecoder` | Protocol elements to timestamped semantic events |
+| Consume | `DecodeConsumers` | One ordered event stream to diagnostics and every enabled output backend |
+| Complete | `TraceOutputLifecycle` | Complete active artifacts, or remove them after output or decoder failure |
+
 ## Runtime flow
 
 1. `CtraceMain` parses and validates the command line.
@@ -38,12 +89,47 @@ formats independent of OpenCSD and allows another raw trace channel to reuse the
 
 Without `--csv`, `--ctf`, or `--all`, the same pipeline runs in validation-only mode without creating output files.
 
+## Processing state and ownership
+
+One `DecodePipeline` is created for each supported raw file. It owns the OpenCSD adapter and Cortex-M stream decoder,
+so protocol, timestamp, and DWT state survive arbitrary file-read boundaries. `RawFileReader` owns a single 64 KiB
+buffer; each `RawByteView` borrows that buffer only for the synchronous `DecodePipeline::push` call. Calling
+`DecodePipeline::finish` flushes both the OpenCSD and Cortex-M layers before the pipeline is destroyed.
+
+`CortexMStreamDecoder` maintains an independent post-decoder for each observed Trace Bus ID. All post-decoders emit
+into the same `TraceEventSink`, preserving input order while keeping stream-specific timestamp and DWT state apart.
+
+There is no application-wide event queue. `DecodeConsumers` forwards each event synchronously to the output
+lifecycle and issue reporter. Output backends own their files and are isolated from one another: failure of one
+backend aborts its incomplete artifact but does not directly stop another active backend. A decoder-fatal error
+aborts every still-active output for that raw file.
+
+The diagnostic sink lives for the complete command invocation. It therefore aggregates failures across solution sets
+and determines the final process status after processing has continued wherever possible.
+
+## Suggested code-reading path
+
+1. Start at [`CtraceMain.cpp`](../src/CtraceMain.cpp) for command-line handling and top-level error policy.
+2. Follow [`TraceDirectoryJob.cpp`](../src/control/TraceDirectoryJob.cpp) to see how solution sets, YAML, SWO, and
+   unsupported Trace Bus input are associated.
+3. Read [`FileDecodeJob.cpp`](../src/control/FileDecodeJob.cpp) for output preflight, chunked input, pipeline
+   construction, and finalization.
+4. Continue through [`DecodePipeline.cpp`](../src/decode/DecodePipeline.cpp),
+   [`OpenCsdItmDecoder.cpp`](../src/decode/OpenCsdItmDecoder.cpp), and
+   [`CortexMStreamDecoder.cpp`](../src/decode/CortexMStreamDecoder.cpp) for the two decode representations.
+5. Use [`TraceEvent.hpp`](../src/model/TraceEvent.hpp) as the semantic contract between decoding and all consumers.
+6. Finish with [`DecodeConsumers.cpp`](../src/control/DecodeConsumers.cpp) and
+   [`TraceOutputLifecycle.cpp`](../src/output/TraceOutputLifecycle.cpp), then inspect either the CSV or CTF backend.
+
+This path follows one trace file through the system without requiring the build-target graph or every backend detail
+up front.
+
 ## Module boundaries
 
 ### Entry point and orchestration
 
 | Module | Responsibility |
-|---|---|
+| --- | --- |
 | `src/CtraceMain.hpp` | Platform-independent entry point used by the executable trampoline |
 | `src/cli` | Command-line parsing, value normalization, and validation |
 | `src/control` | Solution-set orchestration, raw-file access, output setup, and per-file decode jobs |
@@ -56,7 +142,7 @@ must not depend on control jobs or command-line details.
 ### Trace-run metadata
 
 | Module | Responsibility |
-|---|---|
+| --- | --- |
 | `src/tracerun` | File discovery, YAML parsing, schema subset validation, and normalized metadata |
 
 The YAML reader intentionally consumes only data required by `ctrace`. A malformed consumed field is an error, while
@@ -69,7 +155,7 @@ normalized metadata instead of navigating YAML nodes.
 ### Decode and event model
 
 | Module | Responsibility |
-|---|---|
+| --- | --- |
 | `src/decode` | Raw-byte decoder interface, OpenCSD integration, packet recovery, timestamps, and Cortex-M semantics |
 | `src/model` | Backend-independent event types, quality information, and event selection |
 
@@ -84,7 +170,7 @@ to make independent decisions without reconstructing decoder state.
 ### Output
 
 | Module | Responsibility |
-|---|---|
+| --- | --- |
 | `src/output` | Backend requirements, output planning, and lifecycle management |
 | `src/output/csv` | Stable CSV schema, row mapping, filtering, and file output |
 | `src/output/ctf` | CTF metadata and stream encoding plus Trace Compass analysis XML |
@@ -110,7 +196,7 @@ fatal diagnostic occurred.
 ## External dependencies
 
 | Dependency | Use |
-|---|---|
+| --- | --- |
 | `cxxopts` | Command-line parsing |
 | `yaml-cpp` | Trace-run YAML parsing |
 | `OpenCSD` 1.8.3 | ITM protocol decoding; pinned as a repository submodule |
