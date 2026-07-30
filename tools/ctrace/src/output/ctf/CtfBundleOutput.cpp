@@ -174,7 +174,7 @@ CtfBundleOutput::CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnos
 CtfBundleOutput::~CtfBundleOutput()
 {
   try {
-    abort();
+    CtfBundleOutput::abort();
   } catch (...) {
     // Destructors cannot report a best-effort cleanup failure.
     (void)0;

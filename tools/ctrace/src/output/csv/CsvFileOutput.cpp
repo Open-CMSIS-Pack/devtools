@@ -66,7 +66,7 @@ CsvFileOutput::CsvFileOutput(std::filesystem::path outputFile, TraceSelection se
 CsvFileOutput::~CsvFileOutput()
 {
   try {
-    abort();
+    CsvFileOutput::abort();
   } catch (...) {
     // Destructors cannot report a best-effort cleanup failure.
     (void)0;
@@ -91,7 +91,7 @@ void CsvFileOutput::start()
   createParentDirectory(outputPath);
   active_ = true;
   stream_.clear();
-  stream_.open(outputPath, std::ios::out | std::ios::trunc);
+  stream_.open(outputPath, std::ios::out | std::ios::trunc | std::ios::binary);
   if (!stream_.is_open()) {
     abort();
     throw std::runtime_error("Failed to open CSV output " + outputPath.string());

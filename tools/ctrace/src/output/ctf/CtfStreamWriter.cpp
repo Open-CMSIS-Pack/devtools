@@ -184,7 +184,7 @@ const std::string& CtfStreamWriter::uuidString() const noexcept
 
 void CtfStreamWriter::beginPacket()
 {
-  std::fill(packetBuffer_.begin(), packetBuffer_.end(), 0U);
+  std::fill(packetBuffer_.begin(), packetBuffer_.end(), std::uint8_t{0});
   contentOffset_ = kPacketOverhead;
   eventCount_ = 0U;
   timestampBegin_ = 0U;

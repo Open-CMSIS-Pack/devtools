@@ -43,11 +43,6 @@ std::uint64_t DiagnosticSink::fatalCount() const noexcept
   return fatalCount_;
 }
 
-bool DiagnosticSink::hasFatalSince(std::uint64_t checkpoint) const noexcept
-{
-  return fatalCount_ > checkpoint;
-}
-
 std::string_view toString(DiagnosticSink::Severity severity)
 {
   switch (severity) {

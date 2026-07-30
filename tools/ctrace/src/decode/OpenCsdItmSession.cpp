@@ -21,17 +21,15 @@
 namespace {
 
 constexpr std::uint32_t kItmTcrSwoEnable = 1U << 4U;
+constexpr ocsd_itm_cfg kItmConfig{kItmTcrSwoEnable};
 
 } // namespace
 
 OpenCsdItmSession::OpenCsdItmSession(OpenCsdPacketCollector& collector, OpenCsdErrorController& errorController)
+  : config_(&kItmConfig)
 {
-  ocsd_itm_cfg config{};
   // Keep OpenCSD timestamps in raw ITM ticks. They are scaled after decode,
   // where the originating CoreSight stream and processor are known.
-  config.reg_tcr = kItmTcrSwoEnable;
-  config_ = &config;
-
   try {
     createDecoder(collector, errorController);
   } catch (...) {

@@ -53,7 +53,7 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
   const auto checkpoint = diagnostics.fatalCount();
   job.run();
 
-  require(!diagnostics.hasFatalSince(checkpoint), "TraceDirectoryJob target run failed");
+  require(diagnostics.fatalCount() == checkpoint, "TraceDirectoryJob target run failed");
   require(reader.paths.size() == 1U, "TraceDirectoryJob should read one selected YAML file");
   require(std::filesystem::path(reader.paths[0]).filename() == "Alpha.ctrace-run.yml",
           "TraceDirectoryJob reader path mismatch");
@@ -85,7 +85,7 @@ TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
   const auto batchCheckpoint = diagnostics.fatalCount();
   batchJob.run();
 
-  require(!diagnostics.hasFatalSince(batchCheckpoint), "TraceDirectoryJob batch check failed");
+  require(diagnostics.fatalCount() == batchCheckpoint, "TraceDirectoryJob batch check failed");
   require(batchReader.paths.size() == 2U, "TraceDirectoryJob batch should read every trace-run file");
   require(!std::filesystem::exists(traceDir / "Alpha.SWO.csv"), "check-only batch should not create CSV output");
   require(!std::filesystem::exists(traceDir / "Alpha.ctf"), "check-only batch should not create CTF output");
@@ -101,6 +101,6 @@ TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
   TraceDirectoryJob brokenJob(brokenOptions, diagnostics, brokenReader);
   const auto brokenCheckpoint = diagnostics.fatalCount();
   brokenJob.run();
-  require(diagnostics.hasFatalSince(brokenCheckpoint),
+  require(diagnostics.fatalCount() > brokenCheckpoint,
           "check-only trace directory should fail on decoder error packets");
 }

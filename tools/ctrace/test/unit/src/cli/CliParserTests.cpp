@@ -13,9 +13,31 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
-TEST(CtraceUnitTests, testCliParser)
+static bool validationErrorContains(int argc, const char* const argv[], std::string_view expected)
+{
+  try {
+    const auto options = CliParser::parse(argc, argv);
+    CliParser::validate(options);
+  } catch (const std::runtime_error& error) {
+    return std::string_view(error.what()).find(expected) != std::string_view::npos;
+  }
+  return false;
+}
+
+static bool parseFails(int argc, const char* const argv[])
+{
+  try {
+    (void)CliParser::parse(argc, argv);
+  } catch (const std::runtime_error&) {
+    return true;
+  }
+  return false;
+}
+
+TEST(CtraceUnitTests, testCliParserOutputOptions)
 {
   const char* allArgv[] = {
       "ctrace", ".trace", "--all", "--target", "Board.Debug", "--type", "dwt", "itm", "--stream", "1", "2",
@@ -57,69 +79,37 @@ TEST(CtraceUnitTests, testCliParser)
   const auto version = CliParser::parse(2, versionArgv);
   CliParser::validate(version);
   require(version.version, "CliParser short version alias mismatch");
+}
 
+TEST(CtraceUnitTests, testCliParserRejectsInvalidSelections)
+{
   const char* invalidVersionTypeArgv[] = {"ctrace", "-V", "--type", "DWT"};
-  bool rejectedInvalidVersionType = false;
-  try {
-    const auto invalid = CliParser::parse(4, invalidVersionTypeArgv);
-    CliParser::validate(invalid);
-  } catch (const std::runtime_error& error) {
-    rejectedInvalidVersionType = std::string(error.what()).find("Invalid --type value: DWT") != std::string::npos;
-  }
-  require(rejectedInvalidVersionType, "--version must not bypass packet type validation");
+  require(validationErrorContains(4, invalidVersionTypeArgv, "Invalid --type value: DWT"),
+          "--version must not bypass packet type validation");
 
   const char* missingArgv[] = {"ctrace"};
-  bool rejectedMissingTraceDir = false;
-  try {
-    const auto missing = CliParser::parse(1, missingArgv);
-    CliParser::validate(missing);
-  } catch (const std::runtime_error& error) {
-    rejectedMissingTraceDir = std::string(error.what()).find("Specify <trace-dir>") != std::string::npos;
-  }
-  require(rejectedMissingTraceDir, "CliParser should require a trace directory");
+  require(validationErrorContains(1, missingArgv, "Specify <trace-dir>"), "CliParser should require a trace directory");
 
   const char* invalidTypeArgv[] = {"ctrace", ".trace", "--type", "invalid"};
-  bool rejectedInvalidType = false;
-  try {
-    const auto invalid = CliParser::parse(4, invalidTypeArgv);
-    CliParser::validate(invalid);
-  } catch (const std::runtime_error& error) {
-    rejectedInvalidType = std::string(error.what()).find("Invalid --type value") != std::string::npos;
-  }
-  require(rejectedInvalidType, "CliParser should reject invalid packet types");
+  require(validationErrorContains(4, invalidTypeArgv, "Invalid --type value"),
+          "CliParser should reject invalid packet types");
 
   for (const auto* type : {"event", "pmu", "pcsample"}) {
     const char* unsupportedTypeArgv[] = {"ctrace", ".trace", "--type", type};
-    bool rejectedUnsupportedType = false;
-    try {
-      const auto unsupported = CliParser::parse(4, unsupportedTypeArgv);
-      CliParser::validate(unsupported);
-    } catch (const std::runtime_error& error) {
-      rejectedUnsupportedType = std::string(error.what()).find("Invalid --type value") != std::string::npos;
-    }
-    require(rejectedUnsupportedType, std::string("CliParser should reject unimplemented type ") + type);
+    require(validationErrorContains(4, unsupportedTypeArgv, "Invalid --type value"),
+            std::string("CliParser should reject unimplemented type ") + type);
   }
 
   const char* wrongCaseTypeArgv[] = {"ctrace", ".trace", "--type", "DWT"};
-  bool rejectedWrongCaseType = false;
-  try {
-    const auto invalid = CliParser::parse(4, wrongCaseTypeArgv);
-    CliParser::validate(invalid);
-  } catch (const std::runtime_error& error) {
-    rejectedWrongCaseType = std::string(error.what()).find("Invalid --type value: DWT") != std::string::npos;
-  }
-  require(rejectedWrongCaseType, "CliParser should enforce case-sensitive packet type names");
+  require(validationErrorContains(4, wrongCaseTypeArgv, "Invalid --type value: DWT"),
+          "CliParser should enforce case-sensitive packet type names");
 
   const char* commaSeparatedArgv[] = {"ctrace", ".trace", "--type=dwt,event"};
-  bool rejectedCommaSeparatedTypes = false;
-  try {
-    const auto invalid = CliParser::parse(3, commaSeparatedArgv);
-    CliParser::validate(invalid);
-  } catch (const std::runtime_error&) {
-    rejectedCommaSeparatedTypes = true;
-  }
-  require(rejectedCommaSeparatedTypes, "CliParser should accept only the specified space-separated selectors");
+  require(parseFails(3, commaSeparatedArgv), "CliParser should accept only the specified space-separated selectors");
+}
 
+TEST(CtraceUnitTests, testCliParserStreamRangeAndUnknownOptions)
+{
   const char* traceBusZeroArgv[] = {"ctrace", ".trace", "--stream", "0"};
   const auto traceBusZero = CliParser::parse(4, traceBusZeroArgv);
   require(traceBusZero.selection.streams == std::vector<std::uint8_t>({0U}),
@@ -127,21 +117,10 @@ TEST(CtraceUnitTests, testCliParser)
 
   for (const auto* stream : {"112", "255"}) {
     const char* invalidStreamArgv[] = {"ctrace", ".trace", "--stream", stream};
-    bool rejectedInvalidStream = false;
-    try {
-      (void)CliParser::parse(4, invalidStreamArgv);
-    } catch (const std::runtime_error& error) {
-      rejectedInvalidStream = std::string(error.what()).find("CoreSight Trace Bus ID") != std::string::npos;
-    }
-    require(rejectedInvalidStream, std::string("CliParser accepted invalid Trace Bus ID ") + stream);
+    require(validationErrorContains(4, invalidStreamArgv, "CoreSight Trace Bus ID"),
+            std::string("CliParser accepted invalid Trace Bus ID ") + stream);
   }
 
   const char* unknownArgv[] = {"ctrace", ".trace", "--unknown"};
-  bool rejectedUnknown = false;
-  try {
-    (void)CliParser::parse(3, unknownArgv);
-  } catch (const std::runtime_error&) {
-    rejectedUnknown = true;
-  }
-  require(rejectedUnknown, "CliParser should reject unknown options");
+  require(parseFails(3, unknownArgv), "CliParser should reject unknown options");
 }

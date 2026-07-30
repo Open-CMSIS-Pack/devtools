@@ -46,68 +46,44 @@ static std::string withTraceCompassAnalysisVersion(std::string xml)
   return xml;
 }
 
-void TraceCompassXmlWriter::writeFile(const std::filesystem::path& filePath)
+static std::string valueHandlers(CtfSchema::EventId eventId, const char* prefix, const char* routeField,
+                                 const char* valueAttribute)
 {
-  std::ostringstream dwtHandlers;
+  std::ostringstream handlers;
   for (const auto& arm : CtfSchema::ValueVariants) {
-    dwtHandlers << R"(            <stateChange>
+    handlers << R"(            <stateChange>
                 <if>
                     <condition>
-                        <stateValue type="eventField" value="cmsis_dwt_value_type" />
+                        <stateValue type="eventField" value="cmsis_)"
+             << prefix << R"(_value_type" />
                         <stateValue type="string" value=")"
-                << arm.name << R"(" />
+             << arm.name << R"(" />
                     </condition>
                 </if>
                 <then>
                     <stateAttribute type="constant" value=")"
-                << CtfSchema::eventName(CtfSchema::EventId::DwtValue) << R"(" />
-                    <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
-                    <stateAttribute type="constant" value="data" />
-                    <stateValue type="eventField" value="cmsis_dwt_value.)"
-                << arm.name << R"(" forcedType=")" << arm.traceCompassType << R"(" />
-                </then>
-            </stateChange>
-)";
-  }
-
-  std::ostringstream itmHandlers;
-  for (const auto& arm : CtfSchema::ValueVariants) {
-    itmHandlers << R"(            <stateChange>
-                <if>
-                    <condition>
-                        <stateValue type="eventField" value="cmsis_itm_value_type" />
-                        <stateValue type="string" value=")"
-                << arm.name << R"(" />
-                    </condition>
-                </if>
-                <then>
+             << CtfSchema::eventName(eventId) << R"(" />
+                    <stateAttribute type="eventField" value=")"
+             << routeField << R"(" />
                     <stateAttribute type="constant" value=")"
-                << CtfSchema::eventName(CtfSchema::EventId::Itm) << R"(" />
-                    <stateAttribute type="eventField" value="cmsis_itm_channel" />
-                    <stateAttribute type="constant" value="value" />
-                    <stateValue type="eventField" value="cmsis_itm_value.)"
-                << arm.name << R"(" forcedType=")" << arm.traceCompassType << R"(" />
+             << valueAttribute << R"(" />
+                    <stateValue type="eventField" value="cmsis_)"
+             << prefix << R"(_value.)" << arm.name << R"(" forcedType=")" << arm.traceCompassType << R"(" />
                 </then>
             </stateChange>
 )";
   }
+  return handlers.str();
+}
 
-  if (!filePath.parent_path().empty()) {
-    std::filesystem::create_directories(filePath.parent_path());
-  }
-  std::ofstream out(filePath, std::ios::out | std::ios::trunc);
-  if (!out) {
-    throw std::runtime_error("Failed to write Trace Compass XML " + filePath.string());
-  }
+static std::string stateProviderXml()
+{
   std::ostringstream xml;
-  xml << R"(<?xml version="1.0" encoding="UTF-8"?>
-<tmfxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="xmlDefinition.xsd">
-    <stateProvider version="__SWO_ANALYSIS_VERSION__" id="arm.cmsis.swo.analysis.v1">
+  xml << R"(    <stateProvider version="__SWO_ANALYSIS_VERSION__" id="arm.cmsis.swo.analysis.v1">
         <head><label value="SWO Trace Analysis" /></head>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtValue) << R"(">
-)" << dwtHandlers.str()
+)" << valueHandlers(CtfSchema::EventId::DwtValue, "dwt", "cmsis_dwt_comparator", "data")
       << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(">
@@ -121,7 +97,7 @@ void TraceCompassXmlWriter::writeFile(const std::filesystem::path& filePath)
         </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm) << R"(">
-)" << itmHandlers.str()
+)" << valueHandlers(CtfSchema::EventId::Itm, "itm", "cmsis_itm_channel", "value")
       << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(">
@@ -166,7 +142,14 @@ void TraceCompassXmlWriter::writeFile(const std::filesystem::path& filePath)
             </stateChange>
         </eventHandler>
     </stateProvider>
-    <xyView id="arm.cmsis.swo.xy.dwt_value.v1">
+)";
+  return xml.str();
+}
+
+static std::string viewsXml()
+{
+  std::ostringstream xml;
+  xml << R"(    <xyView id="arm.cmsis.swo.xy.dwt_value.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtValue) << R"(" /></head>
         <entry path=")"
@@ -201,9 +184,32 @@ void TraceCompassXmlWriter::writeFile(const std::filesystem::path& filePath)
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus)
       << R"(/*" displayText="true"><display type="self" /><name type="self" /></entry>
     </timeGraphView>
-</tmfxml>
 )";
-  out << withTraceCompassAnalysisVersion(xml.str());
+  return xml.str();
+}
+
+static std::string traceCompassXml()
+{
+  std::ostringstream xml;
+  xml << R"(<?xml version="1.0" encoding="UTF-8"?>
+<tmfxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="xmlDefinition.xsd">
+)" << stateProviderXml()
+      << viewsXml() << R"(</tmfxml>
+)";
+  return withTraceCompassAnalysisVersion(xml.str());
+}
+
+void TraceCompassXmlWriter::writeFile(const std::filesystem::path& filePath)
+{
+  if (!filePath.parent_path().empty()) {
+    std::filesystem::create_directories(filePath.parent_path());
+  }
+  std::ofstream out(filePath, std::ios::out | std::ios::trunc);
+  if (!out) {
+    throw std::runtime_error("Failed to write Trace Compass XML " + filePath.string());
+  }
+  out << traceCompassXml();
   out.close();
   if (!out) {
     throw std::runtime_error("Failed to write Trace Compass XML " + filePath.string());

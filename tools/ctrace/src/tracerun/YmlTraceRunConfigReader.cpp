@@ -438,6 +438,117 @@ std::vector<TraceRunReference> parseReferences(const std::string& path, const No
   return references;
 }
 
+std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::string& path, const Node& element)
+{
+  const auto timestampsLookup = lookupNode(element, "timestamps");
+  const auto timestampsNode = timestampsLookup.value;
+  if (timestampsLookup.duplicateKey) {
+    TraceRunTimestampSetup timestamps;
+    timestamps.line = lineNumber(timestampsLookup.duplicateKey);
+    timestamps.clockError = errorMessage(path, timestampsLookup.duplicateKey, "duplicate 'timestamps' setting");
+    return timestamps;
+  }
+  if (!timestampsNode) {
+    return std::nullopt;
+  }
+  if (timestampsNode.IsScalar() || timestampsNode.IsNull()) {
+    TraceRunTimestampSetup timestamps;
+    timestamps.line = lineNumber(timestampsNode);
+    if (timestampsNode.IsScalar() && !timestampsNode.Scalar().empty()) {
+      timestamps.clockError = "'timestamps' must be empty or a map";
+    }
+    return timestamps;
+  }
+  if (!timestampsNode.IsMap()) {
+    TraceRunTimestampSetup timestamps;
+    timestamps.line = lineNumber(timestampsNode);
+    timestamps.clockError = "'timestamps' must be empty or a map";
+    return timestamps;
+  }
+
+  TraceRunTimestampSetup timestamps;
+  timestamps.line = lineNumber(timestampsNode);
+  const auto clock = lookupNode(timestampsNode, "clock");
+  if (clock.duplicateKey) {
+    timestamps.clockError = errorMessage(path, clock.duplicateKey, "duplicate 'timestamps.clock' setting");
+  } else if (clock.value && !clock.value.IsScalar() && !clock.value.IsNull()) {
+    timestamps.clockError = "'timestamps.clock' must be a scalar unsigned integer";
+  } else {
+    timestamps.clockHz = deferredUnsignedAttribute(path, timestampsNode, "clock",
+                                                   std::numeric_limits<std::uint64_t>::max(), timestamps.clockError);
+  }
+  if (uniqueChild(path, timestampsNode, "itm-prescaler")) {
+    fail(path, timestampsNode, "'timestamps.itm-prescaler' must be a scalar unsigned integer");
+  }
+  const auto prescaler =
+      optionalUnsignedAttribute(path, timestampsNode, "itm-prescaler", std::numeric_limits<std::uint32_t>::max());
+  if (prescaler.has_value()) {
+    timestamps.timestampPrescaler = static_cast<std::uint32_t>(*prescaler);
+  }
+  return timestamps;
+}
+
+std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, const Node& element)
+{
+  const auto itmNode = uniqueNode(path, element, "itm");
+  if (!itmNode) {
+    return std::nullopt;
+  }
+  if (!itmNode.IsMap()) {
+    fail(path, itmNode, "'itm' must be a map containing 'enable'");
+  }
+  const auto enableNode = uniqueNode(path, itmNode, "enable");
+  if (!enableNode || !enableNode.IsScalar() || enableNode.Scalar().empty()) {
+    fail(path, enableNode ? enableNode : itmNode, "'itm.enable' is required and must be a scalar unsigned integer");
+  }
+  return TraceRunItmSetup{static_cast<std::uint32_t>(
+      unsignedValue(path, enableNode, "itm.enable", enableNode.Scalar(), std::numeric_limits<std::uint32_t>::max()))};
+}
+
+std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::string& path, const Node& element,
+                                                         const std::set<std::size_t>& referencedIndices)
+{
+  const auto dataLookup = referencedIndices.empty() ? NodeLookup{} : lookupNode(element, "data");
+  if (dataLookup.duplicateKey || !dataLookup.value || !dataLookup.value.IsSequence()) {
+    return {};
+  }
+
+  std::vector<TraceRunDataSetup> dataSetups;
+  std::size_t index = 0U;
+  bool foundReferencedEntry = false;
+  for (const auto& item : dataLookup.value) {
+    if (referencedIndices.find(index++) == referencedIndices.end()) {
+      dataSetups.emplace_back();
+      continue;
+    }
+    foundReferencedEntry = true;
+    TraceRunDataSetup data;
+    if (!item.IsMap()) {
+      dataSetups.push_back(std::move(data));
+      continue;
+    }
+    const auto type = lookupNode(item, "symbol-type");
+    if (type.duplicateKey) {
+      data.symbolTypeError = "duplicate 'data.symbol-type' setting";
+    } else if (type.value && !type.value.IsScalar() && !type.value.IsNull()) {
+      data.symbolTypeError = "'data.symbol-type' must be a scalar string";
+    } else if (type.value && !type.value.IsNull()) {
+      data.symbolType = optionalAttribute(path, item, "symbol-type");
+    }
+    const auto size = lookupNode(item, "symbol-size");
+    if (size.duplicateKey) {
+      data.symbolSizeError = "duplicate 'data.symbol-size' setting";
+    } else if (size.value && !size.value.IsScalar() && !size.value.IsNull()) {
+      data.symbolSizeError = "'data.symbol-size' must be a scalar unsigned integer";
+    } else if (size.value && !size.value.IsNull()) {
+      data.symbolSize = deferredUnsignedAttribute(path, item, "symbol-size", std::numeric_limits<std::uint64_t>::max(),
+                                                  data.symbolSizeError);
+    }
+    dataSetups.push_back(std::move(data));
+  }
+  return foundReferencedEntry ? dataSetups : std::vector<TraceRunDataSetup>{};
+}
+
 TraceRunSetup parseSetup(const std::string& path, const Node& element, const std::vector<TraceRunReference>& references)
 {
   if (!element.IsMap()) {
@@ -448,106 +559,9 @@ TraceRunSetup parseSetup(const std::string& path, const Node& element, const std
   setup.line = lineNumber(element);
   setup.processorName = processorNameAttribute(path, element);
   const auto referencedDataIndices = referencedDataSetupIndices(references, setup.processorName);
-
-  const auto timestampsLookup = lookupNode(element, "timestamps");
-  const auto timestampsNode = timestampsLookup.value;
-  if (timestampsLookup.duplicateKey) {
-    setup.timestamps = TraceRunTimestampSetup{};
-    setup.timestamps->line = lineNumber(timestampsLookup.duplicateKey);
-    setup.timestamps->clockError = errorMessage(path, timestampsLookup.duplicateKey, "duplicate 'timestamps' setting");
-  } else if (timestampsNode && (timestampsNode.IsScalar() || timestampsNode.IsNull())) {
-    setup.timestamps = TraceRunTimestampSetup{};
-    setup.timestamps->line = lineNumber(timestampsNode);
-    if (timestampsNode.IsScalar() && !timestampsNode.Scalar().empty()) {
-      setup.timestamps->clockError = "'timestamps' must be empty or a map";
-    }
-  } else if (timestampsNode) {
-    if (!timestampsNode.IsMap()) {
-      setup.timestamps = TraceRunTimestampSetup{};
-      setup.timestamps->line = lineNumber(timestampsNode);
-      setup.timestamps->clockError = "'timestamps' must be empty or a map";
-    } else {
-      TraceRunTimestampSetup timestamps;
-      timestamps.line = lineNumber(timestampsNode);
-      const auto clock = lookupNode(timestampsNode, "clock");
-      if (clock.duplicateKey) {
-        timestamps.clockError = errorMessage(path, clock.duplicateKey, "duplicate 'timestamps.clock' setting");
-      } else if (clock.value && !clock.value.IsScalar() && !clock.value.IsNull()) {
-        timestamps.clockError = "'timestamps.clock' must be a scalar unsigned integer";
-      } else {
-        timestamps.clockHz = deferredUnsignedAttribute(
-            path, timestampsNode, "clock", std::numeric_limits<std::uint64_t>::max(), timestamps.clockError);
-      }
-      if (uniqueChild(path, timestampsNode, "itm-prescaler")) {
-        fail(path, timestampsNode, "'timestamps.itm-prescaler' must be a scalar unsigned integer");
-      }
-      const auto prescaler =
-          optionalUnsignedAttribute(path, timestampsNode, "itm-prescaler", std::numeric_limits<std::uint32_t>::max());
-      if (prescaler.has_value()) {
-        timestamps.timestampPrescaler = static_cast<std::uint32_t>(*prescaler);
-      }
-      setup.timestamps = std::move(timestamps);
-    }
-  }
-
-  const auto itmNode = uniqueNode(path, element, "itm");
-  if (itmNode) {
-    if (!itmNode.IsMap()) {
-      fail(path, itmNode, "'itm' must be a map containing 'enable'");
-    }
-    const auto enableNode = uniqueNode(path, itmNode, "enable");
-    if (!enableNode || !enableNode.IsScalar() || enableNode.Scalar().empty()) {
-      fail(path, enableNode ? enableNode : itmNode, "'itm.enable' is required and must be a scalar unsigned integer");
-    }
-    setup.itm = TraceRunItmSetup{static_cast<std::uint32_t>(
-        unsignedValue(path, enableNode, "itm.enable", enableNode.Scalar(), std::numeric_limits<std::uint32_t>::max()))};
-  }
-
-  const auto dataLookup = referencedDataIndices.empty() ? NodeLookup{} : lookupNode(element, "data");
-  if (dataLookup.duplicateKey) {
-    return setup;
-  }
-  const auto dataNode = dataLookup.value;
-  if (dataNode) {
-    if (!dataNode.IsSequence()) {
-      return setup;
-    }
-    std::size_t index = 0U;
-    bool foundReferencedEntry = false;
-    for (const auto& item : dataNode) {
-      if (referencedDataIndices.find(index++) == referencedDataIndices.end()) {
-        setup.data.emplace_back();
-        continue;
-      }
-      foundReferencedEntry = true;
-      TraceRunDataSetup data;
-      if (!item.IsMap()) {
-        setup.data.push_back(std::move(data));
-        continue;
-      }
-      const auto type = lookupNode(item, "symbol-type");
-      if (type.duplicateKey) {
-        data.symbolTypeError = "duplicate 'data.symbol-type' setting";
-      } else if (type.value && !type.value.IsScalar() && !type.value.IsNull()) {
-        data.symbolTypeError = "'data.symbol-type' must be a scalar string";
-      } else if (type.value && !type.value.IsNull()) {
-        data.symbolType = optionalAttribute(path, item, "symbol-type");
-      }
-      const auto size = lookupNode(item, "symbol-size");
-      if (size.duplicateKey) {
-        data.symbolSizeError = "duplicate 'data.symbol-size' setting";
-      } else if (size.value && !size.value.IsScalar() && !size.value.IsNull()) {
-        data.symbolSizeError = "'data.symbol-size' must be a scalar unsigned integer";
-      } else if (size.value && !size.value.IsNull()) {
-        data.symbolSize = deferredUnsignedAttribute(path, item, "symbol-size",
-                                                    std::numeric_limits<std::uint64_t>::max(), data.symbolSizeError);
-      }
-      setup.data.push_back(std::move(data));
-    }
-    if (!foundReferencedEntry) {
-      setup.data.clear();
-    }
-  }
+  setup.timestamps = parseTimestampSetup(path, element);
+  setup.itm = parseItmSetup(path, element);
+  setup.data = parseReferencedDataSetups(path, element, referencedDataIndices);
   return setup;
 }
 

@@ -28,6 +28,23 @@ static TraceOutputRequest traceOutputRequest(const CliOptions& options)
   };
 }
 
+static TraceRunConfig backendRequirementsConfig()
+{
+  TraceRunConfig config;
+  config.path = "BackendRequirements.ctrace-run.yml";
+  TraceRunSetup setup;
+  setup.timestamps = TraceRunTimestampSetup{400000000U, 1U};
+  setup.data.push_back(TraceRunDataSetup{"double", 4U});
+  config.setups.push_back(setup);
+  TraceRunReference reference;
+  reference.ctraceRef = "opaque/dwt";
+  reference.type = "dwt";
+  reference.sources = {0U};
+  reference.dataSetupIndex = 0U;
+  config.references.push_back(reference);
+  return config;
+}
+
 TEST(CtraceUnitTests, testTimestampPrescalerAndBackendRequirements)
 {
   TraceRunConfig traceRun;
@@ -167,18 +184,7 @@ TEST(CtraceUnitTests, testDwtDataMetadataDefaultsAndValidation)
 
 TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
 {
-  TraceRunConfig config;
-  config.path = "BackendRequirements.ctrace-run.yml";
-  TraceRunSetup setup;
-  setup.timestamps = TraceRunTimestampSetup{400000000U, 1U};
-  setup.data.push_back(TraceRunDataSetup{"double", 4U});
-  config.setups.push_back(setup);
-  TraceRunReference reference;
-  reference.ctraceRef = "opaque/dwt";
-  reference.type = "dwt";
-  reference.sources = {0U};
-  reference.dataSetupIndex = 0U;
-  config.references.push_back(reference);
+  auto config = backendRequirementsConfig();
 
   CliOptions csvOptions;
   csvOptions.outputFormat = OutputFormat::Csv;
@@ -238,8 +244,14 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
               malformedSizeDiagnostics.events().size() == 1U &&
               malformedSizeDiagnostics.events()[0].code == "ctf-dwt-symbol-size-invalid",
           "malformed data.symbol-size must disable only CTF");
+}
 
-  config.setups[0].data[0].symbolSizeError.reset();
+TEST(CtraceUnitTests, testCtfOutputRequiresAValidClock)
+{
+  auto config = backendRequirementsConfig();
+  config.setups[0].data[0] = TraceRunDataSetup{};
+  CliOptions allOptions;
+  allOptions.outputFormat = OutputFormat::All;
   config.setups[0].timestamps->clockHz.reset();
   CollectingDiagnosticSink missingClockDiagnostics;
   const auto missingClock =
@@ -263,8 +275,13 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
       planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("BackendRequirements.SWO.raw"),
                        CtraceRunMeta::fromConfig(config), zeroClockDiagnostics);
   require(zeroClock.csv.has_value() && !zeroClock.ctf.has_value(), "zero timestamps.clock must disable only CTF");
+}
 
-  config.setups[0].timestamps->clockHz = 400000000U;
+TEST(CtraceUnitTests, testOutputRequirementsHonorFiltersAndCheckOnlyMode)
+{
+  const auto config = backendRequirementsConfig();
+  CliOptions allOptions;
+  allOptions.outputFormat = OutputFormat::All;
   allOptions.selection.types = {"itm"};
   CollectingDiagnosticSink filteredDiagnostics;
   const auto filtered =

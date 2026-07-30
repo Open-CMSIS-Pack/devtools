@@ -60,7 +60,6 @@ public:
 
   void report(const Event& event);
   std::uint64_t fatalCount() const noexcept;
-  bool hasFatalSince(std::uint64_t checkpoint) const noexcept;
 
 protected:
   virtual void write(const Event& event) = 0;

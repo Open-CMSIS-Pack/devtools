@@ -128,22 +128,23 @@ bool validateCtfRouteIdentity(const CtraceRunMeta& ctraceRunMeta, const TraceSel
   return valid;
 }
 
-std::optional<std::uint64_t> resolveCtfClock(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,
-                                             DiagnosticSink& diagnostics)
+struct SelectedClockResolution {
+  std::optional<std::uint64_t> clockHz;
+  bool hasRoutes{false};
+  bool valid{true};
+};
+
+SelectedClockResolution resolveSelectedCtfClock(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,
+                                                DiagnosticSink& diagnostics)
 {
-  std::vector<std::pair<std::uint8_t, CtraceRunTimestampMeta>> routes;
+  SelectedClockResolution result;
   for (const auto& [traceBusId, timestamp] : ctraceRunMeta.timestampsByTraceBusId()) {
     if (!selection.includesStream(traceBusId)) {
       continue;
     }
-    routes.emplace_back(traceBusId, timestamp);
-  }
-
-  std::optional<std::uint64_t> clockHz;
-  bool valid = true;
-  for (const auto& [traceBusId, timestamp] : routes) {
+    result.hasRoutes = true;
     if (timestamp.clockError.has_value()) {
-      valid = false;
+      result.valid = false;
       reportRequirementError(diagnostics, "ctf-timestamp-clock-invalid",
                              "CTF output cannot use the configured timestamps.clock",
                              {
@@ -156,7 +157,7 @@ std::optional<std::uint64_t> resolveCtfClock(const CtraceRunMeta& ctraceRunMeta,
       continue;
     }
     if (!timestamp.clockHz.has_value()) {
-      valid = false;
+      result.valid = false;
       reportRequirementError(diagnostics, "ctf-timestamp-clock-missing",
                              "CTF output requires timestamps.clock for the processor assigned to this Trace Bus ID",
                              {
@@ -168,7 +169,7 @@ std::optional<std::uint64_t> resolveCtfClock(const CtraceRunMeta& ctraceRunMeta,
       continue;
     }
     if (*timestamp.clockHz == 0U) {
-      valid = false;
+      result.valid = false;
       reportRequirementError(diagnostics, "ctf-timestamp-clock-invalid",
                              "CTF output requires timestamps.clock to be greater than zero",
                              {
@@ -179,8 +180,8 @@ std::optional<std::uint64_t> resolveCtfClock(const CtraceRunMeta& ctraceRunMeta,
                              });
       continue;
     }
-    if (clockHz.has_value() && *clockHz != *timestamp.clockHz) {
-      valid = false;
+    if (result.clockHz.has_value() && *result.clockHz != *timestamp.clockHz) {
+      result.valid = false;
       reportRequirementError(diagnostics, "ctf-timestamp-clock-ambiguous",
                              "CTF output cannot combine selected Trace Bus IDs with different timestamps.clock values",
                              {
@@ -191,15 +192,14 @@ std::optional<std::uint64_t> resolveCtfClock(const CtraceRunMeta& ctraceRunMeta,
                              });
       continue;
     }
-    clockHz = timestamp.clockHz;
+    result.clockHz = timestamp.clockHz;
   }
-  if (!valid) {
-    return std::nullopt;
-  }
-  if (clockHz.has_value()) {
-    return clockHz;
-  }
+  return result;
+}
 
+std::optional<std::uint64_t> resolveDefaultCtfClock(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,
+                                                    DiagnosticSink& diagnostics)
+{
   for (const auto& error : ctraceRunMeta.timestampClockErrors()) {
     reportRequirementError(diagnostics, "ctf-timestamp-clock-invalid",
                            "CTF output cannot use the configured timestamps.clock",
@@ -241,6 +241,19 @@ std::optional<std::uint64_t> resolveCtfClock(const CtraceRunMeta& ctraceRunMeta,
     return std::nullopt;
   }
   return ctraceRunMeta.timestampClockHz();
+}
+
+std::optional<std::uint64_t> resolveCtfClock(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,
+                                             DiagnosticSink& diagnostics)
+{
+  const auto selected = resolveSelectedCtfClock(ctraceRunMeta, selection, diagnostics);
+  if (!selected.valid) {
+    return std::nullopt;
+  }
+  if (selected.hasRoutes) {
+    return selected.clockHz;
+  }
+  return resolveDefaultCtfClock(ctraceRunMeta, selection, diagnostics);
 }
 
 bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,

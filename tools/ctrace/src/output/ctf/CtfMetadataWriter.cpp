@@ -162,51 +162,46 @@ static std::string ctfValueFields(std::string_view prefix)
   return out.str();
 }
 
-void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const std::string& uuidString,
-                              std::uint64_t coreClockHz, const std::vector<ResolvedTraceSource>& sources,
-                              const std::vector<std::uint32_t>& observedExceptionNumbers)
-{
+struct MetadataSymbols {
   std::map<std::uint32_t, std::string> dwtValueTypes;
   std::map<std::uint32_t, std::string> itmNames;
   std::map<std::uint32_t, std::string> dwtNames;
   std::map<std::uint32_t, std::uint64_t> dwtAddressStarts;
   std::map<std::uint32_t, std::uint64_t> dwtAddressEnds;
+};
 
+static MetadataSymbols collectMetadataSymbols(const std::vector<ResolvedTraceSource>& sources)
+{
+  MetadataSymbols symbols;
   for (const auto& source : sources) {
     const auto id = source.source;
     if (source.type == "itm") {
       if (source.label.has_value()) {
-        itmNames[id] = *source.label;
+        symbols.itmNames[id] = *source.label;
       }
       continue;
     }
     if (source.type != "dwt") {
       continue;
     }
-    dwtValueTypes[id] = source.valueType;
+    symbols.dwtValueTypes[id] = source.valueType;
     if (source.label.has_value()) {
-      dwtNames[id] = *source.label;
+      symbols.dwtNames[id] = *source.label;
     }
     if (source.symbolAddress.has_value()) {
-      dwtAddressStarts[id] = *source.symbolAddress;
+      symbols.dwtAddressStarts[id] = *source.symbolAddress;
       const auto extent = static_cast<std::uint64_t>(source.valueSize - 1U);
       if (*source.symbolAddress <= std::numeric_limits<std::uint64_t>::max() - extent) {
-        dwtAddressEnds[id] = *source.symbolAddress + extent;
+        symbols.dwtAddressEnds[id] = *source.symbolAddress + extent;
       }
     }
   }
+  return symbols;
+}
 
-  std::ostringstream exceptionEnum;
-  for (const auto number : exceptionNumbersWithDefaults(observedExceptionNumbers)) {
-    exceptionEnum << "    " << tsdlString(exceptionName(number)) << " = " << number << ",\n";
-  }
-
-  const auto metadataPath = outputDir / "metadata";
-  std::ofstream out(metadataPath, std::ios::out | std::ios::trunc);
-  if (!out) {
-    throw std::runtime_error("Failed to write CTF metadata " + metadataPath.string());
-  }
-
+static void writeTraceEnvironment(std::ostream& out, const std::string& uuidString, std::uint64_t coreClockHz,
+                                  const MetadataSymbols& symbols)
+{
   out << R"(/* CTF 1.8 */
 trace {
     major = 1;
@@ -225,13 +220,13 @@ env {
     cmsis_ctf_profile = "cmsis.ctf";
     cmsis_ctf_profile_version = 1;
 )";
-  for (const auto& entry : dwtValueTypes) {
+  for (const auto& entry : symbols.dwtValueTypes) {
     out << "    cmsis_dwt" << entry.first << "_value_type = " << tsdlString(entry.second) << ";\n";
   }
-  for (const auto& entry : dwtAddressStarts) {
+  for (const auto& entry : symbols.dwtAddressStarts) {
     out << "    cmsis_dwt" << entry.first << "_address_start = " << tsdlString("0x" + hexValue(entry.second)) << ";\n";
   }
-  for (const auto& entry : dwtAddressEnds) {
+  for (const auto& entry : symbols.dwtAddressEnds) {
     out << "    cmsis_dwt" << entry.first << "_address_end = " << tsdlString("0x" + hexValue(entry.second)) << ";\n";
   }
   out << R"(};
@@ -245,7 +240,13 @@ clock {
     freq = )"
       << coreClockHz << R"(;
 };
+)";
+}
 
+static void writeTypeDefinitions(std::ostream& out, const MetadataSymbols& symbols,
+                                 const std::vector<std::uint32_t>& observedExceptionNumbers)
+{
+  out << R"(
 typealias integer { size = 8; align = 8; signed = false; } := uint8_t;
 typealias integer { size = 16; align = 8; signed = false; byte_order = le; } := uint16_t;
 typealias integer { size = 32; align = 8; signed = false; byte_order = le; } := uint32_t;
@@ -285,24 +286,32 @@ typealias enum : uint8_t {
   std::set<std::string> itmLabels;
   for (std::uint32_t channel = 1U; channel < 32U; ++channel) {
     const auto fallback = "ITM" + std::to_string(channel);
-    out << "    " << tsdlString(uniqueEnumLabel(mapValueOrEmpty(itmNames, channel), fallback, itmLabels)) << " = "
-        << channel << ",\n";
+    out << "    " << tsdlString(uniqueEnumLabel(mapValueOrEmpty(symbols.itmNames, channel), fallback, itmLabels))
+        << " = " << channel << ",\n";
   }
   out << R"(} := cmsis_itm_channel_t;
 typealias enum : uint8_t {
 )";
   std::set<std::string> dwtLabels;
   for (std::uint32_t comparator = 0U; comparator < 4U; ++comparator) {
-    const auto label = mapValueOrEmpty(dwtNames, comparator);
+    const auto label = mapValueOrEmpty(symbols.dwtNames, comparator);
     const auto fallback = "DWT" + std::to_string(comparator);
     out << "    " << tsdlString(uniqueEnumLabel(label, fallback, dwtLabels)) << " = " << comparator << ",\n";
   }
   out << R"(
 } := cmsis_dwt_comparator_t;
 typealias enum : uint16_t {
-)" << exceptionEnum.str()
-      << R"(} := cmsis_exception_number_t;
+)";
+  for (const auto number : exceptionNumbersWithDefaults(observedExceptionNumbers)) {
+    out << "    " << tsdlString(exceptionName(number)) << " = " << number << ",\n";
+  }
+  out << R"(} := cmsis_exception_number_t;
+)";
+}
 
+static void writeStreamDefinition(std::ostream& out)
+{
+  out << R"(
 stream {
     id = )"
       << CtfSchema::SwoStreamId << R"(;
@@ -322,7 +331,12 @@ stream {
         uint32_t packet_seq_num;
     };
 };
+)";
+}
 
+static void writeItmEvent(std::ostream& out)
+{
+  out << R"(
 event {
     id = )"
       << CtfSchema::value(CtfSchema::EventId::Itm) << R"(;
@@ -337,7 +351,12 @@ event {
         uint32_t cmsis_overflow_count;
     };
 };
+)";
+}
 
+static void writeDwtValueEvent(std::ostream& out)
+{
+  out << R"(
 event {
     id = )"
       << CtfSchema::value(CtfSchema::EventId::DwtValue) << R"(;
@@ -357,7 +376,12 @@ event {
         uint32_t cmsis_overflow_count;
     };
 };
+)";
+}
 
+static void writeDwtAddressEvent(std::ostream& out)
+{
+  out << R"(
 event {
     id = )"
       << CtfSchema::value(CtfSchema::EventId::DwtAddress) << R"(;
@@ -375,7 +399,12 @@ event {
         uint32_t cmsis_overflow_count;
     };
 };
+)";
+}
 
+static void writeStatusEvents(std::ostream& out)
+{
+  out << R"(
 event {
     id = )"
       << CtfSchema::value(CtfSchema::EventId::TraceStatus) << R"(;
@@ -416,6 +445,26 @@ event {
     };
 };
 )";
+}
+
+void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const std::string& uuidString,
+                              std::uint64_t coreClockHz, const std::vector<ResolvedTraceSource>& sources,
+                              const std::vector<std::uint32_t>& observedExceptionNumbers)
+{
+  const auto metadataPath = outputDir / "metadata";
+  std::ofstream out(metadataPath, std::ios::out | std::ios::trunc);
+  if (!out) {
+    throw std::runtime_error("Failed to write CTF metadata " + metadataPath.string());
+  }
+
+  const auto symbols = collectMetadataSymbols(sources);
+  writeTraceEnvironment(out, uuidString, coreClockHz, symbols);
+  writeTypeDefinitions(out, symbols, observedExceptionNumbers);
+  writeStreamDefinition(out);
+  writeItmEvent(out);
+  writeDwtValueEvent(out);
+  writeDwtAddressEvent(out);
+  writeStatusEvents(out);
   out.close();
   if (!out) {
     throw std::runtime_error("Failed to write CTF metadata " + metadataPath.string());
