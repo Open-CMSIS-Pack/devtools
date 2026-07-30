@@ -2839,7 +2839,7 @@ RteItem::ConditionResult ProjMgrWorker::ValidateContext(ContextItem& context) {
     const auto& depResults = componentResult.GetResults();
     for (const auto& [item, result] : depResults) {
       auto conditionRes = result.GetResult();
-      if(res == RteItem::SELECTABLE && contextResult < RteItem::SELECTABLE) {
+      if(conditionRes == RteItem::SELECTABLE && contextResult < RteItem::SELECTABLE) {
         continue; // ignore selectable results when more important problems exist
       }
       ValidationCondition condition;

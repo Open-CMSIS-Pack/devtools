@@ -19,3 +19,4 @@ solution:
     - project: incompatible.cproject.yml
     - project: incompatible-variant.cproject.yml
     - project: missing-component.cproject.yml
+    - project: mixed-issues.cproject.yml
