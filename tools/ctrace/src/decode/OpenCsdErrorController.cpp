@@ -286,6 +286,11 @@ std::string OpenCsdErrorController::describe(const Decision& decision)
   return out.str();
 }
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
+#endif
+
 OpenCsdErrorController::ErrorSourceHandleResult
 OpenCsdErrorController::RegisterErrorSource(const std::string& componentName)
 {
@@ -302,6 +307,10 @@ OpenCsdErrorController::ErrorLogVerbosityResult OpenCsdErrorController::GetError
 {
   return OCSD_ERR_SEV_INFO;
 }
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 void OpenCsdErrorController::LogError(ocsd_hndl_err_log_t, const ocsdError* error)
 {

@@ -16,7 +16,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <map>
-#include <optional>
 #include <set>
 #include <utility>
 #include <vector>
@@ -44,9 +43,13 @@ public:
   void writeEvent(const TraceEvent& event);
 
 private:
-  void resetEventTimestamps();
-  void observeInputTimestamp(std::uint64_t timestamp);
-  std::uint64_t allocateEventTimestamp();
+  struct StreamState {
+    std::uint64_t eventTimestamp = 0;
+    std::uint64_t overflowCount = 0;
+    bool localTimestampObserved = false;
+  };
+
+  std::uint64_t allocateEventTimestamp(std::uint8_t traceBusId);
   void writeMetadataFile();
   void writeTraceStatusEvent(std::uint8_t reason, std::uint8_t traceBusId, bool emitEvent = true);
   void writeSoftwareEvent(const TraceEvent& event, const SoftwareTraceEvent& software);
@@ -63,11 +66,7 @@ private:
   std::filesystem::path outputDirectory_;
   CtfStreamWriter stream_;
   bool recording_ = false;
-  std::uint64_t currentEventTimestamp_ = 0;
-  std::optional<std::uint64_t> lastInputTimestamp_;
-  std::optional<std::uint64_t> lastEventTimestamp_;
-  std::map<std::uint8_t, std::uint64_t> overflowCounts_;
-  std::set<std::uint8_t> localTimestampTraceBusIds_;
+  std::map<std::uint8_t, StreamState> streamStates_;
   std::set<std::pair<std::uint8_t, std::uint32_t>> reportedDwtSizeMismatches_;
   std::map<std::uint8_t, CtfExceptionLaneTracker> exceptionLanes_;
 };

@@ -129,7 +129,7 @@ void CortexMPostDecoder::appendOverflow(const OpenCsdTraceElement& element)
   }};
   event.index = element.sourceIndex;
   event.traceBusId = element.traceBusId;
-  event.tcyc = currentTcyc_;
+  event.tcyc = timelineKnown_ ? std::optional<std::uint64_t>(currentTcyc_) : std::nullopt;
   event.quality = TraceQuality{true, false, overflowCount_};
   emitEvent(event);
 }
@@ -175,7 +175,7 @@ void CortexMPostDecoder::appendError(const OpenCsdTraceElement& element)
   event.index = element.sourceIndex;
   event.traceBusId = element.traceBusId;
   event.tcyc = currentTcyc_;
-  applyDwtTraceStatus(event, status);
+  event.quality = status;
   if (element.awaitingResumeTimestamp) {
     std::get<TraceIssueEvent>(event.payload).lastValidTcyc = currentTcyc_;
     pendingEvents_.push_back(std::move(event));
@@ -195,7 +195,7 @@ void CortexMPostDecoder::appendSoftware(const OpenCsdTraceElement& element)
   event.index = element.sourceIndex;
   event.traceBusId = element.traceBusId;
   event.tcyc = currentTcyc_;
-  applyDwtTraceStatus(event, currentTraceStatus(element.overflow));
+  event.quality = currentTraceStatus(element.overflow);
   pendingEvents_.push_back(std::move(event));
 }
 
@@ -233,12 +233,12 @@ void CortexMPostDecoder::appendTimestamp(const OpenCsdTraceElement& element)
   dataLossSinceLastTimestamp_ = false;
 }
 
-void CortexMPostDecoder::flushPendingDataTrace(const DwtTraceStatus& status)
+void CortexMPostDecoder::flushPendingDataTrace(const TraceQuality& quality)
 {
-  appendPendingEvents(dwtDecoder_.flush(status, currentTcyc_));
+  appendPendingEvents(dwtDecoder_.flush(quality, currentTcyc_));
 }
 
-void CortexMPostDecoder::flushPendingEvents(std::optional<std::uint64_t> tcyc, const DwtTraceStatus& status)
+void CortexMPostDecoder::flushPendingEvents(std::optional<std::uint64_t> tcyc, const TraceQuality& quality)
 {
   for (auto& event : pendingEvents_) {
     const auto* issue = traceEventPayload<TraceIssueEvent>(event);
@@ -248,7 +248,7 @@ void CortexMPostDecoder::flushPendingEvents(std::optional<std::uint64_t> tcyc, c
       event.tcyc = tcyc;
     }
     if (!isControlEvent && !hasLastValidTcyc) {
-      applyDwtTraceStatus(event, status);
+      event.quality = quality;
     }
     emitEvent(event);
   }
@@ -262,7 +262,7 @@ void CortexMPostDecoder::appendPendingEvents(std::vector<TraceEvent> events)
 }
 
 void CortexMPostDecoder::queueDiscontinuityIssue(std::uint64_t sourceIndex, std::uint8_t traceBusId,
-                                                 const DwtTraceStatus& status, const std::string& issueCode,
+                                                 const TraceQuality& quality, const std::string& issueCode,
                                                  const std::string& message,
                                                  std::optional<std::uint64_t> rawBytesConsumed)
 {
@@ -276,7 +276,7 @@ void CortexMPostDecoder::queueDiscontinuityIssue(std::uint64_t sourceIndex, std:
   event.index = sourceIndex;
   event.traceBusId = traceBusId;
   event.tcyc = currentTcyc_;
-  applyDwtTraceStatus(event, status);
+  event.quality = quality;
   pendingEvents_.push_back(std::move(event));
 }
 
@@ -303,7 +303,7 @@ void CortexMPostDecoder::queueOrEmitWhileAwaitingTimestamp(TraceEvent event)
   emitEvent(event);
 }
 
-DwtTraceStatus CortexMPostDecoder::markDiscontinuity()
+TraceQuality CortexMPostDecoder::markDiscontinuity()
 {
   noteOverflow();
   const auto status = currentTraceStatus();
@@ -323,7 +323,7 @@ void CortexMPostDecoder::emitEvent(const TraceEvent& event)
   ++eventCount_;
 }
 
-DwtTraceStatus CortexMPostDecoder::currentTraceStatus(bool packetOverflow) const
+TraceQuality CortexMPostDecoder::currentTraceStatus(bool packetOverflow) const
 {
   return {
       dataLossSinceLastTimestamp_ || !timestampReliable_ || packetOverflow,  // LCOV_EXCL_BR_LINE
@@ -332,7 +332,7 @@ DwtTraceStatus CortexMPostDecoder::currentTraceStatus(bool packetOverflow) const
   };
 }
 
-DwtTraceStatus CortexMPostDecoder::statusResolvedByTimestamp(LocalTimestampRelation relation) const
+TraceQuality CortexMPostDecoder::statusResolvedByTimestamp(LocalTimestampRelation relation) const
 {
   const auto dataIntact = !dataLossSinceLastTimestamp_;
   const auto payloadDelayed = relation == LocalTimestampRelation::PayloadDelayed ||

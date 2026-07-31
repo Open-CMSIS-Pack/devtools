@@ -12,7 +12,6 @@
 #include <map>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
 struct TraceRunConfig;
@@ -51,9 +50,6 @@ public:
   bool hasDistinctProcessorPrescalers() const;
   std::size_t processorCount() const;
   const std::vector<CtraceRunSourceMeta>& sources() const;
-
-  const CtraceRunSourceMeta* resolveSource(std::string_view type, std::optional<std::uint8_t> traceBusId,
-                                           std::uint32_t source) const;
 
 private:
   std::string configPath_;

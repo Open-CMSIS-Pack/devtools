@@ -15,10 +15,6 @@
 #include <optional>
 #include <vector>
 
-using DwtTraceStatus = TraceQuality;
-
-void applyDwtTraceStatus(TraceEvent& packet, const DwtTraceStatus& status);
-
 struct DwtPayloadPacket {
   std::uint64_t index = 0;
   std::uint8_t traceBusId = 0U;
@@ -26,13 +22,13 @@ struct DwtPayloadPacket {
   std::uint8_t size = 0;
   std::uint32_t value = 0;
   std::uint64_t tcyc = 0;
-  DwtTraceStatus status;
+  TraceQuality quality;
 };
 
 class DwtPacketDecoder {
 public:
   std::vector<TraceEvent> decode(const DwtPayloadPacket& payload);
-  std::vector<TraceEvent> flush(const DwtTraceStatus& status, std::uint64_t tcyc);
+  std::vector<TraceEvent> flush(const TraceQuality& quality, std::uint64_t tcyc);
   void reset();
 
 private:
@@ -49,15 +45,15 @@ private:
     bool hasPc = false;
     bool hasAddressLo16 = false;
     bool hasValue = false;
-    DwtTraceStatus status;
+    TraceQuality quality;
   };
 
   void decodeDataTrace(const DwtPayloadPacket& payload, std::vector<TraceEvent>& output);
-  void sendDataTraceEvent(std::uint32_t comparator, const PendingDataTrace& event, const DwtTraceStatus& status,
+  void sendDataTraceEvent(std::uint32_t comparator, const PendingDataTrace& event, const TraceQuality& quality,
                           std::uint64_t tcyc, std::vector<TraceEvent>& output);
-  void flushPending(std::uint32_t comparator, const DwtTraceStatus& status, std::uint64_t tcyc,
+  void flushPending(std::uint32_t comparator, const TraceQuality& quality, std::uint64_t tcyc,
                     std::vector<TraceEvent>& output);
-  DwtTraceStatus statusForPendingFlush(const PendingDataTrace& pending, const DwtTraceStatus& current) const;
+  TraceQuality qualityForPendingFlush(const PendingDataTrace& pending, const TraceQuality& current) const;
 
   static ExceptionAction exceptionAction(std::uint32_t value);
   std::array<std::optional<PendingDataTrace>, kDataTraceComparatorCount> pendingDataTrace_;

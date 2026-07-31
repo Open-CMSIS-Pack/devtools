@@ -63,6 +63,17 @@ TEST(CtraceUnitTests, testCortexMPostDecoderOffsetsTimestampsAfterOverflow)
   require(sink.events[3].tcyc == 115U, "timestamp segment post-overflow increment mismatch");
 }
 
+TEST(CtraceUnitTests, testCortexMPostDecoderLeavesInitialOverflowTimestampUnknown)
+{
+  CollectingEventSink sink;
+  CortexMPostDecoder decoder(sink);
+
+  decoder.append(openCsdElement(OpenCsdTraceElement::Kind::Overflow));
+
+  ASSERT_EQ(sink.events.size(), 1U);
+  EXPECT_FALSE(sink.events.front().tcyc.has_value());
+}
+
 TEST(CtraceUnitTests, testCortexMPostDecoderUsesTimestampOverflowFlag)
 {
   CollectingEventSink sink;

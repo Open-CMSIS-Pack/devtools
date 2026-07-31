@@ -1,6 +1,6 @@
 # License Terms
 
-Copyright 2020-2021 Arm Limited. All rights reserved.
+Copyright 2020-2026 Arm Limited. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -48,3 +48,7 @@ binaries as indicated by the Usage column.
 |json-schema-validator|2.1.0|[MIT](https://opensource.org/licenses/MIT)|https://github.com/pboettch/json-schema-validator| yml-schema-checker |
 
 <!-- markdownlint-restore -->
+
+Dependency modifications incorporated into ctrace are documented in its
+[third-party notices](tools/ctrace/docs/THIRD_PARTY_NOTICES.md). Compiler and operating-system runtime components are
+tracked separately in the [ctrace runtime inventory](tools/ctrace/docs/RUNTIME_COMPONENTS.md).

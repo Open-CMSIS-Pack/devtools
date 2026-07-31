@@ -77,7 +77,8 @@ std::optional<TraceEventType> typeFor(const TraceIssueEvent&)
 
 std::string_view traceEventTypeName(TraceEventType type)
 {
-  return kTraceEventTypeNames[static_cast<std::size_t>(type)];
+  const auto index = static_cast<std::size_t>(type);
+  return index < kTraceEventTypeNames.size() ? kTraceEventTypeNames[index] : std::string_view("unknown");
 }
 
 std::string traceEventTypeList(std::string_view separator)

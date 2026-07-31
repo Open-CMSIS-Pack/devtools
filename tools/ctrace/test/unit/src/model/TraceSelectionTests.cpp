@@ -14,6 +14,8 @@
 
 TEST(CtraceUnitTests, testTraceSelection)
 {
+  EXPECT_EQ(traceEventTypeName(TraceEventType::Count), "unknown");
+  EXPECT_EQ(traceEventTypeName(static_cast<TraceEventType>(1000U)), "unknown");
   EXPECT_FALSE(CoreSight::isAtbTraceId(0U));
   EXPECT_TRUE(CoreSight::isAtbTraceId(1U));
   EXPECT_FALSE(CoreSight::isAtbTraceId(112U));

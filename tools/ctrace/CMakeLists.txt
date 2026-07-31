@@ -38,10 +38,19 @@ target_link_libraries(ctrace PRIVATE
 )
 ctrace_configure_target(ctrace)
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-   "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  target_link_options(ctrace PUBLIC "-static")
+include(GNUInstallDirs)
+install(TARGETS ctrace
+  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+  COMPONENT ctrace
+)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
+   (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+    CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
+  target_link_options(ctrace PRIVATE "-static")
 endif()
 
-enable_testing()
-add_subdirectory(test)
+include(CTest)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

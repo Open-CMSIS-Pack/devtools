@@ -155,17 +155,15 @@ TEST(CtraceUnitTests, testCtfEncoderDwtAddressEncoding)
                              99U));
   encoder.stop();
 
-  const auto stream = readTestBinaryFile(outputDirectory / "stream_0");
-
-  constexpr std::size_t payloadSize = 14U;
-  constexpr std::size_t payloadOffset = kCtfEventOffset + kCtfEventHeaderSize;
-  require(readLe32(stream, kCtfPacketHeaderSize + 4U) == (kCtfEventOffset + kCtfEventHeaderSize + payloadSize) * 8U,
-          "CTF DWT address event content size mismatch");
-  require(readLe32(stream, kCtfEventOffset) == 6U, "CTF DWT address event ID mismatch");
-  require(readLe64(stream, kCtfEventOffset + 4U) == 99U, "CTF DWT address timestamp mismatch");
-  require(stream[payloadOffset] == 3U && stream[payloadOffset + 1U] == 1U && stream[payloadOffset + 2U] == 1U,
+  const auto records = readCtfRecords(outputDirectory / "stream_0");
+  ASSERT_EQ(records.size(), 1U);
+  const auto& record = records.front();
+  require(record.id == CtfSchema::value(CtfSchema::EventId::DwtAddress), "CTF DWT address event ID mismatch");
+  require(record.timestamp == 99U, "CTF DWT address timestamp mismatch");
+  require(record.payload.size() == 14U, "CTF DWT address event payload size mismatch");
+  require(record.payload[0U] == 3U && record.payload[1U] == 1U && record.payload[2U] == 1U,
           "CTF DWT address comparator or presence flags mismatch");
-  require(readLe32(stream, payloadOffset + 3U) == 0x12345678U && readLe16(stream, payloadOffset + 7U) == 0xabcdU,
+  require(readLe32(record.payload, 3U) == 0x12345678U && readLe16(record.payload, 7U) == 0xabcdU,
           "CTF DWT PC/address payload mismatch");
 
   encoder.abort();
@@ -200,9 +198,9 @@ TEST(CtraceUnitTests, testCtfEncoderWritesAllDwtValueVariants)
   const TemporaryTestPath temporaryPath("ctrace-ctf-value-variants-test");
   temporaryPath.createDirectory();
   std::vector<ResolvedTraceSource> sources{
-      resolvedDwtSource(0U, 1U, "signed int", 2U),   resolvedDwtSource(1U, 1U, "float", 4U),
-      resolvedDwtSource(2U, 1U, "signed int", 4U),   resolvedDwtSource(3U, 7U, "unsigned int", 1U),
-      resolvedDwtSource(4U, 1U, "unsigned int", 4U), resolvedDwtSource(4U, 2U, "unsigned int", 4U),
+      resolvedDwtSource(0U, 1U, "signed int", 2U), resolvedDwtSource(1U, 1U, "float", 4U),
+      resolvedDwtSource(2U, 1U, "signed int", 4U), resolvedDwtSource(3U, 7U, "unsigned int", 1U),
+      resolvedDwtSource(4U, 1U, "signed int", 1U), resolvedDwtSource(4U, 2U, "signed int", 1U),
   };
   sources.push_back(resolvedDwtSource(99U, 7U, "unsigned int", 1U));
 
@@ -217,11 +215,119 @@ TEST(CtraceUnitTests, testCtfEncoderWritesAllDwtValueVariants)
   encoder.writeEvent(atCycle(onStream(TraceEvent{DwtDataTraceEvent{1U, 4U, 0x3f800000U, AccessType::Read}}, 1U), 11U));
   encoder.writeEvent(atCycle(onStream(TraceEvent{DwtDataTraceEvent{2U, 4U, 0xffffffffU, AccessType::Read}}, 1U), 12U));
   encoder.writeEvent(atCycle(TraceEvent{DwtDataTraceEvent{3U, 1U, 0x12U, AccessType::Read}}, 13U));
-  encoder.writeEvent(atCycle(TraceEvent{DwtDataTraceEvent{4U, 4U, 0x12U, AccessType::Read}}, 14U));
+  encoder.writeEvent(atCycle(TraceEvent{DwtDataTraceEvent{4U, 1U, 0xffU, AccessType::Read}}, 14U));
 
   encoder.stop();
-  EXPECT_TRUE(std::filesystem::is_regular_file(temporaryPath.path() / "stream_0"));
-  EXPECT_GT(readTestBinaryFile(temporaryPath.path() / "stream_0").size(), kCtfEventOffset);
+  const auto records = readCtfRecords(temporaryPath.path() / "stream_0");
+  ASSERT_EQ(records.size(), 5U);
+  for (const auto& record : records) {
+    EXPECT_EQ(record.id, CtfSchema::value(CtfSchema::EventId::DwtValue));
+  }
+  EXPECT_EQ(records[0].timestamp, 10U);
+  EXPECT_EQ(records[0].traceBusId, 1U);
+  EXPECT_EQ(records[0].payload[0U], 0U);
+  EXPECT_EQ(records[0].payload[1U], CtfSchema::value(CtfSchema::DwtAccess::Write));
+  EXPECT_EQ(records[0].payload[2U], CtfSchema::value(CtfSchema::ValueTag::Signed16));
+  EXPECT_EQ(readLe16(records[0].payload, 3U), 0xff80U);
+  EXPECT_EQ(records[0].payload[5U], 1U);
+  EXPECT_EQ(readLe32(records[0].payload, 6U), 0x08000000U);
+  EXPECT_EQ(records[0].payload[10U], 1U);
+  EXPECT_EQ(readLe16(records[0].payload, 11U), 0x1234U);
+
+  EXPECT_EQ(records[1].timestamp, 11U);
+  EXPECT_EQ(records[1].payload[2U], CtfSchema::value(CtfSchema::ValueTag::Float32));
+  EXPECT_EQ(readLe32(records[1].payload, 3U), 0x3f800000U);
+  EXPECT_EQ(records[2].timestamp, 12U);
+  EXPECT_EQ(records[2].payload[2U], CtfSchema::value(CtfSchema::ValueTag::Signed32));
+  EXPECT_EQ(readLe32(records[2].payload, 3U), 0xffffffffU);
+  EXPECT_EQ(records[3].timestamp, 13U);
+  EXPECT_EQ(records[3].traceBusId, 0U);
+  EXPECT_EQ(records[3].payload[2U], CtfSchema::value(CtfSchema::ValueTag::Unsigned8));
+  EXPECT_EQ(records[3].payload[3U], 0x12U);
+  // The unformatted stream must retain equivalent metadata from both configured routes.
+  EXPECT_EQ(records[4].timestamp, 14U);
+  EXPECT_EQ(records[4].payload[2U], CtfSchema::value(CtfSchema::ValueTag::Signed8));
+  EXPECT_EQ(records[4].payload[3U], 0xffU);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderRejectsConflictingUnformattedDwtRoutes)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-conflicting-dwt-routes-test");
+  temporaryPath.createDirectory();
+  const std::vector<ResolvedTraceSource> sources{
+      resolvedDwtSource(0U, 1U, "signed int", 1U),
+      resolvedDwtSource(0U, 2U, "float", 4U),
+  };
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{{"dwt"}, {}}, sources});
+  encoder.start(temporaryPath.path());
+  EXPECT_TRUE(
+      throwsWithMessage([&] { encoder.writeEvent(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Read}}); },
+                        "conflicting metadata for unformatted dwt source 0"));
+  encoder.abort();
+}
+
+TEST(CtraceUnitTests, testCtfEncoderIgnoresUnselectedStreamTimeAndQuality)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-filtered-stream-state-test");
+  temporaryPath.createDirectory();
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{{"itm"}, {1U}}, {}});
+  encoder.start(temporaryPath.path());
+
+  auto excludedTimestamp = atCycle(onStream(TraceEvent{LocalTimestampTraceEvent{}}, 2U), 900U);
+  excludedTimestamp.quality = TraceQuality{false, true, 0U};
+  encoder.writeEvent(excludedTimestamp);
+  auto excludedOverflow = atCycle(onStream(TraceEvent{OverflowTraceEvent{}}, 2U), 1000U);
+  excludedOverflow.quality = TraceQuality{true, false, 99U};
+  encoder.writeEvent(excludedOverflow);
+
+  auto selected = atCycle(onStream(softwarePacket(1U, 1U, 'A'), 1U), 10U);
+  selected.quality = TraceQuality{false, true, 0U};
+  encoder.writeEvent(selected);
+  encoder.stop();
+
+  const auto records = readCtfRecords(temporaryPath.path() / "stream_0");
+  ASSERT_EQ(records.size(), 1U);
+  EXPECT_EQ(records[0].id, CtfSchema::value(CtfSchema::EventId::Itm));
+  EXPECT_EQ(records[0].timestamp, 10U);
+  EXPECT_EQ(records[0].traceBusId, 1U);
+  EXPECT_EQ(records[0].payload[3U], CtfSchema::SampleFlagTimestampReliable);
+  EXPECT_EQ(readLe32(records[0].payload, 4U), 0U);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderStreamSelectionKeepsStartAndResyncContext)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-selected-stream-status-test");
+  temporaryPath.createDirectory();
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{{}, {3U}}, {}});
+  encoder.start(temporaryPath.path());
+  encoder.writeEvent(onStream(exceptionPacket(15U, ExceptionAction::Entered, 10U), 3U));
+  encoder.writeEvent(atCycle(onStream(TraceEvent{SyncTraceEvent{}}, 3U), 11U));
+  encoder.writeEvent(onStream(exceptionPacket(54U, ExceptionAction::Entered, 20U), 3U));
+  encoder.stop();
+
+  const auto records = readCtfRecords(temporaryPath.path() / "stream_0");
+  std::vector<std::uint8_t> statusReasons;
+  std::vector<std::pair<std::uint64_t, std::string>> exceptionRecords;
+  for (const auto& record : records) {
+    EXPECT_EQ(record.traceBusId, 3U);
+    if (record.id == CtfSchema::value(CtfSchema::EventId::TraceStatus)) {
+      statusReasons.push_back(record.payload[0U]);
+    } else if (record.id == CtfSchema::value(CtfSchema::EventId::Exception)) {
+      exceptionRecords.emplace_back(record.timestamp, std::to_string(readLe16(record.payload, 0U)) + ":" +
+                                                          std::to_string(record.payload[2U]));
+    }
+  }
+  EXPECT_EQ(statusReasons, std::vector<std::uint8_t>({
+                               CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart),
+                               CtfSchema::value(CtfSchema::TraceStatusReason::Resync),
+                           }));
+  EXPECT_EQ(exceptionRecords, (std::vector<std::pair<std::uint64_t, std::string>>({
+                                  {0U, "0:1"},
+                                  {10U, "0:2"},
+                                  {10U, "15:1"},
+                                  {20U, "15:2"},
+                                  {20U, "54:1"},
+                              })));
 }
 
 TEST(CtraceUnitTests, testCtfEncoderTracksLocalTimeAndUnqualifiedOverflow)
@@ -240,5 +346,17 @@ TEST(CtraceUnitTests, testCtfEncoderTracksLocalTimeAndUnqualifiedOverflow)
   encoder.stop();
   encoder.stop();
 
-  EXPECT_TRUE(std::filesystem::is_regular_file(temporaryPath.path() / "metadata"));
+  const auto records = readCtfRecords(temporaryPath.path() / "stream_0");
+  const auto& itm = requireFirstCtfRecord(records, CtfSchema::EventId::Itm, "saturated CTF ITM sample missing");
+  EXPECT_EQ(itm.timestamp, 21U);
+  EXPECT_EQ(itm.traceBusId, 3U);
+  EXPECT_EQ(itm.payload[3U], CtfSchema::SampleFlagOverflow | CtfSchema::SampleFlagTimestampReliable);
+  EXPECT_EQ(readLe32(itm.payload, 4U), std::numeric_limits<std::uint32_t>::max());
+
+  const auto overflowStatus = std::find_if(records.begin(), records.end(), [](const CtfRecord& record) {
+    return record.id == CtfSchema::value(CtfSchema::EventId::TraceStatus) && record.traceBusId == 3U &&
+           record.payload[0U] == CtfSchema::value(CtfSchema::TraceStatusReason::Overflow);
+  });
+  ASSERT_NE(overflowStatus, records.end());
+  EXPECT_EQ(readLe32(overflowStatus->payload, 1U), 1U);
 }

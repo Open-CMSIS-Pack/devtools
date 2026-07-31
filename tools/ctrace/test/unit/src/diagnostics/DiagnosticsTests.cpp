@@ -117,6 +117,7 @@ TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
   require(diagnostics.events()[0].code == "overflow", "TraceIssueReporter overflow code mismatch");
   require(diagnostics.events()[0].severity == DiagnosticSink::Severity::Warning,
           "TraceIssueReporter overflow severity mismatch");
+  EXPECT_NE(diagnostics.events()[0].message.find("1 more occurred"), std::string::npos);
   require(diagnostics.events()[1].code == "data-loss", "TraceIssueReporter data-loss code mismatch");
   require(diagnostics.events()[1].severity == DiagnosticSink::Severity::Error,
           "TraceIssueReporter data-loss severity mismatch");
@@ -129,6 +130,19 @@ TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
           "TraceIssueReporter should preserve warning severity");
   require(diagnostics.events()[4].context.empty(), "TraceIssueReporter context mismatch");
   require(diagnostics.fatalCount() == 3U, "TraceIssueReporter should classify decoder errors as fatal");
+}
+
+TEST(CtraceUnitTests, testTraceIssueReporterFormatsUnknownOverflowTimestamp)
+{
+  CollectingDiagnosticSink diagnostics;
+  TraceIssueReporter reporter(diagnostics);
+  reporter.append(TraceEvent{OverflowTraceEvent{"overflow"}});
+  reporter.finish();
+
+  ASSERT_EQ(diagnostics.events().size(), 1U);
+  EXPECT_NE(diagnostics.events().front().message.find("unknown cycle timestamp"), std::string::npos);
+  EXPECT_EQ(diagnostics.events().front().message.find("cycle timestamp 0"), std::string::npos);
+  EXPECT_EQ(diagnostics.events().front().message.find("0 more occurred"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryCompactErrorKind)

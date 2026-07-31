@@ -74,13 +74,18 @@ void TraceIssueReporter::finish()
     return;
   }
   finished_ = true;
-  if (!firstOverflowTimestamp_.has_value()) {
+  if (overflowPackets_ == 0U) {
     return;
   }
 
   const auto additionalOverflows = overflowPackets_ - 1U;
-  const auto summary = "first overflow occurred at cycle timestamp " + std::to_string(*firstOverflowTimestamp_) + "; " +
-                       std::to_string(additionalOverflows) + " more occurred";
+  const auto firstOverflow = firstOverflowTimestamp_.has_value()
+                                 ? "cycle timestamp " + std::to_string(*firstOverflowTimestamp_)
+                                 : std::string("an unknown cycle timestamp");
+  auto summary = "first overflow occurred at " + firstOverflow;
+  if (additionalOverflows > 0U) {
+    summary += "; " + std::to_string(additionalOverflows) + " more occurred";
+  }
   report(DiagnosticSink::Severity::Warning, "overflow",
          "SWO " + summary +
              ". Payload trace was lost at the overflow boundaries, and timestamp continuity after "
@@ -90,8 +95,8 @@ void TraceIssueReporter::finish()
 
 void TraceIssueReporter::reportOverflow(const TraceEvent& event)
 {
-  if (!firstOverflowTimestamp_.has_value()) {
-    firstOverflowTimestamp_ = event.tcyc.value_or(0U);
+  if (overflowPackets_ == 0U) {
+    firstOverflowTimestamp_ = event.tcyc;
   }
   ++overflowPackets_;
 }

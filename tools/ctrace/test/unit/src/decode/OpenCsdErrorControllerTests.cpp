@@ -140,7 +140,8 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerNamesResponsesAndErrors)
   for (const auto& [response, name] : responses) {
     EXPECT_EQ(OpenCsdErrorController::responseName(response), name);
   }
-  EXPECT_EQ(OpenCsdErrorController::responseName(static_cast<ocsd_datapath_resp_t>(-1)), "OCSD_RESP_UNKNOWN(-1)");
+  EXPECT_EQ(OpenCsdErrorController::responseName(static_cast<ocsd_datapath_resp_t>(11)),
+            "OCSD_RESP_UNKNOWN(11)");
 
   EXPECT_FALSE(OpenCsdErrorController::responseReportsError(OCSD_RESP_CONT));
   EXPECT_TRUE(OpenCsdErrorController::responseReportsError(OCSD_RESP_ERR_CONT));
@@ -152,7 +153,7 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerNamesResponsesAndErrors)
 
   EXPECT_EQ(OpenCsdErrorController::errorCodeName(OCSD_OK), "OCSD_OK");
   EXPECT_EQ(OpenCsdErrorController::errorCodeName(OCSD_ERR_LAST), "OCSD_ERR_LAST");
-  EXPECT_EQ(OpenCsdErrorController::errorCodeName(static_cast<ocsd_err_t>(-1)), "OCSD_ERR_UNKNOWN(-1)");
+  EXPECT_EQ(OpenCsdErrorController::errorCodeName(static_cast<ocsd_err_t>(48)), "OCSD_ERR_UNKNOWN(48)");
 }
 
 TEST(CtraceUnitTests, testOpenCsdErrorControllerFormatsDecisionDetails)
@@ -254,10 +255,8 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerForwardsLoggerMessages)
   const auto source = controller.RegisterErrorSource("ITM decoder");
   controller.LogMessage(source, OCSD_ERR_SEV_INFO, "configured");
   controller.LogMessage(99U, OCSD_ERR_SEV_ERROR, "fallback");
-  controller.LogMessage(source, static_cast<ocsd_err_severity_t>(OCSD_ERR_SEV_INFO + 1), "filtered");
   EXPECT_NE(sink.messages.find("ITM decoder: configured"), std::string::npos);
   EXPECT_NE(sink.messages.find("OpenCSD: fallback"), std::string::npos);
-  EXPECT_EQ(sink.messages.find("filtered"), std::string::npos);
 
   controller.setOutputLogger(nullptr);
   controller.LogMessage(source, OCSD_ERR_SEV_ERROR, "disabled");

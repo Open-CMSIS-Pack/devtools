@@ -12,12 +12,19 @@ are intentionally omitted.
 - [ ] **Formatted trace:** add the OpenCSD frame deformatter and per-Trace-Bus-ID decoders for `*.TB.raw` input.
 - [ ] **Outputs:** add multiple CTF clock classes; define and enable `pcsample`, `event`, and `pmu`; extend CSV, CTF,
   Trace Compass, multicore, and Armv8-M golden coverage.
-- [ ] **OpenCSD boundary:** remove the remaining dependency on OpenCSD `common/` and `interfaces/` private headers.
-- [ ] **Release verification:** obtain a green ctrace GitHub Actions run for the Windows, Linux, and macOS matrix and
-  inspect the generated multi-platform ZIP, checksums, and included license texts. Local Debug and Release tests are
-  green; sanitizer and hosted platform results remain to be recorded.
+- [ ] **OpenCSD boundary:** remove the remaining dependency on OpenCSD `common/` and `interfaces/` private headers and
+  adopt an upstream-supported ITM-only target if one becomes available. OpenCSD 1.8.3's minimal static target includes
+  all protocol decoders; maintaining a private source list is deliberately avoided.
+- [ ] **Release verification:** inspect the first generated multi-platform ZIP, checksums, license texts, OpenCSD
+  notices, and runtime inventory. The hosted Windows, Linux, and macOS matrix and local AddressSanitizer/
+  UndefinedBehaviorSanitizer suite are green; the final production-artifact inspection remains to be recorded.
+- [ ] **Static runtime compliance:** inspect the GNU and Microsoft runtime code incorporated by the pinned release
+  toolchains. For each Linux architecture, record the exact glibc, libstdc++, and libgcc provenance; provide the
+  applicable notices and license texts, corresponding sources, and a tested LGPL 2.1 section 6 relinking mechanism.
+  Complete any additional toolchain-specific obligations before publication. `RUNTIME_COMPONENTS.md` records the
+  current build characteristics without treating this review as complete.
 - [ ] **Release provenance:** decide whether production releases require artifact signing, macOS notarization, and a
   machine-readable SBOM. Until then, release artifacts are explicitly unsigned and protected by published SHA-256
-  checksums plus complete third-party notices and license texts.
+  checksums plus the documented application-dependency notices and license texts.
 - [ ] **Release coverage:** add an Armv8-M end-to-end fixture when the corresponding DWT semantics are implemented;
   this extends the supported profile and does not block the initial ITM/DWT-focused release.

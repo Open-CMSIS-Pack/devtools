@@ -125,7 +125,7 @@ void configureCliParser(cxxopts::Options& parser)
 {
   parser.custom_help("<trace-dir> [options]");
   parser.allow_unrecognised_options();
-  parser.add_options()("V,version", "Print version")(
+  parser.add_options()("h,help", "Print help")("V,version", "Print version")(
       "t,target", "Specify solution-set (default: process all solution sets)", cxxopts::value<std::string>())(
       "csv", "Generate only CSV files")("ctf", "Generate only CTF files")("a,all", "Generate CSV and CTF files")(
       "type", "Filter packet types (default: all packet types)", cxxopts::value<std::vector<std::string>>(),
@@ -155,6 +155,7 @@ CliOptions parseCliArgs(int argc, const char* const argv[])
     options.traceDir = argument;
   }
 
+  options.help = parsed.count("help") != 0U;
   options.version = parsed.count("version") != 0U;
   if (parsed.count("target") != 0U) {
     options.targetName = parsed["target"].as<std::string>();
@@ -181,6 +182,9 @@ CliOptions parseCliArgs(int argc, const char* const argv[])
 
 void validateCliOptions(const CliOptions& options)
 {
+  if (options.help) {
+    return;
+  }
   for (const auto& type : options.selection.types) {
     if (!parseTraceEventType(type).has_value()) {
       throw std::runtime_error("Invalid --type value: " + type + " (accepted: " + traceEventTypeList(", ") + ")");

@@ -131,6 +131,55 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderAbortsFatalAndNoProgressData)
   EXPECT_TRUE(stalled.sink.hasIssue("opencsd-no-progress"));
 }
 
+TEST(CtraceUnitTests, testOpenCsdItmDecoderBoundsZeroProgressRecoveryAndWaitRetries)
+{
+  ScriptedDecoderHarness recovery;
+  recovery.script->pushes = {
+      {OCSD_RESP_ERR_CONT, 0U, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 0U, "bad packet"}}},
+      {OCSD_RESP_ERR_CONT, 0U, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 0U, "bad packet"}}},
+  };
+  EXPECT_THROW(recovery.push(1U), OpenCsdFatalError);
+  EXPECT_EQ(recovery.script->pushCalls, 2U);
+  EXPECT_EQ(recovery.script->resetCalls, 1U);
+  EXPECT_TRUE(recovery.sink.hasIssue("opencsd-no-progress"));
+
+  ScriptedDecoderHarness wait;
+  wait.script->pushes = {
+      {OCSD_RESP_WAIT, 0U},
+      {OCSD_RESP_WAIT, 0U},
+  };
+  wait.script->flushes = {{OCSD_RESP_CONT}};
+  EXPECT_THROW(wait.push(1U), OpenCsdFatalError);
+  EXPECT_EQ(wait.script->pushCalls, 2U);
+  EXPECT_EQ(wait.script->flushCalls, 1U);
+  EXPECT_TRUE(wait.sink.hasIssue("opencsd-no-progress"));
+}
+
+TEST(CtraceUnitTests, testOpenCsdItmDecoderAllowsZeroProgressRetriesToResume)
+{
+  ScriptedDecoderHarness harness;
+  harness.script->pushes = {
+      {OCSD_RESP_WAIT, 0U},
+      {OCSD_RESP_CONT, 1U, true},
+  };
+  harness.script->flushes = {{OCSD_RESP_CONT}};
+
+  EXPECT_NO_THROW(harness.push(1U));
+  EXPECT_EQ(harness.decoder.finish().bytesIn, 1U);
+  EXPECT_EQ(harness.script->pushCalls, 2U);
+  EXPECT_EQ(harness.script->flushCalls, 1U);
+
+  ScriptedDecoderHarness recovery;
+  recovery.script->pushes = {
+      {OCSD_RESP_ERR_CONT, 0U, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 0U, "bad packet"}}},
+      {OCSD_RESP_CONT, 1U, true},
+  };
+  EXPECT_NO_THROW(recovery.push(1U));
+  EXPECT_EQ(recovery.decoder.finish().bytesIn, 1U);
+  EXPECT_EQ(recovery.script->pushCalls, 2U);
+  EXPECT_EQ(recovery.script->resetCalls, 1U);
+}
+
 TEST(CtraceUnitTests, testOpenCsdItmDecoderHandlesFlushRecoveryAndTimeout)
 {
   ScriptedDecoderHarness recovery;

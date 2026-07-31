@@ -127,16 +127,21 @@ ctrace-run:
   EXPECT_EQ(meta.timestampPrescaler(), std::optional<std::uint32_t>(4U));
   ASSERT_EQ(meta.itmEnableMasksByTraceBusId().at(2U), 0x00000006U);
 
-  const auto* itm = meta.resolveSource("itm", 2U, 1U);
-  ASSERT_NE(itm, nullptr);
-  EXPECT_EQ(itm->label, std::optional<std::string>("Console"));
+  ASSERT_EQ(meta.sources().size(), 2U);
+  const auto& itm = meta.sources()[0];
+  EXPECT_EQ(itm.type, "itm");
+  EXPECT_EQ(itm.traceBusId, 2U);
+  EXPECT_EQ(itm.source, 1U);
+  EXPECT_EQ(itm.label, std::optional<std::string>("Console"));
 
-  const auto* dwt = meta.resolveSource("dwt", 2U, 0U);
-  ASSERT_NE(dwt, nullptr);
-  EXPECT_EQ(dwt->valueType, "signed int");
-  EXPECT_EQ(dwt->valueSize, 1U);
-  EXPECT_EQ(dwt->symbolAddress, std::optional<std::uint64_t>(0x20000100U));
-  EXPECT_EQ(dwt->label, std::optional<std::string>("Current"));
+  const auto& dwt = meta.sources()[1];
+  EXPECT_EQ(dwt.type, "dwt");
+  EXPECT_EQ(dwt.traceBusId, 2U);
+  EXPECT_EQ(dwt.source, 0U);
+  EXPECT_EQ(dwt.valueType, "signed int");
+  EXPECT_EQ(dwt.valueSize, 1U);
+  EXPECT_EQ(dwt.symbolAddress, std::optional<std::uint64_t>(0x20000100U));
+  EXPECT_EQ(dwt.label, std::optional<std::string>("Current"));
 
   const auto empty = file.read(R"yml(unrelated-root: [ignored]
 ctrace-run:

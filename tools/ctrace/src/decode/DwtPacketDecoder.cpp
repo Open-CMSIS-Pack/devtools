@@ -55,11 +55,6 @@ constexpr std::uint8_t kArmv7MAddressOffsetBytes = 2U;
 
 } // namespace
 
-void applyDwtTraceStatus(TraceEvent& event, const DwtTraceStatus& status)
-{
-  event.quality = status;
-}
-
 std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload)
 {
   std::vector<TraceEvent> output;
@@ -67,20 +62,20 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
 
   const auto source = static_cast<DwtPacketSource>(discriminator);
   if (source == DwtPacketSource::EventCounter || source == DwtPacketSource::PmuOverflow) {
-    output = flush(payload.status, payload.tcyc);
+    output = flush(payload.quality, payload.tcyc);
     TraceEvent packet = source == DwtPacketSource::EventCounter
                             ? TraceEvent(DwtEventTraceEvent{discriminator, payload.size, payload.value})
                             : TraceEvent(PmuTraceEvent{discriminator, payload.size, payload.value});
     packet.index = payload.index;
     packet.traceBusId = payload.traceBusId;
     packet.tcyc = payload.tcyc;
-    applyDwtTraceStatus(packet, payload.status);
+    packet.quality = payload.quality;
     output.push_back(std::move(packet));
     return output;
   }
 
   if (source == DwtPacketSource::ExceptionTrace) {
-    output = flush(payload.status, payload.tcyc);
+    output = flush(payload.quality, payload.tcyc);
     const auto exceptionNumber = payload.value & kExceptionNumberMask;
     const auto action = exceptionAction((payload.value >> kExceptionActionShift) & kExceptionActionMask);
     if (action == ExceptionAction::Unknown) {
@@ -94,7 +89,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
       error.index = payload.index;
       error.traceBusId = payload.traceBusId;
       error.tcyc = payload.tcyc;
-      applyDwtTraceStatus(error, payload.status);
+      error.quality = payload.quality;
       output.push_back(std::move(error));
       return output;
     }
@@ -102,7 +97,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
     packet.index = payload.index;
     packet.traceBusId = payload.traceBusId;
     packet.tcyc = payload.tcyc;
-    applyDwtTraceStatus(packet, payload.status);
+    packet.quality = payload.quality;
     output.push_back(std::move(packet));
     return output;
   }
@@ -111,7 +106,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
     // PC samples need a dedicated output event. Until that event is
     // defined, flush preceding data trace but do not expose the sample as
     // an address event.
-    output = flush(payload.status, payload.tcyc);
+    output = flush(payload.quality, payload.tcyc);
     return output;
   }
 
@@ -120,11 +115,11 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
     return output;
   }
 
-  output = flush(payload.status, payload.tcyc);
+  output = flush(payload.quality, payload.tcyc);
   return output;
 } // LCOV_EXCL_LINE: GCC attributes the generated vector cleanup to this closing brace
 
-std::vector<TraceEvent> DwtPacketDecoder::flush(const DwtTraceStatus& status, std::uint64_t tcyc)
+std::vector<TraceEvent> DwtPacketDecoder::flush(const TraceQuality& quality, std::uint64_t tcyc)
 {
   std::vector<TraceEvent> output;
   std::vector<std::uint32_t> comparators;
@@ -139,7 +134,7 @@ std::vector<TraceEvent> DwtPacketDecoder::flush(const DwtTraceStatus& status, st
     return leftIndex == rightIndex ? left < right : leftIndex < rightIndex;
   });
   for (const auto comparator : comparators) {
-    flushPending(comparator, status, tcyc, output);
+    flushPending(comparator, quality, tcyc, output);
   }
   return output;
 }
@@ -163,12 +158,12 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
   PendingDataTrace event;
   event.index = payload.index;
   event.traceBusId = payload.traceBusId;
-  event.status = payload.status;
+  event.quality = payload.quality;
 
   if (packetType == DwtDataPacketType::Address) {
     const auto expectedSize = secondarySubtype ? kArmv7MAddressOffsetBytes : kArmv7MFullPcBytes;
     if (payload.size != expectedSize) {
-      auto flushed = flush(payload.status, payload.tcyc);
+      auto flushed = flush(payload.quality, payload.tcyc);
       output.insert(output.end(), std::make_move_iterator(flushed.begin()), std::make_move_iterator(flushed.end()));
       TraceEvent error{TraceIssueEvent{
           "unsupported-dwt-address-payload",
@@ -183,7 +178,7 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
       error.index = payload.index;
       error.traceBusId = payload.traceBusId;
       error.tcyc = payload.tcyc;
-      applyDwtTraceStatus(error, payload.status);
+      error.quality = payload.quality;
       output.push_back(std::move(error));
       return;
     }
@@ -194,7 +189,7 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
       event.pc = payload.value;
       event.hasPc = true;
     }
-    sendDataTraceEvent(comparator, event, payload.status, payload.tcyc, output);
+    sendDataTraceEvent(comparator, event, payload.quality, payload.tcyc, output);
     return;
   }
   // Discriminators 8..23 encode either an address or a value packet. The
@@ -203,11 +198,11 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
   event.size = payload.size;
   event.isRead = !secondarySubtype;
   event.hasValue = true;
-  sendDataTraceEvent(comparator, event, payload.status, payload.tcyc, output);
+  sendDataTraceEvent(comparator, event, payload.quality, payload.tcyc, output);
 }
 
 void DwtPacketDecoder::sendDataTraceEvent(std::uint32_t comparator, const PendingDataTrace& event,
-                                          const DwtTraceStatus& status, std::uint64_t tcyc,
+                                          const TraceQuality& quality, std::uint64_t tcyc,
                                           std::vector<TraceEvent>& output)
 {
   auto& pending = pendingDataTrace_[comparator];
@@ -235,21 +230,21 @@ void DwtPacketDecoder::sendDataTraceEvent(std::uint32_t comparator, const Pendin
     pending->hasPc = pending->hasPc || event.hasPc;
     pending->hasAddressLo16 = pending->hasAddressLo16 || event.hasAddressLo16;
     pending->hasValue = pending->hasValue || event.hasValue;
-    pending->status.overflow = pending->status.overflow || event.status.overflow;
-    pending->status.timestampReliable = pending->status.timestampReliable && event.status.timestampReliable;
+    pending->quality.overflow = pending->quality.overflow || event.quality.overflow;
+    pending->quality.timestampReliable = pending->quality.timestampReliable && event.quality.timestampReliable;
     // LCOV_EXCL_BR_STOP
-    pending->status.overflowCount = std::max(pending->status.overflowCount, event.status.overflowCount);
+    pending->quality.overflowCount = std::max(pending->quality.overflowCount, event.quality.overflowCount);
     if (pending->hasValue) {
-      flushPending(comparator, statusForPendingFlush(*pending, status), tcyc, output);
+      flushPending(comparator, qualityForPendingFlush(*pending, quality), tcyc, output);
     }
     return;
   }
 
-  flushPending(comparator, statusForPendingFlush(*pending, status), tcyc, output);
+  flushPending(comparator, qualityForPendingFlush(*pending, quality), tcyc, output);
   pending = event;
 }
 
-void DwtPacketDecoder::flushPending(std::uint32_t comparator, const DwtTraceStatus& status, std::uint64_t tcyc,
+void DwtPacketDecoder::flushPending(std::uint32_t comparator, const TraceQuality& quality, std::uint64_t tcyc,
                                     std::vector<TraceEvent>& output)
 {
   auto& pending = pendingDataTrace_[comparator];
@@ -279,21 +274,22 @@ void DwtPacketDecoder::flushPending(std::uint32_t comparator, const DwtTraceStat
   packet.index = pending->index;
   packet.traceBusId = pending->traceBusId;
   packet.tcyc = tcyc;
-  applyDwtTraceStatus(packet, status);
+  packet.quality = quality;
   output.push_back(std::move(packet));
   pending.reset();
 }
 
-DwtTraceStatus DwtPacketDecoder::statusForPendingFlush(const PendingDataTrace& pending,
-                                                       const DwtTraceStatus& current) const
+TraceQuality DwtPacketDecoder::qualityForPendingFlush(const PendingDataTrace& pending,
+                                                      const TraceQuality& current) const
 {
-  DwtTraceStatus status = current;
+  TraceQuality quality = current;
   // LCOV_EXCL_BR_START: status merge behavior is tested; boolean permutations are equivalent
-  status.overflow = status.overflow || pending.status.overflow;
-  status.timestampReliable = status.timestampReliable && !pending.status.overflow && pending.status.timestampReliable;
+  quality.overflow = quality.overflow || pending.quality.overflow;
+  quality.timestampReliable =
+      quality.timestampReliable && !pending.quality.overflow && pending.quality.timestampReliable;
   // LCOV_EXCL_BR_STOP
-  status.overflowCount = std::max(status.overflowCount, pending.status.overflowCount);
-  return status;
+  quality.overflowCount = std::max(quality.overflowCount, pending.quality.overflowCount);
+  return quality;
 }
 
 ExceptionAction DwtPacketDecoder::exceptionAction(std::uint32_t value)

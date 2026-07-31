@@ -68,6 +68,18 @@ TEST(CtraceUnitTests, testCliParserOutputOptions)
 
   const auto version = parseAndValidate({"ctrace", "-V"});
   require(version.version, "CliParser short version alias mismatch");
+
+  const auto help = parseAndValidate({"ctrace", "--help"});
+  require(help.help, "CliParser help option mismatch");
+  require(CliParser::helpString().find("--help") != std::string::npos, "CliParser help text must list --help");
+
+  const auto trailingTraceDirectory =
+      parseAndValidate({"ctrace", "--type", "dwt", "itm", "--stream", "1", "2", "--all", "--", ".trace"});
+  require(trailingTraceDirectory.traceDir == std::optional<std::string>(".trace"),
+          "CliParser must accept a delimited trace directory after selector options");
+  require(trailingTraceDirectory.selection.types == std::vector<std::string>({"dwt", "itm"}) &&
+              trailingTraceDirectory.selection.streams == std::vector<std::uint8_t>({1U, 2U}),
+          "CliParser trailing trace directory must preserve selector values");
 }
 
 TEST(CtraceUnitTests, testCliParserRejectsInvalidSelections)
@@ -79,6 +91,9 @@ TEST(CtraceUnitTests, testCliParserRejectsInvalidSelections)
 
   require(validationErrorContains({"ctrace", ".trace", "--type", "invalid"}, "Invalid --type value"),
           "CliParser should reject invalid packet types");
+  require(validationErrorContains({"ctrace", ".trace", "--type", "dwt", "invalid", "--all"},
+                                  "Invalid --type value: invalid"),
+          "CliParser should reject an invalid selector after a valid selector");
 
   for (const auto* type : {"event", "pmu", "pcsample"}) {
     require(validationErrorContains({"ctrace", ".trace", "--type", type}, "Invalid --type value"),

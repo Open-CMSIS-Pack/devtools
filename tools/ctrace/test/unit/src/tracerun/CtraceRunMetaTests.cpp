@@ -80,6 +80,16 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidReferences)
   diagnosed.references.push_back(makeReference("itm", std::nullopt, 0U, {99U}));
   diagnosed.references.front().error = "producer rejected this route";
   EXPECT_NO_THROW((void)CtraceRunMeta::fromConfig(diagnosed));
+
+  TraceRunConfig diagnosedBinding;
+  diagnosedBinding.path = "trace.yml";
+  diagnosedBinding.setups.push_back(makeTimestampSetup("core"));
+  diagnosedBinding.references.push_back(makeReference("itm", "unusable", 0U, {99U}));
+  diagnosedBinding.references.front().error = "producer rejected this route";
+  const auto meta = CtraceRunMeta::fromConfig(diagnosedBinding);
+  EXPECT_EQ(meta.processorCount(), 1U);
+  EXPECT_TRUE(meta.sources().empty());
+  EXPECT_TRUE(meta.timestampsByTraceBusId().empty());
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidPrescalers)
@@ -218,8 +228,6 @@ TEST(CtraceUnitTests, testCtraceRunMetaResolvesDwtDataAndDefaults)
   EXPECT_EQ(meta.sources()[0].symbolSizeError, std::optional<std::string>("size warning"));
   EXPECT_EQ(meta.sources()[1].valueType, std::string(TraceRunSchema::kDefaultDwtDataType));
   EXPECT_EQ(meta.sources()[2].valueSize, TraceRunSchema::kDefaultDwtDataSize);
-  EXPECT_EQ(meta.resolveSource("dwt", 1U, 0U), &meta.sources()[0]);
-  EXPECT_EQ(meta.resolveSource("itm", std::nullopt, 0U), nullptr);
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaIgnoresInactiveSetups)

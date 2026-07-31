@@ -75,7 +75,9 @@ target_include_directories(ctrace-decode PUBLIC
 target_link_libraries(ctrace-decode PUBLIC
   ctrace::model
 )
-target_link_libraries(ctrace-decode PRIVATE
+# Decode headers contain OpenCSD interface types; propagate that build-time
+# dependency. ctrace installs no library headers or C++ API.
+target_link_libraries(ctrace-decode PUBLIC
   ctrace::opencsd
 )
 ctrace_configure_target(ctrace-decode)
@@ -121,7 +123,8 @@ target_link_libraries(ctrace-control PUBLIC
   ctrace::output
   ctrace::trace-run
 )
-target_link_libraries(ctrace-control PRIVATE
+# FileDecodeJob.hpp exposes decoder types to build-tree consumers.
+target_link_libraries(ctrace-control PUBLIC
   ctrace::decode
 )
 ctrace_configure_target(ctrace-control)

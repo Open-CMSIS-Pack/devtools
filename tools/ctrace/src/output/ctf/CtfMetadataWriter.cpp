@@ -124,7 +124,10 @@ static std::string exceptionName(std::uint32_t number)
   case 15:
     return "SysTick";
   default:
-    return "External IRQ " + std::to_string(number);
+    if (number >= 16U) {
+      return "External IRQ " + std::to_string(number - 16U);
+    }
+    return "Reserved " + std::to_string(number);
   }
 }
 

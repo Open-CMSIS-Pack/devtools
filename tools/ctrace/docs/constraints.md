@@ -82,18 +82,21 @@ code and covered by focused, individually discoverable CTest cases.
 ## Distribution
 
 - **The executable version and release workflow are tool-specific.** A release tag named `tools/ctrace/<version>`
-  supplies the compiled version and selects the ctrace workflow. Its matrix builds Windows AMD64/Arm64, Linux
+  with a stable three-component SemVer suffix supplies the compiled version and selects the ctrace workflow. The
+  release smoke test requires the executable to report that exact version. Its matrix builds Windows AMD64/Arm64, Linux
   AMD64/Arm64, and macOS Arm64 artifacts. Tests execute on Windows AMD64, Linux AMD64, Linux Arm64 through QEMU, and
   native macOS Arm64; Windows Arm64 receives a PE machine-type check.
 
 - **Product dependencies come from devtools and carry repository-level license records.** `cxxopts`, `yaml-cpp`, and
   the pinned OpenCSD submodule are listed in the top-level `LICENSE.md`. The release archive includes the project
-  license, [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md), the unmodified license text for each incorporated
-  dependency, and verified per-file checksums. Its separately published checksum covers the complete ZIP archive.
+  license, [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md), OpenCSD source-file copyright notices, application
+  dependency license texts, the [platform-runtime inventory](RUNTIME_COMPONENTS.md), and verified per-file checksums.
+  Its separately published checksum covers the complete ZIP archive. Runtime contents remain subject to per-artifact
+  inspection rather than being implicitly covered by the application dependency list.
 
-- **The Blinky SWO and TB captures are redistributable ctrace test assets.** Their purpose and derived golden CSV are
-  documented in the [fixture README](../test/data/README.md); generated test output remains confined to the build
-  tree.
+- **The Blinky SWO and TB captures are redistributable ctrace test assets.** Their purpose, origin, derived golden CSV,
+  and SPDX sidecars are documented in the [fixture README](../test/data/README.md); generated test output remains
+  confined to the build tree.
 
 ## Maintenance rule
 

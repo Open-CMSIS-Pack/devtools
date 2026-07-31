@@ -26,10 +26,14 @@ struct OpenCsdErrorRecord {
   std::string message;
 };
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
+#endif
+
 class OpenCsdErrorController final : public ITraceErrorLog {
-  // OpenCSD declares these scalar return types with top-level const.  Keep
-  // the exact override type without repeating the ineffective qualifier at
-  // every declaration and definition.
+  // OpenCSD declares these scalar return types with top-level const. Keep the
+  // exact override type while containing GCC's warning about that upstream API.
   using ErrorSourceHandleResult = const ocsd_hndl_err_log_t;
   using ErrorLogVerbosityResult = const ocsd_err_severity_t;
 
@@ -80,3 +84,7 @@ private:
   std::array<std::optional<ocsdError>, 0x80> lastTraceErrors_{};
   ocsdMsgLogger* outputLogger_ = nullptr;
 };
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif

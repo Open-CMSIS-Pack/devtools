@@ -30,8 +30,6 @@ add_executable(CtraceUnitTests
 
 target_link_libraries(CtraceUnitTests PRIVATE
   ctrace::control
-  ctrace::decode
-  ctrace::opencsd
   gtest_main
 )
 

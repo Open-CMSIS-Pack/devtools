@@ -32,7 +32,7 @@ TEST(CtraceUnitTests, testDwtPcSampleIsSuppressedUntilDedicatedEventExists)
 {
   DwtPacketDecoder decoder;
   auto payload = dwtPayload(2U, 4U, 0x08001234U, 19U, 3U, 949339000U);
-  payload.status.timestampReliable = true;
+  payload.quality.timestampReliable = true;
 
   const auto packets = decoder.decode(payload);
   require(packets.empty(), "DWT PC samples must remain suppressed until their output event is defined");
@@ -43,9 +43,9 @@ TEST(CtraceUnitTests, testDwtCounterPacketsArePreservedUntilOutputSemanticsExist
   const auto verify = [](std::uint8_t discriminator, const char* selector) {
     DwtPacketDecoder decoder;
     auto payload = dwtPayload(discriminator, 1U, 0x21U, 23U, 4U, 949339100U);
-    payload.status.overflow = true;
-    payload.status.timestampReliable = false;
-    payload.status.overflowCount = 7U;
+    payload.quality.overflow = true;
+    payload.quality.timestampReliable = false;
+    payload.quality.overflowCount = 7U;
 
     const auto packets = decoder.decode(payload);
     require(packets.size() == 1U, "DWT counter packet must be preserved internally");
@@ -79,7 +79,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsReservedExceptionAction)
 {
   DwtPacketDecoder decoder;
   auto payload = dwtPayload(1U, 2U, 11U, 17U, 3U, 1234U);
-  payload.status.timestampReliable = true;
+  payload.quality.timestampReliable = true;
 
   const auto packets = decoder.decode(payload);
   require(packets.size() == 1U, "DwtPacketDecoder reserved exception action packet count mismatch");
@@ -165,7 +165,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
   const auto verify = [](std::uint8_t discriminator, std::uint8_t size) {
     DwtPacketDecoder decoder;
     auto payload = dwtPayload(discriminator, size, 0x12345678U, 17U, 3U, 99U);
-    payload.status.timestampReliable = true;
+    payload.quality.timestampReliable = true;
 
     const auto packets = decoder.decode(payload);
     require(packets.size() == 1U, "unsupported DWT address width must emit one error");
@@ -187,7 +187,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderMapsAllExceptionActions)
   const auto verify = [](std::uint32_t actionCode, ExceptionAction expected) {
     DwtPacketDecoder decoder;
     auto payload = dwtPayload(1U, 2U, (actionCode << 12U) | 11U, 17U, 3U, 1234U);
-    payload.status.timestampReliable = true;
+    payload.quality.timestampReliable = true;
 
     const auto packets = decoder.decode(payload);
     ASSERT_EQ(packets.size(), 1U);
@@ -226,7 +226,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderCombinesPcOffsetAndValue)
   DwtPacketDecoder decoder;
 
   auto pc = dwtPayload(8U, 4U, 0x08001234U, 10U);
-  pc.status.timestampReliable = true;
+  pc.quality.timestampReliable = true;
   EXPECT_TRUE(decoder.decode(pc).empty());
 
   auto offset = pc;

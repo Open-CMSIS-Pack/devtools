@@ -20,7 +20,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <limits>
-#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -33,15 +32,6 @@ std::uint32_t ctfOverflowCount(std::uint64_t count)
 {
   return static_cast<std::uint32_t>(std::min<std::uint64_t>(count, std::numeric_limits<std::uint32_t>::max()));
 }
-std::uint64_t holdMonotonicTimestamp(std::uint64_t timestamp, std::optional<std::uint64_t>& lastTimestamp)
-{
-  if (lastTimestamp.has_value() && timestamp < *lastTimestamp) {
-    timestamp = *lastTimestamp;
-  }
-  lastTimestamp = timestamp;
-  return timestamp;
-}
-
 const CtfSchema::ValueVariant& dwtValueVariant(const ResolvedTraceSource* source, std::uint32_t comparator)
 {
   static const ResolvedTraceSource defaults; // LCOV_EXCL_BR_LINE: thread-safe static initialization guard
@@ -52,6 +42,16 @@ const CtfSchema::ValueVariant& dwtValueVariant(const ResolvedTraceSource* source
                              " has invalid ctrace-run data.symbol-type/data.symbol-size metadata");
   }
   return *variant;
+}
+
+bool equivalentSourceMetadata(const ResolvedTraceSource& left, const ResolvedTraceSource& right)
+{
+  // Trace Bus ID identifies the route, not the metadata attached to it.
+  // LCOV_EXCL_BR_START: equality and conflict behavior is covered; field-order short-circuiting is immaterial
+  return left.type == right.type && left.source == right.source && left.label == right.label &&
+         left.symbolAddress == right.symbolAddress && left.valueType == right.valueType &&
+         left.valueSize == right.valueSize;
+  // LCOV_EXCL_BR_STOP
 }
 
 const ResolvedTraceSource* resolvedTraceSource(const CtfEncoderConfig& config, const char* type,
@@ -72,10 +72,13 @@ const ResolvedTraceSource* resolvedTraceSource(const CtfEncoderConfig& config, c
     if (candidate.type != type || candidate.source != source) { // LCOV_EXCL_BR_LINE
       continue;
     }
-    if (unique != nullptr) {
-      return nullptr;
+    if (unique != nullptr && !equivalentSourceMetadata(*unique, candidate)) {
+      throw std::runtime_error("CTF cannot resolve conflicting metadata for unformatted " + std::string(type) +
+                               " source " + std::to_string(source));
     }
-    unique = &candidate;
+    if (unique == nullptr) {
+      unique = &candidate;
+    }
   }
   return unique;
 }
@@ -128,15 +131,21 @@ void CtfEncoder::start(const std::filesystem::path& outputDirectory)
   abort();
   outputDirectory_ = outputDirectory;
   try {
-    resetEventTimestamps();
-    overflowCounts_.clear();
-    localTimestampTraceBusIds_.clear();
+    streamStates_.clear();
     reportedDwtSizeMismatches_.clear();
     exceptionLanes_.clear();
     stream_.open(outputDirectory_ / "stream_0", CtfSchema::SwoStreamId);
     recording_ = true;
-    writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart), 0U, config_.selection.empty());
-    (void)exceptionLane(0U);
+    auto initialTraceBusIds =
+        std::set<std::uint8_t>(config_.selection.streams.begin(), config_.selection.streams.end());
+    if (initialTraceBusIds.empty()) {
+      initialTraceBusIds.insert(0U);
+    }
+    for (const auto traceBusId : initialTraceBusIds) {
+      writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart), traceBusId,
+                            config_.selection.types.empty());
+      (void)exceptionLane(traceBusId);
+    }
   } catch (...) {
     abort();
     throw;
@@ -165,10 +174,14 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
   if (!recording_) {
     return;
   }
+  if (!config_.selection.includesStream(event.traceBusId)) {
+    return;
+  }
   if (!isTraceEvent<GlobalTimestampTraceEvent>(event) && event.tcyc.has_value()) {
-    observeInputTimestamp(*event.tcyc);
+    auto& eventTimestamp = streamStates_[event.traceBusId].eventTimestamp;
+    eventTimestamp = std::max(eventTimestamp, *event.tcyc);
     if (event.quality.has_value() && event.quality->timestampReliable) {
-      localTimestampTraceBusIds_.insert(event.traceBusId);
+      streamStates_[event.traceBusId].localTimestampObserved = true;
     }
   }
 
@@ -190,21 +203,18 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
       writeDwtAddrEvent(event, *address);
     }
   } else if (isTraceEvent<OverflowTraceEvent>(event)) {
+    auto& streamState = streamStates_[event.traceBusId];
     if (event.quality.has_value()) {
-      auto& overflowCount = overflowCounts_[event.traceBusId];
-      overflowCount = std::max(overflowCount, event.quality->overflowCount);
+      streamState.overflowCount = std::max(streamState.overflowCount, event.quality->overflowCount);
     } else {
-      ++overflowCounts_[event.traceBusId];
+      ++streamState.overflowCount;
     }
     writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::Overflow), event.traceBusId, selected);
   } else if (isTraceEvent<LocalTimestampTraceEvent>(event)) {
-    localTimestampTraceBusIds_.insert(event.traceBusId);
-    if (event.tcyc.has_value()) { // LCOV_EXCL_BR_LINE: timestamp presence is covered
-      observeInputTimestamp(*event.tcyc);
-    }
+    streamStates_[event.traceBusId].localTimestampObserved = true;
   } else if (isTraceEvent<SyncTraceEvent>(event)) {
     writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::Resync), event.traceBusId,
-                          config_.selection.empty());
+                          config_.selection.types.empty());
   } else if (const auto* timestamp = traceEventPayload<GlobalTimestampTraceEvent>(event)) {
     if (selected) { // LCOV_EXCL_BR_LINE: selected and filtered global timestamps are covered
       writeGlobalTimestampEvent(event, *timestamp);
@@ -223,22 +233,11 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
   }
 }
 
-void CtfEncoder::resetEventTimestamps()
+std::uint64_t CtfEncoder::allocateEventTimestamp(std::uint8_t traceBusId)
 {
-  currentEventTimestamp_ = 0U;
-  lastInputTimestamp_.reset();
-  lastEventTimestamp_.reset();
-}
-
-void CtfEncoder::observeInputTimestamp(std::uint64_t timestamp)
-{
-  currentEventTimestamp_ = holdMonotonicTimestamp(timestamp, lastInputTimestamp_);
-}
-
-std::uint64_t CtfEncoder::allocateEventTimestamp()
-{
-  currentEventTimestamp_ = holdMonotonicTimestamp(currentEventTimestamp_, lastEventTimestamp_);
-  return currentEventTimestamp_;
+  // CtfStreamWriter applies the final monotonic clamp across the multiplexed
+  // CTF stream. This value remains local to the CoreSight Trace Bus ID.
+  return streamStates_[traceBusId].eventTimestamp;
 }
 
 void CtfEncoder::writeSoftwareEvent(const TraceEvent& event, const SoftwareTraceEvent& software)
@@ -248,7 +247,7 @@ void CtfEncoder::writeSoftwareEvent(const TraceEvent& event, const SoftwareTrace
     throw std::runtime_error("CTF ITM value has an invalid SWO payload size");
   }
   const auto quality = computeSampleQuality(event);
-  const auto eventTimestamp = allocateEventTimestamp();
+  const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
   const auto payloadSize = 1U + 1U + variant->byteSize + 1U + 4U;
   stream_.writeRecord(CtfSchema::value(CtfSchema::EventId::Itm), eventTimestamp, event.traceBusId, payloadSize,
                       [&](CtfStreamWriter::Record& record) {
@@ -268,7 +267,7 @@ void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceE
   const auto hasPc = data.pc.has_value() ? 1U : 0U;
   const auto hasAddress = data.addressLo16.has_value() ? 1U : 0U;
   const auto payloadSize = 1U + 1U + 1U + variant.byteSize + 1U + hasPc * 4U + 1U + hasAddress * 2U + 1U + 4U;
-  const auto eventTimestamp = allocateEventTimestamp();
+  const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
   const auto quality = computeSampleQuality(event);
   stream_.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtValue), eventTimestamp, event.traceBusId, payloadSize,
                       [&](CtfStreamWriter::Record& record) {
@@ -319,7 +318,7 @@ void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTra
 void CtfEncoder::writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTraceEvent& address)
 {
   constexpr auto payloadSize = 1U + 1U + 1U + 4U + 2U + 1U + 4U;
-  const auto eventTimestamp = allocateEventTimestamp();
+  const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
   const auto quality = computeSampleQuality(event);
   const auto pc = dwtAddressPc(address);
   const auto addressOffset = dwtAddressOffset(address);
@@ -340,7 +339,7 @@ void CtfEncoder::writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTrac
 void CtfEncoder::writeGlobalTimestampEvent(const TraceEvent& event, const GlobalTimestampTraceEvent& timestamp)
 {
   constexpr auto payloadSize = 8U + 1U;
-  const auto eventTimestamp = allocateEventTimestamp();
+  const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
   stream_.writeRecord(CtfSchema::value(CtfSchema::EventId::GlobalTimestamp), eventTimestamp, event.traceBusId,
                       payloadSize, [&](CtfStreamWriter::Record& record) {
                         record.writeU64(timestamp.value);
@@ -352,16 +351,15 @@ void CtfEncoder::writeTraceStatusEvent(std::uint8_t reason, std::uint8_t traceBu
 {
   if (emitEvent) {
     constexpr auto payloadSize = 1U + 4U;
-    const auto eventTimestamp = allocateEventTimestamp();
+    const auto eventTimestamp = allocateEventTimestamp(traceBusId);
     stream_.writeRecord(CtfSchema::value(CtfSchema::EventId::TraceStatus), eventTimestamp, traceBusId, payloadSize,
                         [&](CtfStreamWriter::Record& record) {
                           record.writeU8(reason);
-                          record.writeU32(ctfOverflowCount(overflowCounts_[traceBusId]));
+                          record.writeU32(ctfOverflowCount(streamStates_[traceBusId].overflowCount));
                         });
   }
 
   if (reason == CtfSchema::value(CtfSchema::TraceStatusReason::Overflow) ||
-      reason == CtfSchema::value(CtfSchema::TraceStatusReason::Resync) ||
       reason == CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss)) {
     const auto lane = exceptionLanes_.find(traceBusId);
     if (lane != exceptionLanes_.end()) {
@@ -393,7 +391,7 @@ void CtfEncoder::emitExceptionRecord(std::uint8_t traceBusId, std::uint32_t numb
     return;
   }
   constexpr auto payloadSize = 2U + 1U + 2U;
-  const auto eventTimestamp = allocateEventTimestamp();
+  const auto eventTimestamp = allocateEventTimestamp(traceBusId);
   const auto encodedAction =
       CtfSchema::value(action == CtfExceptionLaneTracker::RecordAction::Enter ? CtfSchema::ExceptionAction::Entered
                                                                               : CtfSchema::ExceptionAction::Exited);
@@ -419,18 +417,16 @@ CtfExceptionLaneTracker& CtfEncoder::exceptionLane(std::uint8_t traceBusId)
 
 std::pair<std::uint8_t, std::uint32_t> CtfEncoder::computeSampleQuality(const TraceEvent& event)
 {
-  auto& currentOverflowCount = overflowCounts_[event.traceBusId];
-  const auto previousOverflowCount = currentOverflowCount;
-  const auto overflowCount = event.quality.has_value() ? event.quality->overflowCount : currentOverflowCount;
+  auto& streamState = streamStates_[event.traceBusId];
+  const auto previousOverflowCount = streamState.overflowCount;
+  const auto overflowCount = event.quality.has_value() ? event.quality->overflowCount : streamState.overflowCount;
   const auto timestampReliable = event.quality.has_value() ? event.quality->timestampReliable : true;
   const auto overflow = event.quality.has_value() ? event.quality->overflow : overflowCount > previousOverflowCount;
   const auto flags =
       static_cast<std::uint8_t>((overflow ? CtfSchema::SampleFlagOverflow : 0U) |
                                 (timestampReliable ? CtfSchema::SampleFlagTimestampReliable : 0U) |
-                                (localTimestampTraceBusIds_.find(event.traceBusId) != localTimestampTraceBusIds_.end()
-                                     ? 0U
-                                     : CtfSchema::SampleFlagBeforeFirstTimestamp));
-  currentOverflowCount = std::max(currentOverflowCount, overflowCount);
+                                (streamState.localTimestampObserved ? 0U : CtfSchema::SampleFlagBeforeFirstTimestamp));
+  streamState.overflowCount = std::max(streamState.overflowCount, overflowCount);
   return {flags, ctfOverflowCount(overflowCount)};
 }
 

@@ -24,5 +24,6 @@ struct CliOptions {
   std::optional<std::string> targetName;
   OutputFormat outputFormat = OutputFormat::None;
   TraceSelection selection;
+  bool help = false;
   bool version = false;
 };

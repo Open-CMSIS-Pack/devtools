@@ -163,6 +163,24 @@ private:
       const auto response = session_->pushData(traceIndex_, callSize, data + processed, processedThisPass);
       collector_.rethrowOutputError();
       const auto decision = errorController_.decide(response);
+      if (decision.action == OpenCsdErrorController::Action::Abort) {
+        abortDecode(decision, callSize, callIndex, processedThisPass, "OpenCSD aborted decode: ");
+      }
+
+      const auto consumed = std::min(processedThisPass, callSize);
+      if (consumed == 0U) {
+        if (noProgressRetryOffset.has_value() && *noProgressRetryOffset == traceIndex_) {
+          collector_.rollbackTransaction();
+          completeConsumedDataLoss(traceIndex_);
+          collector_.appendDecodeError(traceIndex_, "OpenCSD made no progress after a retry; decode aborted",
+                                       "opencsd-no-progress", false);
+          throw OpenCsdFatalError("OpenCSD made no progress after a retry", static_cast<std::uint64_t>(traceIndex_));
+        }
+        noProgressRetryOffset = static_cast<std::uint64_t>(traceIndex_);
+      } else {
+        noProgressRetryOffset.reset();
+      }
+
       if (decision.action == OpenCsdErrorController::Action::RecoverStream) {
         const auto sourceOffset = OpenCsdErrorController::errorOffset(decision, callIndex);
         completeConsumedDataLoss(
@@ -171,7 +189,6 @@ private:
         // after its offset belong to the failed decode transaction.
         collector_.commitTransactionBefore(sourceOffset);
         appendReportedErrors(decision, callIndex, true);
-        const auto consumed = std::min(processedThisPass, callSize);
         processed += consumed;
         traceIndex_ += consumed;
         dataLossActive_ = true;
@@ -179,9 +196,6 @@ private:
         consumedDataLossBoundaryMarked_ = true;
         resetDecoder();
         continue;
-      }
-      if (decision.action == OpenCsdErrorController::Action::Abort) {
-        abortDecode(decision, callSize, callIndex, processedThisPass, "OpenCSD aborted decode: ");
       }
       if (decision.action == OpenCsdErrorController::Action::Wait) {
         if (collector_.transactionElementCount() == 0U) {
@@ -191,26 +205,17 @@ private:
           collector_.commitTransaction();
         }
         appendReportedErrors(decision, callIndex, false);
-        const auto consumed = std::min(processedThisPass, callSize);
         processed += consumed;
         traceIndex_ += consumed;
         flushAfterWait();
         continue;
       }
-      if (processedThisPass == 0) {
+      if (consumed == 0U) {
         collector_.rollbackTransaction();
-        if (noProgressRetryOffset.has_value() && *noProgressRetryOffset == traceIndex_) { // LCOV_EXCL_BR_LINE
-          completeConsumedDataLoss(traceIndex_);
-          collector_.appendDecodeError(traceIndex_, "OpenCSD made no progress after decoder reset; decode aborted",
-                                       "opencsd-no-progress", false);
-          throw OpenCsdFatalError("OpenCSD made no progress after decoder reset",
-                                  static_cast<std::uint64_t>(traceIndex_));
-        }
         collector_.appendDecodeError(traceIndex_,
                                      "OpenCSD made no progress while raw data was present; decoder reset and searching "
                                      "for next real ITM async sync",
                                      "opencsd-no-progress");
-        noProgressRetryOffset = static_cast<std::uint64_t>(traceIndex_);
         dataLossActive_ = true;
         consumedDataLossStart_ = static_cast<std::uint64_t>(traceIndex_);
         consumedDataLossBoundaryMarked_ = true;
@@ -225,17 +230,16 @@ private:
           consumedDataLossBoundaryMarked_ = false;
           dataLossActive_ = true;
         }
-        processed += processedThisPass;
-        traceIndex_ += processedThisPass;
+        processed += consumed;
+        traceIndex_ += consumed;
         continue;
       }
       completeConsumedDataLoss(collector_.transactionFirstSourceOffset().value_or(callIndex));
       collector_.commitTransaction();
       appendReportedErrors(decision, callIndex, false);
       dataLossActive_ = false;
-      processed += processedThisPass;
-      traceIndex_ += processedThisPass;
-      noProgressRetryOffset.reset();
+      processed += consumed;
+      traceIndex_ += consumed;
     }
   }
 

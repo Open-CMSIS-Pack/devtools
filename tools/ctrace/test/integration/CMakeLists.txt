@@ -43,6 +43,14 @@ set_tests_properties(ctrace-no-args-shows-help PROPERTIES
     PASS_REGULAR_EXPRESSION "ctrace <trace-dir> \\[options\\]"
 )
 
+add_test(
+    NAME ctrace-help
+    COMMAND ctrace --help
+)
+set_tests_properties(ctrace-help PROPERTIES
+    PASS_REGULAR_EXPRESSION "ctrace <trace-dir> \\[options\\]"
+)
+
 set_tests_properties(ctrace-version PROPERTIES
     PASS_REGULAR_EXPRESSION "ctrace ${CTRACE_VERSION_REGEX}"
 )

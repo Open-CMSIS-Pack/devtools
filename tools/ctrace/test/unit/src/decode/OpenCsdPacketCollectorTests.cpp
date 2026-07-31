@@ -144,7 +144,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
   EXPECT_EQ(collector.TraceElemIn(12U, 5U, unrelated), OCSD_RESP_CONT);
   EXPECT_EQ(sink.elements.size(), 2U);
 
-  const auto unknown = itmElement(static_cast<swt_itm_type>(255));
+  const auto unknown = itmElement(static_cast<swt_itm_type>(7));
   EXPECT_EQ(collector.TraceElemIn(12U, 5U, unknown), OCSD_RESP_CONT);
   EXPECT_EQ(sink.elements.size(), 2U);
 

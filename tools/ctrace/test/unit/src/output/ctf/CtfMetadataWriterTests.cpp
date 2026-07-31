@@ -35,10 +35,16 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
       {"dwt", 0U, 1U, std::nullopt, std::numeric_limits<std::uint64_t>::max(), "unsigned int", 4U},
   };
 
-  CtfMetadataWriter::write(path.path(), "00000000-0000-4000-8000-000000000000", 1000000U, sources, {});
+  CtfMetadataWriter::write(path.path(), "00000000-0000-4000-8000-000000000000", 1000000U, sources,
+                           {8U, 10U, 13U, 16U, 54U});
   const auto metadata = readTestTextFile(path.path() / "metadata");
   EXPECT_NE(metadata.find("ITM3_2"), std::string::npos);
   EXPECT_NE(metadata.find("line\\rbreak"), std::string::npos);
+  EXPECT_NE(metadata.find("\"Reserved 8\" = 8"), std::string::npos);
+  EXPECT_NE(metadata.find("\"Reserved 10\" = 10"), std::string::npos);
+  EXPECT_NE(metadata.find("\"Reserved 13\" = 13"), std::string::npos);
+  EXPECT_NE(metadata.find("\"External IRQ 0\" = 16"), std::string::npos);
+  EXPECT_NE(metadata.find("\"External IRQ 38\" = 54"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfMetadataWriterRejectsMissingOutputDirectory)

@@ -17,7 +17,6 @@
 #include <set>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace {
@@ -99,6 +98,12 @@ bool consumesSetup(const TraceRunConfig& config, const TraceRunSetup& setup)
   return false;
 }
 
+bool isUsableStreamBinding(const TraceRunReference& reference)
+{
+  return TraceRunSchema::contributesStreamBinding(reference) &&
+         TraceRunSchema::referenceProblem(reference) == ReferenceProblem::None;
+}
+
 ProcessorIdentity processorIdentity(const TraceRunConfig& config)
 {
   std::set<std::string> setupNames;
@@ -129,7 +134,7 @@ ProcessorIdentity processorIdentity(const TraceRunConfig& config)
   std::set<std::string> referenceNames;
   bool unnamedReference = false;
   for (const auto& reference : config.references) {
-    if (!TraceRunSchema::isUsableReference(reference) && !TraceRunSchema::contributesStreamBinding(reference)) {
+    if (!isUsableStreamBinding(reference)) {
       continue;
     }
     const auto name = TraceRunSchema::normalizedProcessorName(reference.processorName);
@@ -272,12 +277,6 @@ struct ResolvedStreamBinding {
   const ProcessorMeta* processor = nullptr;
 };
 
-bool isUsableStreamBinding(const TraceRunReference& reference)
-{
-  return TraceRunSchema::contributesStreamBinding(reference) &&
-         TraceRunSchema::referenceProblem(reference) == ReferenceProblem::None;
-}
-
 std::vector<ResolvedStreamBinding> resolveStreamBindings(const TraceRunConfig& config,
                                                          const ProcessorIdentity& processorIdentity,
                                                          const std::vector<ProcessorMeta>& processors)
@@ -396,16 +395,6 @@ bool containsDistinctProcessorPrescalers(const std::vector<ProcessorMeta>& proce
     first = processor.timestampPrescaler;
   }
   return false;
-}
-
-bool equivalentSourceMetadata(const CtraceRunSourceMeta& left, const CtraceRunSourceMeta& right)
-{
-  // LCOV_EXCL_BR_START: equality and conflict behavior is covered; field-order short-circuiting is immaterial
-  return left.type == right.type && left.processorName == right.processorName && left.source == right.source &&
-         left.label == right.label && left.symbolAddress == right.symbolAddress && left.valueType == right.valueType &&
-         left.valueSize == right.valueSize && left.symbolTypeError == right.symbolTypeError &&
-         left.symbolSizeError == right.symbolSizeError;
-  // LCOV_EXCL_BR_STOP
 }
 
 } // namespace
@@ -537,24 +526,4 @@ std::size_t CtraceRunMeta::processorCount() const
 const std::vector<CtraceRunSourceMeta>& CtraceRunMeta::sources() const
 {
   return sources_;
-}
-
-const CtraceRunSourceMeta* CtraceRunMeta::resolveSource(std::string_view type, std::optional<std::uint8_t> traceBusId,
-                                                        std::uint32_t source) const
-{
-  const CtraceRunSourceMeta* result = nullptr;
-  for (const auto& candidate : sources_) {
-    if (candidate.type != type || candidate.source != source ||
-        (traceBusId.has_value() && candidate.traceBusId != *traceBusId)) {
-      continue;
-    }
-    if (result != nullptr && !equivalentSourceMetadata(*result, candidate)) { // LCOV_EXCL_BR_LINE
-      throw std::runtime_error(configPath_ + ": ambiguous metadata for trace route type '" + std::string(type) +
-                               "', Trace Bus ID " +
-                               (traceBusId.has_value() ? std::to_string(*traceBusId) : "any") + // LCOV_EXCL_BR_LINE
-                               ", source " + std::to_string(source));
-    }
-    result = &candidate;
-  }
-  return result;
 }

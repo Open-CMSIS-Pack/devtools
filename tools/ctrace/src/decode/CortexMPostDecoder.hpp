@@ -35,22 +35,22 @@ private:
   void appendDwt(const OpenCsdTraceElement& element);
   void appendTimestamp(const OpenCsdTraceElement& element);
 
-  void queueDiscontinuityIssue(std::uint64_t sourceIndex, std::uint8_t traceBusId, const DwtTraceStatus& status,
+  void queueDiscontinuityIssue(std::uint64_t sourceIndex, std::uint8_t traceBusId, const TraceQuality& quality,
                                const std::string& issueCode, const std::string& message,
                                std::optional<std::uint64_t> rawBytesConsumed = std::nullopt);
   void finalizePendingDiscontinuityIssues(std::optional<std::uint64_t> firstResumedTcyc);
   void queueOrEmitWhileAwaitingTimestamp(TraceEvent event);
-  DwtTraceStatus markDiscontinuity();
-  void flushPendingDataTrace(const DwtTraceStatus& status);
-  void flushPendingEvents(std::optional<std::uint64_t> tcyc, const DwtTraceStatus& status);
+  TraceQuality markDiscontinuity();
+  void flushPendingDataTrace(const TraceQuality& quality);
+  void flushPendingEvents(std::optional<std::uint64_t> tcyc, const TraceQuality& quality);
   void appendPendingEvents(std::vector<TraceEvent> events);
   void emitEvent(const TraceEvent& event);
   void mapTimestampSegment(OpenCsdTraceElement& element);
   void startNewTimestampSegment();
   static std::uint64_t saturatingAdd(std::uint64_t lhs, std::uint64_t rhs);
 
-  DwtTraceStatus currentTraceStatus(bool packetOverflow = false) const;
-  DwtTraceStatus statusResolvedByTimestamp(LocalTimestampRelation relation) const;
+  TraceQuality currentTraceStatus(bool packetOverflow = false) const;
+  TraceQuality statusResolvedByTimestamp(LocalTimestampRelation relation) const;
   void noteOverflow();
 
   TraceEventSink& eventSink_;

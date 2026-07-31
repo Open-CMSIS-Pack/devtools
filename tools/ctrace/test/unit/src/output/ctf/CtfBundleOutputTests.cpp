@@ -20,7 +20,6 @@
 #include "TraceOutputConfig.hpp"
 #include "TraceRunConfig.hpp"
 
-#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -32,12 +31,6 @@
 namespace {
 
 using namespace CtfTestSupport;
-
-constexpr std::size_t kCtfStatusOrContextPayloadSize = 5U;
-constexpr std::size_t kCtfStatusOrContextEventSize = kCtfEventHeaderSize + kCtfStatusOrContextPayloadSize;
-constexpr std::uint32_t kCtfDwtValueEventId = 4U;
-constexpr std::uint32_t kCtfTraceStatusEventId = 5U;
-constexpr std::uint32_t kCtfExceptionEventId = 7U;
 
 std::filesystem::path testTraceCompassXmlPath(const std::filesystem::path& outputDirectory)
 {
@@ -91,29 +84,12 @@ ResolvedTraceSource resolvedSource(const CtraceRunSourceMeta& source)
 
 std::vector<std::string> readCtfExceptionRecords(const std::filesystem::path& streamPath)
 {
-  const auto bytes = readTestBinaryFile(streamPath);
-
-  constexpr std::size_t exceptionPayloadSize = 5U;
-
   std::vector<std::string> records;
-  for (std::size_t packetStart = 0; packetStart + kCtfEventOffset <= bytes.size(); packetStart += kCtfPacketSize) {
-    const auto contentBits = readLe32(bytes, packetStart + kCtfPacketHeaderSize + 4U);
-    const auto contentEnd = packetStart + static_cast<std::size_t>(contentBits / 8U);
-    std::size_t offset = packetStart + kCtfEventOffset;
-    while (offset + kCtfEventHeaderSize <= contentEnd) {
-      const auto id = readLe32(bytes, offset);
-      if (id == kCtfTraceStatusEventId) {
-        offset += kCtfStatusOrContextEventSize;
-        continue;
-      }
-      if (id == kCtfExceptionEventId) {
-        const auto number = readLe16(bytes, offset + kCtfEventHeaderSize);
-        const auto action = bytes[offset + kCtfEventHeaderSize + 2U];
-        records.push_back(std::to_string(number) + ":" + std::to_string(static_cast<unsigned>(action)));
-        offset += kCtfEventHeaderSize + exceptionPayloadSize;
-        continue;
-      }
-      break;
+  for (const auto& record : readCtfRecords(streamPath)) {
+    if (record.id == CtfSchema::value(CtfSchema::EventId::Exception)) {
+      const auto number = readLe16(record.payload, 0U);
+      const auto action = record.payload[2U];
+      records.push_back(std::to_string(number) + ":" + std::to_string(static_cast<unsigned>(action)));
     }
   }
   return records;
@@ -121,42 +97,19 @@ std::vector<std::string> readCtfExceptionRecords(const std::filesystem::path& st
 
 std::vector<std::uint8_t> readOnlyCtfTraceStatusReasons(const std::filesystem::path& streamPath)
 {
-  const auto bytes = readTestBinaryFile(streamPath);
-
   std::vector<std::uint8_t> reasons;
-  for (std::size_t packetStart = 0; packetStart + kCtfEventOffset <= bytes.size(); packetStart += kCtfPacketSize) {
-    const auto contentBits = readLe32(bytes, packetStart + kCtfPacketHeaderSize + 4U);
-    const auto contentEnd = packetStart + static_cast<std::size_t>(contentBits / 8U);
-    std::size_t offset = packetStart + kCtfEventOffset;
-    while (offset + kCtfStatusOrContextEventSize <= contentEnd) {
-      require(readLe32(bytes, offset) == kCtfTraceStatusEventId, "expected only CTF trace-status events");
-      reasons.push_back(bytes[offset + kCtfEventHeaderSize]);
-      offset += kCtfStatusOrContextEventSize;
-    }
-    require(offset == contentEnd, "malformed CTF trace-status content size");
+  for (const auto& record : readCtfRecords(streamPath)) {
+    require(record.id == CtfSchema::value(CtfSchema::EventId::TraceStatus), "expected only CTF trace-status events");
+    reasons.push_back(record.payload.front());
   }
   return reasons;
 }
 
-std::size_t findFirstCtfEvent(const std::vector<unsigned char>& bytes, std::uint32_t expectedId)
-{
-  const auto contentEnd = static_cast<std::size_t>(readLe32(bytes, kCtfPacketHeaderSize + 4U) / 8U);
-  std::size_t offset = kCtfEventOffset;
-  while (offset + kCtfEventHeaderSize <= contentEnd) {
-    const auto eventId = readLe32(bytes, offset);
-    if (eventId == expectedId) {
-      return offset;
-    }
-    require(eventId == kCtfTraceStatusEventId || eventId == kCtfExceptionEventId, "unexpected preceding CTF event");
-    offset += kCtfStatusOrContextEventSize;
-  }
-  throw std::runtime_error("expected CTF event missing");
-}
-
 std::uint8_t readFirstCtfDwtValueTag(const std::filesystem::path& streamPath)
 {
-  const auto bytes = readTestBinaryFile(streamPath);
-  return bytes[findFirstCtfEvent(bytes, kCtfDwtValueEventId) + kCtfEventHeaderSize + 2U];
+  const auto records = readCtfRecords(streamPath);
+  const auto& record = requireFirstCtfRecord(records, CtfSchema::EventId::DwtValue, "expected CTF DWT event missing");
+  return record.payload[2U];
 }
 
 } // namespace
@@ -249,12 +202,13 @@ TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
   require(metadata.find("\"Current\\n\\t\\\"\\\\\\x01\" = 2") != std::string::npos,
           "CTF trace-run label escaping mismatch");
 
-  require(readLe32(stream, kCtfEventOffset) == kCtfTraceStatusEventId, "CTF trace-start event missing");
-  const auto dwtEventOffset = findFirstCtfEvent(stream, kCtfDwtValueEventId);
-  require(stream[dwtEventOffset + 12U] == 7U, "CTF event context must preserve the CoreSight Trace Bus ID");
-  require(stream[dwtEventOffset + kCtfEventHeaderSize + 2U] == 1U,
-          "CTF one-byte int payload must select the i8 variant");
-  require(stream[dwtEventOffset + kCtfEventHeaderSize + 3U] == 0xffU, "CTF signed-byte payload mismatch");
+  const auto records = parseCtfRecords(stream);
+  require(records.front().id == CtfSchema::value(CtfSchema::EventId::TraceStatus), "CTF trace-start event missing");
+  const auto& dwtRecord =
+      requireFirstCtfRecord(records, CtfSchema::EventId::DwtValue, "expected CTF DWT value event missing");
+  require(dwtRecord.traceBusId == 7U, "CTF event context must preserve the CoreSight Trace Bus ID");
+  require(dwtRecord.payload[2U] == 1U, "CTF one-byte int payload must select the i8 variant");
+  require(dwtRecord.payload[3U] == 0xffU, "CTF signed-byte payload mismatch");
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
@@ -268,13 +222,13 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   defaultReference.dataSetupIndex = 0U;
   defaultTraceRun.references.push_back(defaultReference);
   const auto defaultMeta = CtraceRunMeta::fromConfig(defaultTraceRun);
-  const auto* defaultSource = defaultMeta.resolveSource("dwt", std::nullopt, 0U);
-  require(defaultSource != nullptr && defaultSource->valueType == "unsigned int" && defaultSource->valueSize == 4U,
+  require(defaultMeta.sources().size() == 1U && defaultMeta.sources().front().valueType == "unsigned int" &&
+              defaultMeta.sources().front().valueSize == 4U,
           "missing DWT data.symbol-type/data.symbol-size must default to unsigned int/4");
 
   const auto defaultOutputDir = root / "default";
   auto defaultOptions = makeCtfBundleConfig(defaultOutputDir, 1000000U);
-  defaultOptions.sources = {resolvedSource(*defaultSource)};
+  defaultOptions.sources = {resolvedSource(defaultMeta.sources().front())};
   CollectingDiagnosticSink diagnostics;
   CtfBundleOutput defaultOutput(std::move(defaultOptions), &diagnostics);
   defaultOutput.start();
@@ -293,11 +247,10 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   signedTraceRun.setups.push_back(std::move(signedSetup));
   signedTraceRun.references.push_back(defaultReference);
   const auto signedMeta = CtraceRunMeta::fromConfig(signedTraceRun);
-  const auto* signedSource = signedMeta.resolveSource("dwt", std::nullopt, 0U);
-  require(signedSource != nullptr, "signed DWT source missing");
+  require(signedMeta.sources().size() == 1U, "signed DWT source missing");
   const auto signedOutputDir = root / "signed";
   auto signedOptions = makeCtfBundleConfig(signedOutputDir, 1000000U);
-  signedOptions.sources = {resolvedSource(*signedSource)};
+  signedOptions.sources = {resolvedSource(signedMeta.sources().front())};
   CollectingDiagnosticSink signedDiagnostics;
   CtfBundleOutput signedOutput(std::move(signedOptions), &signedDiagnostics);
   signedOutput.start();
@@ -320,12 +273,9 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   second.label = "core-two";
   traceRun.references = {first, second};
   const auto meta = CtraceRunMeta::fromConfig(traceRun);
-  const auto* selected = meta.resolveSource("dwt", std::optional<std::uint8_t>(1U), 0U);
-  require(selected != nullptr && selected->label == std::optional<std::string>("core-one"),
-          "selected stream must resolve its exact DWT metadata");
-
-  require(throwsWithMessage([&] { (void)meta.resolveSource("dwt", std::nullopt, 0U); }, "ambiguous metadata"),
-          "unformatted CTF must reject conflicting metadata from multiple ATB streams");
+  require(meta.sources().size() == 2U && meta.sources().front().traceBusId == 1U &&
+              meta.sources().front().label == std::optional<std::string>("core-one"),
+          "trace-run metadata must preserve the exact DWT stream route");
 }
 
 TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
@@ -405,13 +355,12 @@ TEST(CtraceUnitTests, testCtfGlobalTimestampDoesNotEstablishLocalTimeQuality)
   output.writeEvent(softwarePacket(1U, 1U, 'A'));
   output.stop();
 
-  const auto stream = readTestBinaryFile(outputDir / "stream_0");
-
-  constexpr std::size_t qualityFlagsOffset = kCtfEventOffset + kCtfEventHeaderSize + 3U;
+  const auto records = readCtfRecords(outputDir / "stream_0");
   constexpr std::uint8_t timestampReliable = 1U << 1U;
   constexpr std::uint8_t beforeFirstLocalTimestamp = 1U << 2U;
-  require(readLe32(stream, kCtfEventOffset) == 0U, "CTF ITM event missing after global timestamp");
-  require(stream[qualityFlagsOffset] == (timestampReliable | beforeFirstLocalTimestamp),
+  require(records.size() == 1U && records.front().id == CtfSchema::value(CtfSchema::EventId::Itm),
+          "CTF ITM event missing after global timestamp");
+  require(records.front().payload[3U] == (timestampReliable | beforeFirstLocalTimestamp),
           "global timestamp must not mark following samples as locally timestamped");
 }
 
@@ -428,11 +377,9 @@ TEST(CtraceUnitTests, testCtfHoldsRegressingEventTimestamps)
   output.writeEvent(atCycle(softwarePacket(1U, 1U, 'B'), 10U));
   output.stop();
 
-  const auto stream = readTestBinaryFile(outputDir / "stream_0");
-
-  constexpr std::size_t itmEventSize = kCtfEventHeaderSize + 8U;
-  require(readLe64(stream, kCtfEventOffset + 4U) == 100U, "first CTF event timestamp mismatch");
-  require(readLe64(stream, kCtfEventOffset + itmEventSize + 4U) == 100U, "CTF event timestamps must not regress");
+  const auto records = readCtfRecords(outputDir / "stream_0");
+  require(records.size() == 2U && records[0].timestamp == 100U, "first CTF event timestamp mismatch");
+  require(records[1].timestamp == 100U, "CTF event timestamps must not regress");
 }
 
 TEST(CtraceUnitTests, testCtfGlobalTimestampEvent)
@@ -448,18 +395,14 @@ TEST(CtraceUnitTests, testCtfGlobalTimestampEvent)
   output.writeEvent(TraceEvent{GlobalTimestampTraceEvent{timestampValue, true}});
   output.stop();
 
-  const auto stream = readTestBinaryFile(outputDir / "stream_0");
+  const auto records = readCtfRecords(outputDir / "stream_0");
   const auto metadata = readTestTextFile(outputDir / "metadata");
 
-  constexpr std::size_t payloadSize = 9U;
-  constexpr std::size_t contentSize = kCtfEventOffset + kCtfEventHeaderSize + payloadSize;
-  require(stream.size() >= contentSize, "CTF global timestamp event missing");
-  require(readLe32(stream, kCtfPacketHeaderSize + 4U) == contentSize * 8U,
-          "CTF global timestamp filter emitted unrelated events");
-  require(readLe32(stream, kCtfEventOffset) == 8U, "CTF global timestamp event ID mismatch");
-  require(readLe64(stream, kCtfEventOffset + kCtfEventHeaderSize) == timestampValue,
-          "CTF global timestamp value mismatch");
-  require(stream[kCtfEventOffset + kCtfEventHeaderSize + 8U] == 1U, "CTF global timestamp clock-change flag mismatch");
+  require(records.size() == 1U, "CTF global timestamp filter emitted unrelated events");
+  const auto& record = records.front();
+  require(record.id == CtfSchema::value(CtfSchema::EventId::GlobalTimestamp), "CTF global timestamp event ID mismatch");
+  require(readLe64(record.payload, 0U) == timestampValue, "CTF global timestamp value mismatch");
+  require(record.payload[8U] == 1U, "CTF global timestamp clock-change flag mismatch");
   require(metadata.find("name = \"GLOBAL_TIMESTAMP\"") != std::string::npos, "CTF global timestamp metadata missing");
 }
 

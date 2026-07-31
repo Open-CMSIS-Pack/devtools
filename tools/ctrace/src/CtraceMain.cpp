@@ -41,6 +41,10 @@ int CtraceMain(int argc, const char* const argv[])
       return 0;
     }
     options = CliParser::parse(argc, argv);
+    if (options.help) {
+      std::cout << CliParser::helpString();
+      return 0;
+    }
     CliParser::validate(options);
     if (options.version) {
       std::cout << CliParser::versionString() << "\n";

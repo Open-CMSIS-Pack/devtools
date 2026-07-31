@@ -243,10 +243,12 @@ The source tree has seven static library targets: `model`, `cli`, `trace-run`, `
 `control`. The `ctrace` executable adds only the platform trampoline and `CtraceMain`. Dependencies form a directed,
 cycle-free graph with `control` as the composition root.
 
-The tool-specific GitHub workflow is selected by a `tools/ctrace/<version>` release tag. It builds Windows AMD64 and
-Arm64, Linux AMD64 and Arm64, and macOS Arm64 binaries. The release archive contains the Apache-2.0 project license,
-third-party notices, the exact cxxopts, yaml-cpp, and OpenCSD license texts, and per-file SHA-256 checksums. A separate
-checksum verifies the archive. The version compiled into the executable is derived from the same tag.
+The tool-specific GitHub workflow is selected by a `tools/ctrace/<version>` release tag with a stable
+three-component SemVer suffix. It builds Windows AMD64 and Arm64, Linux AMD64 and Arm64, and macOS Arm64 binaries.
+The release archive contains the Apache-2.0 project license, application-dependency notices and license texts,
+retained OpenCSD copyright notices, a platform-runtime inventory, and per-file SHA-256 checksums. A separate checksum
+verifies the archive. The version compiled into the executable is derived from and checked against the same tag. The
+actual compiler and operating-system runtime content still requires inspection for each production release.
 
 The checked-in SWO and TB captures are approved ctrace test assets and may be redistributed with devtools. Together
 with the tool-specific build, test, packaging, versioning, and license integration, this forms the technical basis for
