@@ -258,6 +258,10 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerForwardsLoggerMessages)
   EXPECT_NE(sink.messages.find("ITM decoder: configured"), std::string::npos);
   EXPECT_NE(sink.messages.find("OpenCSD: fallback"), std::string::npos);
 
+  logger.setLogOpts(ocsdMsgLogger::OUT_NONE);
+  controller.LogMessage(source, OCSD_ERR_SEV_INFO, "muted");
+  EXPECT_EQ(sink.messages.find("muted"), std::string::npos);
+
   controller.setOutputLogger(nullptr);
   controller.LogMessage(source, OCSD_ERR_SEV_ERROR, "disabled");
   EXPECT_EQ(sink.messages.find("disabled"), std::string::npos);

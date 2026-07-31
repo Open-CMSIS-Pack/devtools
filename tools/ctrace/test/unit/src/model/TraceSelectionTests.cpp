@@ -19,6 +19,8 @@ TEST(CtraceUnitTests, testTraceSelection)
   EXPECT_FALSE(CoreSight::isAtbTraceId(0U));
   EXPECT_TRUE(CoreSight::isAtbTraceId(1U));
   EXPECT_FALSE(CoreSight::isAtbTraceId(112U));
+  EXPECT_TRUE(TraceSelection{}.empty());
+  EXPECT_FALSE((TraceSelection{{"itm"}, {}}.empty()));
   EXPECT_FALSE((TraceSelection{{}, {1U}}.empty()));
   EXPECT_TRUE(TraceRunSchema::isDwtDataType("unsigned int"));
   EXPECT_TRUE(TraceRunSchema::isDwtDataType("signed int"));

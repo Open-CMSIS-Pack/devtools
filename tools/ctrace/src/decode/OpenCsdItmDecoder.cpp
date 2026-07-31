@@ -153,7 +153,7 @@ private:
   void processBlock(const std::uint8_t* data, std::uint32_t size)
   {
     std::uint32_t processed = 0;
-    std::optional<std::uint64_t> noProgressRetryOffset;
+    bool retriedWithoutProgress = false;
     while (processed < size) {
       const auto callIndex = static_cast<std::uint64_t>(traceIndex_);
       const auto callSize = size - processed;
@@ -169,16 +169,16 @@ private:
 
       const auto consumed = std::min(processedThisPass, callSize);
       if (consumed == 0U) {
-        if (noProgressRetryOffset.has_value() && *noProgressRetryOffset == traceIndex_) {
+        if (retriedWithoutProgress) {
           collector_.rollbackTransaction();
           completeConsumedDataLoss(traceIndex_);
           collector_.appendDecodeError(traceIndex_, "OpenCSD made no progress after a retry; decode aborted",
                                        "opencsd-no-progress", false);
           throw OpenCsdFatalError("OpenCSD made no progress after a retry", static_cast<std::uint64_t>(traceIndex_));
         }
-        noProgressRetryOffset = static_cast<std::uint64_t>(traceIndex_);
+        retriedWithoutProgress = true;
       } else {
-        noProgressRetryOffset.reset();
+        retriedWithoutProgress = false;
       }
 
       if (decision.action == OpenCsdErrorController::Action::RecoverStream) {

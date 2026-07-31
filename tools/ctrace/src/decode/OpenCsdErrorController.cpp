@@ -327,8 +327,8 @@ void OpenCsdErrorController::LogError(ocsd_hndl_err_log_t, const ocsdError* erro
 void OpenCsdErrorController::LogMessage(ocsd_hndl_err_log_t handle, ocsd_err_severity_t filterLevel,
                                         const std::string& message)
 {
-  if (outputLogger_ != nullptr && GetErrorLogVerbosity() >= filterLevel &&
-      outputLogger_->isLogging()) { // LCOV_EXCL_BR_LINE
+  (void)filterLevel;
+  if (outputLogger_ != nullptr && outputLogger_->isLogging()) {
     outputLogger_->LogMsg(sourceName(handle) + ": " + message);
   }
 }

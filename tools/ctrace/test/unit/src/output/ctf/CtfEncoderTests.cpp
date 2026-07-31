@@ -216,10 +216,11 @@ TEST(CtraceUnitTests, testCtfEncoderWritesAllDwtValueVariants)
   encoder.writeEvent(atCycle(onStream(TraceEvent{DwtDataTraceEvent{2U, 4U, 0xffffffffU, AccessType::Read}}, 1U), 12U));
   encoder.writeEvent(atCycle(TraceEvent{DwtDataTraceEvent{3U, 1U, 0x12U, AccessType::Read}}, 13U));
   encoder.writeEvent(atCycle(TraceEvent{DwtDataTraceEvent{4U, 1U, 0xffU, AccessType::Read}}, 14U));
+  encoder.writeEvent(atCycle(TraceEvent{DwtDataTraceEvent{6U, 4U, 0x12345678U, AccessType::Read}}, 15U));
 
   encoder.stop();
   const auto records = readCtfRecords(temporaryPath.path() / "stream_0");
-  ASSERT_EQ(records.size(), 5U);
+  ASSERT_EQ(records.size(), 6U);
   for (const auto& record : records) {
     EXPECT_EQ(record.id, CtfSchema::value(CtfSchema::EventId::DwtValue));
   }
@@ -248,6 +249,9 @@ TEST(CtraceUnitTests, testCtfEncoderWritesAllDwtValueVariants)
   EXPECT_EQ(records[4].timestamp, 14U);
   EXPECT_EQ(records[4].payload[2U], CtfSchema::value(CtfSchema::ValueTag::Signed8));
   EXPECT_EQ(records[4].payload[3U], 0xffU);
+  EXPECT_EQ(records[5].timestamp, 15U);
+  EXPECT_EQ(records[5].payload[2U], CtfSchema::value(CtfSchema::ValueTag::Unsigned32));
+  EXPECT_EQ(readLe32(records[5].payload, 3U), 0x12345678U);
 }
 
 TEST(CtraceUnitTests, testCtfEncoderRejectsConflictingUnformattedDwtRoutes)
