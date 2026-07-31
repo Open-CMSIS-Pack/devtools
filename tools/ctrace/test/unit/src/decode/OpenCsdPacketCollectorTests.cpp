@@ -41,10 +41,13 @@ public:
 
 class ThrowingTraceElementSink final : public OpenCsdTraceElementSink {
 public:
-  void append(OpenCsdTraceElement) override
+  void append(OpenCsdTraceElement element) override
   {
+    elements.push_back(std::move(element));
     throw std::runtime_error("synthetic output failure");
   }
+
+  std::vector<OpenCsdTraceElement> elements;
 };
 
 OcsdTraceElement itmElement(swt_itm_type type, std::uint8_t source = 0U, std::uint8_t size = 0U,
@@ -237,6 +240,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorDefersOutputFailures)
 
   EXPECT_EQ(collector.TraceElemIn(1U, 1U, software), OCSD_RESP_FATAL_SYS_ERR);
   EXPECT_EQ(collector.TraceElemIn(2U, 1U, software), OCSD_RESP_FATAL_SYS_ERR);
+  EXPECT_EQ(sink.elements.size(), 2U);
   EXPECT_THROW(collector.rethrowOutputError(), std::runtime_error);
   EXPECT_NO_THROW(collector.rethrowOutputError());
 
@@ -244,5 +248,6 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorDefersOutputFailures)
   packet.setPktType(ITM_PKT_ASYNC);
   collector.RawPacketDataMon(OCSD_OP_DATA, 3U, &packet, 0U, nullptr);
   collector.RawPacketDataMon(OCSD_OP_DATA, 4U, &packet, 0U, nullptr);
+  EXPECT_EQ(sink.elements.size(), 4U);
   EXPECT_THROW(collector.rethrowOutputError(), std::runtime_error);
 }
