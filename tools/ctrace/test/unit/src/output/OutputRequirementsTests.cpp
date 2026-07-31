@@ -385,3 +385,82 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   require(csvPlan.csv.has_value(), "CTF-only data.symbol-size metadata must not disable CSV");
   require(sizeDiagnostics.events().empty(), "CSV must not inspect CTF-only data.symbol-size metadata");
 }
+
+TEST(CtraceUnitTests, testOutputRequirementsValidateDefaultClockWithoutRoutes)
+{
+  CliOptions options;
+  options.outputFormat = OutputFormat::Ctf;
+  TraceRunConfig config;
+  config.path = "Clock.ctrace-run.yml";
+  TraceRunSetup setup;
+  setup.timestamps = TraceRunTimestampSetup{};
+  config.setups.push_back(setup);
+
+  CollectingDiagnosticSink missingDiagnostics;
+  auto plan = planTraceOutputs(traceOutputRequest(options), "Clock.SWO.raw", CtraceRunMeta::fromConfig(config),
+                               missingDiagnostics);
+  ASSERT_FALSE(plan.ctf.has_value());
+  ASSERT_EQ(missingDiagnostics.events().size(), 1U);
+  EXPECT_EQ(missingDiagnostics.events()[0].code, "ctf-timestamp-clock-missing");
+
+  config.setups[0].timestamps->clockError = "clock must be an unsigned integer";
+  CollectingDiagnosticSink malformedDiagnostics;
+  plan = planTraceOutputs(traceOutputRequest(options), "Clock.SWO.raw", CtraceRunMeta::fromConfig(config),
+                          malformedDiagnostics);
+  ASSERT_FALSE(plan.ctf.has_value());
+  ASSERT_EQ(malformedDiagnostics.events().size(), 1U);
+  EXPECT_EQ(malformedDiagnostics.events()[0].code, "ctf-timestamp-clock-invalid");
+
+  config.setups[0].timestamps->clockError.reset();
+  config.setups[0].timestamps->clockHz = 0U;
+  CollectingDiagnosticSink zeroDiagnostics;
+  plan = planTraceOutputs(traceOutputRequest(options), "Clock.SWO.raw", CtraceRunMeta::fromConfig(config),
+                          zeroDiagnostics);
+  ASSERT_FALSE(plan.ctf.has_value());
+  ASSERT_EQ(zeroDiagnostics.events().size(), 1U);
+  EXPECT_EQ(zeroDiagnostics.events()[0].code, "ctf-timestamp-clock-invalid");
+}
+
+TEST(CtraceUnitTests, testOutputRequirementsRejectUnknownStreamWithMultipleClocks)
+{
+  TraceRunConfig config;
+  config.path = "Multicore.ctrace-run.yml";
+  TraceRunSetup first;
+  first.processorName = "first";
+  first.timestamps = TraceRunTimestampSetup{100U, 1U};
+  TraceRunSetup second;
+  second.processorName = "second";
+  second.timestamps = TraceRunTimestampSetup{200U, 1U};
+  config.setups = {first, second};
+
+  TraceRunReference firstRoute;
+  firstRoute.type = "itm";
+  firstRoute.ctraceRef = "first/itm";
+  firstRoute.processorName = "first";
+  firstRoute.stream = 1U;
+  firstRoute.sources = {1U};
+  TraceRunReference secondRoute = firstRoute;
+  secondRoute.ctraceRef = "second/itm";
+  secondRoute.processorName = "second";
+  secondRoute.stream = 2U;
+  config.references = {firstRoute, secondRoute};
+
+  CliOptions options;
+  options.outputFormat = OutputFormat::Ctf;
+  options.selection.streams = {99U};
+  CollectingDiagnosticSink diagnostics;
+  const auto plan = planTraceOutputs(traceOutputRequest(options), "Multicore.SWO.raw",
+                                     CtraceRunMeta::fromConfig(config), diagnostics);
+  ASSERT_FALSE(plan.ctf.has_value());
+  ASSERT_EQ(diagnostics.events().size(), 1U);
+  EXPECT_EQ(diagnostics.events()[0].code, "ctf-timestamp-clock-ambiguous");
+}
+
+TEST(CtraceUnitTests, testOutputRequirementsRejectsInputWithoutArtifactName)
+{
+  CliOptions options;
+  options.outputFormat = OutputFormat::Csv;
+  CollectingDiagnosticSink diagnostics;
+  EXPECT_THROW((void)planTraceOutputs(traceOutputRequest(options), {}, CtraceRunMeta::fromConfig({}), diagnostics),
+               std::runtime_error);
+}

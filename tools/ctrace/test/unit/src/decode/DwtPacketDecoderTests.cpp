@@ -116,6 +116,11 @@ TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingEventsInRawOrder)
   comparatorThree.value = 0x08003000U;
   require(decoder.decode(comparatorThree).empty(), "an incomplete DWT comparator-three event must remain pending");
 
+  auto comparatorOne = comparatorThree;
+  comparatorOne.discriminator = 10U;
+  comparatorOne.value = 0x08001000U;
+  require(decoder.decode(comparatorOne).empty(), "an incomplete DWT comparator-one event must remain pending");
+
   DwtPayloadPacket comparatorZero;
   comparatorZero.index = 20U;
   comparatorZero.traceBusId = 4U;
@@ -125,14 +130,16 @@ TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingEventsInRawOrder)
   require(decoder.decode(comparatorZero).empty(), "an incomplete DWT comparator-zero event must remain pending");
 
   const auto packets = decoder.flush({}, 123U);
-  require(packets.size() == 2U, "DWT flush must emit both pending comparator events");
-  require(packets[0].index == 10U && packets[1].index == 20U,
+  require(packets.size() == 3U, "DWT flush must emit all pending comparator events");
+  require(packets[0].index == 10U && packets[1].index == 10U && packets[2].index == 20U,
           "DWT flush must preserve raw-stream order across comparators");
-  require(packets[0].traceBusId == 3U && packets[1].traceBusId == 4U,
+  require(packets[0].traceBusId == 3U && packets[1].traceBusId == 3U && packets[2].traceBusId == 4U,
           "DWT flush must preserve the identity of each pending event");
   const auto* first = traceEventPayload<DwtAddressTraceEvent>(packets[0]);
   const auto* second = traceEventPayload<DwtAddressTraceEvent>(packets[1]);
-  require(first != nullptr && first->comparator == 3U && second != nullptr && second->comparator == 0U,
+  const auto* third = traceEventPayload<DwtAddressTraceEvent>(packets[2]);
+  require(first != nullptr && first->comparator == 1U && second != nullptr && second->comparator == 3U &&
+              third != nullptr && third->comparator == 0U,
           "DWT raw-order regression must not rewrite comparator identities");
 }
 
@@ -211,4 +218,99 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
 
   verify(8U, 1U);
   verify(9U, 4U);
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderMapsAllExceptionActions)
+{
+  const auto verify = [](std::uint32_t actionCode, ExceptionAction expected) {
+    DwtPacketDecoder decoder;
+    DwtPayloadPacket payload;
+    payload.index = 17U;
+    payload.traceBusId = 3U;
+    payload.discriminator = 1U;
+    payload.size = 2U;
+    payload.value = (actionCode << 12U) | 11U;
+    payload.tcyc = 1234U;
+    payload.status.timestampReliable = true;
+
+    const auto packets = decoder.decode(payload);
+    ASSERT_EQ(packets.size(), 1U);
+    const auto* exception = traceEventPayload<ExceptionTraceEvent>(packets.front());
+    ASSERT_NE(exception, nullptr);
+    EXPECT_EQ(exception->number, 11U);
+    EXPECT_EQ(exception->action, expected);
+  };
+
+  verify(1U, ExceptionAction::Entered);
+  verify(2U, ExceptionAction::Exited);
+  verify(3U, ExceptionAction::Returned);
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingTraceForUnknownSource)
+{
+  DwtPacketDecoder decoder;
+  DwtPayloadPacket address;
+  address.index = 10U;
+  address.discriminator = 8U;
+  address.size = 4U;
+  address.value = 0x08001234U;
+  EXPECT_TRUE(decoder.decode(address).empty());
+
+  DwtPayloadPacket unknown;
+  unknown.index = 11U;
+  unknown.discriminator = 7U;
+  unknown.tcyc = 42U;
+  const auto packets = decoder.decode(unknown);
+  ASSERT_EQ(packets.size(), 1U);
+  EXPECT_NE(traceEventPayload<DwtAddressTraceEvent>(packets.front()), nullptr);
+  EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(42U));
+
+  decoder.reset();
+  EXPECT_TRUE(decoder.flush({}, 43U).empty());
+
+  unknown.discriminator = 24U;
+  EXPECT_TRUE(decoder.decode(unknown).empty());
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderCombinesPcOffsetAndValue)
+{
+  DwtPacketDecoder decoder;
+
+  DwtPayloadPacket pc;
+  pc.index = 10U;
+  pc.discriminator = 8U;
+  pc.size = 4U;
+  pc.value = 0x08001234U;
+  pc.status.timestampReliable = true;
+  EXPECT_TRUE(decoder.decode(pc).empty());
+
+  auto offset = pc;
+  offset.index = 11U;
+  offset.discriminator = 9U;
+  offset.size = 2U;
+  offset.value = 0x20U;
+  EXPECT_TRUE(decoder.decode(offset).empty());
+
+  auto value = pc;
+  value.index = 12U;
+  value.discriminator = 16U;
+  value.size = 4U;
+  value.value = 0xabcdef01U;
+  const auto packets = decoder.decode(value);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto* data = traceEventPayload<DwtDataTraceEvent>(packets.front());
+  ASSERT_NE(data, nullptr);
+  EXPECT_EQ(data->access, AccessType::Read);
+  EXPECT_EQ(data->pc, std::optional<std::uint32_t>(0x08001234U));
+  EXPECT_EQ(data->addressLo16, std::optional<std::uint32_t>(0x20U));
+
+  DwtPacketDecoder addressDecoder;
+  EXPECT_TRUE(addressDecoder.decode(pc).empty());
+  EXPECT_TRUE(addressDecoder.decode(offset).empty());
+  const auto addresses = addressDecoder.flush({}, 100U);
+  ASSERT_EQ(addresses.size(), 1U);
+  const auto* address = traceEventPayload<DwtAddressTraceEvent>(addresses.front());
+  ASSERT_NE(address, nullptr);
+  EXPECT_EQ(dwtAddressPc(*address), std::optional<std::uint32_t>(0x08001234U));
+  EXPECT_EQ(dwtAddressOffset(*address), std::optional<std::uint32_t>(0x20U));
 }

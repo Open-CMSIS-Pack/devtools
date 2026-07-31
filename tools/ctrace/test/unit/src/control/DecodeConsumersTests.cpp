@@ -109,6 +109,9 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
   auto printfChannel = softwarePacket(0U);
   consumers.append(printfChannel);
 
+  auto invalidChannel = softwarePacket(32U);
+  consumers.append(invalidChannel);
+
   auto streamSpecificDisabled = softwarePacket(1U);
   streamSpecificDisabled.traceBusId = 2U;
   consumers.append(streamSpecificDisabled);

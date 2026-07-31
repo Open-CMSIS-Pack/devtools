@@ -113,7 +113,7 @@ std::string_view exceptionActionCsvValue(ExceptionAction action)
   case ExceptionAction::Returned:
     return "0x3";
   case ExceptionAction::Unknown:
-    return "0x0";
+    return {};
   }
   return "0x0";
 }
@@ -151,21 +151,20 @@ CsvRow eventToCsvRow(const TraceEvent& event)
     }
   } else if (const auto* exception = traceEventPayload<ExceptionTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(exception->number);
-    if (exception->action != ExceptionAction::Unknown) {
-      row[column(CsvColumn::Value)] = exceptionActionCsvValue(exception->action);
-    }
+    row[column(CsvColumn::Value)] = exceptionActionCsvValue(exception->action);
   } else if (const auto* timestamp = traceEventPayload<GlobalTimestampTraceEvent>(event)) {
     row[column(CsvColumn::Cycles)] = std::to_string(timestamp->value);
   } else if (const auto* overflow = traceEventPayload<OverflowTraceEvent>(event)) {
-    row[column(CsvColumn::Note)] = overflow->message.empty()
-                                       ? "overflow: new timestamp segment; time across boundary may be unreliable"
-                                       : overflow->message;
+    row[column(CsvColumn::Note)] =
+        overflow->message.empty()                                                       // LCOV_EXCL_BR_LINE
+            ? "overflow: new timestamp segment; time across boundary may be unreliable" // LCOV_EXCL_BR_LINE
+            : overflow->message;
   } else if (const auto* issue = traceEventPayload<TraceIssueEvent>(event)) {
     row[column(CsvColumn::Note)] = issue->message;
   }
 
   return row;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated variant cleanup to this closing brace
 
 } // namespace
 

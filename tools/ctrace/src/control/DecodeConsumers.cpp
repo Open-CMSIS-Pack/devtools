@@ -68,6 +68,7 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
     return;
   }
 
+  // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
   diagnostics_.report({
       DiagnosticSink::Severity::Warning,
       DiagnosticSink::Category::Input,
@@ -79,6 +80,7 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
           {"enable", hexMask(*enableMask)},
       },
   });
+  // LCOV_EXCL_BR_STOP
 }
 
 std::uint64_t DecodeConsumers::eventCount() const

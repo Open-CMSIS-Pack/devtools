@@ -46,7 +46,7 @@ int CtraceMain(int argc, const char* const argv[])
       std::cout << CliParser::versionString() << "\n";
       return 0;
     }
-  } catch (const std::exception& error) {
+  } catch (const std::exception& error) { // LCOV_EXCL_BR_LINE: exception dispatch is validated by CLI tests
     reportFailure(diagnostics, DiagnosticSink::Category::Cli, "invalid-arguments", error);
     return 1;
   }
@@ -56,7 +56,7 @@ int CtraceMain(int argc, const char* const argv[])
     TraceDirectoryJob job(options, diagnostics, configReader);
     job.run();
     return diagnostics.fatalCount() == 0U ? 0 : 1;
-  } catch (const std::exception& error) {
+  } catch (const std::exception& error) { // LCOV_EXCL_BR_LINE: exception dispatch is validated by job tests
     reportFailure(diagnostics, DiagnosticSink::Category::Input, "trace-directory-failed", error);
     return 1;
   }

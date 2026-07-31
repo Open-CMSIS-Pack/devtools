@@ -9,6 +9,7 @@
 #include "TestSupport.hpp"
 #include <gtest/gtest.h>
 #include "TraceRunDiscovery.hpp"
+#include <filesystem>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -26,6 +27,9 @@ TEST(CtraceUnitTests, testTraceRunDiscovery)
   writeTestFile(traceDir / "Alpha.swo.raw");
   writeTestFile(traceDir / "Alpha.custom.raw");
   writeTestFile(traceDir / "unrelated.raw");
+  writeTestFile(traceDir / "Alpha..raw");
+  std::filesystem::create_directories(traceDir / "ignored.ctrace-run.yml");
+  std::filesystem::create_directories(traceDir / "Alpha.SWO.raw.dir");
 
   const auto batch = TraceRunDiscovery::selectConfigFiles(traceDir, std::nullopt);
   require(batch.size() == 2U, "TraceRunDiscovery batch configuration count mismatch");
@@ -44,8 +48,29 @@ TEST(CtraceUnitTests, testTraceRunDiscovery)
   require(rawInputs[2].channel == "TB", "TraceRunDiscovery TB channel mismatch");
 
   const std::vector<std::string> unsafeTargets{
-      "../Alpha",          "..\\Alpha",    "/Alpha",     "C:Alpha", "C:/Alpha", "C:\\Alpha",
-      "\\\\server\\share", "Alpha:stream", "Alpha?Beta", "Alpha.",  "NUL",      "COM1.log",
+      "",
+      ".",
+      "..",
+      "../Alpha",
+      "..\\Alpha",
+      "/Alpha",
+      "C:Alpha",
+      "C:/Alpha",
+      "C:\\Alpha",
+      "\\\\server\\share",
+      "Alpha:stream",
+      "Alpha?Beta",
+      "Alpha.",
+      "Alpha ",
+      "NUL",
+      "con.txt",
+      "PRN",
+      "AUX",
+      "CONIN$",
+      "CONOUT$",
+      "COM1.log",
+      "LPT9",
+      "bad\x01name",
   };
   for (const auto& unsafeTarget : unsafeTargets) {
     bool rejected = false;
@@ -56,4 +81,17 @@ TEST(CtraceUnitTests, testTraceRunDiscovery)
     }
     require(rejected, "TraceRunDiscovery should reject unsafe target name: " + unsafeTarget);
   }
+
+  EXPECT_THROW((void)TraceRunDiscovery::selectConfigFiles(traceDir, std::string("Missing")), std::runtime_error);
+  EXPECT_THROW((void)TraceRunDiscovery::selectConfigFiles(traceDir, std::string("ABCD")), std::runtime_error);
+  EXPECT_THROW((void)TraceRunDiscovery::selectConfigFiles(traceDir, std::string("COM0")), std::runtime_error);
+  EXPECT_THROW((void)TraceRunDiscovery::selectConfigFiles(traceDir / "missing", std::nullopt), std::runtime_error);
+  EXPECT_THROW((void)TraceRunDiscovery::solutionSetName("wrong.yml"), std::runtime_error);
+  EXPECT_THROW((void)TraceRunDiscovery::solutionSetName(".ctrace-run.yml"), std::runtime_error);
+
+  const TemporaryTestPath emptyPath("ctrace-trace-run-discovery-empty-test");
+  std::filesystem::create_directories(emptyPath.path());
+  writeTestFile(emptyPath.path() / ".ctrace-run.yml");
+  EXPECT_THROW((void)TraceRunDiscovery::selectConfigFiles(emptyPath.path(), std::nullopt), std::runtime_error);
+  EXPECT_TRUE(TraceRunDiscovery::rawInputs("parentless.ctrace-run.yml").empty());
 }

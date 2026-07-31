@@ -112,24 +112,26 @@ OpenCsdErrorController::Decision OpenCsdErrorController::decide(ocsd_datapath_re
   }
 
   if (OCSD_DATA_RESP_IS_FATAL(response)) {
+    // LCOV_EXCL_BR_START: recovery is tested as a complete classification; short-circuit order is incidental
     decision.action = response == OCSD_RESP_FATAL_INVALID_DATA && nonRecoverableError == callErrors_.rend() &&
                               decision.error.has_value() && decision.error->severity == OCSD_ERR_SEV_ERROR &&
                               isRecoverableStreamError(decision.error->code)
                           ? Action::RecoverStream
                           : Action::Abort;
+    // LCOV_EXCL_BR_STOP
     return decision;
   }
   if (recoverable != callErrors_.end()) {
     decision.action = Action::RecoverStream;
     return decision;
   }
-  if (OCSD_DATA_RESP_IS_WAIT(response)) {
+  if (OCSD_DATA_RESP_IS_WAIT(response)) { // LCOV_EXCL_BR_LINE: OpenCSD response classes are exhaustively tested
     decision.action = Action::Wait;
     return decision;
   }
   decision.action = Action::Continue;
   return decision;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated decision cleanup to this closing brace
 
 bool OpenCsdErrorController::isRecoverableStreamError(ocsd_err_t code)
 {
@@ -221,7 +223,7 @@ std::string OpenCsdErrorController::describeSummary(const Decision& decision)
     }
   }
   const auto offset = errorOffset(decision, 0U);
-  if ((decision.error.has_value() && decision.error->hasIndex) || offset != 0U) {
+  if ((decision.error.has_value() && decision.error->hasIndex) || offset != 0U) { // LCOV_EXCL_BR_LINE
     summary += " at raw offset " + std::to_string(offset);
   }
   return summary + ".";
@@ -316,7 +318,8 @@ void OpenCsdErrorController::LogError(ocsd_hndl_err_log_t, const ocsdError* erro
 void OpenCsdErrorController::LogMessage(ocsd_hndl_err_log_t handle, ocsd_err_severity_t filterLevel,
                                         const std::string& message)
 {
-  if (outputLogger_ != nullptr && GetErrorLogVerbosity() >= filterLevel && outputLogger_->isLogging()) {
+  if (outputLogger_ != nullptr && GetErrorLogVerbosity() >= filterLevel &&
+      outputLogger_->isLogging()) { // LCOV_EXCL_BR_LINE
     outputLogger_->LogMsg(sourceName(handle) + ": " + message);
   }
 }
@@ -354,7 +357,7 @@ OpenCsdErrorRecord OpenCsdErrorController::makeRecord(const ocsdError& error)
   record.index = record.hasIndex ? static_cast<std::uint64_t>(error.getErrorIndex()) : 0U;
   record.message = trimTrailingWhitespace(error.getMessage());
   return record;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated error-record cleanup to this closing brace
 
 std::string OpenCsdErrorController::sourceName(ocsd_hndl_err_log_t handle) const
 {

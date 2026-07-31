@@ -34,7 +34,7 @@ void CtfExceptionLaneTracker::resetForDiscontinuity(const RecordEmitter& emit)
 void CtfExceptionLaneTracker::consume(const ExceptionTraceEvent& event, const RecordEmitter& emit)
 {
   const auto number = event.number & 0x1ffU;
-  switch (event.action) {
+  switch (event.action) { // LCOV_EXCL_BR_LINE: every declared exception action is covered
   case ExceptionAction::Entered:
     enterContext(number);
     break;
@@ -100,7 +100,7 @@ void CtfExceptionLaneTracker::enterContext(std::uint32_t number)
 
 void CtfExceptionLaneTracker::exitContext(std::uint32_t number)
 {
-  if (contextStack_.empty() || contextStack_.back().number != number ||
+  if (contextStack_.empty() || contextStack_.back().number != number || // LCOV_EXCL_BR_LINE
       contextStack_.back().state != ContextState::Running) {
     return;
   }
@@ -114,7 +114,7 @@ void CtfExceptionLaneTracker::returnToContext(std::uint32_t number)
   }
   if (!contextStack_.empty()) {
     contextStack_.back().state = ContextState::Running;
-  } else if (number != kThreadModeNumber) {
+  } else if (number != kThreadModeNumber) { // LCOV_EXCL_BR_LINE: both semantic outcomes are covered
     contextStack_.push_back({number, ContextState::Running});
   }
 }

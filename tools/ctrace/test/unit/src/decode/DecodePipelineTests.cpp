@@ -18,6 +18,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <string>
 #include <vector>
@@ -141,6 +142,45 @@ TEST(CtraceUnitTests, testCortexMStreamDecoderAppliesPerStreamPrescalers)
           "stream 1 timestamp prescaler mismatch");
   require(sink.events[2].traceBusId == 2U && sink.events[2].tcyc == std::optional<std::uint64_t>(160U),
           "stream 2 timestamp prescaler mismatch");
+}
+
+TEST(CtraceUnitTests, testCortexMStreamDecoderValidatesAndSaturatesPrescalers)
+{
+  CollectingEventSink sink;
+  OpenCsdTraceElement timestamp;
+  timestamp.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
+  timestamp.tcyc = std::numeric_limits<std::uint64_t>::max();
+
+  CortexMStreamDecoder saturating(ItmTimestampPrescalers{2U, {}}, sink);
+  saturating.append(timestamp);
+  saturating.finish();
+  ASSERT_EQ(sink.events.size(), 1U);
+  EXPECT_EQ(sink.events.front().tcyc, std::numeric_limits<std::uint64_t>::max());
+  EXPECT_EQ(saturating.eventCount(), 1U);
+
+  CortexMStreamDecoder zero(ItmTimestampPrescalers{0U, {}}, sink);
+  EXPECT_THROW(zero.append(timestamp), std::invalid_argument);
+
+  CortexMStreamDecoder unresolved(ItmTimestampPrescalers{std::nullopt, {}}, sink);
+  EXPECT_THROW(unresolved.append(timestamp), std::runtime_error);
+  timestamp.traceBusId = 7U;
+  EXPECT_THROW(unresolved.append(timestamp), std::runtime_error);
+
+  OpenCsdTraceElement timestampWithoutValue;
+  timestampWithoutValue.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
+  EXPECT_NO_THROW(saturating.append(timestampWithoutValue));
+}
+
+TEST(CtraceUnitTests, testDecodePipelineRejectsInvalidChunkSizes)
+{
+  CollectingEventSink sink;
+  DecodePipeline pipeline(1U, sink);
+  EXPECT_NO_THROW(pipeline.push({nullptr, 0U}));
+  EXPECT_THROW(pipeline.push({nullptr, static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()) + 1U}),
+               std::runtime_error);
+  const auto result = pipeline.finish();
+  EXPECT_EQ(result.bytesIn, 0U);
+  EXPECT_EQ(result.packetsOut, 0U);
 }
 
 TEST(CtraceUnitTests, testCortexMPostDecoderReportsDiscontinuityInterval)

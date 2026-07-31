@@ -19,6 +19,7 @@
 
 TEST(CtraceUnitTests, testCtfValueTypes)
 {
+  EXPECT_EQ(CtfSchema::eventName(static_cast<CtfSchema::EventId>(255U)), "UNKNOWN");
   struct SupportedType {
     const char* name;
     CtfSchema::ValueTag tag;
@@ -108,4 +109,11 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
   require(records.size() == preemptedRecordCount + 2U && records[records.size() - 2U] == "3:exit" &&
               records.back() == "0:enter",
           "CtfExceptionLaneTracker must exit a resumed context");
+
+  tracker.reset();
+  records.clear();
+  tracker.consume(ExceptionTraceEvent{3, ExceptionAction::Entered}, emit);
+  tracker.consume(ExceptionTraceEvent{15, ExceptionAction::Entered}, emit);
+  tracker.consume(ExceptionTraceEvent{3, ExceptionAction::Returned}, emit);
+  EXPECT_EQ(records.back(), "3:enter");
 }

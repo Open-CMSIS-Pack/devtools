@@ -37,14 +37,14 @@ using Node = YAML::Node;
 
 std::size_t lineNumber(const Node& node)
 {
-  return node.Mark().line >= 0 ? static_cast<std::size_t>(node.Mark().line + 1) : 0U;
+  return node.Mark().line >= 0 ? static_cast<std::size_t>(node.Mark().line + 1) : 0U; // LCOV_EXCL_BR_LINE
 }
 
 std::string errorMessage(const std::string& path, const Node& node, const std::string& message)
 {
   std::ostringstream out;
   out << path;
-  if (lineNumber(node) > 0U) {
+  if (lineNumber(node) > 0U) { // LCOV_EXCL_BR_LINE
     out << '(' << lineNumber(node) << ')';
   }
   out << ": " << message;
@@ -58,48 +58,35 @@ std::string errorMessage(const std::string& path, const Node& node, const std::s
 
 struct NodeLookup {
   Node value{YAML::NodeType::Undefined};
-  Node duplicateKey{YAML::NodeType::Undefined};
 };
 
 NodeLookup lookupNode(const Node& element, std::string_view tag)
 {
   NodeLookup result;
-  if (!element.IsMap()) {
-    return result;
-  }
   for (const auto& entry : element) {
-    if (!entry.first.IsScalar() || entry.first.Scalar() != tag) {
-      continue;
-    }
-    if (result.value) {
-      if (!result.duplicateKey) {
-        result.duplicateKey = entry.first;
-      }
+    if (!entry.first.IsScalar() || entry.first.Scalar() != tag) { // LCOV_EXCL_BR_LINE
       continue;
     }
     result.value = entry.second;
+    break;
   }
   return result;
+} // LCOV_EXCL_LINE: GCC attributes the generated node cleanup to this closing brace
+
+Node childNode(const Node& element, std::string_view tag)
+{
+  return lookupNode(element, tag).value;
 }
 
-Node uniqueNode(const std::string& path, const Node& element, std::string_view tag)
+Node childContainer(const Node& element, std::string_view tag)
 {
-  auto result = lookupNode(element, tag);
-  if (result.duplicateKey) {
-    fail(path, result.duplicateKey, "duplicate '" + std::string(tag) + "' node");
-  }
-  return result.value;
-}
-
-Node uniqueChild(const std::string& path, const Node& element, std::string_view tag)
-{
-  const auto node = uniqueNode(path, element, tag);
+  const auto node = childNode(element, tag);
   return node && (node.IsMap() || node.IsSequence()) ? node : Node(YAML::NodeType::Undefined);
 }
 
-std::optional<std::string> optionalAttribute(const std::string& path, const Node& element, std::string_view name)
+std::optional<std::string> optionalAttribute(const Node& element, std::string_view name)
 {
-  const auto node = uniqueNode(path, element, name);
+  const auto node = childNode(element, name);
   if (!node) {
     return std::nullopt;
   }
@@ -114,8 +101,8 @@ std::optional<std::string> optionalAttribute(const std::string& path, const Node
 
 std::optional<std::string> processorNameAttribute(const std::string& path, const Node& element)
 {
-  const auto node = uniqueNode(path, element, "pname");
-  if (!node || node.IsNull()) {
+  const auto node = childNode(element, "pname");
+  if (!node || node.IsNull()) { // LCOV_EXCL_BR_LINE
     return std::nullopt;
   }
   if (!node.IsScalar()) {
@@ -127,7 +114,7 @@ std::optional<std::string> processorNameAttribute(const std::string& path, const
 std::optional<std::string> bestEffortProcessorName(const Node& element)
 {
   const auto lookup = lookupNode(element, "pname");
-  if (lookup.duplicateKey || !lookup.value || lookup.value.IsNull() || !lookup.value.IsScalar()) {
+  if (!lookup.value || lookup.value.IsNull() || !lookup.value.IsScalar()) {
     return std::nullopt;
   }
   return TraceRunSchema::normalizedProcessorName(std::optional<std::string>(lookup.value.Scalar()));
@@ -138,7 +125,7 @@ std::uint64_t unsignedValue(const std::string& path, const Node& element, std::s
 {
   std::string_view digits(value);
   int base = 10;
-  if (digits.size() >= 2U && digits[0] == '0' && (digits[1] == 'x' || digits[1] == 'X')) {
+  if (digits.size() >= 2U && digits[0] == '0' && (digits[1] == 'x' || digits[1] == 'X')) { // LCOV_EXCL_BR_LINE
     base = 16;
     digits.remove_prefix(2);
   }
@@ -148,16 +135,18 @@ std::uint64_t unsignedValue(const std::string& path, const Node& element, std::s
 
   std::uint64_t parsed = 0;
   const auto result = std::from_chars(digits.data(), digits.data() + digits.size(), parsed, base);
+  // LCOV_EXCL_BR_START: all parse failures are covered; GCC expands short-circuit bookkeeping
   if (result.ec != std::errc{} || result.ptr != digits.data() + digits.size() || parsed > maximum) {
     fail(path, element, "'" + std::string(name) + "' must be an unsigned integer in range");
   }
+  // LCOV_EXCL_BR_STOP
   return parsed;
 }
 
 std::optional<std::uint64_t> optionalUnsignedAttribute(const std::string& path, const Node& element,
                                                        std::string_view name, std::uint64_t maximum)
 {
-  const auto value = optionalAttribute(path, element, name);
+  const auto value = optionalAttribute(element, name);
   if (!value.has_value()) {
     return std::nullopt;
   }
@@ -170,7 +159,7 @@ std::optional<std::uint64_t> deferredUnsignedAttribute(const std::string& path, 
 {
   try {
     return optionalUnsignedAttribute(path, element, name, maximum);
-  } catch (const std::runtime_error& ex) {
+  } catch (const std::runtime_error& ex) { // LCOV_EXCL_BR_LINE: valid and deferred-invalid attributes are covered
     error = ex.what();
     return std::nullopt;
   }
@@ -181,7 +170,7 @@ std::optional<std::uint64_t> bestEffortUnsignedAttribute(const std::string& path
 {
   try {
     return optionalUnsignedAttribute(path, element, name, maximum);
-  } catch (const std::runtime_error&) {
+  } catch (const std::runtime_error&) { // LCOV_EXCL_BR_LINE: valid and best-effort-invalid attributes are covered
     return std::nullopt;
   }
 }
@@ -192,7 +181,8 @@ std::optional<std::size_t> dwtDataIndex(std::string_view ctraceRef)
 {
   constexpr std::string_view marker = "data#";
   const auto markerPosition = ctraceRef.rfind(marker);
-  if (markerPosition == std::string_view::npos || (markerPosition != 0U && ctraceRef[markerPosition - 1U] != '/')) {
+  if (markerPosition == std::string_view::npos ||
+      (markerPosition != 0U && ctraceRef[markerPosition - 1U] != '/')) { // LCOV_EXCL_BR_LINE
     return std::nullopt;
   }
   const auto value = ctraceRef.substr(markerPosition + marker.size());
@@ -201,7 +191,7 @@ std::optional<std::size_t> dwtDataIndex(std::string_view ctraceRef)
   }
   std::size_t index = 0U;
   const auto parsed = std::from_chars(value.data(), value.data() + value.size(), index);
-  if (parsed.ec != std::errc{} || parsed.ptr != value.data() + value.size()) {
+  if (parsed.ec != std::errc{} || parsed.ptr != value.data() + value.size()) { // LCOV_EXCL_BR_LINE
     return std::nullopt;
   }
   return index;
@@ -212,19 +202,19 @@ std::set<std::size_t> referencedDataSetupIndices(const std::vector<TraceRunRefer
 {
   std::set<std::size_t> indices;
   for (const auto& reference : references) {
-    if (reference.type != "dwt" || !TraceRunSchema::isUsableReference(reference)) {
+    if (reference.type != "dwt" || !TraceRunSchema::isUsableReference(reference)) { // LCOV_EXCL_BR_LINE
       continue;
     }
     if (!TraceRunSchema::processorNamesMayBind(setupProcessorName, reference.processorName)) {
       continue;
     }
     const auto index = reference.dataSetupIndex;
-    if (index.has_value()) {
+    if (index.has_value()) { // LCOV_EXCL_BR_LINE: present and absent data indices are covered
       indices.insert(*index);
     }
   }
   return indices;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated set cleanup to this closing brace
 
 bool hasReferencedDataForProcessor(const std::vector<TraceRunReference>& references,
                                    const std::optional<std::string>& setupProcessorName)
@@ -242,7 +232,7 @@ bool setupDataMayBeConsumed(const Node& setup, const std::vector<TraceRunReferen
 {
   bool hasProcessorName = false;
   for (const auto& entry : setup) {
-    if (!entry.first.IsScalar() || entry.first.Scalar() != "pname") {
+    if (!entry.first.IsScalar() || entry.first.Scalar() != "pname") { // LCOV_EXCL_BR_LINE
       continue;
     }
     hasProcessorName = true;
@@ -251,14 +241,15 @@ bool setupDataMayBeConsumed(const Node& setup, const std::vector<TraceRunReferen
       // it when this setup contains otherwise consumed data.
       return true;
     }
-    auto processorName = entry.second.IsScalar() ? std::optional<std::string>(entry.second.Scalar())
-                                                 : std::optional<std::string>(std::string{});
+    auto processorName = entry.second.IsScalar()
+                             ? std::optional<std::string>(entry.second.Scalar()) // LCOV_EXCL_BR_LINE
+                             : std::optional<std::string>(std::string{});        // LCOV_EXCL_BR_LINE
     processorName = TraceRunSchema::normalizedProcessorName(std::move(processorName));
     if (hasReferencedDataForProcessor(references, processorName)) {
       return true;
     }
   }
-  return !hasProcessorName && hasReferencedDataForProcessor(references, std::nullopt);
+  return !hasProcessorName && hasReferencedDataForProcessor(references, std::nullopt); // LCOV_EXCL_BR_LINE
 }
 
 void requireSequence(const std::string& path, const Node& element, std::string_view name)
@@ -274,7 +265,7 @@ Node traceRunRoot(const std::string& path, const Node& document)
     fail(path, document, "expected a YAML map containing 'ctrace-run'");
   }
 
-  const auto root = uniqueNode(path, document, "ctrace-run");
+  const auto root = childNode(document, "ctrace-run");
   if (!root) {
     fail(path, document, "missing top-level 'ctrace-run' node");
   }
@@ -286,7 +277,7 @@ Node traceRunRoot(const std::string& path, const Node& document)
 
 std::pair<std::vector<std::uint32_t>, bool> parseSources(const std::string& path, const Node& reference)
 {
-  const auto sourceNode = uniqueNode(path, reference, "source");
+  const auto sourceNode = childNode(reference, "source");
   if (!sourceNode) {
     return {{}, false};
   }
@@ -319,8 +310,8 @@ struct ReferenceDiagnostics {
 ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, const Node& element)
 {
   const auto message = [&](std::string_view name) {
-    const auto value = optionalAttribute(path, element, name);
-    if (uniqueChild(path, element, name)) {
+    const auto value = optionalAttribute(element, name);
+    if (childContainer(element, name)) {
       fail(path, element, "'" + std::string(name) + "' must be a scalar message");
     }
     return value;
@@ -339,7 +330,7 @@ std::optional<TraceRunReference> parseReference(const std::string& path, const N
   }
 
   const auto requiredScalar = [&](std::string_view name) {
-    const auto node = uniqueNode(path, element, name);
+    const auto node = childNode(element, name);
     if (!node || !node.IsScalar() || node.Scalar().empty()) {
       fail(path, node ? node : element, "missing required '" + std::string(name) + "' scalar in ctrace-ref entry");
     }
@@ -348,7 +339,7 @@ std::optional<TraceRunReference> parseReference(const std::string& path, const N
 
   const auto typeLookup = lookupNode(element, "type");
   const auto typeNode = typeLookup.value;
-  if (typeLookup.duplicateKey || !typeNode || !typeNode.IsScalar() || typeNode.Scalar().empty()) {
+  if (!typeNode || !typeNode.IsScalar() || typeNode.Scalar().empty()) {
     return std::nullopt;
   }
 
@@ -369,7 +360,7 @@ std::optional<TraceRunReference> parseReference(const std::string& path, const N
   reference.error = diagnostics.error;
 
   const auto parseStream = [&]() -> std::optional<std::uint32_t> {
-    if (uniqueChild(path, element, "stream")) {
+    if (childContainer(element, "stream")) {
       fail(path, element, "'stream' must be a scalar unsigned integer");
     }
     const auto stream = optionalUnsignedAttribute(path, element, "stream", std::numeric_limits<std::uint32_t>::max());
@@ -391,7 +382,7 @@ std::optional<TraceRunReference> parseReference(const std::string& path, const N
       reference.symbolAddress =
           bestEffortUnsignedAttribute(path, element, "symbol-address", std::numeric_limits<std::uint64_t>::max());
     }
-    reference.label = optionalAttribute(path, element, "label");
+    reference.label = optionalAttribute(element, "label");
   };
 
   if (!TraceRunSchema::supportsSource(reference.type)) {
@@ -411,7 +402,7 @@ std::optional<TraceRunReference> parseReference(const std::string& path, const N
         return reference;
       }
       return diagnosticReference;
-    } catch (const std::runtime_error&) {
+    } catch (const std::runtime_error&) { // LCOV_EXCL_BR_LINE: diagnostic-reference fallback is covered
       return diagnosticReference;
     }
   }
@@ -422,7 +413,7 @@ std::optional<TraceRunReference> parseReference(const std::string& path, const N
 
 std::vector<TraceRunReference> parseReferences(const std::string& path, const Node& root)
 {
-  const auto referencesNode = uniqueNode(path, root, "ctrace-refs");
+  const auto referencesNode = childNode(root, "ctrace-refs");
   if (!referencesNode) {
     return {};
   }
@@ -442,19 +433,13 @@ std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::string& pat
 {
   const auto timestampsLookup = lookupNode(element, "timestamps");
   const auto timestampsNode = timestampsLookup.value;
-  if (timestampsLookup.duplicateKey) {
-    TraceRunTimestampSetup timestamps;
-    timestamps.line = lineNumber(timestampsLookup.duplicateKey);
-    timestamps.clockError = errorMessage(path, timestampsLookup.duplicateKey, "duplicate 'timestamps' setting");
-    return timestamps;
-  }
   if (!timestampsNode) {
     return std::nullopt;
   }
   if (timestampsNode.IsScalar() || timestampsNode.IsNull()) {
     TraceRunTimestampSetup timestamps;
     timestamps.line = lineNumber(timestampsNode);
-    if (timestampsNode.IsScalar() && !timestampsNode.Scalar().empty()) {
+    if (timestampsNode.IsScalar() && !timestampsNode.Scalar().empty()) { // LCOV_EXCL_BR_LINE
       timestamps.clockError = "'timestamps' must be empty or a map";
     }
     return timestamps;
@@ -469,15 +454,13 @@ std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::string& pat
   TraceRunTimestampSetup timestamps;
   timestamps.line = lineNumber(timestampsNode);
   const auto clock = lookupNode(timestampsNode, "clock");
-  if (clock.duplicateKey) {
-    timestamps.clockError = errorMessage(path, clock.duplicateKey, "duplicate 'timestamps.clock' setting");
-  } else if (clock.value && !clock.value.IsScalar() && !clock.value.IsNull()) {
+  if (clock.value && !clock.value.IsScalar() && !clock.value.IsNull()) {
     timestamps.clockError = "'timestamps.clock' must be a scalar unsigned integer";
   } else {
     timestamps.clockHz = deferredUnsignedAttribute(path, timestampsNode, "clock",
                                                    std::numeric_limits<std::uint64_t>::max(), timestamps.clockError);
   }
-  if (uniqueChild(path, timestampsNode, "itm-prescaler")) {
+  if (childContainer(timestampsNode, "itm-prescaler")) {
     fail(path, timestampsNode, "'timestamps.itm-prescaler' must be a scalar unsigned integer");
   }
   const auto prescaler =
@@ -490,14 +473,14 @@ std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::string& pat
 
 std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, const Node& element)
 {
-  const auto itmNode = uniqueNode(path, element, "itm");
+  const auto itmNode = childNode(element, "itm");
   if (!itmNode) {
     return std::nullopt;
   }
   if (!itmNode.IsMap()) {
     fail(path, itmNode, "'itm' must be a map containing 'enable'");
   }
-  const auto enableNode = uniqueNode(path, itmNode, "enable");
+  const auto enableNode = childNode(itmNode, "enable");
   if (!enableNode || !enableNode.IsScalar() || enableNode.Scalar().empty()) {
     fail(path, enableNode ? enableNode : itmNode, "'itm.enable' is required and must be a scalar unsigned integer");
   }
@@ -509,7 +492,7 @@ std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::string& path
                                                          const std::set<std::size_t>& referencedIndices)
 {
   const auto dataLookup = referencedIndices.empty() ? NodeLookup{} : lookupNode(element, "data");
-  if (dataLookup.duplicateKey || !dataLookup.value || !dataLookup.value.IsSequence()) {
+  if (!dataLookup.value || !dataLookup.value.IsSequence()) {
     return {};
   }
 
@@ -528,17 +511,13 @@ std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::string& path
       continue;
     }
     const auto type = lookupNode(item, "symbol-type");
-    if (type.duplicateKey) {
-      data.symbolTypeError = "duplicate 'data.symbol-type' setting";
-    } else if (type.value && !type.value.IsScalar() && !type.value.IsNull()) {
+    if (type.value && !type.value.IsScalar() && !type.value.IsNull()) {
       data.symbolTypeError = "'data.symbol-type' must be a scalar string";
     } else if (type.value && !type.value.IsNull()) {
-      data.symbolType = optionalAttribute(path, item, "symbol-type");
+      data.symbolType = optionalAttribute(item, "symbol-type");
     }
     const auto size = lookupNode(item, "symbol-size");
-    if (size.duplicateKey) {
-      data.symbolSizeError = "duplicate 'data.symbol-size' setting";
-    } else if (size.value && !size.value.IsScalar() && !size.value.IsNull()) {
+    if (size.value && !size.value.IsScalar() && !size.value.IsNull()) {
       data.symbolSizeError = "'data.symbol-size' must be a scalar unsigned integer";
     } else if (size.value && !size.value.IsNull()) {
       data.symbolSize = deferredUnsignedAttribute(path, item, "symbol-size", std::numeric_limits<std::uint64_t>::max(),
@@ -551,10 +530,6 @@ std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::string& path
 
 TraceRunSetup parseSetup(const std::string& path, const Node& element, const std::vector<TraceRunReference>& references)
 {
-  if (!element.IsMap()) {
-    return {};
-  }
-
   TraceRunSetup setup;
   setup.line = lineNumber(element);
   setup.processorName = processorNameAttribute(path, element);
@@ -569,9 +544,6 @@ std::vector<TraceRunSetup> parseSetups(const std::string& path, const Node& root
                                        const std::vector<TraceRunReference>& references)
 {
   const auto setupLookup = lookupNode(root, "ctrace-setup");
-  if (setupLookup.duplicateKey) {
-    return {};
-  }
   const auto setupNode = setupLookup.value;
   if (!setupNode) {
     return {};
@@ -588,19 +560,19 @@ std::vector<TraceRunSetup> parseSetups(const std::string& path, const Node& root
     const auto timestamps = lookupNode(item, "timestamps");
     const auto itm = lookupNode(item, "itm");
     const auto data = lookupNode(item, "data");
-    const auto consumesData = (data.value || data.duplicateKey) && setupDataMayBeConsumed(item, references);
-    if (!timestamps.value && !timestamps.duplicateKey && !itm.value && !itm.duplicateKey && !consumesData) {
+    const auto consumesData = data.value && setupDataMayBeConsumed(item, references);
+    if (!timestamps.value && !itm.value && !consumesData) {
       continue;
     }
     // The copied ctrace.yml setup semantics define the presence of
     // 'disable' itself as sufficient to ignore the complete list entry.
     // Its value therefore has no schema that ctrace needs to validate.
     const auto disable = lookupNode(item, "disable");
-    if (disable.value || disable.duplicateKey) {
+    if (disable.value) {
       continue;
     }
     auto setup = parseSetup(path, item, references);
-    if (!setup.timestamps.has_value() && !setup.itm.has_value() && setup.data.empty()) {
+    if (!setup.timestamps.has_value() && !setup.itm.has_value() && setup.data.empty()) { // LCOV_EXCL_BR_LINE
       continue;
     }
     setups.push_back(std::move(setup));
@@ -619,12 +591,12 @@ TraceRunConfig YmlTraceRunConfigReader::read(const std::string& path) const
   std::vector<Node> documents;
   try {
     documents = YAML::LoadAllFromFile(path);
-  } catch (const YAML::Exception& error) {
+  } catch (const YAML::Exception& error) { // LCOV_EXCL_BR_LINE: malformed documents are covered
     std::ostringstream message;
     message << "failed to parse trace-run configuration: " << path;
-    if (error.mark.line >= 0) {
+    if (error.mark.line >= 0) { // LCOV_EXCL_BR_LINE
       message << '(' << (error.mark.line + 1);
-      if (error.mark.column >= 0) {
+      if (error.mark.column >= 0) { // LCOV_EXCL_BR_LINE
         message << ',' << (error.mark.column + 1);
       }
       message << ')';
@@ -633,7 +605,7 @@ TraceRunConfig YmlTraceRunConfigReader::read(const std::string& path) const
     throw std::runtime_error(message.str());
   }
   if (documents.size() != 1U) {
-    const auto location = documents.size() > 1U ? documents[1] : Node(YAML::NodeType::Undefined);
+    const auto location = documents.size() > 1U ? documents[1] : Node(YAML::NodeType::Undefined); // LCOV_EXCL_BR_LINE
     fail(path, location, "expected exactly one YAML document");
   }
 

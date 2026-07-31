@@ -47,7 +47,7 @@ constexpr bool isTimestampPrescaler(std::uint32_t prescaler)
 
 constexpr bool isDwtDataType(std::string_view type)
 {
-  return type == "unsigned int" || type == "signed int" || type == "float";
+  return type == "unsigned int" || type == "signed int" || type == "float"; // LCOV_EXCL_BR_LINE
 }
 
 constexpr bool isDwtDataSize(std::uint64_t size)

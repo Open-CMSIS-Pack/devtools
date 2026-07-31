@@ -19,7 +19,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -53,6 +55,18 @@ void requireSingleCtfItmEvent(const std::filesystem::path& streamPath, std::uint
   require(readLe32(bytes, kCtfPacketHeaderSize + 4U) == contentSize * 8U, message);
   require(readLe32(bytes, kCtfEventOffset) == 0U, message);
   require(bytes[kCtfEventOffset + kCtfEventHeaderSize] == expectedChannel, message);
+}
+
+ResolvedTraceSource resolvedDwtSource(std::uint32_t comparator, std::uint8_t traceBusId, std::string type,
+                                      std::uint8_t size)
+{
+  ResolvedTraceSource source;
+  source.type = "dwt";
+  source.source = comparator;
+  source.traceBusId = traceBusId;
+  source.valueType = std::move(type);
+  source.valueSize = size;
+  return source;
 }
 
 } // namespace
@@ -180,4 +194,97 @@ TEST(CtraceUnitTests, testCtfEncoderDwtAddressEncoding)
           "CTF DWT PC/address payload mismatch");
 
   encoder.abort();
+}
+
+TEST(CtraceUnitTests, testCtfEncoderRejectsInvalidClockAndPayloadMetadata)
+{
+  EXPECT_THROW((void)CtfEncoder(CtfEncoderConfig{}), std::invalid_argument);
+
+  const TemporaryTestPath temporaryPath("ctrace-ctf-invalid-payload-test");
+  std::filesystem::create_directories(temporaryPath.path());
+  CtfEncoder invalidItm(CtfEncoderConfig{1000000U, TraceSelection{{"itm"}, {}}, {}});
+  invalidItm.stop();
+  invalidItm.writeEvent(softwarePacket(1U));
+  invalidItm.start(temporaryPath.path());
+  EXPECT_THROW(invalidItm.writeEvent(softwarePacket(1U, 3U, 0U)), std::runtime_error);
+  invalidItm.abort();
+
+  CtfEncoder invalidDwt(CtfEncoderConfig{
+      1000000U,
+      TraceSelection{{"dwt"}, {}},
+      {resolvedDwtSource(0U, 1U, "unsupported", 3U)},
+  });
+  invalidDwt.start(temporaryPath.path());
+  TraceEvent data{DwtDataTraceEvent{0U, 1U, 0U, AccessType::Read}};
+  data.traceBusId = 1U;
+  EXPECT_THROW(invalidDwt.writeEvent(data), std::runtime_error);
+  invalidDwt.abort();
+}
+
+TEST(CtraceUnitTests, testCtfEncoderWritesAllDwtValueVariants)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-value-variants-test");
+  std::filesystem::create_directories(temporaryPath.path());
+  std::vector<ResolvedTraceSource> sources{
+      resolvedDwtSource(0U, 1U, "signed int", 2U),   resolvedDwtSource(1U, 1U, "float", 4U),
+      resolvedDwtSource(2U, 1U, "signed int", 4U),   resolvedDwtSource(3U, 7U, "unsigned int", 1U),
+      resolvedDwtSource(4U, 1U, "unsigned int", 4U), resolvedDwtSource(4U, 2U, "unsigned int", 4U),
+  };
+  sources.push_back(resolvedDwtSource(99U, 7U, "unsigned int", 1U));
+
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{{"dwt"}, {}}, sources});
+  encoder.start(temporaryPath.path());
+
+  TraceEvent signed16{DwtDataTraceEvent{0U, 2U, 0xff80U, AccessType::Write, 0x1234U, 0x08000000U}};
+  signed16.traceBusId = 1U;
+  signed16.tcyc = 10U;
+  signed16.quality = TraceQuality{false, true, 0U};
+  encoder.writeEvent(signed16);
+
+  TraceEvent floating{DwtDataTraceEvent{1U, 4U, 0x3f800000U, AccessType::Read}};
+  floating.traceBusId = 1U;
+  floating.tcyc = 11U;
+  encoder.writeEvent(floating);
+
+  TraceEvent signed32{DwtDataTraceEvent{2U, 4U, 0xffffffffU, AccessType::Read}};
+  signed32.traceBusId = 1U;
+  signed32.tcyc = 12U;
+  encoder.writeEvent(signed32);
+
+  TraceEvent uniqueFallback{DwtDataTraceEvent{3U, 1U, 0x12U, AccessType::Read}};
+  uniqueFallback.tcyc = 13U;
+  encoder.writeEvent(uniqueFallback);
+  TraceEvent ambiguousFallback{DwtDataTraceEvent{4U, 4U, 0x12U, AccessType::Read}};
+  ambiguousFallback.tcyc = 14U;
+  encoder.writeEvent(ambiguousFallback);
+
+  encoder.stop();
+  EXPECT_TRUE(std::filesystem::is_regular_file(temporaryPath.path() / "stream_0"));
+  EXPECT_GT(readTestBinaryFile(temporaryPath.path() / "stream_0").size(), kCtfEventOffset);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderTracksLocalTimeAndUnqualifiedOverflow)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-time-quality-test");
+  std::filesystem::create_directories(temporaryPath.path());
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{}, {}});
+  encoder.start(temporaryPath.path());
+
+  TraceEvent localTimestamp{LocalTimestampTraceEvent{}};
+  localTimestamp.traceBusId = 3U;
+  localTimestamp.tcyc = 20U;
+  encoder.writeEvent(localTimestamp);
+  TraceEvent overflow{OverflowTraceEvent{}};
+  overflow.traceBusId = 3U;
+  encoder.writeEvent(overflow);
+
+  TraceEvent saturated = softwarePacket(1U, 1U, 0U);
+  saturated.traceBusId = 3U;
+  saturated.tcyc = 21U;
+  saturated.quality = TraceQuality{true, true, std::numeric_limits<std::uint64_t>::max()};
+  encoder.writeEvent(saturated);
+  encoder.stop();
+  encoder.stop();
+
+  EXPECT_TRUE(std::filesystem::is_regular_file(temporaryPath.path() / "metadata"));
 }

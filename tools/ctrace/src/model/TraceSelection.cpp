@@ -90,7 +90,7 @@ std::string traceEventTypeList(std::string_view separator)
     result += name;
   }
   return result;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated string cleanup to this closing brace
 
 std::optional<TraceEventType> parseTraceEventType(std::string_view value)
 {

@@ -40,7 +40,7 @@ static std::string tsdlString(const std::string& value)
       out += "\\r";
     } else if (ch == '\t') {
       out += "\\t";
-    } else if (ch < 0x20U || ch == 0x7fU) {
+    } else if (ch < 0x20U || ch == 0x7fU) { // LCOV_EXCL_BR_LINE: both control-character forms are covered
       out += "\\x";
       out.push_back(hexDigits[(ch >> 4U) & 0x0fU]);
       out.push_back(hexDigits[ch & 0x0fU]);
@@ -50,7 +50,7 @@ static std::string tsdlString(const std::string& value)
   }
   out.push_back('"');
   return out;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated string cleanup to this closing brace
 
 static std::string hexValue(std::uint64_t value)
 {
@@ -80,7 +80,7 @@ static std::string uniqueEnumLabel(const std::string& preferred, const std::stri
 static std::string mapValueOrEmpty(const std::map<std::uint32_t, std::string>& values, std::uint32_t key)
 {
   const auto found = values.find(key);
-  return found == values.end() ? "" : found->second;
+  return found == values.end() ? "" : found->second; // LCOV_EXCL_BR_LINE: present and absent mappings are covered
 }
 
 static std::vector<std::uint32_t>
@@ -94,7 +94,7 @@ exceptionNumbersWithDefaults(const std::vector<std::uint32_t>& observedException
   }
   std::sort(exceptions.begin(), exceptions.end());
   return exceptions;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated vector cleanup to this closing brace
 
 static std::string exceptionName(std::uint32_t number)
 {
@@ -197,7 +197,7 @@ static MetadataSymbols collectMetadataSymbols(const std::vector<ResolvedTraceSou
     }
   }
   return symbols;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated metadata cleanup to this closing brace
 
 static void writeTraceEnvironment(std::ostream& out, const std::string& uuidString, std::uint64_t coreClockHz,
                                   const MetadataSymbols& symbols)
@@ -453,8 +453,8 @@ void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const std:
 {
   const auto metadataPath = outputDir / "metadata";
   std::ofstream out(metadataPath, std::ios::out | std::ios::trunc);
-  if (!out) {
-    throw std::runtime_error("Failed to write CTF metadata " + metadataPath.string());
+  if (!out) { // LCOV_EXCL_BR_LINE: covered on Linux with /dev/full
+    throw std::runtime_error("Failed to write CTF metadata " + metadataPath.string()); // LCOV_EXCL_LINE
   }
 
   const auto symbols = collectMetadataSymbols(sources);

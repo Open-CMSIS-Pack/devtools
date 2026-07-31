@@ -10,6 +10,7 @@ add_executable(CtraceUnitTests
   src/decode/DecodePipelineTests.cpp
   src/decode/DwtPacketDecoderTests.cpp
   src/decode/OpenCsdErrorControllerTests.cpp
+  src/decode/OpenCsdItmDecoderTests.cpp
   src/decode/OpenCsdPacketCollectorTests.cpp
   src/diagnostics/DiagnosticsTests.cpp
   src/model/TraceSelectionTests.cpp
@@ -20,7 +21,9 @@ add_executable(CtraceUnitTests
   src/output/csv/CsvRowMapperTests.cpp
   src/output/ctf/CtfBundleOutputTests.cpp
   src/output/ctf/CtfEncoderTests.cpp
+  src/output/ctf/CtfMetadataWriterTests.cpp
   src/output/ctf/CtfSchemaTests.cpp
+  src/output/ctf/CtfStreamWriterTests.cpp
   src/tracerun/CtraceRunMetaTests.cpp
   src/tracerun/TraceRunConfigReaderTests.cpp
   src/tracerun/TraceRunDiscoveryTests.cpp

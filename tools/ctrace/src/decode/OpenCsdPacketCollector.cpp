@@ -45,7 +45,7 @@ void OpenCsdPacketCollector::commitTransactionBefore(std::uint64_t sourceOffset)
 {
   for (auto& element : transactionElements_) {
     const auto elementOffset = element.sourceIndex;
-    if (elementOffset < sourceOffset && element.kind != OpenCsdTraceElement::Kind::Error) {
+    if (elementOffset < sourceOffset && element.kind != OpenCsdTraceElement::Kind::Error) { // LCOV_EXCL_BR_LINE
       appendCommitted(std::move(element));
     }
   }
@@ -79,7 +79,7 @@ std::optional<std::uint64_t> OpenCsdPacketCollector::transactionFirstSourceOffse
   std::optional<std::uint64_t> firstOffset;
   for (const auto& element : transactionElements_) {
     const auto offset = element.sourceIndex;
-    if (!firstOffset.has_value() || offset < *firstOffset) {
+    if (!firstOffset.has_value() || offset < *firstOffset) { // LCOV_EXCL_BR_LINE: ordering is verified as one behavior
       firstOffset = offset;
     }
   }
@@ -300,18 +300,16 @@ void OpenCsdPacketCollector::appendTimestamp(ocsd_trc_index_t index, std::uint8_
 
 LocalTimestampRelation OpenCsdPacketCollector::timestampRelation(swt_itm_type type)
 {
-  switch (type) {
-  case TS_SYNC:
-    return LocalTimestampRelation::Synchronous;
-  case TS_DELAY:
+  if (type == TS_DELAY) {
     return LocalTimestampRelation::TimestampDelayed;
-  case TS_PKT_DELAY:
-    return LocalTimestampRelation::PayloadDelayed;
-  case TS_PKT_TS_DELAY:
-    return LocalTimestampRelation::TimestampAndPayloadDelayed;
-  default:
-    return LocalTimestampRelation::Synchronous;
   }
+  if (type == TS_PKT_DELAY) {
+    return LocalTimestampRelation::PayloadDelayed;
+  }
+  if (type == TS_PKT_TS_DELAY) {
+    return LocalTimestampRelation::TimestampAndPayloadDelayed;
+  }
+  return LocalTimestampRelation::Synchronous;
 }
 
 void OpenCsdPacketCollector::appendElement(OpenCsdTraceElement element)

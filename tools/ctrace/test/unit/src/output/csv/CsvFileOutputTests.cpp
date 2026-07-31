@@ -11,6 +11,7 @@
 #include "TraceEvent.hpp"
 #include "csv/CsvFileOutput.hpp"
 #include <filesystem>
+#include <system_error>
 #include <stdexcept>
 #include <string>
 
@@ -117,3 +118,59 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesDirectly)
   require(std::filesystem::is_regular_file(testRoot / "captures" / "output.csv"),
           "CSV output must accept a legitimate parent-relative trace path");
 }
+
+TEST(CtraceUnitTests, testCsvFileOutputReportsIdentityAndIgnoresClosedWrites)
+{
+  const TemporaryTestPath temporaryPath("ctrace-csv-identity-test.csv");
+  CsvFileOutput output(temporaryPath.path(), TraceSelection{{"itm"}, {1U}});
+  EXPECT_EQ(output.backendName(), "csv");
+  EXPECT_EQ(output.targetPath(), temporaryPath.path().string());
+
+  output.writeEvent(softwarePacket(1U));
+  EXPECT_FALSE(std::filesystem::exists(temporaryPath.path()));
+  output.start();
+  output.writeEvent(softwarePacket(2U));
+  output.stop();
+  EXPECT_EQ(readTestLines(temporaryPath.path()).size(), 1U);
+  output.stop();
+  output.abort();
+}
+
+TEST(CtraceUnitTests, testCsvFileOutputRejectsUnsafeAndInvalidParents)
+{
+  for (const auto& path : {std::filesystem::path{}, std::filesystem::path("."), std::filesystem::path("..")}) {
+    CsvFileOutput output(path);
+    EXPECT_THROW(output.start(), std::invalid_argument);
+  }
+
+  const TemporaryTestPath regularParent("ctrace-csv-regular-parent-test");
+  writeTestFile(regularParent.path(), "not a directory");
+  CsvFileOutput childOfFile(regularParent.path() / "output.csv");
+  EXPECT_THROW(childOfFile.start(), std::runtime_error);
+
+  const TemporaryTestPath longNameRoot("ctrace-csv-long-name-test");
+  std::filesystem::create_directories(longNameRoot.path());
+  CsvFileOutput overlyLongName(longNameRoot.path() / std::string(1024U, 'x'));
+  EXPECT_THROW(overlyLongName.start(), std::runtime_error);
+}
+
+TEST(CtraceUnitTests, testCsvFileOutputSupportsParentlessPath)
+{
+  const auto path = std::filesystem::path("ctrace-parentless-output-test.csv");
+  std::error_code ignored;
+  std::filesystem::remove(path, ignored);
+  CsvFileOutput output(path);
+  output.start();
+  output.writeEvent(softwarePacket(1U));
+  output.stop();
+  EXPECT_TRUE(std::filesystem::is_regular_file(path));
+  std::filesystem::remove(path, ignored);
+}
+
+#if defined(__linux__)
+TEST(CtraceUnitTests, testCsvFileOutputReportsPseudoFilesystemOpenFailure)
+{
+  CsvFileOutput output("/proc/ctrace-coverage-output.csv");
+  EXPECT_THROW(output.start(), std::runtime_error);
+}
+#endif

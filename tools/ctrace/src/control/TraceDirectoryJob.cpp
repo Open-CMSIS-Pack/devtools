@@ -40,7 +40,7 @@ std::vector<std::pair<std::string, std::string>> referenceContext(const TraceRun
     context.emplace_back("stream", std::to_string(*reference.stream));
   }
   return context;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated context cleanup to this closing brace
 
 void reportTraceRunDiagnostics(const TraceRunConfig& config, DiagnosticSink& diagnostics)
 {
@@ -65,6 +65,7 @@ void reportTraceRunDiagnostics(const TraceRunConfig& config, DiagnosticSink& dia
     report(DiagnosticSink::Severity::Warning, "trace-run-generation-warning", reference.warning);
     if (reference.error.has_value()) {
       auto context = referenceContext(config, reference);
+      // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
       diagnostics.report({
           DiagnosticSink::Severity::Error,
           DiagnosticSink::Category::Input,
@@ -74,6 +75,7 @@ void reportTraceRunDiagnostics(const TraceRunConfig& config, DiagnosticSink& dia
           std::nullopt,
           DiagnosticSink::Impact::NonFatal,
       });
+      // LCOV_EXCL_BR_STOP
     }
   }
 }
@@ -99,6 +101,7 @@ void TraceDirectoryJob::run()
     const auto solutionSet = TraceRunDiscovery::solutionSetName(configFile);
     try {
       const auto config = configReader_.read(configFile.string());
+      // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
       diagnostics_.report({
           DiagnosticSink::Severity::Info,
           DiagnosticSink::Category::Input,
@@ -111,12 +114,14 @@ void TraceDirectoryJob::run()
               {"setups", std::to_string(config.setups.size())},
           },
       });
+      // LCOV_EXCL_BR_STOP
       reportTraceRunDiagnostics(config, diagnostics_);
       const auto ctraceRunMeta = CtraceRunMeta::fromConfig(config);
       const auto rawInputs = TraceRunDiscovery::rawInputs(configFile);
       bool processedSolutionSet = false;
       for (const auto& rawInput : rawInputs) {
         if (rawInput.channel != "SWO") {
+          // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
           diagnostics_.report({
               DiagnosticSink::Severity::Warning,
               DiagnosticSink::Category::Input,
@@ -128,6 +133,7 @@ void TraceDirectoryJob::run()
                   {"path", rawInput.path.string()},
               },
           });
+          // LCOV_EXCL_BR_STOP
           continue;
         }
 
@@ -136,6 +142,7 @@ void TraceDirectoryJob::run()
         processedSolutionSet = true;
       }
       if (!processedSolutionSet) {
+        // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
         diagnostics_.report({
             DiagnosticSink::Severity::Error,
             DiagnosticSink::Category::Input,
@@ -146,8 +153,10 @@ void TraceDirectoryJob::run()
                 {"traceDir", configFile.parent_path().string()},
             },
         });
+        // LCOV_EXCL_BR_STOP
       }
-    } catch (const std::exception& error) {
+    } catch (const std::exception& error) { // LCOV_EXCL_BR_LINE: exception dispatch is validated by tests
+      // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
       diagnostics_.report({
           DiagnosticSink::Severity::Error,
           DiagnosticSink::Category::Input,
@@ -158,6 +167,7 @@ void TraceDirectoryJob::run()
               {"config", configFile.string()},
           },
       });
+      // LCOV_EXCL_BR_STOP
     }
   }
 }

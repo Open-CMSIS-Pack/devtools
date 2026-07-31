@@ -123,4 +123,22 @@ TEST(CtraceUnitTests, testCliParserStreamRangeAndUnknownOptions)
 
   const char* unknownArgv[] = {"ctrace", ".trace", "--unknown"};
   require(parseFails(3, unknownArgv), "CliParser should reject unknown options");
+
+  const char* nonNumericStreamArgv[] = {"ctrace", ".trace", "--stream", "invalid"};
+  require(parseFails(4, nonNumericStreamArgv), "CliParser should reject non-numeric stream IDs");
+
+  const char* trailingStreamArgv[] = {"ctrace", ".trace", "--stream", "1x"};
+  require(parseFails(4, trailingStreamArgv), "CliParser should reject trailing stream ID characters");
+
+  const char* overflowingStreamArgv[] = {"ctrace", ".trace", "--stream", "999999999999999999999"};
+  require(parseFails(4, overflowingStreamArgv), "CliParser should reject overflowing stream IDs");
+
+  const char* emptyTypeArgv[] = {"ctrace", ".trace", "--type="};
+  require(parseFails(3, emptyTypeArgv), "CliParser should reject an empty inline selector");
+
+  const char* missingTypeArgv[] = {"ctrace", ".trace", "--type"};
+  require(parseFails(3, missingTypeArgv), "CliParser should require at least one selector value");
+
+  const char* positionalArgv[] = {"ctrace", ".trace", "unexpected"};
+  require(parseFails(3, positionalArgv), "CliParser should reject a second positional argument");
 }

@@ -10,6 +10,7 @@
 #include "OpenCsdTraceElement.hpp"
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -17,6 +18,13 @@
 struct OpenCsdItmDecodeResult {
   std::uint64_t bytesIn = 0;
 };
+
+class OpenCsdErrorController;
+class OpenCsdItmSessionInterface;
+class OpenCsdPacketCollector;
+
+using OpenCsdItmSessionFactory =
+    std::function<std::unique_ptr<OpenCsdItmSessionInterface>(OpenCsdPacketCollector&, OpenCsdErrorController&)>;
 
 class OpenCsdFatalError final : public std::runtime_error {
 public:
@@ -39,6 +47,7 @@ class OpenCsdItmDecoderImpl;
 class OpenCsdItmDecoder {
 public:
   OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink);
+  OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory);
   ~OpenCsdItmDecoder();
 
   OpenCsdItmDecoder(const OpenCsdItmDecoder&) = delete;

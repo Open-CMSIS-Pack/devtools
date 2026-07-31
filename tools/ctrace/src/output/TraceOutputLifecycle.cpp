@@ -23,9 +23,7 @@ namespace {
 std::string exceptionMessage(const std::exception_ptr& error)
 {
   try {
-    if (error) {
-      std::rethrow_exception(error);
-    }
+    std::rethrow_exception(error);
   } catch (const std::exception& ex) {
     return ex.what();
   } catch (...) {
@@ -106,6 +104,7 @@ void TraceOutputLifecycle::fail(std::size_t index, const char* phase, const std:
     const auto message = exceptionMessage(error);
     const auto backend = std::string(outputs_[index]->backendName());
     const auto target = outputs_[index]->targetPath();
+    // LCOV_EXCL_BR_START: generated aggregate and string-expression exception edges
     diagnostics_.report({
         DiagnosticSink::Severity::Error,
         DiagnosticSink::Category::Output,
@@ -121,6 +120,7 @@ void TraceOutputLifecycle::fail(std::size_t index, const char* phase, const std:
         backend + " output" + (target.empty() ? std::string() : " '" + target + "'") + " failed during " + phase +
             ": " + message,
     });
+    // LCOV_EXCL_BR_STOP
   } catch (...) {
     // Diagnostics must never escape this noexcept failure path.
     (void)0;

@@ -67,6 +67,51 @@ public:
   void writeEvent(const TraceEvent&) override {}
 };
 
+class FailingWriteOutput final : public TraceOutput {
+public:
+  std::string targetPath() const override
+  {
+    return "synthetic.trace";
+  }
+
+  void abort() override
+  {
+    aborted = true;
+  }
+
+  void writeEvent(const TraceEvent&) override
+  {
+    throw std::runtime_error("intentional write failure");
+  }
+
+  bool aborted = false;
+};
+
+class NonStandardFailureOutput final : public TraceOutput {
+public:
+  void start() override
+  {
+    throw 42;
+  }
+
+  void abort() override {}
+  void writeEvent(const TraceEvent&) override {}
+};
+
+class ThrowingDiagnosticSink final : public DiagnosticSink {
+protected:
+  void write(const Event&) override
+  {
+    throw std::runtime_error("synthetic diagnostic failure");
+  }
+};
+
+class PassiveOutput final : public TraceOutput {
+public:
+  void abort() override {}
+  void writeEvent(const TraceEvent&) override {}
+};
+
 TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesIndependentOutputs)
 {
   const TemporaryTestPath temporaryPath("ctrace-output-lifecycle-test.csv");
@@ -110,4 +155,39 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleReportsAbortFailures)
   }
   require(diagnostics.fatalCount() == 1U && reportsAbortPhase,
           "output lifecycle must report a failed direct-output cleanup");
+}
+
+TEST(CtraceUnitTests, testTraceOutputLifecycleReportsWriteFailuresAndFinishesOnce)
+{
+  std::vector<std::unique_ptr<TraceOutput>> outputs;
+  auto failing = std::make_unique<FailingWriteOutput>();
+  auto* failingPointer = failing.get();
+  outputs.push_back(std::move(failing));
+  CollectingDiagnosticSink diagnostics;
+  TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
+  lifecycle.append(softwarePacket(1U));
+  lifecycle.append(softwarePacket(2U));
+  lifecycle.finish();
+  lifecycle.finish();
+
+  ASSERT_EQ(diagnostics.events().size(), 1U);
+  EXPECT_TRUE(failingPointer->aborted);
+  EXPECT_EQ(diagnostics.events().front().compactMessage,
+            "trace output 'synthetic.trace' failed during write: intentional write failure");
+}
+
+TEST(CtraceUnitTests, testTraceOutputLifecycleContainsDiagnosticAndNonStandardFailures)
+{
+  std::vector<std::unique_ptr<TraceOutput>> outputs;
+  outputs.push_back(std::make_unique<NonStandardFailureOutput>());
+  ThrowingDiagnosticSink diagnostics;
+  EXPECT_NO_THROW((void)TraceOutputLifecycle(std::move(outputs), diagnostics));
+  EXPECT_EQ(diagnostics.fatalCount(), 1U);
+
+  std::vector<std::unique_ptr<TraceOutput>> passiveOutputs;
+  passiveOutputs.push_back(std::make_unique<PassiveOutput>());
+  CollectingDiagnosticSink passiveDiagnostics;
+  TraceOutputLifecycle passive(std::move(passiveOutputs), passiveDiagnostics);
+  passive.finish();
+  EXPECT_EQ(passiveDiagnostics.fatalCount(), 0U);
 }

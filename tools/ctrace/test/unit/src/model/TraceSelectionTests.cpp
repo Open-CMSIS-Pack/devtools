@@ -9,10 +9,22 @@
 #include <gtest/gtest.h>
 #include "TraceEvent.hpp"
 #include "TraceSelection.hpp"
+#include "TraceStreamId.hpp"
+#include "TraceRunConfig.hpp"
 #include "csv/CsvRowMapper.hpp"
 
 TEST(CtraceUnitTests, testTraceSelection)
 {
+  EXPECT_FALSE(CoreSight::isAtbTraceId(0U));
+  EXPECT_TRUE(CoreSight::isAtbTraceId(1U));
+  EXPECT_FALSE(CoreSight::isAtbTraceId(112U));
+  EXPECT_FALSE((TraceSelection{{}, {1U}}.empty()));
+  EXPECT_TRUE(TraceRunSchema::isDwtDataType("unsigned int"));
+  EXPECT_TRUE(TraceRunSchema::isDwtDataType("signed int"));
+  EXPECT_TRUE(TraceRunSchema::isDwtDataType("float"));
+  TraceRunReference timestampReference;
+  timestampReference.ctraceRef = "timestamps";
+  EXPECT_TRUE(TraceRunSchema::isTimestampReference(timestampReference));
   TraceEvent itm = softwarePacket(1U);
   itm.traceBusId = 1;
   require(traceEventSelectedForOutput(itm, TraceSelection{{"itm"}, {}}), "TraceSelection ITM type mismatch");

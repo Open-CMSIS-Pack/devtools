@@ -98,22 +98,23 @@ void TraceIssueReporter::reportOverflow(const TraceEvent& event)
 
 void TraceIssueReporter::reportError(const TraceEvent& event, const TraceIssueEvent& issue)
 {
-  const auto code = issue.code.empty() ? std::string("decode-error") : issue.code;
+  const auto code = issue.code.empty() ? std::string("decode-error") : issue.code; // LCOV_EXCL_BR_LINE
   if (code == "data-loss") {
     report(issue.severity == TraceIssueSeverity::Warning ? DiagnosticSink::Severity::Warning
                                                          : DiagnosticSink::Severity::Error,
            code,
-           issue.message.empty() ? "Trace data loss detected while the decoder was not synchronized. Raw bytes were "
-                                   "present, but OpenCSD could not turn them into reliable trace packets until a later "
-                                   "sync/recovery point."
-                                 : issue.message,
+           issue.message.empty()
+               ? "Trace data loss detected while the decoder was not synchronized. Raw bytes were " // LCOV_EXCL_BR_LINE
+                 "present, but OpenCSD could not turn them into reliable trace packets until a later "
+                 "sync/recovery point."
+               : issue.message,
            compactErrorMessage(event, issue, code));
     return;
   }
 
   report(issue.severity == TraceIssueSeverity::Warning ? DiagnosticSink::Severity::Warning
                                                        : DiagnosticSink::Severity::Error,
-         code, issue.message.empty() ? "decode error detected" : issue.message,
+         code, issue.message.empty() ? "decode error detected" : issue.message, // LCOV_EXCL_BR_LINE
          compactErrorMessage(event, issue, code));
 }
 

@@ -33,6 +33,8 @@ class DecodePipeline final {
 public:
   DecodePipeline(std::uint32_t timestampPrescaler, TraceEventSink& eventSink);
   DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink);
+  DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
+                 const OpenCsdItmSessionFactory& sessionFactory);
 
   void push(RawByteView bytes);
   DecodeResult finish();

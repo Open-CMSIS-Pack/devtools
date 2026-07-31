@@ -689,3 +689,71 @@ TEST(CtraceUnitTests, testCtfBundleOutputOwnsDirectLifecycle)
               std::filesystem::is_regular_file(testRoot / "captures" / "Relative.SWO.traceanalysis.xml"),
           "CTF output must accept a legitimate parent-relative trace path");
 }
+
+TEST(CtraceUnitTests, testCtfBundleOutputReportsIdentityAndSupportsInactiveStop)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-identity-test");
+  const auto& outputDirectory = temporaryOutput.outputDirectory();
+  CtfBundleOutput output(makeCtfBundleConfig(outputDirectory, 1000000U));
+  EXPECT_EQ(output.backendName(), "ctf");
+  EXPECT_EQ(output.targetPath(), outputDirectory.string());
+  output.stop();
+  output.writeEvent(softwarePacket(1U));
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory));
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputRejectsUnsafeTargets)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-unsafe-targets-test");
+  const auto safeCtf = temporaryPath.path() / "safe.ctf";
+  const auto safeXml = temporaryPath.path() / "safe.xml";
+  for (const auto& unsafe : {std::filesystem::path{}, std::filesystem::path("."), std::filesystem::path("..")}) {
+    EXPECT_THROW((void)CtfBundleOutput(CtfOutputConfig(unsafe, safeXml, 1000000U, {}, {})), std::invalid_argument);
+    EXPECT_THROW((void)CtfBundleOutput(CtfOutputConfig(safeCtf, unsafe, 1000000U, {}, {})), std::invalid_argument);
+  }
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputRejectsInvalidExistingXmlAndLongPaths)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-invalid-existing-output-test");
+  const auto ctfDirectory = temporaryPath.path() / "output.ctf";
+  const auto xmlDirectory = temporaryPath.path() / "output.xml";
+  std::filesystem::create_directories(xmlDirectory);
+  CtfBundleOutput directoryXml(CtfOutputConfig(ctfDirectory, xmlDirectory, 1000000U, {}, {}));
+  EXPECT_THROW(directoryXml.start(), std::runtime_error);
+
+  const auto longName = std::string(1024U, 'x');
+  CtfBundleOutput longCtf(
+      CtfOutputConfig(temporaryPath.path() / longName, temporaryPath.path() / "long-ctf.xml", 1000000U, {}, {}));
+  EXPECT_THROW(longCtf.start(), std::runtime_error);
+  CtfBundleOutput longXml(
+      CtfOutputConfig(temporaryPath.path() / "long-xml.ctf", temporaryPath.path() / longName, 1000000U, {}, {}));
+  EXPECT_THROW(longXml.start(), std::runtime_error);
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputCleansUpAfterMetadataFailure)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-metadata-failure-test");
+  const auto& outputDirectory = temporaryOutput.outputDirectory();
+  const auto xmlPath = testTraceCompassXmlPath(outputDirectory);
+  CtfBundleOutput output(makeCtfBundleConfig(outputDirectory, 1000000U));
+  output.start();
+  std::filesystem::create_directory(outputDirectory / "metadata");
+  EXPECT_THROW(output.stop(), std::runtime_error);
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory));
+  EXPECT_FALSE(std::filesystem::exists(xmlPath));
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputCleansUpAfterTraceCompassStartFailure)
+{
+  const TemporaryTestPath root("ctrace-ctf-start-failure-test");
+  std::filesystem::create_directories(root.path());
+  const auto blockedParent = root.path() / "not-a-directory";
+  writeTestFile(blockedParent, "file");
+  const auto outputDirectory = root.path() / "trace.ctf";
+  const auto xmlPath = blockedParent / "trace.xml";
+
+  CtfBundleOutput output(CtfOutputConfig(outputDirectory, xmlPath, 1000000U, {}, {}));
+  EXPECT_THROW(output.start(), std::runtime_error);
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory));
+}

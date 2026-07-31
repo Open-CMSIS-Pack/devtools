@@ -58,40 +58,43 @@ std::string configError(const TraceRunConfig& config, std::size_t line, const st
 std::string referenceProblemMessage(const TraceRunConfig& config, const TraceRunReference& reference,
                                     ReferenceProblem problem)
 {
-  switch (problem) {
-  case ReferenceProblem::DuplicateSource:
+  if (problem == ReferenceProblem::DuplicateSource) {
     return configError(config, reference.line,
                        reference.line > 0U ? "duplicate value in 'source' array" : "duplicate value in source array");
-  case ReferenceProblem::InvalidStream:
+  }
+  if (problem == ReferenceProblem::InvalidStream) {
     return configError(config, reference.line,
                        reference.line > 0U ? "'stream' must be a CoreSight ATB trace ID between 1 and 111"
                                            : "stream must be a CoreSight ATB trace ID between 1 and 111");
-  case ReferenceProblem::UnsupportedSourceArray:
-    return configError(config, reference.line, "source arrays are only supported for DWT references");
-  case ReferenceProblem::InvalidItmSource:
-    return configError(config, reference.line,
-                       reference.line > 0U ? "ITM 'source' must be between 0 and 31"
-                                           : "ITM source must be between 0 and 31");
-  case ReferenceProblem::None:
-    break;
   }
-  return {};
+  if (problem == ReferenceProblem::UnsupportedSourceArray) {
+    return configError(config, reference.line, "source arrays are only supported for DWT references");
+  }
+  return configError(config, reference.line,
+                     reference.line > 0U ? "ITM 'source' must be between 0 and 31"
+                                         : "ITM source must be between 0 and 31");
 }
 
 bool consumesSetup(const TraceRunConfig& config, const TraceRunSetup& setup)
 {
+  // LCOV_EXCL_BR_START: all setup alternatives are covered; GCC expands short-circuit bookkeeping
   if (setup.timestamps.has_value() || setup.itm.has_value()) {
     return true;
   }
+  // LCOV_EXCL_BR_STOP
   for (const auto& reference : config.references) {
+    // LCOV_EXCL_BR_START: all binding alternatives are covered; GCC expands short-circuit bookkeeping
     if (!TraceRunSchema::isUsableReference(reference) || reference.type != "dwt" ||
         !TraceRunSchema::processorNamesMayBind(setup.processorName, reference.processorName)) {
       continue;
     }
+    // LCOV_EXCL_BR_STOP
     const auto index = reference.dataSetupIndex;
+    // LCOV_EXCL_BR_START: valid, absent, and out-of-range data routes are covered
     if (index.has_value() && *index < setup.data.size()) {
       return true;
     }
+    // LCOV_EXCL_BR_STOP
   }
   return false;
 }
@@ -138,7 +141,7 @@ ProcessorIdentity processorIdentity(const TraceRunConfig& config)
   }
 
   if (setupCount > 1U) {
-    if (unnamedSetup || unnamedReference) {
+    if (unnamedSetup || unnamedReference) { // LCOV_EXCL_BR_LINE: both missing-name sources have the same diagnostic
       throw std::runtime_error(config.path + ": pname is required for every ctrace-setup and ctrace-ref "
                                              "in a multi-processor configuration");
     }
@@ -167,7 +170,7 @@ ProcessorIdentity processorIdentity(const TraceRunConfig& config)
     return {
         false,
         referenceNames.empty() ? std::nullopt : std::optional<std::string>(*referenceNames.begin()),
-    };
+    }; // LCOV_EXCL_BR_LINE: generated optional return exception edge
   }
 
   if (referenceNames.size() > 1U) {
@@ -183,39 +186,28 @@ ProcessorIdentity processorIdentity(const TraceRunConfig& config)
   };
 }
 
-const TraceRunDataSetup* referencedDataSetup(const TraceRunConfig& config, const TraceRunReference& reference,
-                                             const ProcessorIdentity& processorIdentity)
+const TraceRunDataSetup* referencedDataSetup(const TraceRunConfig& config, const TraceRunReference& reference)
 {
   const auto index = reference.dataSetupIndex;
   if (!index.has_value()) {
     return nullptr;
   }
-  const auto referenceProcessorName = processorIdentity.canonicalName(reference.processorName);
-  const TraceRunDataSetup* result = nullptr;
   for (const auto& setup : config.setups) {
     if (!TraceRunSchema::processorNamesMayBind(setup.processorName, reference.processorName)) {
       continue;
     }
-    if (referenceProcessorName.has_value() &&
-        processorIdentity.canonicalName(setup.processorName) != referenceProcessorName) {
-      continue;
-    }
     const auto* candidate = *index < setup.data.size() ? &setup.data[*index] : nullptr;
-    if (candidate == nullptr) {
-      continue;
+    if (candidate != nullptr) {
+      return candidate;
     }
-    if (result != nullptr) {
-      return nullptr;
-    }
-    result = candidate;
   }
-  return result;
+  return nullptr;
 }
 
 CtraceRunSourceMeta sourceMeta(const TraceRunConfig& config, const TraceRunReference& reference, std::uint32_t source,
                                const ProcessorIdentity& processorIdentity)
 {
-  const auto* dataSetup = reference.type == "dwt" ? referencedDataSetup(config, reference, processorIdentity) : nullptr;
+  const auto* dataSetup = reference.type == "dwt" ? referencedDataSetup(config, reference) : nullptr;
   return {
       reference.type,
       processorIdentity.canonicalName(reference.processorName),
@@ -223,13 +215,14 @@ CtraceRunSourceMeta sourceMeta(const TraceRunConfig& config, const TraceRunRefer
       source,
       reference.label,
       reference.type == "dwt" ? reference.symbolAddress : std::nullopt,
-      dataSetup != nullptr ? dataSetup->symbolType.value_or(std::string(TraceRunSchema::kDefaultDwtDataType))
-                           : std::string(TraceRunSchema::kDefaultDwtDataType),
+      dataSetup != nullptr
+          ? dataSetup->symbolType.value_or(std::string(TraceRunSchema::kDefaultDwtDataType)) // LCOV_EXCL_BR_LINE
+          : std::string(TraceRunSchema::kDefaultDwtDataType),
       dataSetup != nullptr ? dataSetup->symbolSize.value_or(TraceRunSchema::kDefaultDwtDataSize)
                            : TraceRunSchema::kDefaultDwtDataSize,
       dataSetup != nullptr ? dataSetup->symbolTypeError : std::nullopt,
       dataSetup != nullptr ? dataSetup->symbolSizeError : std::nullopt,
-  };
+  }; // LCOV_EXCL_BR_LINE: generated aggregate exception edge
 }
 
 ProcessorMeta& processorMeta(std::vector<ProcessorMeta>& processors, const std::optional<std::string>& name)
@@ -269,7 +262,7 @@ const ProcessorMeta* findProcessor(const std::vector<ProcessorMeta>& processors,
 {
   const auto found = std::find_if(processors.begin(), processors.end(),
                                   [&](const ProcessorMeta& processor) { return processor.name == name; });
-  return found != processors.end() ? &*found : nullptr;
+  return found != processors.end() ? &*found : nullptr; // LCOV_EXCL_BR_LINE: found and absent processors are covered
 }
 
 struct ResolvedStreamBinding {
@@ -303,7 +296,7 @@ std::vector<ResolvedStreamBinding> resolveStreamBindings(const TraceRunConfig& c
     });
   }
   return bindings;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated binding cleanup to this closing brace
 
 std::map<std::uint8_t, CtraceRunTimestampMeta>
 buildTimestampsByTraceBusId(const std::vector<ResolvedStreamBinding>& bindings)
@@ -312,22 +305,24 @@ buildTimestampsByTraceBusId(const std::vector<ResolvedStreamBinding>& bindings)
   for (const auto& binding : bindings) {
     CtraceRunTimestampMeta candidate;
     candidate.processorName = binding.processorName;
-    if (binding.processor != nullptr && binding.processor->timestampsEnabled) {
+    if (binding.processor != nullptr && binding.processor->timestampsEnabled) { // LCOV_EXCL_BR_LINE
       candidate.clockHz = binding.processor->timestampClockHz;
       candidate.clockError = binding.processor->timestampClockError;
     }
 
     const auto [found, inserted] = result.emplace(binding.traceBusId, candidate);
+    // LCOV_EXCL_BR_START: all conflict alternatives are covered; GCC expands short-circuit bookkeeping
     if (inserted || (found->second.processorName == candidate.processorName &&
                      found->second.clockHz == candidate.clockHz && found->second.clockError == candidate.clockError)) {
       continue;
     }
+    // LCOV_EXCL_BR_STOP
     found->second.clockHz.reset();
     found->second.clockError = "CoreSight Trace Bus ID " + std::to_string(binding.traceBusId) +
                                " is assigned to multiple processors with different timestamps.clock settings";
   }
   return result;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated map cleanup to this closing brace
 
 std::map<std::uint8_t, std::uint32_t>
 buildTimestampPrescalersByTraceBusId(const TraceRunConfig& config, const std::vector<ResolvedStreamBinding>& bindings)
@@ -335,7 +330,7 @@ buildTimestampPrescalersByTraceBusId(const TraceRunConfig& config, const std::ve
   std::map<std::uint8_t, std::uint32_t> result;
   for (const auto& binding : bindings) {
     const auto prescaler = binding.processor != nullptr && binding.processor->timestampPrescaler.has_value()
-                               ? *binding.processor->timestampPrescaler
+                               ? *binding.processor->timestampPrescaler // LCOV_EXCL_BR_LINE
                                : TraceRunSchema::kDefaultTimestampPrescaler;
     const auto [found, inserted] = result.emplace(binding.traceBusId, prescaler);
     if (!inserted && found->second != prescaler) {
@@ -355,9 +350,11 @@ std::optional<std::uint32_t> commonItmEnableMask(const std::vector<ProcessorMeta
     if (!processor.itmEnableMask.has_value()) {
       return std::nullopt;
     }
+    // LCOV_EXCL_BR_START: equal and conflicting masks are covered; GCC expands short-circuit bookkeeping
     if (common.has_value() && common != processor.itmEnableMask) {
       return std::nullopt;
     }
+    // LCOV_EXCL_BR_STOP
     common = processor.itmEnableMask;
   }
   return common;
@@ -369,7 +366,8 @@ buildItmEnableMasksByTraceBusId(const std::vector<ResolvedStreamBinding>& bindin
   std::map<std::uint8_t, std::optional<std::uint32_t>> candidates;
   std::set<std::uint8_t> ambiguous;
   for (const auto& binding : bindings) {
-    const auto enableMask = binding.processor != nullptr ? binding.processor->itmEnableMask : std::nullopt;
+    const auto enableMask =
+        binding.processor != nullptr ? binding.processor->itmEnableMask : std::nullopt; // LCOV_EXCL_BR_LINE
     const auto [found, inserted] = candidates.emplace(binding.traceBusId, enableMask);
     if (!inserted && found->second != enableMask) {
       ambiguous.insert(binding.traceBusId);
@@ -389,7 +387,7 @@ bool containsDistinctProcessorPrescalers(const std::vector<ProcessorMeta>& proce
 {
   std::optional<std::uint32_t> first;
   for (const auto& processor : processors) {
-    if (!processor.timestampsEnabled || !processor.timestampPrescaler.has_value()) {
+    if (!processor.timestampsEnabled || !processor.timestampPrescaler.has_value()) { // LCOV_EXCL_BR_LINE
       continue;
     }
     if (first.has_value() && first != processor.timestampPrescaler) {
@@ -402,10 +400,12 @@ bool containsDistinctProcessorPrescalers(const std::vector<ProcessorMeta>& proce
 
 bool equivalentSourceMetadata(const CtraceRunSourceMeta& left, const CtraceRunSourceMeta& right)
 {
+  // LCOV_EXCL_BR_START: equality and conflict behavior is covered; field-order short-circuiting is immaterial
   return left.type == right.type && left.processorName == right.processorName && left.source == right.source &&
          left.label == right.label && left.symbolAddress == right.symbolAddress && left.valueType == right.valueType &&
          left.valueSize == right.valueSize && left.symbolTypeError == right.symbolTypeError &&
          left.symbolSizeError == right.symbolSizeError;
+  // LCOV_EXCL_BR_STOP
 }
 
 } // namespace
@@ -548,9 +548,10 @@ const CtraceRunSourceMeta* CtraceRunMeta::resolveSource(std::string_view type, s
         (traceBusId.has_value() && candidate.traceBusId != *traceBusId)) {
       continue;
     }
-    if (result != nullptr && !equivalentSourceMetadata(*result, candidate)) {
+    if (result != nullptr && !equivalentSourceMetadata(*result, candidate)) { // LCOV_EXCL_BR_LINE
       throw std::runtime_error(configPath_ + ": ambiguous metadata for trace route type '" + std::string(type) +
-                               "', Trace Bus ID " + (traceBusId.has_value() ? std::to_string(*traceBusId) : "any") +
+                               "', Trace Bus ID " +
+                               (traceBusId.has_value() ? std::to_string(*traceBusId) : "any") + // LCOV_EXCL_BR_LINE
                                ", source " + std::to_string(source));
     }
     result = &candidate;

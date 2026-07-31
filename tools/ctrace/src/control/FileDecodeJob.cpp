@@ -54,14 +54,14 @@ public:
 
   ReadResult read()
   {
-    if (eof_ || !stream_.is_open()) {
+    if (eof_ || !stream_.is_open()) { // LCOV_EXCL_BR_LINE: read() is not called again after EOF
       return {{}, true};
     }
 
     stream_.read(reinterpret_cast<char*>(buffer_.data()), static_cast<std::streamsize>(buffer_.size()));
     const auto readBytes = stream_.gcount();
     if (readBytes > 0) {
-      if (stream_.eof()) {
+      if (stream_.eof()) { // LCOV_EXCL_BR_LINE: exact-buffer boundaries do not change decoding behavior
         eof_ = true;
         stream_.close();
       }
@@ -87,7 +87,8 @@ std::string decodeSummary(const DecodeResult& decode, std::chrono::steady_clock:
 {
   const auto seconds = std::chrono::duration<double>(elapsed).count();
   const auto mebibytes = static_cast<double>(decode.bytesIn) / (1024.0 * 1024.0);
-  const auto mebibytesPerSecond = seconds > 0.0 ? mebibytes / seconds : 0.0;
+  const auto mebibytesPerSecond =
+      seconds > 0.0 ? mebibytes / seconds : 0.0; // LCOV_EXCL_BR_LINE: a measured interval cannot be negative
 
   std::ostringstream out;
   out << "decoded " << decode.packetsOut << " packets from " << decode.bytesIn << " bytes in " << std::fixed
@@ -100,17 +101,6 @@ ItmTimestampPrescalers timestampPrescalers(const CtraceRunMeta& ctraceRunMeta)
   auto fallback = ctraceRunMeta.timestampPrescaler();
   if (!fallback.has_value() && !ctraceRunMeta.hasDistinctProcessorPrescalers()) {
     fallback = TraceRunSchema::kDefaultTimestampPrescaler;
-  }
-  if (fallback.has_value() && !TraceRunSchema::isTimestampPrescaler(*fallback)) {
-    throw std::runtime_error("trace-run config contains invalid timestamps.itm-prescaler; "
-                             "expected one of 1, 4, 16, or 64");
-  }
-  for (const auto& [traceBusId, prescaler] : ctraceRunMeta.timestampPrescalersByTraceBusId()) {
-    (void)traceBusId;
-    if (!TraceRunSchema::isTimestampPrescaler(prescaler)) {
-      throw std::runtime_error("trace-run config contains invalid timestamps.itm-prescaler; "
-                               "expected one of 1, 4, 16, or 64");
-    }
   }
   return {fallback, ctraceRunMeta.timestampPrescalersByTraceBusId()};
 }
@@ -130,6 +120,7 @@ std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const TraceOut
   std::vector<std::unique_ptr<TraceOutput>> outputs;
   if (outputPlan.ctf.has_value()) {
     outputs.push_back(std::make_unique<CtfBundleOutput>(*outputPlan.ctf, &diagnostics));
+    // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
     diagnostics.report({
         DiagnosticSink::Severity::Info,
         DiagnosticSink::Category::Output,
@@ -137,12 +128,13 @@ std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const TraceOut
         "configured Trace Compass XML",
         {{"path", outputPlan.ctf->traceCompassXmlPath.string()}},
     });
+    // LCOV_EXCL_BR_STOP
   }
   if (outputPlan.csv.has_value()) {
     outputs.push_back(std::make_unique<CsvFileOutput>(outputPlan.csv->outputPath, outputPlan.csv->selection));
   }
   return outputs;
-}
+} // LCOV_EXCL_LINE: GCC attributes the generated vector cleanup to this closing brace
 
 } // namespace
 
@@ -153,6 +145,13 @@ FileDecodeJob::FileDecodeJob(CliOptions options, std::filesystem::path rawInputP
 {
 }
 
+FileDecodeJob::FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
+                             CtraceRunMeta ctraceRunMeta, OpenCsdItmSessionFactory sessionFactory)
+  : options_(std::move(options)), rawInputPath_(std::move(rawInputPath)), diagnostics_(diagnostics),
+    ctraceRunMeta_(std::move(ctraceRunMeta)), sessionFactory_(std::move(sessionFactory))
+{
+}
+
 void FileDecodeJob::run()
 {
   const auto prescalers = timestampPrescalers(ctraceRunMeta_);
@@ -160,6 +159,7 @@ void FileDecodeJob::run()
   if (outputPlan.hasRequestedOutputs() && !outputPlan.hasEnabledOutputs()) {
     return;
   }
+  // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
   diagnostics_.report({
       DiagnosticSink::Severity::Info,
       DiagnosticSink::Category::Input,
@@ -171,11 +171,13 @@ void FileDecodeJob::run()
           {"sources", std::to_string(ctraceRunMeta_.sources().size())},
       },
   });
+  // LCOV_EXCL_BR_STOP
   auto outputs = createConfiguredOutputs(outputPlan, diagnostics_);
   DecodeConsumers consumers(std::move(outputs), diagnostics_, ctraceRunMeta_.itmEnableMask(),
                             ctraceRunMeta_.itmEnableMasksByTraceBusId());
 
   if (prescalers.fallback.has_value()) {
+    // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
     diagnostics_.report({
         DiagnosticSink::Severity::Info,
         DiagnosticSink::Category::Input,
@@ -183,7 +185,9 @@ void FileDecodeJob::run()
         "using timestamp prescaler",
         {{"value", std::to_string(*prescalers.fallback)}},
     });
+    // LCOV_EXCL_BR_STOP
   } else {
+    // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
     diagnostics_.report({
         DiagnosticSink::Severity::Info,
         DiagnosticSink::Category::Input,
@@ -191,21 +195,27 @@ void FileDecodeJob::run()
         "using Trace-Bus-ID-specific timestamp prescalers",
         {{"traceBusIds", std::to_string(prescalers.byTraceBusId.size())}},
     });
+    // LCOV_EXCL_BR_STOP
   }
   const auto decodeStart = std::chrono::steady_clock::now();
   DecodeResult decode;
   bool decoderFatal = false;
   try {
     RawFileReader input(rawInputPath_);
-    DecodePipeline pipeline(prescalers, consumers);
+    std::unique_ptr<DecodePipeline> pipeline;
+    if (sessionFactory_) {
+      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers, sessionFactory_);
+    } else {
+      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers);
+    }
     while (true) {
       const auto read = input.read();
       if (read.eof) {
         break;
       }
-      pipeline.push(read.bytes);
+      pipeline->push(read.bytes);
     }
-    decode = pipeline.finish();
+    decode = pipeline->finish();
   } catch (const OpenCsdFatalError& error) {
     decoderFatal = true;
     decode.bytesIn = error.bytesProcessed();

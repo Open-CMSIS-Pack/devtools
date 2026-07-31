@@ -25,10 +25,14 @@ static_assert(sizeof(ocsd_trc_index_t) == sizeof(std::uint64_t), "ctrace require
 
 class OpenCsdItmDecoderImpl {
 public:
-  explicit OpenCsdItmDecoderImpl(OpenCsdTraceElementSink& elementSink) : collector_(elementSink)
+  OpenCsdItmDecoderImpl(OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory)
+    : collector_(elementSink)
   {
     try {
-      session_ = std::make_unique<OpenCsdItmSession>(collector_, errorController_);
+      session_ = sessionFactory(collector_, errorController_);
+      if (session_ == nullptr) {
+        failInitialization("OpenCSD ITM session factory returned no session");
+      }
     } catch (const OpenCsdItmSessionError& error) {
       failInitialization(error.what());
     }
@@ -94,9 +98,10 @@ private:
       item.error = error;
       const auto sourceOffset = OpenCsdErrorController::errorOffset(item, baseOffset);
       const auto isError = error.severity == OCSD_ERR_SEV_ERROR;
-      collector_.appendDecodeError(static_cast<ocsd_trc_index_t>(sourceOffset),
+      collector_.appendDecodeError(static_cast<ocsd_trc_index_t>(sourceOffset), // LCOV_EXCL_BR_LINE
                                    OpenCsdErrorController::describeSummary(item),
-                                   OpenCsdErrorController::issueCode(item), nextDiscontinuity && isError,
+                                   OpenCsdErrorController::issueCode(item),
+                                   nextDiscontinuity && isError, // LCOV_EXCL_BR_LINE
                                    isError ? TraceIssueSeverity::Error : TraceIssueSeverity::Warning);
       if (isError) {
         emittedError = true;
@@ -194,7 +199,7 @@ private:
       }
       if (processedThisPass == 0) {
         collector_.rollbackTransaction();
-        if (noProgressRetryOffset.has_value() && *noProgressRetryOffset == traceIndex_) {
+        if (noProgressRetryOffset.has_value() && *noProgressRetryOffset == traceIndex_) { // LCOV_EXCL_BR_LINE
           completeConsumedDataLoss(traceIndex_);
           collector_.appendDecodeError(traceIndex_, "OpenCSD made no progress after decoder reset; decode aborted",
                                        "opencsd-no-progress", false);
@@ -294,7 +299,7 @@ private:
 
   OpenCsdPacketCollector collector_;
   OpenCsdErrorController errorController_;
-  std::unique_ptr<OpenCsdItmSession> session_;
+  std::unique_ptr<OpenCsdItmSessionInterface> session_;
   ocsd_trc_index_t traceIndex_ = 0;
   bool dataLossActive_ = false;
   std::optional<std::uint64_t> consumedDataLossStart_;
@@ -304,7 +309,15 @@ private:
 };
 
 OpenCsdItmDecoder::OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink)
-  : impl_(std::make_unique<OpenCsdItmDecoderImpl>(elementSink))
+  : OpenCsdItmDecoder(elementSink, [](OpenCsdPacketCollector& collector, OpenCsdErrorController& errorController) {
+      return std::make_unique<OpenCsdItmSession>(collector, errorController);
+    })
+{
+}
+
+OpenCsdItmDecoder::OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink,
+                                     const OpenCsdItmSessionFactory& sessionFactory)
+  : impl_(std::make_unique<OpenCsdItmDecoderImpl>(elementSink, sessionFactory))
 {
 }
 

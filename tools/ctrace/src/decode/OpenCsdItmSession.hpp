@@ -19,6 +19,17 @@ class OpenCsdErrorController;
 class OpenCsdPacketCollector;
 class TraceComponent;
 
+class OpenCsdItmSessionInterface {
+public:
+  virtual ~OpenCsdItmSessionInterface() = default;
+
+  virtual ocsd_datapath_resp_t pushData(ocsd_trc_index_t index, std::uint32_t size, const std::uint8_t* data,
+                                        std::uint32_t& processed) = 0;
+  virtual ocsd_datapath_resp_t flush() = 0;
+  virtual ocsd_datapath_resp_t reset() = 0;
+  virtual ocsd_datapath_resp_t endOfTrace() = 0;
+};
+
 class OpenCsdItmSessionError final : public std::runtime_error {
 public:
   using std::runtime_error::runtime_error;
@@ -26,7 +37,7 @@ public:
 
 // Owns one fully wired OpenCSD ITM callback decoder. Feed/recovery policy stays
 // in OpenCsdItmDecoder; this class only manages the external decoder session.
-class OpenCsdItmSession final {
+class OpenCsdItmSession final : public OpenCsdItmSessionInterface {
 public:
   OpenCsdItmSession(OpenCsdPacketCollector& collector, OpenCsdErrorController& errorController);
   ~OpenCsdItmSession() noexcept;
@@ -35,10 +46,10 @@ public:
   OpenCsdItmSession& operator=(const OpenCsdItmSession&) = delete;
 
   ocsd_datapath_resp_t pushData(ocsd_trc_index_t index, std::uint32_t size, const std::uint8_t* data,
-                                std::uint32_t& processed);
-  ocsd_datapath_resp_t flush();
-  ocsd_datapath_resp_t reset();
-  ocsd_datapath_resp_t endOfTrace();
+                                std::uint32_t& processed) override;
+  ocsd_datapath_resp_t flush() override;
+  ocsd_datapath_resp_t reset() override;
+  ocsd_datapath_resp_t endOfTrace() override;
 
 private:
   static void checkOcsd(ocsd_err_t error, const char* message);

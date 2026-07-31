@@ -25,6 +25,12 @@ DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, Trace
 {
 }
 
+DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
+                               const OpenCsdItmSessionFactory& sessionFactory)
+  : streamDecoder_(std::move(timestampPrescalers), eventSink), decoder_(streamDecoder_, sessionFactory)
+{
+}
+
 void DecodePipeline::push(RawByteView bytes)
 {
   if (bytes.empty()) {
