@@ -18,16 +18,20 @@
 #include <cstdint>
 #include <optional>
 
+namespace {
+
+DwtPayloadPacket dwtPayload(std::uint8_t discriminator, std::uint8_t size = 0U, std::uint32_t value = 0U,
+                            std::uint64_t index = 0U, std::uint8_t traceBusId = 0U, std::uint64_t tcyc = 0U)
+{
+  return {index, traceBusId, discriminator, size, value, tcyc, {}};
+}
+
+} // namespace
+
 TEST(CtraceUnitTests, testDwtPcSampleIsSuppressedUntilDedicatedEventExists)
 {
   DwtPacketDecoder decoder;
-  DwtPayloadPacket payload;
-  payload.index = 19U;
-  payload.traceBusId = 3U;
-  payload.discriminator = 2U;
-  payload.size = 4U;
-  payload.value = 0x08001234U;
-  payload.tcyc = 949339000U;
+  auto payload = dwtPayload(2U, 4U, 0x08001234U, 19U, 3U, 949339000U);
   payload.status.timestampReliable = true;
 
   const auto packets = decoder.decode(payload);
@@ -38,13 +42,7 @@ TEST(CtraceUnitTests, testDwtCounterPacketsArePreservedUntilOutputSemanticsExist
 {
   const auto verify = [](std::uint8_t discriminator, const char* selector) {
     DwtPacketDecoder decoder;
-    DwtPayloadPacket payload;
-    payload.index = 23U;
-    payload.traceBusId = 4U;
-    payload.discriminator = discriminator;
-    payload.size = 1U;
-    payload.value = 0x21U;
-    payload.tcyc = 949339100U;
+    auto payload = dwtPayload(discriminator, 1U, 0x21U, 23U, 4U, 949339100U);
     payload.status.overflow = true;
     payload.status.timestampReliable = false;
     payload.status.overflowCount = 7U;
@@ -80,13 +78,7 @@ TEST(CtraceUnitTests, testDwtCounterPacketsArePreservedUntilOutputSemanticsExist
 TEST(CtraceUnitTests, testDwtPacketDecoderRejectsReservedExceptionAction)
 {
   DwtPacketDecoder decoder;
-  DwtPayloadPacket payload;
-  payload.index = 17;
-  payload.traceBusId = 3;
-  payload.discriminator = 1;
-  payload.size = 2;
-  payload.value = 11;
-  payload.tcyc = 1234;
+  auto payload = dwtPayload(1U, 2U, 11U, 17U, 3U, 1234U);
   payload.status.timestampReliable = true;
 
   const auto packets = decoder.decode(payload);
@@ -108,25 +100,13 @@ TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingEventsInRawOrder)
 {
   DwtPacketDecoder decoder;
 
-  DwtPayloadPacket comparatorThree;
-  comparatorThree.index = 10U;
-  comparatorThree.traceBusId = 3U;
-  comparatorThree.discriminator = 14U;
-  comparatorThree.size = 4U;
-  comparatorThree.value = 0x08003000U;
+  const auto comparatorThree = dwtPayload(14U, 4U, 0x08003000U, 10U, 3U);
   require(decoder.decode(comparatorThree).empty(), "an incomplete DWT comparator-three event must remain pending");
 
-  auto comparatorOne = comparatorThree;
-  comparatorOne.discriminator = 10U;
-  comparatorOne.value = 0x08001000U;
+  const auto comparatorOne = dwtPayload(10U, 4U, 0x08001000U, 10U, 3U);
   require(decoder.decode(comparatorOne).empty(), "an incomplete DWT comparator-one event must remain pending");
 
-  DwtPayloadPacket comparatorZero;
-  comparatorZero.index = 20U;
-  comparatorZero.traceBusId = 4U;
-  comparatorZero.discriminator = 8U;
-  comparatorZero.size = 4U;
-  comparatorZero.value = 0x08000000U;
+  const auto comparatorZero = dwtPayload(8U, 4U, 0x08000000U, 20U, 4U);
   require(decoder.decode(comparatorZero).empty(), "an incomplete DWT comparator-zero event must remain pending");
 
   const auto packets = decoder.flush({}, 123U);
@@ -147,23 +127,11 @@ TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRepeatedAddressFragments)
 {
   const auto verify = [](std::uint8_t discriminator, std::uint32_t firstValue, std::uint32_t secondValue) {
     DwtPacketDecoder decoder;
-    DwtPayloadPacket first;
-    first.index = 10U;
-    first.traceBusId = 3U;
-    first.discriminator = discriminator;
-    first.size = (discriminator & 1U) == 0U ? 4U : 2U;
-    first.value = firstValue;
+    const auto size = static_cast<std::uint8_t>((discriminator & 1U) == 0U ? 4U : 2U);
+    const auto first = dwtPayload(discriminator, size, firstValue, 10U, 3U);
     require(decoder.decode(first).empty(), "first DWT address fragment must remain pending");
 
-    auto packets = decoder.decode(DwtPayloadPacket{
-        20U,
-        4U,
-        discriminator,
-        static_cast<std::uint8_t>((discriminator & 1U) == 0U ? 4U : 2U),
-        secondValue,
-        200U,
-        {},
-    });
+    auto packets = decoder.decode(dwtPayload(discriminator, size, secondValue, 20U, 4U, 200U));
     require(packets.size() == 1U, "a repeated DWT address fragment must flush its predecessor");
     const auto* firstAddress = traceEventPayload<DwtAddressTraceEvent>(packets.front());
     require(firstAddress != nullptr && packets.front().index == 10U && packets.front().traceBusId == 3U,
@@ -196,13 +164,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
 {
   const auto verify = [](std::uint8_t discriminator, std::uint8_t size) {
     DwtPacketDecoder decoder;
-    DwtPayloadPacket payload;
-    payload.index = 17U;
-    payload.traceBusId = 3U;
-    payload.discriminator = discriminator;
-    payload.size = size;
-    payload.value = 0x12345678U;
-    payload.tcyc = 99U;
+    auto payload = dwtPayload(discriminator, size, 0x12345678U, 17U, 3U, 99U);
     payload.status.timestampReliable = true;
 
     const auto packets = decoder.decode(payload);
@@ -224,13 +186,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderMapsAllExceptionActions)
 {
   const auto verify = [](std::uint32_t actionCode, ExceptionAction expected) {
     DwtPacketDecoder decoder;
-    DwtPayloadPacket payload;
-    payload.index = 17U;
-    payload.traceBusId = 3U;
-    payload.discriminator = 1U;
-    payload.size = 2U;
-    payload.value = (actionCode << 12U) | 11U;
-    payload.tcyc = 1234U;
+    auto payload = dwtPayload(1U, 2U, (actionCode << 12U) | 11U, 17U, 3U, 1234U);
     payload.status.timestampReliable = true;
 
     const auto packets = decoder.decode(payload);
@@ -249,17 +205,10 @@ TEST(CtraceUnitTests, testDwtPacketDecoderMapsAllExceptionActions)
 TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingTraceForUnknownSource)
 {
   DwtPacketDecoder decoder;
-  DwtPayloadPacket address;
-  address.index = 10U;
-  address.discriminator = 8U;
-  address.size = 4U;
-  address.value = 0x08001234U;
+  const auto address = dwtPayload(8U, 4U, 0x08001234U, 10U);
   EXPECT_TRUE(decoder.decode(address).empty());
 
-  DwtPayloadPacket unknown;
-  unknown.index = 11U;
-  unknown.discriminator = 7U;
-  unknown.tcyc = 42U;
+  auto unknown = dwtPayload(7U, 0U, 0U, 11U, 0U, 42U);
   const auto packets = decoder.decode(unknown);
   ASSERT_EQ(packets.size(), 1U);
   EXPECT_NE(traceEventPayload<DwtAddressTraceEvent>(packets.front()), nullptr);
@@ -276,11 +225,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderCombinesPcOffsetAndValue)
 {
   DwtPacketDecoder decoder;
 
-  DwtPayloadPacket pc;
-  pc.index = 10U;
-  pc.discriminator = 8U;
-  pc.size = 4U;
-  pc.value = 0x08001234U;
+  auto pc = dwtPayload(8U, 4U, 0x08001234U, 10U);
   pc.status.timestampReliable = true;
   EXPECT_TRUE(decoder.decode(pc).empty());
 

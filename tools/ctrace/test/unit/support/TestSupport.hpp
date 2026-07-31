@@ -14,9 +14,10 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
-#include <sstream>
+#include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -27,6 +28,29 @@ inline void require(bool condition, const std::string& message)
   }
 }
 
+template <typename Exception = std::runtime_error, typename Function>
+inline std::optional<std::string> captureExceptionMessage(Function&& action)
+{
+  try {
+    std::forward<Function>(action)();
+  } catch (const Exception& error) {
+    return error.what();
+  }
+  return std::nullopt;
+}
+
+template <typename Exception = std::runtime_error, typename Function> inline bool throwsException(Function&& action)
+{
+  return captureExceptionMessage<Exception>(std::forward<Function>(action)).has_value();
+}
+
+template <typename Exception = std::runtime_error, typename Function>
+inline bool throwsWithMessage(Function&& action, std::string_view expected)
+{
+  const auto message = captureExceptionMessage<Exception>(std::forward<Function>(action));
+  return message.has_value() && message->find(expected) != std::string::npos;
+}
+
 class CollectingDiagnosticSink final : public DiagnosticSink {
 public:
   const std::vector<Event>& events() const
@@ -34,9 +58,36 @@ public:
     return events_;
   }
 
-  void clear()
+  bool contains(std::string_view code) const
   {
-    events_.clear();
+    for (const auto& event : events_) {
+      if (event.code == code) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  const Event& singleEvent(std::string_view code) const
+  {
+    require(events_.size() == 1U, "expected exactly one diagnostic event");
+    require(events_.front().code == code, "unexpected diagnostic code: " + events_.front().code);
+    return events_.front();
+  }
+
+  bool containsContext(std::string_view code, std::string_view key, std::string_view value) const
+  {
+    for (const auto& event : events_) {
+      if (event.code != code) {
+        continue;
+      }
+      for (const auto& [contextKey, contextValue] : event.context) {
+        if (contextKey == key && contextValue == value) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
 protected:
@@ -100,20 +151,6 @@ inline std::vector<unsigned char> readTestBinaryFile(const std::filesystem::path
   return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
 }
 
-inline std::vector<std::string> splitCsvTestLine(const std::string& line)
-{
-  std::vector<std::string> fields;
-  std::istringstream in(line);
-  std::string field;
-  while (std::getline(in, field, ',')) {
-    fields.push_back(field);
-  }
-  if (!line.empty() && line.back() == ',') {
-    fields.emplace_back();
-  }
-  return fields;
-}
-
 inline TraceEvent exceptionPacket(std::uint32_t number, ExceptionAction action, std::uint64_t tcyc = 0)
 {
   TraceEvent packet{ExceptionTraceEvent{number, action}};
@@ -132,6 +169,18 @@ inline TraceEvent overflowPacket(std::uint64_t tcyc)
 inline TraceEvent softwarePacket(std::uint32_t channel, std::uint8_t size = 1, std::uint32_t value = 0)
 {
   return TraceEvent{SoftwareTraceEvent{channel, size, value}};
+}
+
+inline TraceEvent atCycle(TraceEvent event, std::uint64_t tcyc)
+{
+  event.tcyc = tcyc;
+  return event;
+}
+
+inline TraceEvent onStream(TraceEvent event, std::uint8_t traceBusId)
+{
+  event.traceBusId = traceBusId;
+  return event;
 }
 
 inline TraceEvent issuePacket(std::string code, std::string message = {},

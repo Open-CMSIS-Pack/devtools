@@ -22,44 +22,45 @@
 
 namespace {
 
-const CtraceRunSourceMeta* findSource(const CtraceRunMeta& meta, const std::string& type, std::uint32_t source)
-{
-  for (const auto& candidate : meta.sources()) {
-    if (candidate.type == type && candidate.source == source) {
-      return &candidate;
-    }
-  }
-  return nullptr;
-}
-
-class TemporaryTraceRunFile {
+class TraceRunFixture {
 public:
-  explicit TemporaryTraceRunFile(const std::string& name) : root_(name), path_(root_.path() / "Board.ctrace-run.yml") {}
+  explicit TraceRunFixture(const std::string& name) : root_(name), path_(root_.path() / "Board.ctrace-run.yml") {}
 
-  const std::filesystem::path& path() const
+  TraceRunConfig read() const
   {
-    return path_;
+    return YmlTraceRunConfigReader().read(path_.string());
+  }
+
+  TraceRunConfig read(std::string_view yaml)
+  {
+    write(yaml);
+    return read();
+  }
+
+  std::string error() const
+  {
+    return captureExceptionMessage([this] { (void)read(); }).value_or("");
+  }
+
+  std::string error(std::string_view yaml)
+  {
+    write(yaml);
+    return error();
   }
 
 private:
+  void write(std::string_view yaml)
+  {
+    writeTestFile(path_, std::string(yaml));
+  }
+
   TemporaryTestPath root_;
   std::filesystem::path path_;
 };
 
-std::string readError(const std::filesystem::path& path)
+void expectReadError(TraceRunFixture& file, std::string_view yaml, std::string_view expected)
 {
-  try {
-    (void)YmlTraceRunConfigReader().read(path.string());
-  } catch (const std::runtime_error& error) {
-    return error.what();
-  }
-  return {};
-}
-
-void expectReadError(TemporaryTraceRunFile& file, std::string_view yaml, std::string_view expected)
-{
-  writeTestFile(file.path(), std::string(yaml));
-  const auto error = readError(file.path());
+  const auto error = file.error(yaml);
   EXPECT_NE(error.find(expected), std::string::npos) << "unexpected result for:\n" << yaml << "\nerror: " << error;
 }
 
@@ -67,8 +68,8 @@ void expectReadError(TemporaryTraceRunFile& file, std::string_view yaml, std::st
 
 TEST(CtraceUnitTests, TraceRunReaderConsumesOnlyRelevantFields)
 {
-  TemporaryTraceRunFile file("ctrace-run-reader-relevant-fields-test");
-  writeTestFile(file.path(), R"yml(format-version: ignored
+  TraceRunFixture file("ctrace-run-reader-relevant-fields-test");
+  const auto config = file.read(R"yml(format-version: ignored
 producer-data:
   malformed: [but, irrelevant]
 ctrace-run:
@@ -117,8 +118,6 @@ ctrace-run:
     - { ctrace-ref: ignored/missing-type, source: [invalid] }
     - malformed-entry-is-ignored
 )yml");
-
-  const auto config = YmlTraceRunConfigReader().read(file.path().string());
   ASSERT_EQ(config.references.size(), 2U);
   ASSERT_EQ(config.setups.size(), 1U);
 
@@ -128,45 +127,44 @@ ctrace-run:
   EXPECT_EQ(meta.timestampPrescaler(), std::optional<std::uint32_t>(4U));
   ASSERT_EQ(meta.itmEnableMasksByTraceBusId().at(2U), 0x00000006U);
 
-  const auto* itm = findSource(meta, "itm", 1U);
+  const auto* itm = meta.resolveSource("itm", 2U, 1U);
   ASSERT_NE(itm, nullptr);
   EXPECT_EQ(itm->label, std::optional<std::string>("Console"));
 
-  const auto* dwt = findSource(meta, "dwt", 0U);
+  const auto* dwt = meta.resolveSource("dwt", 2U, 0U);
   ASSERT_NE(dwt, nullptr);
   EXPECT_EQ(dwt->valueType, "signed int");
   EXPECT_EQ(dwt->valueSize, 1U);
   EXPECT_EQ(dwt->symbolAddress, std::optional<std::uint64_t>(0x20000100U));
   EXPECT_EQ(dwt->label, std::optional<std::string>("Current"));
 
-  writeTestFile(file.path(), R"yml(unrelated-root: [ignored]
+  const auto empty = file.read(R"yml(unrelated-root: [ignored]
 ctrace-run:
   generated-by: ignored
   unsupported-content: { malformed: [but, irrelevant] }
 )yml");
-  const auto empty = YmlTraceRunConfigReader().read(file.path().string());
   EXPECT_TRUE(empty.references.empty());
   EXPECT_TRUE(empty.setups.empty());
 }
 
 TEST(CtraceUnitTests, TraceRunReaderValidatesConsumedFields)
 {
-  TemporaryTraceRunFile file("ctrace-run-reader-consumed-fields-test");
-  writeTestFile(file.path(), R"yml(ctrace-run:
+  TraceRunFixture file("ctrace-run-reader-consumed-fields-test");
+  EXPECT_THROW((void)file.read(R"yml(ctrace-run:
   ctrace-refs:
     - ctrace-ref: relevant/itm
       type: itm
       source: [1]
-)yml");
-
-  EXPECT_THROW((void)YmlTraceRunConfigReader().read(file.path().string()), std::runtime_error);
+)yml"),
+               std::runtime_error);
 }
 
 TEST(CtraceUnitTests, TraceRunReaderReportsDocumentErrors)
 {
-  TemporaryTraceRunFile file("ctrace-run-reader-document-errors-test");
-  EXPECT_EQ(readError({}), "trace-run configuration path is empty");
-  EXPECT_NE(readError(file.path()).find("failed to parse trace-run configuration"), std::string::npos);
+  TraceRunFixture file("ctrace-run-reader-document-errors-test");
+  EXPECT_EQ(captureExceptionMessage([] { (void)YmlTraceRunConfigReader().read(""); }),
+            std::optional<std::string>("trace-run configuration path is empty"));
+  EXPECT_NE(file.error().find("failed to parse trace-run configuration"), std::string::npos);
 
   expectReadError(file, "ctrace-run: [\n", "failed to parse trace-run configuration");
   expectReadError(file, "ctrace-run: {}\n---\nctrace-run: {}\n", "expected exactly one YAML document");
@@ -178,7 +176,7 @@ TEST(CtraceUnitTests, TraceRunReaderReportsDocumentErrors)
 
 TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceContainers)
 {
-  TemporaryTraceRunFile file("ctrace-run-reader-reference-container-errors-test");
+  TraceRunFixture file("ctrace-run-reader-reference-container-errors-test");
   expectReadError(file, "ctrace-run:\n  ctrace-refs: {}\n", "'ctrace-refs' must be an array");
   expectReadError(file, "ctrace-run:\n  ctrace-refs: []\n  ctrace-refs: []\n", "map keys must be unique");
   expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - type: itm\n      source: 1\n",
@@ -191,7 +189,7 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceContainers)
 
 TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceRoutes)
 {
-  TemporaryTraceRunFile file("ctrace-run-reader-reference-route-errors-test");
+  TraceRunFixture file("ctrace-run-reader-reference-route-errors-test");
   struct Case {
     const char* fields;
     const char* error;
@@ -221,8 +219,8 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceRoutes)
 
 TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
 {
-  TemporaryTraceRunFile file("ctrace-run-reader-diagnostic-references-test");
-  writeTestFile(file.path(), R"yml(ctrace-run:
+  TraceRunFixture file("ctrace-run-reader-diagnostic-references-test");
+  const auto config = file.read(R"yml(ctrace-run:
   ctrace-refs:
     - { type: event, ctrace-ref: core/event, pname: core0, source: [invalid], info: note }
     - { type: pmu, ctrace-ref: core/pmu, pname: [], warning: warning }
@@ -237,8 +235,6 @@ TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
     - { type: [], ctrace-ref: ignored }
     - { type: '', ctrace-ref: ignored }
 )yml");
-
-  const auto config = YmlTraceRunConfigReader().read(file.path().string());
   ASSERT_EQ(config.references.size(), 8U);
   EXPECT_EQ(config.references[0].processorName, std::optional<std::string>("core0"));
   EXPECT_FALSE(config.references[1].processorName.has_value());
@@ -253,8 +249,8 @@ TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
 
 TEST(CtraceUnitTests, TraceRunReaderParsesTimestampSetupVariants)
 {
-  TemporaryTraceRunFile file("ctrace-run-reader-timestamp-variants-test");
-  writeTestFile(file.path(), R"yml(ctrace-run:
+  TraceRunFixture file("ctrace-run-reader-timestamp-variants-test");
+  const auto config = file.read(R"yml(ctrace-run:
   ctrace-setup:
     - { timestamps: null }
     - { timestamps: invalid }
@@ -264,8 +260,6 @@ TEST(CtraceUnitTests, TraceRunReaderParsesTimestampSetupVariants)
     - timestamps: { clock: null }
     - timestamps: { clock: 0X10, itm-prescaler: 0x4 }
 )yml");
-
-  const auto config = YmlTraceRunConfigReader().read(file.path().string());
   ASSERT_EQ(config.setups.size(), 7U);
   EXPECT_FALSE(config.setups[0].timestamps->clockError.has_value());
   EXPECT_EQ(config.setups[1].timestamps->clockError, std::optional<std::string>("'timestamps' must be empty or a map"));
@@ -285,7 +279,7 @@ TEST(CtraceUnitTests, TraceRunReaderParsesTimestampSetupVariants)
 
 TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedConsumedSetups)
 {
-  TemporaryTraceRunFile file("ctrace-run-reader-setup-errors-test");
+  TraceRunFixture file("ctrace-run-reader-setup-errors-test");
   constexpr std::string_view prefix = "ctrace-run:\n  ctrace-setup:\n    - ";
   struct Case {
     const char* setup;
@@ -317,8 +311,8 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedConsumedSetups)
 
 TEST(CtraceUnitTests, TraceRunReaderParsesReferencedDataVariants)
 {
-  TemporaryTraceRunFile file("ctrace-run-reader-data-variants-test");
-  writeTestFile(file.path(), R"yml(ctrace-run:
+  TraceRunFixture file("ctrace-run-reader-data-variants-test");
+  const auto config = file.read(R"yml(ctrace-run:
   ctrace-refs:
     - { type: dwt, ctrace-ref: core0/data#1, pname: core0, source: 0 }
     - { type: dwt, ctrace-ref: core0/data#2, pname: core0, source: 1 }
@@ -346,8 +340,6 @@ TEST(CtraceUnitTests, TraceRunReaderParsesReferencedDataVariants)
         - { symbol-type: null, symbol-size: null }
     - data: [{}]
 )yml");
-
-  const auto config = YmlTraceRunConfigReader().read(file.path().string());
   ASSERT_EQ(config.setups.size(), 4U);
   ASSERT_EQ(config.setups[0].data.size(), 6U);
   EXPECT_FALSE(config.setups[0].data[1].symbolType.has_value());
@@ -371,8 +363,8 @@ TEST(CtraceUnitTests, TraceRunReaderParsesReferencedDataVariants)
 
 TEST(CtraceUnitTests, TraceRunReaderIgnoresUnconsumedSetups)
 {
-  TemporaryTraceRunFile file("ctrace-run-reader-unconsumed-setups-test");
-  writeTestFile(file.path(), R"yml(ctrace-run:
+  TraceRunFixture file("ctrace-run-reader-unconsumed-setups-test");
+  EXPECT_TRUE(file.read(R"yml(ctrace-run:
   ctrace-refs:
     - { type: dwt, ctrace-ref: core0/data#4, pname: core0, source: 0 }
   ctrace-setup:
@@ -383,11 +375,10 @@ TEST(CtraceUnitTests, TraceRunReaderIgnoresUnconsumedSetups)
     - { pname: null, data: [{}], disable: false }
     - { timestamps: {}, disable: true }
     - { itm: { enable: 1 }, disable: true }
-)yml");
-  EXPECT_TRUE(YmlTraceRunConfigReader().read(file.path().string()).setups.empty());
+)yml")
+                  .setups.empty());
 
-  writeTestFile(file.path(), "ctrace-run:\n  ctrace-setup: {}\n");
-  EXPECT_TRUE(YmlTraceRunConfigReader().read(file.path().string()).setups.empty());
-  writeTestFile(file.path(), "ctrace-run:\n  ctrace-setup: []\n  ctrace-setup: []\n");
-  EXPECT_NE(readError(file.path()).find("map keys must be unique"), std::string::npos);
+  EXPECT_TRUE(file.read("ctrace-run:\n  ctrace-setup: {}\n").setups.empty());
+  EXPECT_NE(file.error("ctrace-run:\n  ctrace-setup: []\n  ctrace-setup: []\n").find("map keys must be unique"),
+            std::string::npos);
 }

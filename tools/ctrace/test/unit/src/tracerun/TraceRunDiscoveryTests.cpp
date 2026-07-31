@@ -73,13 +73,9 @@ TEST(CtraceUnitTests, testTraceRunDiscovery)
       "bad\x01name",
   };
   for (const auto& unsafeTarget : unsafeTargets) {
-    bool rejected = false;
-    try {
-      (void)TraceRunDiscovery::selectConfigFiles(traceDir, unsafeTarget);
-    } catch (const std::runtime_error& error) {
-      rejected = std::string(error.what()).find("solution-set name") != std::string::npos;
-    }
-    require(rejected, "TraceRunDiscovery should reject unsafe target name: " + unsafeTarget);
+    require(throwsWithMessage([&] { (void)TraceRunDiscovery::selectConfigFiles(traceDir, unsafeTarget); },
+                              "solution-set name"),
+            "TraceRunDiscovery should reject unsafe target name: " + unsafeTarget);
   }
 
   EXPECT_THROW((void)TraceRunDiscovery::selectConfigFiles(traceDir, std::string("Missing")), std::runtime_error);
@@ -90,7 +86,7 @@ TEST(CtraceUnitTests, testTraceRunDiscovery)
   EXPECT_THROW((void)TraceRunDiscovery::solutionSetName(".ctrace-run.yml"), std::runtime_error);
 
   const TemporaryTestPath emptyPath("ctrace-trace-run-discovery-empty-test");
-  std::filesystem::create_directories(emptyPath.path());
+  emptyPath.createDirectory();
   writeTestFile(emptyPath.path() / ".ctrace-run.yml");
   EXPECT_THROW((void)TraceRunDiscovery::selectConfigFiles(emptyPath.path(), std::nullopt), std::runtime_error);
   EXPECT_TRUE(TraceRunDiscovery::rawInputs("parentless.ctrace-run.yml").empty());

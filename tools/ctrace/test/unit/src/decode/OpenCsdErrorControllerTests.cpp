@@ -16,6 +16,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -31,15 +32,15 @@ public:
   std::string messages;
 };
 
-OpenCsdErrorController::Decision makeDecision(ocsd_datapath_resp_t response, ocsd_err_t code, std::uint64_t offset = 0U,
-                                              bool hasOffset = false)
+OpenCsdErrorController::Decision makeDecision(ocsd_datapath_resp_t response, ocsd_err_t code,
+                                              std::optional<std::uint64_t> offset = std::nullopt)
 {
   OpenCsdErrorController::Decision decision;
   decision.response = response;
   OpenCsdErrorRecord error;
   error.code = code;
-  error.index = offset;
-  error.hasIndex = hasOffset;
+  error.index = offset.value_or(0U);
+  error.hasIndex = offset.has_value();
   decision.error = std::move(error);
   return decision;
 }
@@ -162,7 +163,7 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerFormatsDecisionDetails)
   EXPECT_EQ(OpenCsdErrorController::issueCode(noError), "opencsd-decode-error");
   EXPECT_EQ(OpenCsdErrorController::describe(noError), "OCSD_RESP_CONT");
 
-  auto headerError = makeDecision(OCSD_RESP_ERR_CONT, OCSD_ERR_INVALID_PCKT_HDR, 17U, true);
+  auto headerError = makeDecision(OCSD_RESP_ERR_CONT, OCSD_ERR_INVALID_PCKT_HDR, 17U);
   headerError.error->message = "reserved header";
   EXPECT_EQ(OpenCsdErrorController::errorOffset(headerError, 42U), 17U);
   EXPECT_EQ(OpenCsdErrorController::issueCode(headerError), "opencsd-invalid-packet-header");
@@ -193,7 +194,7 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerSummarizesKnownFailures)
     EXPECT_EQ(OpenCsdErrorController::describeSummary(makeDecision(OCSD_RESP_ERR_CONT, code)), summary);
   }
 
-  auto offsetError = makeDecision(OCSD_RESP_ERR_CONT, OCSD_ERR_MEM, 0U, true);
+  auto offsetError = makeDecision(OCSD_RESP_ERR_CONT, OCSD_ERR_MEM, 0U);
   EXPECT_EQ(OpenCsdErrorController::describeSummary(offsetError), "OpenCSD decoder ran out of memory at raw offset 0.");
 }
 

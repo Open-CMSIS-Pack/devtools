@@ -5,6 +5,7 @@
  * Generated with AI
  */
 
+#include "OpenCsdTestSupport.hpp"
 #include "TestSupport.hpp"
 
 #include <gtest/gtest.h>
@@ -23,31 +24,19 @@
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
-#include <string>
 #include <utility>
-#include <vector>
 
 namespace {
 
-class CollectingTraceElementSink final : public OpenCsdTraceElementSink {
+using OpenCsdTestSupport::CollectingOpenCsdElementSink;
+
+class ThrowingTraceElementSink final : public CollectingOpenCsdElementSink {
 public:
   void append(OpenCsdTraceElement element) override
   {
-    elements.push_back(std::move(element));
-  }
-
-  std::vector<OpenCsdTraceElement> elements;
-};
-
-class ThrowingTraceElementSink final : public OpenCsdTraceElementSink {
-public:
-  void append(OpenCsdTraceElement element) override
-  {
-    elements.push_back(std::move(element));
+    CollectingOpenCsdElementSink::append(std::move(element));
     throw std::runtime_error("synthetic output failure");
   }
-
-  std::vector<OpenCsdTraceElement> elements;
 };
 
 OcsdTraceElement itmElement(swt_itm_type type, std::uint8_t source = 0U, std::uint8_t size = 0U,
@@ -69,14 +58,10 @@ OcsdTraceElement itmElement(swt_itm_type type, std::uint8_t source = 0U, std::ui
 
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorUsesReconstructedGlobalTimestamp)
 {
-  CollectingTraceElementSink sink;
+  CollectingOpenCsdElementSink sink;
   OpenCsdPacketCollector collector(sink);
 
-  OcsdTraceElement globalTimestamp;
-  globalTimestamp.setType(OCSD_GEN_TRC_ELEM_ITMTRACE);
-  swt_itm_info info{};
-  info.pkt_type = TS_GLOBAL;
-  globalTimestamp.setSWT_ITMInfo(info);
+  auto globalTimestamp = itmElement(TS_GLOBAL);
   globalTimestamp.setTS(0xfedcba9876543210ULL, true);
 
   require(collector.TraceElemIn(42U, 7U, globalTimestamp) == OCSD_RESP_CONT,
@@ -118,14 +103,10 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsLocalTimestampRelations)
       {TS_PKT_TS_DELAY, LocalTimestampRelation::TimestampAndPayloadDelayed},
   }};
 
-  CollectingTraceElementSink sink;
+  CollectingOpenCsdElementSink sink;
   OpenCsdPacketCollector collector(sink);
   for (std::size_t index = 0; index < cases.size(); ++index) {
-    OcsdTraceElement timestamp;
-    timestamp.setType(OCSD_GEN_TRC_ELEM_ITMTRACE);
-    swt_itm_info info{};
-    info.pkt_type = cases[index].first;
-    timestamp.setSWT_ITMInfo(info);
+    auto timestamp = itmElement(cases[index].first);
     timestamp.setTS(100U + index, false);
 
     require(collector.TraceElemIn(index, 0U, timestamp) == OCSD_RESP_CONT, "OpenCSD local timestamp collection failed");
@@ -140,7 +121,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsLocalTimestampRelations)
 
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
 {
-  CollectingTraceElementSink sink;
+  CollectingOpenCsdElementSink sink;
   OpenCsdPacketCollector collector(sink);
 
   const auto software = itmElement(SWIT_PAYLOAD, 7U, 4U, 0x12345678U, true);
@@ -173,25 +154,31 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
   collector.RawPacketDataMon(OCSD_OP_RESET, 14U, &packet, 0U, nullptr);
   EXPECT_EQ(sink.elements.size(), 2U);
 
-  packet.setPktType(ITM_PKT_OVERFLOW);
-  collector.RawPacketDataMon(OCSD_OP_DATA, 15U, &packet, 0U, nullptr);
-  ASSERT_EQ(sink.elements.size(), 3U);
-  EXPECT_EQ(sink.elements.back().kind, OpenCsdTraceElement::Kind::Overflow);
-
-  packet.setPktType(ITM_PKT_RESERVED);
-  collector.RawPacketDataMon(OCSD_OP_DATA, 16U, &packet, 0U, nullptr);
-  ASSERT_EQ(sink.elements.size(), 4U);
-  EXPECT_EQ(sink.elements.back().errorMessage, "Reserved ITM packet");
-
-  packet.setPktType(ITM_PKT_BAD_SEQUENCE);
-  collector.RawPacketDataMon(OCSD_OP_DATA, 17U, &packet, 0U, nullptr);
-  ASSERT_EQ(sink.elements.size(), 5U);
-  EXPECT_EQ(sink.elements.back().errorMessage, "Bad ITM packet sequence");
-
-  packet.setPktType(ITM_PKT_INCOMPLETE_EOT);
-  collector.RawPacketDataMon(OCSD_OP_EOT, 18U, &packet, 0U, nullptr);
-  ASSERT_EQ(sink.elements.size(), 6U);
-  EXPECT_EQ(sink.elements.back().issueCode, "opencsd-incomplete-tail");
+  struct RawPacketCase {
+    ocsd_itm_pkt_type type;
+    ocsd_datapath_op_t operation;
+    OpenCsdTraceElement::Kind kind;
+    const char* errorMessage;
+    const char* issueCode;
+  };
+  constexpr RawPacketCase rawPacketCases[]{
+      {ITM_PKT_OVERFLOW, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Overflow, "", ""},
+      {ITM_PKT_RESERVED, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Error, "Reserved ITM packet", "opencsd-decode-error"},
+      {ITM_PKT_BAD_SEQUENCE, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Error, "Bad ITM packet sequence",
+       "opencsd-decode-error"},
+      {ITM_PKT_INCOMPLETE_EOT, OCSD_OP_EOT, OpenCsdTraceElement::Kind::Error, "incomplete ITM packet at end of input",
+       "opencsd-incomplete-tail"},
+  };
+  for (std::size_t index = 0U; index < std::size(rawPacketCases); ++index) {
+    SCOPED_TRACE(index);
+    const auto& testCase = rawPacketCases[index];
+    packet.setPktType(testCase.type);
+    collector.RawPacketDataMon(testCase.operation, 15U + index, &packet, 0U, nullptr);
+    ASSERT_EQ(sink.elements.size(), 3U + index);
+    EXPECT_EQ(sink.elements.back().kind, testCase.kind);
+    EXPECT_EQ(sink.elements.back().errorMessage, testCase.errorMessage);
+    EXPECT_EQ(sink.elements.back().issueCode, testCase.issueCode);
+  }
 
   packet.setPktType(ITM_PKT_SWIT);
   collector.RawPacketDataMon(OCSD_OP_DATA, 19U, &packet, 0U, nullptr);
@@ -200,7 +187,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
 
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommittedElements)
 {
-  CollectingTraceElementSink sink;
+  CollectingOpenCsdElementSink sink;
   OpenCsdPacketCollector collector(sink);
   EXPECT_NO_THROW(collector.rethrowOutputError());
   EXPECT_FALSE(collector.transactionFirstSourceOffset().has_value());

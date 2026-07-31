@@ -49,9 +49,6 @@ TEST(CtraceUnitTests, testDiagnosticCollection)
   });
   require(sink.events().back().impact == DiagnosticSink::Impact::Fatal && sink.fatalCount() == 1U,
           "fatal errors must fail the job");
-
-  sink.clear();
-  require(sink.events().empty(), "diagnostic clear failed");
 }
 
 TEST(CtraceUnitTests, testDiagnosticTextCoversAllValuesAndFormatting)
@@ -139,17 +136,21 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryCompactErrorKind)
   CollectingDiagnosticSink diagnostics;
   TraceIssueReporter reporter(diagnostics);
 
-  const std::vector<std::string> codes{
-      "opencsd-bad-packet-sequence",
-      "opencsd-invalid-packet-header",
-      "opencsd-incomplete-tail",
-      "opencsd-no-progress",
-      "opencsd-wait-timeout",
-      "opencsd-initialization-error",
-      "other-error",
+  struct Case {
+    const char* code;
+    const char* compactMessage;
   };
-  for (const auto& code : codes) {
-    auto event = issuePacket(code);
+  constexpr Case cases[]{
+      {"opencsd-bad-packet-sequence", "invalid ITM packet sequence at raw offset 42"},
+      {"opencsd-invalid-packet-header", "invalid ITM packet header at raw offset 42"},
+      {"opencsd-incomplete-tail", "incomplete ITM packet starting at raw offset 42 at end of input"},
+      {"opencsd-no-progress", "OpenCSD made no decode progress at raw offset 42"},
+      {"opencsd-wait-timeout", "OpenCSD remained blocked while flushing pending data"},
+      {"opencsd-initialization-error", "OpenCSD initialization failed"},
+      {"other-error", "trace decode error at raw offset 42"},
+  };
+  for (const auto& testCase : cases) {
+    auto event = issuePacket(testCase.code);
     event.index = 42U;
     reporter.append(event);
   }
@@ -162,13 +163,12 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryCompactErrorKind)
   reporter.append(warningDataLoss);
   reporter.append(issuePacket(""));
 
-  ASSERT_EQ(diagnostics.events().size(), codes.size() + 3U);
-  EXPECT_EQ(diagnostics.events()[0].compactMessage, "invalid ITM packet sequence at raw offset 42");
-  EXPECT_EQ(diagnostics.events()[1].compactMessage, "invalid ITM packet header at raw offset 42");
-  EXPECT_EQ(diagnostics.events()[3].compactMessage, "OpenCSD made no decode progress at raw offset 42");
-  EXPECT_EQ(diagnostics.events()[4].compactMessage, "OpenCSD remained blocked while flushing pending data");
-  EXPECT_NE(diagnostics.events()[codes.size()].message.find("Trace data loss detected"), std::string::npos);
-  EXPECT_NE(diagnostics.events()[codes.size()].compactMessage->find("raw offset 43"), std::string::npos);
-  EXPECT_EQ(diagnostics.events()[codes.size() + 1U].severity, DiagnosticSink::Severity::Warning);
+  ASSERT_EQ(diagnostics.events().size(), std::size(cases) + 3U);
+  for (std::size_t index = 0U; index < std::size(cases); ++index) {
+    EXPECT_EQ(diagnostics.events()[index].compactMessage, cases[index].compactMessage);
+  }
+  EXPECT_NE(diagnostics.events()[std::size(cases)].message.find("Trace data loss detected"), std::string::npos);
+  EXPECT_NE(diagnostics.events()[std::size(cases)].compactMessage->find("raw offset 43"), std::string::npos);
+  EXPECT_EQ(diagnostics.events()[std::size(cases) + 1U].severity, DiagnosticSink::Severity::Warning);
   EXPECT_EQ(diagnostics.events().back().code, "decode-error");
 }

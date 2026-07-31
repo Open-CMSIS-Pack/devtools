@@ -2,32 +2,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-foreach(required
+include("${CMAKE_CURRENT_LIST_DIR}/CtraceTestCommand.cmake")
+ctrace_require_variables(
         CTRACE_EXECUTABLE
         FIXTURE_DIR
         TARGET
         WORK_DIR
-        EXPECTED_RESULT)
-    if(NOT DEFINED ${required})
-        message(FATAL_ERROR "Missing -D${required}=...")
-    endif()
-endforeach()
-
-include("${CMAKE_CURRENT_LIST_DIR}/CtraceTestCommand.cmake")
+        EXPECTED_RESULT
+)
 
 set(swo_raw "${FIXTURE_DIR}/${TARGET}.SWO.raw")
 set(tb_raw "${FIXTURE_DIR}/${TARGET}.TB.raw")
 set(trace_run "${FIXTURE_DIR}/${TARGET}.ctrace-run.yml")
 set(expected_csv "${FIXTURE_DIR}/${TARGET}.SWO.csv")
 
-foreach(fixture_file IN ITEMS "${swo_raw}" "${tb_raw}" "${trace_run}" "${expected_csv}")
-    if(NOT EXISTS "${fixture_file}")
-        message(FATAL_ERROR "Missing fixture file: ${fixture_file}")
-    endif()
-endforeach()
+ctrace_require_files_exist("${swo_raw}" "${tb_raw}" "${trace_run}" "${expected_csv}")
 
-file(REMOVE_RECURSE "${WORK_DIR}")
-file(MAKE_DIRECTORY "${WORK_DIR}")
+ctrace_prepare_work_directory("${WORK_DIR}")
 file(COPY "${swo_raw}" "${tb_raw}" "${trace_run}" DESTINATION "${WORK_DIR}")
 
 execute_process(
@@ -39,10 +30,7 @@ execute_process(
     RESULT_VARIABLE result
     ERROR_VARIABLE stderr
 )
-if(NOT result EQUAL EXPECTED_RESULT)
-    message(FATAL_ERROR
-        "ctrace conversion returned ${result}, expected ${EXPECTED_RESULT}:\n${stderr}")
-endif()
+ctrace_require_result(result EXPECTED_RESULT stderr)
 
 if(NOT stderr MATCHES "unsupported-trace-channel:.*channel=TB")
     message(FATAL_ERROR

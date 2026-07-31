@@ -10,135 +10,105 @@
 #include "CliOptions.hpp"
 #include "CliParser.hpp"
 #include <cstdint>
+#include <initializer_list>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
 
-static bool validationErrorContains(int argc, const char* const argv[], std::string_view expected)
+static CliOptions parse(std::initializer_list<const char*> arguments)
 {
-  try {
-    const auto options = CliParser::parse(argc, argv);
-    CliParser::validate(options);
-  } catch (const std::runtime_error& error) {
-    return std::string_view(error.what()).find(expected) != std::string_view::npos;
-  }
-  return false;
+  const std::vector<const char*> argv(arguments);
+  return CliParser::parse(static_cast<int>(argv.size()), argv.data());
 }
 
-static bool parseFails(int argc, const char* const argv[])
+static CliOptions parseAndValidate(std::initializer_list<const char*> arguments)
 {
-  try {
-    (void)CliParser::parse(argc, argv);
-  } catch (const std::runtime_error&) {
-    return true;
-  }
-  return false;
+  auto options = parse(arguments);
+  CliParser::validate(options);
+  return options;
+}
+
+static bool validationErrorContains(std::initializer_list<const char*> arguments, std::string_view expected)
+{
+  return throwsWithMessage(
+      [&arguments] {
+        const auto options = parse(arguments);
+        CliParser::validate(options);
+      },
+      expected);
+}
+
+static bool parseFails(std::initializer_list<const char*> arguments)
+{
+  return throwsException([&arguments] { (void)parse(arguments); });
+}
+
+static void expectOutputFormat(std::initializer_list<const char*> arguments, OutputFormat expected)
+{
+  EXPECT_EQ(parseAndValidate(arguments).outputFormat, expected);
 }
 
 TEST(CtraceUnitTests, testCliParserOutputOptions)
 {
-  const char* allArgv[] = {
-      "ctrace", ".trace", "--all", "--target", "Board.Debug", "--type", "dwt", "itm", "--stream", "1", "2",
-  };
-  const auto all = CliParser::parse(11, allArgv);
-  CliParser::validate(all);
+  const auto all = parseAndValidate(
+      {"ctrace", ".trace", "--all", "--target", "Board.Debug", "--type", "dwt", "itm", "--stream", "1", "2"});
   require(all.traceDir == std::optional<std::string>(".trace"), "CliParser trace directory mismatch");
   require(all.targetName == std::optional<std::string>("Board.Debug"), "CliParser target mismatch");
   require(all.outputFormat == OutputFormat::All, "CliParser all output mismatch");
   require(all.selection.types == std::vector<std::string>({"dwt", "itm"}), "CliParser type filter mismatch");
   require(all.selection.streams == std::vector<std::uint8_t>({1U, 2U}), "CliParser stream filter mismatch");
 
-  const char* checkArgv[] = {"ctrace", ".trace"};
-  const auto check = CliParser::parse(2, checkArgv);
-  CliParser::validate(check);
-  require(check.outputFormat == OutputFormat::None, "CliParser check-only output mismatch");
+  expectOutputFormat({"ctrace", ".trace"}, OutputFormat::None);
+  expectOutputFormat({"ctrace", ".trace", "--csv"}, OutputFormat::Csv);
+  expectOutputFormat({"ctrace", ".trace", "--ctf"}, OutputFormat::Ctf);
+  expectOutputFormat({"ctrace", ".trace", "-a"}, OutputFormat::All);
+  expectOutputFormat({"ctrace", ".trace", "--csv", "--ctf"}, OutputFormat::All);
 
-  const char* csvArgv[] = {"ctrace", ".trace", "--csv"};
-  const auto csv = CliParser::parse(3, csvArgv);
-  CliParser::validate(csv);
-  require(csv.outputFormat == OutputFormat::Csv, "CliParser CSV output mismatch");
-
-  const char* ctfArgv[] = {"ctrace", ".trace", "--ctf"};
-  const auto ctf = CliParser::parse(3, ctfArgv);
-  CliParser::validate(ctf);
-  require(ctf.outputFormat == OutputFormat::Ctf, "CliParser CTF output mismatch");
-
-  const char* shortAllArgv[] = {"ctrace", ".trace", "-a"};
-  const auto shortAll = CliParser::parse(3, shortAllArgv);
-  CliParser::validate(shortAll);
-  require(shortAll.outputFormat == OutputFormat::All, "CliParser short all output mismatch");
-
-  const char* combinedArgv[] = {"ctrace", ".trace", "--csv", "--ctf"};
-  const auto combined = CliParser::parse(4, combinedArgv);
-  CliParser::validate(combined);
-  require(combined.outputFormat == OutputFormat::All, "CliParser combined output mismatch");
-
-  const char* versionArgv[] = {"ctrace", "-V"};
-  const auto version = CliParser::parse(2, versionArgv);
-  CliParser::validate(version);
+  const auto version = parseAndValidate({"ctrace", "-V"});
   require(version.version, "CliParser short version alias mismatch");
 }
 
 TEST(CtraceUnitTests, testCliParserRejectsInvalidSelections)
 {
-  const char* invalidVersionTypeArgv[] = {"ctrace", "-V", "--type", "DWT"};
-  require(validationErrorContains(4, invalidVersionTypeArgv, "Invalid --type value: DWT"),
+  require(validationErrorContains({"ctrace", "-V", "--type", "DWT"}, "Invalid --type value: DWT"),
           "--version must not bypass packet type validation");
 
-  const char* missingArgv[] = {"ctrace"};
-  require(validationErrorContains(1, missingArgv, "Specify <trace-dir>"), "CliParser should require a trace directory");
+  require(validationErrorContains({"ctrace"}, "Specify <trace-dir>"), "CliParser should require a trace directory");
 
-  const char* invalidTypeArgv[] = {"ctrace", ".trace", "--type", "invalid"};
-  require(validationErrorContains(4, invalidTypeArgv, "Invalid --type value"),
+  require(validationErrorContains({"ctrace", ".trace", "--type", "invalid"}, "Invalid --type value"),
           "CliParser should reject invalid packet types");
 
   for (const auto* type : {"event", "pmu", "pcsample"}) {
-    const char* unsupportedTypeArgv[] = {"ctrace", ".trace", "--type", type};
-    require(validationErrorContains(4, unsupportedTypeArgv, "Invalid --type value"),
+    require(validationErrorContains({"ctrace", ".trace", "--type", type}, "Invalid --type value"),
             std::string("CliParser should reject unimplemented type ") + type);
   }
 
-  const char* wrongCaseTypeArgv[] = {"ctrace", ".trace", "--type", "DWT"};
-  require(validationErrorContains(4, wrongCaseTypeArgv, "Invalid --type value: DWT"),
+  require(validationErrorContains({"ctrace", ".trace", "--type", "DWT"}, "Invalid --type value: DWT"),
           "CliParser should enforce case-sensitive packet type names");
 
-  const char* commaSeparatedArgv[] = {"ctrace", ".trace", "--type=dwt,event"};
-  require(parseFails(3, commaSeparatedArgv), "CliParser should accept only the specified space-separated selectors");
+  require(parseFails({"ctrace", ".trace", "--type=dwt,event"}),
+          "CliParser should accept only the specified space-separated selectors");
 }
 
 TEST(CtraceUnitTests, testCliParserStreamRangeAndUnknownOptions)
 {
-  const char* traceBusZeroArgv[] = {"ctrace", ".trace", "--stream", "0"};
-  const auto traceBusZero = CliParser::parse(4, traceBusZeroArgv);
+  const auto traceBusZero = parse({"ctrace", ".trace", "--stream", "0"});
   require(traceBusZero.selection.streams == std::vector<std::uint8_t>({0U}),
           "CliParser must accept Trace Bus ID 0 for unformatted input");
 
   for (const auto* stream : {"112", "255"}) {
-    const char* invalidStreamArgv[] = {"ctrace", ".trace", "--stream", stream};
-    require(validationErrorContains(4, invalidStreamArgv, "CoreSight Trace Bus ID"),
+    require(validationErrorContains({"ctrace", ".trace", "--stream", stream}, "CoreSight Trace Bus ID"),
             std::string("CliParser accepted invalid Trace Bus ID ") + stream);
   }
 
-  const char* unknownArgv[] = {"ctrace", ".trace", "--unknown"};
-  require(parseFails(3, unknownArgv), "CliParser should reject unknown options");
-
-  const char* nonNumericStreamArgv[] = {"ctrace", ".trace", "--stream", "invalid"};
-  require(parseFails(4, nonNumericStreamArgv), "CliParser should reject non-numeric stream IDs");
-
-  const char* trailingStreamArgv[] = {"ctrace", ".trace", "--stream", "1x"};
-  require(parseFails(4, trailingStreamArgv), "CliParser should reject trailing stream ID characters");
-
-  const char* overflowingStreamArgv[] = {"ctrace", ".trace", "--stream", "999999999999999999999"};
-  require(parseFails(4, overflowingStreamArgv), "CliParser should reject overflowing stream IDs");
-
-  const char* emptyTypeArgv[] = {"ctrace", ".trace", "--type="};
-  require(parseFails(3, emptyTypeArgv), "CliParser should reject an empty inline selector");
-
-  const char* missingTypeArgv[] = {"ctrace", ".trace", "--type"};
-  require(parseFails(3, missingTypeArgv), "CliParser should require at least one selector value");
-
-  const char* positionalArgv[] = {"ctrace", ".trace", "unexpected"};
-  require(parseFails(3, positionalArgv), "CliParser should reject a second positional argument");
+  require(parseFails({"ctrace", ".trace", "--unknown"}), "CliParser should reject unknown options");
+  require(parseFails({"ctrace", ".trace", "--stream", "invalid"}), "CliParser should reject non-numeric stream IDs");
+  require(parseFails({"ctrace", ".trace", "--stream", "1x"}), "CliParser should reject trailing stream ID characters");
+  require(parseFails({"ctrace", ".trace", "--stream", "999999999999999999999"}),
+          "CliParser should reject overflowing stream IDs");
+  require(parseFails({"ctrace", ".trace", "--type="}), "CliParser should reject an empty inline selector");
+  require(parseFails({"ctrace", ".trace", "--type"}), "CliParser should require at least one selector value");
+  require(parseFails({"ctrace", ".trace", "unexpected"}), "CliParser should reject a second positional argument");
 }

@@ -24,7 +24,7 @@
 TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
 {
   const TemporaryTestPath path("ctrace-metadata-writer");
-  std::filesystem::create_directories(path.path());
+  path.createDirectory();
   const std::vector<ResolvedTraceSource> sources{
       {"itm", 1U, 1U, std::string("ITM3"), std::nullopt, "unsigned int", 4U},
       {"itm", 2U, 1U, std::string("ITM3_1"), std::nullopt, "unsigned int", 4U},
@@ -50,7 +50,7 @@ TEST(CtraceUnitTests, testCtfMetadataWriterRejectsMissingOutputDirectory)
 TEST(CtraceUnitTests, testTraceCompassXmlWriterRejectsDirectoryTarget)
 {
   const TemporaryTestPath path("ctrace-trace-compass-directory-target");
-  std::filesystem::create_directories(path.path());
+  path.createDirectory();
   EXPECT_THROW(TraceCompassXmlWriter::writeFile(path.path()), std::runtime_error);
 }
 
@@ -68,7 +68,7 @@ TEST(CtraceUnitTests, testTraceCompassXmlWriterSupportsParentlessTarget)
 TEST(CtraceUnitTests, testCtfTextWritersReportDeviceWriteFailures)
 {
   const TemporaryTestPath path("ctrace-metadata-device-failure");
-  std::filesystem::create_directories(path.path());
+  path.createDirectory();
   std::filesystem::create_symlink("/dev/full", path.path() / "metadata");
   EXPECT_THROW(CtfMetadataWriter::write(path.path(), "uuid", 1U, {}, {}), std::runtime_error);
   EXPECT_THROW(TraceCompassXmlWriter::writeFile("/dev/full"), std::runtime_error);

@@ -2,16 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-foreach(required CTRACE_EXECUTABLE PYTHON_EXECUTABLE YAML_FILE WORK_DIR TARGET)
-    if(NOT DEFINED ${required})
-        message(FATAL_ERROR "Missing -D${required}=...")
-    endif()
-endforeach()
-
 include("${CMAKE_CURRENT_LIST_DIR}/CtraceTestCommand.cmake")
+ctrace_require_variables(CTRACE_EXECUTABLE PYTHON_EXECUTABLE YAML_FILE WORK_DIR TARGET)
 
-file(REMOVE_RECURSE "${WORK_DIR}")
-file(MAKE_DIRECTORY "${WORK_DIR}")
+ctrace_prepare_work_directory("${WORK_DIR}")
 configure_file("${YAML_FILE}" "${WORK_DIR}/${TARGET}.ctrace-run.yml" COPYONLY)
 
 # Hardware ITM synchronization followed by one channel-1 software packet with
@@ -54,15 +48,12 @@ endif()
 set(csv_path "${WORK_DIR}/${TARGET}.SWO.csv")
 set(ctf_path "${WORK_DIR}/${TARGET}.ctf")
 set(xml_path "${WORK_DIR}/${TARGET}.SWO.traceanalysis.xml")
-foreach(expected_file IN ITEMS
-        "${csv_path}"
-        "${ctf_path}/metadata"
-        "${ctf_path}/stream_0"
-        "${xml_path}")
-    if(NOT EXISTS "${expected_file}")
-        message(FATAL_ERROR "ctrace did not generate expected output: ${expected_file}")
-    endif()
-endforeach()
+ctrace_require_files_exist(
+    "${csv_path}"
+    "${ctf_path}/metadata"
+    "${ctf_path}/stream_0"
+    "${xml_path}"
+)
 
 file(READ "${csv_path}" csv_contents)
 string(CONCAT expected_csv

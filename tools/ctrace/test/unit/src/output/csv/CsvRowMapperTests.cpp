@@ -61,6 +61,8 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
           "CSV must render the raw hexadecimal DWT value with the one-byte SWO width");
   require(CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 2U, 0x0aU, AccessType::Write}}) == ",0,dwt,0,0x000a,,,",
           "CSV must render the raw hexadecimal DWT value with the two-byte SWO width");
+  require(CsvRowMapper::row(softwarePacket(1U)) == ",0,itm,1,0x00,,,",
+          "CSV must write Trace Bus ID 0 for unformatted input");
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperCoversAddressAndExceptionVariants)
@@ -78,14 +80,11 @@ TEST(CtraceUnitTests, testCsvRowMapperCoversAddressAndExceptionVariants)
 
 TEST(CtraceUnitTests, testCsvRowMapperEscapesDiagnosticText)
 {
-  TraceEvent issue = issuePacket("decode-error", "comma, quote \" and\nnewline");
-  issue.traceBusId = 7U;
+  const auto issue = onStream(issuePacket("decode-error", "comma, quote \" and\nnewline"), 7U);
   EXPECT_EQ(CsvRowMapper::row(issue), ",7,error,,,,,\"comma, quote \"\" and\nnewline\"");
 
-  TraceEvent timestamp{GlobalTimestampTraceEvent{123U, false}};
-  timestamp.tcyc = 99U;
-  EXPECT_EQ(CsvRowMapper::row(timestamp), "123,0,global_ts,,,,,");
-  EXPECT_EQ(CsvRowMapper::row(TraceEvent{OverflowTraceEvent{"custom overflow"}}), ",0,overflow,,,,,custom overflow");
+  EXPECT_EQ(CsvRowMapper::row(atCycle(TraceEvent{GlobalTimestampTraceEvent{123U, false}}, 99U)),
+            "123,0,global_ts,,,,,");
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperHandlesInternalAndCustomOverflowEvents)

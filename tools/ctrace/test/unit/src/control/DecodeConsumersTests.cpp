@@ -6,6 +6,7 @@
  */
 
 #include "TestSupport.hpp"
+#include "TraceOutputTestSupport.hpp"
 #include <gtest/gtest.h>
 #include "DecodeConsumers.hpp"
 #include "TraceOutput.hpp"
@@ -16,33 +17,7 @@
 #include <utility>
 #include <vector>
 
-class LifecycleRecordingTraceOutput final : public TraceOutput {
-public:
-  explicit LifecycleRecordingTraceOutput(std::vector<std::string>& calls) : calls_(calls) {}
-
-  void start() override
-  {
-    calls_.push_back("start");
-  }
-
-  void stop() override
-  {
-    calls_.push_back("stop");
-  }
-
-  void abort() override
-  {
-    calls_.push_back("abort");
-  }
-
-  void writeEvent(const TraceEvent&) override
-  {
-    calls_.push_back("write");
-  }
-
-private:
-  std::vector<std::string>& calls_;
-};
+using TraceOutputTestSupport::TestTraceOutput;
 
 class OrderingDiagnosticSink final : public DiagnosticSink {
 public:
@@ -62,7 +37,7 @@ TEST(CtraceUnitTests, testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOut
 {
   std::vector<std::string> calls;
   std::vector<std::unique_ptr<TraceOutput>> outputs;
-  outputs.push_back(std::make_unique<LifecycleRecordingTraceOutput>(calls));
+  outputs.push_back(std::make_unique<TestTraceOutput>(calls));
   OrderingDiagnosticSink diagnostics(calls);
   DecodeConsumers consumers(std::move(outputs), diagnostics);
 

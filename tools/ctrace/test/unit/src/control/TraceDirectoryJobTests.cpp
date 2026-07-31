@@ -5,51 +5,45 @@
  * Generated with AI
  */
 
+#include "OpenCsdSessionTestSupport.hpp"
 #include "TestPath.hpp"
 #include "TestSupport.hpp"
+#include "TraceRunTestSupport.hpp"
 #include <gtest/gtest.h>
 #include "CliOptions.hpp"
 #include "CtraceRunMeta.hpp"
 #include "FileDecodeJob.hpp"
-#include "OpenCsdErrorController.hpp"
-#include "OpenCsdItmSession.hpp"
-#include "OpenCsdPacketCollector.hpp"
 #include "TraceDirectoryJob.hpp"
 #include "TraceRunConfig.hpp"
 #include "TraceRunConfigReader.hpp"
 #include <cstdint>
 #include <filesystem>
+#include <initializer_list>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
-class RecordingTraceRunConfigReader final : public TraceRunConfigReader {
-public:
-  TraceRunConfig read(const std::string& path) const override
-  {
-    paths.push_back(path);
-    TraceRunConfig config;
-    config.path = path;
-    TraceRunSetup setup;
-    setup.timestamps = TraceRunTimestampSetup{100000000U, 1U};
-    config.setups.push_back(setup);
-    return config;
-  }
+TraceRunConfig defaultTraceRunConfig()
+{
+  TraceRunConfig config;
+  config.setups.push_back(TraceRunTestSupport::makeTimestampSetup(std::nullopt, 100000000U));
+  return config;
+}
 
-  mutable std::vector<std::string> paths;
-};
-
-class StaticTraceRunConfigReader final : public TraceRunConfigReader {
+class TestTraceRunConfigReader final : public TraceRunConfigReader {
 public:
-  explicit StaticTraceRunConfigReader(TraceRunConfig config, bool fail = false)
+  explicit TestTraceRunConfigReader(TraceRunConfig config = defaultTraceRunConfig(), bool fail = false)
     : config_(std::move(config)), fail_(fail)
   {
   }
 
   TraceRunConfig read(const std::string& path) const override
   {
+    paths.push_back(path);
     if (fail_) {
       throw std::runtime_error("synthetic config failure");
     }
@@ -58,41 +52,20 @@ public:
     return config;
   }
 
+  mutable std::vector<std::string> paths;
+
 private:
   TraceRunConfig config_;
   bool fail_ = false;
 };
 
-class FatalOpenCsdSession final : public OpenCsdItmSessionInterface {
-public:
-  ocsd_datapath_resp_t pushData(ocsd_trc_index_t, std::uint32_t, const std::uint8_t*, std::uint32_t& processed) override
-  {
-    processed = 1U;
-    return OCSD_RESP_FATAL_SYS_ERR;
-  }
-
-  ocsd_datapath_resp_t flush() override
-  {
-    return OCSD_RESP_CONT;
-  }
-  ocsd_datapath_resp_t reset() override
-  {
-    return OCSD_RESP_CONT;
-  }
-  ocsd_datapath_resp_t endOfTrace() override
-  {
-    return OCSD_RESP_CONT;
-  }
-};
-
-bool hasDiagnostic(const CollectingDiagnosticSink& diagnostics, const std::string& code)
+void writeTraceInputs(const std::filesystem::path& traceDirectory, std::initializer_list<std::string_view> targetNames)
 {
-  for (const auto& event : diagnostics.events()) {
-    if (event.code == code) {
-      return true;
-    }
+  for (const auto targetName : targetNames) {
+    const auto target = std::string(targetName);
+    writeTestFile(traceDirectory / (target + ".ctrace-run.yml"), "ctrace-run:\n");
+    writeTestFile(traceDirectory / (target + ".SWO.raw"));
   }
-  return false;
 }
 
 TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
@@ -100,10 +73,7 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
   const TemporaryTestPath temporaryPath("ctrace-trace-directory-job-test");
   const auto& root = temporaryPath.path();
   const auto traceDir = root / ".trace";
-  writeTestFile(traceDir / "Alpha.ctrace-run.yml", "ctrace-run:\n");
-  writeTestFile(traceDir / "Alpha.SWO.raw");
-  writeTestFile(traceDir / "Beta.ctrace-run.yml", "ctrace-run:\n");
-  writeTestFile(traceDir / "Beta.SWO.raw");
+  writeTraceInputs(traceDir, {"Alpha", "Beta"});
 
   CliOptions options;
   options.traceDir = traceDir.string();
@@ -111,7 +81,7 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
   options.outputFormat = OutputFormat::All;
 
   CollectingDiagnosticSink diagnostics;
-  RecordingTraceRunConfigReader reader;
+  TestTraceRunConfigReader reader;
   TraceDirectoryJob job(options, diagnostics, reader);
   const auto checkpoint = diagnostics.fatalCount();
   job.run();
@@ -134,16 +104,13 @@ TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
   const TemporaryTestPath temporaryPath("ctrace-trace-directory-check-test");
   const auto& root = temporaryPath.path();
   const auto traceDir = root / ".trace";
-  writeTestFile(traceDir / "Alpha.ctrace-run.yml", "ctrace-run:\n");
-  writeTestFile(traceDir / "Alpha.SWO.raw");
-  writeTestFile(traceDir / "Beta.ctrace-run.yml", "ctrace-run:\n");
-  writeTestFile(traceDir / "Beta.SWO.raw");
+  writeTraceInputs(traceDir, {"Alpha", "Beta"});
 
   CliOptions batchOptions;
   batchOptions.traceDir = traceDir.string();
 
   CollectingDiagnosticSink diagnostics;
-  RecordingTraceRunConfigReader batchReader;
+  TestTraceRunConfigReader batchReader;
   TraceDirectoryJob batchJob(batchOptions, diagnostics, batchReader);
   const auto batchCheckpoint = diagnostics.fatalCount();
   batchJob.run();
@@ -160,7 +127,7 @@ TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
   brokenOptions.traceDir = traceDir.string();
   brokenOptions.targetName = "Broken";
 
-  RecordingTraceRunConfigReader brokenReader;
+  TestTraceRunConfigReader brokenReader;
   TraceDirectoryJob brokenJob(brokenOptions, diagnostics, brokenReader);
   const auto brokenCheckpoint = diagnostics.fatalCount();
   brokenJob.run();
@@ -176,11 +143,7 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   writeTestFile(traceDir / "Alpha.TB.raw", "unsupported");
 
   TraceRunConfig config;
-  TraceRunReference reported;
-  reported.ctraceRef = "core/event";
-  reported.type = "event";
-  reported.processorName = "core";
-  reported.stream = 3U;
+  auto reported = TraceRunTestSupport::makeReference("event", "core", 3U, {}, "core/event");
   reported.info = "producer note";
   reported.warning = "producer warning";
   reported.error = "producer error";
@@ -190,10 +153,7 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   emptyError.info.reset();
   emptyError.warning = "";
   emptyError.error = "";
-  TraceRunReference channelZero;
-  channelZero.ctraceRef = "core/itm";
-  channelZero.type = "itm";
-  channelZero.sources = {0U};
+  auto channelZero = TraceRunTestSupport::makeReference("itm", std::nullopt, std::nullopt, {0U}, "core/itm");
   channelZero.error = "ignored channel zero";
   TraceRunReference noStream = reported;
   noStream.ctraceRef = "core/no-stream";
@@ -205,20 +165,20 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   CliOptions options;
   options.traceDir = traceDir.string();
   CollectingDiagnosticSink diagnostics;
-  StaticTraceRunConfigReader reader(config);
+  TestTraceRunConfigReader reader(config);
   TraceDirectoryJob(options, diagnostics, reader).run();
 
-  EXPECT_TRUE(hasDiagnostic(diagnostics, "trace-run-generation-info"));
-  EXPECT_TRUE(hasDiagnostic(diagnostics, "trace-run-generation-warning"));
-  EXPECT_TRUE(hasDiagnostic(diagnostics, "trace-run-generation-error"));
-  EXPECT_TRUE(hasDiagnostic(diagnostics, "unsupported-trace-channel"));
-  EXPECT_TRUE(hasDiagnostic(diagnostics, "missing-swo-raw-input"));
+  EXPECT_TRUE(diagnostics.contains("trace-run-generation-info"));
+  EXPECT_TRUE(diagnostics.contains("trace-run-generation-warning"));
+  EXPECT_TRUE(diagnostics.contains("trace-run-generation-error"));
+  EXPECT_TRUE(diagnostics.contains("unsupported-trace-channel"));
+  EXPECT_TRUE(diagnostics.contains("missing-swo-raw-input"));
 }
 
 TEST(CtraceUnitTests, testTraceDirectoryReportsConfigFailureAndRequiresDirectory)
 {
   CollectingDiagnosticSink diagnostics;
-  StaticTraceRunConfigReader reader({}, true);
+  TestTraceRunConfigReader reader({}, true);
   EXPECT_THROW(TraceDirectoryJob(CliOptions{}, diagnostics, reader).run(), std::runtime_error);
 
   const TemporaryTestPath temporaryPath("ctrace-trace-directory-config-failure-test");
@@ -227,7 +187,7 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsConfigFailureAndRequiresDirectory
   CliOptions options;
   options.traceDir = traceDir.string();
   TraceDirectoryJob(options, diagnostics, reader).run();
-  EXPECT_TRUE(hasDiagnostic(diagnostics, "solution-set-failed"));
+  EXPECT_TRUE(diagnostics.contains("solution-set-failed"));
 }
 
 TEST(CtraceUnitTests, testFileDecodeJobHandlesMissingInputAndDisabledCtf)
@@ -244,7 +204,7 @@ TEST(CtraceUnitTests, testFileDecodeJobHandlesMissingInputAndDisabledCtf)
   ctf.outputFormat = OutputFormat::Ctf;
   FileDecodeJob disabled(ctf, rawPath, diagnostics, CtraceRunMeta::fromConfig({}));
   EXPECT_NO_THROW(disabled.run());
-  EXPECT_TRUE(hasDiagnostic(diagnostics, "ctf-timestamp-clock-missing"));
+  EXPECT_TRUE(diagnostics.contains("ctf-timestamp-clock-missing"));
 }
 
 TEST(CtraceUnitTests, testFileDecodeJobUsesPerStreamPrescalers)
@@ -254,29 +214,19 @@ TEST(CtraceUnitTests, testFileDecodeJobUsesPerStreamPrescalers)
   writeTestFile(rawPath);
 
   TraceRunConfig config;
-  TraceRunSetup first;
-  first.processorName = "first";
-  first.timestamps = TraceRunTimestampSetup{100U, 4U};
-  TraceRunSetup second;
-  second.processorName = "second";
-  second.timestamps = TraceRunTimestampSetup{100U, 16U};
-  config.setups = {first, second};
-  TraceRunReference firstRoute;
-  firstRoute.type = "itm";
-  firstRoute.ctraceRef = "first/itm";
-  firstRoute.processorName = "first";
-  firstRoute.stream = 1U;
-  firstRoute.sources = {1U};
-  TraceRunReference secondRoute = firstRoute;
-  secondRoute.ctraceRef = "second/itm";
-  secondRoute.processorName = "second";
-  secondRoute.stream = 2U;
-  config.references = {firstRoute, secondRoute};
+  config.setups = {
+      TraceRunTestSupport::makeTimestampSetup("first", 100U, 4U),
+      TraceRunTestSupport::makeTimestampSetup("second", 100U, 16U),
+  };
+  config.references = {
+      TraceRunTestSupport::makeReference("itm", "first", 1U, {1U}, "first/itm"),
+      TraceRunTestSupport::makeReference("itm", "second", 2U, {1U}, "second/itm"),
+  };
 
   CollectingDiagnosticSink diagnostics;
   FileDecodeJob job(CliOptions{}, rawPath, diagnostics, CtraceRunMeta::fromConfig(config));
   EXPECT_NO_THROW(job.run());
-  EXPECT_TRUE(hasDiagnostic(diagnostics, "timestamp-prescaler"));
+  EXPECT_TRUE(diagnostics.contains("timestamp-prescaler"));
 }
 
 TEST(CtraceUnitTests, testFileDecodeJobAbortsOutputsAfterFatalDecoderError)
@@ -287,11 +237,11 @@ TEST(CtraceUnitTests, testFileDecodeJobAbortsOutputsAfterFatalDecoderError)
   CliOptions options;
   options.outputFormat = OutputFormat::Csv;
   CollectingDiagnosticSink diagnostics;
-  const OpenCsdItmSessionFactory factory = [](OpenCsdPacketCollector&, OpenCsdErrorController&) {
-    return std::make_unique<FatalOpenCsdSession>();
-  };
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes = {{OCSD_RESP_FATAL_SYS_ERR, 1U}};
 
-  FileDecodeJob job(options, rawPath, diagnostics, CtraceRunMeta::fromConfig({}), factory);
+  FileDecodeJob job(options, rawPath, diagnostics, CtraceRunMeta::fromConfig({}),
+                    OpenCsdSessionTestSupport::scriptedFactory(script));
   EXPECT_NO_THROW(job.run());
   EXPECT_GT(diagnostics.fatalCount(), 0U);
   EXPECT_FALSE(std::filesystem::exists(temporaryPath.path() / "fatal.SWO.csv"));
@@ -301,7 +251,7 @@ TEST(CtraceUnitTests, testFileDecodeJobAbortsOutputsAfterFatalDecoderError)
 TEST(CtraceUnitTests, testFileDecodeJobReportsRawInputReadFailures)
 {
   const TemporaryTestPath temporaryPath("ctrace-file-decode-read-failure-test");
-  std::filesystem::create_directories(temporaryPath.path());
+  temporaryPath.createDirectory();
   CollectingDiagnosticSink diagnostics;
   FileDecodeJob job(CliOptions{}, temporaryPath.path(), diagnostics, CtraceRunMeta::fromConfig({}));
   EXPECT_THROW(job.run(), std::runtime_error);

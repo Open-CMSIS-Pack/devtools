@@ -16,7 +16,6 @@ add_executable(CtraceUnitTests
   src/model/TraceSelectionTests.cpp
   src/output/OutputRequirementsTests.cpp
   src/output/TraceOutputLifecycleTests.cpp
-  src/output/csv/CsvFileOutputCriteriaTests.cpp
   src/output/csv/CsvFileOutputTests.cpp
   src/output/csv/CsvRowMapperTests.cpp
   src/output/ctf/CtfBundleOutputTests.cpp

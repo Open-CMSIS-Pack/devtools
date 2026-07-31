@@ -3,16 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Generated with AI
 
-foreach(required CTRACE_EXECUTABLE YAML_FILE WORK_DIR TARGET EXPECTED_RESULT EXPECTED_STDERR)
-    if(NOT DEFINED ${required})
-        message(FATAL_ERROR "Missing -D${required}=...")
-    endif()
-endforeach()
-
 include("${CMAKE_CURRENT_LIST_DIR}/CtraceTestCommand.cmake")
+ctrace_require_variables(CTRACE_EXECUTABLE YAML_FILE WORK_DIR TARGET EXPECTED_RESULT EXPECTED_STDERR)
 
-file(REMOVE_RECURSE "${WORK_DIR}")
-file(MAKE_DIRECTORY "${WORK_DIR}")
+ctrace_prepare_work_directory("${WORK_DIR}")
 configure_file("${YAML_FILE}" "${WORK_DIR}/${TARGET}.ctrace-run.yml" COPYONLY)
 if(RAW_DECODER_ERROR)
     string(ASCII 1 decoder_error_prefix)
@@ -31,22 +25,12 @@ execute_process(
     ERROR_VARIABLE stderr
 )
 
-if(NOT result EQUAL EXPECTED_RESULT)
-    message(FATAL_ERROR
-        "ctrace returned ${result}, expected ${EXPECTED_RESULT}\n"
-        "stderr:\n${stderr}")
-endif()
-if(NOT stderr MATCHES "${EXPECTED_STDERR}")
-    message(FATAL_ERROR
-        "ctrace stderr does not contain '${EXPECTED_STDERR}'\n"
-        "stderr:\n${stderr}")
-endif()
+ctrace_require_result(result EXPECTED_RESULT stderr)
+ctrace_require_stderr_match(stderr EXPECTED_STDERR)
 foreach(index RANGE 2 6)
-    if(DEFINED EXPECTED_STDERR_${index}
-       AND NOT stderr MATCHES "${EXPECTED_STDERR_${index}}")
-        message(FATAL_ERROR
-            "ctrace stderr does not contain '${EXPECTED_STDERR_${index}}'\n"
-            "stderr:\n${stderr}")
+    set(expected_stderr_var "EXPECTED_STDERR_${index}")
+    if(DEFINED ${expected_stderr_var})
+        ctrace_require_stderr_match(stderr ${expected_stderr_var})
     endif()
 endforeach()
 if(DEFINED UNEXPECTED_STDERR AND stderr MATCHES "${UNEXPECTED_STDERR}")

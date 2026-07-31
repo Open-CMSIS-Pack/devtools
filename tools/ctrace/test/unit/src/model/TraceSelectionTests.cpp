@@ -11,7 +11,6 @@
 #include "TraceSelection.hpp"
 #include "TraceStreamId.hpp"
 #include "TraceRunConfig.hpp"
-#include "csv/CsvRowMapper.hpp"
 
 TEST(CtraceUnitTests, testTraceSelection)
 {
@@ -42,8 +41,6 @@ TEST(CtraceUnitTests, testTraceSelection)
           "a non-zero stream selector must not match Trace Bus ID 0 input");
   require(traceEventSelectedForOutput(itm, TraceSelection{{}, {0U}}),
           "stream selector 0 must match unformatted single-source input");
-  require(CsvRowMapper::row(itm) == ",0,itm,1,0x00,,,", "CSV must write Trace Bus ID 0 for unformatted input");
-
   std::get<SoftwareTraceEvent>(itm.payload).channel = 0;
   require(!traceEventSelectedForOutput(itm, TraceSelection{}),
           "TraceSelection must exclude software channel zero without selectors");

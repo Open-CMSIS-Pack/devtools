@@ -7,96 +7,16 @@
 
 #include "TestPath.hpp"
 #include "TestSupport.hpp"
+#include "TraceOutputTestSupport.hpp"
 #include <gtest/gtest.h>
 #include "csv/CsvFileOutput.hpp"
-#include "TraceOutput.hpp"
 #include "TraceOutputLifecycle.hpp"
 #include <memory>
 #include <stdexcept>
-#include <string>
-#include <utility>
 #include <vector>
 
-class FailingStopOutput final : public TraceOutput {
-public:
-  void stop() override
-  {
-    throw std::runtime_error("intentional stop failure");
-  }
-
-  void abort() override
-  {
-    aborted = true;
-  }
-
-  void writeEvent(const TraceEvent& packet) override
-  {
-    (void)packet;
-  }
-
-  bool aborted = false;
-};
-
-class FailingStartOutput final : public TraceOutput {
-public:
-  void start() override
-  {
-    throw std::runtime_error("intentional start failure");
-  }
-
-  void abort() override
-  {
-    aborted = true;
-  }
-
-  void writeEvent(const TraceEvent& packet) override
-  {
-    (void)packet;
-  }
-
-  bool aborted = false;
-};
-
-class FailingAbortOutput final : public TraceOutput {
-public:
-  void abort() override
-  {
-    throw std::runtime_error("intentional abort cleanup failure");
-  }
-
-  void writeEvent(const TraceEvent&) override {}
-};
-
-class FailingWriteOutput final : public TraceOutput {
-public:
-  std::string targetPath() const override
-  {
-    return "synthetic.trace";
-  }
-
-  void abort() override
-  {
-    aborted = true;
-  }
-
-  void writeEvent(const TraceEvent&) override
-  {
-    throw std::runtime_error("intentional write failure");
-  }
-
-  bool aborted = false;
-};
-
-class NonStandardFailureOutput final : public TraceOutput {
-public:
-  void start() override
-  {
-    throw 42;
-  }
-
-  void abort() override {}
-  void writeEvent(const TraceEvent&) override {}
-};
+using TraceOutputTestSupport::TestTraceOutput;
+using TraceOutputTestSupport::TestTraceOutputFailure;
 
 class ThrowingDiagnosticSink final : public DiagnosticSink {
 protected:
@@ -106,12 +26,6 @@ protected:
   }
 };
 
-class PassiveOutput final : public TraceOutput {
-public:
-  void abort() override {}
-  void writeEvent(const TraceEvent&) override {}
-};
-
 TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesIndependentOutputs)
 {
   const TemporaryTestPath temporaryPath("ctrace-output-lifecycle-test.csv");
@@ -119,10 +33,10 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesIndependentOutputs)
   writeTestFile(path, "old-output\n");
 
   std::vector<std::unique_ptr<TraceOutput>> outputs;
-  outputs.push_back(std::make_unique<FailingStartOutput>());
+  outputs.push_back(std::make_unique<TestTraceOutput>(TestTraceOutputFailure::Start));
   auto csv = std::make_unique<CsvFileOutput>(path);
   outputs.push_back(std::move(csv));
-  outputs.push_back(std::make_unique<FailingStopOutput>());
+  outputs.push_back(std::make_unique<TestTraceOutput>(TestTraceOutputFailure::Stop));
 
   CollectingDiagnosticSink diagnostics;
   TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
@@ -140,27 +54,19 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesIndependentOutputs)
 TEST(CtraceUnitTests, testTraceOutputLifecycleReportsAbortFailures)
 {
   std::vector<std::unique_ptr<TraceOutput>> outputs;
-  outputs.push_back(std::make_unique<FailingAbortOutput>());
+  outputs.push_back(std::make_unique<TestTraceOutput>(TestTraceOutputFailure::Abort));
   CollectingDiagnosticSink diagnostics;
   TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
   lifecycle.abort();
 
-  bool reportsAbortPhase = false;
-  for (const auto& event : diagnostics.events()) {
-    for (const auto& [key, value] : event.context) {
-      if (key == "phase" && value == "abort") {
-        reportsAbortPhase = true;
-      }
-    }
-  }
-  require(diagnostics.fatalCount() == 1U && reportsAbortPhase,
+  require(diagnostics.fatalCount() == 1U && diagnostics.containsContext("output-failed", "phase", "abort"),
           "output lifecycle must report a failed direct-output cleanup");
 }
 
 TEST(CtraceUnitTests, testTraceOutputLifecycleReportsWriteFailuresAndFinishesOnce)
 {
   std::vector<std::unique_ptr<TraceOutput>> outputs;
-  auto failing = std::make_unique<FailingWriteOutput>();
+  auto failing = std::make_unique<TestTraceOutput>(TestTraceOutputFailure::Write, "synthetic.trace");
   auto* failingPointer = failing.get();
   outputs.push_back(std::move(failing));
   CollectingDiagnosticSink diagnostics;
@@ -171,7 +77,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleReportsWriteFailuresAndFinishesOnc
   lifecycle.finish();
 
   ASSERT_EQ(diagnostics.events().size(), 1U);
-  EXPECT_TRUE(failingPointer->aborted);
+  EXPECT_TRUE(failingPointer->aborted());
   EXPECT_EQ(diagnostics.events().front().compactMessage,
             "trace output 'synthetic.trace' failed during write: intentional write failure");
 }
@@ -179,13 +85,13 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleReportsWriteFailuresAndFinishesOnc
 TEST(CtraceUnitTests, testTraceOutputLifecycleContainsDiagnosticAndNonStandardFailures)
 {
   std::vector<std::unique_ptr<TraceOutput>> outputs;
-  outputs.push_back(std::make_unique<NonStandardFailureOutput>());
+  outputs.push_back(std::make_unique<TestTraceOutput>(TestTraceOutputFailure::NonStandardStart));
   ThrowingDiagnosticSink diagnostics;
   EXPECT_NO_THROW((void)TraceOutputLifecycle(std::move(outputs), diagnostics));
   EXPECT_EQ(diagnostics.fatalCount(), 1U);
 
   std::vector<std::unique_ptr<TraceOutput>> passiveOutputs;
-  passiveOutputs.push_back(std::make_unique<PassiveOutput>());
+  passiveOutputs.push_back(std::make_unique<TestTraceOutput>());
   CollectingDiagnosticSink passiveDiagnostics;
   TraceOutputLifecycle passive(std::move(passiveOutputs), passiveDiagnostics);
   passive.finish();

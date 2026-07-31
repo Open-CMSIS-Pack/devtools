@@ -9,11 +9,47 @@
 #include "TestSupport.hpp"
 #include <gtest/gtest.h>
 #include "TraceEvent.hpp"
+#include "TraceSelection.hpp"
 #include "csv/CsvFileOutput.hpp"
+#include <cstdint>
 #include <filesystem>
 #include <system_error>
 #include <stdexcept>
 #include <string>
+
+TEST(CtraceUnitTests, testCsvFileOutputCriteria)
+{
+  const TemporaryTestPath outputPath("ctrace-filtered-output.csv");
+  CsvFileOutput output(outputPath.path(), TraceSelection{{"itm"}, {1U, 2U}});
+  output.start();
+
+  const auto accepted = onStream(softwarePacket(1U, 1U, 0x41U), 2U);
+  output.writeEvent(accepted);
+
+  for (const auto stream : {3U, 0U}) {
+    auto excluded = accepted;
+    excluded.traceBusId = static_cast<std::uint8_t>(stream);
+    output.writeEvent(excluded);
+  }
+
+  auto excludedChannel = accepted;
+  std::get<SoftwareTraceEvent>(excludedChannel.payload).channel = 0U;
+  output.writeEvent(excludedChannel);
+
+  output.writeEvent(onStream(issuePacket("decode-error"), accepted.traceBusId));
+  output.stop();
+
+  require(readTestTextFile(outputPath.path()) == "cycles,stream,type,source,value,pc,offset,note\n,2,itm,1,0x41,,,\n",
+          "CsvFileOutput criteria mismatch");
+
+  const TemporaryTestPath errorOutputPath("ctrace-filtered-errors.csv");
+  CsvFileOutput errorOutput(errorOutputPath.path(), TraceSelection{{"error"}, {}});
+  errorOutput.start();
+  errorOutput.writeEvent(issuePacket("decode-warning", "decoder warning", TraceIssueSeverity::Warning));
+  errorOutput.stop();
+  require(readTestTextFile(errorOutputPath.path()).find(",0,error,,,,,decoder warning\n") != std::string::npos,
+          "the error selector must include warning-severity decoder issue packets");
+}
 
 TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
 {
@@ -23,20 +59,16 @@ TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
   CsvFileOutput output(csvPath);
   output.start();
 
-  TraceEvent dwt{DwtDataTraceEvent{
-      2U,
-      4U,
-      0xfffffdf9U,
-      AccessType::Read,
-      0xfdf9U,
-      0x08001234U,
-  }};
-  dwt.tcyc = 949338400U;
-  output.writeEvent(dwt);
-
-  TraceEvent exception{ExceptionTraceEvent{11U, ExceptionAction::Entered}};
-  exception.tcyc = 950364820U;
-  output.writeEvent(exception);
+  output.writeEvent(atCycle(TraceEvent{DwtDataTraceEvent{
+                                2U,
+                                4U,
+                                0xfffffdf9U,
+                                AccessType::Read,
+                                0xfdf9U,
+                                0x08001234U,
+                            }},
+                            949338400U));
+  output.writeEvent(atCycle(TraceEvent{ExceptionTraceEvent{11U, ExceptionAction::Entered}}, 950364820U));
 
   output.stop();
 
@@ -57,9 +89,7 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
   output.start();
   output.writeEvent(overflowPacket(1234));
 
-  TraceEvent dataLoss = issuePacket("data-loss", "trace data lost before resynchronization");
-  dataLoss.tcyc = 1235;
-  output.writeEvent(dataLoss);
+  output.writeEvent(atCycle(issuePacket("data-loss", "trace data lost before resynchronization"), 1235U));
   output.stop();
 
   const auto lines = readTestLines(csvPath);
@@ -97,13 +127,10 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesDirectly)
   std::filesystem::remove(csvPath);
 
   std::filesystem::create_directory(csvPath);
-  bool rejectedDirectory = false;
-  try {
+  const auto rejectedDirectory = throwsException([&] {
     CsvFileOutput directoryOutput(csvPath);
     directoryOutput.start();
-  } catch (const std::runtime_error&) {
-    rejectedDirectory = true;
-  }
+  });
   require(rejectedDirectory && std::filesystem::is_directory(csvPath),
           "CSV output must not delete a directory occupying its target path");
   std::filesystem::remove_all(testRoot);
@@ -149,7 +176,7 @@ TEST(CtraceUnitTests, testCsvFileOutputRejectsUnsafeAndInvalidParents)
   EXPECT_THROW(childOfFile.start(), std::runtime_error);
 
   const TemporaryTestPath longNameRoot("ctrace-csv-long-name-test");
-  std::filesystem::create_directories(longNameRoot.path());
+  longNameRoot.createDirectory();
   CsvFileOutput overlyLongName(longNameRoot.path() / std::string(1024U, 'x'));
   EXPECT_THROW(overlyLongName.start(), std::runtime_error);
 }

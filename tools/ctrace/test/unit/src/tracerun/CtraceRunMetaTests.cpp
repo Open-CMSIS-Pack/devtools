@@ -6,6 +6,7 @@
  */
 
 #include "TestSupport.hpp"
+#include "TraceRunTestSupport.hpp"
 #include <gtest/gtest.h>
 #include "CtraceRunMeta.hpp"
 #include "TraceRunConfig.hpp"
@@ -13,45 +14,17 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <utility>
+#include <string_view>
 #include <vector>
 
 namespace {
 
-TraceRunReference makeReference(std::string type, std::optional<std::string> processorName,
-                                std::optional<std::uint32_t> stream, std::vector<std::uint32_t> sources,
-                                std::string ctraceRef = "route")
-{
-  TraceRunReference reference;
-  reference.type = std::move(type);
-  reference.processorName = std::move(processorName);
-  reference.stream = stream;
-  reference.sources = std::move(sources);
-  reference.ctraceRef = std::move(ctraceRef);
-  return reference;
-}
+using TraceRunTestSupport::makeReference;
+using TraceRunTestSupport::makeTimestampSetup;
 
-TraceRunSetup makeSetup(std::optional<std::string> processorName, std::optional<std::uint64_t> clock = 1U,
-                        std::optional<std::uint32_t> prescaler = 1U,
-                        std::optional<std::uint32_t> enableMask = std::nullopt)
+bool metaRejects(const TraceRunConfig& config, std::string_view message)
 {
-  TraceRunSetup setup;
-  setup.processorName = std::move(processorName);
-  setup.timestamps = TraceRunTimestampSetup{clock, prescaler};
-  if (enableMask.has_value()) {
-    setup.itm = TraceRunItmSetup{*enableMask};
-  }
-  return setup;
-}
-
-std::string metaError(const TraceRunConfig& config)
-{
-  try {
-    (void)CtraceRunMeta::fromConfig(config);
-  } catch (const std::runtime_error& error) {
-    return error.what();
-  }
-  return {};
+  return throwsWithMessage([&config] { (void)CtraceRunMeta::fromConfig(config); }, message);
 }
 
 } // namespace
@@ -97,10 +70,10 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidReferences)
     TraceRunConfig config;
     config.path = "trace.yml";
     config.references = {testCase.reference};
-    EXPECT_NE(metaError(config).find(testCase.message), std::string::npos);
+    EXPECT_TRUE(metaRejects(config, testCase.message));
 
     config.references.front().line = 7U;
-    EXPECT_NE(metaError(config).find("trace.yml(7)"), std::string::npos);
+    EXPECT_TRUE(metaRejects(config, "trace.yml(7)"));
   }
 
   TraceRunConfig diagnosed;
@@ -113,55 +86,55 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidPrescalers)
 {
   TraceRunConfig config;
   config.path = "trace.yml";
-  config.setups.push_back(makeSetup(std::nullopt, 1U, 2U));
-  EXPECT_NE(metaError(config).find("ctrace-setup timestamps.itm-prescaler must be one of"), std::string::npos);
+  config.setups.push_back(makeTimestampSetup(std::nullopt, 1U, 2U));
+  EXPECT_TRUE(metaRejects(config, "ctrace-setup timestamps.itm-prescaler must be one of"));
 
   config.setups.front().timestamps->line = 12U;
-  EXPECT_NE(metaError(config).find("trace.yml(12): 'timestamps.itm-prescaler' must be one of"), std::string::npos);
+  EXPECT_TRUE(metaRejects(config, "trace.yml(12): 'timestamps.itm-prescaler' must be one of"));
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaRejectsAmbiguousProcessorIdentity)
 {
   TraceRunConfig duplicate;
   duplicate.path = "trace.yml";
-  duplicate.setups = {makeSetup(std::nullopt), makeSetup(std::nullopt)};
-  EXPECT_NE(metaError(duplicate).find("duplicate active ctrace-setup for pname '<unnamed>'"), std::string::npos);
+  duplicate.setups = {makeTimestampSetup(std::nullopt), makeTimestampSetup(std::nullopt)};
+  EXPECT_TRUE(metaRejects(duplicate, "duplicate active ctrace-setup for pname '<unnamed>'"));
   duplicate.setups.back().line = 9U;
-  EXPECT_NE(metaError(duplicate).find("duplicate active 'ctrace-setup' for pname '<unnamed>'"), std::string::npos);
+  EXPECT_TRUE(metaRejects(duplicate, "duplicate active 'ctrace-setup' for pname '<unnamed>'"));
 
   TraceRunConfig multiUnnamed;
   multiUnnamed.path = "trace.yml";
-  multiUnnamed.setups = {makeSetup("a"), makeSetup("b")};
+  multiUnnamed.setups = {makeTimestampSetup("a"), makeTimestampSetup("b")};
   multiUnnamed.references.push_back(makeReference("itm", std::nullopt, 1U, {1U}));
-  EXPECT_NE(metaError(multiUnnamed).find("pname is required for every ctrace-setup and ctrace-ref"), std::string::npos);
+  EXPECT_TRUE(metaRejects(multiUnnamed, "pname is required for every ctrace-setup and ctrace-ref"));
 
   TraceRunConfig multiUnmatched = multiUnnamed;
   multiUnmatched.references.front().processorName = "c";
-  EXPECT_NE(metaError(multiUnmatched).find("pname 'c' has no matching ctrace-setup"), std::string::npos);
+  EXPECT_TRUE(metaRejects(multiUnmatched, "pname 'c' has no matching ctrace-setup"));
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaRejectsSingleAndReferenceOnlyIdentityConflicts)
 {
   TraceRunConfig namedSetup;
   namedSetup.path = "trace.yml";
-  namedSetup.setups.push_back(makeSetup("a"));
+  namedSetup.setups.push_back(makeTimestampSetup("a"));
   namedSetup.references.push_back(makeReference("itm", "b", 1U, {1U}));
-  EXPECT_NE(metaError(namedSetup).find("no matching ctrace-setup pname 'a'"), std::string::npos);
+  EXPECT_TRUE(metaRejects(namedSetup, "no matching ctrace-setup pname 'a'"));
 
   TraceRunConfig unnamedSetup;
   unnamedSetup.path = "trace.yml";
-  unnamedSetup.setups.push_back(makeSetup(std::nullopt));
+  unnamedSetup.setups.push_back(makeTimestampSetup(std::nullopt));
   unnamedSetup.references = {
       makeReference("itm", "a", 1U, {1U}),
       makeReference("itm", "b", 2U, {2U}),
   };
-  EXPECT_NE(metaError(unnamedSetup).find("pname is required for ctrace-setup"), std::string::npos);
+  EXPECT_TRUE(metaRejects(unnamedSetup, "pname is required for ctrace-setup"));
 
   TraceRunConfig referencesOnly;
   referencesOnly.path = "trace.yml";
   referencesOnly.references = unnamedSetup.references;
   referencesOnly.references.push_back(makeReference("dwt", std::nullopt, 3U, {0U}));
-  EXPECT_NE(metaError(referencesOnly).find("pname is required for every ctrace-ref"), std::string::npos);
+  EXPECT_TRUE(metaRejects(referencesOnly, "pname is required for every ctrace-ref"));
 
   referencesOnly.references.pop_back();
   const auto meta = CtraceRunMeta::fromConfig(referencesOnly);
@@ -174,8 +147,8 @@ TEST(CtraceUnitTests, testCtraceRunMetaMapsDistinctProcessorSettings)
   TraceRunConfig config;
   config.path = "trace.yml";
   config.setups = {
-      makeSetup("a", 100U, 4U, 1U),
-      makeSetup("b", 200U, 4U, 2U),
+      makeTimestampSetup("a", 100U, 4U, 1U),
+      makeTimestampSetup("b", 200U, 4U, 2U),
   };
   config.references = {
       makeReference("itm", "a", 5U, {1U}),
@@ -196,8 +169,8 @@ TEST(CtraceUnitTests, testCtraceRunMetaMapsDistinctPrescalersPerStream)
 {
   TraceRunConfig config;
   config.setups = {
-      makeSetup("a", 100U, 4U),
-      makeSetup("b", 100U, 16U),
+      makeTimestampSetup("a", 100U, 4U),
+      makeTimestampSetup("b", 100U, 16U),
   };
   config.references = {
       makeReference("itm", "a", 5U, {1U}),
@@ -212,14 +185,14 @@ TEST(CtraceUnitTests, testCtraceRunMetaMapsDistinctPrescalersPerStream)
   config.path = "trace.yml";
   config.references.back().stream = 5U;
   config.references.back().line = 23U;
-  EXPECT_NE(metaError(config).find("trace.yml(23): CoreSight Trace Bus ID 5"), std::string::npos);
+  EXPECT_TRUE(metaRejects(config, "trace.yml(23): CoreSight Trace Bus ID 5"));
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaResolvesDwtDataAndDefaults)
 {
   TraceRunConfig config;
   config.path = "trace.yml";
-  auto setup = makeSetup("core");
+  auto setup = makeTimestampSetup("core");
   setup.data.resize(2U);
   setup.data[0].symbolType = "signed int";
   setup.data[0].symbolSize = 2U;

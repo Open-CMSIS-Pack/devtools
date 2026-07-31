@@ -5,6 +5,7 @@
  * Generated with AI
  */
 
+#include "OpenCsdTestSupport.hpp"
 #include "TestSupport.hpp"
 
 #include <gtest/gtest.h>
@@ -13,20 +14,11 @@
 #include "OpenCsdTraceElement.hpp"
 
 #include <array>
-#include <cstdint>
 #include <utility>
 
-namespace {
-
-OpenCsdTraceElement localTimestampElement(std::uint64_t tcyc)
-{
-  OpenCsdTraceElement element;
-  element.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
-  element.tcyc = tcyc;
-  return element;
-}
-
-} // namespace
+using OpenCsdTestSupport::openCsdElement;
+using OpenCsdTestSupport::openCsdSoftwareElement;
+using OpenCsdTestSupport::openCsdTimestampElement;
 
 TEST(CtraceUnitTests, testCortexMPostDecoderUsesLocalTimestampRelations)
 {
@@ -41,15 +33,9 @@ TEST(CtraceUnitTests, testCortexMPostDecoderUsesLocalTimestampRelations)
     CollectingEventSink sink;
     CortexMPostDecoder decoder(sink);
 
-    OpenCsdTraceElement software;
-    software.kind = OpenCsdTraceElement::Kind::Software;
-    software.channel = 1U;
-    software.size = 1U;
-    decoder.append(software);
+    decoder.append(openCsdSoftwareElement(1U));
 
-    auto timestamp = localTimestampElement(100U);
-    timestamp.timestampRelation = relation;
-    decoder.append(timestamp);
+    decoder.append(openCsdTimestampElement(100U, 0U, 0U, relation));
     decoder.finish();
 
     require(sink.events.size() == 2U, "local timestamp relation event count mismatch");
@@ -64,14 +50,12 @@ TEST(CtraceUnitTests, testCortexMPostDecoderOffsetsTimestampsAfterOverflow)
   CollectingEventSink sink;
   CortexMPostDecoder decoder(sink);
 
-  decoder.append(localTimestampElement(100));
+  decoder.append(openCsdTimestampElement(100U));
 
-  OpenCsdTraceElement overflow;
-  overflow.kind = OpenCsdTraceElement::Kind::Overflow;
-  decoder.append(overflow);
+  decoder.append(openCsdElement(OpenCsdTraceElement::Kind::Overflow));
 
-  decoder.append(localTimestampElement(10));
-  decoder.append(localTimestampElement(15));
+  decoder.append(openCsdTimestampElement(10U));
+  decoder.append(openCsdTimestampElement(15U));
 
   require(sink.events.size() == 4, "timestamp segment overflow event count mismatch");
   require(sink.events[0].tcyc == 100U, "timestamp segment first tcyc mismatch");
@@ -84,9 +68,9 @@ TEST(CtraceUnitTests, testCortexMPostDecoderUsesTimestampOverflowFlag)
   CollectingEventSink sink;
   CortexMPostDecoder decoder(sink);
 
-  decoder.append(localTimestampElement(100));
+  decoder.append(openCsdTimestampElement(100U));
 
-  auto timestamp = localTimestampElement(9);
+  auto timestamp = openCsdTimestampElement(9U);
   timestamp.overflow = true;
   decoder.append(timestamp);
 
@@ -99,11 +83,9 @@ TEST(CtraceUnitTests, testCortexMPostDecoderMapsDiscontinuityTimestamp)
   CollectingEventSink sink;
   CortexMPostDecoder decoder(sink);
 
-  decoder.append(localTimestampElement(200));
-  OpenCsdTraceElement discontinuity;
-  discontinuity.kind = OpenCsdTraceElement::Kind::Discontinuity;
-  decoder.append(discontinuity);
-  decoder.append(localTimestampElement(7));
+  decoder.append(openCsdTimestampElement(200U));
+  decoder.append(openCsdElement(OpenCsdTraceElement::Kind::Discontinuity));
+  decoder.append(openCsdTimestampElement(7U));
 
   require(sink.events.size() == 3, "timestamp discontinuity event count mismatch");
   require(sink.events[2].tcyc == 207U, "post-decoder explicit discontinuity timestamp mismatch");

@@ -6,6 +6,7 @@
  */
 
 // Cortex-M post-decoder and end-to-end decode pipeline tests.
+#include "OpenCsdTestSupport.hpp"
 #include "TestSupport.hpp"
 
 #include <gtest/gtest.h>
@@ -18,12 +19,15 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <limits>
 #include <optional>
 #include <string>
 #include <vector>
 
 namespace {
+
+using namespace OpenCsdTestSupport;
 
 const SoftwareTraceEvent* softwareEvent(const TraceEvent& event)
 {
@@ -70,6 +74,31 @@ std::size_t countIssues(const std::vector<TraceEvent>& events, const std::string
   return count;
 }
 
+template <std::size_t Size> constexpr RawByteView rawBytes(const std::uint8_t (&bytes)[Size])
+{
+  return {bytes, Size};
+}
+
+inline RawByteView rawBytes(const std::vector<std::uint8_t>& bytes)
+{
+  return {bytes.data(), bytes.size()};
+}
+
+struct DecodedTrace {
+  DecodeResult result;
+  std::vector<TraceEvent> events;
+};
+
+DecodedTrace decodeTrace(std::initializer_list<RawByteView> chunks, std::uint32_t timestampPrescaler = 16U)
+{
+  CollectingEventSink sink;
+  DecodePipeline pipeline(timestampPrescaler, sink);
+  for (const auto chunk : chunks) {
+    pipeline.push(chunk);
+  }
+  return {pipeline.finish(), std::move(sink.events)};
+}
+
 } // namespace
 
 TEST(CtraceUnitTests, testCortexMPostDecoderSoftwareTimestampBoundary)
@@ -77,22 +106,8 @@ TEST(CtraceUnitTests, testCortexMPostDecoderSoftwareTimestampBoundary)
   CollectingEventSink sink;
   CortexMPostDecoder decoder(sink);
 
-  OpenCsdTraceElement software;
-  software.kind = OpenCsdTraceElement::Kind::Software;
-  software.sourceIndex = 4;
-  software.traceBusId = 1;
-  software.channel = 0;
-  software.size = 1;
-  software.value = 'A';
-  decoder.append(software);
-
-  OpenCsdTraceElement timestamp;
-  timestamp.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
-  timestamp.sourceIndex = 5;
-  timestamp.traceBusId = 1;
-  timestamp.timestampRelation = LocalTimestampRelation::Synchronous;
-  timestamp.tcyc = 120;
-  decoder.append(timestamp);
+  decoder.append(openCsdSoftwareElement(0U, 'A', 4U, 1U));
+  decoder.append(openCsdTimestampElement(120U, 5U, 1U));
 
   decoder.finish();
   const auto& packets = sink.events;
@@ -113,27 +128,16 @@ TEST(CtraceUnitTests, testCortexMStreamDecoderAppliesPerStreamPrescalers)
   CollectingEventSink sink;
   CortexMStreamDecoder decoder(ItmTimestampPrescalers{1U, {{1U, 4U}, {2U, 16U}}}, sink);
 
-  OpenCsdTraceElement stream1Software;
-  stream1Software.kind = OpenCsdTraceElement::Kind::Software;
-  stream1Software.traceBusId = 1U;
-  stream1Software.channel = 1U;
-  stream1Software.size = 1U;
-  stream1Software.value = 0x11U;
+  const auto stream1Software = openCsdSoftwareElement(1U, 0x11U, 0U, 1U);
   decoder.append(stream1Software);
 
-  auto stream2Software = stream1Software;
-  stream2Software.traceBusId = 2U;
-  stream2Software.value = 0x22U;
+  const auto stream2Software = openCsdSoftwareElement(1U, 0x22U, 0U, 2U);
   decoder.append(stream2Software);
 
-  OpenCsdTraceElement stream1Timestamp;
-  stream1Timestamp.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
-  stream1Timestamp.traceBusId = 1U;
-  stream1Timestamp.tcyc = 10U;
+  const auto stream1Timestamp = openCsdTimestampElement(10U, 0U, 1U);
   decoder.append(stream1Timestamp);
 
-  auto stream2Timestamp = stream1Timestamp;
-  stream2Timestamp.traceBusId = 2U;
+  const auto stream2Timestamp = openCsdTimestampElement(10U, 0U, 2U);
   decoder.append(stream2Timestamp);
   decoder.finish();
 
@@ -147,9 +151,7 @@ TEST(CtraceUnitTests, testCortexMStreamDecoderAppliesPerStreamPrescalers)
 TEST(CtraceUnitTests, testCortexMStreamDecoderValidatesAndSaturatesPrescalers)
 {
   CollectingEventSink sink;
-  OpenCsdTraceElement timestamp;
-  timestamp.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
-  timestamp.tcyc = std::numeric_limits<std::uint64_t>::max();
+  auto timestamp = openCsdTimestampElement(std::numeric_limits<std::uint64_t>::max());
 
   CortexMStreamDecoder saturating(ItmTimestampPrescalers{2U, {}}, sink);
   saturating.append(timestamp);
@@ -166,8 +168,7 @@ TEST(CtraceUnitTests, testCortexMStreamDecoderValidatesAndSaturatesPrescalers)
   timestamp.traceBusId = 7U;
   EXPECT_THROW(unresolved.append(timestamp), std::runtime_error);
 
-  OpenCsdTraceElement timestampWithoutValue;
-  timestampWithoutValue.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
+  const auto timestampWithoutValue = openCsdElement(OpenCsdTraceElement::Kind::LocalTimestamp);
   EXPECT_NO_THROW(saturating.append(timestampWithoutValue));
 }
 
@@ -188,28 +189,14 @@ TEST(CtraceUnitTests, testCortexMPostDecoderReportsDiscontinuityInterval)
   CollectingEventSink sink;
   CortexMPostDecoder decoder(sink);
 
-  OpenCsdTraceElement discontinuity;
-  discontinuity.kind = OpenCsdTraceElement::Kind::Discontinuity;
-  discontinuity.sourceIndex = 0U;
+  auto discontinuity = openCsdElement(OpenCsdTraceElement::Kind::Discontinuity);
   discontinuity.issueCode = "data-loss";
   discontinuity.errorMessage = "OpenCSD consumed 2 raw bytes";
   discontinuity.rawBytesConsumed = 2U;
   decoder.append(discontinuity);
 
-  OpenCsdTraceElement software;
-  software.kind = OpenCsdTraceElement::Kind::Software;
-  software.sourceIndex = 8U;
-  software.channel = 0U;
-  software.size = 1U;
-  software.value = static_cast<std::uint8_t>('B');
-  decoder.append(software);
-
-  OpenCsdTraceElement timestamp;
-  timestamp.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
-  timestamp.sourceIndex = 10U;
-  timestamp.timestampRelation = LocalTimestampRelation::Synchronous;
-  timestamp.tcyc = 42U;
-  decoder.append(timestamp);
+  decoder.append(openCsdSoftwareElement(0U, 'B', 8U));
+  decoder.append(openCsdTimestampElement(42U, 10U));
 
   decoder.finish();
   const auto& packets = sink.events;
@@ -230,29 +217,20 @@ TEST(CtraceUnitTests, testCortexMPostDecoderSeparatesRecoveryCauseAndDataLoss)
   CollectingEventSink sink;
   CortexMPostDecoder decoder(sink);
 
-  OpenCsdTraceElement cause;
-  cause.kind = OpenCsdTraceElement::Kind::Error;
-  cause.sourceIndex = 8U;
+  auto cause = openCsdElement(OpenCsdTraceElement::Kind::Error, 8U);
   cause.discontinuity = true;
   cause.issueCode = "opencsd-bad-packet-sequence";
   cause.errorMessage = "OpenCSD detected an invalid ITM packet sequence at raw offset 8.";
   decoder.append(cause);
 
-  OpenCsdTraceElement loss;
-  loss.kind = OpenCsdTraceElement::Kind::Error;
-  loss.sourceIndex = 10U;
+  auto loss = openCsdElement(OpenCsdTraceElement::Kind::Error, 10U);
   loss.awaitingResumeTimestamp = true;
   loss.issueCode = "data-loss";
   loss.errorMessage = "OpenCSD consumed 2 raw bytes";
   loss.rawBytesConsumed = 2U;
   decoder.append(loss);
 
-  OpenCsdTraceElement timestamp;
-  timestamp.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
-  timestamp.sourceIndex = 12U;
-  timestamp.timestampRelation = LocalTimestampRelation::Synchronous;
-  timestamp.tcyc = 42U;
-  decoder.append(timestamp);
+  decoder.append(openCsdTimestampElement(42U, 12U));
 
   decoder.finish();
   const auto& packets = sink.events;
@@ -276,43 +254,25 @@ TEST(CtraceUnitTests, testCortexMPostDecoderOverflowFlushesDwtSegments)
   CollectingEventSink sink;
   CortexMPostDecoder decoder(sink);
 
-  OpenCsdTraceElement firstTimestamp;
-  firstTimestamp.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
-  firstTimestamp.sourceIndex = 1;
-  firstTimestamp.traceBusId = 1;
-  firstTimestamp.timestampRelation = LocalTimestampRelation::Synchronous;
-  firstTimestamp.tcyc = 100;
+  const auto firstTimestamp = openCsdTimestampElement(100U, 1U, 1U);
   decoder.append(firstTimestamp);
 
-  OpenCsdTraceElement pc;
-  pc.kind = OpenCsdTraceElement::Kind::Hardware;
-  pc.sourceIndex = 2;
-  pc.traceBusId = 1;
+  auto pc = openCsdElement(OpenCsdTraceElement::Kind::Hardware, 2U, 1U);
   pc.discriminator = 8;
   pc.size = 4;
   pc.value = 0x08001234U;
   decoder.append(pc);
 
-  OpenCsdTraceElement overflow;
-  overflow.kind = OpenCsdTraceElement::Kind::Overflow;
-  overflow.sourceIndex = 3;
+  const auto overflow = openCsdElement(OpenCsdTraceElement::Kind::Overflow, 3U);
   decoder.append(overflow);
 
-  OpenCsdTraceElement value;
-  value.kind = OpenCsdTraceElement::Kind::Hardware;
-  value.sourceIndex = 4;
-  value.traceBusId = 1;
+  auto value = openCsdElement(OpenCsdTraceElement::Kind::Hardware, 4U, 1U);
   value.discriminator = 16;
   value.size = 4;
   value.value = 0x55U;
   decoder.append(value);
 
-  OpenCsdTraceElement secondTimestamp;
-  secondTimestamp.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
-  secondTimestamp.sourceIndex = 5;
-  secondTimestamp.traceBusId = 1;
-  secondTimestamp.timestampRelation = LocalTimestampRelation::Synchronous;
-  secondTimestamp.tcyc = 20;
+  const auto secondTimestamp = openCsdTimestampElement(20U, 5U, 1U);
   decoder.append(secondTimestamp);
 
   decoder.finish();
@@ -343,18 +303,10 @@ TEST(CtraceUnitTests, testCortexMPostDecoderPreservesDecoderTimestamps)
   CollectingEventSink sink;
   CortexMPostDecoder decoder(sink);
 
-  OpenCsdTraceElement firstTimestamp;
-  firstTimestamp.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
-  firstTimestamp.sourceIndex = (std::uint64_t{1} << 32U) + 1U;
-  firstTimestamp.timestampRelation = LocalTimestampRelation::Synchronous;
-  firstTimestamp.tcyc = 100;
+  const auto firstTimestamp = openCsdTimestampElement(100U, (std::uint64_t{1} << 32U) + 1U);
   decoder.append(firstTimestamp);
 
-  OpenCsdTraceElement secondTimestamp;
-  secondTimestamp.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
-  secondTimestamp.sourceIndex = 2;
-  secondTimestamp.timestampRelation = LocalTimestampRelation::Synchronous;
-  secondTimestamp.tcyc = 10;
+  const auto secondTimestamp = openCsdTimestampElement(10U, 2U);
   decoder.append(secondTimestamp);
 
   decoder.finish();
@@ -370,41 +322,26 @@ TEST(CtraceUnitTests, testCortexMPostDecoderPreservesGlobalTimestampOrder)
   CollectingEventSink sink;
   CortexMPostDecoder decoder(sink);
 
-  OpenCsdTraceElement software;
-  software.kind = OpenCsdTraceElement::Kind::Software;
-  software.sourceIndex = 1U;
-  software.channel = 1U;
-  software.size = 1U;
-  software.value = static_cast<std::uint8_t>('A');
+  const auto software = openCsdSoftwareElement(1U, 'A', 1U);
   decoder.append(software);
 
-  OpenCsdTraceElement dwtPc;
-  dwtPc.kind = OpenCsdTraceElement::Kind::Hardware;
-  dwtPc.sourceIndex = 2U;
+  auto dwtPc = openCsdElement(OpenCsdTraceElement::Kind::Hardware, 2U);
   dwtPc.discriminator = 8U;
   dwtPc.size = 4U;
   dwtPc.value = 0x08001234U;
   decoder.append(dwtPc);
 
-  OpenCsdTraceElement globalTimestamp;
-  globalTimestamp.kind = OpenCsdTraceElement::Kind::GlobalTimestamp;
-  globalTimestamp.sourceIndex = 3U;
+  auto globalTimestamp = openCsdElement(OpenCsdTraceElement::Kind::GlobalTimestamp, 3U);
   globalTimestamp.timestampValue = 0x123456789abcdef0ULL;
   decoder.append(globalTimestamp);
 
-  OpenCsdTraceElement warning;
-  warning.kind = OpenCsdTraceElement::Kind::Error;
-  warning.sourceIndex = 4U;
+  auto warning = openCsdElement(OpenCsdTraceElement::Kind::Error, 4U);
   warning.issueCode = "opencsd-warning";
   warning.issueSeverity = TraceIssueSeverity::Warning;
   warning.errorMessage = "decoder warning";
   decoder.append(warning);
 
-  OpenCsdTraceElement localTimestamp;
-  localTimestamp.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
-  localTimestamp.sourceIndex = 5U;
-  localTimestamp.timestampRelation = LocalTimestampRelation::Synchronous;
-  localTimestamp.tcyc = 42U;
+  const auto localTimestamp = openCsdTimestampElement(42U, 5U);
   decoder.append(localTimestamp);
   decoder.finish();
 
@@ -429,53 +366,42 @@ TEST(CtraceUnitTests, testCortexMPostDecoderPreservesGlobalTimestampOrder)
 
 TEST(CtraceUnitTests, testDecodePipelineRecoversAtRealSync)
 {
-  CollectingEventSink sink;
-  DecodePipeline pipeline(16, sink);
-
   const std::uint8_t trace[] = {
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('A'), 0x00U, 0xfeU,
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('B'),
   };
-  pipeline.push({trace, sizeof(trace)});
-  const auto result = pipeline.finish();
+  const auto decoded = decodeTrace({rawBytes(trace)});
 
-  require(result.bytesIn == sizeof(trace), "recovery byte count mismatch");
-  require(hasSoftwareValue(sink.events, static_cast<std::uint8_t>('A')),
+  require(decoded.result.bytesIn == sizeof(trace), "recovery byte count mismatch");
+  require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('A')),
           "recovery should preserve packets before the damaged section");
-  const auto* error = findIssue(sink.events, "opencsd-bad-packet-sequence", 8U);
+  const auto* error = findIssue(decoded.events, "opencsd-bad-packet-sequence", 8U);
   require(error != nullptr && error->message == "OpenCSD detected an invalid ITM packet sequence at raw offset 8.",
           "recovery should report the exact OpenCSD error offset");
-  require(hasSoftwareValue(sink.events, static_cast<std::uint8_t>('B')),
+  require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
           "recovery should resume after the next real ITM sync");
 }
 
 TEST(CtraceUnitTests, testDecodePipelineKeepsCallbacksAttachedAcrossRepeatedResets)
 {
-  CollectingEventSink sink;
-  DecodePipeline pipeline(16U, sink);
-
   const std::uint8_t trace[] = {
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('A'), 0x00U, 0xfeU,
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('B'), 0x00U, 0xfeU,
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('C'),
   };
-  pipeline.push({trace, sizeof(trace)});
-  const auto result = pipeline.finish();
+  const auto decoded = decodeTrace({rawBytes(trace)});
 
-  require(result.bytesIn == sizeof(trace), "repeated recovery byte count mismatch");
-  require(hasSoftwareValue(sink.events, static_cast<std::uint8_t>('A')) &&
-              hasSoftwareValue(sink.events, static_cast<std::uint8_t>('B')) &&
-              hasSoftwareValue(sink.events, static_cast<std::uint8_t>('C')),
+  require(decoded.result.bytesIn == sizeof(trace), "repeated recovery byte count mismatch");
+  require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('A')) &&
+              hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')) &&
+              hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('C')),
           "decoder resets must retain all OpenCSD callbacks");
-  require(countIssues(sink.events, "opencsd-bad-packet-sequence") == 2U,
+  require(countIssues(decoded.events, "opencsd-bad-packet-sequence") == 2U,
           "each damaged section must trigger one recoverable reset");
 }
 
 TEST(CtraceUnitTests, testDecodePipelineReconstructsGlobalTimestamp)
 {
-  CollectingEventSink sink;
-  DecodePipeline pipeline(1U, sink);
-
   constexpr std::uint64_t lower = 0x00f23456ULL;
   constexpr std::uint64_t upper = 0x1020304c000000ULL;
   std::vector<std::uint8_t> trace{
@@ -498,12 +424,11 @@ TEST(CtraceUnitTests, testDecodePipelineReconstructsGlobalTimestamp)
       static_cast<std::uint8_t>(0x80U | ((upper >> 54U) & 0x7fU)),
       static_cast<std::uint8_t>((upper >> 61U) & 0x07U),
   };
-  pipeline.push({trace.data(), trace.size()});
-  const auto result = pipeline.finish();
+  const auto decoded = decodeTrace({rawBytes(trace)}, 1U);
 
-  require(result.bytesIn == trace.size(), "global timestamp input byte count mismatch");
+  require(decoded.result.bytesIn == trace.size(), "global timestamp input byte count mismatch");
   std::size_t globalTimestampCount = 0U;
-  for (const auto& packet : sink.events) {
+  for (const auto& packet : decoded.events) {
     if (const auto* timestamp = traceEventPayload<GlobalTimestampTraceEvent>(packet)) {
       ++globalTimestampCount;
       require(timestamp->value == (upper | lower), "GTS1/GTS2 reconstruction lost timestamp bits");
@@ -515,17 +440,14 @@ TEST(CtraceUnitTests, testDecodePipelineReconstructsGlobalTimestamp)
 
 TEST(CtraceUnitTests, testDecodePipelineAppliesPrescalerAfterOpenCsd)
 {
-  CollectingEventSink sink;
-  DecodePipeline pipeline(16U, sink);
   const std::uint8_t trace[] = {
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x09U, 0x41U, 0x20U,
   };
 
-  pipeline.push({trace, sizeof(trace)});
-  pipeline.finish();
+  const auto decoded = decodeTrace({rawBytes(trace)});
 
   bool foundScaledSoftware = false;
-  for (const auto& event : sink.events) {
+  for (const auto& event : decoded.events) {
     const auto* software = softwareEvent(event);
     foundScaledSoftware = foundScaledSoftware || (software != nullptr && software->channel == 1U &&
                                                   event.tcyc == std::optional<std::uint64_t>(32U));
@@ -535,74 +457,57 @@ TEST(CtraceUnitTests, testDecodePipelineAppliesPrescalerAfterOpenCsd)
 
 TEST(CtraceUnitTests, testDecodePipelineRecoversWhenErrorSpansChunks)
 {
-  CollectingEventSink sink;
-  DecodePipeline pipeline(16, sink);
-
   const std::uint8_t firstChunk[] = {
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('A'), 0x00U,
   };
   const std::uint8_t secondChunk[] = {
       0xfeU, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('B'),
   };
-  pipeline.push({firstChunk, sizeof(firstChunk)});
-  pipeline.push({secondChunk, sizeof(secondChunk)});
-  const auto result = pipeline.finish();
+  const auto decoded = decodeTrace({rawBytes(firstChunk), rawBytes(secondChunk)});
 
-  require(result.bytesIn == sizeof(firstChunk) + sizeof(secondChunk), "split recovery byte count mismatch");
-  require(findIssue(sink.events, "opencsd-bad-packet-sequence", 8U) != nullptr,
+  require(decoded.result.bytesIn == sizeof(firstChunk) + sizeof(secondChunk), "split recovery byte count mismatch");
+  require(findIssue(decoded.events, "opencsd-bad-packet-sequence", 8U) != nullptr,
           "split bad packet should retain its header offset");
-  require(hasSoftwareValue(sink.events, static_cast<std::uint8_t>('B')),
+  require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
           "recovery should resume after a split bad packet");
 }
 
 TEST(CtraceUnitTests, testDecodePipelineRecoversFromReservedHeader)
 {
-  CollectingEventSink sink;
-  DecodePipeline pipeline(16, sink);
-
   const std::uint8_t trace[] = {
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('A'), 0x04U,
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('B'),
   };
-  pipeline.push({trace, sizeof(trace)});
-  pipeline.finish();
+  const auto decoded = decodeTrace({rawBytes(trace)});
 
-  const auto* error = findIssue(sink.events, "opencsd-invalid-packet-header", 8U);
+  const auto* error = findIssue(decoded.events, "opencsd-invalid-packet-header", 8U);
   require(error != nullptr && error->message == "OpenCSD detected an invalid ITM packet header at raw offset 8.",
           "reserved header should report its exact OpenCSD error");
-  require(hasSoftwareValue(sink.events, static_cast<std::uint8_t>('B')),
+  require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
           "recovery should resume after a reserved header");
 }
 
 TEST(CtraceUnitTests, testDecodePipelineFinishesWithoutLaterSync)
 {
-  CollectingEventSink sink;
-  DecodePipeline pipeline(16, sink);
-
   const std::uint8_t trace[] = {
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('A'), 0x00U, 0xfeU, 0xffU, 0xffU,
   };
-  pipeline.push({trace, sizeof(trace)});
-  const auto result = pipeline.finish();
+  const auto decoded = decodeTrace({rawBytes(trace)});
 
-  require(result.bytesIn == sizeof(trace), "bad-tail byte count mismatch");
-  require(findIssue(sink.events, "opencsd-bad-packet-sequence", 8U) != nullptr,
+  require(decoded.result.bytesIn == sizeof(trace), "bad-tail byte count mismatch");
+  require(findIssue(decoded.events, "opencsd-bad-packet-sequence", 8U) != nullptr,
           "bad tail should report its exact OpenCSD error and finish");
 }
 
 TEST(CtraceUnitTests, testDecodePipelineReportsIncompletePacketAtEndOfInput)
 {
-  CollectingEventSink sink;
-  DecodePipeline pipeline(16, sink);
-
   const std::uint8_t trace[] = {
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('A'), 0x03U, 0x12U,
   };
-  pipeline.push({trace, sizeof(trace)});
-  pipeline.finish();
+  const auto decoded = decodeTrace({rawBytes(trace)});
 
-  require(!sink.events.empty(), "incomplete trace should emit packets");
-  const auto& last = sink.events.back();
+  require(!decoded.events.empty(), "incomplete trace should emit packets");
+  const auto& last = decoded.events.back();
   const auto* issue = issueEvent(last);
   require(issue != nullptr, "incomplete trace should end with an error packet");
   require(issue->code == "opencsd-incomplete-tail", "incomplete trace issue code mismatch");
@@ -619,8 +524,6 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversFromOverlongContinuationPackets)
   };
 
   for (const auto& damaged : damagedPackets) {
-    CollectingEventSink sink;
-    DecodePipeline pipeline(16, sink);
     std::vector<std::uint8_t> trace{
         0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('A'),
     };
@@ -628,30 +531,25 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversFromOverlongContinuationPackets)
     trace.insert(trace.end(), {0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U});
     trace.insert(trace.end(), {0x01U, static_cast<std::uint8_t>('B')});
 
-    pipeline.push({trace.data(), trace.size()});
-    pipeline.finish();
+    const auto decoded = decodeTrace({rawBytes(trace)});
 
-    require(findIssue(sink.events, "opencsd-bad-packet-sequence") != nullptr,
+    require(findIssue(decoded.events, "opencsd-bad-packet-sequence") != nullptr,
             "overlong continuation packet should emit the OpenCSD error");
-    require(hasSoftwareValue(sink.events, static_cast<std::uint8_t>('B')),
+    require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
             "decode should resume after an overlong continuation packet");
   }
 }
 
 TEST(CtraceUnitTests, testDecodePipelinePreservesDwtEventAndPmuPackets)
 {
-  CollectingEventSink sink;
-  DecodePipeline pipeline(16, sink);
-
   const std::uint8_t trace[] = {
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x05U, 0x21U, 0x1dU, 0x81U,
   };
-  pipeline.push({trace, sizeof(trace)});
-  pipeline.finish();
+  const auto decoded = decodeTrace({rawBytes(trace)});
 
   bool foundEvent = false;
   bool foundPmu = false;
-  for (const auto& packet : sink.events) {
+  for (const auto& packet : decoded.events) {
     const auto* event = traceEventPayload<DwtEventTraceEvent>(packet);
     const auto* pmu = traceEventPayload<PmuTraceEvent>(packet);
     foundEvent =
@@ -664,17 +562,13 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesDwtEventAndPmuPackets)
 
 TEST(CtraceUnitTests, testDecodePipelineDoesNotInjectSync)
 {
-  CollectingEventSink sink;
-  DecodePipeline pipeline(16, sink);
-
   const std::uint8_t validWithoutAsync[] = {0x01U, static_cast<std::uint8_t>('A')};
-  pipeline.push({validWithoutAsync, sizeof(validWithoutAsync)});
-  const auto result = pipeline.finish();
+  const auto decoded = decodeTrace({rawBytes(validWithoutAsync)});
 
-  require(result.bytesIn == sizeof(validWithoutAsync), "decode byte count mismatch");
+  require(decoded.result.bytesIn == sizeof(validWithoutAsync), "decode byte count mismatch");
   bool foundPayload = false;
   bool foundDataLoss = false;
-  for (const auto& packet : sink.events) {
+  for (const auto& packet : decoded.events) {
     if (softwareEvent(packet) != nullptr) {
       foundPayload = true;
     }
@@ -695,20 +589,15 @@ TEST(CtraceUnitTests, testDecodePipelineDoesNotInjectSync)
 
 TEST(CtraceUnitTests, testDecodePipelineCountsBytesUntilRealSync)
 {
-  CollectingEventSink sink;
-  DecodePipeline pipeline(16, sink);
-
   const std::uint8_t leading[] = {0x01U, static_cast<std::uint8_t>('A')};
-  pipeline.push({leading, sizeof(leading)});
   const std::uint8_t synchronized[] = {
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('B'),
   };
-  pipeline.push({synchronized, sizeof(synchronized)});
-  pipeline.finish();
+  const auto decoded = decodeTrace({rawBytes(leading), rawBytes(synchronized)});
 
   bool foundDataLoss = false;
   bool foundPayloadAfterDataLoss = false;
-  for (const auto& packet : sink.events) {
+  for (const auto& packet : decoded.events) {
     const auto* issue = issueEvent(packet);
     if (issue != nullptr && issue->code == "data-loss") {
       foundDataLoss = true;

@@ -53,6 +53,12 @@ public:
     return path_;
   }
 
+  const std::filesystem::path& createDirectory() const
+  {
+    std::filesystem::create_directories(path_);
+    return path_;
+  }
+
 private:
   std::filesystem::path path_;
 };

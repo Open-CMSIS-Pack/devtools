@@ -6,8 +6,8 @@
  */
 
 #include "TestSupport.hpp"
+#include "TraceRunTestSupport.hpp"
 #include <gtest/gtest.h>
-#include "CliOptions.hpp"
 #include "CtraceRunMeta.hpp"
 #include "OutputRequirements.hpp"
 #include "TraceRunConfig.hpp"
@@ -17,76 +17,48 @@
 #include <optional>
 #include <string>
 #include <utility>
-#include <vector>
 
-static TraceOutputRequest traceOutputRequest(const CliOptions& options)
+static TraceOutputRequest outputRequest(bool csv, bool ctf)
 {
-  return {
-      options.outputFormat == OutputFormat::Csv || options.outputFormat == OutputFormat::All,
-      options.outputFormat == OutputFormat::Ctf || options.outputFormat == OutputFormat::All,
-      options.selection,
-  };
+  return {csv, ctf, {}};
+}
+
+static TraceOutputPlan planOutputs(const TraceOutputRequest& request, const std::filesystem::path& rawInputPath,
+                                   const CtraceRunMeta& meta, DiagnosticSink& diagnostics)
+{
+  return planTraceOutputs(request, rawInputPath, meta, diagnostics);
+}
+
+static TraceOutputPlan planOutputs(const TraceOutputRequest& request, const std::filesystem::path& rawInputPath,
+                                   const TraceRunConfig& config, DiagnosticSink& diagnostics)
+{
+  return planOutputs(request, rawInputPath, CtraceRunMeta::fromConfig(config), diagnostics);
 }
 
 static TraceRunConfig backendRequirementsConfig()
 {
   TraceRunConfig config;
   config.path = "BackendRequirements.ctrace-run.yml";
-  TraceRunSetup setup;
-  setup.timestamps = TraceRunTimestampSetup{400000000U, 1U};
+  auto setup = TraceRunTestSupport::makeTimestampSetup(std::nullopt, 400000000U, 1U);
   setup.data.push_back(TraceRunDataSetup{"double", 4U});
   config.setups.push_back(setup);
-  TraceRunReference reference;
-  reference.ctraceRef = "opaque/dwt";
-  reference.type = "dwt";
-  reference.sources = {0U};
+  auto reference = TraceRunTestSupport::makeReference("dwt", std::nullopt, std::nullopt, {0U}, "opaque/dwt");
   reference.dataSetupIndex = 0U;
   config.references.push_back(reference);
   return config;
 }
 
-TEST(CtraceUnitTests, testTimestampPrescalerAndBackendRequirements)
+TEST(CtraceUnitTests, testBackendRequirementsUsePerStreamMetadata)
 {
-  TraceRunConfig traceRun;
-  traceRun.path = "Board.ctrace-run.yml";
-  TraceRunSetup setup;
-  setup.timestamps = TraceRunTimestampSetup{280000000U, 16U};
-  traceRun.setups.push_back(setup);
-  const auto ctraceRunMeta = CtraceRunMeta::fromConfig(traceRun);
-
-  require(ctraceRunMeta.timestampPrescaler() == std::optional<std::uint32_t>(16U), "trace-run prescaler mismatch");
-
   TraceRunConfig multicore;
   multicore.path = "Multicore.ctrace-run.yml";
-  TraceRunSetup core0;
-  core0.processorName = "core0";
-  core0.timestamps = TraceRunTimestampSetup{400000000U, 1U};
-  TraceRunSetup core1;
-  core1.processorName = "core1";
-  core1.timestamps = TraceRunTimestampSetup{400000000U, 4U};
+  auto core0 = TraceRunTestSupport::makeTimestampSetup("core0", 400000000U, 1U);
+  auto core1 = TraceRunTestSupport::makeTimestampSetup("core1", 400000000U, 4U);
   multicore.setups = {core0, core1};
 
-  TraceRunReference core0Itm;
-  core0Itm.ctraceRef = "opaque/core0-route";
-  core0Itm.type = "itm";
-  core0Itm.processorName = "core0";
-  core0Itm.stream = 1U;
-  core0Itm.sources = {1U};
-  TraceRunReference core1Itm;
-  core1Itm.ctraceRef = "opaque/core1-route";
-  core1Itm.type = "itm";
-  core1Itm.processorName = "core1";
-  core1Itm.stream = 2U;
-  core1Itm.sources = {1U};
+  const auto core0Itm = TraceRunTestSupport::makeReference("itm", "core0", 1U, {1U}, "opaque/core0-route");
+  const auto core1Itm = TraceRunTestSupport::makeReference("itm", "core1", 2U, {1U}, "opaque/core1-route");
   multicore.references = {core0Itm, core1Itm};
-
-  const auto distinctPrescalerMeta = CtraceRunMeta::fromConfig(multicore);
-  require(!distinctPrescalerMeta.timestampPrescaler().has_value() &&
-              distinctPrescalerMeta.hasDistinctProcessorPrescalers(),
-          "different processor prescalers must not be collapsed into an unformatted value");
-  require(distinctPrescalerMeta.timestampPrescalersByTraceBusId() ==
-              std::map<std::uint8_t, std::uint32_t>({{1U, 1U}, {2U, 4U}}),
-          "processor prescalers must remain associated with their ATB streams");
 
   core1.timestamps = TraceRunTimestampSetup{400000000U, std::nullopt};
   multicore.setups = {core0, core1};
@@ -114,21 +86,17 @@ TEST(CtraceUnitTests, testTimestampPrescalerAndBackendRequirements)
               distinctClockMeta.timestampsByTraceBusId().at(2U).clockHz == std::optional<std::uint64_t>(200000000U),
           "processor clocks must remain associated with their Trace Bus IDs");
 
-  CliOptions ctfOptions;
-  ctfOptions.outputFormat = OutputFormat::Ctf;
+  auto ctfRequest = outputRequest(false, true);
   CollectingDiagnosticSink allClockDiagnostics;
   const auto allClockPlan =
-      planTraceOutputs(traceOutputRequest(ctfOptions), std::filesystem::path("captures/Multicore.SWO.raw"),
-                       distinctClockMeta, allClockDiagnostics);
-  require(!allClockPlan.ctf.has_value() && !allClockDiagnostics.events().empty() &&
-              allClockDiagnostics.events()[0].code == "ctf-timestamp-clock-ambiguous",
-          "CTF must reject selected Trace Bus IDs with different clocks");
+      planOutputs(ctfRequest, "captures/Multicore.SWO.raw", distinctClockMeta, allClockDiagnostics);
+  require(!allClockPlan.ctf.has_value(), "CTF must reject selected Trace Bus IDs with different clocks");
+  allClockDiagnostics.singleEvent("ctf-timestamp-clock-ambiguous");
 
-  ctfOptions.selection.streams = {2U};
+  ctfRequest.selection.streams = {2U};
   CollectingDiagnosticSink selectedClockDiagnostics;
   const auto selectedClockPlan =
-      planTraceOutputs(traceOutputRequest(ctfOptions), std::filesystem::path("captures/Multicore.SWO.raw"),
-                       distinctClockMeta, selectedClockDiagnostics);
+      planOutputs(ctfRequest, "captures/Multicore.SWO.raw", distinctClockMeta, selectedClockDiagnostics);
   require(selectedClockPlan.ctf.has_value() && selectedClockPlan.ctf->coreClockHz == 200000000U &&
               selectedClockDiagnostics.events().empty(),
           "a selected Trace Bus ID must use its processor's clock");
@@ -138,8 +106,7 @@ TEST(CtraceUnitTests, testDwtDataMetadataDefaultsAndValidation)
 {
   TraceRunConfig config;
   config.path = "DwtSize.ctrace-run.yml";
-  TraceRunSetup setup;
-  setup.timestamps = TraceRunTimestampSetup{100000000U, 1U};
+  auto setup = TraceRunTestSupport::makeTimestampSetup(std::nullopt, 100000000U, 1U);
   setup.data = {
       TraceRunDataSetup{},
       TraceRunDataSetup{"unsigned int", 1U},
@@ -147,20 +114,16 @@ TEST(CtraceUnitTests, testDwtDataMetadataDefaultsAndValidation)
   };
   config.setups.push_back(std::move(setup));
   for (std::uint32_t comparator = 0U; comparator < 3U; ++comparator) {
-    TraceRunReference reference;
-    reference.ctraceRef = "opaque/dwt-" + std::to_string(comparator);
-    reference.type = "dwt";
-    reference.sources = {comparator};
+    auto reference = TraceRunTestSupport::makeReference("dwt", std::nullopt, std::nullopt, {comparator},
+                                                        "opaque/dwt-" + std::to_string(comparator));
     reference.dataSetupIndex = comparator;
     config.references.push_back(std::move(reference));
   }
   const auto meta = CtraceRunMeta::fromConfig(config);
 
-  CliOptions allOptions;
-  allOptions.outputFormat = OutputFormat::All;
+  const auto allRequest = outputRequest(true, true);
   CollectingDiagnosticSink configurationDiagnostics;
-  const auto outputPlan = planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("DwtSize.SWO.raw"),
-                                           meta, configurationDiagnostics);
+  const auto outputPlan = planOutputs(allRequest, "DwtSize.SWO.raw", meta, configurationDiagnostics);
   require(outputPlan.csv.has_value() && outputPlan.ctf.has_value(),
           "valid or missing DWT metadata must not disable CSV or CTF");
   require(configurationDiagnostics.events().empty(), "valid or missing DWT metadata must not produce diagnostics");
@@ -172,48 +135,34 @@ TEST(CtraceUnitTests, testDwtDataMetadataDefaultsAndValidation)
 
   config.setups[0].data[1].symbolSize = 0U;
   CollectingDiagnosticSink invalidSizeDiagnostics;
-  const auto invalidSizePlan =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("DwtSize.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), invalidSizeDiagnostics);
+  const auto invalidSizePlan = planOutputs(allRequest, "DwtSize.SWO.raw", config, invalidSizeDiagnostics);
   require(invalidSizePlan.csv.has_value() && !invalidSizePlan.ctf.has_value(),
           "invalid data.symbol-size must disable only CTF");
-  require(invalidSizeDiagnostics.events().size() == 1U &&
-              invalidSizeDiagnostics.events()[0].code == "ctf-dwt-symbol-size-invalid",
-          "invalid CTF data.symbol-size diagnostic mismatch");
+  invalidSizeDiagnostics.singleEvent("ctf-dwt-symbol-size-invalid");
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
 {
   auto config = backendRequirementsConfig();
 
-  CliOptions csvOptions;
-  csvOptions.outputFormat = OutputFormat::Csv;
+  const auto csvRequest = outputRequest(true, false);
   CollectingDiagnosticSink invalidTypeCsvDiagnostics;
-  const auto invalidTypeCsv =
-      planTraceOutputs(traceOutputRequest(csvOptions), std::filesystem::path("BackendRequirements.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), invalidTypeCsvDiagnostics);
+  const auto invalidTypeCsv = planOutputs(csvRequest, "BackendRequirements.SWO.raw", config, invalidTypeCsvDiagnostics);
   require(invalidTypeCsv.csv.has_value() && !invalidTypeCsv.ctf.has_value(),
           "an invalid explicit data.symbol-type must not disable CSV");
   require(invalidTypeCsvDiagnostics.events().empty(), "CSV must not inspect CTF-only data.symbol-type metadata");
 
-  CliOptions allOptions;
-  allOptions.outputFormat = OutputFormat::All;
+  const auto allRequest = outputRequest(true, true);
   CollectingDiagnosticSink invalidTypeAllDiagnostics;
-  const auto invalidTypeAll =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("BackendRequirements.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), invalidTypeAllDiagnostics);
+  const auto invalidTypeAll = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, invalidTypeAllDiagnostics);
   require(invalidTypeAll.csv.has_value() && !invalidTypeAll.ctf.has_value(),
           "an invalid explicit data.symbol-type must disable only CTF for --all");
-  require(invalidTypeAllDiagnostics.events().size() == 1U &&
-              invalidTypeAllDiagnostics.events()[0].code == "ctf-dwt-symbol-type-invalid",
-          "invalid CTF data.symbol-type diagnostic mismatch");
+  invalidTypeAllDiagnostics.singleEvent("ctf-dwt-symbol-type-invalid");
 
   config.setups[0].data[0].symbolType.reset();
   config.setups[0].data[0].symbolSize.reset();
   CollectingDiagnosticSink missingTypeDiagnostics;
-  const auto missingType =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("BackendRequirements.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), missingTypeDiagnostics);
+  const auto missingType = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, missingTypeDiagnostics);
   require(missingType.csv.has_value() && missingType.ctf.has_value(),
           "missing data.symbol-type/data.symbol-size must use CTF defaults and leave CSV enabled");
   require(missingType.csv->outputPath == std::filesystem::path("BackendRequirements.SWO.csv") &&
@@ -228,74 +177,57 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
 
   config.setups[0].data[0].symbolTypeError = "data.symbol-type must be scalar";
   CollectingDiagnosticSink malformedTypeDiagnostics;
-  const auto malformedType =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("BackendRequirements.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), malformedTypeDiagnostics);
+  const auto malformedType = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, malformedTypeDiagnostics);
   require(malformedType.csv.has_value() && !malformedType.ctf.has_value(),
           "malformed data.symbol-type must disable only CTF");
 
   config.setups[0].data[0].symbolTypeError.reset();
   config.setups[0].data[0].symbolSizeError = "data.symbol-size must be unsigned";
   CollectingDiagnosticSink malformedSizeDiagnostics;
-  const auto malformedSize =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("BackendRequirements.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), malformedSizeDiagnostics);
-  require(malformedSize.csv.has_value() && !malformedSize.ctf.has_value() &&
-              malformedSizeDiagnostics.events().size() == 1U &&
-              malformedSizeDiagnostics.events()[0].code == "ctf-dwt-symbol-size-invalid",
+  const auto malformedSize = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, malformedSizeDiagnostics);
+  require(malformedSize.csv.has_value() && !malformedSize.ctf.has_value(),
           "malformed data.symbol-size must disable only CTF");
+  malformedSizeDiagnostics.singleEvent("ctf-dwt-symbol-size-invalid");
 }
 
 TEST(CtraceUnitTests, testCtfOutputRequiresAValidClock)
 {
   auto config = backendRequirementsConfig();
   config.setups[0].data[0] = TraceRunDataSetup{};
-  CliOptions allOptions;
-  allOptions.outputFormat = OutputFormat::All;
+  const auto allRequest = outputRequest(true, true);
   config.setups[0].timestamps->clockHz.reset();
   CollectingDiagnosticSink missingClockDiagnostics;
-  const auto missingClock =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("BackendRequirements.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), missingClockDiagnostics);
+  const auto missingClock = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, missingClockDiagnostics);
   require(missingClock.csv.has_value() && !missingClock.ctf.has_value(),
           "missing timestamps.clock must disable only CTF");
 
   config.setups[0].timestamps->clockError = "timestamps.clock must be unsigned";
   CollectingDiagnosticSink malformedClockDiagnostics;
-  const auto malformedClock =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("BackendRequirements.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), malformedClockDiagnostics);
+  const auto malformedClock = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, malformedClockDiagnostics);
   require(malformedClock.csv.has_value() && !malformedClock.ctf.has_value(),
           "malformed timestamps.clock must disable only CTF");
 
   config.setups[0].timestamps->clockError.reset();
   config.setups[0].timestamps->clockHz = 0U;
   CollectingDiagnosticSink zeroClockDiagnostics;
-  const auto zeroClock =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("BackendRequirements.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), zeroClockDiagnostics);
+  const auto zeroClock = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, zeroClockDiagnostics);
   require(zeroClock.csv.has_value() && !zeroClock.ctf.has_value(), "zero timestamps.clock must disable only CTF");
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsHonorFiltersAndCheckOnlyMode)
 {
   const auto config = backendRequirementsConfig();
-  CliOptions allOptions;
-  allOptions.outputFormat = OutputFormat::All;
-  allOptions.selection.types = {"itm"};
+  auto allRequest = outputRequest(true, true);
+  allRequest.selection.types = {"itm"};
   CollectingDiagnosticSink filteredDiagnostics;
-  const auto filtered =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("BackendRequirements.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), filteredDiagnostics);
+  const auto filtered = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, filteredDiagnostics);
   require(filtered.csv.has_value() && filtered.ctf.has_value(),
           "filtered-out DWT type metadata must not affect either backend");
   require(filteredDiagnostics.events().empty(), "filtered-out invalid DWT metadata must not produce diagnostics");
 
-  CliOptions checkOnlyOptions;
   CollectingDiagnosticSink checkOnlyDiagnostics;
   const auto checkOnly =
-      planTraceOutputs(traceOutputRequest(checkOnlyOptions), std::filesystem::path("BackendRequirements.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), checkOnlyDiagnostics);
+      planOutputs(outputRequest(false, false), "BackendRequirements.SWO.raw", config, checkOnlyDiagnostics);
   require(!checkOnly.hasRequestedOutputs() && checkOnlyDiagnostics.events().empty(),
           "check-only mode must not apply CSV or CTF metadata requirements");
 }
@@ -304,39 +236,28 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
 {
   TraceRunConfig config;
   config.path = "AmbiguousRoutes.ctrace-run.yml";
-  TraceRunSetup setup;
-  setup.timestamps = TraceRunTimestampSetup{400000000U, 1U};
+  auto setup = TraceRunTestSupport::makeTimestampSetup(std::nullopt, 400000000U, 1U);
   setup.data.push_back(TraceRunDataSetup{"unsigned int", 4U});
   config.setups.push_back(setup);
 
-  TraceRunReference first;
-  first.ctraceRef = "opaque/dwt-a";
-  first.type = "dwt";
-  first.stream = 1U;
-  first.sources = {0U};
+  auto first = TraceRunTestSupport::makeReference("dwt", std::nullopt, 1U, {0U}, "opaque/dwt-a");
   first.dataSetupIndex = 0U;
   first.label = "core-one";
   TraceRunReference second = first;
   second.label = "core-two";
   config.references = {first, second};
 
-  CliOptions allOptions;
-  allOptions.outputFormat = OutputFormat::All;
+  auto allRequest = outputRequest(true, true);
   CollectingDiagnosticSink diagnostics;
-  const auto plan =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("captures/AmbiguousRoutes.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), diagnostics);
+  const auto plan = planOutputs(allRequest, "captures/AmbiguousRoutes.SWO.raw", config, diagnostics);
   require(plan.csv.has_value() && !plan.ctf.has_value(),
           "conflicting CTF route labels must not disable independent CSV output");
-  require(diagnostics.events().size() == 1U && diagnostics.events()[0].code == "ctf-trace-route-ambiguous",
-          "CTF route ambiguity must be diagnosed during preflight");
+  diagnostics.singleEvent("ctf-trace-route-ambiguous");
 
   config.references[1].stream = 2U;
   config.references[1].label = "core-one";
   CollectingDiagnosticSink routeDiagnostics;
-  const auto routePlan =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("captures/AmbiguousRoutes.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), routeDiagnostics);
+  const auto routePlan = planOutputs(allRequest, "captures/AmbiguousRoutes.SWO.raw", config, routeDiagnostics);
   require(routePlan.csv.has_value() && routePlan.ctf.has_value() && routePlan.ctf->sources.size() == 2U,
           "CTF must retain equivalent routes with distinct Trace Bus IDs");
   require(routeDiagnostics.events().empty(), "equivalent CTF metadata on distinct Trace Bus IDs must not be ambiguous");
@@ -353,20 +274,15 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   auto core1Reference = first;
   core1Reference.processorName = "core1";
   processorConfig.references = {core0Reference, core1Reference};
-  CliOptions processorCsvOptions;
-  processorCsvOptions.outputFormat = OutputFormat::Csv;
   CollectingDiagnosticSink processorDiagnostics;
-  const auto processorPlan = planTraceOutputs(traceOutputRequest(processorCsvOptions),
-                                              std::filesystem::path("captures/AmbiguousProcessors.SWO.raw"),
-                                              CtraceRunMeta::fromConfig(processorConfig), processorDiagnostics);
+  const auto processorPlan = planOutputs(outputRequest(true, false), "captures/AmbiguousProcessors.SWO.raw",
+                                         processorConfig, processorDiagnostics);
   require(processorPlan.csv.has_value() && processorDiagnostics.events().empty(),
           "CSV must preserve raw stream/source values without consuming processor metadata");
 
-  allOptions.selection.streams = {1U};
+  allRequest.selection.streams = {1U};
   CollectingDiagnosticSink selectedDiagnostics;
-  const auto selectedPlan =
-      planTraceOutputs(traceOutputRequest(allOptions), std::filesystem::path("captures/AmbiguousRoutes.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), selectedDiagnostics);
+  const auto selectedPlan = planOutputs(allRequest, "captures/AmbiguousRoutes.SWO.raw", config, selectedDiagnostics);
   require(selectedPlan.csv.has_value() && selectedPlan.ctf.has_value() && selectedPlan.ctf->sources.size() == 1U &&
               selectedPlan.ctf->sources[0].label == std::optional<std::string>("core-one"),
           "an explicit stream selection must produce one resolved CTF route");
@@ -376,20 +292,16 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   config.references[1].stream = 1U;
   config.references[1].ctraceRef = "opaque/dwt-b";
   config.references[1].dataSetupIndex = 1U;
-  CliOptions csvOptions;
-  csvOptions.outputFormat = OutputFormat::Csv;
   CollectingDiagnosticSink sizeDiagnostics;
   const auto csvPlan =
-      planTraceOutputs(traceOutputRequest(csvOptions), std::filesystem::path("captures/AmbiguousRoutes.SWO.raw"),
-                       CtraceRunMeta::fromConfig(config), sizeDiagnostics);
+      planOutputs(outputRequest(true, false), "captures/AmbiguousRoutes.SWO.raw", config, sizeDiagnostics);
   require(csvPlan.csv.has_value(), "CTF-only data.symbol-size metadata must not disable CSV");
   require(sizeDiagnostics.events().empty(), "CSV must not inspect CTF-only data.symbol-size metadata");
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsValidateDefaultClockWithoutRoutes)
 {
-  CliOptions options;
-  options.outputFormat = OutputFormat::Ctf;
+  const auto ctfRequest = outputRequest(false, true);
   TraceRunConfig config;
   config.path = "Clock.ctrace-run.yml";
   TraceRunSetup setup;
@@ -397,70 +309,48 @@ TEST(CtraceUnitTests, testOutputRequirementsValidateDefaultClockWithoutRoutes)
   config.setups.push_back(setup);
 
   CollectingDiagnosticSink missingDiagnostics;
-  auto plan = planTraceOutputs(traceOutputRequest(options), "Clock.SWO.raw", CtraceRunMeta::fromConfig(config),
-                               missingDiagnostics);
+  auto plan = planOutputs(ctfRequest, "Clock.SWO.raw", config, missingDiagnostics);
   ASSERT_FALSE(plan.ctf.has_value());
-  ASSERT_EQ(missingDiagnostics.events().size(), 1U);
-  EXPECT_EQ(missingDiagnostics.events()[0].code, "ctf-timestamp-clock-missing");
+  missingDiagnostics.singleEvent("ctf-timestamp-clock-missing");
 
   config.setups[0].timestamps->clockError = "clock must be an unsigned integer";
   CollectingDiagnosticSink malformedDiagnostics;
-  plan = planTraceOutputs(traceOutputRequest(options), "Clock.SWO.raw", CtraceRunMeta::fromConfig(config),
-                          malformedDiagnostics);
+  plan = planOutputs(ctfRequest, "Clock.SWO.raw", config, malformedDiagnostics);
   ASSERT_FALSE(plan.ctf.has_value());
-  ASSERT_EQ(malformedDiagnostics.events().size(), 1U);
-  EXPECT_EQ(malformedDiagnostics.events()[0].code, "ctf-timestamp-clock-invalid");
+  malformedDiagnostics.singleEvent("ctf-timestamp-clock-invalid");
 
   config.setups[0].timestamps->clockError.reset();
   config.setups[0].timestamps->clockHz = 0U;
   CollectingDiagnosticSink zeroDiagnostics;
-  plan = planTraceOutputs(traceOutputRequest(options), "Clock.SWO.raw", CtraceRunMeta::fromConfig(config),
-                          zeroDiagnostics);
+  plan = planOutputs(ctfRequest, "Clock.SWO.raw", config, zeroDiagnostics);
   ASSERT_FALSE(plan.ctf.has_value());
-  ASSERT_EQ(zeroDiagnostics.events().size(), 1U);
-  EXPECT_EQ(zeroDiagnostics.events()[0].code, "ctf-timestamp-clock-invalid");
+  zeroDiagnostics.singleEvent("ctf-timestamp-clock-invalid");
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsRejectUnknownStreamWithMultipleClocks)
 {
   TraceRunConfig config;
   config.path = "Multicore.ctrace-run.yml";
-  TraceRunSetup first;
-  first.processorName = "first";
-  first.timestamps = TraceRunTimestampSetup{100U, 1U};
-  TraceRunSetup second;
-  second.processorName = "second";
-  second.timestamps = TraceRunTimestampSetup{200U, 1U};
-  config.setups = {first, second};
+  config.setups = {
+      TraceRunTestSupport::makeTimestampSetup("first", 100U, 1U),
+      TraceRunTestSupport::makeTimestampSetup("second", 200U, 1U),
+  };
+  config.references = {
+      TraceRunTestSupport::makeReference("itm", "first", 1U, {1U}, "first/itm"),
+      TraceRunTestSupport::makeReference("itm", "second", 2U, {1U}, "second/itm"),
+  };
 
-  TraceRunReference firstRoute;
-  firstRoute.type = "itm";
-  firstRoute.ctraceRef = "first/itm";
-  firstRoute.processorName = "first";
-  firstRoute.stream = 1U;
-  firstRoute.sources = {1U};
-  TraceRunReference secondRoute = firstRoute;
-  secondRoute.ctraceRef = "second/itm";
-  secondRoute.processorName = "second";
-  secondRoute.stream = 2U;
-  config.references = {firstRoute, secondRoute};
-
-  CliOptions options;
-  options.outputFormat = OutputFormat::Ctf;
-  options.selection.streams = {99U};
+  auto ctfRequest = outputRequest(false, true);
+  ctfRequest.selection.streams = {99U};
   CollectingDiagnosticSink diagnostics;
-  const auto plan = planTraceOutputs(traceOutputRequest(options), "Multicore.SWO.raw",
-                                     CtraceRunMeta::fromConfig(config), diagnostics);
+  const auto plan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, diagnostics);
   ASSERT_FALSE(plan.ctf.has_value());
-  ASSERT_EQ(diagnostics.events().size(), 1U);
-  EXPECT_EQ(diagnostics.events()[0].code, "ctf-timestamp-clock-ambiguous");
+  diagnostics.singleEvent("ctf-timestamp-clock-ambiguous");
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsRejectsInputWithoutArtifactName)
 {
-  CliOptions options;
-  options.outputFormat = OutputFormat::Csv;
   CollectingDiagnosticSink diagnostics;
-  EXPECT_THROW((void)planTraceOutputs(traceOutputRequest(options), {}, CtraceRunMeta::fromConfig({}), diagnostics),
+  EXPECT_THROW((void)planTraceOutputs(outputRequest(true, false), {}, CtraceRunMeta::fromConfig({}), diagnostics),
                std::runtime_error);
 }
