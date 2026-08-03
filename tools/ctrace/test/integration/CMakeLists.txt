@@ -112,14 +112,14 @@ set_tests_properties(
 )
 
 set(CTRACE_BLINKY_FIXTURE_DIR
-    "${CTRACE_SOURCE_DIR}/test/data/Blinky+STM32H747I-EVAL")
+    "${CTRACE_SOURCE_DIR}/test/data/Blinky+Arm")
 
 add_test(
     NAME ctrace-fixture-blinky-swo-and-unimplemented-tb
     COMMAND ${CMAKE_COMMAND}
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
         -DFIXTURE_DIR=${CTRACE_BLINKY_FIXTURE_DIR}
-        -DTARGET=Blinky+STM32H747I-EVAL
+        -DTARGET=Blinky+Arm
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/fixture-blinky
         -DEXPECTED_RESULT=1
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunTraceFixture.cmake
@@ -132,14 +132,14 @@ set_tests_properties(
 )
 
 set(CTRACE_RESET_FIXTURE_DIR
-    "${CTRACE_SOURCE_DIR}/test/data/STM32H7B3I-DK-reset")
+    "${CTRACE_SOURCE_DIR}/test/data/Arm-reset")
 
 add_test(
     NAME ctrace-fixture-reset-recovery
     COMMAND ${CMAKE_COMMAND}
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
         -DFIXTURE_DIR=${CTRACE_RESET_FIXTURE_DIR}
-        -DTARGET=STM32H7B3I-DK
+        -DTARGET=Arm
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/fixture-reset-recovery
         -DEXPECTED_RAW_SHA256=853ebc2a511536de28670b536cbc60776378a07d7536687bddb93b632b5a5e31
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunResetRecoveryFixture.cmake
