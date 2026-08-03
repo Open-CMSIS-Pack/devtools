@@ -108,6 +108,8 @@ Editors using `clangd` should open the devtools repository root and configure in
 
 `ctrace` uses the devtools copies of `cxxopts`, `yaml-cpp`, GoogleTest, and the `external/OpenCSD` submodule. It does
 not carry private copies below `tools/ctrace`.
+Known defects in the pinned OpenCSD revision that can affect ctrace are recorded
+in the [OpenCSD issue notes](docs/opencsd-issues.md).
 
 Publishing a GitHub Release for a tag named `tools/ctrace/<version>` runs the ctrace workflow. `<version>` must be a
 stable SemVer value with three numeric components and no leading zeroes, for example `0.0.1`. The workflow builds

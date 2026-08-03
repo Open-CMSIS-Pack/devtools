@@ -20,9 +20,10 @@ The source revisions used for this notice are pinned by the devtools gitlinks:
 GoogleTest is used only to build the test executable and is not incorporated
 into the released ctrace executable.
 
-## Modifications
+## Dependency patches and build configuration
 
-devtools applies the following modifications while building ctrace:
+devtools applies the following dependency patches and build configuration while
+building ctrace:
 
 - `external/cxxopts.patch` adjusts help formatting in the header-only cxxopts
   component.
@@ -30,8 +31,7 @@ devtools applies the following modifications while building ctrace:
   map-key validation and emitter formatting changes.
 - `tools/ctrace/cmake/dependencies/ConfigureOpenCSD.cmake` builds OpenCSD's
   upstream minimal static target, enables large trace-source IDs, adjusts
-  MSVC options, and replaces one empty-vector `operator[]` expression with
-  `data()` in a generated build-tree copy of the ITM packet processor.
+  MSVC options, and leaves the pinned OpenCSD sources unchanged.
 
 The OpenCSD minimal static target still contains upstream decoders other than
 ITM because OpenCSD 1.8.3 does not expose a supported ITM-only CMake target.
