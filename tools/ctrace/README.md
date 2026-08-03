@@ -88,9 +88,6 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build --target ctrace CtraceUnitTests
 ```
 
-Set `-DBUILD_TESTING=OFF` when configuring a production-only tree that should
-not create the ctrace test targets.
-
 Run the independently discoverable GoogleTest cases and the executable-level integration tests:
 
 ```bash
