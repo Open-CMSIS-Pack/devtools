@@ -50,5 +50,5 @@ binaries as indicated by the Usage column.
 <!-- markdownlint-restore -->
 
 Dependency modifications incorporated into ctrace are documented in its
-[third-party notices](tools/ctrace/docs/THIRD_PARTY_NOTICES.md). Compiler and operating-system runtime components are
-tracked separately in the [ctrace runtime inventory](tools/ctrace/docs/RUNTIME_COMPONENTS.md).
+[third-party notices](tools/ctrace/docs/THIRD_PARTY_NOTICES.md). Compiler and operating-system runtime obligations are
+artifact-specific and must be verified before publishing a ctrace release.
