@@ -96,7 +96,7 @@ private:
 
   ITMConfig config_;
   IDecoderMngr* manager_ = nullptr;
-  std::unique_ptr<TraceComponent, DecoderDeleter> component_;
+  std::unique_ptr<TraceComponent, DecoderDeleter> component_{nullptr, DecoderDeleter{}};
   ITrcDataIn* input_ = nullptr;
 };
 
