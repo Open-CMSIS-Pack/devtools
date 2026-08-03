@@ -141,14 +141,14 @@ add_test(
         -DFIXTURE_DIR=${CTRACE_RESET_FIXTURE_DIR}
         -DTARGET=Arm
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/fixture-reset-recovery
-        -DEXPECTED_RAW_SHA256=853ebc2a511536de28670b536cbc60776378a07d7536687bddb93b632b5a5e31
+        -DEXPECTED_RAW_SHA256=8c7ba2b90e42188517c7b793e8b7dd4030fa5455b7a38a2de15d8ca2b47995c9
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunResetRecoveryFixture.cmake
 )
-# The complete 816560-byte recovery fixture can exceed the common 30-second
-# test timeout with the MSVC Debug build while still completing normally.
+# The 128-KiB capture excerpt preserves the reset discontinuity, recovery sync,
+# and resumed DWT events while keeping the MSVC Debug test bounded.
 set_tests_properties(
     ctrace-fixture-reset-recovery
     PROPERTIES
         LABELS "integration;fixture"
-        TIMEOUT 120
+        TIMEOUT 60
 )

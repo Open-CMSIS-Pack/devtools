@@ -20,7 +20,7 @@ if(NOT raw_sha256 STREQUAL EXPECTED_RAW_SHA256)
     message(FATAL_ERROR
         "Reset-recovery fixture SHA-256 mismatch: ${raw_sha256}")
 endif()
-foreach(sync_offset IN ITEMS 407861 407989)
+foreach(sync_offset IN ITEMS 0 128)
     file(READ "${raw_input}" hardware_sync
         OFFSET ${sync_offset}
         LIMIT 6
@@ -50,9 +50,9 @@ if(NOT result EQUAL 1)
 endif()
 
 foreach(expected_stderr IN ITEMS
-        "\\[error\\] decode/opencsd-bad-packet-sequence: invalid ITM packet sequence at raw offset 407871"
-        "\\[error\\] decode/data-loss: 116 raw bytes from raw offset 407873 could not be decoded before the next hardware ITM sync"
-        "decode/summary: decoded 318443 packets from 816560 bytes")
+        "\\[error\\] decode/opencsd-bad-packet-sequence: invalid ITM packet sequence at raw offset 10"
+        "\\[error\\] decode/data-loss: 116 raw bytes from raw offset 12 could not be decoded before the next hardware ITM sync"
+        "decode/summary: decoded 52374 packets from 131071 bytes")
     if(NOT stderr MATCHES "${expected_stderr}")
         message(FATAL_ERROR
             "ctrace did not report expected reset recovery '${expected_stderr}'\n"
@@ -73,11 +73,11 @@ if(csv MATCHES ",itm,")
 endif()
 
 set(recovery_error
-    "1263538492,0,error,,,,,OpenCSD detected an invalid ITM packet sequence at raw offset 407871.")
+    "0,0,error,,,,,OpenCSD detected an invalid ITM packet sequence at raw offset 10.")
 set(data_loss
-    "1263538492,0,error,,,,,OpenCSD consumed 116 raw bytes while waiting for usable ITM trace packets")
-set(first_resumed_event "1535311750,0,dwt,0,0x00,,,")
-set(late_resumed_event "2594186112,0,dwt,0,0x5b,,,")
+    "0,0,error,,,,,OpenCSD consumed 116 raw bytes while waiting for usable ITM trace packets")
+set(first_resumed_event "271773258,0,dwt,0,0x00,,,")
+set(late_resumed_event "425766493,0,dwt,0,0x2a,,,")
 
 string(FIND "${csv}" "${recovery_error}" recovery_error_position)
 string(FIND "${csv}" "${data_loss}" data_loss_position)

@@ -30,13 +30,15 @@ The approved Blinky fixture set is identified by these SHA-256 values:
 - Derived CSV: `6138cc60deee8bc16a8a889a6d9156ed76f389c4831afafc5125e4a0d00074cc`
 - Trace-run YAML: `deef176a7a924a9c24a126ea460994e86afee3d216e6839da515296758797966`
 
-The `Arm-reset` fixture is an approved Arm target capture. It contains an
-MCU-reset discontinuity that OpenCSD reports as an invalid packet sequence. The
-integration test verifies that ctrace discards the damaged interval, finds the
-next hardware ITM sync, and continues decoding the remainder of the capture.
-The portable trace-run YAML retains only metadata needed by the test.
+The `Arm-reset` fixture is an approved excerpt of an Arm target capture. It
+starts at the hardware ITM sync immediately before an MCU-reset discontinuity
+that OpenCSD reports as an invalid packet sequence. The integration test
+verifies that ctrace discards the damaged interval, finds the next hardware ITM
+sync, and continues decoding DWT events. The bounded excerpt keeps Debug tests
+portable across CI platforms. The trace-run YAML retains only metadata needed
+by the test.
 
-- SWO capture: `853ebc2a511536de28670b536cbc60776378a07d7536687bddb93b632b5a5e31`
+- SWO capture: `8c7ba2b90e42188517c7b793e8b7dd4030fa5455b7a38a2de15d8ca2b47995c9`
 - Trace-run YAML: `b5bdf891ae109ab3798f9985430e91a6dfef2038fc5494a57b4cb882a3d3a514`
 
 `trace-run` contains only the small current-schema inputs needed by executable
