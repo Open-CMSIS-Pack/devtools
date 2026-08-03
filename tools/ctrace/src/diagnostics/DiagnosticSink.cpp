@@ -17,8 +17,7 @@
 static std::string formatDiagnosticEvent(const DiagnosticSink::Event& event)
 {
   std::ostringstream out;
-  out << "[" << (event.impact == DiagnosticSink::Impact::Fatal ? toString(event.impact) : toString(event.severity))
-      << "] " << toString(event.category);
+  out << "[" << toString(event.severity) << "] " << toString(event.category);
   if (!event.code.empty()) {
     out << "/" << event.code;
   }
@@ -32,15 +31,15 @@ static std::string formatDiagnosticEvent(const DiagnosticSink::Event& event)
 
 void DiagnosticSink::report(const Event& event)
 {
-  if (event.impact == Impact::Fatal) {
-    ++fatalCount_;
+  if (event.impact == Impact::Failing) {
+    ++failureCount_;
   }
   write(event);
 }
 
-std::uint64_t DiagnosticSink::fatalCount() const noexcept
+std::uint64_t DiagnosticSink::failureCount() const noexcept
 {
-  return fatalCount_;
+  return failureCount_;
 }
 
 std::string_view toString(DiagnosticSink::Severity severity)
@@ -74,10 +73,10 @@ std::string_view toString(DiagnosticSink::Category category)
 std::string_view toString(DiagnosticSink::Impact impact)
 {
   switch (impact) {
-  case DiagnosticSink::Impact::NonFatal:
-    return "nonfatal";
-  case DiagnosticSink::Impact::Fatal:
-    return "fatal";
+  case DiagnosticSink::Impact::NonFailing:
+    return "non-failing";
+  case DiagnosticSink::Impact::Failing:
+    return "failing";
   }
   return "unknown";
 }

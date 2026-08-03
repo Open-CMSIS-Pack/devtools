@@ -19,7 +19,7 @@ add_test(
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
         "${CTRACE_EMULATOR_ARGUMENT}"
         "-DCTRACE_ARGS=--version;--type;DWT"
-        "-DEXPECTED_STDERR=\\[fatal\\] cli/invalid-arguments:"
+        "-DEXPECTED_STDERR=\\[error\\] cli/invalid-arguments:"
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunExpectedFailure.cmake
 )
 
@@ -29,7 +29,7 @@ add_test(
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
         "${CTRACE_EMULATOR_ARGUMENT}"
         -DCTRACE_ARGS=${CMAKE_CURRENT_BINARY_DIR}/__missing_trace_directory_4b66b86f__
-        "-DEXPECTED_STDERR=\\[fatal\\] input/trace-directory-failed:"
+        "-DEXPECTED_STDERR=\\[error\\] input/trace-directory-failed:"
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunExpectedFailure.cmake
 )
 
@@ -101,6 +101,18 @@ add_test(
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunValidTraceFixture.cmake
 )
 set_tests_properties(
+    ctrace-version
+    ctrace-version-rejects-invalid-type
+    ctrace-missing-trace-directory
+    ctrace-no-args-shows-help
+    ctrace-help
+    ctrace-trace-run-yaml
+    ctrace-decoder-error-all-is-generated
+    PROPERTIES
+        LABELS "integration"
+        TIMEOUT 30
+)
+set_tests_properties(
     ctrace-valid-swo-generates-all-outputs
     PROPERTIES
         LABELS "integration;fixture"
@@ -123,6 +135,27 @@ add_test(
 )
 set_tests_properties(
     ctrace-fixture-blinky-swo-and-unimplemented-tb
+    PROPERTIES
+        LABELS "integration;fixture"
+        TIMEOUT 30
+)
+
+set(CTRACE_RESET_FIXTURE_DIR
+    "${CTRACE_SOURCE_DIR}/test/data/STM32H7B3I-DK-reset")
+
+add_test(
+    NAME ctrace-fixture-reset-recovery
+    COMMAND ${CMAKE_COMMAND}
+        -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
+        "${CTRACE_EMULATOR_ARGUMENT}"
+        -DFIXTURE_DIR=${CTRACE_RESET_FIXTURE_DIR}
+        -DTARGET=STM32H7B3I-DK
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/fixture-reset-recovery
+        -DEXPECTED_RAW_SHA256=853ebc2a511536de28670b536cbc60776378a07d7536687bddb93b632b5a5e31
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunResetRecoveryFixture.cmake
+)
+set_tests_properties(
+    ctrace-fixture-reset-recovery
     PROPERTIES
         LABELS "integration;fixture"
         TIMEOUT 30

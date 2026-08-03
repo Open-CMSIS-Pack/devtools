@@ -30,8 +30,8 @@ public:
   };
 
   enum class Impact {
-    NonFatal,
-    Fatal,
+    NonFailing,
+    Failing,
   };
 
   struct Event {
@@ -43,7 +43,7 @@ public:
           std::optional<Impact> eventImpact = std::nullopt)
       : severity(eventSeverity), category(eventCategory), code(std::move(eventCode)), message(std::move(eventMessage)),
         context(std::move(eventContext)), compactMessage(std::move(eventCompactMessage)),
-        impact(eventImpact.value_or(eventSeverity == Severity::Error ? Impact::Fatal : Impact::NonFatal))
+        impact(eventImpact.value_or(eventSeverity == Severity::Error ? Impact::Failing : Impact::NonFailing))
     {
     }
 
@@ -53,19 +53,19 @@ public:
     std::string message;
     std::vector<std::pair<std::string, std::string>> context;
     std::optional<std::string> compactMessage;
-    Impact impact = Impact::NonFatal;
+    Impact impact = Impact::NonFailing;
   };
 
   virtual ~DiagnosticSink() = default;
 
   void report(const Event& event);
-  std::uint64_t fatalCount() const noexcept;
+  std::uint64_t failureCount() const noexcept;
 
 protected:
   virtual void write(const Event& event) = 0;
 
 private:
-  std::uint64_t fatalCount_ = 0;
+  std::uint64_t failureCount_ = 0;
 };
 
 class StderrDiagnosticSink final : public DiagnosticSink {

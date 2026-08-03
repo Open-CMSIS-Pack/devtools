@@ -73,7 +73,7 @@ void reportTraceRunDiagnostics(const TraceRunConfig& config, DiagnosticSink& dia
           reference.error->empty() ? "trace generation setup failed without a diagnostic message" : *reference.error,
           std::move(context),
           std::nullopt,
-          DiagnosticSink::Impact::NonFatal,
+          DiagnosticSink::Impact::NonFailing,
       });
       // LCOV_EXCL_BR_STOP
     }

@@ -85,7 +85,7 @@ OpenCSD types.
 8. The OpenCSD adapter decodes ITM protocol elements and preserves decoder warnings, errors, and recovery boundaries.
 9. The Cortex-M post-decoder converts protocol elements into semantic `TraceEvent` values.
 10. `DecodeConsumers` forwards every event to diagnostics and the selected output backends.
-11. Output lifecycle handling completes valid artifacts or removes incomplete artifacts after a fatal failure.
+11. Output lifecycle handling completes valid artifacts or removes incomplete artifacts after a failure.
 
 Without `--csv`, `--ctf`, or `--all`, the same pipeline runs in validation-only mode without creating output files.
 
@@ -101,8 +101,8 @@ into the same `TraceEventSink`, preserving input order while keeping stream-spec
 
 There is no application-wide event queue. `DecodeConsumers` forwards each event synchronously to the output
 lifecycle and issue reporter. Output backends own their files and are isolated from one another: failure of one
-backend aborts its incomplete artifact but does not directly stop another active backend. A decoder-fatal error
-aborts every still-active output for that raw file.
+backend aborts its incomplete artifact but does not directly stop another active backend. A non-recoverable decoder
+error aborts every still-active output for that raw file.
 
 The diagnostic sink lives for the complete command invocation. It therefore aggregates failures across solution sets
 and determines the final process status after processing has continued wherever possible.
@@ -179,7 +179,7 @@ Output requirements are evaluated per backend. For example, missing CTF-specific
 independent CSV output remains valid. `--all` therefore does not make the backends share failure state unnecessarily.
 
 Outputs use an explicit `start`, `writeEvent`, `stop`, and `abort` lifecycle. A successful backend can finish even if
-another backend fails. Fatal decode or finalization failures trigger cleanup of incomplete artifacts.
+another backend fails. Decode or finalization failures trigger cleanup of incomplete artifacts.
 
 ## Diagnostics and failure semantics
 
@@ -190,8 +190,8 @@ without necessarily preventing the decoding of otherwise valid trace input.
 Decoder issue packets remain part of the event stream. They can therefore be written to CSV or CTF and reported to
 stderr independently of payload filters. Repeated issues are not silently collapsed.
 
-Processing continues with other solution sets where possible. The executable exits with a non-zero status if any
-fatal diagnostic occurred.
+Processing continues with other solution sets where possible. Errors are rendered as `error` even when their impact
+causes a non-zero exit status; `fatal` is reserved for an internal ctrace crash.
 
 ## External dependencies
 

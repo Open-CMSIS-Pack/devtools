@@ -55,7 +55,7 @@ code and covered by focused, individually discoverable CTest cases.
   periodic PC samples remain suppressed; `testTraceSelection`, `testCliParser`, `testCsvRowMapper`, and
   `testDwtPcSampleIsSuppressedUntilDedicatedEventExists` enforce the boundary.
 
-- **Decoder warnings and errors remain observable independently of payload filtering; errors are fatal.**
+- **Decoder warnings and errors remain observable independently of payload filtering; errors fail the command.**
   `testTraceIssueReporterReportsEveryIssue` and
   `testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOutputs` verify ordering and impact.
 
@@ -75,9 +75,9 @@ code and covered by focused, individually discoverable CTest cases.
 - **Validation-only mode creates no output; unsupported trace channels are diagnosed and skipped.**
   `TraceDirectoryJob`, `ctrace-trace-run-yaml`, and the SWO/TB fixture integration test enforce the workflow.
 
-- **Process success comes from structured fatal diagnostics, not formatted stderr text.**
-  [`DiagnosticSink`](../src/diagnostics/DiagnosticSink.hpp) tracks fatal impact; `CtraceMain` returns failure when the
-  fatal count is non-zero.
+- **Process success comes from structured diagnostic impact, not formatted stderr text.**
+  [`DiagnosticSink`](../src/diagnostics/DiagnosticSink.hpp) tracks failure impact independently of the rendered
+  severity; `CtraceMain` returns failure when the failure count is non-zero.
 
 ## Distribution
 

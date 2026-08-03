@@ -238,7 +238,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   require(readFirstCtfDwtValueTag(defaultOutputDir / "stream_0") == 6U,
           "default DWT metadata must select the unsigned 32-bit CTF variant");
   const auto& sizeWarning = diagnostics.singleEvent("dwt-symbol-size-mismatch");
-  require(sizeWarning.severity == DiagnosticSink::Severity::Warning && diagnostics.fatalCount() == 0U,
+  require(sizeWarning.severity == DiagnosticSink::Severity::Warning && diagnostics.failureCount() == 0U,
           "DWT size mismatch must be reported once per channel");
 
   TraceRunConfig signedTraceRun;

@@ -1,3 +1,8 @@
+<!--
+Copyright (c) 2026 Arm Limited. All rights reserved.
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # ctrace Integration Tests
 
 Integration tests exercise the `ctrace` executable and file-oriented workflows.
@@ -8,3 +13,6 @@ the CMake build directory.
 ITM stream in the build tree and verifies a successful CSV, CTF, and Trace
 Compass conversion. The versioned Blinky capture separately covers damaged
 input recovery, exact CSV output, and discovery of unsupported Trace Bus input.
+The versioned STM32H7B3I-DK capture covers recovery across a real MCU-reset
+trace discontinuity and verifies that DWT decoding continues after the next
+hardware ITM sync.

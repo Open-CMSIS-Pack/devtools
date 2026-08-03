@@ -43,7 +43,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesIndependentOutputs)
   TraceEvent packet = softwarePacket(1U, 1U, 'A');
   lifecycle.append(packet);
   lifecycle.finish();
-  require(diagnostics.fatalCount() == 2U, "output lifecycle should report start and finalization failures");
+  require(diagnostics.failureCount() == 2U, "output lifecycle should report start and finalization failures");
 
   const auto contents = readTestTextFile(path);
   require(contents.find("cycles,stream,type,source,value,pc,offset,note\n") == 0U &&
@@ -59,7 +59,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleReportsAbortFailures)
   TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
   lifecycle.abort();
 
-  require(diagnostics.fatalCount() == 1U && diagnostics.containsContext("output-failed", "phase", "abort"),
+  require(diagnostics.failureCount() == 1U && diagnostics.containsContext("output-failed", "phase", "abort"),
           "output lifecycle must report a failed direct-output cleanup");
 }
 
@@ -88,12 +88,12 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleContainsDiagnosticAndNonStandardFa
   outputs.push_back(std::make_unique<TestTraceOutput>(TestTraceOutputFailure::NonStandardStart));
   ThrowingDiagnosticSink diagnostics;
   EXPECT_NO_THROW((void)TraceOutputLifecycle(std::move(outputs), diagnostics));
-  EXPECT_EQ(diagnostics.fatalCount(), 1U);
+  EXPECT_EQ(diagnostics.failureCount(), 1U);
 
   std::vector<std::unique_ptr<TraceOutput>> passiveOutputs;
   passiveOutputs.push_back(std::make_unique<TestTraceOutput>());
   CollectingDiagnosticSink passiveDiagnostics;
   TraceOutputLifecycle passive(std::move(passiveOutputs), passiveDiagnostics);
   passive.finish();
-  EXPECT_EQ(passiveDiagnostics.fatalCount(), 0U);
+  EXPECT_EQ(passiveDiagnostics.failureCount(), 0U);
 }

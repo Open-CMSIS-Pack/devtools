@@ -59,7 +59,7 @@ int CtraceMain(int argc, const char* const argv[])
     YmlTraceRunConfigReader configReader;
     TraceDirectoryJob job(options, diagnostics, configReader);
     job.run();
-    return diagnostics.fatalCount() == 0U ? 0 : 1;
+    return diagnostics.failureCount() == 0U ? 0 : 1;
   } catch (const std::exception& error) { // LCOV_EXCL_BR_LINE: exception dispatch is validated by job tests
     reportFailure(diagnostics, DiagnosticSink::Category::Input, "trace-directory-failed", error);
     return 1;

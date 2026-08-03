@@ -45,7 +45,7 @@ if(EXPECT_NO_OUTPUT)
         "${WORK_DIR}/*.traceanalysis.xml")
     if(generated_outputs)
         message(FATAL_ERROR
-            "ctrace generated output despite a fatal configuration error: ${generated_outputs}")
+            "ctrace generated output despite a failing configuration error: ${generated_outputs}")
     endif()
 endif()
 

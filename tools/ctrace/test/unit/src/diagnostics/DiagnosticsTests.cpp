@@ -27,7 +27,7 @@ TEST(CtraceUnitTests, testDiagnosticCollection)
   require(sink.events()[0].category == DiagnosticSink::Category::Decode, "diagnostic category mismatch");
   require(toString(sink.events()[0].severity) == "warning", "diagnostic severity text mismatch");
   require(toString(sink.events()[0].category) == "decode", "diagnostic category text mismatch");
-  require(sink.fatalCount() == 0U, "warnings must not be fatal");
+  require(sink.failureCount() == 0U, "warnings must not fail the command");
 
   sink.report({
       DiagnosticSink::Severity::Error,
@@ -36,10 +36,10 @@ TEST(CtraceUnitTests, testDiagnosticCollection)
       "generator could not create an irrelevant register",
       {},
       std::nullopt,
-      DiagnosticSink::Impact::NonFatal,
+      DiagnosticSink::Impact::NonFailing,
   });
-  require(sink.events().back().impact == DiagnosticSink::Impact::NonFatal && sink.fatalCount() == 0U,
-          "non-fatal errors must retain error severity without failing the job");
+  require(sink.events().back().impact == DiagnosticSink::Impact::NonFailing && sink.failureCount() == 0U,
+          "non-failing errors must retain error severity without failing the job");
 
   sink.report({
       DiagnosticSink::Severity::Error,
@@ -47,8 +47,8 @@ TEST(CtraceUnitTests, testDiagnosticCollection)
       "required-input-missing",
       "required input is missing",
   });
-  require(sink.events().back().impact == DiagnosticSink::Impact::Fatal && sink.fatalCount() == 1U,
-          "fatal errors must fail the job");
+  require(sink.events().back().impact == DiagnosticSink::Impact::Failing && sink.failureCount() == 1U,
+          "failing errors must fail the job");
 }
 
 TEST(CtraceUnitTests, testDiagnosticTextCoversAllValuesAndFormatting)
@@ -62,8 +62,8 @@ TEST(CtraceUnitTests, testDiagnosticTextCoversAllValuesAndFormatting)
   EXPECT_EQ(toString(DiagnosticSink::Category::Decode), "decode");
   EXPECT_EQ(toString(DiagnosticSink::Category::Output), "output");
   EXPECT_EQ(toString(static_cast<DiagnosticSink::Category>(99)), "unknown");
-  EXPECT_EQ(toString(DiagnosticSink::Impact::NonFatal), "nonfatal");
-  EXPECT_EQ(toString(DiagnosticSink::Impact::Fatal), "fatal");
+  EXPECT_EQ(toString(DiagnosticSink::Impact::NonFailing), "non-failing");
+  EXPECT_EQ(toString(DiagnosticSink::Impact::Failing), "failing");
   EXPECT_EQ(toString(static_cast<DiagnosticSink::Impact>(99)), "unknown");
 
   StderrDiagnosticSink sink;
@@ -76,10 +76,10 @@ TEST(CtraceUnitTests, testDiagnosticTextCoversAllValuesAndFormatting)
                "long message",
                {},
                "compact",
-               DiagnosticSink::Impact::Fatal});
+               DiagnosticSink::Impact::Failing});
   const auto text = testing::internal::GetCapturedStderr();
   EXPECT_NE(text.find("[info] cli: full message argument=--all"), std::string::npos);
-  EXPECT_NE(text.find("[fatal] output/write: compact"), std::string::npos);
+  EXPECT_NE(text.find("[error] output/write: compact"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
@@ -90,7 +90,7 @@ TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
   payloadIndependentReporter.append(payloadIndependentError);
   require(payloadIndependentDiagnostics.events().size() == 1U,
           "decoder errors must remain visible independently of payload filtering");
-  require(payloadIndependentDiagnostics.fatalCount() == 1U,
+  require(payloadIndependentDiagnostics.failureCount() == 1U,
           "decoder errors must fail validation independently of payload filtering");
 
   CollectingDiagnosticSink diagnostics;
@@ -129,7 +129,7 @@ TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
   require(diagnostics.events()[3].severity == DiagnosticSink::Severity::Warning,
           "TraceIssueReporter should preserve warning severity");
   require(diagnostics.events()[4].context.empty(), "TraceIssueReporter context mismatch");
-  require(diagnostics.fatalCount() == 3U, "TraceIssueReporter should classify decoder errors as fatal");
+  require(diagnostics.failureCount() == 3U, "TraceIssueReporter should classify decoder errors as failing");
 }
 
 TEST(CtraceUnitTests, testTraceIssueReporterFormatsUnknownOverflowTimestamp)

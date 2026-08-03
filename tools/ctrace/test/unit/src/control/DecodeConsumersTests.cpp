@@ -46,7 +46,7 @@ TEST(CtraceUnitTests, testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOut
   require(calls == std::vector<std::string>({"start", "write", "diagnostic"}),
           "warning packets must reach outputs before issue reporting");
   require(consumers.eventCount() == 1U, "DecodeConsumers warning packet count mismatch");
-  require(diagnostics.fatalCount() == 0U, "decoder warnings must not fail validation");
+  require(diagnostics.failureCount() == 0U, "decoder warnings must not fail validation");
 
   TraceEvent error = warning;
   auto& errorIssue = std::get<TraceIssueEvent>(error.payload);
@@ -57,11 +57,11 @@ TEST(CtraceUnitTests, testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOut
   require(calls == std::vector<std::string>({"start", "write", "diagnostic", "write", "diagnostic"}),
           "decoder error packets must reach outputs before issue reporting");
   require(consumers.eventCount() == 2U, "DecodeConsumers error packet count mismatch");
-  require(diagnostics.fatalCount() == 1U, "decoder errors must fail validation even when outputs are configured");
+  require(diagnostics.failureCount() == 1U, "decoder errors must fail validation even when outputs are configured");
 
   consumers.abortOutputs();
   require(calls == std::vector<std::string>({"start", "write", "diagnostic", "write", "diagnostic", "abort"}),
-          "fatal decode cleanup must abort and remove partial outputs");
+          "failed decode cleanup must abort and remove partial outputs");
 }
 
 TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
@@ -98,7 +98,7 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
   require(diagnostics.events().size() == 2U, "disabled ITM channels must produce one warning per Trace Bus ID/channel");
   for (const auto& event : diagnostics.events()) {
     require(event.severity == DiagnosticSink::Severity::Warning && event.category == DiagnosticSink::Category::Input &&
-                event.code == "itm-channel-not-enabled" && event.impact == DiagnosticSink::Impact::NonFatal,
+                event.code == "itm-channel-not-enabled" && event.impact == DiagnosticSink::Impact::NonFailing,
             "ITM enable mismatch diagnostic classification mismatch");
   }
 }
