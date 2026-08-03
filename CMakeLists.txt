@@ -158,8 +158,8 @@ apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/cxxopts)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/xerces-c)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/yaml-cpp)
 
-# OpenCSD
-if(NOT LIBS_ONLY)
+# OpenCSD is a private build dependency of ctrace.
+if(TARGET ctrace)
   include(tools/ctrace/cmake/dependencies/ConfigureOpenCSD.cmake)
 endif()
 

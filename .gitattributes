@@ -46,4 +46,4 @@
 # Denote all files that are truly binary and should not be modified.
 *.png binary
 *.jpg binary
-*.raw binary
+tools/ctrace/test/data/**/*.raw binary

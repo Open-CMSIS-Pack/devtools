@@ -39,6 +39,6 @@ jobs:
       - id: set-matrix
         run: |
           publicRepo=$(echo '${{ github.event.repository.private && 'privateRepo' || 'publicRepo' }}')
-          matrix=$(jq -c --arg publicRepo "$publicRepo" '{include: map(select(.runOn == $publicRepo or .runOn == "always"))}' matrix_includes_${{ inputs.workflow_name }}.json)
-          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+          matrix=$(jq --arg publicRepo "$publicRepo" 'map(. | select((.runOn==$publicRepo) or (.runOn=="always")) )' matrix_includes_${{ inputs.workflow_name }}.json)
+          echo "matrix={\"include\":$(echo $matrix)}\"" >> $GITHUB_OUTPUT
         working-directory: .github/
