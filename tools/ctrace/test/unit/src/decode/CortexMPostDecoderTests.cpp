@@ -5,13 +5,13 @@
  * Generated with AI
  */
 
-#include "OpenCsdTestSupport.hpp"
-#include "TestSupport.hpp"
+#include "OpenCsdTestSupport.h"
+#include "TestSupport.h"
 
 #include <gtest/gtest.h>
 
-#include "CortexMPostDecoder.hpp"
-#include "OpenCsdTraceElement.hpp"
+#include "CortexMPostDecoder.h"
+#include "OpenCsdTraceElement.h"
 
 #include <array>
 #include <utility>

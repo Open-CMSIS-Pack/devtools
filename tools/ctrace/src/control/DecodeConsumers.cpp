@@ -5,12 +5,12 @@
  * Generated with AI
  */
 
-#include "DecodeConsumers.hpp"
+#include "DecodeConsumers.h"
 
-#include "DiagnosticSink.hpp"
-#include "TraceEvent.hpp"
-#include "TraceOutput.hpp"
-#include "TraceOutputLifecycle.hpp"
+#include "DiagnosticSink.h"
+#include "TraceEvent.h"
+#include "TraceOutput.h"
+#include "TraceOutputLifecycle.h"
 
 #include <cstdint>
 #include <iomanip>
@@ -23,16 +23,12 @@
 #include <utility>
 #include <vector>
 
-namespace {
-
-std::string hexMask(std::uint32_t value)
+static std::string hexMask(std::uint32_t value)
 {
   std::ostringstream out;
   out << "0x" << std::hex << std::setw(8) << std::setfill('0') << value;
   return out.str();
 }
-
-} // namespace
 
 DecodeConsumers::DecodeConsumers(std::vector<std::unique_ptr<TraceOutput>> outputs, DiagnosticSink& diagnostics,
                                  std::optional<std::uint32_t> itmEnableMask,
@@ -68,7 +64,6 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
     return;
   }
 
-  // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
   diagnostics_.report({
       DiagnosticSink::Severity::Warning,
       DiagnosticSink::Category::Input,
@@ -80,7 +75,6 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
           {"enable", hexMask(*enableMask)},
       },
   });
-  // LCOV_EXCL_BR_STOP
 }
 
 std::uint64_t DecodeConsumers::eventCount() const

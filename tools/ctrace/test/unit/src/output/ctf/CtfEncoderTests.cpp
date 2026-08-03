@@ -5,15 +5,15 @@
  * Generated with AI
  */
 
-#include "CtfTestSupport.hpp"
-#include "TestSupport.hpp"
+#include "CtfTestSupport.h"
+#include "TestSupport.h"
 
 #include <gtest/gtest.h>
 
-#include "ctf/CtfEncoder.hpp"
-#include "TestPath.hpp"
-#include "TraceEvent.hpp"
-#include "TraceSelection.hpp"
+#include "ctf/CtfEncoder.h"
+#include "TestPath.h"
+#include "TraceEvent.h"
+#include "TraceSelection.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -24,11 +24,18 @@
 #include <utility>
 #include <vector>
 
-namespace {
+using CtfTestSupport::CtfRecord;
+using CtfTestSupport::kCtfEventOffset;
+using CtfTestSupport::kCtfPacketContextSize;
+using CtfTestSupport::kCtfPacketHeaderSize;
+using CtfTestSupport::kCtfPacketSize;
+using CtfTestSupport::readCtfRecords;
+using CtfTestSupport::readLe16;
+using CtfTestSupport::readLe32;
+using CtfTestSupport::requireFirstCtfRecord;
+using CtfTestSupport::requireSingleItmEvent;
 
-using namespace CtfTestSupport;
-
-std::string formatCtfUuid(const std::vector<unsigned char>& bytes, std::size_t offset)
+static std::string formatCtfUuid(const std::vector<unsigned char>& bytes, std::size_t offset)
 {
   static constexpr char hexDigits[] = "0123456789abcdef";
   std::string result;
@@ -44,8 +51,8 @@ std::string formatCtfUuid(const std::vector<unsigned char>& bytes, std::size_t o
   return result;
 }
 
-ResolvedTraceSource resolvedDwtSource(std::uint32_t comparator, std::uint8_t traceBusId, std::string type,
-                                      std::uint8_t size)
+static ResolvedTraceSource resolvedDwtSource(std::uint32_t comparator, std::uint8_t traceBusId, std::string type,
+                                             std::uint8_t size)
 {
   ResolvedTraceSource source;
   source.type = "dwt";
@@ -55,8 +62,6 @@ ResolvedTraceSource resolvedDwtSource(std::uint32_t comparator, std::uint8_t tra
   source.valueSize = size;
   return source;
 }
-
-} // namespace
 
 TEST(CtraceUnitTests, testCtfEncoderWritesOnlyIntoProvidedDirectory)
 {

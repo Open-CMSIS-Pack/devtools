@@ -5,9 +5,9 @@
  * Generated with AI
  */
 
-#include "CtfExceptionLaneTracker.hpp"
+#include "CtfExceptionLaneTracker.h"
 
-#include "TraceEvent.hpp"
+#include "TraceEvent.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -34,7 +34,7 @@ void CtfExceptionLaneTracker::resetForDiscontinuity(const RecordEmitter& emit)
 void CtfExceptionLaneTracker::consume(const ExceptionTraceEvent& event, const RecordEmitter& emit)
 {
   const auto number = event.number & 0x1ffU;
-  switch (event.action) { // LCOV_EXCL_BR_LINE: every declared exception action is covered
+  switch (event.action) {
   case ExceptionAction::Entered:
     enterContext(number);
     break;
@@ -100,7 +100,7 @@ void CtfExceptionLaneTracker::enterContext(std::uint32_t number)
 
 void CtfExceptionLaneTracker::exitContext(std::uint32_t number)
 {
-  if (contextStack_.empty() || contextStack_.back().number != number || // LCOV_EXCL_BR_LINE
+  if (contextStack_.empty() || contextStack_.back().number != number ||
       contextStack_.back().state != ContextState::Running) {
     return;
   }
@@ -114,7 +114,7 @@ void CtfExceptionLaneTracker::returnToContext(std::uint32_t number)
   }
   if (!contextStack_.empty()) {
     contextStack_.back().state = ContextState::Running;
-  } else if (number != kThreadModeNumber) { // LCOV_EXCL_BR_LINE: both semantic outcomes are covered
+  } else if (number != kThreadModeNumber) {
     contextStack_.push_back({number, ContextState::Running});
   }
 }

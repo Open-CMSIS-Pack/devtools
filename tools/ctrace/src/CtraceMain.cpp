@@ -5,21 +5,19 @@
  * Generated with AI
  */
 
-#include "CtraceMain.hpp"
+#include "CtraceMain.h"
 
-#include "CliOptions.hpp"
-#include "CliParser.hpp"
-#include "DiagnosticSink.hpp"
-#include "TraceDirectoryJob.hpp"
-#include "YmlTraceRunConfigReader.hpp"
+#include "CliOptions.h"
+#include "CliParser.h"
+#include "DiagnosticSink.h"
+#include "TraceDirectoryJob.h"
+#include "YmlTraceRunConfigReader.h"
 
 #include <exception>
 #include <iostream>
 
-namespace {
-
-void reportFailure(DiagnosticSink& diagnostics, DiagnosticSink::Category category, const char* code,
-                   const std::exception& error)
+static void reportFailure(DiagnosticSink& diagnostics, DiagnosticSink::Category category, const char* code,
+                          const std::exception& error)
 {
   diagnostics.report({
       DiagnosticSink::Severity::Error,
@@ -28,8 +26,6 @@ void reportFailure(DiagnosticSink& diagnostics, DiagnosticSink::Category categor
       error.what(),
   });
 }
-
-} // namespace
 
 int CtraceMain(int argc, const char* const argv[])
 {
@@ -50,7 +46,7 @@ int CtraceMain(int argc, const char* const argv[])
       std::cout << CliParser::versionString() << "\n";
       return 0;
     }
-  } catch (const std::exception& error) { // LCOV_EXCL_BR_LINE: exception dispatch is validated by CLI tests
+  } catch (const std::exception& error) {
     reportFailure(diagnostics, DiagnosticSink::Category::Cli, "invalid-arguments", error);
     return 1;
   }
@@ -60,7 +56,7 @@ int CtraceMain(int argc, const char* const argv[])
     TraceDirectoryJob job(options, diagnostics, configReader);
     job.run();
     return diagnostics.failureCount() == 0U ? 0 : 1;
-  } catch (const std::exception& error) { // LCOV_EXCL_BR_LINE: exception dispatch is validated by job tests
+  } catch (const std::exception& error) {
     reportFailure(diagnostics, DiagnosticSink::Category::Input, "trace-directory-failed", error);
     return 1;
   }

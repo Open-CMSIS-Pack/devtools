@@ -42,7 +42,7 @@ code and covered by focused, individually discoverable CTest cases.
   `testCortexMPostDecoderOverflowFlushesDwtSegments` and post-decoder reset paths flush or clear pending state.
 
 - **Unformatted input uses Trace Bus ID `0`; formatted IDs are restricted to `1` through `111`.**
-  [`TraceStreamId.hpp`](../src/model/TraceStreamId.hpp), `testTraceSelection`, and `testCliParser` enforce the domains.
+  [`TraceStreamId.h`](../src/model/TraceStreamId.h), `testTraceSelection`, and `testCliParser` enforce the domains.
 
 - **ITM timestamp prescalers default to `1`, accept `1`, `4`, `16`, or `64`, and remain stream-specific.**
   `testTimestampPrescalerMetadataDefaults`, `testCortexMStreamDecoderAppliesPerStreamPrescalers`, and metadata tests
@@ -76,23 +76,21 @@ code and covered by focused, individually discoverable CTest cases.
   `TraceDirectoryJob`, `ctrace-trace-run-yaml`, and the SWO/TB fixture integration test enforce the workflow.
 
 - **Process success comes from structured diagnostic impact, not formatted stderr text.**
-  [`DiagnosticSink`](../src/diagnostics/DiagnosticSink.hpp) tracks failure impact independently of the rendered
+  [`DiagnosticSink`](../src/diagnostics/DiagnosticSink.h) tracks failure impact independently of the rendered
   severity; `CtraceMain` returns failure when the failure count is non-zero.
 
 ## Distribution
 
 - **The executable version and release workflow are tool-specific.** A release tag named `tools/ctrace/<version>`
-  with a stable three-component SemVer suffix supplies the compiled version and selects the ctrace workflow. The
-  release smoke test requires the executable to report that exact version. Its matrix builds Windows AMD64/Arm64, Linux
-  AMD64/Arm64, and macOS Arm64 artifacts. Tests execute on Windows AMD64, Linux AMD64, Linux Arm64 through QEMU, and
-  native macOS Arm64; Windows Arm64 receives a PE machine-type check.
+  supplies the compiled version and selects the ctrace workflow. Its matrix builds Windows AMD64/Arm64, Linux
+  AMD64/Arm64, and macOS Arm64 artifacts. Tests execute on Windows AMD64 and Linux AMD64; ARM64 targets are compiled
+  but not executed, matching the other devtools workflows.
 
 - **Product dependencies come from devtools and carry repository-level license records.** `cxxopts`, `yaml-cpp`, and
   the pinned OpenCSD submodule are listed in the top-level `LICENSE.md`. The release archive includes the project
   license, [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md), OpenCSD source-file copyright notices, application
-  dependency license texts, the [platform-runtime inventory](RUNTIME_COMPONENTS.md), and verified per-file checksums.
-  Its separately published checksum covers the complete ZIP archive. Runtime contents remain subject to per-artifact
-  inspection rather than being implicitly covered by the application dependency list.
+  dependency license texts, and verified per-file checksums. Runtime contents remain subject to per-artifact inspection
+  rather than being implicitly covered by the application dependency list.
 
 - **The Blinky SWO and TB captures are redistributable ctrace test assets.** Their purpose, origin, derived golden CSV,
   and SPDX sidecars are documented in the [fixture README](../test/data/README.md); generated test output remains

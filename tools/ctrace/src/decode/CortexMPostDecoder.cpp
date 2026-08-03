@@ -5,11 +5,11 @@
  * Generated with AI
  */
 
-#include "CortexMPostDecoder.hpp"
+#include "CortexMPostDecoder.h"
 
-#include "DwtPacketDecoder.hpp"
-#include "TraceEvent.hpp"
-#include "OpenCsdTraceElement.hpp"
+#include "DwtPacketDecoder.h"
+#include "TraceEvent.h"
+#include "OpenCsdTraceElement.h"
 
 #include <cstdint>
 #include <iterator>
@@ -24,7 +24,7 @@ CortexMPostDecoder::CortexMPostDecoder(TraceEventSink& eventSink) : eventSink_(e
 void CortexMPostDecoder::append(OpenCsdTraceElement element)
 {
   mapTimestampSegment(element);
-  switch (element.kind) { // LCOV_EXCL_BR_LINE: every declared element kind is covered
+  switch (element.kind) {
   case OpenCsdTraceElement::Kind::Software:
     appendSoftware(element);
     break;
@@ -58,7 +58,7 @@ void CortexMPostDecoder::mapTimestampSegment(OpenCsdTraceElement& element)
     startNewTimestampSegment();
   }
 
-  switch (element.kind) { // LCOV_EXCL_BR_LINE: every timestamp-relevant kind is covered
+  switch (element.kind) {
   case OpenCsdTraceElement::Kind::LocalTimestamp:
     if (element.tcyc.has_value()) {
       const auto mapped = saturatingAdd(timestampSegmentBase_, *element.tcyc);
@@ -92,7 +92,7 @@ void CortexMPostDecoder::startNewTimestampSegment()
 std::uint64_t CortexMPostDecoder::saturatingAdd(std::uint64_t lhs, std::uint64_t rhs)
 {
   const auto max = std::numeric_limits<std::uint64_t>::max();
-  return rhs > max - lhs ? max : lhs + rhs; // LCOV_EXCL_BR_LINE: saturation is one arithmetic behavior
+  return rhs > max - lhs ? max : lhs + rhs;
 }
 
 void CortexMPostDecoder::finish()
@@ -151,11 +151,9 @@ void CortexMPostDecoder::appendDiscontinuity(const OpenCsdTraceElement& element)
   const auto status = markDiscontinuity();
 
   queueDiscontinuityIssue(
-      element.sourceIndex, element.traceBusId, status,
-      element.issueCode.empty() ? "data-loss" : element.issueCode, // LCOV_EXCL_BR_LINE
-      element.errorMessage.empty()
-          ? "data loss/resync boundary; timestamps across this point may not match" // LCOV_EXCL_BR_LINE
-          : element.errorMessage,
+      element.sourceIndex, element.traceBusId, status, element.issueCode.empty() ? "data-loss" : element.issueCode,
+      element.errorMessage.empty() ? "data loss/resync boundary; timestamps across this point may not match"
+                                   : element.errorMessage,
       element.rawBytesConsumed);
 }
 
@@ -163,7 +161,6 @@ void CortexMPostDecoder::appendError(const OpenCsdTraceElement& element)
 {
   const auto status = element.discontinuity ? markDiscontinuity() : currentTraceStatus();
 
-  // LCOV_EXCL_BR_START: generated variant-initializer exception edges
   TraceEvent event{TraceIssueEvent{
       element.issueCode.empty() ? "opencsd-decode-error" : element.issueCode,
       element.issueSeverity,
@@ -171,7 +168,6 @@ void CortexMPostDecoder::appendError(const OpenCsdTraceElement& element)
       element.rawBytesConsumed,
       std::nullopt,
   }};
-  // LCOV_EXCL_BR_STOP
   event.index = element.sourceIndex;
   event.traceBusId = element.traceBusId;
   event.tcyc = currentTcyc_;
@@ -287,10 +283,8 @@ void CortexMPostDecoder::finalizePendingDiscontinuityIssues(std::optional<std::u
     if (issue == nullptr || !issue->lastValidTcyc.has_value()) {
       continue;
     }
-    // LCOV_EXCL_BR_START: all behavioral alternatives are covered; GCC emits expression-cleanup branches
     issue->message += "; timestamp " + std::to_string(*issue->lastValidTcyc) + " .. " +
                       (firstResumedTcyc.has_value() ? std::to_string(*firstResumedTcyc) : "unknown") + ".";
-    // LCOV_EXCL_BR_STOP
   }
 }
 
@@ -326,8 +320,8 @@ void CortexMPostDecoder::emitEvent(const TraceEvent& event)
 TraceQuality CortexMPostDecoder::currentTraceStatus(bool packetOverflow) const
 {
   return {
-      dataLossSinceLastTimestamp_ || !timestampReliable_ || packetOverflow,  // LCOV_EXCL_BR_LINE
-      timestampReliable_ && !dataLossSinceLastTimestamp_ && !packetOverflow, // LCOV_EXCL_BR_LINE
+      dataLossSinceLastTimestamp_ || !timestampReliable_ || packetOverflow,
+      timestampReliable_ && !dataLossSinceLastTimestamp_ && !packetOverflow,
       overflowCount_,
   };
 }

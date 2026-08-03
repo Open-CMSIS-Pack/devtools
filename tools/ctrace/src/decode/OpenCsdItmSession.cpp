@@ -5,10 +5,10 @@
  * Generated with AI
  */
 
-#include "OpenCsdItmSession.hpp"
+#include "OpenCsdItmSession.h"
 
-#include "OpenCsdErrorController.hpp"
-#include "OpenCsdPacketCollector.hpp"
+#include "OpenCsdErrorController.h"
+#include "OpenCsdPacketCollector.h"
 #include "common/ocsd_dcd_mngr_i.h"
 #include "common/ocsd_lib_dcd_register.h"
 #include "common/trc_component.h"
@@ -18,12 +18,8 @@
 
 #include <cstdint>
 
-namespace {
-
 constexpr std::uint32_t kItmTcrSwoEnable = 1U << 4U;
 constexpr ocsd_itm_cfg kItmConfig{kItmTcrSwoEnable};
-
-} // namespace
 
 OpenCsdItmSession::OpenCsdItmSession(OpenCsdPacketCollector& collector, OpenCsdErrorController& errorController)
   : config_(&kItmConfig)
@@ -32,12 +28,10 @@ OpenCsdItmSession::OpenCsdItmSession(OpenCsdPacketCollector& collector, OpenCsdE
   // where the originating CoreSight stream and processor are known.
   try {
     createDecoder(collector, errorController);
-    // LCOV_EXCL_START: requires OpenCSD construction to fail internally
   } catch (...) {
     destroyDecoder();
     throw;
   }
-  // LCOV_EXCL_STOP
 }
 
 OpenCsdItmSession::~OpenCsdItmSession() noexcept
@@ -68,16 +62,16 @@ ocsd_datapath_resp_t OpenCsdItmSession::endOfTrace()
 
 void OpenCsdItmSession::checkOcsd(ocsd_err_t error, const char* message)
 {
-  if (error != OCSD_OK) { // LCOV_EXCL_BR_LINE: requires an injected OpenCSD API failure
-    throw OpenCsdItmSessionError(OpenCsdErrorController::describeApiError(error, message)); // LCOV_EXCL_LINE
+  if (error != OCSD_OK) {
+    throw OpenCsdItmSessionError(OpenCsdErrorController::describeApiError(error, message));
   }
 }
 
 void OpenCsdItmSession::createDecoder(OpenCsdPacketCollector& collector, OpenCsdErrorController& errorController)
 {
   auto* registry = OcsdLibDcdRegister::getDecoderRegister();
-  if (registry == nullptr) { // LCOV_EXCL_BR_LINE: OpenCSD statically registers the built-in decoder
-    throw OpenCsdItmSessionError("OpenCSD decoder registry is not initialized"); // LCOV_EXCL_LINE
+  if (registry == nullptr) {
+    throw OpenCsdItmSessionError("OpenCSD decoder registry is not initialized");
   }
 
   auto error = registry->getDecoderMngrByName(OCSD_BUILTIN_DCD_ITM, &manager_);
@@ -88,7 +82,7 @@ void OpenCsdItmSession::createDecoder(OpenCsdPacketCollector& collector, OpenCsd
 
   error = manager_->attachErrorLogger(component_, &errorController);
   checkOcsd(error, "failed to attach OpenCSD packet-decoder error logger");
-  if (component_->getAssocComponent() != nullptr) { // LCOV_EXCL_BR_LINE: invariant of the built-in full decoder
+  if (component_->getAssocComponent() != nullptr) {
     error = manager_->attachErrorLogger(component_->getAssocComponent(), &errorController);
     checkOcsd(error, "failed to attach OpenCSD packet-processor error logger");
   }
@@ -106,7 +100,7 @@ void OpenCsdItmSession::createDecoder(OpenCsdPacketCollector& collector, OpenCsd
 void OpenCsdItmSession::destroyDecoder() noexcept
 {
   input_ = nullptr;
-  if (manager_ != nullptr && component_ != nullptr) { // LCOV_EXCL_BR_LINE: OpenCSD creates and owns the pair atomically
+  if (manager_ != nullptr && component_ != nullptr) {
     manager_->destroyDecoder(component_);
     component_ = nullptr;
   }

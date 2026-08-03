@@ -107,6 +107,21 @@ error aborts every still-active output for that raw file.
 The diagnostic sink lives for the complete command invocation. It therefore aggregates failures across solution sets
 and determines the final process status after processing has continued wherever possible.
 
+## Recovery after damaged trace
+
+Recoverable OpenCSD packet errors establish a discontinuity at the reported raw-file offset. Decoder callbacks before
+that offset are retained; callbacks at or after it belong to the failed transaction and are discarded. `ctrace` then
+resets the OpenCSD decoder and feeds the following input bytes to it unchanged. OpenCSD resumes only after finding a
+real ITM hardware-sync sequence; `ctrace` never inserts a synthetic sync sequence.
+
+Bytes consumed while no usable trace elements are produced form one explicit `data-loss` interval. At its boundary,
+the Cortex-M post-decoder flushes pending events, resets incomplete DWT correlation, and marks timestamps unreliable
+until the stream supplies enough timing information again. The issue remains part of the ordered `TraceEvent` stream,
+so diagnostics and enabled output backends observe the same recovery boundary.
+
+Failure to reset OpenCSD, repeated lack of decoder progress, or an unsuccessful wait/flush operation aborts only the
+current raw-file job. Other solution sets continue to be processed where possible.
+
 ## Suggested code-reading path
 
 1. Start at [`CtraceMain.cpp`](../src/CtraceMain.cpp) for command-line handling and top-level error policy.
@@ -117,7 +132,7 @@ and determines the final process status after processing has continued wherever 
 4. Continue through [`DecodePipeline.cpp`](../src/decode/DecodePipeline.cpp),
    [`OpenCsdItmDecoder.cpp`](../src/decode/OpenCsdItmDecoder.cpp), and
    [`CortexMStreamDecoder.cpp`](../src/decode/CortexMStreamDecoder.cpp) for the two decode representations.
-5. Use [`TraceEvent.hpp`](../src/model/TraceEvent.hpp) as the semantic contract between decoding and all consumers.
+5. Use [`TraceEvent.h`](../src/model/TraceEvent.h) as the semantic contract between decoding and all consumers.
 6. Finish with [`DecodeConsumers.cpp`](../src/control/DecodeConsumers.cpp) and
    [`TraceOutputLifecycle.cpp`](../src/output/TraceOutputLifecycle.cpp), then inspect either the CSV or CTF backend.
 
@@ -130,7 +145,7 @@ up front.
 
 | Module | Responsibility |
 | --- | --- |
-| `src/CtraceMain.hpp` | Platform-independent entry point used by the executable trampoline |
+| `src/CtraceMain.h` | Platform-independent entry point used by the executable trampoline |
 | `src/cli` | Command-line parsing, value normalization, and validation |
 | `src/control` | Solution-set orchestration, raw-file access, output setup, and per-file decode jobs |
 | `src/diagnostics` | Structured diagnostics, severity tracking, and decoder issue reporting |
@@ -203,6 +218,9 @@ causes a non-zero exit status; `fatal` is reserved for an internal ctrace crash.
 | GoogleTest | Unit-test framework; not linked into the product executable |
 
 Dependencies are provided by the devtools repository. `tools/ctrace` does not maintain private library copies.
+The pinned OpenCSD source is built without a downstream source patch. A known unsafe empty-buffer access in an
+upstream diagnostic path, its reachability, and a proposed upstream fix are recorded in the
+[OpenCSD issue notes](opencsd-issues.md).
 
 ## Extension points
 
@@ -233,9 +251,8 @@ diagnostics, output cleanup, and fixture conversion. Test data and expected arti
 files are written only below the CMake build directory.
 
 The `CtraceUnitTests` target preserves one CI entry point while linking the ctrace modules explicitly. Integration
-tests use the `ctrace-` CTest name prefix. The release workflow runs them on Windows AMD64, Linux AMD64, Linux Arm64
-through QEMU, and a native macOS Arm64 runner. Windows Arm64 is cross-built on an x64 runner and its PE machine type
-is verified without executing the binary.
+tests use the `ctrace-` CTest name prefix. CI runs both suites on Windows AMD64 and Linux AMD64. ARM64 targets are
+compiled but not executed, matching the other devtools workflows.
 
 ## Build and release structure
 
@@ -243,12 +260,12 @@ The source tree has seven static library targets: `model`, `cli`, `trace-run`, `
 `control`. The `ctrace` executable adds only the platform trampoline and `CtraceMain`. Dependencies form a directed,
 cycle-free graph with `control` as the composition root.
 
-The tool-specific GitHub workflow is selected by a `tools/ctrace/<version>` release tag with a stable
-three-component SemVer suffix. It builds Windows AMD64 and Arm64, Linux AMD64 and Arm64, and macOS Arm64 binaries.
+The tool-specific GitHub workflow is selected by a `tools/ctrace/<version>` release tag. It builds Windows AMD64 and
+Arm64, Linux AMD64 and Arm64, and macOS Arm64 binaries.
 The release archive contains the Apache-2.0 project license, application-dependency notices and license texts,
-retained OpenCSD copyright notices, a platform-runtime inventory, and per-file SHA-256 checksums. A separate checksum
-verifies the archive. The version compiled into the executable is derived from and checked against the same tag. The
-actual compiler and operating-system runtime content still requires inspection for each production release.
+retained OpenCSD copyright notices, and per-file SHA-256 checksums. The version compiled into the executable is derived
+from the same tag. The actual compiler and operating-system runtime content still requires inspection for each
+production release.
 
 The checked-in SWO and TB captures are approved ctrace test assets and may be redistributed with devtools. Together
 with the tool-specific build, test, packaging, versioning, and license integration, this forms the technical basis for

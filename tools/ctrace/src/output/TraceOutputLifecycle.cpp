@@ -5,11 +5,11 @@
  * Generated with AI
  */
 
-#include "TraceOutputLifecycle.hpp"
+#include "TraceOutputLifecycle.h"
 
-#include "DiagnosticSink.hpp"
-#include "TraceEvent.hpp"
-#include "TraceOutput.hpp"
+#include "DiagnosticSink.h"
+#include "TraceEvent.h"
+#include "TraceOutput.h"
 
 #include <cstddef>
 #include <exception>
@@ -18,9 +18,7 @@
 #include <utility>
 #include <vector>
 
-namespace {
-
-std::string exceptionMessage(const std::exception_ptr& error)
+static std::string exceptionMessage(const std::exception_ptr& error)
 {
   try {
     std::rethrow_exception(error);
@@ -32,8 +30,6 @@ std::string exceptionMessage(const std::exception_ptr& error)
   }
   return "unknown exception";
 }
-
-} // namespace
 
 TraceOutputLifecycle::TraceOutputLifecycle(std::vector<std::unique_ptr<TraceOutput>> outputs,
                                            DiagnosticSink& diagnostics)
@@ -104,7 +100,6 @@ void TraceOutputLifecycle::fail(std::size_t index, const char* phase, const std:
     const auto message = exceptionMessage(error);
     const auto backend = std::string(outputs_[index]->backendName());
     const auto target = outputs_[index]->targetPath();
-    // LCOV_EXCL_BR_START: generated aggregate and string-expression exception edges
     diagnostics_.report({
         DiagnosticSink::Severity::Error,
         DiagnosticSink::Category::Output,
@@ -120,7 +115,6 @@ void TraceOutputLifecycle::fail(std::size_t index, const char* phase, const std:
         backend + " output" + (target.empty() ? std::string() : " '" + target + "'") + " failed during " + phase +
             ": " + message,
     });
-    // LCOV_EXCL_BR_STOP
   } catch (...) {
     // Diagnostics must never escape this noexcept failure path.
     (void)0;

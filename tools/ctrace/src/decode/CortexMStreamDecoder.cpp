@@ -5,11 +5,11 @@
  * Generated with AI
  */
 
-#include "CortexMStreamDecoder.hpp"
+#include "CortexMStreamDecoder.h"
 
-#include "CortexMPostDecoder.hpp"
-#include "OpenCsdTraceElement.hpp"
-#include "TraceEvent.hpp"
+#include "CortexMPostDecoder.h"
+#include "OpenCsdTraceElement.h"
+#include "TraceEvent.h"
 
 #include <cstdint>
 #include <limits>
@@ -18,9 +18,7 @@
 #include <string>
 #include <utility>
 
-namespace {
-
-std::uint64_t saturatingMultiply(std::uint64_t value, std::uint32_t factor)
+static std::uint64_t saturatingMultiply(std::uint64_t value, std::uint32_t factor)
 {
   if (factor == 0U) {
     throw std::invalid_argument("ITM timestamp prescaler must not be zero");
@@ -28,8 +26,6 @@ std::uint64_t saturatingMultiply(std::uint64_t value, std::uint32_t factor)
   const auto maximum = std::numeric_limits<std::uint64_t>::max();
   return value > maximum / factor ? maximum : value * factor;
 }
-
-} // namespace
 
 CortexMStreamDecoder::CortexMStreamDecoder(ItmTimestampPrescalers prescalers, TraceEventSink& eventSink)
   : prescalers_(std::move(prescalers)), eventSink_(eventSink)

@@ -5,27 +5,23 @@
  * Generated with AI
  */
 
-#include "OpenCsdTestSupport.hpp"
-#include "OpenCsdSessionTestSupport.hpp"
+#include "OpenCsdTestSupport.h"
+#include "OpenCsdSessionTestSupport.h"
 
 #include <gtest/gtest.h>
 
-#include "OpenCsdErrorController.hpp"
-#include "OpenCsdItmDecoder.hpp"
-#include "OpenCsdItmSession.hpp"
-#include "OpenCsdPacketCollector.hpp"
-#include "OpenCsdTraceElement.hpp"
+#include "OpenCsdErrorController.h"
+#include "OpenCsdItmDecoder.h"
+#include "OpenCsdItmSession.h"
+#include "OpenCsdPacketCollector.h"
+#include "OpenCsdTraceElement.h"
 
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
 
-namespace {
-
+using OpenCsdSessionTestSupport::ScriptedDecoderHarness;
 using OpenCsdTestSupport::CollectingOpenCsdElementSink;
-using namespace OpenCsdSessionTestSupport;
-
-} // namespace
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderChunksAndFinishesOnce)
 {

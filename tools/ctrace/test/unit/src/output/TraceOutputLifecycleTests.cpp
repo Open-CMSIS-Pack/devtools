@@ -5,12 +5,12 @@
  * Generated with AI
  */
 
-#include "TestPath.hpp"
-#include "TestSupport.hpp"
-#include "TraceOutputTestSupport.hpp"
+#include "TestPath.h"
+#include "TestSupport.h"
+#include "TraceOutputTestSupport.h"
 #include <gtest/gtest.h>
-#include "csv/CsvFileOutput.hpp"
-#include "TraceOutputLifecycle.hpp"
+#include "csv/CsvFileOutput.h"
+#include "TraceOutputLifecycle.h"
 #include <memory>
 #include <stdexcept>
 #include <vector>

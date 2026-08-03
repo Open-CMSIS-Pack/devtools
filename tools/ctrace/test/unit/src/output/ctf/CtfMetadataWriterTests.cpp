@@ -5,14 +5,14 @@
  * Generated with AI
  */
 
-#include "TestPath.hpp"
-#include "TestSupport.hpp"
+#include "TestPath.h"
+#include "TestSupport.h"
 
 #include <gtest/gtest.h>
 
-#include "ctf/CtfMetadataWriter.hpp"
-#include "ctf/TraceCompassXmlWriter.hpp"
-#include "TraceOutputConfig.hpp"
+#include "ctf/CtfMetadataWriter.h"
+#include "ctf/TraceCompassXmlWriter.h"
+#include "TraceOutputConfig.h"
 
 #include <cstdint>
 #include <filesystem>

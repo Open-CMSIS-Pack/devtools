@@ -5,12 +5,12 @@
  * Generated with AI
  */
 
-#include "TestSupport.hpp"
-#include "TraceRunTestSupport.hpp"
+#include "TestSupport.h"
+#include "TraceRunTestSupport.h"
 #include <gtest/gtest.h>
-#include "CtraceRunMeta.hpp"
-#include "OutputRequirements.hpp"
-#include "TraceRunConfig.hpp"
+#include "CtraceRunMeta.h"
+#include "OutputRequirements.h"
+#include "TraceRunConfig.h"
 #include <cstdint>
 #include <filesystem>
 #include <map>

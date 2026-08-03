@@ -20,18 +20,14 @@ The source revisions used for this notice are pinned by the devtools gitlinks:
 GoogleTest is used only to build the test executable and is not incorporated
 into the released ctrace executable.
 
-## Dependency patches and build configuration
+## Dependency build configuration
 
-devtools applies the following dependency patches and build configuration while
-building ctrace:
+ctrace does not add private dependency patches. It consumes the repository-wide
+cxxopts and yaml-cpp targets configured by devtools.
 
-- `external/cxxopts.patch` adjusts help formatting in the header-only cxxopts
-  component.
-- `external/yaml-cpp.patch` adds devtools YAML behavior, including duplicate
-  map-key validation and emitter formatting changes.
-- `tools/ctrace/cmake/dependencies/ConfigureOpenCSD.cmake` builds OpenCSD's
-  upstream minimal static target, enables large trace-source IDs, adjusts
-  MSVC options, and leaves the pinned OpenCSD sources unchanged.
+`tools/ctrace/cmake/dependencies/ConfigureOpenCSD.cmake` builds OpenCSD's
+upstream minimal static target, enables large trace-source IDs, and adjusts its
+MSVC build options. The pinned OpenCSD sources remain unchanged.
 
 The OpenCSD minimal static target still contains upstream decoders other than
 ITM because OpenCSD 1.8.3 does not expose a supported ITM-only CMake target.
@@ -39,6 +35,4 @@ ctrace does not maintain a private source list that could silently diverge
 from upstream.
 
 Compiler and operating-system runtime code is separate from the application
-dependency list above. See `RUNTIME_COMPONENTS.md` for the platform inventory
-and the release-verification requirement; that inventory must be confirmed
-against every production artifact.
+dependency list above and must be reviewed for every production artifact.

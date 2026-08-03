@@ -5,12 +5,12 @@
  * Generated with AI
  */
 
-#include "TestSupport.hpp"
+#include "TestSupport.h"
 #include <gtest/gtest.h>
-#include "TraceEvent.hpp"
-#include "TraceSelection.hpp"
-#include "TraceStreamId.hpp"
-#include "TraceRunConfig.hpp"
+#include "TraceEvent.h"
+#include "TraceSelection.h"
+#include "TraceStreamId.h"
+#include "TraceRunConfig.h"
 
 TEST(CtraceUnitTests, testTraceSelection)
 {

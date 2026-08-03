@@ -6,16 +6,16 @@
  */
 
 // Cortex-M post-decoder and end-to-end decode pipeline tests.
-#include "OpenCsdTestSupport.hpp"
-#include "TestSupport.hpp"
+#include "OpenCsdTestSupport.h"
+#include "TestSupport.h"
 
 #include <gtest/gtest.h>
 
-#include "CortexMPostDecoder.hpp"
-#include "CortexMStreamDecoder.hpp"
-#include "DecodePipeline.hpp"
-#include "OpenCsdTraceElement.hpp"
-#include "TraceEvent.hpp"
+#include "CortexMPostDecoder.h"
+#include "CortexMStreamDecoder.h"
+#include "DecodePipeline.h"
+#include "OpenCsdTraceElement.h"
+#include "TraceEvent.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -25,21 +25,21 @@
 #include <string>
 #include <vector>
 
-namespace {
+using OpenCsdTestSupport::openCsdElement;
+using OpenCsdTestSupport::openCsdSoftwareElement;
+using OpenCsdTestSupport::openCsdTimestampElement;
 
-using namespace OpenCsdTestSupport;
-
-const SoftwareTraceEvent* softwareEvent(const TraceEvent& event)
+static const SoftwareTraceEvent* softwareEvent(const TraceEvent& event)
 {
   return traceEventPayload<SoftwareTraceEvent>(event);
 }
 
-const TraceIssueEvent* issueEvent(const TraceEvent& event)
+static const TraceIssueEvent* issueEvent(const TraceEvent& event)
 {
   return traceEventPayload<TraceIssueEvent>(event);
 }
 
-bool hasSoftwareValue(const std::vector<TraceEvent>& events, std::uint8_t value, std::uint32_t channel = 0U)
+static bool hasSoftwareValue(const std::vector<TraceEvent>& events, std::uint8_t value, std::uint32_t channel = 0U)
 {
   for (const auto& event : events) {
     const auto* software = softwareEvent(event);
@@ -50,8 +50,8 @@ bool hasSoftwareValue(const std::vector<TraceEvent>& events, std::uint8_t value,
   return false;
 }
 
-const TraceIssueEvent* findIssue(const std::vector<TraceEvent>& events, const std::string& code,
-                                 std::optional<std::uint64_t> index = std::nullopt)
+static const TraceIssueEvent* findIssue(const std::vector<TraceEvent>& events, const std::string& code,
+                                        std::optional<std::uint64_t> index = std::nullopt)
 {
   for (const auto& event : events) {
     const auto* issue = issueEvent(event);
@@ -62,7 +62,7 @@ const TraceIssueEvent* findIssue(const std::vector<TraceEvent>& events, const st
   return nullptr;
 }
 
-std::size_t countIssues(const std::vector<TraceEvent>& events, const std::string& code)
+static std::size_t countIssues(const std::vector<TraceEvent>& events, const std::string& code)
 {
   std::size_t count = 0U;
   for (const auto& event : events) {
@@ -74,12 +74,12 @@ std::size_t countIssues(const std::vector<TraceEvent>& events, const std::string
   return count;
 }
 
-template <std::size_t Size> constexpr RawByteView rawBytes(const std::uint8_t (&bytes)[Size])
+template <std::size_t Size> static constexpr RawByteView rawBytes(const std::uint8_t (&bytes)[Size])
 {
   return {bytes, Size};
 }
 
-inline RawByteView rawBytes(const std::vector<std::uint8_t>& bytes)
+static RawByteView rawBytes(const std::vector<std::uint8_t>& bytes)
 {
   return {bytes.data(), bytes.size()};
 }
@@ -89,7 +89,7 @@ struct DecodedTrace {
   std::vector<TraceEvent> events;
 };
 
-DecodedTrace decodeTrace(std::initializer_list<RawByteView> chunks, std::uint32_t timestampPrescaler = 16U)
+static DecodedTrace decodeTrace(std::initializer_list<RawByteView> chunks, std::uint32_t timestampPrescaler = 16U)
 {
   CollectingEventSink sink;
   DecodePipeline pipeline(timestampPrescaler, sink);
@@ -98,8 +98,6 @@ DecodedTrace decodeTrace(std::initializer_list<RawByteView> chunks, std::uint32_
   }
   return {pipeline.finish(), std::move(sink.events)};
 }
-
-} // namespace
 
 TEST(CtraceUnitTests, testCortexMPostDecoderSoftwareTimestampBoundary)
 {

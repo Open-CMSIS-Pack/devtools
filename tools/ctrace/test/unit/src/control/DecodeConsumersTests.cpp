@@ -5,11 +5,11 @@
  * Generated with AI
  */
 
-#include "TestSupport.hpp"
-#include "TraceOutputTestSupport.hpp"
+#include "TestSupport.h"
+#include "TraceOutputTestSupport.h"
 #include <gtest/gtest.h>
-#include "DecodeConsumers.hpp"
-#include "TraceOutput.hpp"
+#include "DecodeConsumers.h"
+#include "TraceOutput.h"
 #include <cstdint>
 #include <memory>
 #include <stdexcept>

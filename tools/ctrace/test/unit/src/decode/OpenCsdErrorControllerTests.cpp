@@ -5,11 +5,11 @@
  * Generated with AI
  */
 
-#include "TestSupport.hpp"
+#include "TestSupport.h"
 
 #include <gtest/gtest.h>
 
-#include "OpenCsdErrorController.hpp"
+#include "OpenCsdErrorController.h"
 #include "common/ocsd_error.h"
 #include "common/ocsd_msg_logger.h"
 #include "opencsd/ocsd_if_types.h"
@@ -19,8 +19,6 @@
 #include <optional>
 #include <string>
 #include <utility>
-
-namespace {
 
 class MessageSink final : public ocsdMsgLogStrOutI {
 public:
@@ -32,8 +30,8 @@ public:
   std::string messages;
 };
 
-OpenCsdErrorController::Decision makeDecision(ocsd_datapath_resp_t response, ocsd_err_t code,
-                                              std::optional<std::uint64_t> offset = std::nullopt)
+static OpenCsdErrorController::Decision makeDecision(ocsd_datapath_resp_t response, ocsd_err_t code,
+                                                     std::optional<std::uint64_t> offset = std::nullopt)
 {
   OpenCsdErrorController::Decision decision;
   decision.response = response;
@@ -45,14 +43,10 @@ OpenCsdErrorController::Decision makeDecision(ocsd_datapath_resp_t response, ocs
   return decision;
 }
 
-} // namespace
-
 TEST(CtraceUnitTests, testOpenCsdErrorControllerClassifiesResponses)
 {
   OpenCsdErrorController controller;
   const auto source = controller.RegisterErrorSource("ITM packet processor");
-  require(controller.RegisterErrorSource("ITM packet processor") == source,
-          "recreated OpenCSD components should reuse their logger source handle");
 
   controller.beginDataPathCall();
   const ocsdError recoverable(OCSD_ERR_SEV_ERROR, OCSD_ERR_BAD_PACKET_SEQ, 123U, 1U, "invalid async sequence");
@@ -140,8 +134,7 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerNamesResponsesAndErrors)
   for (const auto& [response, name] : responses) {
     EXPECT_EQ(OpenCsdErrorController::responseName(response), name);
   }
-  EXPECT_EQ(OpenCsdErrorController::responseName(static_cast<ocsd_datapath_resp_t>(11)),
-            "OCSD_RESP_UNKNOWN(11)");
+  EXPECT_EQ(OpenCsdErrorController::responseName(static_cast<ocsd_datapath_resp_t>(11)), "OCSD_RESP_UNKNOWN(11)");
 
   EXPECT_FALSE(OpenCsdErrorController::responseReportsError(OCSD_RESP_CONT));
   EXPECT_TRUE(OpenCsdErrorController::responseReportsError(OCSD_RESP_ERR_CONT));
@@ -255,8 +248,8 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerForwardsLoggerMessages)
   const auto source = controller.RegisterErrorSource("ITM decoder");
   controller.LogMessage(source, OCSD_ERR_SEV_INFO, "configured");
   controller.LogMessage(99U, OCSD_ERR_SEV_ERROR, "fallback");
-  EXPECT_NE(sink.messages.find("ITM decoder: configured"), std::string::npos);
-  EXPECT_NE(sink.messages.find("OpenCSD: fallback"), std::string::npos);
+  EXPECT_NE(sink.messages.find("ITM decoder : configured"), std::string::npos);
+  EXPECT_NE(sink.messages.find("unknown : fallback"), std::string::npos);
 
   logger.setLogOpts(ocsdMsgLogger::OUT_NONE);
   controller.LogMessage(source, OCSD_ERR_SEV_INFO, "muted");

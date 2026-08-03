@@ -6,27 +6,23 @@
  */
 
 // DWT packet decoding and explicitly deferred DWT feature tests.
-#include "TestSupport.hpp"
+#include "TestSupport.h"
 
 #include <gtest/gtest.h>
 
-#include "csv/CsvRowMapper.hpp"
-#include "DwtPacketDecoder.hpp"
-#include "TraceEvent.hpp"
-#include "TraceSelection.hpp"
+#include "csv/CsvRowMapper.h"
+#include "DwtPacketDecoder.h"
+#include "TraceEvent.h"
+#include "TraceSelection.h"
 
 #include <cstdint>
 #include <optional>
 
-namespace {
-
-DwtPayloadPacket dwtPayload(std::uint8_t discriminator, std::uint8_t size = 0U, std::uint32_t value = 0U,
-                            std::uint64_t index = 0U, std::uint8_t traceBusId = 0U, std::uint64_t tcyc = 0U)
+static DwtPayloadPacket dwtPayload(std::uint8_t discriminator, std::uint8_t size = 0U, std::uint32_t value = 0U,
+                                   std::uint64_t index = 0U, std::uint8_t traceBusId = 0U, std::uint64_t tcyc = 0U)
 {
   return {index, traceBusId, discriminator, size, value, tcyc, {}};
 }
-
-} // namespace
 
 TEST(CtraceUnitTests, testDwtPcSampleIsSuppressedUntilDedicatedEventExists)
 {

@@ -58,7 +58,7 @@ field is an error; an unneeded extension to the trace-run format does not break 
 
 | Path | Responsibility |
 |---|---|
-| `src/CtraceMain.hpp` | Platform-independent entry point used by the executable trampoline |
+| `src/CtraceMain.h` | Platform-independent entry point used by the executable trampoline |
 | `src/cli` | Command-line parsing and validation |
 | `src/control` | Trace-directory orchestration, raw-file access, and per-file decode jobs |
 | `src/tracerun` | Trace-run discovery, YAML parsing, and normalized metadata |
@@ -111,22 +111,18 @@ not carry private copies below `tools/ctrace`.
 Known defects in the pinned OpenCSD revision that can affect ctrace are recorded
 in the [OpenCSD issue notes](docs/opencsd-issues.md).
 
-Publishing a GitHub Release for a tag named `tools/ctrace/<version>` runs the ctrace workflow. `<version>` must be a
-stable SemVer value with three numeric components and no leading zeroes, for example `0.0.1`. The workflow builds
-Windows AMD64/Arm64, Linux AMD64/Arm64, and macOS Arm64 variants and attaches `ctrace.zip` to the release. Unit and
-integration tests run on Windows AMD64 and both Linux architectures (Linux Arm64 through QEMU), as well as on the
-native macOS Arm64 runner. Windows Arm64 is cross-built and its PE machine type is verified. Coverage runs on Linux
-AMD64. The executable version is derived from the same tool-specific tag and is checked against it before packaging.
-Pull requests exercise the same package assembly script with the Linux AMD64 binary before a release combines the
-complete matrix.
+Publishing a GitHub Release for a tag named `tools/ctrace/<version>`, for example `tools/ctrace/0.0.1`, runs the ctrace
+workflow. It builds Windows AMD64/Arm64, Linux AMD64/Arm64, and macOS Arm64 variants and attaches `ctrace.zip` to the
+release. Unit and integration tests run on Windows AMD64 and Linux AMD64; ARM64 targets are compiled but not executed,
+matching the other devtools workflows. Coverage runs on Linux AMD64. The executable version is derived from the same
+tool-specific tag.
 
 The project is licensed under Apache-2.0. Product dependencies and their licenses are recorded in the repository's
 top-level `LICENSE.md`. The release archive contains the project license, third-party notices, OpenCSD copyright
-notices, the application-dependency license texts, a platform-runtime inventory, and checksums for all included
-files. The separately published `ctrace.zip.sha256` verifies the archive itself. Compiler and operating-system runtime
-contents must still be inspected for each production build as described in `docs/RUNTIME_COMPONENTS.md`; the
-application dependency list does not claim to cover them. Release artifacts are currently unsigned; signing, macOS
-notarization, and a formal SBOM remain explicit release-hardening decisions.
+notices, the application-dependency license texts, and checksums for all included files. Compiler and operating-system
+runtime contents must still be inspected for each production build; the application dependency list does not claim to
+cover them. Release artifacts are currently unsigned; signing, archive checksums, macOS notarization, and a formal
+SBOM remain explicit release-hardening decisions.
 
 The code, build, test, and packaging structure is ready for release-candidate validation. The Blinky SWO and TB
 captures are approved redistributable test assets with SPDX sidecars, as documented in the

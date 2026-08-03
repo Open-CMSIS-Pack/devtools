@@ -16,15 +16,15 @@ are intentionally omitted.
   adopt an upstream-supported ITM-only target if one becomes available. OpenCSD 1.8.3's minimal static target includes
   all protocol decoders; maintaining a private source list is deliberately avoided.
 - [ ] **Release verification:** inspect the first generated multi-platform ZIP, checksums, license texts, OpenCSD
-  notices, and runtime inventory. The hosted Windows, Linux, and macOS matrix and local AddressSanitizer/
+  notices, and runtime dependencies. The hosted Windows, Linux, and macOS matrix and local AddressSanitizer/
   UndefinedBehaviorSanitizer suite are green; the final production-artifact inspection remains to be recorded.
 - [ ] **Static runtime compliance:** inspect the GNU and Microsoft runtime code incorporated by the pinned release
   toolchains. For each Linux architecture, record the exact glibc, libstdc++, and libgcc provenance; provide the
   applicable notices and license texts, corresponding sources, and a tested LGPL 2.1 section 6 relinking mechanism.
-  Complete any additional toolchain-specific obligations before publication. `RUNTIME_COMPONENTS.md` records the
-  current build characteristics without treating this review as complete.
+  Complete any additional toolchain-specific obligations before publication.
 - [ ] **Release provenance:** decide whether production releases require artifact signing, macOS notarization, and a
-  machine-readable SBOM. Until then, release artifacts are explicitly unsigned and protected by published SHA-256
-  checksums plus the documented application-dependency notices and license texts.
+  machine-readable SBOM or a separately published archive checksum. Until then, release artifacts are explicitly
+  unsigned; the archive contains per-file SHA-256 checksums and the documented application-dependency notices and
+  license texts.
 - [ ] **Release coverage:** add an Armv8-M end-to-end fixture when the corresponding DWT semantics are implemented;
   this extends the supported profile and does not block the initial ITM/DWT-focused release.

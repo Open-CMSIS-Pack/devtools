@@ -3,12 +3,13 @@
   Copyright (c) 2026 Arm Limited. All rights reserved.
   SPDX-License-Identifier: Apache-2.0
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1080" viewBox="0 0 1280 1080" role="img"
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1120" viewBox="0 0 1280 1120" role="img"
      aria-labelledby="title description">
   <title id="title">ctrace software architecture</title>
   <desc id="description">
     Seven library modules and the first-release ITM and DWT data flow from command-line, trace-run YAML, and SWO raw
-    input through orchestration, decoding, the trace event model, diagnostics, and CSV and CTF output backends.
+    input through orchestration, hardware-sync recovery, the trace event model, diagnostics, and CSV and CTF output
+    backends. Trace Bus input is discovered but not decoded.
   </desc>
 
   <defs>
@@ -41,12 +42,13 @@
                     marker-end: url(#arrow-muted); }
       .unsupported { fill: none; stroke: #66788a; stroke-width: 1.8; stroke-dasharray: 2 5;
                      marker-end: url(#arrow-muted); }
+      .flow, .dependency, .unsupported { stroke-linecap: round; stroke-linejoin: round; }
       .group { fill: none; stroke: #d5dde5; stroke-width: 1.2; rx: 14; }
       .legend { font-size: 12px; fill: #52667a; }
     </style>
   </defs>
 
-  <rect width="1280" height="1080" fill="#fbfcfe"/>
+  <rect width="1280" height="1120" fill="#fbfcfe"/>
   <text x="50" y="48" class="title">ctrace architecture</text>
   <text x="50" y="73" class="subtitle">Seven library boundaries · initial ITM/DWT release profile</text>
 
@@ -91,9 +93,9 @@
   <path d="M 440 197 L 440 285" class="flow"/>
   <path d="M 170 365 L 350 400" class="flow"/>
   <path d="M 440 365 L 450 400" class="flow"/>
-  <path d="M 720 197 L 720 382 L 500 382 L 500 400" class="flow"/>
-  <path d="M 990 197 L 990 382 L 920 382 L 920 400" class="unsupported"/>
-  <path d="M 550 441 L 760 441" class="dependency"/>
+  <path d="M 720 197 L 720 378 L 500 378 L 500 400" class="flow"/>
+  <path d="M 990 197 L 990 215 L 1050 215 L 1050 490 L 520 490 L 520 482" class="unsupported"/>
+  <path d="M 550 421 L 760 421" class="dependency"/>
 
   <text x="50" y="550" class="section">DECODE PIPELINE</text>
   <rect x="40" y="565" width="1040" height="220" class="group"/>
@@ -103,8 +105,9 @@
   <text x="170" y="645" class="box-detail">RawByteView · chunk continuity</text>
 
   <rect x="320" y="590" width="210" height="86" class="box decode"/>
-  <text x="425" y="623" class="box-title">OpenCSD adapter</text>
-  <text x="425" y="645" class="box-detail">packets, errors, recovery</text>
+  <text x="425" y="618" class="box-title">OpenCSD adapter</text>
+  <text x="425" y="640" class="box-detail">packets · errors · recovery</text>
+  <text x="425" y="658" class="box-detail">resume at real hardware sync</text>
 
   <rect x="575" y="590" width="210" height="86" class="box decode"/>
   <text x="680" y="623" class="box-title">Cortex-M decode</text>
@@ -118,7 +121,7 @@
   <text x="425" y="733" class="box-title">OpenCSD 1.8.3</text>
   <text x="425" y="750" class="box-detail">pinned external library</text>
 
-  <path d="M 400 482 L 400 535 L 300 535 L 300 575 L 170 575 L 170 590" class="flow"/>
+  <path d="M 400 482 L 400 530 L 250 530 L 250 590" class="flow"/>
   <path d="M 275 633 L 320 633" class="flow"/>
   <path d="M 530 633 L 575 633" class="flow"/>
   <path d="M 785 633 L 830 633" class="flow"/>
@@ -143,10 +146,10 @@
   <path d="M 350 943 L 350 955 L 280 955 L 280 970" class="flow"/>
   <path d="M 470 943 L 470 955 L 745 955 L 745 970" class="flow"/>
 
-  <line x1="950" y1="895" x2="1000" y2="895" class="flow"/>
-  <text x="1010" y="899" class="legend">runtime data flow</text>
-  <line x1="950" y1="925" x2="1000" y2="925" class="dependency"/>
-  <text x="1010" y="929" class="legend">service or library dependency</text>
-  <line x1="950" y1="955" x2="1000" y2="955" class="unsupported"/>
-  <text x="1010" y="959" class="legend">unsupported input path</text>
+  <line x1="70" y1="1080" x2="120" y2="1080" class="flow"/>
+  <text x="135" y="1084" class="legend">runtime data flow</text>
+  <line x1="405" y1="1080" x2="455" y2="1080" class="dependency"/>
+  <text x="470" y="1084" class="legend">service or library dependency</text>
+  <line x1="815" y1="1080" x2="865" y2="1080" class="unsupported"/>
+  <text x="880" y="1084" class="legend">unsupported input path</text>
 </svg>

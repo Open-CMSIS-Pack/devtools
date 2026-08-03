@@ -5,9 +5,9 @@
  * Generated with AI
  */
 
-#include "YmlTraceRunConfigReader.hpp"
+#include "YmlTraceRunConfigReader.h"
 
-#include "TraceRunConfig.hpp"
+#include "TraceRunConfig.h"
 #include "yaml-cpp/exceptions.h"
 #include "yaml-cpp/node/node.h"
 #include "yaml-cpp/node/type.h"
@@ -31,27 +31,25 @@
 #include <utility>
 #include <vector>
 
-namespace {
-
 using Node = YAML::Node;
 
-std::size_t lineNumber(const Node& node)
+static std::size_t lineNumber(const Node& node)
 {
-  return node.Mark().line >= 0 ? static_cast<std::size_t>(node.Mark().line + 1) : 0U; // LCOV_EXCL_BR_LINE
+  return node.Mark().line >= 0 ? static_cast<std::size_t>(node.Mark().line + 1) : 0U;
 }
 
-std::string errorMessage(const std::string& path, const Node& node, const std::string& message)
+static std::string errorMessage(const std::string& path, const Node& node, const std::string& message)
 {
   std::ostringstream out;
   out << path;
-  if (lineNumber(node) > 0U) { // LCOV_EXCL_BR_LINE
+  if (lineNumber(node) > 0U) {
     out << '(' << lineNumber(node) << ')';
   }
   out << ": " << message;
   return out.str();
 }
 
-[[noreturn]] void fail(const std::string& path, const Node& node, const std::string& message)
+[[noreturn]] static void fail(const std::string& path, const Node& node, const std::string& message)
 {
   throw std::runtime_error(errorMessage(path, node, message));
 }
@@ -60,31 +58,31 @@ struct NodeLookup {
   Node value{YAML::NodeType::Undefined};
 };
 
-NodeLookup lookupNode(const Node& element, std::string_view tag)
+static NodeLookup lookupNode(const Node& element, std::string_view tag)
 {
   NodeLookup result;
   for (const auto& entry : element) {
-    if (!entry.first.IsScalar() || entry.first.Scalar() != tag) { // LCOV_EXCL_BR_LINE
+    if (!entry.first.IsScalar() || entry.first.Scalar() != tag) {
       continue;
     }
     result.value = entry.second;
     break;
   }
   return result;
-} // LCOV_EXCL_LINE: GCC attributes the generated node cleanup to this closing brace
+}
 
-Node childNode(const Node& element, std::string_view tag)
+static Node childNode(const Node& element, std::string_view tag)
 {
   return lookupNode(element, tag).value;
 }
 
-Node childContainer(const Node& element, std::string_view tag)
+static Node childContainer(const Node& element, std::string_view tag)
 {
   const auto node = childNode(element, tag);
   return node && (node.IsMap() || node.IsSequence()) ? node : Node(YAML::NodeType::Undefined);
 }
 
-std::optional<std::string> optionalAttribute(const Node& element, std::string_view name)
+static std::optional<std::string> optionalAttribute(const Node& element, std::string_view name)
 {
   const auto node = childNode(element, name);
   if (!node) {
@@ -99,10 +97,10 @@ std::optional<std::string> optionalAttribute(const Node& element, std::string_vi
   return node.Scalar();
 }
 
-std::optional<std::string> processorNameAttribute(const std::string& path, const Node& element)
+static std::optional<std::string> processorNameAttribute(const std::string& path, const Node& element)
 {
   const auto node = childNode(element, "pname");
-  if (!node || node.IsNull()) { // LCOV_EXCL_BR_LINE
+  if (!node || node.IsNull()) {
     return std::nullopt;
   }
   if (!node.IsScalar()) {
@@ -111,7 +109,7 @@ std::optional<std::string> processorNameAttribute(const std::string& path, const
   return TraceRunSchema::normalizedProcessorName(std::optional<std::string>(node.Scalar()));
 }
 
-std::optional<std::string> bestEffortProcessorName(const Node& element)
+static std::optional<std::string> bestEffortProcessorName(const Node& element)
 {
   const auto lookup = lookupNode(element, "pname");
   if (!lookup.value || lookup.value.IsNull() || !lookup.value.IsScalar()) {
@@ -120,12 +118,12 @@ std::optional<std::string> bestEffortProcessorName(const Node& element)
   return TraceRunSchema::normalizedProcessorName(std::optional<std::string>(lookup.value.Scalar()));
 }
 
-std::uint64_t unsignedValue(const std::string& path, const Node& element, std::string_view name,
-                            const std::string& value, std::uint64_t maximum)
+static std::uint64_t unsignedValue(const std::string& path, const Node& element, std::string_view name,
+                                   const std::string& value, std::uint64_t maximum)
 {
   std::string_view digits(value);
   int base = 10;
-  if (digits.size() >= 2U && digits[0] == '0' && (digits[1] == 'x' || digits[1] == 'X')) { // LCOV_EXCL_BR_LINE
+  if (digits.size() >= 2U && digits[0] == '0' && (digits[1] == 'x' || digits[1] == 'X')) {
     base = 16;
     digits.remove_prefix(2);
   }
@@ -135,16 +133,14 @@ std::uint64_t unsignedValue(const std::string& path, const Node& element, std::s
 
   std::uint64_t parsed = 0;
   const auto result = std::from_chars(digits.data(), digits.data() + digits.size(), parsed, base);
-  // LCOV_EXCL_BR_START: all parse failures are covered; GCC expands short-circuit bookkeeping
   if (result.ec != std::errc{} || result.ptr != digits.data() + digits.size() || parsed > maximum) {
     fail(path, element, "'" + std::string(name) + "' must be an unsigned integer in range");
   }
-  // LCOV_EXCL_BR_STOP
   return parsed;
 }
 
-std::optional<std::uint64_t> optionalUnsignedAttribute(const std::string& path, const Node& element,
-                                                       std::string_view name, std::uint64_t maximum)
+static std::optional<std::uint64_t> optionalUnsignedAttribute(const std::string& path, const Node& element,
+                                                              std::string_view name, std::uint64_t maximum)
 {
   const auto value = optionalAttribute(element, name);
   if (!value.has_value()) {
@@ -153,36 +149,35 @@ std::optional<std::uint64_t> optionalUnsignedAttribute(const std::string& path, 
   return unsignedValue(path, element, name, *value, maximum);
 }
 
-std::optional<std::uint64_t> deferredUnsignedAttribute(const std::string& path, const Node& element,
-                                                       std::string_view name, std::uint64_t maximum,
-                                                       std::optional<std::string>& error)
+static std::optional<std::uint64_t> deferredUnsignedAttribute(const std::string& path, const Node& element,
+                                                              std::string_view name, std::uint64_t maximum,
+                                                              std::optional<std::string>& error)
 {
   try {
     return optionalUnsignedAttribute(path, element, name, maximum);
-  } catch (const std::runtime_error& ex) { // LCOV_EXCL_BR_LINE: valid and deferred-invalid attributes are covered
+  } catch (const std::runtime_error& ex) {
     error = ex.what();
     return std::nullopt;
   }
 }
 
-std::optional<std::uint64_t> bestEffortUnsignedAttribute(const std::string& path, const Node& element,
-                                                         std::string_view name, std::uint64_t maximum)
+static std::optional<std::uint64_t> bestEffortUnsignedAttribute(const std::string& path, const Node& element,
+                                                                std::string_view name, std::uint64_t maximum)
 {
   try {
     return optionalUnsignedAttribute(path, element, name, maximum);
-  } catch (const std::runtime_error&) { // LCOV_EXCL_BR_LINE: valid and best-effort-invalid attributes are covered
+  } catch (const std::runtime_error&) {
     return std::nullopt;
   }
 }
 
 // ctrace-ref identifies the originating ctrace.yml node. The data index links
 // a generated DWT route to its copied ctrace-setup.data metadata.
-std::optional<std::size_t> dwtDataIndex(std::string_view ctraceRef)
+static std::optional<std::size_t> dwtDataIndex(std::string_view ctraceRef)
 {
   constexpr std::string_view marker = "data#";
   const auto markerPosition = ctraceRef.rfind(marker);
-  if (markerPosition == std::string_view::npos ||
-      (markerPosition != 0U && ctraceRef[markerPosition - 1U] != '/')) { // LCOV_EXCL_BR_LINE
+  if (markerPosition == std::string_view::npos || (markerPosition != 0U && ctraceRef[markerPosition - 1U] != '/')) {
     return std::nullopt;
   }
   const auto value = ctraceRef.substr(markerPosition + marker.size());
@@ -191,33 +186,33 @@ std::optional<std::size_t> dwtDataIndex(std::string_view ctraceRef)
   }
   std::size_t index = 0U;
   const auto parsed = std::from_chars(value.data(), value.data() + value.size(), index);
-  if (parsed.ec != std::errc{} || parsed.ptr != value.data() + value.size()) { // LCOV_EXCL_BR_LINE
+  if (parsed.ec != std::errc{} || parsed.ptr != value.data() + value.size()) {
     return std::nullopt;
   }
   return index;
 }
 
-std::set<std::size_t> referencedDataSetupIndices(const std::vector<TraceRunReference>& references,
-                                                 const std::optional<std::string>& setupProcessorName)
+static std::set<std::size_t> referencedDataSetupIndices(const std::vector<TraceRunReference>& references,
+                                                        const std::optional<std::string>& setupProcessorName)
 {
   std::set<std::size_t> indices;
   for (const auto& reference : references) {
-    if (reference.type != "dwt" || !TraceRunSchema::isUsableReference(reference)) { // LCOV_EXCL_BR_LINE
+    if (reference.type != "dwt" || !TraceRunSchema::isUsableReference(reference)) {
       continue;
     }
     if (!TraceRunSchema::processorNamesMayBind(setupProcessorName, reference.processorName)) {
       continue;
     }
     const auto index = reference.dataSetupIndex;
-    if (index.has_value()) { // LCOV_EXCL_BR_LINE: present and absent data indices are covered
+    if (index.has_value()) {
       indices.insert(*index);
     }
   }
   return indices;
-} // LCOV_EXCL_LINE: GCC attributes the generated set cleanup to this closing brace
+}
 
-bool hasReferencedDataForProcessor(const std::vector<TraceRunReference>& references,
-                                   const std::optional<std::string>& setupProcessorName)
+static bool hasReferencedDataForProcessor(const std::vector<TraceRunReference>& references,
+                                          const std::optional<std::string>& setupProcessorName)
 {
   for (const auto& reference : references) {
     if (reference.type == "dwt" && TraceRunSchema::isUsableReference(reference) &&
@@ -228,11 +223,11 @@ bool hasReferencedDataForProcessor(const std::vector<TraceRunReference>& referen
   return false;
 }
 
-bool setupDataMayBeConsumed(const Node& setup, const std::vector<TraceRunReference>& references)
+static bool setupDataMayBeConsumed(const Node& setup, const std::vector<TraceRunReference>& references)
 {
   bool hasProcessorName = false;
   for (const auto& entry : setup) {
-    if (!entry.first.IsScalar() || entry.first.Scalar() != "pname") { // LCOV_EXCL_BR_LINE
+    if (!entry.first.IsScalar() || entry.first.Scalar() != "pname") {
       continue;
     }
     hasProcessorName = true;
@@ -241,25 +236,24 @@ bool setupDataMayBeConsumed(const Node& setup, const std::vector<TraceRunReferen
       // it when this setup contains otherwise consumed data.
       return true;
     }
-    auto processorName = entry.second.IsScalar()
-                             ? std::optional<std::string>(entry.second.Scalar()) // LCOV_EXCL_BR_LINE
-                             : std::optional<std::string>(std::string{});        // LCOV_EXCL_BR_LINE
+    auto processorName = entry.second.IsScalar() ? std::optional<std::string>(entry.second.Scalar())
+                                                 : std::optional<std::string>(std::string{});
     processorName = TraceRunSchema::normalizedProcessorName(std::move(processorName));
     if (hasReferencedDataForProcessor(references, processorName)) {
       return true;
     }
   }
-  return !hasProcessorName && hasReferencedDataForProcessor(references, std::nullopt); // LCOV_EXCL_BR_LINE
+  return !hasProcessorName && hasReferencedDataForProcessor(references, std::nullopt);
 }
 
-void requireSequence(const std::string& path, const Node& element, std::string_view name)
+static void requireSequence(const std::string& path, const Node& element, std::string_view name)
 {
   if (!element.IsSequence()) {
     fail(path, element, "'" + std::string(name) + "' must be an array");
   }
 }
 
-Node traceRunRoot(const std::string& path, const Node& document)
+static Node traceRunRoot(const std::string& path, const Node& document)
 {
   if (!document.IsMap()) {
     fail(path, document, "expected a YAML map containing 'ctrace-run'");
@@ -275,7 +269,7 @@ Node traceRunRoot(const std::string& path, const Node& document)
   return root;
 }
 
-std::pair<std::vector<std::uint32_t>, bool> parseSources(const std::string& path, const Node& reference)
+static std::pair<std::vector<std::uint32_t>, bool> parseSources(const std::string& path, const Node& reference)
 {
   const auto sourceNode = childNode(reference, "source");
   if (!sourceNode) {
@@ -307,7 +301,7 @@ struct ReferenceDiagnostics {
   std::optional<std::string> error;
 };
 
-ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, const Node& element)
+static ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, const Node& element)
 {
   const auto message = [&](std::string_view name) {
     const auto value = optionalAttribute(element, name);
@@ -323,7 +317,7 @@ ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, const No
   };
 }
 
-std::optional<TraceRunReference> parseReference(const std::string& path, const Node& element)
+static std::optional<TraceRunReference> parseReference(const std::string& path, const Node& element)
 {
   if (!element.IsMap()) {
     return std::nullopt;
@@ -402,7 +396,7 @@ std::optional<TraceRunReference> parseReference(const std::string& path, const N
         return reference;
       }
       return diagnosticReference;
-    } catch (const std::runtime_error&) { // LCOV_EXCL_BR_LINE: diagnostic-reference fallback is covered
+    } catch (const std::runtime_error&) {
       return diagnosticReference;
     }
   }
@@ -411,7 +405,7 @@ std::optional<TraceRunReference> parseReference(const std::string& path, const N
   return reference;
 }
 
-std::vector<TraceRunReference> parseReferences(const std::string& path, const Node& root)
+static std::vector<TraceRunReference> parseReferences(const std::string& path, const Node& root)
 {
   const auto referencesNode = childNode(root, "ctrace-refs");
   if (!referencesNode) {
@@ -429,7 +423,7 @@ std::vector<TraceRunReference> parseReferences(const std::string& path, const No
   return references;
 }
 
-std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::string& path, const Node& element)
+static std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::string& path, const Node& element)
 {
   const auto timestampsLookup = lookupNode(element, "timestamps");
   const auto timestampsNode = timestampsLookup.value;
@@ -439,7 +433,7 @@ std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::string& pat
   if (timestampsNode.IsScalar() || timestampsNode.IsNull()) {
     TraceRunTimestampSetup timestamps;
     timestamps.line = lineNumber(timestampsNode);
-    if (timestampsNode.IsScalar() && !timestampsNode.Scalar().empty()) { // LCOV_EXCL_BR_LINE
+    if (timestampsNode.IsScalar() && !timestampsNode.Scalar().empty()) {
       timestamps.clockError = "'timestamps' must be empty or a map";
     }
     return timestamps;
@@ -471,7 +465,7 @@ std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::string& pat
   return timestamps;
 }
 
-std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, const Node& element)
+static std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, const Node& element)
 {
   const auto itmNode = childNode(element, "itm");
   if (!itmNode) {
@@ -488,8 +482,8 @@ std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, const Nod
       unsignedValue(path, enableNode, "itm.enable", enableNode.Scalar(), std::numeric_limits<std::uint32_t>::max()))};
 }
 
-std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::string& path, const Node& element,
-                                                         const std::set<std::size_t>& referencedIndices)
+static std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::string& path, const Node& element,
+                                                                const std::set<std::size_t>& referencedIndices)
 {
   const auto dataLookup = referencedIndices.empty() ? NodeLookup{} : lookupNode(element, "data");
   if (!dataLookup.value || !dataLookup.value.IsSequence()) {
@@ -528,7 +522,8 @@ std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::string& path
   return foundReferencedEntry ? dataSetups : std::vector<TraceRunDataSetup>{};
 }
 
-TraceRunSetup parseSetup(const std::string& path, const Node& element, const std::vector<TraceRunReference>& references)
+static TraceRunSetup parseSetup(const std::string& path, const Node& element,
+                                const std::vector<TraceRunReference>& references)
 {
   TraceRunSetup setup;
   setup.line = lineNumber(element);
@@ -540,8 +535,8 @@ TraceRunSetup parseSetup(const std::string& path, const Node& element, const std
   return setup;
 }
 
-std::vector<TraceRunSetup> parseSetups(const std::string& path, const Node& root,
-                                       const std::vector<TraceRunReference>& references)
+static std::vector<TraceRunSetup> parseSetups(const std::string& path, const Node& root,
+                                              const std::vector<TraceRunReference>& references)
 {
   const auto setupLookup = lookupNode(root, "ctrace-setup");
   const auto setupNode = setupLookup.value;
@@ -572,15 +567,13 @@ std::vector<TraceRunSetup> parseSetups(const std::string& path, const Node& root
       continue;
     }
     auto setup = parseSetup(path, item, references);
-    if (!setup.timestamps.has_value() && !setup.itm.has_value() && setup.data.empty()) { // LCOV_EXCL_BR_LINE
+    if (!setup.timestamps.has_value() && !setup.itm.has_value() && setup.data.empty()) {
       continue;
     }
     setups.push_back(std::move(setup));
   }
   return setups;
 }
-
-} // namespace
 
 TraceRunConfig YmlTraceRunConfigReader::read(const std::string& path) const
 {
@@ -591,12 +584,12 @@ TraceRunConfig YmlTraceRunConfigReader::read(const std::string& path) const
   std::vector<Node> documents;
   try {
     documents = YAML::LoadAllFromFile(path);
-  } catch (const YAML::Exception& error) { // LCOV_EXCL_BR_LINE: malformed documents are covered
+  } catch (const YAML::Exception& error) {
     std::ostringstream message;
     message << "failed to parse trace-run configuration: " << path;
-    if (error.mark.line >= 0) { // LCOV_EXCL_BR_LINE
+    if (error.mark.line >= 0) {
       message << '(' << (error.mark.line + 1);
-      if (error.mark.column >= 0) { // LCOV_EXCL_BR_LINE
+      if (error.mark.column >= 0) {
         message << ',' << (error.mark.column + 1);
       }
       message << ')';
@@ -605,7 +598,7 @@ TraceRunConfig YmlTraceRunConfigReader::read(const std::string& path) const
     throw std::runtime_error(message.str());
   }
   if (documents.size() != 1U) {
-    const auto location = documents.size() > 1U ? documents[1] : Node(YAML::NodeType::Undefined); // LCOV_EXCL_BR_LINE
+    const auto location = documents.size() > 1U ? documents[1] : Node(YAML::NodeType::Undefined);
     fail(path, location, "expected exactly one YAML document");
   }
 

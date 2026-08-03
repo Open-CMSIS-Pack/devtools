@@ -44,7 +44,6 @@ endif()
 set(package_copies
   "LICENSE|LICENSE.txt"
   "tools/ctrace/docs/THIRD_PARTY_NOTICES.md|THIRD_PARTY_NOTICES.md"
-  "tools/ctrace/docs/RUNTIME_COMPONENTS.md|RUNTIME_COMPONENTS.md"
   "external/cxxopts/LICENSE|THIRD_PARTY_LICENSES/cxxopts.txt"
   "external/yaml-cpp/LICENSE|THIRD_PARTY_LICENSES/yaml-cpp.txt"
   "external/OpenCSD/LICENSE|THIRD_PARTY_LICENSES/OpenCSD.txt"
@@ -101,7 +100,6 @@ file(GLOB_RECURSE package_files
 )
 list(APPEND package_files
   LICENSE.txt
-  RUNTIME_COMPONENTS.md
   THIRD_PARTY_NOTICES.md
 )
 list(SORT package_files)
@@ -114,12 +112,11 @@ foreach(package_file IN LISTS package_files)
 endforeach()
 
 set(archive_path "${CTRACE_DISTRIBUTION_DIR}/ctrace.zip")
-file(REMOVE "${archive_path}" "${archive_path}.sha256")
+file(REMOVE "${archive_path}")
 execute_process(
   COMMAND "${CMAKE_COMMAND}" -E tar cf ctrace.zip --format=zip
     bin
     LICENSE.txt
-    RUNTIME_COMPONENTS.md
     THIRD_PARTY_LICENSES
     THIRD_PARTY_NOTICES.md
     SHA256SUMS
@@ -130,7 +127,4 @@ execute_process(
 if(NOT archive_result EQUAL 0)
   message(FATAL_ERROR "Failed to create ctrace.zip: ${archive_error}")
 endif()
-
-file(SHA256 "${archive_path}" archive_hash)
-file(WRITE "${archive_path}.sha256" "${archive_hash}  ctrace.zip\n")
 message(STATUS "Created verified ctrace package: ${archive_path}")

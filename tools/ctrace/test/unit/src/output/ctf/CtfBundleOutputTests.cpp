@@ -6,19 +6,19 @@
  */
 
 // CTF bundle metadata, event handling, and direct-output lifecycle tests.
-#include "CtfTestSupport.hpp"
-#include "TestSupport.hpp"
-#include "TraceRunTestSupport.hpp"
+#include "CtfTestSupport.h"
+#include "TestSupport.h"
+#include "TraceRunTestSupport.h"
 
 #include <gtest/gtest.h>
 
-#include "ctf/CtfBundleOutput.hpp"
-#include "CtraceRunMeta.hpp"
-#include "OutputRequirements.hpp"
-#include "TestPath.hpp"
-#include "TraceEvent.hpp"
-#include "TraceOutputConfig.hpp"
-#include "TraceRunConfig.hpp"
+#include "ctf/CtfBundleOutput.h"
+#include "CtraceRunMeta.h"
+#include "OutputRequirements.h"
+#include "TestPath.h"
+#include "TraceEvent.h"
+#include "TraceOutputConfig.h"
+#include "TraceRunConfig.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -28,11 +28,14 @@
 #include <utility>
 #include <vector>
 
-namespace {
+using CtfTestSupport::parseCtfRecords;
+using CtfTestSupport::readCtfRecords;
+using CtfTestSupport::readLe16;
+using CtfTestSupport::readLe64;
+using CtfTestSupport::requireFirstCtfRecord;
+using CtfTestSupport::requireSingleItmEvent;
 
-using namespace CtfTestSupport;
-
-std::filesystem::path testTraceCompassXmlPath(const std::filesystem::path& outputDirectory)
+static std::filesystem::path testTraceCompassXmlPath(const std::filesystem::path& outputDirectory)
 {
   auto basePath = outputDirectory;
   if (basePath.extension() == ".ctf") {
@@ -42,13 +45,13 @@ std::filesystem::path testTraceCompassXmlPath(const std::filesystem::path& outpu
   return basePath;
 }
 
-CtfOutputConfig makeCtfBundleConfig(const std::filesystem::path& outputDirectory, std::uint64_t coreClockHz)
+static CtfOutputConfig makeCtfBundleConfig(const std::filesystem::path& outputDirectory, std::uint64_t coreClockHz)
 {
   return CtfOutputConfig(outputDirectory, testTraceCompassXmlPath(outputDirectory), coreClockHz, {}, {});
 }
 
-void requireCompleteCtfBundle(const std::filesystem::path& ctfDirectory, const std::filesystem::path& xmlPath,
-                              const std::string& message)
+static void requireCompleteCtfBundle(const std::filesystem::path& ctfDirectory, const std::filesystem::path& xmlPath,
+                                     const std::string& message)
 {
   require(std::filesystem::is_regular_file(ctfDirectory / "metadata") &&
               std::filesystem::is_regular_file(ctfDirectory / "stream_0") && std::filesystem::is_regular_file(xmlPath),
@@ -69,7 +72,7 @@ private:
   std::filesystem::path outputDirectory_;
 };
 
-ResolvedTraceSource resolvedSource(const CtraceRunSourceMeta& source)
+static ResolvedTraceSource resolvedSource(const CtraceRunSourceMeta& source)
 {
   return {
       source.type,
@@ -82,7 +85,7 @@ ResolvedTraceSource resolvedSource(const CtraceRunSourceMeta& source)
   };
 }
 
-std::vector<std::string> readCtfExceptionRecords(const std::filesystem::path& streamPath)
+static std::vector<std::string> readCtfExceptionRecords(const std::filesystem::path& streamPath)
 {
   std::vector<std::string> records;
   for (const auto& record : readCtfRecords(streamPath)) {
@@ -95,7 +98,7 @@ std::vector<std::string> readCtfExceptionRecords(const std::filesystem::path& st
   return records;
 }
 
-std::vector<std::uint8_t> readOnlyCtfTraceStatusReasons(const std::filesystem::path& streamPath)
+static std::vector<std::uint8_t> readOnlyCtfTraceStatusReasons(const std::filesystem::path& streamPath)
 {
   std::vector<std::uint8_t> reasons;
   for (const auto& record : readCtfRecords(streamPath)) {
@@ -105,14 +108,12 @@ std::vector<std::uint8_t> readOnlyCtfTraceStatusReasons(const std::filesystem::p
   return reasons;
 }
 
-std::uint8_t readFirstCtfDwtValueTag(const std::filesystem::path& streamPath)
+static std::uint8_t readFirstCtfDwtValueTag(const std::filesystem::path& streamPath)
 {
   const auto records = readCtfRecords(streamPath);
   const auto& record = requireFirstCtfRecord(records, CtfSchema::EventId::DwtValue, "expected CTF DWT event missing");
   return record.payload[2U];
 }
-
-} // namespace
 
 TEST(CtraceUnitTests, testCtfBundleOutputExceptionContext)
 {

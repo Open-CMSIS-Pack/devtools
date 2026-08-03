@@ -123,7 +123,7 @@ target_link_libraries(ctrace-control PUBLIC
   ctrace::output
   ctrace::trace-run
 )
-# FileDecodeJob.hpp exposes decoder types to build-tree consumers.
+# FileDecodeJob.h exposes decoder types to build-tree consumers.
 target_link_libraries(ctrace-control PUBLIC
   ctrace::decode
 )

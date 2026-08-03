@@ -5,7 +5,7 @@
  * Generated with AI
  */
 
-#include "TraceRunDiscovery.hpp"
+#include "TraceRunDiscovery.h"
 
 #include <algorithm>
 #include <cctype>
@@ -18,21 +18,19 @@
 #include <utility>
 #include <vector>
 
-namespace {
-
 constexpr std::string_view ConfigSuffix = ".ctrace-run.yml";
 
-bool endsWith(std::string_view value, std::string_view suffix)
+static bool endsWith(std::string_view value, std::string_view suffix)
 {
   return value.size() >= suffix.size() && value.substr(value.size() - suffix.size()) == suffix;
 }
 
-bool isTraceChannel(std::string_view value)
+static bool isTraceChannel(std::string_view value)
 {
   return value == "SWO" || value == "TB" || value == "ER";
 }
 
-bool isWindowsReservedFilename(std::string_view value)
+static bool isWindowsReservedFilename(std::string_view value)
 {
   const auto extension = value.find('.');
   const auto basename = value.substr(0U, extension);
@@ -45,13 +43,11 @@ bool isWindowsReservedFilename(std::string_view value)
   if (upper == "CON" || upper == "PRN" || upper == "AUX" || upper == "NUL" || upper == "CONIN$" || upper == "CONOUT$") {
     return true;
   }
-  // LCOV_EXCL_BR_START: reserved-name components are covered independently
   return upper.size() == 4U && (upper.compare(0U, 3U, "COM") == 0 || upper.compare(0U, 3U, "LPT") == 0) &&
          upper[3] >= '1' && upper[3] <= '9';
-  // LCOV_EXCL_BR_STOP
 }
 
-bool isSafeSolutionSetName(std::string_view value)
+static bool isSafeSolutionSetName(std::string_view value)
 {
   if (value.empty() || value == "." || value == ".." || value.back() == '.' || value.back() == ' ' ||
       isWindowsReservedFilename(value)) {
@@ -65,14 +61,12 @@ bool isSafeSolutionSetName(std::string_view value)
   });
 }
 
-void requireReadableConfigFile(const std::filesystem::path& path)
+static void requireReadableConfigFile(const std::filesystem::path& path)
 {
   if (!std::filesystem::is_regular_file(path)) {
     throw std::runtime_error("trace-run configuration not found: " + path.string());
   }
 }
-
-} // namespace
 
 std::vector<std::filesystem::path> TraceRunDiscovery::selectConfigFiles(const std::filesystem::path& traceDir,
                                                                         const std::optional<std::string>& target)
@@ -87,7 +81,7 @@ std::vector<std::filesystem::path> TraceRunDiscovery::selectConfigFiles(const st
     }
     auto path = traceDir / (*target + std::string(ConfigSuffix));
     requireReadableConfigFile(path);
-    return {std::move(path)}; // LCOV_EXCL_BR_LINE: generated path-move exception edge
+    return {std::move(path)};
   }
 
   std::vector<std::filesystem::path> configs;

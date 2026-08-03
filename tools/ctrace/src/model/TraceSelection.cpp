@@ -5,9 +5,9 @@
  * Generated with AI
  */
 
-#include "TraceSelection.hpp"
+#include "TraceSelection.h"
 
-#include "TraceEvent.hpp"
+#include "TraceEvent.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -16,64 +16,60 @@
 #include <string_view>
 #include <variant>
 
-namespace {
-
-std::optional<TraceEventType> typeFor(const SoftwareTraceEvent&)
+static std::optional<TraceEventType> typeFor(const SoftwareTraceEvent&)
 {
   return TraceEventType::Itm;
 }
 
-std::optional<TraceEventType> typeFor(const DwtDataTraceEvent&)
+static std::optional<TraceEventType> typeFor(const DwtDataTraceEvent&)
 {
   return TraceEventType::Dwt;
 }
 
-std::optional<TraceEventType> typeFor(const DwtAddressTraceEvent&)
+static std::optional<TraceEventType> typeFor(const DwtAddressTraceEvent&)
 {
   return TraceEventType::Dwt;
 }
 
-std::optional<TraceEventType> typeFor(const ExceptionTraceEvent&)
+static std::optional<TraceEventType> typeFor(const ExceptionTraceEvent&)
 {
   return TraceEventType::Exception;
 }
 
-std::optional<TraceEventType> typeFor(const DwtEventTraceEvent&)
+static std::optional<TraceEventType> typeFor(const DwtEventTraceEvent&)
 {
   return std::nullopt;
 }
 
-std::optional<TraceEventType> typeFor(const PmuTraceEvent&)
+static std::optional<TraceEventType> typeFor(const PmuTraceEvent&)
 {
   return std::nullopt;
 }
 
-std::optional<TraceEventType> typeFor(const LocalTimestampTraceEvent&)
+static std::optional<TraceEventType> typeFor(const LocalTimestampTraceEvent&)
 {
   return std::nullopt;
 }
 
-std::optional<TraceEventType> typeFor(const GlobalTimestampTraceEvent&)
+static std::optional<TraceEventType> typeFor(const GlobalTimestampTraceEvent&)
 {
   return TraceEventType::GlobalTimestamp;
 }
 
-std::optional<TraceEventType> typeFor(const OverflowTraceEvent&)
+static std::optional<TraceEventType> typeFor(const OverflowTraceEvent&)
 {
   return TraceEventType::Overflow;
 }
 
-std::optional<TraceEventType> typeFor(const SyncTraceEvent&)
+static std::optional<TraceEventType> typeFor(const SyncTraceEvent&)
 {
   return std::nullopt;
 }
 
-std::optional<TraceEventType> typeFor(const TraceIssueEvent&)
+static std::optional<TraceEventType> typeFor(const TraceIssueEvent&)
 {
   return TraceEventType::Error;
 }
-
-} // namespace
 
 std::string_view traceEventTypeName(TraceEventType type)
 {
@@ -91,7 +87,7 @@ std::string traceEventTypeList(std::string_view separator)
     result += name;
   }
   return result;
-} // LCOV_EXCL_LINE: GCC attributes the generated string cleanup to this closing brace
+}
 
 std::optional<TraceEventType> parseTraceEventType(std::string_view value)
 {

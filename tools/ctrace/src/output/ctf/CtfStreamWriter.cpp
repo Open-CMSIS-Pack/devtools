@@ -5,9 +5,9 @@
  * Generated with AI
  */
 
-#include "CtfStreamWriter.hpp"
+#include "CtfStreamWriter.h"
 
-#include "CtfSchema.hpp"
+#include "CtfSchema.h"
 
 #include <algorithm>
 #include <array>
@@ -22,14 +22,12 @@
 #include <string>
 #include <vector>
 
-namespace {
-
 constexpr std::size_t kPacketSizeBytes = 65536U;
 constexpr std::size_t kPacketHeaderSize = 24U;
 constexpr std::size_t kPacketContextSize = 32U;
 constexpr std::size_t kPacketOverhead = kPacketHeaderSize + kPacketContextSize;
 constexpr std::size_t kEventPrefixSize = 13U;
-std::string formatUuid(const std::array<std::uint8_t, 16U>& uuid)
+static std::string formatUuid(const std::array<std::uint8_t, 16U>& uuid)
 {
   std::ostringstream out;
   out << std::hex << std::setfill('0');
@@ -41,8 +39,6 @@ std::string formatUuid(const std::array<std::uint8_t, 16U>& uuid)
   }
   return out.str();
 }
-
-} // namespace
 
 CtfStreamWriter::Record::Record(std::vector<std::uint8_t>& buffer, std::size_t offset, std::size_t endOffset)
   : buffer_(buffer), offset_(offset), endOffset_(endOffset)
@@ -126,8 +122,8 @@ void CtfStreamWriter::close()
   file_.close();
   open_ = false;
   packetBuffer_.clear();
-  if (!file_) { // LCOV_EXCL_BR_LINE: covered on Linux with /dev/full
-    throw std::runtime_error("Failed to write CTF stream in " + filePath_.parent_path().string()); // LCOV_EXCL_LINE
+  if (!file_) {
+    throw std::runtime_error("Failed to write CTF stream in " + filePath_.parent_path().string());
   }
 }
 

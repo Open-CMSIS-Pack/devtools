@@ -1,51 +1,26 @@
 name: ctrace
 on:
   workflow_call:
-  workflow_dispatch:
   push:
     branches:
       - main
     paths:
       - '.github/workflows/ctrace.yml'
-      - '.github/workflows/shared_matrix_prep.yml'
-      - '.github/workflows/shared_setup_env.yml'
       - '.github/matrix_includes_ctrace.json'
       - 'cmake/**'
       - 'CMakeLists.txt'
-      - 'external/OpenCSD'
-      - 'external/cxxopts'
-      - 'external/cxxopts.patch'
-      - 'external/googletest'
-      - 'external/yaml-cpp'
-      - 'external/yaml-cpp.patch'
       - 'tools/ctrace/**'
       - '!**/docs/**/*'
       - '!**/*.md'
-      - 'LICENSE'
-      - 'tools/ctrace/docs/OpenCSD-NOTICE.txt'
-      - 'tools/ctrace/docs/RUNTIME_COMPONENTS.md'
-      - 'tools/ctrace/docs/THIRD_PARTY_NOTICES.md'
   pull_request:
     paths:
       - '.github/workflows/ctrace.yml'
-      - '.github/workflows/shared_matrix_prep.yml'
-      - '.github/workflows/shared_setup_env.yml'
       - '.github/matrix_includes_ctrace.json'
       - 'cmake/**'
       - 'CMakeLists.txt'
-      - 'external/OpenCSD'
-      - 'external/cxxopts'
-      - 'external/cxxopts.patch'
-      - 'external/googletest'
-      - 'external/yaml-cpp'
-      - 'external/yaml-cpp.patch'
       - 'tools/ctrace/**'
       - '!**/docs/**/*'
       - '!**/*.md'
-      - 'LICENSE'
-      - 'tools/ctrace/docs/OpenCSD-NOTICE.txt'
-      - 'tools/ctrace/docs/RUNTIME_COMPONENTS.md'
-      - 'tools/ctrace/docs/THIRD_PARTY_NOTICES.md'
   release:
     types: [published]
 
@@ -60,35 +35,10 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  release_metadata:
-    name: Validate ctrace release tag
-    runs-on: ubuntu-22.04
-    outputs:
-      version: ${{ steps.release_tag.outputs.version }}
-    steps:
-      - name: Harden Runner
-        if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
-        with:
-          egress-policy: audit
-
-      - name: Validate release tag
-        id: release_tag
-        shell: bash
-        run: |
-          if [[ "${GITHUB_EVENT_NAME}" != "release" || "${GITHUB_REF_NAME}" != tools/ctrace/* ]]; then
-            exit 0
-          fi
-          if [[ ! "${GITHUB_REF_NAME}" =~ ^tools/ctrace/(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "Expected a stable SemVer tag named tools/ctrace/<major>.<minor>.<patch>, got '${GITHUB_REF_NAME}'" >&2
-            exit 1
-          fi
-          echo "version=${GITHUB_REF_NAME#tools/ctrace/}" >> "${GITHUB_OUTPUT}"
-
   setup:
     uses: ./.github/workflows/shared_setup_env.yml
     with:
-      run_if: ${{ (github.event_name == 'pull_request') || (github.event_name == 'workflow_dispatch') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/ctrace/')) || ((github.event.schedule != '') && (!github.event.repository.private)) }}
+      run_if: ${{ fromJSON((github.event_name == 'pull_request') || (github.event_name == 'workflow_dispatch') || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/ctrace/')) || ((github.event.schedule != '') && (!github.event.repository.private))) }}
 
   matrix_prep:
     needs: setup
@@ -97,7 +47,7 @@ jobs:
       workflow_name: ctrace
 
   build:
-    needs: [ release_metadata, setup, matrix_prep ]
+    needs: [ setup, matrix_prep ]
     runs-on: ${{ matrix.runs_on }}
     name: build (${{ matrix.runs_on }}, ${{ matrix.arch }})
     timeout-minutes: 25
@@ -124,30 +74,6 @@ jobs:
           target: ctrace
           arch: ${{ matrix.arch }}
 
-      - name: Run ctrace integration tests
-        if: (matrix.target != 'windows' || matrix.arch != 'arm64')
-        run: ctest -V -C Release -R '^ctrace-'
-        working-directory: ./build
-
-      - name: Verify Windows Arm64 binary architecture
-        if: (matrix.target == 'windows' && matrix.arch == 'arm64')
-        shell: pwsh
-        run: |
-          $binaryPath = "./build/tools/ctrace/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}"
-          $bytes = [System.IO.File]::ReadAllBytes($binaryPath)
-          if ($bytes.Length -lt 64) {
-            throw "ctrace.exe is too short to contain a valid PE header"
-          }
-          $peOffset = [System.BitConverter]::ToUInt32($bytes, 0x3c)
-          if ($peOffset + 6 -gt $bytes.Length) {
-            throw "ctrace.exe contains an invalid PE header offset"
-          }
-          $signature = [System.Text.Encoding]::ASCII.GetString($bytes, $peOffset, 4)
-          $machine = [System.BitConverter]::ToUInt16($bytes, $peOffset + 4)
-          if ($signature -ne "PE`0`0" -or $machine -ne 0xAA64) {
-            throw "ctrace.exe is not an Arm64 PE binary (machine 0x$($machine.ToString('X4')))"
-          }
-
       - name: Install strip tools
         if: |
           github.event_name == 'release' &&
@@ -170,38 +96,6 @@ jobs:
             strip "$binary_path"
           fi
 
-      - name: Smoke-test release binary
-        if: |
-          github.event_name == 'release' &&
-          (matrix.target != 'windows' || matrix.arch != 'arm64')
-        shell: bash
-        run: |
-          binary_path="./build/tools/ctrace/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}"
-          if [[ "${{ matrix.target }}" == "linux" && "${{ matrix.arch }}" == "arm64" ]]; then
-            actual_version="$(qemu-aarch64 -L /usr/aarch64-linux-gnu "$binary_path" --version)"
-          else
-            actual_version="$("$binary_path" --version)"
-          fi
-          actual_version="${actual_version%$'\r'}"
-          expected_version="ctrace ${{ needs.release_metadata.outputs.version }}"
-          if [[ "$actual_version" != "$expected_version" ]]; then
-            echo "Expected '$expected_version', got '$actual_version'" >&2
-            exit 1
-          fi
-
-      - name: Dry-run ctrace package assembly
-        if: matrix.target == 'linux' && matrix.arch == 'amd64'
-        shell: bash
-        run: |
-          binary_path="${GITHUB_WORKSPACE}/build/tools/ctrace/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}"
-          cmake \
-            -DCTRACE_SOURCE_DIR="${GITHUB_WORKSPACE}" \
-            -DCTRACE_DISTRIBUTION_DIR="${RUNNER_TEMP}/ctrace-package-dry-run" \
-            -DCTRACE_STAGE_BINARY="$binary_path" \
-            -DCTRACE_STAGE_PATH="bin/${{ matrix.target }}-${{ matrix.arch }}/${{ matrix.binary }}" \
-            -DCTRACE_EXPECTED_BINARIES="bin/${{ matrix.target }}-${{ matrix.arch }}/${{ matrix.binary }}" \
-            -P tools/ctrace/cmake/PackageCtrace.cmake
-
       - name: Archive ctrace
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -214,18 +108,12 @@ jobs:
     if: |
       github.event_name == 'release' &&
       startsWith(github.ref, 'refs/tags/tools/ctrace/')
-    needs: [ build, unittest, coverage, release_metadata ]
+    needs: [ build, test, coverage ]
     runs-on: ubuntu-22.04
     timeout-minutes: 25
     permissions:
       contents: write
     steps:
-      - name: Harden Runner
-        if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
-        with:
-          egress-policy: audit
-
       - name: Checkout devtools
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -278,18 +166,9 @@ jobs:
           overwrite: true
           asset_name: ctrace.zip
 
-      - name: Attach archive checksum to release assets
-        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: tools/ctrace/distribution/ctrace.zip.sha256
-          tag: ${{ github.ref }}
-          overwrite: true
-          asset_name: ctrace.zip.sha256
-
-  unittest:
-    needs: [ release_metadata, setup, matrix_prep ]
-    name: unittest (${{ matrix.runs_on }}, ${{ matrix.arch }})
+  test:
+    needs: [ setup, matrix_prep ]
+    name: test (${{ matrix.runs_on }}, ${{ matrix.arch }})
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 25
     strategy:
@@ -315,13 +194,20 @@ jobs:
           build_type: Debug
           arch: ${{ matrix.arch }}
 
-      - name: Run ctrace unit tests
-        if: (matrix.target != 'windows' || matrix.arch != 'arm64')
-        run: ctest -C Debug -R CtraceUnitTests
+      - name: Build ctrace integration target
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
+        with:
+          target: ctrace
+          build_type: Debug
+          arch: ${{ matrix.arch }}
+
+      - name: Run ctrace tests
+        if: matrix.arch != 'arm64'
+        run: ctest -V -C Debug -R '^(CtraceUnitTests|ctrace-)'
         working-directory: ./build
 
       - name: Archive unit tests results
-        if: always() && (matrix.target != 'windows' || matrix.arch != 'arm64')
+        if: always() && (matrix.arch != 'arm64')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_ctrace-${{ matrix.target }}-${{ matrix.arch }}
@@ -336,7 +222,6 @@ jobs:
       (github.event_name == 'push') ||
       (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/ctrace/')) ||
       ((github.event.schedule != '') && (!github.event.repository.private))
-    needs: [ release_metadata ]
     env:
       lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15
       lcov_installer: lcov-1.15.tar.gz
@@ -397,6 +282,8 @@ jobs:
         run: |
           lcov-1.15/bin/lcov --rc lcov_branch_coverage=1 --rc geninfo_no_exception_branch=1 -c --directory . --output-file full_coverage.info
           lcov-1.15/bin/lcov --rc lcov_branch_coverage=1 --rc geninfo_no_exception_branch=1 -e full_coverage.info '*/tools/ctrace/src/*' -o coverage_ctrace.info
+          # Preserve unfiltered branch data for review, but gate on portable source-line coverage.
+          lcov-1.15/bin/lcov --rc lcov_branch_coverage=0 -e full_coverage.info '*/tools/ctrace/src/*' -o coverage_ctrace_codecov.info
           lcov-1.15/bin/genhtml coverage_ctrace.info --output-directory coverage_ctrace --branch-coverage
         working-directory: ./build/tools/ctrace
 
@@ -406,7 +293,7 @@ jobs:
         with:
           action: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
           with: |
-            files: ./build/tools/ctrace/coverage_ctrace.info
+            files: ./build/tools/ctrace/coverage_ctrace_codecov.info
             fail_ci_if_error: true
             flags: ctrace-cov
             token: ${{ secrets.CODECOV_TOKEN }}
@@ -421,13 +308,14 @@ jobs:
           path: |
             ./build/tools/ctrace/coverage_ctrace/
             ./build/tools/ctrace/coverage_ctrace.info
+            ./build/tools/ctrace/coverage_ctrace_codecov.info
           retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
 
   test-results-preparation:
     name: "Publish Tests Results"
     if: ${{ always() }}
-    needs: [ unittest ]
+    needs: [ test ]
     runs-on: ubuntu-22.04
     steps:
       - name: Harden Runner

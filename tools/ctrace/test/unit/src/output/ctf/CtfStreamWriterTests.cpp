@@ -5,11 +5,11 @@
  * Generated with AI
  */
 
-#include "TestPath.hpp"
+#include "TestPath.h"
 
 #include <gtest/gtest.h>
 
-#include "ctf/CtfStreamWriter.hpp"
+#include "ctf/CtfStreamWriter.h"
 
 #include <cstddef>
 #include <cstdint>

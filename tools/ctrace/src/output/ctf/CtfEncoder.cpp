@@ -5,16 +5,16 @@
  * Generated with AI
  */
 
-#include "CtfEncoder.hpp"
+#include "CtfEncoder.h"
 
-#include "CtfExceptionLaneTracker.hpp"
-#include "CtfMetadataWriter.hpp"
-#include "CtfSchema.hpp"
-#include "CtfStreamWriter.hpp"
-#include "DiagnosticSink.hpp"
-#include "TraceEvent.hpp"
-#include "TraceOutputConfig.hpp"
-#include "TraceSelection.hpp"
+#include "CtfExceptionLaneTracker.h"
+#include "CtfMetadataWriter.h"
+#include "CtfSchema.h"
+#include "CtfStreamWriter.h"
+#include "DiagnosticSink.h"
+#include "TraceEvent.h"
+#include "TraceOutputConfig.h"
+#include "TraceSelection.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -26,15 +26,13 @@
 #include <utility>
 #include <vector>
 
-namespace {
-
-std::uint32_t ctfOverflowCount(std::uint64_t count)
+static std::uint32_t ctfOverflowCount(std::uint64_t count)
 {
   return static_cast<std::uint32_t>(std::min<std::uint64_t>(count, std::numeric_limits<std::uint32_t>::max()));
 }
-const CtfSchema::ValueVariant& dwtValueVariant(const ResolvedTraceSource* source, std::uint32_t comparator)
+static const CtfSchema::ValueVariant& dwtValueVariant(const ResolvedTraceSource* source, std::uint32_t comparator)
 {
-  static const ResolvedTraceSource defaults; // LCOV_EXCL_BR_LINE: thread-safe static initialization guard
+  static const ResolvedTraceSource defaults;
   const auto& resolved = source != nullptr ? *source : defaults;
   const auto* variant = CtfSchema::valueVariantForTraceRunType(resolved.valueType, resolved.valueSize);
   if (variant == nullptr) {
@@ -44,20 +42,17 @@ const CtfSchema::ValueVariant& dwtValueVariant(const ResolvedTraceSource* source
   return *variant;
 }
 
-bool equivalentSourceMetadata(const ResolvedTraceSource& left, const ResolvedTraceSource& right)
+static bool equivalentSourceMetadata(const ResolvedTraceSource& left, const ResolvedTraceSource& right)
 {
   // Trace Bus ID identifies the route, not the metadata attached to it.
-  // LCOV_EXCL_BR_START: equality and conflict behavior is covered; field-order short-circuiting is immaterial
   return left.type == right.type && left.source == right.source && left.label == right.label &&
          left.symbolAddress == right.symbolAddress && left.valueType == right.valueType &&
          left.valueSize == right.valueSize;
-  // LCOV_EXCL_BR_STOP
 }
 
-const ResolvedTraceSource* resolvedTraceSource(const CtfEncoderConfig& config, const char* type,
-                                               std::uint8_t traceBusId, std::uint32_t source)
+static const ResolvedTraceSource* resolvedTraceSource(const CtfEncoderConfig& config, const char* type,
+                                                      std::uint8_t traceBusId, std::uint32_t source)
 {
-  // LCOV_EXCL_BR_START: all lookup alternatives are covered; GCC emits lambda bookkeeping branches
   const auto exact =
       std::find_if(config.sources.begin(), config.sources.end(), [&](const ResolvedTraceSource& candidate) {
         return candidate.type == type && candidate.source == source && candidate.traceBusId == traceBusId;
@@ -65,11 +60,10 @@ const ResolvedTraceSource* resolvedTraceSource(const CtfEncoderConfig& config, c
   if (exact != config.sources.end() || traceBusId != 0U) {
     return exact == config.sources.end() ? nullptr : &*exact;
   }
-  // LCOV_EXCL_BR_STOP
 
   const ResolvedTraceSource* unique = nullptr;
   for (const auto& candidate : config.sources) {
-    if (candidate.type != type || candidate.source != source) { // LCOV_EXCL_BR_LINE
+    if (candidate.type != type || candidate.source != source) {
       continue;
     }
     if (unique != nullptr && !equivalentSourceMetadata(*unique, candidate)) {
@@ -83,7 +77,7 @@ const ResolvedTraceSource* resolvedTraceSource(const CtfEncoderConfig& config, c
   return unique;
 }
 
-std::uint32_t signExtendSample(std::uint32_t value, std::uint8_t sourceBytes)
+static std::uint32_t signExtendSample(std::uint32_t value, std::uint8_t sourceBytes)
 {
   if (sourceBytes >= 4U) {
     return value;
@@ -95,8 +89,8 @@ std::uint32_t signExtendSample(std::uint32_t value, std::uint8_t sourceBytes)
   return (v ^ signBit) - signBit;
 }
 
-void writeVariantValue(CtfStreamWriter::Record& record, std::uint32_t data, std::uint8_t sourceSize,
-                       const CtfSchema::ValueVariant& info)
+static void writeVariantValue(CtfStreamWriter::Record& record, std::uint32_t data, std::uint8_t sourceSize,
+                              const CtfSchema::ValueVariant& info)
 {
   if (info.floatingPoint) {
     record.writeU32(data);
@@ -111,8 +105,6 @@ void writeVariantValue(CtfStreamWriter::Record& record, std::uint32_t data, std:
     record.writeU32(value);
   }
 }
-
-} // namespace
 
 CtfEncoder::CtfEncoder(CtfEncoderConfig config) : config_(std::move(config))
 {
@@ -191,15 +183,15 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
       writeSoftwareEvent(event, *software);
     }
   } else if (const auto* exception = traceEventPayload<ExceptionTraceEvent>(event)) {
-    if (exception->action != ExceptionAction::Unknown) { // LCOV_EXCL_BR_LINE: known and unknown actions are covered
+    if (exception->action != ExceptionAction::Unknown) {
       writeExceptionEvent(event.traceBusId, *exception);
     }
   } else if (const auto* data = traceEventPayload<DwtDataTraceEvent>(event)) {
-    if (selected) { // LCOV_EXCL_BR_LINE: selected and filtered DWT values are covered
+    if (selected) {
       writeDwtValueEvent(event, *data);
     }
   } else if (const auto* address = traceEventPayload<DwtAddressTraceEvent>(event)) {
-    if (selected) { // LCOV_EXCL_BR_LINE: selected and filtered DWT addresses are covered
+    if (selected) {
       writeDwtAddrEvent(event, *address);
     }
   } else if (isTraceEvent<OverflowTraceEvent>(event)) {
@@ -216,14 +208,14 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
     writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::Resync), event.traceBusId,
                           config_.selection.types.empty());
   } else if (const auto* timestamp = traceEventPayload<GlobalTimestampTraceEvent>(event)) {
-    if (selected) { // LCOV_EXCL_BR_LINE: selected and filtered global timestamps are covered
+    if (selected) {
       writeGlobalTimestampEvent(event, *timestamp);
     }
-  } else if (const auto* issue = traceEventPayload<TraceIssueEvent>(event)) { // LCOV_EXCL_BR_LINE
-    if (issue->code == "data-loss") { // LCOV_EXCL_BR_LINE: both issue classes are covered
+  } else if (const auto* issue = traceEventPayload<TraceIssueEvent>(event)) {
+    if (issue->code == "data-loss") {
       writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss), event.traceBusId, selected);
     } else {
-      if (event.quality.has_value() && event.quality->overflow) { // LCOV_EXCL_BR_LINE
+      if (event.quality.has_value() && event.quality->overflow) {
         writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss), event.traceBusId, selected);
       }
       if (selected) {
@@ -292,8 +284,7 @@ void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceE
 void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data,
                                        const ResolvedTraceSource* source)
 {
-  const auto configuredSize =
-      source != nullptr ? source->valueSize : ResolvedTraceSource{}.valueSize; // LCOV_EXCL_BR_LINE
+  const auto configuredSize = source != nullptr ? source->valueSize : ResolvedTraceSource{}.valueSize;
   if (configuredSize == data.size || config_.diagnostics == nullptr ||
       !reportedDwtSizeMismatches_.insert({event.traceBusId, data.comparator}).second) {
     return;
@@ -322,8 +313,8 @@ void CtfEncoder::writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTrac
   const auto quality = computeSampleQuality(event);
   const auto pc = dwtAddressPc(address);
   const auto addressOffset = dwtAddressOffset(address);
-  const auto hasPc = pc.has_value() ? 1U : 0U;                 // LCOV_EXCL_BR_LINE
-  const auto hasAddress = addressOffset.has_value() ? 1U : 0U; // LCOV_EXCL_BR_LINE
+  const auto hasPc = pc.has_value() ? 1U : 0U;
+  const auto hasAddress = addressOffset.has_value() ? 1U : 0U;
   stream_.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtAddress), eventTimestamp, event.traceBusId, payloadSize,
                       [&](CtfStreamWriter::Record& record) {
                         record.writeU8(static_cast<std::uint8_t>(address.comparator & 0xffU));
@@ -343,7 +334,7 @@ void CtfEncoder::writeGlobalTimestampEvent(const TraceEvent& event, const Global
   stream_.writeRecord(CtfSchema::value(CtfSchema::EventId::GlobalTimestamp), eventTimestamp, event.traceBusId,
                       payloadSize, [&](CtfStreamWriter::Record& record) {
                         record.writeU64(timestamp.value);
-                        record.writeU8(timestamp.clockChange ? 1U : 0U); // LCOV_EXCL_BR_LINE
+                        record.writeU8(timestamp.clockChange ? 1U : 0U);
                       });
 }
 

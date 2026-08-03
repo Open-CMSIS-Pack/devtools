@@ -5,10 +5,10 @@
  * Generated with AI
  */
 
-#include "CsvRowMapper.hpp"
+#include "CsvRowMapper.h"
 
-#include "TraceEvent.hpp"
-#include "TraceSelection.hpp"
+#include "TraceEvent.h"
+#include "TraceSelection.h"
 
 #include <algorithm>
 #include <array>
@@ -18,7 +18,6 @@
 #include <string>
 #include <string_view>
 
-namespace {
 
 enum class CsvColumn : std::size_t {
   Cycles,
@@ -45,7 +44,7 @@ constexpr std::array<std::string_view, static_cast<std::size_t>(CsvColumn::Count
 
 using CsvRow = std::array<std::string, static_cast<std::size_t>(CsvColumn::Count)>;
 
-template <typename Columns> std::string joinColumns(const Columns& columns)
+template <typename Columns> static std::string joinColumns(const Columns& columns)
 {
   std::ostringstream out;
   for (std::size_t index = 0; index < columns.size(); ++index) {
@@ -57,12 +56,12 @@ template <typename Columns> std::string joinColumns(const Columns& columns)
   return out.str();
 }
 
-std::size_t column(CsvColumn value)
+static std::size_t column(CsvColumn value)
 {
   return static_cast<std::size_t>(value);
 }
 
-std::string escapeCsvField(const std::string& value)
+static std::string escapeCsvField(const std::string& value)
 {
   if (value.find_first_of("\",\r\n") == std::string::npos) {
     return value;
@@ -79,7 +78,7 @@ std::string escapeCsvField(const std::string& value)
   return escaped;
 }
 
-std::string renderCsvRow(const CsvRow& fields)
+static std::string renderCsvRow(const CsvRow& fields)
 {
   std::ostringstream out;
   for (std::size_t index = 0; index < fields.size(); ++index) {
@@ -91,7 +90,7 @@ std::string renderCsvRow(const CsvRow& fields)
   return out.str();
 }
 
-std::string hexValue(std::uint64_t value, std::uint32_t widthBytes)
+static std::string hexValue(std::uint64_t value, std::uint32_t widthBytes)
 {
   static constexpr char digits[] = "0123456789abcdef";
   const auto width = std::max<std::uint32_t>(2U, widthBytes * 2U);
@@ -103,7 +102,7 @@ std::string hexValue(std::uint64_t value, std::uint32_t widthBytes)
   return "0x" + out;
 }
 
-std::string_view exceptionActionCsvValue(ExceptionAction action)
+static std::string_view exceptionActionCsvValue(ExceptionAction action)
 {
   switch (action) {
   case ExceptionAction::Entered:
@@ -118,7 +117,7 @@ std::string_view exceptionActionCsvValue(ExceptionAction action)
   return "0x0";
 }
 
-CsvRow eventToCsvRow(const TraceEvent& event)
+static CsvRow eventToCsvRow(const TraceEvent& event)
 {
   CsvRow row{};
   if (event.tcyc.has_value()) {
@@ -155,18 +154,16 @@ CsvRow eventToCsvRow(const TraceEvent& event)
   } else if (const auto* timestamp = traceEventPayload<GlobalTimestampTraceEvent>(event)) {
     row[column(CsvColumn::Cycles)] = std::to_string(timestamp->value);
   } else if (const auto* overflow = traceEventPayload<OverflowTraceEvent>(event)) {
-    row[column(CsvColumn::Note)] =
-        overflow->message.empty()                                                       // LCOV_EXCL_BR_LINE
-            ? "overflow: new timestamp segment; time across boundary may be unreliable" // LCOV_EXCL_BR_LINE
-            : overflow->message;
+    row[column(CsvColumn::Note)] = overflow->message.empty()
+                                       ? "overflow: new timestamp segment; time across boundary may be unreliable"
+                                       : overflow->message;
   } else if (const auto* issue = traceEventPayload<TraceIssueEvent>(event)) {
     row[column(CsvColumn::Note)] = issue->message;
   }
 
   return row;
-} // LCOV_EXCL_LINE: GCC attributes the generated variant cleanup to this closing brace
+}
 
-} // namespace
 
 std::string CsvRowMapper::header()
 {

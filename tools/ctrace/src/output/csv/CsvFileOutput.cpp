@@ -5,11 +5,11 @@
  * Generated with AI
  */
 
-#include "CsvFileOutput.hpp"
+#include "CsvFileOutput.h"
 
-#include "CsvRowMapper.hpp"
-#include "TraceEvent.hpp"
-#include "TraceSelection.hpp"
+#include "CsvRowMapper.h"
+#include "TraceEvent.h"
+#include "TraceSelection.h"
 
 #include <filesystem>
 #include <ios>
@@ -19,13 +19,11 @@
 #include <system_error>
 #include <utility>
 
-namespace {
-
-void removeExistingCsv(const std::filesystem::path& path)
+static void removeExistingCsv(const std::filesystem::path& path)
 {
   const auto normalized = path.lexically_normal();
-  if (path.empty() || normalized == normalized.root_path() || normalized.filename().empty() || // LCOV_EXCL_BR_LINE
-      normalized.filename() == "." || normalized.filename() == "..") {                         // LCOV_EXCL_BR_LINE
+  if (path.empty() || normalized == normalized.root_path() || normalized.filename().empty() ||
+      normalized.filename() == "." || normalized.filename() == "..") {
     throw std::invalid_argument("CSV output path must identify a file");
   }
   std::error_code error;
@@ -38,14 +36,12 @@ void removeExistingCsv(const std::filesystem::path& path)
   }
   error.clear();
   std::filesystem::remove(path, error);
-  if (error) { // LCOV_EXCL_BR_LINE: requires an external filesystem failure
-    // LCOV_EXCL_START: requires an external filesystem failure after successful inspection
+  if (error) {
     throw std::runtime_error("Failed to remove existing CSV output " + path.string() + ": " + error.message());
-    // LCOV_EXCL_STOP
   }
 }
 
-void createParentDirectory(const std::filesystem::path& path)
+static void createParentDirectory(const std::filesystem::path& path)
 {
   const auto parent = path.parent_path();
   if (parent.empty()) {
@@ -53,14 +49,10 @@ void createParentDirectory(const std::filesystem::path& path)
   }
   std::error_code error;
   std::filesystem::create_directories(parent, error);
-  if (error) { // LCOV_EXCL_BR_LINE: requires an external filesystem failure
-    // LCOV_EXCL_START: requires an external filesystem failure after successful parent inspection
+  if (error) {
     throw std::runtime_error("Failed to create CSV output directory " + parent.string() + ": " + error.message());
-    // LCOV_EXCL_STOP
   }
 }
-
-} // namespace
 
 CsvFileOutput::CsvFileOutput(std::filesystem::path outputFile, TraceSelection selection)
   : outputFile_(std::move(outputFile)), selection_(std::move(selection))
@@ -71,11 +63,9 @@ CsvFileOutput::~CsvFileOutput()
 {
   try {
     CsvFileOutput::abort();
-    // LCOV_EXCL_START: destructors cannot expose a best-effort filesystem cleanup failure
   } catch (...) {
     (void)0;
   }
-  // LCOV_EXCL_STOP
 }
 
 std::string_view CsvFileOutput::backendName() const noexcept
@@ -103,9 +93,9 @@ void CsvFileOutput::start()
   }
 
   stream_ << CsvRowMapper::header() << "\n";
-  if (!stream_) { // LCOV_EXCL_BR_LINE: requires an external device write failure
-    abort();      // LCOV_EXCL_LINE
-    throw std::runtime_error("Failed to write CSV output " + outputFile_.string()); // LCOV_EXCL_LINE
+  if (!stream_) {
+    abort();
+    throw std::runtime_error("Failed to write CSV output " + outputFile_.string());
   }
 }
 
@@ -114,9 +104,9 @@ void CsvFileOutput::stop()
   if (stream_.is_open()) {
     stream_.close();
   }
-  if (!stream_) { // LCOV_EXCL_BR_LINE: requires an external device close failure
-    abort();      // LCOV_EXCL_LINE
-    throw std::runtime_error("Failed to write CSV output " + outputFile_.string()); // LCOV_EXCL_LINE
+  if (!stream_) {
+    abort();
+    throw std::runtime_error("Failed to write CSV output " + outputFile_.string());
   }
   active_ = false;
 }

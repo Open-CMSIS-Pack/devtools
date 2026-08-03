@@ -5,13 +5,13 @@
  * Generated with AI
  */
 
-#include "TestSupport.hpp"
+#include "TestSupport.h"
 
 #include <gtest/gtest.h>
 
-#include "ctf/CtfExceptionLaneTracker.hpp"
-#include "ctf/CtfSchema.hpp"
-#include "TraceEvent.hpp"
+#include "ctf/CtfExceptionLaneTracker.h"
+#include "ctf/CtfSchema.h"
+#include "TraceEvent.h"
 
 #include <cstdint>
 #include <string>

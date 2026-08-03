@@ -5,10 +5,10 @@
  * Generated with AI
  */
 
-#include "TestSupport.hpp"
+#include "TestSupport.h"
 #include <gtest/gtest.h>
-#include "CliOptions.hpp"
-#include "CliParser.hpp"
+#include "CliOptions.h"
+#include "CliParser.h"
 #include <cstdint>
 #include <initializer_list>
 #include <optional>

@@ -5,9 +5,6 @@
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
-set(CTRACE_EMULATOR_ARGUMENT
-    "-DCTRACE_EMULATOR=$<JOIN:$<TARGET_PROPERTY:ctrace,CROSSCOMPILING_EMULATOR>,|>")
-
 add_test(
     NAME ctrace-version
     COMMAND ctrace --version
@@ -17,7 +14,6 @@ add_test(
     NAME ctrace-version-rejects-invalid-type
     COMMAND ${CMAKE_COMMAND}
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
-        "${CTRACE_EMULATOR_ARGUMENT}"
         "-DCTRACE_ARGS=--version;--type;DWT"
         "-DEXPECTED_STDERR=\\[error\\] cli/invalid-arguments:"
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunExpectedFailure.cmake
@@ -27,7 +23,6 @@ add_test(
     NAME ctrace-missing-trace-directory
     COMMAND ${CMAKE_COMMAND}
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
-        "${CTRACE_EMULATOR_ARGUMENT}"
         -DCTRACE_ARGS=${CMAKE_CURRENT_BINARY_DIR}/__missing_trace_directory_4b66b86f__
         "-DEXPECTED_STDERR=\\[error\\] input/trace-directory-failed:"
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunExpectedFailure.cmake
@@ -59,7 +54,6 @@ add_test(
     NAME ctrace-trace-run-yaml
     COMMAND ${CMAKE_COMMAND}
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
-        "${CTRACE_EMULATOR_ARGUMENT}"
         -DYAML_FILE=${CTRACE_SOURCE_DIR}/test/data/trace-run/Board.ctrace-run.yml
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/trace-run-yaml
         -DTARGET=Board
@@ -75,7 +69,6 @@ add_test(
     NAME ctrace-decoder-error-all-is-generated
     COMMAND ${CMAKE_COMMAND}
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
-        "${CTRACE_EMULATOR_ARGUMENT}"
         -DYAML_FILE=${CTRACE_SOURCE_DIR}/test/data/trace-run/Minimal.ctrace-run.yml
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/decoder-error-all
         -DTARGET=Minimal
@@ -93,7 +86,6 @@ add_test(
     NAME ctrace-valid-swo-generates-all-outputs
     COMMAND ${CMAKE_COMMAND}
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
-        "${CTRACE_EMULATOR_ARGUMENT}"
         -DPYTHON_EXECUTABLE=${Python3_EXECUTABLE}
         -DYAML_FILE=${CTRACE_SOURCE_DIR}/test/data/trace-run/Board.ctrace-run.yml
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/valid-swo-all
@@ -126,7 +118,6 @@ add_test(
     NAME ctrace-fixture-blinky-swo-and-unimplemented-tb
     COMMAND ${CMAKE_COMMAND}
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
-        "${CTRACE_EMULATOR_ARGUMENT}"
         -DFIXTURE_DIR=${CTRACE_BLINKY_FIXTURE_DIR}
         -DTARGET=Blinky+STM32H747I-EVAL
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/fixture-blinky
@@ -147,7 +138,6 @@ add_test(
     NAME ctrace-fixture-reset-recovery
     COMMAND ${CMAKE_COMMAND}
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
-        "${CTRACE_EMULATOR_ARGUMENT}"
         -DFIXTURE_DIR=${CTRACE_RESET_FIXTURE_DIR}
         -DTARGET=STM32H7B3I-DK
         -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/fixture-reset-recovery

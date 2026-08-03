@@ -5,11 +5,11 @@
  * Generated with AI
  */
 
-#include "CliParser.hpp"
+#include "CliParser.h"
 
-#include "CliOptions.hpp"
-#include "TraceSelection.hpp"
-#include "TraceStreamId.hpp"
+#include "CliOptions.h"
+#include "TraceSelection.h"
+#include "TraceStreamId.h"
 
 #include <charconv>
 #include <cstddef>
@@ -21,27 +21,26 @@
 #include <system_error>
 #include <vector>
 
-namespace {
-
-bool startsWithDash(const std::string& value)
+static bool startsWithDash(const std::string& value)
 {
-  return !value.empty() && value.front() == '-'; // LCOV_EXCL_BR_LINE: short-circuit permutations are equivalent
+  return !value.empty() && value.front() == '-';
 }
 
-std::uint32_t parseUnsignedInteger(const std::string& value, const std::string& option)
+static std::uint32_t parseUnsignedInteger(const std::string& value, const std::string& option)
 {
   std::uint32_t parsed = 0;
   const auto result = std::from_chars(value.data(), value.data() + value.size(), parsed);
-  if (value.empty() || result.ec != std::errc{} || result.ptr != value.data() + value.size()) { // LCOV_EXCL_BR_LINE
+  if (value.empty() || result.ec != std::errc{} || result.ptr != value.data() + value.size()) {
     throw std::runtime_error(option + " must be an unsigned integer, got " + value);
   }
   return parsed;
 }
 
-std::optional<std::vector<std::string>> consumeMultiValueOption(const std::string& arg, const std::string& option,
-                                                                int& index, int argc, const char* const argv[])
+static std::optional<std::vector<std::string>> consumeMultiValueOption(const std::string& arg,
+                                                                       const std::string& option, int& index, int argc,
+                                                                       const char* const argv[])
 {
-  if (arg != option && arg.rfind(option + "=", 0) != 0) { // LCOV_EXCL_BR_LINE: both accepted forms are tested
+  if (arg != option && arg.rfind(option + "=", 0) != 0) {
     return std::nullopt;
   }
 
@@ -56,11 +55,11 @@ std::optional<std::vector<std::string>> consumeMultiValueOption(const std::strin
     values.push_back(value);
   };
   if (arg == option) {
-    while (index + 1 < argc && !startsWithDash(argv[index + 1])) { // LCOV_EXCL_BR_LINE
+    while (index + 1 < argc && !startsWithDash(argv[index + 1])) {
       append(argv[++index]);
     }
   } else {
-    append(arg.substr(option.size() + 1U)); // LCOV_EXCL_BR_LINE: generated string exception edge
+    append(arg.substr(option.size() + 1U));
   }
   if (values.empty()) {
     throw std::runtime_error("Missing value for " + option);
@@ -68,11 +67,11 @@ std::optional<std::vector<std::string>> consumeMultiValueOption(const std::strin
   return values;
 }
 
-std::vector<std::string> normalizeArgsForCxxopts(int argc, const char* const argv[])
+static std::vector<std::string> normalizeArgsForCxxopts(int argc, const char* const argv[])
 {
   std::vector<std::string> args;
   args.reserve(static_cast<std::size_t>(argc));
-  if (argc > 0) { // LCOV_EXCL_BR_LINE: the C/C++ process contract supplies argv[0]
+  if (argc > 0) {
     args.emplace_back(argv[0]);
   }
 
@@ -97,7 +96,7 @@ std::vector<std::string> normalizeArgsForCxxopts(int argc, const char* const arg
   return args;
 }
 
-std::vector<const char*> asArgv(const std::vector<std::string>& args)
+static std::vector<const char*> asArgv(const std::vector<std::string>& args)
 {
   std::vector<const char*> argv;
   argv.reserve(args.size());
@@ -105,9 +104,9 @@ std::vector<const char*> asArgv(const std::vector<std::string>& args)
     argv.push_back(arg.c_str());
   }
   return argv;
-} // LCOV_EXCL_LINE: GCC attributes the generated vector cleanup to this closing brace
+}
 
-OutputFormat selectedOutputFormat(bool csvRequested, bool ctfRequested, bool allRequested)
+static OutputFormat selectedOutputFormat(bool csvRequested, bool ctfRequested, bool allRequested)
 {
   if (allRequested || (csvRequested && ctfRequested)) {
     return OutputFormat::All;
@@ -121,7 +120,7 @@ OutputFormat selectedOutputFormat(bool csvRequested, bool ctfRequested, bool all
   return OutputFormat::None;
 }
 
-void configureCliParser(cxxopts::Options& parser)
+static void configureCliParser(cxxopts::Options& parser)
 {
   parser.custom_help("<trace-dir> [options]");
   parser.allow_unrecognised_options();
@@ -133,7 +132,7 @@ void configureCliParser(cxxopts::Options& parser)
                    "sel [...]");
 }
 
-CliOptions parseCliArgs(int argc, const char* const argv[])
+static CliOptions parseCliArgs(int argc, const char* const argv[])
 {
   CliOptions options;
   auto normalizedArgs = normalizeArgsForCxxopts(argc, argv);
@@ -180,7 +179,7 @@ CliOptions parseCliArgs(int argc, const char* const argv[])
   return options;
 }
 
-void validateCliOptions(const CliOptions& options)
+static void validateCliOptions(const CliOptions& options)
 {
   if (options.help) {
     return;
@@ -197,8 +196,6 @@ void validateCliOptions(const CliOptions& options)
     throw std::runtime_error("Specify <trace-dir>");
   }
 }
-
-} // namespace
 
 CliOptions CliParser::parse(int argc, const char* const argv[])
 {

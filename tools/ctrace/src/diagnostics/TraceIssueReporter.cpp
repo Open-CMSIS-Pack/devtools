@@ -5,24 +5,22 @@
  * Generated with AI
  */
 
-#include "TraceIssueReporter.hpp"
+#include "TraceIssueReporter.h"
 
-#include "DiagnosticSink.hpp"
-#include "TraceEvent.hpp"
+#include "DiagnosticSink.h"
+#include "TraceEvent.h"
 
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
-namespace {
-
-std::string atRawOffset(const std::string& message, const TraceEvent& event)
+static std::string atRawOffset(const std::string& message, const TraceEvent& event)
 {
   return message + " at raw offset " + std::to_string(event.index);
 }
 
-std::string compactErrorMessage(const TraceEvent& event, const TraceIssueEvent& issue, const std::string& code)
+static std::string compactErrorMessage(const TraceEvent& event, const TraceIssueEvent& issue, const std::string& code)
 {
   if (code == "data-loss") {
     if (issue.rawBytesConsumed.has_value()) {
@@ -52,8 +50,6 @@ std::string compactErrorMessage(const TraceEvent& event, const TraceIssueEvent& 
   }
   return atRawOffset("trace decode error", event);
 }
-
-} // namespace
 
 TraceIssueReporter::TraceIssueReporter(DiagnosticSink& diagnostics) : diagnostics_(diagnostics) {}
 
@@ -103,23 +99,22 @@ void TraceIssueReporter::reportOverflow(const TraceEvent& event)
 
 void TraceIssueReporter::reportError(const TraceEvent& event, const TraceIssueEvent& issue)
 {
-  const auto code = issue.code.empty() ? std::string("decode-error") : issue.code; // LCOV_EXCL_BR_LINE
+  const auto code = issue.code.empty() ? std::string("decode-error") : issue.code;
   if (code == "data-loss") {
     report(issue.severity == TraceIssueSeverity::Warning ? DiagnosticSink::Severity::Warning
                                                          : DiagnosticSink::Severity::Error,
            code,
-           issue.message.empty()
-               ? "Trace data loss detected while the decoder was not synchronized. Raw bytes were " // LCOV_EXCL_BR_LINE
-                 "present, but OpenCSD could not turn them into reliable trace packets until a later "
-                 "sync/recovery point."
-               : issue.message,
+           issue.message.empty() ? "Trace data loss detected while the decoder was not synchronized. Raw bytes were "
+                                   "present, but OpenCSD could not turn them into reliable trace packets until a later "
+                                   "sync/recovery point."
+                                 : issue.message,
            compactErrorMessage(event, issue, code));
     return;
   }
 
   report(issue.severity == TraceIssueSeverity::Warning ? DiagnosticSink::Severity::Warning
                                                        : DiagnosticSink::Severity::Error,
-         code, issue.message.empty() ? "decode error detected" : issue.message, // LCOV_EXCL_BR_LINE
+         code, issue.message.empty() ? "decode error detected" : issue.message,
          compactErrorMessage(event, issue, code));
 }
 

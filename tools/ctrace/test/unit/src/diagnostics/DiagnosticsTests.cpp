@@ -5,9 +5,9 @@
  * Generated with AI
  */
 
-#include "TestSupport.hpp"
+#include "TestSupport.h"
 #include <gtest/gtest.h>
-#include "TraceIssueReporter.hpp"
+#include "TraceIssueReporter.h"
 #include <optional>
 #include <string>
 

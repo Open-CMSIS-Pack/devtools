@@ -5,10 +5,10 @@
  * Generated with AI
  */
 
-#include "CtraceRunMeta.hpp"
-#include "TestPath.hpp"
-#include "TestSupport.hpp"
-#include "YmlTraceRunConfigReader.hpp"
+#include "CtraceRunMeta.h"
+#include "TestPath.h"
+#include "TestSupport.h"
+#include "YmlTraceRunConfigReader.h"
 
 #include <gtest/gtest.h>
 
@@ -19,8 +19,6 @@
 #include <string>
 #include <string_view>
 #include <vector>
-
-namespace {
 
 class TraceRunFixture {
 public:
@@ -58,13 +56,11 @@ private:
   std::filesystem::path path_;
 };
 
-void expectReadError(TraceRunFixture& file, std::string_view yaml, std::string_view expected)
+static void expectReadError(TraceRunFixture& file, std::string_view yaml, std::string_view expected)
 {
   const auto error = file.error(yaml);
   EXPECT_NE(error.find(expected), std::string::npos) << "unexpected result for:\n" << yaml << "\nerror: " << error;
 }
-
-} // namespace
 
 TEST(CtraceUnitTests, TraceRunReaderConsumesOnlyRelevantFields)
 {

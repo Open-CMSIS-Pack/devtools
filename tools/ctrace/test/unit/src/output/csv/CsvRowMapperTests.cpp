@@ -5,11 +5,11 @@
  * Generated with AI
  */
 
-#include "TestSupport.hpp"
+#include "TestSupport.h"
 #include <gtest/gtest.h>
-#include "TraceEvent.hpp"
-#include "TraceSelection.hpp"
-#include "csv/CsvRowMapper.hpp"
+#include "TraceEvent.h"
+#include "TraceSelection.h"
+#include "csv/CsvRowMapper.h"
 #include <array>
 #include <optional>
 #include <string>

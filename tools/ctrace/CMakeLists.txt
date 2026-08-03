@@ -30,7 +30,7 @@ add_subdirectory(src)
 
 add_executable(ctrace
   src/CtraceMain.cpp
-  src/CtraceMain.hpp
+  src/CtraceMain.h
   src/main.cpp
 )
 target_link_libraries(ctrace PRIVATE

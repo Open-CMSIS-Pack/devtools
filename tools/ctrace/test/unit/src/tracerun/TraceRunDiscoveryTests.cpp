@@ -5,10 +5,10 @@
  * Generated with AI
  */
 
-#include "TestPath.hpp"
-#include "TestSupport.hpp"
+#include "TestPath.h"
+#include "TestSupport.h"
 #include <gtest/gtest.h>
-#include "TraceRunDiscovery.hpp"
+#include "TraceRunDiscovery.h"
 #include <filesystem>
 #include <optional>
 #include <stdexcept>

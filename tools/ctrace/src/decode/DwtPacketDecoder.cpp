@@ -5,9 +5,9 @@
  * Generated with AI
  */
 
-#include "DwtPacketDecoder.hpp"
+#include "DwtPacketDecoder.h"
 
-#include "TraceEvent.hpp"
+#include "TraceEvent.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -16,8 +16,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-namespace {
 
 enum class DwtPacketSource : std::uint8_t {
   EventCounter = 0U,
@@ -52,8 +50,6 @@ constexpr std::uint32_t kExceptionActionShift = 12U;
 
 constexpr std::uint8_t kArmv7MFullPcBytes = 4U;
 constexpr std::uint8_t kArmv7MAddressOffsetBytes = 2U;
-
-} // namespace
 
 std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload)
 {
@@ -117,7 +113,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
 
   output = flush(payload.quality, payload.tcyc);
   return output;
-} // LCOV_EXCL_LINE: GCC attributes the generated vector cleanup to this closing brace
+}
 
 std::vector<TraceEvent> DwtPacketDecoder::flush(const TraceQuality& quality, std::uint64_t tcyc)
 {
@@ -213,15 +209,12 @@ void DwtPacketDecoder::sendDataTraceEvent(std::uint32_t comparator, const Pendin
 
   // The individual short-circuit permutations are an implementation detail;
   // repeated and complementary fragments are covered as complete behaviors.
-  // LCOV_EXCL_BR_START
   const auto repeatsFragmentKind = (pending->hasPc && event.hasPc) ||
                                    (pending->hasAddressLo16 && event.hasAddressLo16) ||
                                    (pending->hasValue && event.hasValue);
-  // LCOV_EXCL_BR_STOP
   if (!repeatsFragmentKind) {
     pending->index = event.index;
     pending->traceBusId = event.traceBusId;
-    // LCOV_EXCL_BR_START
     pending->pc = event.hasPc ? event.pc : pending->pc;
     pending->addressLo16 = event.hasAddressLo16 ? event.addressLo16 : pending->addressLo16;
     pending->value = event.hasValue ? event.value : pending->value;
@@ -232,7 +225,6 @@ void DwtPacketDecoder::sendDataTraceEvent(std::uint32_t comparator, const Pendin
     pending->hasValue = pending->hasValue || event.hasValue;
     pending->quality.overflow = pending->quality.overflow || event.quality.overflow;
     pending->quality.timestampReliable = pending->quality.timestampReliable && event.quality.timestampReliable;
-    // LCOV_EXCL_BR_STOP
     pending->quality.overflowCount = std::max(pending->quality.overflowCount, event.quality.overflowCount);
     if (pending->hasValue) {
       flushPending(comparator, qualityForPendingFlush(*pending, quality), tcyc, output);
@@ -283,11 +275,9 @@ TraceQuality DwtPacketDecoder::qualityForPendingFlush(const PendingDataTrace& pe
                                                       const TraceQuality& current) const
 {
   TraceQuality quality = current;
-  // LCOV_EXCL_BR_START: status merge behavior is tested; boolean permutations are equivalent
   quality.overflow = quality.overflow || pending.quality.overflow;
   quality.timestampReliable =
       quality.timestampReliable && !pending.quality.overflow && pending.quality.timestampReliable;
-  // LCOV_EXCL_BR_STOP
   quality.overflowCount = std::max(quality.overflowCount, pending.quality.overflowCount);
   return quality;
 }

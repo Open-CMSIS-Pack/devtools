@@ -5,10 +5,10 @@
  * Generated with AI
  */
 
-#include "DecodePipeline.hpp"
+#include "DecodePipeline.h"
 
-#include "CortexMStreamDecoder.hpp"
-#include "TraceEvent.hpp"
+#include "CortexMStreamDecoder.h"
+#include "TraceEvent.h"
 
 #include <cstdint>
 #include <limits>

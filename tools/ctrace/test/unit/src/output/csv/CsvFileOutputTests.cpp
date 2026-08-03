@@ -5,12 +5,12 @@
  * Generated with AI
  */
 
-#include "TestPath.hpp"
-#include "TestSupport.hpp"
+#include "TestPath.h"
+#include "TestSupport.h"
 #include <gtest/gtest.h>
-#include "TraceEvent.hpp"
-#include "TraceSelection.hpp"
-#include "csv/CsvFileOutput.hpp"
+#include "TraceEvent.h"
+#include "TraceSelection.h"
+#include "csv/CsvFileOutput.h"
 #include <cstdint>
 #include <filesystem>
 #include <system_error>

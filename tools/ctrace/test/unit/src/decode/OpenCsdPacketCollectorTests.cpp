@@ -5,15 +5,15 @@
  * Generated with AI
  */
 
-#include "OpenCsdTestSupport.hpp"
-#include "TestSupport.hpp"
+#include "OpenCsdTestSupport.h"
+#include "TestSupport.h"
 
 #include <gtest/gtest.h>
 
-#include "csv/CsvRowMapper.hpp"
-#include "OpenCsdPacketCollector.hpp"
-#include "OpenCsdTraceElement.hpp"
-#include "TraceEvent.hpp"
+#include "csv/CsvRowMapper.h"
+#include "OpenCsdPacketCollector.h"
+#include "OpenCsdTraceElement.h"
+#include "TraceEvent.h"
 #include "common/trc_gen_elem.h"
 #include "opencsd/itm/trc_pkt_elem_itm.h"
 #include "opencsd/itm/trc_pkt_types_itm.h"
@@ -26,8 +26,6 @@
 #include <stdexcept>
 #include <utility>
 
-namespace {
-
 using OpenCsdTestSupport::CollectingOpenCsdElementSink;
 
 class ThrowingTraceElementSink final : public CollectingOpenCsdElementSink {
@@ -39,8 +37,8 @@ public:
   }
 };
 
-OcsdTraceElement itmElement(swt_itm_type type, std::uint8_t source = 0U, std::uint8_t size = 0U,
-                            std::uint32_t value = 0U, bool overflow = false)
+static OcsdTraceElement itmElement(swt_itm_type type, std::uint8_t source = 0U, std::uint8_t size = 0U,
+                                   std::uint32_t value = 0U, bool overflow = false)
 {
   OcsdTraceElement element;
   element.setType(OCSD_GEN_TRC_ELEM_ITMTRACE);
@@ -53,8 +51,6 @@ OcsdTraceElement itmElement(swt_itm_type type, std::uint8_t source = 0U, std::ui
   element.setSWT_ITMInfo(info);
   return element;
 }
-
-} // namespace
 
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorUsesReconstructedGlobalTimestamp)
 {

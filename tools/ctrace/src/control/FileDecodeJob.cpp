@@ -5,21 +5,21 @@
  * Generated with AI
  */
 
-#include "FileDecodeJob.hpp"
+#include "FileDecodeJob.h"
 
-#include "CliOptions.hpp"
-#include "csv/CsvFileOutput.hpp"
-#include "ctf/CtfBundleOutput.hpp"
-#include "CortexMStreamDecoder.hpp"
-#include "DecodeConsumers.hpp"
-#include "DecodePipeline.hpp"
-#include "DiagnosticSink.hpp"
-#include "OpenCsdItmDecoder.hpp"
-#include "OutputRequirements.hpp"
-#include "TraceOutput.hpp"
-#include "TraceOutputConfig.hpp"
-#include "TraceRunConfig.hpp"
-#include "CtraceRunMeta.hpp"
+#include "CliOptions.h"
+#include "csv/CsvFileOutput.h"
+#include "ctf/CtfBundleOutput.h"
+#include "CortexMStreamDecoder.h"
+#include "DecodeConsumers.h"
+#include "DecodePipeline.h"
+#include "DiagnosticSink.h"
+#include "OpenCsdItmDecoder.h"
+#include "OutputRequirements.h"
+#include "TraceOutput.h"
+#include "TraceOutputConfig.h"
+#include "TraceRunConfig.h"
+#include "CtraceRunMeta.h"
 
 #include <chrono>
 #include <cstddef>
@@ -34,8 +34,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-namespace {
 
 class RawFileReader final {
 public:
@@ -54,14 +52,14 @@ public:
 
   ReadResult read()
   {
-    if (eof_ || !stream_.is_open()) { // LCOV_EXCL_BR_LINE: read() is not called again after EOF
+    if (eof_ || !stream_.is_open()) {
       return {{}, true};
     }
 
     stream_.read(reinterpret_cast<char*>(buffer_.data()), static_cast<std::streamsize>(buffer_.size()));
     const auto readBytes = stream_.gcount();
     if (readBytes > 0) {
-      if (stream_.eof()) { // LCOV_EXCL_BR_LINE: exact-buffer boundaries do not change decoding behavior
+      if (stream_.eof()) {
         eof_ = true;
         stream_.close();
       }
@@ -83,12 +81,11 @@ private:
   bool eof_ = false;
 };
 
-std::string decodeSummary(const DecodeResult& decode, std::chrono::steady_clock::duration elapsed)
+static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady_clock::duration elapsed)
 {
   const auto seconds = std::chrono::duration<double>(elapsed).count();
   const auto mebibytes = static_cast<double>(decode.bytesIn) / (1024.0 * 1024.0);
-  const auto mebibytesPerSecond =
-      seconds > 0.0 ? mebibytes / seconds : 0.0; // LCOV_EXCL_BR_LINE: a measured interval cannot be negative
+  const auto mebibytesPerSecond = seconds > 0.0 ? mebibytes / seconds : 0.0;
 
   std::ostringstream out;
   out << "decoded " << decode.packetsOut << " packets from " << decode.bytesIn << " bytes in " << std::fixed
@@ -96,7 +93,7 @@ std::string decodeSummary(const DecodeResult& decode, std::chrono::steady_clock:
   return out.str();
 }
 
-ItmTimestampPrescalers timestampPrescalers(const CtraceRunMeta& ctraceRunMeta)
+static ItmTimestampPrescalers timestampPrescalers(const CtraceRunMeta& ctraceRunMeta)
 {
   auto fallback = ctraceRunMeta.timestampPrescaler();
   if (!fallback.has_value() && !ctraceRunMeta.hasDistinctProcessorPrescalers()) {
@@ -105,7 +102,7 @@ ItmTimestampPrescalers timestampPrescalers(const CtraceRunMeta& ctraceRunMeta)
   return {fallback, ctraceRunMeta.timestampPrescalersByTraceBusId()};
 }
 
-TraceOutputRequest outputRequest(const CliOptions& options)
+static TraceOutputRequest outputRequest(const CliOptions& options)
 {
   return {
       options.outputFormat == OutputFormat::Csv || options.outputFormat == OutputFormat::All,
@@ -114,13 +111,12 @@ TraceOutputRequest outputRequest(const CliOptions& options)
   };
 }
 
-std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const TraceOutputPlan& outputPlan,
-                                                                  DiagnosticSink& diagnostics)
+static std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const TraceOutputPlan& outputPlan,
+                                                                         DiagnosticSink& diagnostics)
 {
   std::vector<std::unique_ptr<TraceOutput>> outputs;
   if (outputPlan.ctf.has_value()) {
     outputs.push_back(std::make_unique<CtfBundleOutput>(*outputPlan.ctf, &diagnostics));
-    // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
     diagnostics.report({
         DiagnosticSink::Severity::Info,
         DiagnosticSink::Category::Output,
@@ -128,15 +124,12 @@ std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const TraceOut
         "configured Trace Compass XML",
         {{"path", outputPlan.ctf->traceCompassXmlPath.string()}},
     });
-    // LCOV_EXCL_BR_STOP
   }
   if (outputPlan.csv.has_value()) {
     outputs.push_back(std::make_unique<CsvFileOutput>(outputPlan.csv->outputPath, outputPlan.csv->selection));
   }
   return outputs;
-} // LCOV_EXCL_LINE: GCC attributes the generated vector cleanup to this closing brace
-
-} // namespace
+}
 
 FileDecodeJob::FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
                              CtraceRunMeta ctraceRunMeta)
@@ -159,7 +152,6 @@ void FileDecodeJob::run()
   if (outputPlan.hasRequestedOutputs() && !outputPlan.hasEnabledOutputs()) {
     return;
   }
-  // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
   diagnostics_.report({
       DiagnosticSink::Severity::Info,
       DiagnosticSink::Category::Input,
@@ -171,13 +163,11 @@ void FileDecodeJob::run()
           {"sources", std::to_string(ctraceRunMeta_.sources().size())},
       },
   });
-  // LCOV_EXCL_BR_STOP
   auto outputs = createConfiguredOutputs(outputPlan, diagnostics_);
   DecodeConsumers consumers(std::move(outputs), diagnostics_, ctraceRunMeta_.itmEnableMask(),
                             ctraceRunMeta_.itmEnableMasksByTraceBusId());
 
   if (prescalers.fallback.has_value()) {
-    // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
     diagnostics_.report({
         DiagnosticSink::Severity::Info,
         DiagnosticSink::Category::Input,
@@ -185,9 +175,7 @@ void FileDecodeJob::run()
         "using timestamp prescaler",
         {{"value", std::to_string(*prescalers.fallback)}},
     });
-    // LCOV_EXCL_BR_STOP
   } else {
-    // LCOV_EXCL_BR_START: generated aggregate-initializer exception edges
     diagnostics_.report({
         DiagnosticSink::Severity::Info,
         DiagnosticSink::Category::Input,
@@ -195,7 +183,6 @@ void FileDecodeJob::run()
         "using Trace-Bus-ID-specific timestamp prescalers",
         {{"traceBusIds", std::to_string(prescalers.byTraceBusId.size())}},
     });
-    // LCOV_EXCL_BR_STOP
   }
   const auto decodeStart = std::chrono::steady_clock::now();
   DecodeResult decode;

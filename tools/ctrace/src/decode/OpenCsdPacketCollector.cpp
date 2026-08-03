@@ -5,11 +5,11 @@
  * Generated with AI
  */
 
-#include "OpenCsdPacketCollector.hpp"
+#include "OpenCsdPacketCollector.h"
 
-#include "TraceEvent.hpp"
-#include "TraceStreamId.hpp"
-#include "OpenCsdTraceElement.hpp"
+#include "TraceEvent.h"
+#include "TraceStreamId.h"
+#include "OpenCsdTraceElement.h"
 #include "common/trc_gen_elem.h"
 #include "opencsd/itm/trc_pkt_elem_itm.h"
 #include "opencsd/itm/trc_pkt_types_itm.h"
@@ -45,7 +45,7 @@ void OpenCsdPacketCollector::commitTransactionBefore(std::uint64_t sourceOffset)
 {
   for (auto& element : transactionElements_) {
     const auto elementOffset = element.sourceIndex;
-    if (elementOffset < sourceOffset && element.kind != OpenCsdTraceElement::Kind::Error) { // LCOV_EXCL_BR_LINE
+    if (elementOffset < sourceOffset && element.kind != OpenCsdTraceElement::Kind::Error) {
       appendCommitted(std::move(element));
     }
   }
@@ -79,7 +79,7 @@ std::optional<std::uint64_t> OpenCsdPacketCollector::transactionFirstSourceOffse
   std::optional<std::uint64_t> firstOffset;
   for (const auto& element : transactionElements_) {
     const auto offset = element.sourceIndex;
-    if (!firstOffset.has_value() || offset < *firstOffset) { // LCOV_EXCL_BR_LINE: ordering is verified as one behavior
+    if (!firstOffset.has_value() || offset < *firstOffset) {
       firstOffset = offset;
     }
   }

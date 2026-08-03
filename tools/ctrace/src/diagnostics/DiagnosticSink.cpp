@@ -5,7 +5,7 @@
  * Generated with AI
  */
 
-#include "DiagnosticSink.hpp"
+#include "DiagnosticSink.h"
 
 #include <cstdint>
 #include <iostream>

@@ -5,11 +5,11 @@
  * Generated with AI
  */
 
-#include "TestSupport.hpp"
-#include "TraceRunTestSupport.hpp"
+#include "TestSupport.h"
+#include "TraceRunTestSupport.h"
 #include <gtest/gtest.h>
-#include "CtraceRunMeta.hpp"
-#include "TraceRunConfig.hpp"
+#include "CtraceRunMeta.h"
+#include "TraceRunConfig.h"
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
@@ -17,17 +17,13 @@
 #include <string_view>
 #include <vector>
 
-namespace {
-
 using TraceRunTestSupport::makeReference;
 using TraceRunTestSupport::makeTimestampSetup;
 
-bool metaRejects(const TraceRunConfig& config, std::string_view message)
+static bool metaRejects(const TraceRunConfig& config, std::string_view message)
 {
   return throwsWithMessage([&config] { (void)CtraceRunMeta::fromConfig(config); }, message);
 }
-
-} // namespace
 
 TEST(CtraceUnitTests, testTimestampPrescalerMetadataDefaults)
 {

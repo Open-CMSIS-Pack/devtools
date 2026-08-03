@@ -5,13 +5,13 @@
  * Generated with AI
  */
 
-#include "OpenCsdItmDecoder.hpp"
+#include "OpenCsdItmDecoder.h"
 
-#include "TraceEvent.hpp"
-#include "OpenCsdErrorController.hpp"
-#include "OpenCsdPacketCollector.hpp"
-#include "OpenCsdItmSession.hpp"
-#include "OpenCsdTraceElement.hpp"
+#include "TraceEvent.h"
+#include "OpenCsdErrorController.h"
+#include "OpenCsdPacketCollector.h"
+#include "OpenCsdItmSession.h"
+#include "OpenCsdTraceElement.h"
 #include "opencsd/ocsd_if_types.h"
 
 #include <algorithm>
@@ -98,10 +98,9 @@ private:
       item.error = error;
       const auto sourceOffset = OpenCsdErrorController::errorOffset(item, baseOffset);
       const auto isError = error.severity == OCSD_ERR_SEV_ERROR;
-      collector_.appendDecodeError(static_cast<ocsd_trc_index_t>(sourceOffset), // LCOV_EXCL_BR_LINE
+      collector_.appendDecodeError(static_cast<ocsd_trc_index_t>(sourceOffset),
                                    OpenCsdErrorController::describeSummary(item),
-                                   OpenCsdErrorController::issueCode(item),
-                                   nextDiscontinuity && isError, // LCOV_EXCL_BR_LINE
+                                   OpenCsdErrorController::issueCode(item), nextDiscontinuity && isError,
                                    isError ? TraceIssueSeverity::Error : TraceIssueSeverity::Warning);
       if (isError) {
         emittedError = true;

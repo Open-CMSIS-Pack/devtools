@@ -5,17 +5,17 @@
  * Generated with AI
  */
 
-#include "OpenCsdSessionTestSupport.hpp"
-#include "TestPath.hpp"
-#include "TestSupport.hpp"
-#include "TraceRunTestSupport.hpp"
+#include "OpenCsdSessionTestSupport.h"
+#include "TestPath.h"
+#include "TestSupport.h"
+#include "TraceRunTestSupport.h"
 #include <gtest/gtest.h>
-#include "CliOptions.hpp"
-#include "CtraceRunMeta.hpp"
-#include "FileDecodeJob.hpp"
-#include "TraceDirectoryJob.hpp"
-#include "TraceRunConfig.hpp"
-#include "TraceRunConfigReader.hpp"
+#include "CliOptions.h"
+#include "CtraceRunMeta.h"
+#include "FileDecodeJob.h"
+#include "TraceDirectoryJob.h"
+#include "TraceRunConfig.h"
+#include "TraceRunConfigReader.h"
 #include <cstdint>
 #include <filesystem>
 #include <initializer_list>
@@ -27,7 +27,7 @@
 #include <utility>
 #include <vector>
 
-TraceRunConfig defaultTraceRunConfig()
+static TraceRunConfig defaultTraceRunConfig()
 {
   TraceRunConfig config;
   config.setups.push_back(TraceRunTestSupport::makeTimestampSetup(std::nullopt, 100000000U));
@@ -59,7 +59,8 @@ private:
   bool fail_ = false;
 };
 
-void writeTraceInputs(const std::filesystem::path& traceDirectory, std::initializer_list<std::string_view> targetNames)
+static void writeTraceInputs(const std::filesystem::path& traceDirectory,
+                             std::initializer_list<std::string_view> targetNames)
 {
   for (const auto targetName : targetNames) {
     const auto target = std::string(targetName);
