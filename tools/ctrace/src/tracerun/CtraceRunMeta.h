@@ -17,6 +17,7 @@
 
 struct TraceRunConfig;
 
+/** @brief Stores normalized metadata for one trace source route. */
 struct CtraceRunSourceMeta {
   std::string type;
   std::optional<std::string> processorName;
@@ -30,26 +31,40 @@ struct CtraceRunSourceMeta {
   std::optional<std::string> symbolSizeError;
 };
 
+/** @brief Stores normalized timestamp metadata for one processor stream. */
 struct CtraceRunTimestampMeta {
   std::optional<std::string> processorName;
   std::optional<std::uint64_t> clockHz;
   std::optional<std::string> clockError;
 };
 
+/** @brief Provides validated trace-run metadata consumed by decoding and output. */
 class CtraceRunMeta {
 public:
+  /** @brief Normalizes a parsed trace-run configuration. */
   static CtraceRunMeta fromConfig(const TraceRunConfig& config);
 
+  /** @brief Returns the source trace-run configuration path. */
   const std::string& configPath() const;
+  /** @brief Returns the unambiguous timestamp clock, if available. */
   const std::optional<std::uint64_t>& timestampClockHz() const;
+  /** @brief Returns timestamp metadata indexed by Trace Bus ID. */
   const std::map<std::uint8_t, CtraceRunTimestampMeta>& timestampsByTraceBusId() const;
+  /** @brief Returns the unambiguous ITM timestamp prescaler, if available. */
   const std::optional<std::uint32_t>& timestampPrescaler() const;
+  /** @brief Returns timestamp prescalers indexed by Trace Bus ID. */
   const std::map<std::uint8_t, std::uint32_t>& timestampPrescalersByTraceBusId() const;
+  /** @brief Returns the unambiguous ITM stimulus enable mask, if available. */
   const std::optional<std::uint32_t>& itmEnableMask() const;
+  /** @brief Returns ITM stimulus enable masks indexed by Trace Bus ID. */
   const std::map<std::uint8_t, std::uint32_t>& itmEnableMasksByTraceBusId() const;
+  /** @brief Returns clock validation errors retained for output planning. */
   const std::vector<std::string>& timestampClockErrors() const;
+  /** @brief Reports whether processor-specific timestamp prescalers differ. */
   bool hasDistinctProcessorPrescalers() const;
+  /** @brief Returns the number of processors represented by the configuration. */
   std::size_t processorCount() const;
+  /** @brief Returns all normalized source routes. */
   const std::vector<CtraceRunSourceMeta>& sources() const;
 
 private:

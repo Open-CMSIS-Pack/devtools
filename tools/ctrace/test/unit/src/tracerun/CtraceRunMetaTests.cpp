@@ -50,6 +50,7 @@ TEST(CtraceUnitTests, testTimestampPrescalerMetadataDefaults)
 
 TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidReferences)
 {
+  /** @brief Describes one invalid reference and its expected diagnostic. */
   struct Case {
     TraceRunReference reference;
     const char* message;

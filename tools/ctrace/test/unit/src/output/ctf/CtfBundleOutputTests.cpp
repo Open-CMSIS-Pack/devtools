@@ -58,10 +58,13 @@ static void requireCompleteCtfBundle(const std::filesystem::path& ctfDirectory, 
           message);
 }
 
+/** @brief Owns the temporary directory used by one CTF output test. */
 class TemporaryCtfOutput {
 public:
+  /** @brief Creates a temporary CTF output path. */
   explicit TemporaryCtfOutput(const std::string& name) : root_(name), outputDirectory_(root_.path() / "output.ctf") {}
 
+  /** @brief Returns the temporary output directory. */
   const std::filesystem::path& outputDirectory() const
   {
     return outputDirectory_;
@@ -629,3 +632,74 @@ TEST(CtraceUnitTests, testCtfBundleOutputCleansUpAfterTraceCompassStartFailure)
   EXPECT_THROW(output.start(), std::runtime_error);
   EXPECT_FALSE(std::filesystem::exists(outputDirectory));
 }
+
+#if defined(__linux__)
+TEST(CtraceUnitTests, testCtfBundleOutputReportsPseudoFilesystemStartFailure)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-pseudo-filesystem-test");
+  const auto outputDirectory = temporaryPath.path() / "output.ctf";
+  CtfBundleOutput output(CtfOutputConfig(outputDirectory, "/proc/ctrace-coverage-output.xml", 1000000U, {}, {}));
+  EXPECT_THROW(output.start(), std::runtime_error);
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory));
+}
+#endif
+
+#if !defined(_WIN32)
+TEST(CtraceUnitTests, testCtfBundleOutputReportsPermissionFailures)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-permission-failure-test");
+  const auto& root = temporaryPath.createDirectory();
+
+  const auto destructorCtf = root / "destructor.ctf";
+  const auto destructorXml = root / "destructor.xml";
+  {
+    CtfBundleOutput output(CtfOutputConfig(destructorCtf, destructorXml, 1000000U, {}, {}));
+    output.start();
+    std::filesystem::permissions(root, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+  }
+  std::filesystem::permissions(root, std::filesystem::perms::owner_all);
+  EXPECT_TRUE(std::filesystem::exists(destructorCtf));
+  EXPECT_TRUE(std::filesystem::exists(destructorXml));
+  std::filesystem::remove_all(destructorCtf);
+  std::filesystem::remove(destructorXml);
+
+  const auto existingCtf = root / "existing.ctf";
+  const auto existingXml = root / "existing.xml";
+  writeTestFile(existingCtf / "marker", "existing");
+  std::filesystem::permissions(root, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+  CtfBundleOutput removeDirectoryFailure(CtfOutputConfig(existingCtf, existingXml, 1000000U, {}, {}));
+  EXPECT_THROW(removeDirectoryFailure.start(), std::runtime_error);
+  std::filesystem::permissions(root, std::filesystem::perms::owner_all);
+  std::filesystem::remove_all(existingCtf);
+
+  const auto writableParent = root / "writable";
+  const auto blockedParent = root / "blocked";
+  std::filesystem::create_directories(writableParent);
+  std::filesystem::create_directories(blockedParent);
+  const auto blockedXml = blockedParent / "existing.xml";
+  writeTestFile(blockedXml, "existing");
+  std::filesystem::permissions(blockedParent,
+                               std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+  CtfBundleOutput removeFileFailure(
+      CtfOutputConfig(writableParent / "output.ctf", blockedXml, 1000000U, {}, {}));
+  EXPECT_THROW(removeFileFailure.start(), std::runtime_error);
+  std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_all);
+
+  const auto cleanupCtf = writableParent / "cleanup.ctf";
+  std::filesystem::permissions(blockedParent,
+                               std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+  CtfBundleOutput startCleanupFailure(
+      CtfOutputConfig(cleanupCtf, blockedParent / "new.xml", 1000000U, {}, {}));
+  EXPECT_THROW(startCleanupFailure.start(), std::runtime_error);
+  EXPECT_FALSE(std::filesystem::exists(cleanupCtf));
+  std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_all);
+
+  const auto blockedCtf = blockedParent / "new.ctf";
+  std::filesystem::permissions(blockedParent,
+                               std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+  CtfBundleOutput createDirectoryFailure(
+      CtfOutputConfig(blockedCtf, writableParent / "new.xml", 1000000U, {}, {}));
+  EXPECT_THROW(createDirectoryFailure.start(), std::runtime_error);
+  std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_all);
+}
+#endif

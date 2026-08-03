@@ -18,21 +18,30 @@
 
 class CortexMPostDecoder;
 
+/** @brief Stores fallback and stream-specific ITM timestamp prescalers. */
 struct ItmTimestampPrescalers {
   std::optional<std::uint32_t> fallback;
   std::map<std::uint8_t, std::uint32_t> byTraceBusId;
 };
 
+/** @brief Routes OpenCSD elements to per-stream Cortex-M post-decoders. */
 class CortexMStreamDecoder final : public OpenCsdTraceElementSink {
 public:
+  /** @brief Creates a stream router with timestamp scaling configuration. */
   CortexMStreamDecoder(ItmTimestampPrescalers prescalers, TraceEventSink& eventSink);
+  /** @brief Destroys all per-stream post-decoders. */
   ~CortexMStreamDecoder();
 
+  /** @brief Disables copying because stream decoders own unique state. */
   CortexMStreamDecoder(const CortexMStreamDecoder&) = delete;
+  /** @brief Disables copy assignment because stream decoders own unique state. */
   CortexMStreamDecoder& operator=(const CortexMStreamDecoder&) = delete;
 
+  /** @brief Routes one element to its Trace Bus ID stream. */
   void append(OpenCsdTraceElement element) override;
+  /** @brief Flushes all active stream decoders. */
   void finish();
+  /** @brief Returns the combined event count of all streams. */
   std::uint64_t eventCount() const;
 
 private:

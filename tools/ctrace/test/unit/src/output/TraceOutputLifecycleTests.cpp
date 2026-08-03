@@ -18,8 +18,10 @@
 using TraceOutputTestSupport::TestTraceOutput;
 using TraceOutputTestSupport::TestTraceOutputFailure;
 
+/** @brief Simulates failure while recording an output diagnostic. */
 class ThrowingDiagnosticSink final : public DiagnosticSink {
 protected:
+  /** @brief Throws the synthetic diagnostic failure. */
   void write(const Event&) override
   {
     throw std::runtime_error("synthetic diagnostic failure");

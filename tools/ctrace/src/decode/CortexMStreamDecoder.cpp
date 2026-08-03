@@ -9,23 +9,14 @@
 
 #include "CortexMPostDecoder.h"
 #include "OpenCsdTraceElement.h"
+#include "SaturatingArithmetic.h"
 #include "TraceEvent.h"
 
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
-
-static std::uint64_t saturatingMultiply(std::uint64_t value, std::uint32_t factor)
-{
-  if (factor == 0U) {
-    throw std::invalid_argument("ITM timestamp prescaler must not be zero");
-  }
-  const auto maximum = std::numeric_limits<std::uint64_t>::max();
-  return value > maximum / factor ? maximum : value * factor;
-}
 
 CortexMStreamDecoder::CortexMStreamDecoder(ItmTimestampPrescalers prescalers, TraceEventSink& eventSink)
   : prescalers_(std::move(prescalers)), eventSink_(eventSink)
@@ -37,7 +28,7 @@ CortexMStreamDecoder::~CortexMStreamDecoder() = default;
 void CortexMStreamDecoder::append(OpenCsdTraceElement element)
 {
   if (element.kind == OpenCsdTraceElement::Kind::LocalTimestamp && element.tcyc.has_value()) {
-    element.tcyc = saturatingMultiply(*element.tcyc, prescaler(element.traceBusId));
+    element.tcyc = SaturatingArithmetic::multiply(*element.tcyc, prescaler(element.traceBusId));
   }
   decoder(element.traceBusId).append(std::move(element));
 }

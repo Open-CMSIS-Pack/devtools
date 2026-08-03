@@ -13,8 +13,10 @@
 
 #include <string>
 
+/** @brief Reads trace-run configuration files encoded as YAML. */
 class YmlTraceRunConfigReader final : public TraceRunConfigReader {
 public:
+  /** @brief Reads and validates the ctrace-relevant YAML fields. */
   TraceRunConfig read(const std::string& path) const override;
 };
 

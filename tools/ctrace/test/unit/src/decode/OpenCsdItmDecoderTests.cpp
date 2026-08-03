@@ -7,6 +7,7 @@
 
 #include "OpenCsdTestSupport.h"
 #include "OpenCsdSessionTestSupport.h"
+#include "TestSupport.h"
 
 #include <gtest/gtest.h>
 
@@ -19,6 +20,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 using OpenCsdSessionTestSupport::ScriptedDecoderHarness;
 using OpenCsdTestSupport::CollectingOpenCsdElementSink;
@@ -239,4 +241,17 @@ TEST(CtraceUnitTests, testOpenCsdItmSessionAcceptsEmptyDataPathOperations)
   EXPECT_NE(errors.decide(session.reset()).action, OpenCsdErrorController::Action::Abort);
   EXPECT_NE(errors.decide(session.flush()).action, OpenCsdErrorController::Action::Abort);
   EXPECT_NE(errors.decide(session.endOfTrace()).action, OpenCsdErrorController::Action::Abort);
+}
+
+TEST(CtraceUnitTests, testOpenCsdSessionValidationRejectsInvalidApiResults)
+{
+  const std::uint32_t object = 1U;
+  EXPECT_NO_THROW(OpenCsdSessionValidation::requireObject(&object, "valid object"));
+  EXPECT_THROW(OpenCsdSessionValidation::requireObject(nullptr, "missing object"), OpenCsdItmSessionError);
+
+  EXPECT_NO_THROW(OpenCsdSessionValidation::requireSuccess(OCSD_OK, "successful call"));
+  const auto message = captureExceptionMessage<OpenCsdItmSessionError>(
+      [] { OpenCsdSessionValidation::requireSuccess(OCSD_ERR_MEM, "decoder setup failed"); });
+  ASSERT_TRUE(message.has_value());
+  EXPECT_NE(message->find("decoder setup failed (OCSD_ERR_MEM)"), std::string::npos);
 }

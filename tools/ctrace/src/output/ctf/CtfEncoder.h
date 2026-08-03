@@ -23,6 +23,7 @@
 
 class DiagnosticSink;
 
+/** @brief Stores the clock, selection, sources, and diagnostics for CTF encoding. */
 struct CtfEncoderConfig {
   std::uint64_t coreClockHz = 0;
   TraceSelection selection;
@@ -30,20 +31,30 @@ struct CtfEncoderConfig {
   DiagnosticSink* diagnostics = nullptr;
 };
 
+/** @brief Encodes semantic trace events into one CTF stream and metadata set. */
 class CtfEncoder final {
 public:
+  /** @brief Creates an encoder from validated CTF configuration. */
   explicit CtfEncoder(CtfEncoderConfig config);
+  /** @brief Aborts active output before destruction. */
   ~CtfEncoder();
 
+  /** @brief Disables copying because the encoder owns stream state. */
   CtfEncoder(const CtfEncoder&) = delete;
+  /** @brief Disables copy assignment because the encoder owns stream state. */
   CtfEncoder& operator=(const CtfEncoder&) = delete;
 
+  /** @brief Starts writing into a prepared CTF directory. */
   void start(const std::filesystem::path& outputDirectory);
+  /** @brief Completes stream data and writes final metadata. */
   void stop();
+  /** @brief Aborts stream output without throwing. */
   void abort() noexcept;
+  /** @brief Encodes one selected semantic event. */
   void writeEvent(const TraceEvent& event);
 
 private:
+  /** @brief Tracks timestamp and trace-quality state for one output stream. */
   struct StreamState {
     std::uint64_t eventTimestamp = 0;
     std::uint64_t overflowCount = 0;

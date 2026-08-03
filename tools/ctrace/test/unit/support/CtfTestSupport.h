@@ -28,6 +28,7 @@ inline constexpr std::size_t kCtfEventHeaderSize = 13U;
 inline constexpr std::size_t kCtfEventOffset = kCtfPacketHeaderSize + kCtfPacketContextSize;
 inline constexpr std::size_t kCtfPacketSize = 65536U;
 
+/** @brief Stores one CTF event parsed by a unit test. */
 struct CtfRecord {
   std::uint32_t id;
   std::uint64_t timestamp;

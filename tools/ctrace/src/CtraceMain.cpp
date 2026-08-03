@@ -15,6 +15,8 @@
 
 #include <exception>
 #include <iostream>
+#include <string>
+#include <vector>
 
 static void reportFailure(DiagnosticSink& diagnostics, DiagnosticSink::Category category, const char* code,
                           const std::exception& error)
@@ -27,16 +29,16 @@ static void reportFailure(DiagnosticSink& diagnostics, DiagnosticSink::Category 
   });
 }
 
-int CtraceMain(int argc, const char* const argv[])
+int CtraceMain(const std::vector<std::string>& arguments)
 {
   StderrDiagnosticSink diagnostics;
   CliOptions options;
   try {
-    if (argc <= 1) {
+    if (arguments.size() <= 1U) {
       std::cout << CliParser::helpString();
       return 0;
     }
-    options = CliParser::parse(argc, argv);
+    options = CliParser::parse(arguments);
     if (options.help) {
       std::cout << CliParser::helpString();
       return 0;

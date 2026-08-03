@@ -145,7 +145,7 @@ static std::string_view tsdlValueType(const CtfSchema::ValueVariant& variant)
   return variant.byteSize == 1U ? "uint8_t" : variant.byteSize == 2U ? "uint16_t" : "uint32_t";
 }
 
-static std::string ctfValueFields(std::string_view prefix)
+static std::string ctfValueFields(const std::string_view& prefix)
 {
   std::ostringstream out;
   out << "        enum : uint8_t { ";
@@ -165,6 +165,7 @@ static std::string ctfValueFields(std::string_view prefix)
   return out.str();
 }
 
+/** @brief Stores source labels and exception lanes emitted into CTF metadata. */
 struct MetadataSymbols {
   std::map<std::uint32_t, std::string> dwtValueTypes;
   std::map<std::uint32_t, std::string> itmNames;

@@ -16,6 +16,7 @@
 #include <optional>
 #include <vector>
 
+/** @brief Stores a decoded DWT hardware payload and its trace metadata. */
 struct DwtPayloadPacket {
   std::uint64_t index = 0;
   std::uint8_t traceBusId = 0U;
@@ -26,15 +27,20 @@ struct DwtPayloadPacket {
   TraceQuality quality;
 };
 
+/** @brief Reconstructs semantic DWT events from hardware payload packets. */
 class DwtPacketDecoder {
 public:
+  /** @brief Decodes one hardware payload and returns completed semantic events. */
   std::vector<TraceEvent> decode(const DwtPayloadPacket& payload);
+  /** @brief Flushes incomplete data-trace fragments at a boundary. */
   std::vector<TraceEvent> flush(const TraceQuality& quality, std::uint64_t tcyc);
+  /** @brief Discards all pending data-trace reconstruction state. */
   void reset();
 
 private:
   static constexpr std::size_t kDataTraceComparatorCount = 4U;
 
+  /** @brief Accumulates the fragments of one pending DWT data-trace event. */
   struct PendingDataTrace {
     std::uint64_t index = 0;
     std::uint8_t traceBusId = 0U;

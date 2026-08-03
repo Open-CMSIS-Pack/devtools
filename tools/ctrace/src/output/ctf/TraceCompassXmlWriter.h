@@ -10,8 +10,10 @@
 
 #include <filesystem>
 
+/** @brief Writes the Trace Compass analysis definition accompanying CTF output. */
 class TraceCompassXmlWriter final {
 public:
+  /** @brief Writes the complete analysis definition to a file. */
   static void writeFile(const std::filesystem::path& path);
 
 private:

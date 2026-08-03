@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+/** @brief Accumulates normalized metadata for one processor. */
 struct ProcessorMeta {
   std::optional<std::string> name;
   bool timestampsEnabled = false;
@@ -28,10 +29,12 @@ struct ProcessorMeta {
   std::optional<std::uint32_t> itmEnableMask;
 };
 
+/** @brief Identifies one processor and its optional Trace Bus ID. */
 struct ProcessorIdentity {
   bool multipleProcessors = false;
   std::optional<std::string> singleProcessorName;
 
+  /** @brief Resolves an optional processor name to its canonical binding name. */
   std::optional<std::string> canonicalName(const std::optional<std::string>& name) const
   {
     if (!multipleProcessors) {
@@ -262,6 +265,7 @@ static const ProcessorMeta* findProcessor(const std::vector<ProcessorMeta>& proc
   return found != processors.end() ? &*found : nullptr;
 }
 
+/** @brief Stores the result of binding one processor to a trace stream. */
 struct ResolvedStreamBinding {
   std::size_t line = 0U;
   std::uint8_t traceBusId = 0U;

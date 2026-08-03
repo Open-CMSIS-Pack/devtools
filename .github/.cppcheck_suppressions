@@ -4,34 +4,3 @@ unusedFunction:libs/xmltree/src/XMLTree.cpp:47
 unusedFunction:libs/xmlschemachecker/src/XmlErrorHandler.cpp:27
 unusedFunction:libs/xmlschemachecker/src/XmlErrorHandler.cpp:32
 unusedFunction:tools/projmgr/src/ProjMgrRpcServer.cpp
-
-# OpenCSD invokes these ITraceErrorLog overrides through its external library.
-unusedFunction:tools/ctrace/src/decode/OpenCsdErrorController.cpp:295
-unusedFunction:tools/ctrace/src/decode/OpenCsdErrorController.cpp:306
-unusedFunction:tools/ctrace/src/decode/OpenCsdErrorController.cpp:315
-unusedFunction:tools/ctrace/src/decode/OpenCsdErrorController.cpp:327
-unusedFunction:tools/ctrace/src/decode/OpenCsdErrorController.cpp:336
-unusedFunction:tools/ctrace/src/decode/OpenCsdErrorController.cpp:341
-unusedFunction:tools/ctrace/src/decode/OpenCsdErrorController.cpp:350
-unusedFunction:tools/ctrace/src/decode/OpenCsdErrorController.cpp:355
-
-# This public metadata query is used by consumers and tests excluded from the cppcheck scan.
-unusedFunction:tools/ctrace/src/tracerun/CtraceRunMeta.cpp:542
-
-# cppcheck 2.7 treats lightweight std::string_view parameters as expensive copies.
-passedByValue:tools/ctrace/src/model/TraceSelection.cpp:84
-passedByValue:tools/ctrace/src/model/TraceSelection.cpp:96
-passedByValue:tools/ctrace/src/output/ctf/CtfMetadataWriter.cpp:148
-passedByValue:tools/ctrace/src/output/ctf/CtfSchema.hpp:87
-passedByValue:tools/ctrace/src/tracerun/TraceRunConfig.hpp:48
-passedByValue:tools/ctrace/src/tracerun/TraceRunConfig.hpp:58
-passedByValue:tools/ctrace/src/tracerun/TraceRunConfig.hpp:63
-passedByValue:tools/ctrace/src/tracerun/TraceRunConfig.hpp:68
-passedByValue:tools/ctrace/src/tracerun/TraceRunDiscovery.cpp:30
-passedByValue:tools/ctrace/src/tracerun/YmlTraceRunConfigReader.cpp:63
-passedByValue:tools/ctrace/src/tracerun/YmlTraceRunConfigReader.cpp:76
-passedByValue:tools/ctrace/src/tracerun/YmlTraceRunConfigReader.cpp:81
-passedByValue:tools/ctrace/src/tracerun/YmlTraceRunConfigReader.cpp:87
-passedByValue:tools/ctrace/src/tracerun/YmlTraceRunConfigReader.cpp:147
-passedByValue:tools/ctrace/src/tracerun/YmlTraceRunConfigReader.cpp:157
-passedByValue:tools/ctrace/src/tracerun/YmlTraceRunConfigReader.cpp:169

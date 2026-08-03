@@ -80,8 +80,9 @@ static std::string stateProviderXml()
         <head><label value="SWO Trace Analysis" /></head>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtValue) << R"(">
-)" << valueHandlers(CtfSchema::EventId::DwtValue, "dwt", "cmsis_dwt_comparator", "data")
-      << R"(        </eventHandler>
+)";
+  xml << valueHandlers(CtfSchema::EventId::DwtValue, "dwt", "cmsis_dwt_comparator", "data");
+  xml << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(">
             <stateChange>
@@ -191,8 +192,10 @@ static std::string traceCompassXml()
   xml << R"(<?xml version="1.0" encoding="UTF-8"?>
 <tmfxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="xmlDefinition.xsd">
-)" << stateProviderXml()
-      << viewsXml() << R"(</tmfxml>
+)";
+  xml << stateProviderXml();
+  xml << viewsXml();
+  xml << R"(</tmfxml>
 )";
   return withTraceCompassAnalysisVersion(xml.str());
 }

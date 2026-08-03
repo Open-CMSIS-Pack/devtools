@@ -28,10 +28,15 @@ endfunction()
 
 add_subdirectory(src)
 
+set(CTRACE_HEADER_FILES
+  src/CtraceMain.h
+)
+source_group("Header Files" FILES ${CTRACE_HEADER_FILES})
+
 add_executable(ctrace
   src/CtraceMain.cpp
-  src/CtraceMain.h
   src/main.cpp
+  ${CTRACE_HEADER_FILES}
 )
 target_link_libraries(ctrace PRIVATE
   ctrace::control

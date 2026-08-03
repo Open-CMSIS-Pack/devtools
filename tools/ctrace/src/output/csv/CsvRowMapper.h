@@ -12,9 +12,12 @@
 
 struct TraceEvent;
 
+/** @brief Maps semantic trace events to the stable CSV representation. */
 class CsvRowMapper final {
 public:
+  /** @brief Returns the stable CSV header row. */
   static std::string header();
+  /** @brief Returns one CSV row for a semantic trace event. */
   static std::string row(const TraceEvent& event);
 
 private:

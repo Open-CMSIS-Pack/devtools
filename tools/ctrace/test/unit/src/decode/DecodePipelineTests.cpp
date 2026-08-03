@@ -84,6 +84,7 @@ static RawByteView rawBytes(const std::vector<std::uint8_t>& bytes)
   return {bytes.data(), bytes.size()};
 }
 
+/** @brief Stores the result and events returned by one test decode. */
 struct DecodedTrace {
   DecodeResult result;
   std::vector<TraceEvent> events;

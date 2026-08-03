@@ -2,6 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+set(CTRACE_TEST_HEADER_FILES
+  support/CtfTestSupport.h
+  support/OpenCsdSessionTestSupport.h
+  support/OpenCsdTestSupport.h
+  support/TestPath.h
+  support/TestSupport.h
+  support/TraceOutputTestSupport.h
+  support/TraceRunTestSupport.h
+)
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
+  PREFIX "Header Files"
+  FILES ${CTRACE_TEST_HEADER_FILES}
+)
+
 add_executable(CtraceUnitTests
   src/cli/CliParserTests.cpp
   src/control/DecodeConsumersTests.cpp
@@ -26,6 +40,7 @@ add_executable(CtraceUnitTests
   src/tracerun/CtraceRunMetaTests.cpp
   src/tracerun/TraceRunConfigReaderTests.cpp
   src/tracerun/TraceRunDiscoveryTests.cpp
+  ${CTRACE_TEST_HEADER_FILES}
 )
 
 target_link_libraries(CtraceUnitTests PRIVATE

@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+/** @brief Identifies the hardware source encoded by a DWT packet discriminator. */
 enum class DwtPacketSource : std::uint8_t {
   EventCounter = 0U,
   ExceptionTrace = 1U,
@@ -24,11 +25,13 @@ enum class DwtPacketSource : std::uint8_t {
   PmuOverflow = 3U,
 };
 
+/** @brief Identifies address and value variants of DWT data-trace packets. */
 enum class DwtDataPacketType : std::uint8_t {
   Address = 1U,
   Value = 2U,
 };
 
+/** @brief Maps encoded DWT exception actions to their wire values. */
 enum class DwtExceptionActionCode : std::uint32_t {
   Entered = 1U,
   Exited = 2U,

@@ -20,26 +20,32 @@
 #include <string_view>
 #include <vector>
 
+/** @brief Owns one temporary trace-run file used by YAML reader tests. */
 class TraceRunFixture {
 public:
+  /** @brief Creates a fixture with a process-specific file path. */
   explicit TraceRunFixture(const std::string& name) : root_(name), path_(root_.path() / "Board.ctrace-run.yml") {}
 
+  /** @brief Reads the current file content. */
   TraceRunConfig read() const
   {
     return YmlTraceRunConfigReader().read(path_.string());
   }
 
+  /** @brief Writes and reads the supplied YAML document. */
   TraceRunConfig read(std::string_view yaml)
   {
     write(yaml);
     return read();
   }
 
+  /** @brief Returns the error produced by reading the current file. */
   std::string error() const
   {
     return captureExceptionMessage([this] { (void)read(); }).value_or("");
   }
 
+  /** @brief Writes YAML and returns its reader error. */
   std::string error(std::string_view yaml)
   {
     write(yaml);
@@ -191,6 +197,7 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceContainers)
 TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceRoutes)
 {
   TraceRunFixture file("ctrace-run-reader-reference-route-errors-test");
+  /** @brief Describes malformed route fields and their expected errors. */
   struct Case {
     const char* fields;
     const char* error;
@@ -282,6 +289,7 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedConsumedSetups)
 {
   TraceRunFixture file("ctrace-run-reader-setup-errors-test");
   constexpr std::string_view prefix = "ctrace-run:\n  ctrace-setup:\n    - ";
+  /** @brief Describes malformed setup fields and their expected errors. */
   struct Case {
     const char* setup;
     const char* error;

@@ -35,13 +35,16 @@
 #include <utility>
 #include <vector>
 
+/** @brief Reads a raw trace file in reusable fixed-size chunks. */
 class RawFileReader final {
 public:
+  /** @brief Stores one byte chunk and its end-of-file state. */
   struct ReadResult {
     RawByteView bytes;
     bool eof = false;
   };
 
+  /** @brief Opens a raw trace input for binary reading. */
   explicit RawFileReader(std::filesystem::path path)
     : path_(std::move(path)), stream_(path_, std::ios::binary), buffer_(64U * 1024U)
   {
@@ -50,6 +53,7 @@ public:
     }
   }
 
+  /** @brief Returns the next raw byte chunk. */
   ReadResult read()
   {
     if (eof_ || !stream_.is_open()) {

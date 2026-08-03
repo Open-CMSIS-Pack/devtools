@@ -8,12 +8,12 @@
 #include "CortexMPostDecoder.h"
 
 #include "DwtPacketDecoder.h"
-#include "TraceEvent.h"
 #include "OpenCsdTraceElement.h"
+#include "SaturatingArithmetic.h"
+#include "TraceEvent.h"
 
 #include <cstdint>
 #include <iterator>
-#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -61,7 +61,7 @@ void CortexMPostDecoder::mapTimestampSegment(OpenCsdTraceElement& element)
   switch (element.kind) {
   case OpenCsdTraceElement::Kind::LocalTimestamp:
     if (element.tcyc.has_value()) {
-      const auto mapped = saturatingAdd(timestampSegmentBase_, *element.tcyc);
+      const auto mapped = SaturatingArithmetic::add(timestampSegmentBase_, *element.tcyc);
       element.tcyc = mapped;
       mappedTimeline_ = mapped;
       timelineKnown_ = true;
@@ -87,12 +87,6 @@ void CortexMPostDecoder::mapTimestampSegment(OpenCsdTraceElement& element)
 void CortexMPostDecoder::startNewTimestampSegment()
 {
   timestampSegmentBase_ = timelineKnown_ ? mappedTimeline_ : 0U;
-}
-
-std::uint64_t CortexMPostDecoder::saturatingAdd(std::uint64_t lhs, std::uint64_t rhs)
-{
-  const auto max = std::numeric_limits<std::uint64_t>::max();
-  return rhs > max - lhs ? max : lhs + rhs;
 }
 
 void CortexMPostDecoder::finish()

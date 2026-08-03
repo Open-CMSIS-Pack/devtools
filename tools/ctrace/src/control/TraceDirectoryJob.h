@@ -12,10 +12,13 @@
 #include "DiagnosticSink.h"
 #include "TraceRunConfigReader.h"
 
+/** @brief Discovers and decodes the selected trace-run configurations in a directory. */
 class TraceDirectoryJob {
 public:
+  /** @brief Creates a directory job with parsed options and a trace-run reader. */
   TraceDirectoryJob(CliOptions options, DiagnosticSink& diagnostics, const TraceRunConfigReader& configReader);
 
+  /** @brief Runs discovery and all selected file decode jobs. */
   void run();
 
 private:

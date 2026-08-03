@@ -13,6 +13,7 @@
 #include <optional>
 #include <string>
 
+/** @brief Selects the trace output formats requested on the command line. */
 enum class OutputFormat {
   None,
   Ctf,
@@ -20,6 +21,7 @@ enum class OutputFormat {
   All,
 };
 
+/** @brief Stores validated ctrace command-line options. */
 struct CliOptions {
   std::optional<std::string> traceDir;
   std::optional<std::string> targetName;

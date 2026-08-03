@@ -150,6 +150,7 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryCompactErrorKind)
   CollectingDiagnosticSink diagnostics;
   TraceIssueReporter reporter(diagnostics);
 
+  /** @brief Describes one compact diagnostic formatting test case. */
   struct Case {
     const char* code;
     const char* compactMessage;

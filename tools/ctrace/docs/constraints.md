@@ -1,7 +1,13 @@
-# Verified ctrace Constraints
+# Internal ctrace Design Constraints
 
-These are the current behavioral and architectural contracts of ctrace. Each constraint is implemented in the current
-code and covered by focused, individually discoverable CTest cases.
+This is maintainer documentation for implementation boundaries and regression
+tests. User-facing operation belongs in the [ctrace README](../README.md). The
+CMSIS-Toolbox [trace specification](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/Experimental-Features.md#file-structure-of-ctrace-runyml)
+defines the external `*.ctrace-run.yml` format and remains authoritative; this
+document does not redefine it.
+
+The constraints below describe only ctrace-specific implementation decisions.
+Each is implemented in the current code and covered by focused CTest cases.
 
 ## Architecture
 
@@ -13,7 +19,7 @@ code and covered by focused, individually discoverable CTest cases.
   [`YmlTraceRunConfigReader.cpp`](../src/tracerun/YmlTraceRunConfigReader.cpp); normalized configuration and metadata
   cross the boundary.
 
-- **The YAML reader validates consumed fields and ignores unrelated extensions.**
+- **The YAML reader validates the fields consumed by ctrace and ignores unrelated extensions.**
   `TraceRunReaderConsumesOnlyRelevantFields` and `TraceRunReaderValidatesConsumedFields` cover both sides.
 
 - **Production dependencies retain seven explicit, cycle-free module boundaries and point toward lower-level
@@ -89,8 +95,9 @@ code and covered by focused, individually discoverable CTest cases.
 - **Product dependencies come from devtools and carry repository-level license records.** `cxxopts`, `yaml-cpp`, and
   the pinned OpenCSD submodule are listed in the top-level `LICENSE.md`. The release archive includes the project
   license, [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md), OpenCSD source-file copyright notices, application
-  dependency license texts, and verified per-file checksums. Runtime contents remain subject to per-artifact inspection
-  rather than being implicitly covered by the application dependency list.
+  dependency license texts, and verified per-file checksums. The release workflow assembles this archive with the same
+  explicit download/copy/zip stages used by the other devtools workflows. Runtime contents remain subject to
+  per-artifact inspection rather than being implicitly covered by the application dependency list.
 
 - **The Blinky SWO and TB captures are redistributable ctrace test assets.** Their purpose, origin, derived golden CSV,
   and SPDX sidecars are documented in the [fixture README](../test/data/README.md); generated test output remains

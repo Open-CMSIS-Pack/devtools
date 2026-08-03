@@ -24,6 +24,7 @@ static std::string trimTrailingWhitespace(std::string value)
   return value;
 }
 
+/** @brief Maps one OpenCSD error code to its symbolic name. */
 struct OpenCsdErrorName {
   ocsd_err_t code;
   const char* name;

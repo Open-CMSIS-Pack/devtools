@@ -17,13 +17,16 @@
 
 namespace OpenCsdTestSupport {
 
+/** @brief Collects OpenCSD elements emitted during a unit test. */
 class CollectingOpenCsdElementSink : public OpenCsdTraceElementSink {
 public:
+  /** @brief Stores one emitted OpenCSD element. */
   void append(OpenCsdTraceElement element) override
   {
     elements.push_back(std::move(element));
   }
 
+  /** @brief Tests whether the collected elements include an issue code. */
   bool hasIssue(std::string_view code) const
   {
     for (const auto& element : elements) {

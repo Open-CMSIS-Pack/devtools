@@ -19,8 +19,7 @@
 
 static CliOptions parse(std::initializer_list<const char*> arguments)
 {
-  const std::vector<const char*> argv(arguments);
-  return CliParser::parse(static_cast<int>(argv.size()), argv.data());
+  return CliParser::parse(std::vector<std::string>(arguments.begin(), arguments.end()));
 }
 
 static CliOptions parseAndValidate(std::initializer_list<const char*> arguments)

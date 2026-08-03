@@ -7,6 +7,10 @@
 #ifndef CTRACE_SRC_CTRACEMAIN_H
 #define CTRACE_SRC_CTRACEMAIN_H
 
-int CtraceMain(int argc, const char* const argv[]);
+#include <string>
+#include <vector>
+
+/** @brief Runs the ctrace command-line application. */
+int CtraceMain(const std::vector<std::string>& arguments);
 
 #endif  // CTRACE_SRC_CTRACEMAIN_H

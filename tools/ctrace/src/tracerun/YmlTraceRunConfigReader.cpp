@@ -54,11 +54,12 @@ static std::string errorMessage(const std::string& path, const Node& node, const
   throw std::runtime_error(errorMessage(path, node, message));
 }
 
+/** @brief Stores a best-effort YAML child-node lookup result. */
 struct NodeLookup {
   Node value{YAML::NodeType::Undefined};
 };
 
-static NodeLookup lookupNode(const Node& element, std::string_view tag)
+static NodeLookup lookupNode(const Node& element, const std::string_view& tag)
 {
   NodeLookup result;
   for (const auto& entry : element) {
@@ -71,18 +72,18 @@ static NodeLookup lookupNode(const Node& element, std::string_view tag)
   return result;
 }
 
-static Node childNode(const Node& element, std::string_view tag)
+static Node childNode(const Node& element, const std::string_view& tag)
 {
   return lookupNode(element, tag).value;
 }
 
-static Node childContainer(const Node& element, std::string_view tag)
+static Node childContainer(const Node& element, const std::string_view& tag)
 {
   const auto node = childNode(element, tag);
   return node && (node.IsMap() || node.IsSequence()) ? node : Node(YAML::NodeType::Undefined);
 }
 
-static std::optional<std::string> optionalAttribute(const Node& element, std::string_view name)
+static std::optional<std::string> optionalAttribute(const Node& element, const std::string_view& name)
 {
   const auto node = childNode(element, name);
   if (!node) {
@@ -118,7 +119,7 @@ static std::optional<std::string> bestEffortProcessorName(const Node& element)
   return TraceRunSchema::normalizedProcessorName(std::optional<std::string>(lookup.value.Scalar()));
 }
 
-static std::uint64_t unsignedValue(const std::string& path, const Node& element, std::string_view name,
+static std::uint64_t unsignedValue(const std::string& path, const Node& element, const std::string_view& name,
                                    const std::string& value, std::uint64_t maximum)
 {
   std::string_view digits(value);
@@ -140,7 +141,7 @@ static std::uint64_t unsignedValue(const std::string& path, const Node& element,
 }
 
 static std::optional<std::uint64_t> optionalUnsignedAttribute(const std::string& path, const Node& element,
-                                                              std::string_view name, std::uint64_t maximum)
+                                                              const std::string_view& name, std::uint64_t maximum)
 {
   const auto value = optionalAttribute(element, name);
   if (!value.has_value()) {
@@ -150,7 +151,7 @@ static std::optional<std::uint64_t> optionalUnsignedAttribute(const std::string&
 }
 
 static std::optional<std::uint64_t> deferredUnsignedAttribute(const std::string& path, const Node& element,
-                                                              std::string_view name, std::uint64_t maximum,
+                                                              const std::string_view& name, std::uint64_t maximum,
                                                               std::optional<std::string>& error)
 {
   try {
@@ -162,7 +163,7 @@ static std::optional<std::uint64_t> deferredUnsignedAttribute(const std::string&
 }
 
 static std::optional<std::uint64_t> bestEffortUnsignedAttribute(const std::string& path, const Node& element,
-                                                                std::string_view name, std::uint64_t maximum)
+                                                                const std::string_view& name, std::uint64_t maximum)
 {
   try {
     return optionalUnsignedAttribute(path, element, name, maximum);
@@ -173,7 +174,7 @@ static std::optional<std::uint64_t> bestEffortUnsignedAttribute(const std::strin
 
 // ctrace-ref identifies the originating ctrace.yml node. The data index links
 // a generated DWT route to its copied ctrace-setup.data metadata.
-static std::optional<std::size_t> dwtDataIndex(std::string_view ctraceRef)
+static std::optional<std::size_t> dwtDataIndex(const std::string_view& ctraceRef)
 {
   constexpr std::string_view marker = "data#";
   const auto markerPosition = ctraceRef.rfind(marker);
@@ -246,7 +247,7 @@ static bool setupDataMayBeConsumed(const Node& setup, const std::vector<TraceRun
   return !hasProcessorName && hasReferencedDataForProcessor(references, std::nullopt);
 }
 
-static void requireSequence(const std::string& path, const Node& element, std::string_view name)
+static void requireSequence(const std::string& path, const Node& element, const std::string_view& name)
 {
   if (!element.IsSequence()) {
     fail(path, element, "'" + std::string(name) + "' must be an array");
@@ -295,6 +296,7 @@ static std::pair<std::vector<std::uint32_t>, bool> parseSources(const std::strin
   return {std::move(sources), true};
 }
 
+/** @brief Stores diagnostics copied from one parsed trace reference. */
 struct ReferenceDiagnostics {
   std::optional<std::string> info;
   std::optional<std::string> warning;
@@ -303,7 +305,7 @@ struct ReferenceDiagnostics {
 
 static ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, const Node& element)
 {
-  const auto message = [&](std::string_view name) {
+  const auto message = [&](const std::string_view& name) {
     const auto value = optionalAttribute(element, name);
     if (childContainer(element, name)) {
       fail(path, element, "'" + std::string(name) + "' must be a scalar message");
@@ -323,7 +325,7 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
     return std::nullopt;
   }
 
-  const auto requiredScalar = [&](std::string_view name) {
+  const auto requiredScalar = [&](const std::string_view& name) {
     const auto node = childNode(element, name);
     if (!node || !node.IsScalar() || node.Scalar().empty()) {
       fail(path, node ? node : element, "missing required '" + std::string(name) + "' scalar in ctrace-ref entry");

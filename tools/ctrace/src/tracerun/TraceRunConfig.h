@@ -30,6 +30,7 @@ inline constexpr std::uint32_t kDefaultTimestampPrescaler = 1U;
 inline constexpr std::string_view kDefaultDwtDataType = "unsigned int";
 inline constexpr std::uint8_t kDefaultDwtDataSize = 4U;
 
+/** @brief Tests whether a fixed array contains a value. */
 template <typename Value, std::size_t Size>
 constexpr bool contains(const std::array<Value, Size>& values, const Value& candidate)
 {
@@ -41,41 +42,49 @@ constexpr bool contains(const std::array<Value, Size>& values, const Value& cand
   return false;
 }
 
+/** @brief Tests whether an ITM timestamp prescaler is supported. */
 constexpr bool isTimestampPrescaler(std::uint32_t prescaler)
 {
   return contains(kTimestampPrescalers, prescaler);
 }
 
-constexpr bool isDwtDataType(std::string_view type)
+/** @brief Tests whether a DWT data type is supported. */
+constexpr bool isDwtDataType(const std::string_view& type)
 {
   return type == "unsigned int" || type == "signed int" || type == "float";
 }
 
+/** @brief Tests whether a DWT data size is supported. */
 constexpr bool isDwtDataSize(std::uint64_t size)
 {
   return size == 1U || size == 2U || size == 4U;
 }
 
-constexpr bool supportsSource(std::string_view type)
+/** @brief Tests whether a trace source type is decoded in the first release. */
+constexpr bool supportsSource(const std::string_view& type)
 {
   return type == "dwt" || type == "itm";
 }
 
-constexpr bool consumesReferenceMetadata(std::string_view type)
+/** @brief Tests whether ctrace consumes metadata for a reference type. */
+constexpr bool consumesReferenceMetadata(const std::string_view& type)
 {
   return type == "dwt" || type == "itm" || type == "event" || type == "pmu" || type == "pcsample";
 }
 
-constexpr bool supportsSourceArray(std::string_view type)
+/** @brief Tests whether a reference type permits multiple source identifiers. */
+constexpr bool supportsSourceArray(const std::string_view& type)
 {
   return type == "dwt";
 }
 
+/** @brief Tests whether an ITM stimulus port number is valid. */
 constexpr bool isItmSource(std::uint32_t source)
 {
   return source <= 31U;
 }
 
+/** @brief Converts empty processor names to an absent value. */
 inline std::optional<std::string> normalizedProcessorName(std::optional<std::string> name)
 {
   if (name.has_value() && name->empty()) {
@@ -84,6 +93,7 @@ inline std::optional<std::string> normalizedProcessorName(std::optional<std::str
   return name;
 }
 
+/** @brief Tests whether two optional processor names can describe the same route. */
 inline bool processorNamesMayBind(const std::optional<std::string>& left, const std::optional<std::string>& right)
 {
   const auto normalizedLeft = normalizedProcessorName(left);
@@ -93,6 +103,7 @@ inline bool processorNamesMayBind(const std::optional<std::string>& left, const 
 
 } // namespace TraceRunSchema
 
+/** @brief Stores one parsed ctrace reference and its resolved routing metadata. */
 struct TraceRunReference {
   std::string ctraceRef;
   std::string type;
@@ -114,6 +125,7 @@ struct TraceRunReference {
 
 namespace TraceRunSchema {
 
+/** @brief Classifies structural problems in a parsed trace reference. */
 enum class ReferenceProblem {
   None,
   DuplicateSource,
@@ -122,11 +134,13 @@ enum class ReferenceProblem {
   InvalidItmSource,
 };
 
+/** @brief Tests whether a reference selects reserved ITM stimulus port zero. */
 inline bool isItmChannelZero(const TraceRunReference& reference)
 {
   return reference.type == "itm" && reference.sources.size() == 1U && reference.sources.front() == 0U;
 }
 
+/** @brief Tests whether a reference has the fields needed for a decoded route. */
 inline bool hasConsumedRouteShape(const TraceRunReference& reference)
 {
   if (!supportsSource(reference.type) || reference.sources.empty()) {
@@ -138,6 +152,7 @@ inline bool hasConsumedRouteShape(const TraceRunReference& reference)
   return true;
 }
 
+/** @brief Tests whether a reference represents timestamp configuration. */
 inline bool isTimestampReference(const TraceRunReference& reference)
 {
   constexpr std::string_view name = "timestamps";
@@ -147,12 +162,14 @@ inline bool isTimestampReference(const TraceRunReference& reference)
   return leaf == name;
 }
 
+/** @brief Tests whether a reference participates in processor-to-stream binding. */
 inline bool contributesStreamBinding(const TraceRunReference& reference)
 {
   return (reference.type == "dwt" || reference.type == "itm") &&
          (!reference.sources.empty() || isTimestampReference(reference));
 }
 
+/** @brief Returns the first structural problem detected in a reference. */
 inline ReferenceProblem referenceProblem(const TraceRunReference& reference)
 {
   for (std::size_t left = 0U; left < reference.sources.size(); ++left) {
@@ -178,6 +195,7 @@ inline ReferenceProblem referenceProblem(const TraceRunReference& reference)
   return ReferenceProblem::None;
 }
 
+/** @brief Tests whether a reference is structurally valid and usable by ctrace. */
 inline bool isUsableReference(const TraceRunReference& reference)
 {
   return hasConsumedRouteShape(reference) && referenceProblem(reference) == ReferenceProblem::None;
@@ -185,6 +203,7 @@ inline bool isUsableReference(const TraceRunReference& reference)
 
 } // namespace TraceRunSchema
 
+/** @brief Stores timestamp-related fields copied from one trace setup. */
 struct TraceRunTimestampSetup {
   std::optional<std::uint64_t> clockHz = std::nullopt;
   std::optional<std::uint32_t> timestampPrescaler = std::nullopt;
@@ -192,6 +211,7 @@ struct TraceRunTimestampSetup {
   std::size_t line = 0U;
 };
 
+/** @brief Stores data-type fields copied from one DWT data setup. */
 struct TraceRunDataSetup {
   std::optional<std::string> symbolType = std::nullopt;
   std::optional<std::uint64_t> symbolSize = std::nullopt;
@@ -199,10 +219,12 @@ struct TraceRunDataSetup {
   std::optional<std::string> symbolSizeError = std::nullopt;
 };
 
+/** @brief Stores ITM stimulus-port configuration copied from one trace setup. */
 struct TraceRunItmSetup {
   std::uint32_t enableMask = 0U;
 };
 
+/** @brief Stores the ctrace setup metadata consumed by the decoder. */
 struct TraceRunSetup {
   std::optional<std::string> processorName;
   std::optional<TraceRunTimestampSetup> timestamps;
@@ -211,6 +233,7 @@ struct TraceRunSetup {
   std::size_t line = 0U;
 };
 
+/** @brief Stores a parsed `*.ctrace-run.yml` input. */
 struct TraceRunConfig {
   std::string path;
   std::vector<TraceRunReference> references;

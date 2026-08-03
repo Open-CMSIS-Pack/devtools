@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+/** @brief Stores the derived CSV, CTF, and Trace Compass target paths. */
 struct OutputPaths {
   std::filesystem::path csv;
   std::filesystem::path ctf;
@@ -60,7 +61,7 @@ static bool routeMatchesSelection(const CtraceRunSourceMeta& source, const Trace
 }
 
 static std::vector<std::pair<std::string, std::string>>
-routeContext(std::string_view backend, const CtraceRunMeta& ctraceRunMeta, const CtraceRunSourceMeta& source)
+routeContext(const std::string_view& backend, const CtraceRunMeta& ctraceRunMeta, const CtraceRunSourceMeta& source)
 {
   std::vector<std::pair<std::string, std::string>> context{
       {"backend", std::string(backend)},
@@ -125,6 +126,7 @@ static bool validateCtfRouteIdentity(const CtraceRunMeta& ctraceRunMeta, const T
   return valid;
 }
 
+/** @brief Stores an unambiguous clock or the diagnostics preventing selection. */
 struct SelectedClockResolution {
   std::optional<std::uint64_t> clockHz;
   bool hasRoutes{false};

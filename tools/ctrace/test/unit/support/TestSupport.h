@@ -52,13 +52,16 @@ inline bool throwsWithMessage(Function&& action, std::string_view expected)
   return message.has_value() && message->find(expected) != std::string::npos;
 }
 
+/** @brief Collects structured diagnostics emitted during a unit test. */
 class CollectingDiagnosticSink final : public DiagnosticSink {
 public:
+  /** @brief Returns all collected diagnostic events. */
   const std::vector<Event>& events() const
   {
     return events_;
   }
 
+  /** @brief Tests whether a diagnostic code was collected. */
   bool contains(std::string_view code) const
   {
     for (const auto& event : events_) {
@@ -69,6 +72,7 @@ public:
     return false;
   }
 
+  /** @brief Returns the only collected event after checking its code. */
   const Event& singleEvent(std::string_view code) const
   {
     require(events_.size() == 1U, "expected exactly one diagnostic event");
@@ -76,6 +80,7 @@ public:
     return events_.front();
   }
 
+  /** @brief Tests whether a diagnostic contains one context entry. */
   bool containsContext(std::string_view code, std::string_view key, std::string_view value) const
   {
     for (const auto& event : events_) {
@@ -92,6 +97,7 @@ public:
   }
 
 protected:
+  /** @brief Stores one reported diagnostic event. */
   void write(const Event& event) override
   {
     events_.push_back(event);
@@ -101,8 +107,10 @@ private:
   std::vector<Event> events_;
 };
 
+/** @brief Collects semantic trace events emitted during a unit test. */
 class CollectingEventSink final : public TraceEventSink {
 public:
+  /** @brief Stores one emitted semantic event. */
   void append(const TraceEvent& event) override
   {
     events.push_back(event);

@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+/** @brief Stores the stable subset of one OpenCSD error callback. */
 struct OpenCsdErrorRecord {
   ocsd_err_severity_t severity = OCSD_ERR_SEV_ERROR;
   ocsd_err_t code = OCSD_OK;
@@ -24,10 +25,13 @@ struct OpenCsdErrorRecord {
   std::string message;
 };
 
+/** @brief Captures OpenCSD errors and decides whether decoding can recover. */
 class OpenCsdErrorController final : public ocsdDefaultErrorLogger {
 public:
+  /** @brief Creates and configures the OpenCSD error logger. */
   OpenCsdErrorController();
 
+  /** @brief Defines the decoder action selected after an OpenCSD call. */
   enum class Action {
     Continue,
     Wait,
@@ -35,6 +39,7 @@ public:
     Abort,
   };
 
+  /** @brief Combines an OpenCSD response with captured errors and the selected action. */
   struct Decision {
     Action action = Action::Continue;
     ocsd_datapath_resp_t response = OCSD_RESP_CONT;
@@ -42,19 +47,31 @@ public:
     std::vector<OpenCsdErrorRecord> errors;
   };
 
+  /** @brief Clears errors before invoking one OpenCSD data-path operation. */
   void beginDataPathCall();
+  /** @brief Classifies the response and errors from the current data-path operation. */
   Decision decide(ocsd_datapath_resp_t response) const;
 
+  /** @brief Tests whether an OpenCSD error permits stream resynchronization. */
   static bool isRecoverableStreamError(ocsd_err_t code);
+  /** @brief Tests whether an OpenCSD response reports an error condition. */
   static bool responseReportsError(ocsd_datapath_resp_t response);
+  /** @brief Returns the symbolic name of an OpenCSD response. */
   static std::string responseName(ocsd_datapath_resp_t response);
+  /** @brief Returns the symbolic name of an OpenCSD error code. */
   static std::string errorCodeName(ocsd_err_t code);
+  /** @brief Returns the captured raw offset or a supplied fallback. */
   static std::uint64_t errorOffset(const Decision& decision, std::uint64_t fallback);
+  /** @brief Returns the stable ctrace issue code for a decision. */
   static std::string issueCode(const Decision& decision);
+  /** @brief Formats an OpenCSD API setup failure. */
   static std::string describeApiError(ocsd_err_t code, const std::string& message);
+  /** @brief Formats the user-facing summary for a decoder decision. */
   static std::string describeSummary(const Decision& decision);
+  /** @brief Formats the complete diagnostic representation of a decision. */
   static std::string describe(const Decision& decision);
 
+  /** @brief Captures an OpenCSD callback while preserving default logging behavior. */
   void LogError(ocsd_hndl_err_log_t handle, const ocsdError* error) override;
 
 private:

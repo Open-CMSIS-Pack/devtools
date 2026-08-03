@@ -6,7 +6,10 @@
 
 #include "CtraceMain.h"
 
-int main(int argc, const char* const argv[])
+#include <string>
+#include <vector>
+
+int main(int argc, char* argv[])
 {
-  return CtraceMain(argc, argv);
+  return CtraceMain(std::vector<std::string>(argv, argv + argc));
 }

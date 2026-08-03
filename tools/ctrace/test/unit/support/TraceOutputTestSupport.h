@@ -17,17 +17,22 @@
 
 namespace TraceOutputTestSupport {
 
+/** @brief Selects the lifecycle operation where a test output fails. */
 enum class TestTraceOutputFailure { None, Start, Stop, Abort, Write, NonStandardStart };
 
+/** @brief Implements a configurable trace output for lifecycle unit tests. */
 class TestTraceOutput final : public TraceOutput {
 public:
+  /** @brief Creates a test output with an optional failure point and target. */
   explicit TestTraceOutput(TestTraceOutputFailure failure = TestTraceOutputFailure::None, std::string target = {})
     : failure_(failure), target_(std::move(target))
   {
   }
 
+  /** @brief Creates a test output that records lifecycle calls. */
   explicit TestTraceOutput(std::vector<std::string>& calls) : calls_(&calls) {}
 
+  /** @brief Records start and optionally throws the configured failure. */
   void start() override
   {
     record("start");
@@ -38,6 +43,7 @@ public:
     TraceOutput::start();
   }
 
+  /** @brief Records stop and optionally throws the configured failure. */
   void stop() override
   {
     record("stop");
@@ -45,6 +51,7 @@ public:
     TraceOutput::stop();
   }
 
+  /** @brief Records abort and optionally throws the configured failure. */
   void abort() override
   {
     record("abort");
@@ -52,17 +59,20 @@ public:
     aborted_ = true;
   }
 
+  /** @brief Records an event write and optionally throws the configured failure. */
   void writeEvent(const TraceEvent&) override
   {
     record("write");
     failAt(TestTraceOutputFailure::Write, "intentional write failure");
   }
 
+  /** @brief Returns the configured output target. */
   std::string targetPath() const override
   {
     return target_.empty() ? TraceOutput::targetPath() : target_;
   }
 
+  /** @brief Reports whether abort completed successfully. */
   bool aborted() const
   {
     return aborted_;

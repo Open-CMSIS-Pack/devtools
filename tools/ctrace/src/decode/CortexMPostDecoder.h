@@ -17,13 +17,18 @@
 #include <string>
 #include <vector>
 
+/** @brief Converts OpenCSD elements from one Cortex-M stream into semantic events. */
 class CortexMPostDecoder final : public OpenCsdTraceElementSink {
 public:
+  /** @brief Creates a post-decoder that emits to the supplied event sink. */
   explicit CortexMPostDecoder(TraceEventSink& eventSink);
 
+  /** @brief Appends one OpenCSD trace element. */
   void append(OpenCsdTraceElement element) override;
+  /** @brief Flushes pending state at the end of input. */
   void finish();
 
+  /** @brief Returns the number of semantic events emitted. */
   std::uint64_t eventCount() const;
 
 private:
@@ -48,7 +53,6 @@ private:
   void emitEvent(const TraceEvent& event);
   void mapTimestampSegment(OpenCsdTraceElement& element);
   void startNewTimestampSegment();
-  static std::uint64_t saturatingAdd(std::uint64_t lhs, std::uint64_t rhs);
 
   TraceQuality currentTraceStatus(bool packetOverflow = false) const;
   TraceQuality statusResolvedByTimestamp(LocalTimestampRelation relation) const;

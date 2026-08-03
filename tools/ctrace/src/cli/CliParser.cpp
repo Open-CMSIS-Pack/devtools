@@ -37,8 +37,8 @@ static std::uint32_t parseUnsignedInteger(const std::string& value, const std::s
 }
 
 static std::optional<std::vector<std::string>> consumeMultiValueOption(const std::string& arg,
-                                                                       const std::string& option, int& index, int argc,
-                                                                       const char* const argv[])
+                                                                       const std::string& option, std::size_t& index,
+                                                                       const std::vector<std::string>& arguments)
 {
   if (arg != option && arg.rfind(option + "=", 0) != 0) {
     return std::nullopt;
@@ -55,8 +55,8 @@ static std::optional<std::vector<std::string>> consumeMultiValueOption(const std
     values.push_back(value);
   };
   if (arg == option) {
-    while (index + 1 < argc && !startsWithDash(argv[index + 1])) {
-      append(argv[++index]);
+    while (index + 1U < arguments.size() && !startsWithDash(arguments[index + 1U])) {
+      append(arguments[++index]);
     }
   } else {
     append(arg.substr(option.size() + 1U));
@@ -67,24 +67,24 @@ static std::optional<std::vector<std::string>> consumeMultiValueOption(const std
   return values;
 }
 
-static std::vector<std::string> normalizeArgsForCxxopts(int argc, const char* const argv[])
+static std::vector<std::string> normalizeArgsForCxxopts(const std::vector<std::string>& arguments)
 {
   std::vector<std::string> args;
-  args.reserve(static_cast<std::size_t>(argc));
-  if (argc > 0) {
-    args.emplace_back(argv[0]);
+  args.reserve(arguments.size());
+  if (!arguments.empty()) {
+    args.push_back(arguments.front());
   }
 
-  for (int index = 1; index < argc; ++index) {
-    const std::string arg = argv[index];
-    if (const auto types = consumeMultiValueOption(arg, "--type", index, argc, argv)) {
+  for (std::size_t index = 1U; index < arguments.size(); ++index) {
+    const auto& arg = arguments[index];
+    if (const auto types = consumeMultiValueOption(arg, "--type", index, arguments)) {
       for (const auto& type : *types) {
         args.emplace_back("--type");
         args.push_back(type);
       }
       continue;
     }
-    if (const auto streams = consumeMultiValueOption(arg, "--stream", index, argc, argv)) {
+    if (const auto streams = consumeMultiValueOption(arg, "--stream", index, arguments)) {
       for (const auto& stream : *streams) {
         args.emplace_back("--stream");
         args.push_back(stream);
@@ -132,10 +132,10 @@ static void configureCliParser(cxxopts::Options& parser)
                    "sel [...]");
 }
 
-static CliOptions parseCliArgs(int argc, const char* const argv[])
+static CliOptions parseCliArgs(const std::vector<std::string>& arguments)
 {
   CliOptions options;
-  auto normalizedArgs = normalizeArgsForCxxopts(argc, argv);
+  auto normalizedArgs = normalizeArgsForCxxopts(arguments);
   auto cargv = asArgv(normalizedArgs);
   auto mutableArgc = static_cast<int>(cargv.size());
 
@@ -197,9 +197,9 @@ static void validateCliOptions(const CliOptions& options)
   }
 }
 
-CliOptions CliParser::parse(int argc, const char* const argv[])
+CliOptions CliParser::parse(const std::vector<std::string>& arguments)
 {
-  return parseCliArgs(argc, argv);
+  return parseCliArgs(arguments);
 }
 
 void CliParser::validate(const CliOptions& options)

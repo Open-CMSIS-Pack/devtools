@@ -17,19 +17,28 @@
 #include <memory>
 #include <vector>
 
+/** @brief Coordinates start, event delivery, completion, and cleanup for outputs. */
 class TraceOutputLifecycle final : public TraceEventSink {
 public:
+  /** @brief Creates and starts the supplied output backends. */
   explicit TraceOutputLifecycle(std::vector<std::unique_ptr<TraceOutput>> outputs, DiagnosticSink& diagnostics);
+  /** @brief Aborts any outputs that remain active. */
   ~TraceOutputLifecycle() noexcept;
 
+  /** @brief Writes one event to every active output. */
   void append(const TraceEvent& event) override;
+  /** @brief Completes all active outputs without propagating failures. */
   void finish() noexcept;
+  /** @brief Aborts all active outputs without propagating failures. */
   void abort() noexcept;
 
+  /** @brief Disables copying because the lifecycle owns output backends. */
   TraceOutputLifecycle(const TraceOutputLifecycle&) = delete;
+  /** @brief Disables copy assignment because the lifecycle owns output backends. */
   TraceOutputLifecycle& operator=(const TraceOutputLifecycle&) = delete;
 
 private:
+  /** @brief Tracks the lifecycle state of one output backend. */
   enum class State {
     Inactive,
     Active,

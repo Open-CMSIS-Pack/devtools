@@ -13,9 +13,60 @@
 #include "csv/CsvFileOutput.h"
 #include <cstdint>
 #include <filesystem>
-#include <system_error>
+#include <memory>
+#include <ostream>
+#include <streambuf>
 #include <stdexcept>
 #include <string>
+#include <system_error>
+
+/** @brief Selects which operation fails in a synthetic CSV stream. */
+enum class CsvStreamFailure {
+  Write,
+  Flush,
+};
+
+/** @brief Implements write and flush failures for CSV lifecycle tests. */
+class FailingCsvStreamBuffer final : public std::streambuf {
+public:
+  /** @brief Creates a buffer that fails at the selected operation. */
+  explicit FailingCsvStreamBuffer(CsvStreamFailure failure) : failure_(failure) {}
+
+protected:
+  /** @brief Accepts or rejects one output character. */
+  int_type overflow(int_type character) override
+  {
+    return failure_ == CsvStreamFailure::Write ? traits_type::eof() : character;
+  }
+
+  /** @brief Accepts or rejects a stream flush. */
+  int sync() override
+  {
+    return failure_ == CsvStreamFailure::Flush ? -1 : 0;
+  }
+
+private:
+  CsvStreamFailure failure_;
+};
+
+/** @brief Provides a CSV stream around a synthetic failing stream buffer. */
+class FailingCsvStream final : public CsvFileOutput::Stream {
+public:
+  /** @brief Creates a stream that fails at the selected operation. */
+  explicit FailingCsvStream(CsvStreamFailure failure) : buffer_(failure), stream_(&buffer_)
+  {
+  }
+
+  /** @brief Returns the synthetic output stream. */
+  std::ostream& output() override { return stream_; }
+
+  /** @brief Flushes the synthetic output stream. */
+  void close() override { stream_.flush(); }
+
+private:
+  FailingCsvStreamBuffer buffer_;
+  std::ostream stream_;
+};
 
 TEST(CtraceUnitTests, testCsvFileOutputCriteria)
 {
@@ -194,10 +245,56 @@ TEST(CtraceUnitTests, testCsvFileOutputSupportsParentlessPath)
   std::filesystem::remove(path, ignored);
 }
 
+TEST(CtraceUnitTests, testCsvFileOutputReportsInjectedStreamFailures)
+{
+  const TemporaryTestPath temporaryPath("ctrace-csv-stream-failure-test.csv");
+
+  const auto factory = [](CsvStreamFailure failure) {
+    return [failure](const std::filesystem::path&) { return std::make_unique<FailingCsvStream>(failure); };
+  };
+
+  CsvFileOutput writeFailure(temporaryPath.path(), {}, factory(CsvStreamFailure::Write));
+  EXPECT_THROW(writeFailure.start(), std::runtime_error);
+
+  CsvFileOutput flushFailure(temporaryPath.path(), {}, factory(CsvStreamFailure::Flush));
+  flushFailure.start();
+  EXPECT_THROW(flushFailure.stop(), std::runtime_error);
+
+  CsvFileOutput openFailure(temporaryPath.path(), {}, [](const std::filesystem::path&) {
+    return std::unique_ptr<CsvFileOutput::Stream>{};
+  });
+  EXPECT_THROW(openFailure.start(), std::runtime_error);
+
+  EXPECT_THROW((void)CsvFileOutput(temporaryPath.path(), {}, {}), std::invalid_argument);
+}
+
 #if defined(__linux__)
 TEST(CtraceUnitTests, testCsvFileOutputReportsPseudoFilesystemOpenFailure)
 {
   CsvFileOutput output("/proc/ctrace-coverage-output.csv");
   EXPECT_THROW(output.start(), std::runtime_error);
+}
+#endif
+
+#if !defined(_WIN32)
+TEST(CtraceUnitTests, testCsvFileOutputReportsPermissionFailures)
+{
+  const TemporaryTestPath temporaryPath("ctrace-csv-permission-failure-test");
+  const auto& root = temporaryPath.createDirectory();
+  const auto outputPath = root / "output.csv";
+
+  {
+    CsvFileOutput output(outputPath);
+    output.start();
+    std::filesystem::permissions(root, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+  }
+  std::filesystem::permissions(root, std::filesystem::perms::owner_all);
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputPath));
+
+  std::filesystem::remove(outputPath);
+  std::filesystem::permissions(root, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+  CsvFileOutput createFailure(root / "missing" / "output.csv");
+  EXPECT_THROW(createFailure.start(), std::runtime_error);
+  std::filesystem::permissions(root, std::filesystem::perms::owner_all);
 }
 #endif

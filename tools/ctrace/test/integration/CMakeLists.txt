@@ -144,9 +144,11 @@ add_test(
         -DEXPECTED_RAW_SHA256=853ebc2a511536de28670b536cbc60776378a07d7536687bddb93b632b5a5e31
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunResetRecoveryFixture.cmake
 )
+# The complete 816560-byte recovery fixture can exceed the common 30-second
+# test timeout with the MSVC Debug build while still completing normally.
 set_tests_properties(
     ctrace-fixture-reset-recovery
     PROPERTIES
         LABELS "integration;fixture"
-        TIMEOUT 30
+        TIMEOUT 120
 )

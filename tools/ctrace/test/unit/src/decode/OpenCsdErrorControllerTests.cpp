@@ -20,8 +20,10 @@
 #include <string>
 #include <utility>
 
+/** @brief Collects text forwarded by the OpenCSD logger. */
 class MessageSink final : public ocsdMsgLogStrOutI {
 public:
+  /** @brief Appends one logger message. */
   void printOutStr(const std::string& message) override
   {
     messages += message;

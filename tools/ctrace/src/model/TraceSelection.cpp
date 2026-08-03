@@ -77,7 +77,7 @@ std::string_view traceEventTypeName(TraceEventType type)
   return index < kTraceEventTypeNames.size() ? kTraceEventTypeNames[index] : std::string_view("unknown");
 }
 
-std::string traceEventTypeList(std::string_view separator)
+std::string traceEventTypeList(const std::string_view& separator)
 {
   std::string result;
   for (const auto name : kTraceEventTypeNames) {
@@ -89,7 +89,7 @@ std::string traceEventTypeList(std::string_view separator)
   return result;
 }
 
-std::optional<TraceEventType> parseTraceEventType(std::string_view value)
+std::optional<TraceEventType> parseTraceEventType(const std::string_view& value)
 {
   for (std::size_t index = 0; index < kTraceEventTypeNames.size(); ++index) {
     if (kTraceEventTypeNames[index] == value) {
@@ -109,7 +109,7 @@ bool TraceSelection::empty() const
   return types.empty() && streams.empty();
 }
 
-bool TraceSelection::includesType(std::string_view type) const
+bool TraceSelection::includesType(const std::string_view& type) const
 {
   return types.empty() || std::find(types.begin(), types.end(), type) != types.end();
 }

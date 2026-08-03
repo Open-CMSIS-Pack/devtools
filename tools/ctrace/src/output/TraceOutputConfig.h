@@ -17,12 +17,14 @@
 #include <utility>
 #include <vector>
 
+/** @brief Stores the output formats and filters requested by the user. */
 struct TraceOutputRequest {
   bool csv = false;
   bool ctf = false;
   TraceSelection selection;
 };
 
+/** @brief Stores normalized source metadata required by trace outputs. */
 struct ResolvedTraceSource {
   std::string type;
   std::uint32_t source = 0;
@@ -33,12 +35,15 @@ struct ResolvedTraceSource {
   std::uint8_t valueSize = 4U;
 };
 
+/** @brief Configures one CSV output artifact. */
 struct CsvOutputConfig {
   std::filesystem::path outputPath;
   TraceSelection selection;
 };
 
+/** @brief Configures one CTF bundle and its Trace Compass analysis file. */
 struct CtfOutputConfig {
+  /** @brief Creates a complete CTF output configuration. */
   CtfOutputConfig(std::filesystem::path outputDirectory, std::filesystem::path traceCompassXmlPath,
                   std::uint64_t clockHz, TraceSelection selection, std::vector<ResolvedTraceSource> sources)
     : outputDirectory(std::move(outputDirectory)), traceCompassXmlPath(std::move(traceCompassXmlPath)),

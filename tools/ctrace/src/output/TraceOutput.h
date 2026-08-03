@@ -13,25 +13,30 @@
 #include <string>
 #include <string_view>
 
+/** @brief Defines the lifecycle and event interface of a trace output backend. */
 class TraceOutput {
 public:
+  /** @brief Destroys an output backend through its interface. */
   virtual ~TraceOutput() = default;
 
+  /** @brief Returns the stable backend name used in diagnostics. */
   virtual std::string_view backendName() const noexcept
   {
     return "trace";
   }
+  /** @brief Returns the primary output target path used in diagnostics. */
   virtual std::string targetPath() const
   {
     return {};
   }
 
-  // start() prepares the final target, stop() completes it, and abort() discards
-  // an incomplete active output. TraceOutputLifecycle owns this call order.
+  /** @brief Prepares the final output target. */
   virtual void start() {}
+  /** @brief Completes the active output target. */
   virtual void stop() {}
+  /** @brief Discards an incomplete active output. */
   virtual void abort() = 0;
-  // Called synchronously in decode order.
+  /** @brief Writes one event synchronously in decode order. */
   virtual void writeEvent(const TraceEvent& event) = 0;
 };
 

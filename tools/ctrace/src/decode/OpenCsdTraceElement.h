@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <string>
 
+/** @brief Describes ordering between a local timestamp and adjacent payloads. */
 enum class LocalTimestampRelation {
   Synchronous,
   TimestampDelayed,
@@ -20,7 +21,9 @@ enum class LocalTimestampRelation {
   TimestampAndPayloadDelayed,
 };
 
+/** @brief Stores one normalized element received from OpenCSD callbacks. */
 struct OpenCsdTraceElement {
+  /** @brief Identifies the normalized element payload. */
   enum class Kind {
     Software,
     Hardware,
@@ -57,10 +60,13 @@ struct OpenCsdTraceElement {
   std::string errorMessage;
 };
 
+/** @brief Receives normalized OpenCSD trace elements. */
 class OpenCsdTraceElementSink {
 public:
+  /** @brief Destroys an element sink through its interface. */
   virtual ~OpenCsdTraceElementSink() = default;
 
+  /** @brief Appends one normalized OpenCSD element. */
   virtual void append(OpenCsdTraceElement element) = 0;
 };
 

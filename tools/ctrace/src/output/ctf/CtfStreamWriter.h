@@ -18,13 +18,19 @@
 #include <string>
 #include <vector>
 
+/** @brief Writes packetized binary CTF stream records. */
 class CtfStreamWriter final {
 public:
+  /** @brief Provides bounded little-endian writes into one reserved record payload. */
   class Record final {
   public:
+    /** @brief Writes an unsigned 8-bit field. */
     void writeU8(std::uint8_t value);
+    /** @brief Writes an unsigned 16-bit field. */
     void writeU16(std::uint16_t value);
+    /** @brief Writes an unsigned 32-bit field. */
     void writeU32(std::uint32_t value);
+    /** @brief Writes an unsigned 64-bit field. */
     void writeU64(std::uint64_t value);
 
   private:
@@ -39,21 +45,31 @@ public:
     std::size_t endOffset_;
   };
 
+  /** @brief Writes a caller-defined record payload. */
   using RecordCallback = std::function<void(Record&)>;
 
+  /** @brief Creates an inactive CTF stream writer. */
   CtfStreamWriter() = default;
+  /** @brief Aborts an open stream before destruction. */
   ~CtfStreamWriter();
 
+  /** @brief Disables copying because the writer owns an output stream. */
   CtfStreamWriter(const CtfStreamWriter&) = delete;
+  /** @brief Disables copy assignment because the writer owns an output stream. */
   CtfStreamWriter& operator=(const CtfStreamWriter&) = delete;
 
+  /** @brief Opens a new CTF stream file with the supplied stream ID. */
   void open(const std::filesystem::path& filePath, std::uint32_t streamId);
+  /** @brief Flushes the final packet and closes the stream. */
   void close();
+  /** @brief Closes and removes an incomplete stream without throwing. */
   void abort() noexcept;
 
+  /** @brief Appends one timestamped CTF event record. */
   void writeRecord(std::uint32_t eventId, std::uint64_t timestamp, std::uint8_t traceBusId, std::size_t payloadSize,
                    const RecordCallback& writePayload);
 
+  /** @brief Returns the UUID shared by the stream and metadata. */
   const std::string& uuidString() const noexcept;
 
 private:

@@ -11,12 +11,18 @@
 #include "CliOptions.h"
 
 #include <string>
+#include <vector>
 
+/** @brief Parses and validates the ctrace command line. */
 class CliParser final {
 public:
-  static CliOptions parse(int argc, const char* const argv[]);
+  /** @brief Parses command-line arguments into structured options. */
+  static CliOptions parse(const std::vector<std::string>& arguments);
+  /** @brief Validates relationships between parsed command-line options. */
   static void validate(const CliOptions& options);
+  /** @brief Returns the formatted command-line help text. */
   static std::string helpString();
+  /** @brief Returns the formatted ctrace version string. */
   static std::string versionString();
 
 private:

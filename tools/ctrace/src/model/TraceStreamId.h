@@ -16,11 +16,13 @@ inline constexpr std::uint8_t kMinAtbTraceId = 0x01U;
 inline constexpr std::uint8_t kMaxAtbTraceId = 0x6fU;
 inline constexpr std::uint8_t kUnformattedTraceBusId = 0x00U;
 
+/** @brief Tests whether a value is a valid formatted CoreSight ATB trace ID. */
 constexpr bool isAtbTraceId(std::uint32_t value)
 {
   return value >= kMinAtbTraceId && value <= kMaxAtbTraceId;
 }
 
+/** @brief Tests whether a value is a supported formatted or unformatted Trace Bus ID. */
 constexpr bool isTraceBusId(std::uint32_t value)
 {
   return value <= kMaxAtbTraceId;

@@ -28,6 +28,7 @@
 
 namespace OpenCsdSessionTestSupport {
 
+/** @brief Describes one OpenCSD error emitted by a scripted session step. */
 struct ScriptedError {
   ocsd_err_severity_t severity = OCSD_ERR_SEV_ERROR;
   ocsd_err_t code = OCSD_ERR_FAIL;
@@ -35,7 +36,9 @@ struct ScriptedError {
   std::string message;
 };
 
+/** @brief Describes one response returned by a scripted OpenCSD session. */
 struct SessionStep {
+  /** @brief Creates a scripted response and its optional side effects. */
   SessionStep(ocsd_datapath_resp_t stepResponse = OCSD_RESP_CONT,
               std::optional<std::uint32_t> stepProcessed = std::nullopt, bool stepEmitSync = false,
               std::vector<ScriptedError> stepErrors = {})
@@ -49,6 +52,7 @@ struct SessionStep {
   std::vector<ScriptedError> errors;
 };
 
+/** @brief Stores the queued operations and call counters of a scripted session. */
 struct SessionScript {
   std::deque<SessionStep> pushes;
   std::deque<SessionStep> flushes;
@@ -60,14 +64,17 @@ struct SessionScript {
   std::uint32_t resetCalls = 0U;
 };
 
+/** @brief Implements a deterministic OpenCSD session for decoder unit tests. */
 class ScriptedOpenCsdSession final : public OpenCsdItmSessionInterface {
 public:
+  /** @brief Creates a session backed by shared scripted state. */
   ScriptedOpenCsdSession(std::shared_ptr<SessionScript> script, OpenCsdPacketCollector& collector,
                          OpenCsdErrorController& errors)
     : script_(std::move(script)), collector_(collector), errors_(errors)
   {
   }
 
+  /** @brief Applies the next scripted data response. */
   ocsd_datapath_resp_t pushData(ocsd_trc_index_t index, std::uint32_t size, const std::uint8_t*,
                                 std::uint32_t& processed) override
   {
@@ -78,6 +85,7 @@ public:
     return step.response;
   }
 
+  /** @brief Applies the next scripted flush response. */
   ocsd_datapath_resp_t flush() override
   {
     ++script_->flushCalls;
@@ -86,6 +94,7 @@ public:
     return step.response;
   }
 
+  /** @brief Applies the next scripted reset response. */
   ocsd_datapath_resp_t reset() override
   {
     ++script_->resetCalls;
@@ -94,6 +103,7 @@ public:
     return step.response;
   }
 
+  /** @brief Applies the next scripted end-of-trace response. */
   ocsd_datapath_resp_t endOfTrace() override
   {
     auto step = take(script_->ends, SessionStep{});
@@ -138,10 +148,13 @@ inline OpenCsdItmSessionFactory scriptedFactory(const std::shared_ptr<SessionScr
   };
 }
 
+/** @brief Bundles a scripted session, decoder, and collecting sink for tests. */
 class ScriptedDecoderHarness {
 public:
+  /** @brief Creates a decoder connected to a new empty session script. */
   ScriptedDecoderHarness() : script(std::make_shared<SessionScript>()), decoder(sink, scriptedFactory(script)) {}
 
+  /** @brief Pushes a zero-filled raw byte block through the decoder. */
   void push(std::uint32_t size)
   {
     input_.assign(size, 0U);

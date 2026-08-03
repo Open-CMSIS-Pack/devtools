@@ -20,6 +20,7 @@
 TEST(CtraceUnitTests, testCtfValueTypes)
 {
   EXPECT_EQ(CtfSchema::eventName(static_cast<CtfSchema::EventId>(255U)), "UNKNOWN");
+  /** @brief Describes one supported CTF value representation. */
   struct SupportedType {
     const char* name;
     CtfSchema::ValueTag tag;

@@ -15,13 +15,17 @@
 
 #include <filesystem>
 
+/** @brief Decodes one raw trace file and owns its configured output lifecycle. */
 class FileDecodeJob {
 public:
+  /** @brief Creates a file decode job using the production OpenCSD session. */
   FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
                 CtraceRunMeta ctraceRunMeta);
+  /** @brief Creates a file decode job with an injected OpenCSD session factory. */
   FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
                 CtraceRunMeta ctraceRunMeta, OpenCsdItmSessionFactory sessionFactory);
 
+  /** @brief Runs decoding, reporting, and output completion for the input file. */
   void run();
 
 private:

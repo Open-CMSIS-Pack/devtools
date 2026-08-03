@@ -19,11 +19,14 @@
 
 using TraceOutputTestSupport::TestTraceOutput;
 
+/** @brief Records diagnostic delivery in a shared lifecycle call sequence. */
 class OrderingDiagnosticSink final : public DiagnosticSink {
 public:
+  /** @brief Creates a sink that appends to the supplied call sequence. */
   explicit OrderingDiagnosticSink(std::vector<std::string>& calls) : calls_(calls) {}
 
 protected:
+  /** @brief Records one diagnostic delivery. */
   void write(const Event&) override
   {
     calls_.push_back("diagnostic");

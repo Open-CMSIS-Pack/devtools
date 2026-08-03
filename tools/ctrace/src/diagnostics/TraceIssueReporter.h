@@ -15,11 +15,15 @@
 #include <optional>
 #include <string>
 
+/** @brief Converts trace issue and overflow events into structured diagnostics. */
 class TraceIssueReporter final : public TraceEventSink {
 public:
+  /** @brief Creates a reporter that writes to the supplied diagnostic sink. */
   explicit TraceIssueReporter(DiagnosticSink& diagnostics);
 
+  /** @brief Observes one event and reports issue-bearing payloads. */
   void append(const TraceEvent& event) override;
+  /** @brief Emits deferred summary diagnostics once decoding is complete. */
   void finish();
 
 private:

@@ -18,7 +18,7 @@
 #include <string>
 #include <string_view>
 
-
+/** @brief Identifies columns in the stable ctrace CSV schema. */
 enum class CsvColumn : std::size_t {
   Cycles,
   Stream,

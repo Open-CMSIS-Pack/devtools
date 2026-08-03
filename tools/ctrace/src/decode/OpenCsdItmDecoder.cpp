@@ -23,8 +23,10 @@
 
 static_assert(sizeof(ocsd_trc_index_t) == sizeof(std::uint64_t), "ctrace requires 64-bit OpenCSD trace indices");
 
+/** @brief Implements OpenCSD feeding, bounded retry, and hardware-sync recovery. */
 class OpenCsdItmDecoderImpl {
 public:
+  /** @brief Creates a decoder implementation around one session factory. */
   OpenCsdItmDecoderImpl(OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory)
     : collector_(elementSink)
   {
@@ -38,6 +40,7 @@ public:
     }
   }
 
+  /** @brief Pushes the next raw trace byte chunk. */
   void push(const std::uint8_t* data, std::uint32_t size)
   {
     if (finished_) {
@@ -52,6 +55,7 @@ public:
     result_.bytesIn = static_cast<std::uint64_t>(traceIndex_);
   }
 
+  /** @brief Completes the OpenCSD stream and returns the consumed byte count. */
   OpenCsdItmDecodeResult finish()
   {
     if (finished_) {

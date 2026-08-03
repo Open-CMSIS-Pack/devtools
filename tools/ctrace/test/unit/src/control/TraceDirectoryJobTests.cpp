@@ -34,13 +34,16 @@ static TraceRunConfig defaultTraceRunConfig()
   return config;
 }
 
+/** @brief Supplies deterministic trace-run configurations to directory-job tests. */
 class TestTraceRunConfigReader final : public TraceRunConfigReader {
 public:
+  /** @brief Creates a reader with fixed data and an optional failure mode. */
   explicit TestTraceRunConfigReader(TraceRunConfig config = defaultTraceRunConfig(), bool fail = false)
     : config_(std::move(config)), fail_(fail)
   {
   }
 
+  /** @brief Records the path and returns or rejects the configured data. */
   TraceRunConfig read(const std::string& path) const override
   {
     paths.push_back(path);

@@ -17,16 +17,25 @@
 
 class DiagnosticSink;
 
+/** @brief Owns a CTF directory and its companion Trace Compass XML file. */
 class CtfBundleOutput final : public TraceOutput {
 public:
+  /** @brief Creates a CTF bundle output from validated configuration. */
   explicit CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnostics = nullptr);
+  /** @brief Aborts an active bundle before destruction. */
   ~CtfBundleOutput() override;
 
+  /** @brief Prepares empty CTF and XML targets. */
   void start() override;
+  /** @brief Completes metadata, stream, and XML output. */
   void stop() override;
+  /** @brief Removes incomplete CTF and XML targets. */
   void abort() override;
+  /** @brief Encodes one selected semantic event. */
   void writeEvent(const TraceEvent& event) override;
+  /** @brief Returns the CTF backend name. */
   std::string_view backendName() const noexcept override;
+  /** @brief Returns the CTF output directory path. */
   std::string targetPath() const override;
 
 private:

@@ -26,17 +26,30 @@ OpenCsdItmSession::OpenCsdItmSession(OpenCsdPacketCollector& collector, OpenCsdE
 {
   // Keep OpenCSD timestamps in raw ITM ticks. They are scaled after decode,
   // where the originating CoreSight stream and processor are known.
-  try {
-    createDecoder(collector, errorController);
-  } catch (...) {
-    destroyDecoder();
-    throw;
+  createDecoder(collector, errorController);
+}
+
+OpenCsdItmSession::~OpenCsdItmSession() noexcept = default;
+
+void OpenCsdSessionValidation::requireObject(const void* object, const char* message)
+{
+  if (object == nullptr) {
+    throw OpenCsdItmSessionError(message);
   }
 }
 
-OpenCsdItmSession::~OpenCsdItmSession() noexcept
+void OpenCsdSessionValidation::requireSuccess(ocsd_err_t error, const char* message)
 {
-  destroyDecoder();
+  if (error != OCSD_OK) {
+    throw OpenCsdItmSessionError(OpenCsdErrorController::describeApiError(error, message));
+  }
+}
+
+void OpenCsdItmSession::DecoderDeleter::operator()(TraceComponent* component) const noexcept
+{
+  if (manager != nullptr) {
+    manager->destroyDecoder(component);
+  }
 }
 
 ocsd_datapath_resp_t OpenCsdItmSession::pushData(ocsd_trc_index_t index, std::uint32_t size, const std::uint8_t* data,
@@ -60,48 +73,36 @@ ocsd_datapath_resp_t OpenCsdItmSession::endOfTrace()
   return input_->TraceDataIn(OCSD_OP_EOT, 0, 0, nullptr, nullptr);
 }
 
-void OpenCsdItmSession::checkOcsd(ocsd_err_t error, const char* message)
-{
-  if (error != OCSD_OK) {
-    throw OpenCsdItmSessionError(OpenCsdErrorController::describeApiError(error, message));
-  }
-}
-
 void OpenCsdItmSession::createDecoder(OpenCsdPacketCollector& collector, OpenCsdErrorController& errorController)
 {
   auto* registry = OcsdLibDcdRegister::getDecoderRegister();
-  if (registry == nullptr) {
-    throw OpenCsdItmSessionError("OpenCSD decoder registry is not initialized");
-  }
+  OpenCsdSessionValidation::requireObject(registry, "OpenCSD decoder registry is not initialized");
 
   auto error = registry->getDecoderMngrByName(OCSD_BUILTIN_DCD_ITM, &manager_);
-  checkOcsd(error, "failed to get OpenCSD ITM decoder manager");
+  OpenCsdSessionValidation::requireSuccess(error, "failed to get OpenCSD ITM decoder manager");
+  OpenCsdSessionValidation::requireObject(manager_, "OpenCSD ITM decoder manager is not initialized");
 
-  error = manager_->createDecoder(OCSD_CREATE_FLG_FULL_DECODER, 0, &config_, &component_);
-  checkOcsd(error, "failed to create OpenCSD ITM decoder");
+  TraceComponent* component = nullptr;
+  error = manager_->createDecoder(OCSD_CREATE_FLG_FULL_DECODER, 0, &config_, &component);
+  component_.get_deleter().manager = manager_;
+  component_.reset(component);
+  OpenCsdSessionValidation::requireSuccess(error, "failed to create OpenCSD ITM decoder");
+  OpenCsdSessionValidation::requireObject(component_.get(), "OpenCSD ITM decoder component is not initialized");
 
-  error = manager_->attachErrorLogger(component_, &errorController);
-  checkOcsd(error, "failed to attach OpenCSD packet-decoder error logger");
+  error = manager_->attachErrorLogger(component_.get(), &errorController);
+  OpenCsdSessionValidation::requireSuccess(error, "failed to attach OpenCSD packet-decoder error logger");
   if (component_->getAssocComponent() != nullptr) {
     error = manager_->attachErrorLogger(component_->getAssocComponent(), &errorController);
-    checkOcsd(error, "failed to attach OpenCSD packet-processor error logger");
+    OpenCsdSessionValidation::requireSuccess(error, "failed to attach OpenCSD packet-processor error logger");
   }
 
-  error = manager_->attachOutputSink(component_, &collector);
-  checkOcsd(error, "failed to attach OpenCSD ITM output sink");
+  error = manager_->attachOutputSink(component_.get(), &collector);
+  OpenCsdSessionValidation::requireSuccess(error, "failed to attach OpenCSD ITM output sink");
 
-  error = manager_->getDataInputI(component_, &input_);
-  checkOcsd(error, "failed to get OpenCSD ITM input interface");
+  error = manager_->getDataInputI(component_.get(), &input_);
+  OpenCsdSessionValidation::requireSuccess(error, "failed to get OpenCSD ITM input interface");
+  OpenCsdSessionValidation::requireObject(input_, "OpenCSD ITM input interface is not initialized");
 
-  error = manager_->attachPktMonitor(component_, &collector);
-  checkOcsd(error, "failed to attach OpenCSD ITM packet monitor");
-}
-
-void OpenCsdItmSession::destroyDecoder() noexcept
-{
-  input_ = nullptr;
-  if (manager_ != nullptr && component_ != nullptr) {
-    manager_->destroyDecoder(component_);
-    component_ = nullptr;
-  }
+  error = manager_->attachPktMonitor(component_.get(), &collector);
+  OpenCsdSessionValidation::requireSuccess(error, "failed to attach OpenCSD ITM packet monitor");
 }

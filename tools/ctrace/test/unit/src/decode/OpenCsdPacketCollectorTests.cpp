@@ -28,8 +28,10 @@
 
 using OpenCsdTestSupport::CollectingOpenCsdElementSink;
 
+/** @brief Collects one element and then simulates a downstream failure. */
 class ThrowingTraceElementSink final : public CollectingOpenCsdElementSink {
 public:
+  /** @brief Stores the element before throwing the synthetic failure. */
   void append(OpenCsdTraceElement element) override
   {
     CollectingOpenCsdElementSink::append(std::move(element));
@@ -150,6 +152,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
   collector.RawPacketDataMon(OCSD_OP_RESET, 14U, &packet, 0U, nullptr);
   EXPECT_EQ(sink.elements.size(), 2U);
 
+  /** @brief Describes one raw-packet callback mapping test case. */
   struct RawPacketCase {
     ocsd_itm_pkt_type type;
     ocsd_datapath_op_t operation;

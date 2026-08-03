@@ -20,17 +20,17 @@
 
 constexpr std::string_view ConfigSuffix = ".ctrace-run.yml";
 
-static bool endsWith(std::string_view value, std::string_view suffix)
+static bool endsWith(const std::string_view& value, const std::string_view& suffix)
 {
   return value.size() >= suffix.size() && value.substr(value.size() - suffix.size()) == suffix;
 }
 
-static bool isTraceChannel(std::string_view value)
+static bool isTraceChannel(const std::string_view& value)
 {
   return value == "SWO" || value == "TB" || value == "ER";
 }
 
-static bool isWindowsReservedFilename(std::string_view value)
+static bool isWindowsReservedFilename(const std::string_view& value)
 {
   const auto extension = value.find('.');
   const auto basename = value.substr(0U, extension);
@@ -47,7 +47,7 @@ static bool isWindowsReservedFilename(std::string_view value)
          upper[3] >= '1' && upper[3] <= '9';
 }
 
-static bool isSafeSolutionSetName(std::string_view value)
+static bool isSafeSolutionSetName(const std::string_view& value)
 {
   if (value.empty() || value == "." || value == ".." || value.back() == '.' || value.back() == ' ' ||
       isWindowsReservedFilename(value)) {

@@ -13,25 +13,54 @@
 #include "TraceOutput.h"
 
 #include <filesystem>
-#include <fstream>
+#include <functional>
+#include <memory>
+#include <ostream>
 #include <string>
 
+/** @brief Writes selected trace events directly to a CSV file. */
 class CsvFileOutput final : public TraceOutput {
 public:
+  /** @brief Owns one CSV stream and provides its explicit close operation. */
+  class Stream {
+  public:
+    /** @brief Allows destruction through the stream interface. */
+    virtual ~Stream() = default;
+
+    /** @brief Returns the stream receiving CSV rows. */
+    virtual std::ostream& output() = 0;
+    /** @brief Flushes and closes the stream. */
+    virtual void close() = 0;
+  };
+
+  /** @brief Creates an output stream for a validated CSV target path. */
+  using StreamFactory = std::function<std::unique_ptr<Stream>(const std::filesystem::path&)>;
+
+  /** @brief Creates a CSV output for one target file. */
   explicit CsvFileOutput(std::filesystem::path outputFile, TraceSelection selection = {});
+  /** @brief Creates a CSV output using an injected stream factory. */
+  CsvFileOutput(std::filesystem::path outputFile, TraceSelection selection, StreamFactory streamFactory);
+  /** @brief Closes an active stream without throwing. */
   ~CsvFileOutput() override;
 
+  /** @brief Creates the target file and writes its header. */
   void start() override;
+  /** @brief Flushes and closes the completed CSV file. */
   void stop() override;
+  /** @brief Closes and removes an incomplete CSV file. */
   void abort() override;
+  /** @brief Writes one selected event as a CSV row. */
   void writeEvent(const TraceEvent& event) override;
+  /** @brief Returns the CSV backend name. */
   std::string_view backendName() const noexcept override;
+  /** @brief Returns the CSV target file path. */
   std::string targetPath() const override;
 
 private:
   std::filesystem::path outputFile_;
   TraceSelection selection_;
-  std::ofstream stream_;
+  StreamFactory streamFactory_;
+  std::unique_ptr<Stream> stream_;
   bool active_ = false;
 };
 
