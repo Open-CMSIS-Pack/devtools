@@ -18,6 +18,7 @@
 
 namespace TraceRunTestSupport {
 
+/** @brief Creates a trace-run reference with common test defaults. */
 inline TraceRunReference makeReference(std::string type, std::optional<std::string> processorName,
                                        std::optional<std::uint32_t> stream, std::vector<std::uint32_t> sources,
                                        std::string ctraceRef = "route")
@@ -31,6 +32,7 @@ inline TraceRunReference makeReference(std::string type, std::optional<std::stri
   return reference;
 }
 
+/** @brief Creates a timestamp setup with optional ITM configuration. */
 inline TraceRunSetup makeTimestampSetup(std::optional<std::string> processorName,
                                         std::optional<std::uint64_t> clock = 1U,
                                         std::optional<std::uint32_t> prescaler = 1U,

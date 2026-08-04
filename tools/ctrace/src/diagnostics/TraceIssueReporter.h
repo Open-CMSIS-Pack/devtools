@@ -27,15 +27,18 @@ public:
   void finish();
 
 private:
+  /** @brief Accumulates overflow state for the final summary. */
   void reportOverflow(const TraceEvent& event);
+  /** @brief Reports one semantic decoder issue. */
   void reportError(const TraceEvent& event, const TraceIssueEvent& issue);
+  /** @brief Submits one normalized trace diagnostic to the sink. */
   void report(DiagnosticSink::Severity severity, std::string code, std::string message,
               std::optional<std::string> compactMessage = std::nullopt);
 
-  DiagnosticSink& diagnostics_;
-  std::optional<std::uint64_t> firstOverflowTimestamp_;
-  std::uint64_t overflowPackets_ = 0;
-  bool finished_ = false;
+  DiagnosticSink& m_diagnostics;
+  std::optional<std::uint64_t> m_firstOverflowTimestamp;
+  std::uint64_t m_overflowPackets = 0;
+  bool m_finished = false;
 };
 
 #endif  // CTRACE_SRC_DIAGNOSTICS_TRACEISSUEREPORTER_H

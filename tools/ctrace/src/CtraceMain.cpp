@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+/** @brief Converts a caught application failure into one structured diagnostic. */
 static void reportFailure(DiagnosticSink& diagnostics, DiagnosticSink::Category category, const char* code,
                           const std::exception& error)
 {

@@ -44,7 +44,16 @@ public:
     /** @brief Constructs an empty informational CLI diagnostic. */
     Event() = default;
 
-    /** @brief Constructs a fully classified diagnostic event. */
+    /**
+     * @brief Constructs a fully classified diagnostic event.
+     * @param eventSeverity Display severity.
+     * @param eventCategory Originating subsystem.
+     * @param eventCode Stable machine-readable code.
+     * @param eventMessage Human-readable description.
+     * @param eventContext Structured key-value context.
+     * @param eventCompactMessage Optional compact-mode description.
+     * @param eventImpact Optional explicit process-success impact.
+     */
     Event(Severity eventSeverity, Category eventCategory, std::string eventCode, std::string eventMessage,
           std::vector<std::pair<std::string, std::string>> eventContext = {},
           std::optional<std::string> eventCompactMessage = std::nullopt,
@@ -67,9 +76,17 @@ public:
   /** @brief Destroys a diagnostic sink through its interface. */
   virtual ~DiagnosticSink() = default;
 
-  /** @brief Records a diagnostic and forwards it to the concrete writer. */
+  /**
+   * @brief Records a diagnostic and forwards it to the concrete writer.
+   * @param event Fully classified diagnostic event.
+   *
+   * Failing impact is counted independently of display severity.
+   */
   void report(const Event& event);
-  /** @brief Returns the number of diagnostics with failing impact. */
+  /**
+   * @brief Returns the number of diagnostics with failing impact.
+   * @return Monotonic failure count accumulated by report().
+   */
   std::uint64_t failureCount() const noexcept;
 
 protected:
@@ -77,7 +94,7 @@ protected:
   virtual void write(const Event& event) = 0;
 
 private:
-  std::uint64_t failureCount_ = 0;
+  std::uint64_t m_failureCount = 0;
 };
 
 /** @brief Renders structured diagnostics to standard error. */

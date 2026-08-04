@@ -19,9 +19,8 @@ implemented yet.
 
 The Blinky YAML, SWO capture, and TB capture are approved ctrace test assets and
 may be redistributed as part of Open-CMSIS-Pack/devtools. The reference CSV is
-derived from the SWO capture and is covered by the same approval. Every
-versioned input and golden-output file has a sibling `.license` file containing
-machine-readable SPDX copyright and license metadata.
+derived from the SWO capture and is covered by the same approval and the
+repository-wide Apache-2.0 license terms.
 
 The approved Blinky fixture set is identified by these SHA-256 values:
 
@@ -43,6 +42,6 @@ by the test.
 
 `trace-run` contains only the small current-schema inputs needed by executable
 tests. Reader unit tests cover the consumed fields and verify that unrelated
-YAML content is ignored. The successful-output integration test combines the
-Board YAML with an eight-byte synthetic ITM stream generated below the build
-tree; no generated binary fixture is versioned.
+YAML content is ignored. A C++ entry-point test creates a reviewable eight-byte
+ITM stream below the build tree and verifies all output formats without an
+external fixture generator.

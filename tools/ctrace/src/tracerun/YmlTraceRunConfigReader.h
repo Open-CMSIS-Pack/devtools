@@ -16,7 +16,12 @@
 /** @brief Reads trace-run configuration files encoded as YAML. */
 class YmlTraceRunConfigReader final : public TraceRunConfigReader {
 public:
-  /** @brief Reads and validates the ctrace-relevant YAML fields. */
+  /**
+   * @brief Reads and validates the ctrace-relevant YAML fields.
+   * @param path YAML trace-run configuration path.
+   * @return Parsed processors, trace sources, and setup metadata.
+   * @throws std::runtime_error If YAML syntax or required fields are invalid.
+   */
   TraceRunConfig read(const std::string& path) const override;
 };
 

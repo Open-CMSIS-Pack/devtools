@@ -56,11 +56,13 @@ template <typename Columns> static std::string joinColumns(const Columns& column
   return out.str();
 }
 
+/** @brief Converts a CSV column identifier to its array index. */
 static std::size_t column(CsvColumn value)
 {
   return static_cast<std::size_t>(value);
 }
 
+/** @brief Applies RFC-style quoting to one CSV field when required. */
 static std::string escapeCsvField(const std::string& value)
 {
   if (value.find_first_of("\",\r\n") == std::string::npos) {
@@ -78,6 +80,7 @@ static std::string escapeCsvField(const std::string& value)
   return escaped;
 }
 
+/** @brief Joins escaped fields into one CSV row. */
 static std::string renderCsvRow(const CsvRow& fields)
 {
   std::ostringstream out;
@@ -90,6 +93,7 @@ static std::string renderCsvRow(const CsvRow& fields)
   return out.str();
 }
 
+/** @brief Formats an integer as a zero-padded hexadecimal CSV field. */
 static std::string hexValue(std::uint64_t value, std::uint32_t widthBytes)
 {
   static constexpr char digits[] = "0123456789abcdef";
@@ -102,6 +106,7 @@ static std::string hexValue(std::uint64_t value, std::uint32_t widthBytes)
   return "0x" + out;
 }
 
+/** @brief Maps a semantic exception action to its CSV value. */
 static std::string_view exceptionActionCsvValue(ExceptionAction action)
 {
   switch (action) {
@@ -117,6 +122,7 @@ static std::string_view exceptionActionCsvValue(ExceptionAction action)
   return "0x0";
 }
 
+/** @brief Maps one semantic trace event to all CSV columns. */
 static CsvRow eventToCsvRow(const TraceEvent& event)
 {
   CsvRow row{};

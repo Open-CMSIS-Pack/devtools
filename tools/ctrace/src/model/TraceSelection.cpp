@@ -16,56 +16,67 @@
 #include <string_view>
 #include <variant>
 
+/** @brief Maps an ITM payload to its selectable event type. */
 static std::optional<TraceEventType> typeFor(const SoftwareTraceEvent&)
 {
   return TraceEventType::Itm;
 }
 
+/** @brief Maps a DWT data payload to its selectable event type. */
 static std::optional<TraceEventType> typeFor(const DwtDataTraceEvent&)
 {
   return TraceEventType::Dwt;
 }
 
+/** @brief Maps a DWT address payload to its selectable event type. */
 static std::optional<TraceEventType> typeFor(const DwtAddressTraceEvent&)
 {
   return TraceEventType::Dwt;
 }
 
+/** @brief Maps an exception payload to its selectable event type. */
 static std::optional<TraceEventType> typeFor(const ExceptionTraceEvent&)
 {
   return TraceEventType::Exception;
 }
 
+/** @brief Maps a DWT counter payload to its selectable event type. */
 static std::optional<TraceEventType> typeFor(const DwtEventTraceEvent&)
 {
   return std::nullopt;
 }
 
+/** @brief Maps a PMU payload to its selectable event type. */
 static std::optional<TraceEventType> typeFor(const PmuTraceEvent&)
 {
   return std::nullopt;
 }
 
+/** @brief Excludes local timestamp control packets from type selection. */
 static std::optional<TraceEventType> typeFor(const LocalTimestampTraceEvent&)
 {
   return std::nullopt;
 }
 
+/** @brief Excludes global timestamp control packets from type selection. */
 static std::optional<TraceEventType> typeFor(const GlobalTimestampTraceEvent&)
 {
   return TraceEventType::GlobalTimestamp;
 }
 
+/** @brief Excludes overflow control packets from type selection. */
 static std::optional<TraceEventType> typeFor(const OverflowTraceEvent&)
 {
   return TraceEventType::Overflow;
 }
 
+/** @brief Excludes synchronization control packets from type selection. */
 static std::optional<TraceEventType> typeFor(const SyncTraceEvent&)
 {
   return std::nullopt;
 }
 
+/** @brief Excludes retained diagnostic events from type selection. */
 static std::optional<TraceEventType> typeFor(const TraceIssueEvent&)
 {
   return TraceEventType::Error;

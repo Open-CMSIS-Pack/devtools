@@ -46,45 +46,46 @@ public:
 
   /** @brief Opens a raw trace input for binary reading. */
   explicit RawFileReader(std::filesystem::path path)
-    : path_(std::move(path)), stream_(path_, std::ios::binary), buffer_(64U * 1024U)
+    : m_path(std::move(path)), m_stream(m_path, std::ios::binary), m_buffer(64U * 1024U)
   {
-    if (!stream_) {
-      throw std::runtime_error("failed to open input file: " + path_.string());
+    if (!m_stream) {
+      throw std::runtime_error("failed to open input file: " + m_path.string());
     }
   }
 
   /** @brief Returns the next raw byte chunk. */
   ReadResult read()
   {
-    if (eof_ || !stream_.is_open()) {
+    if (m_eof || !m_stream.is_open()) {
       return {{}, true};
     }
 
-    stream_.read(reinterpret_cast<char*>(buffer_.data()), static_cast<std::streamsize>(buffer_.size()));
-    const auto readBytes = stream_.gcount();
+    m_stream.read(reinterpret_cast<char*>(m_buffer.data()), static_cast<std::streamsize>(m_buffer.size()));
+    const auto readBytes = m_stream.gcount();
     if (readBytes > 0) {
-      if (stream_.eof()) {
-        eof_ = true;
-        stream_.close();
+      if (m_stream.eof()) {
+        m_eof = true;
+        m_stream.close();
       }
-      return {{buffer_.data(), static_cast<std::size_t>(readBytes)}, false};
+      return {{m_buffer.data(), static_cast<std::size_t>(readBytes)}, false};
     }
-    if (stream_.bad()) {
-      throw std::runtime_error("failed to read input file: " + path_.string());
+    if (m_stream.bad()) {
+      throw std::runtime_error("failed to read input file: " + m_path.string());
     }
 
-    eof_ = true;
-    stream_.close();
+    m_eof = true;
+    m_stream.close();
     return {{}, true};
   }
 
 private:
-  std::filesystem::path path_;
-  std::ifstream stream_;
-  std::vector<std::uint8_t> buffer_;
-  bool eof_ = false;
+  std::filesystem::path m_path;
+  std::ifstream m_stream;
+  std::vector<std::uint8_t> m_buffer;
+  bool m_eof = false;
 };
 
+/** @brief Formats packet count, input size, elapsed time, and throughput. */
 static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady_clock::duration elapsed)
 {
   const auto seconds = std::chrono::duration<double>(elapsed).count();
@@ -97,6 +98,7 @@ static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady
   return out.str();
 }
 
+/** @brief Extracts fallback and per-stream timestamp prescalers from metadata. */
 static ItmTimestampPrescalers timestampPrescalers(const CtraceRunMeta& ctraceRunMeta)
 {
   auto fallback = ctraceRunMeta.timestampPrescaler();
@@ -106,6 +108,7 @@ static ItmTimestampPrescalers timestampPrescalers(const CtraceRunMeta& ctraceRun
   return {fallback, ctraceRunMeta.timestampPrescalersByTraceBusId()};
 }
 
+/** @brief Converts command-line output selection into an output request. */
 static TraceOutputRequest outputRequest(const CliOptions& options)
 {
   return {
@@ -115,6 +118,7 @@ static TraceOutputRequest outputRequest(const CliOptions& options)
   };
 }
 
+/** @brief Creates the output backends enabled by a validated plan. */
 static std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const TraceOutputPlan& outputPlan,
                                                                          DiagnosticSink& diagnostics)
 {
@@ -137,42 +141,42 @@ static std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const T
 
 FileDecodeJob::FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
                              CtraceRunMeta ctraceRunMeta)
-  : options_(std::move(options)), rawInputPath_(std::move(rawInputPath)), diagnostics_(diagnostics),
-    ctraceRunMeta_(std::move(ctraceRunMeta))
+  : m_options(std::move(options)), m_rawInputPath(std::move(rawInputPath)), m_diagnostics(diagnostics),
+    m_ctraceRunMeta(std::move(ctraceRunMeta))
 {
 }
 
 FileDecodeJob::FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
                              CtraceRunMeta ctraceRunMeta, OpenCsdItmSessionFactory sessionFactory)
-  : options_(std::move(options)), rawInputPath_(std::move(rawInputPath)), diagnostics_(diagnostics),
-    ctraceRunMeta_(std::move(ctraceRunMeta)), sessionFactory_(std::move(sessionFactory))
+  : m_options(std::move(options)), m_rawInputPath(std::move(rawInputPath)), m_diagnostics(diagnostics),
+    m_ctraceRunMeta(std::move(ctraceRunMeta)), m_sessionFactory(std::move(sessionFactory))
 {
 }
 
 void FileDecodeJob::run()
 {
-  const auto prescalers = timestampPrescalers(ctraceRunMeta_);
-  auto outputPlan = planTraceOutputs(outputRequest(options_), rawInputPath_, ctraceRunMeta_, diagnostics_);
+  const auto prescalers = timestampPrescalers(m_ctraceRunMeta);
+  auto outputPlan = planTraceOutputs(outputRequest(m_options), m_rawInputPath, m_ctraceRunMeta, m_diagnostics);
   if (outputPlan.hasRequestedOutputs() && !outputPlan.hasEnabledOutputs()) {
     return;
   }
-  diagnostics_.report({
+  m_diagnostics.report({
       DiagnosticSink::Severity::Info,
       DiagnosticSink::Category::Input,
       "ctrace-run-meta",
       "applied ctrace-run meta",
       {
-          {"path", ctraceRunMeta_.configPath()},
-          {"processors", std::to_string(ctraceRunMeta_.processorCount())},
-          {"sources", std::to_string(ctraceRunMeta_.sources().size())},
+          {"path", m_ctraceRunMeta.configPath()},
+          {"processors", std::to_string(m_ctraceRunMeta.processorCount())},
+          {"sources", std::to_string(m_ctraceRunMeta.sources().size())},
       },
   });
-  auto outputs = createConfiguredOutputs(outputPlan, diagnostics_);
-  DecodeConsumers consumers(std::move(outputs), diagnostics_, ctraceRunMeta_.itmEnableMask(),
-                            ctraceRunMeta_.itmEnableMasksByTraceBusId());
+  auto outputs = createConfiguredOutputs(outputPlan, m_diagnostics);
+  DecodeConsumers consumers(std::move(outputs), m_diagnostics, m_ctraceRunMeta.itmEnableMask(),
+                            m_ctraceRunMeta.itmEnableMasksByTraceBusId());
 
   if (prescalers.fallback.has_value()) {
-    diagnostics_.report({
+    m_diagnostics.report({
         DiagnosticSink::Severity::Info,
         DiagnosticSink::Category::Input,
         "timestamp-prescaler",
@@ -180,7 +184,7 @@ void FileDecodeJob::run()
         {{"value", std::to_string(*prescalers.fallback)}},
     });
   } else {
-    diagnostics_.report({
+    m_diagnostics.report({
         DiagnosticSink::Severity::Info,
         DiagnosticSink::Category::Input,
         "timestamp-prescaler",
@@ -192,10 +196,10 @@ void FileDecodeJob::run()
   DecodeResult decode;
   bool decoderFatal = false;
   try {
-    RawFileReader input(rawInputPath_);
+    RawFileReader input(m_rawInputPath);
     std::unique_ptr<DecodePipeline> pipeline;
-    if (sessionFactory_) {
-      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers, sessionFactory_);
+    if (m_sessionFactory) {
+      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers, m_sessionFactory);
     } else {
       pipeline = std::make_unique<DecodePipeline>(prescalers, consumers);
     }
@@ -214,7 +218,7 @@ void FileDecodeJob::run()
   }
   consumers.finishIssues();
   const auto decodeEnd = std::chrono::steady_clock::now();
-  diagnostics_.report({
+  m_diagnostics.report({
       DiagnosticSink::Severity::Info,
       DiagnosticSink::Category::Decode,
       "summary",

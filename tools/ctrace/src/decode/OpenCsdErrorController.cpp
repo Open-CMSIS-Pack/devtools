@@ -15,6 +15,7 @@
 #include <sstream>
 #include <string>
 
+/** @brief Removes line terminators and trailing whitespace from an OpenCSD message. */
 static std::string trimTrailingWhitespace(std::string value)
 {
   while (!value.empty() &&
@@ -89,38 +90,38 @@ OpenCsdErrorController::OpenCsdErrorController()
 
 void OpenCsdErrorController::beginDataPathCall()
 {
-  callErrors_.clear();
+  m_callErrors.clear();
 }
 
 OpenCsdErrorController::Decision OpenCsdErrorController::decide(ocsd_datapath_resp_t response) const
 {
   Decision decision;
   decision.response = response;
-  decision.errors = callErrors_;
+  decision.errors = m_callErrors;
 
-  const auto recoverable = std::find_if(callErrors_.begin(), callErrors_.end(), [](const auto& error) {
+  const auto recoverable = std::find_if(m_callErrors.begin(), m_callErrors.end(), [](const auto& error) {
     return error.severity == OCSD_ERR_SEV_ERROR && isRecoverableStreamError(error.code);
   });
-  const auto nonRecoverableError = std::find_if(callErrors_.rbegin(), callErrors_.rend(), [](const auto& error) {
+  const auto nonRecoverableError = std::find_if(m_callErrors.rbegin(), m_callErrors.rend(), [](const auto& error) {
     return error.severity == OCSD_ERR_SEV_ERROR && !isRecoverableStreamError(error.code);
   });
-  if (OCSD_DATA_RESP_IS_FATAL(response) && nonRecoverableError != callErrors_.rend()) {
+  if (OCSD_DATA_RESP_IS_FATAL(response) && nonRecoverableError != m_callErrors.rend()) {
     decision.error = *nonRecoverableError;
-  } else if (recoverable != callErrors_.end()) {
+  } else if (recoverable != m_callErrors.end()) {
     decision.error = *recoverable;
-  } else if (!callErrors_.empty()) {
-    decision.error = callErrors_.back();
+  } else if (!m_callErrors.empty()) {
+    decision.error = m_callErrors.back();
   }
 
   if (OCSD_DATA_RESP_IS_FATAL(response)) {
-    decision.action = response == OCSD_RESP_FATAL_INVALID_DATA && nonRecoverableError == callErrors_.rend() &&
+    decision.action = response == OCSD_RESP_FATAL_INVALID_DATA && nonRecoverableError == m_callErrors.rend() &&
                               decision.error.has_value() && decision.error->severity == OCSD_ERR_SEV_ERROR &&
                               isRecoverableStreamError(decision.error->code)
                           ? Action::RecoverStream
                           : Action::Abort;
     return decision;
   }
-  if (recoverable != callErrors_.end()) {
+  if (recoverable != m_callErrors.end()) {
     decision.action = Action::RecoverStream;
     return decision;
   }
@@ -290,7 +291,7 @@ void OpenCsdErrorController::LogError(ocsd_hndl_err_log_t handle, const ocsdErro
   if (error == nullptr) {
     return;
   }
-  callErrors_.push_back(makeRecord(*error));
+  m_callErrors.push_back(makeRecord(*error));
   ocsdDefaultErrorLogger::LogError(handle, error);
 }
 

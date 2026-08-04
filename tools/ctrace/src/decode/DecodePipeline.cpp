@@ -21,13 +21,13 @@ DecodePipeline::DecodePipeline(std::uint32_t timestampPrescaler, TraceEventSink&
 }
 
 DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink)
-  : streamDecoder_(std::move(timestampPrescalers), eventSink), decoder_(streamDecoder_)
+  : m_streamDecoder(std::move(timestampPrescalers), eventSink), m_decoder(m_streamDecoder)
 {
 }
 
 DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
                                const OpenCsdItmSessionFactory& sessionFactory)
-  : streamDecoder_(std::move(timestampPrescalers), eventSink), decoder_(streamDecoder_, sessionFactory)
+  : m_streamDecoder(std::move(timestampPrescalers), eventSink), m_decoder(m_streamDecoder, sessionFactory)
 {
 }
 
@@ -39,15 +39,15 @@ void DecodePipeline::push(RawByteView bytes)
   if (bytes.size > std::numeric_limits<std::uint32_t>::max()) {
     throw std::runtime_error("raw decode chunk is too large");
   }
-  decoder_.push(bytes.data, static_cast<std::uint32_t>(bytes.size));
+  m_decoder.push(bytes.data, static_cast<std::uint32_t>(bytes.size));
 }
 
 DecodeResult DecodePipeline::finish()
 {
-  const auto result = decoder_.finish();
-  streamDecoder_.finish();
+  const auto result = m_decoder.finish();
+  m_streamDecoder.finish();
   return {
       result.bytesIn,
-      streamDecoder_.eventCount(),
+      m_streamDecoder.eventCount(),
   };
 }

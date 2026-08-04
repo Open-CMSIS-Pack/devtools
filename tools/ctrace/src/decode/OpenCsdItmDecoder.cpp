@@ -28,11 +28,11 @@ class OpenCsdItmDecoderImpl {
 public:
   /** @brief Creates a decoder implementation around one session factory. */
   OpenCsdItmDecoderImpl(OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory)
-    : collector_(elementSink)
+    : m_collector(elementSink)
   {
     try {
-      session_ = sessionFactory(collector_, errorController_);
-      if (session_ == nullptr) {
+      m_session = sessionFactory(m_collector, m_errorController);
+      if (m_session == nullptr) {
         failInitialization("OpenCSD ITM session factory returned no session");
       }
     } catch (const OpenCsdItmSessionError& error) {
@@ -43,7 +43,7 @@ public:
   /** @brief Pushes the next raw trace byte chunk. */
   void push(const std::uint8_t* data, std::uint32_t size)
   {
-    if (finished_) {
+    if (m_finished) {
       throw std::runtime_error("OpenCSD ITM decoder already finished");
     }
     std::uint32_t offset = 0;
@@ -52,38 +52,38 @@ public:
       processBlock(data + offset, span);
       offset += span;
     }
-    result_.bytesIn = static_cast<std::uint64_t>(traceIndex_);
+    m_result.bytesIn = static_cast<std::uint64_t>(m_traceIndex);
   }
 
   /** @brief Completes the OpenCSD stream and returns the consumed byte count. */
   OpenCsdItmDecodeResult finish()
   {
-    if (finished_) {
-      return result_;
+    if (m_finished) {
+      return m_result;
     }
-    completeConsumedDataLoss(traceIndex_);
-    collector_.beginTransaction();
-    errorController_.beginDataPathCall();
-    const auto response = session_->endOfTrace();
-    collector_.rethrowOutputError();
-    const auto decision = errorController_.decide(response);
+    completeConsumedDataLoss(m_traceIndex);
+    m_collector.beginTransaction();
+    m_errorController.beginDataPathCall();
+    const auto response = m_session->endOfTrace();
+    m_collector.rethrowOutputError();
+    const auto decision = m_errorController.decide(response);
     if (decision.action == OpenCsdErrorController::Action::Abort) {
-      abortDecode(decision, 0U, traceIndex_, 0U, "OpenCSD aborted end-of-trace processing: ");
+      abortDecode(decision, 0U, m_traceIndex, 0U, "OpenCSD aborted end-of-trace processing: ");
     }
     if (decision.action == OpenCsdErrorController::Action::RecoverStream) {
-      const auto sourceOffset = OpenCsdErrorController::errorOffset(decision, traceIndex_);
-      collector_.commitTransactionBefore(sourceOffset);
-      appendReportedErrors(decision, traceIndex_, true);
+      const auto sourceOffset = OpenCsdErrorController::errorOffset(decision, m_traceIndex);
+      m_collector.commitTransactionBefore(sourceOffset);
+      appendReportedErrors(decision, m_traceIndex, true);
     } else {
-      collector_.commitTransaction();
-      appendReportedErrors(decision, traceIndex_, false);
+      m_collector.commitTransaction();
+      appendReportedErrors(decision, m_traceIndex, false);
       if (decision.action == OpenCsdErrorController::Action::Wait) {
         flushAfterWait();
       }
     }
-    finished_ = true;
-    result_.bytesIn = static_cast<std::uint64_t>(traceIndex_);
-    return result_;
+    m_finished = true;
+    m_result.bytesIn = static_cast<std::uint64_t>(m_traceIndex);
+    return m_result;
   }
 
 private:
@@ -102,7 +102,7 @@ private:
       item.error = error;
       const auto sourceOffset = OpenCsdErrorController::errorOffset(item, baseOffset);
       const auto isError = error.severity == OCSD_ERR_SEV_ERROR;
-      collector_.appendDecodeError(static_cast<ocsd_trc_index_t>(sourceOffset),
+      m_collector.appendDecodeError(static_cast<ocsd_trc_index_t>(sourceOffset),
                                    OpenCsdErrorController::describeSummary(item),
                                    OpenCsdErrorController::issueCode(item), nextDiscontinuity && isError,
                                    isError ? TraceIssueSeverity::Error : TraceIssueSeverity::Warning);
@@ -112,7 +112,7 @@ private:
       }
     }
     if (!emittedError && (force || OpenCsdErrorController::responseReportsError(decision.response))) {
-      collector_.appendDecodeError(
+      m_collector.appendDecodeError(
           static_cast<ocsd_trc_index_t>(OpenCsdErrorController::errorOffset(decision, baseOffset)),
           OpenCsdErrorController::describeSummary(decision), OpenCsdErrorController::issueCode(decision), discontinuity,
           TraceIssueSeverity::Error);
@@ -122,7 +122,7 @@ private:
   [[noreturn]] void abortDecode(const OpenCsdErrorController::Decision& decision, std::uint32_t size,
                                 std::uint64_t baseOffset, std::uint32_t bytesConsumed, const std::string& prefix)
   {
-    collector_.rollbackTransaction();
+    m_collector.rollbackTransaction();
     completeConsumedDataLoss(OpenCsdErrorController::errorOffset(decision, baseOffset));
     appendReportedErrors(decision, baseOffset, true);
     const auto processed = baseOffset + std::min<std::uint64_t>(bytesConsumed, size);
@@ -131,15 +131,15 @@ private:
 
   void completeConsumedDataLoss(std::uint64_t resumeOffset)
   {
-    if (!consumedDataLossStart_.has_value()) {
+    if (!m_consumedDataLossStart.has_value()) {
       return;
     }
-    const auto startOffset = *consumedDataLossStart_;
+    const auto startOffset = *m_consumedDataLossStart;
     const auto endOffset = std::max(startOffset, resumeOffset);
     const auto consumed = endOffset - startOffset;
-    consumedDataLossStart_.reset();
-    const auto boundaryAlreadyMarked = consumedDataLossBoundaryMarked_;
-    consumedDataLossBoundaryMarked_ = false;
+    m_consumedDataLossStart.reset();
+    const auto boundaryAlreadyMarked = m_consumedDataLossBoundaryMarked;
+    m_consumedDataLossBoundaryMarked = false;
     if (consumed == 0U) {
       return;
     }
@@ -147,9 +147,9 @@ private:
         "OpenCSD consumed " + std::to_string(consumed) +
         " raw bytes while waiting for usable ITM trace packets; data loss until a later sync/recovery point";
     if (boundaryAlreadyMarked) {
-      collector_.prependDataLossError(static_cast<ocsd_trc_index_t>(startOffset), message, consumed);
+      m_collector.prependDataLossError(static_cast<ocsd_trc_index_t>(startOffset), message, consumed);
     } else {
-      collector_.prependDiscontinuity(static_cast<ocsd_trc_index_t>(startOffset), message, "data-loss", consumed);
+      m_collector.prependDiscontinuity(static_cast<ocsd_trc_index_t>(startOffset), message, "data-loss", consumed);
     }
   }
 
@@ -158,14 +158,14 @@ private:
     std::uint32_t processed = 0;
     bool retriedWithoutProgress = false;
     while (processed < size) {
-      const auto callIndex = static_cast<std::uint64_t>(traceIndex_);
+      const auto callIndex = static_cast<std::uint64_t>(m_traceIndex);
       const auto callSize = size - processed;
       std::uint32_t processedThisPass = 0;
-      collector_.beginTransaction();
-      errorController_.beginDataPathCall();
-      const auto response = session_->pushData(traceIndex_, callSize, data + processed, processedThisPass);
-      collector_.rethrowOutputError();
-      const auto decision = errorController_.decide(response);
+      m_collector.beginTransaction();
+      m_errorController.beginDataPathCall();
+      const auto response = m_session->pushData(m_traceIndex, callSize, data + processed, processedThisPass);
+      m_collector.rethrowOutputError();
+      const auto decision = m_errorController.decide(response);
       if (decision.action == OpenCsdErrorController::Action::Abort) {
         abortDecode(decision, callSize, callIndex, processedThisPass, "OpenCSD aborted decode: ");
       }
@@ -173,11 +173,11 @@ private:
       const auto consumed = std::min(processedThisPass, callSize);
       if (consumed == 0U) {
         if (retriedWithoutProgress) {
-          collector_.rollbackTransaction();
-          completeConsumedDataLoss(traceIndex_);
-          collector_.appendDecodeError(traceIndex_, "OpenCSD made no progress after a retry; decode aborted",
+          m_collector.rollbackTransaction();
+          completeConsumedDataLoss(m_traceIndex);
+          m_collector.appendDecodeError(m_traceIndex, "OpenCSD made no progress after a retry; decode aborted",
                                        "opencsd-no-progress", false);
-          throw OpenCsdFatalError("OpenCSD made no progress after a retry", static_cast<std::uint64_t>(traceIndex_));
+          throw OpenCsdFatalError("OpenCSD made no progress after a retry", static_cast<std::uint64_t>(m_traceIndex));
         }
         retriedWithoutProgress = true;
       } else {
@@ -187,62 +187,62 @@ private:
       if (decision.action == OpenCsdErrorController::Action::RecoverStream) {
         const auto sourceOffset = OpenCsdErrorController::errorOffset(decision, callIndex);
         completeConsumedDataLoss(
-            std::min(sourceOffset, collector_.transactionFirstSourceOffset().value_or(sourceOffset)));
+            std::min(sourceOffset, m_collector.transactionFirstSourceOffset().value_or(sourceOffset)));
         // Callbacks before the bad packet remain valid; callbacks at or
         // after its offset belong to the failed decode transaction.
-        collector_.commitTransactionBefore(sourceOffset);
+        m_collector.commitTransactionBefore(sourceOffset);
         appendReportedErrors(decision, callIndex, true);
         processed += consumed;
-        traceIndex_ += consumed;
-        dataLossActive_ = true;
-        consumedDataLossStart_ = static_cast<std::uint64_t>(traceIndex_);
-        consumedDataLossBoundaryMarked_ = true;
+        m_traceIndex += consumed;
+        m_dataLossActive = true;
+        m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
+        m_consumedDataLossBoundaryMarked = true;
         resetDecoder();
         continue;
       }
       if (decision.action == OpenCsdErrorController::Action::Wait) {
-        if (collector_.transactionElementCount() == 0U) {
-          collector_.rollbackTransaction();
+        if (m_collector.transactionElementCount() == 0U) {
+          m_collector.rollbackTransaction();
         } else {
-          completeConsumedDataLoss(collector_.transactionFirstSourceOffset().value_or(callIndex));
-          collector_.commitTransaction();
+          completeConsumedDataLoss(m_collector.transactionFirstSourceOffset().value_or(callIndex));
+          m_collector.commitTransaction();
         }
         appendReportedErrors(decision, callIndex, false);
         processed += consumed;
-        traceIndex_ += consumed;
+        m_traceIndex += consumed;
         flushAfterWait();
         continue;
       }
       if (consumed == 0U) {
-        collector_.rollbackTransaction();
-        collector_.appendDecodeError(traceIndex_,
+        m_collector.rollbackTransaction();
+        m_collector.appendDecodeError(m_traceIndex,
                                      "OpenCSD made no progress while raw data was present; decoder reset and searching "
                                      "for next real ITM async sync",
                                      "opencsd-no-progress");
-        dataLossActive_ = true;
-        consumedDataLossStart_ = static_cast<std::uint64_t>(traceIndex_);
-        consumedDataLossBoundaryMarked_ = true;
+        m_dataLossActive = true;
+        m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
+        m_consumedDataLossBoundaryMarked = true;
         resetDecoder();
         continue;
       }
-      if (collector_.transactionElementCount() == 0U) {
-        collector_.rollbackTransaction();
+      if (m_collector.transactionElementCount() == 0U) {
+        m_collector.rollbackTransaction();
         appendReportedErrors(decision, callIndex, false);
-        if (!dataLossActive_) {
-          consumedDataLossStart_ = static_cast<std::uint64_t>(traceIndex_);
-          consumedDataLossBoundaryMarked_ = false;
-          dataLossActive_ = true;
+        if (!m_dataLossActive) {
+          m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
+          m_consumedDataLossBoundaryMarked = false;
+          m_dataLossActive = true;
         }
         processed += consumed;
-        traceIndex_ += consumed;
+        m_traceIndex += consumed;
         continue;
       }
-      completeConsumedDataLoss(collector_.transactionFirstSourceOffset().value_or(callIndex));
-      collector_.commitTransaction();
+      completeConsumedDataLoss(m_collector.transactionFirstSourceOffset().value_or(callIndex));
+      m_collector.commitTransaction();
       appendReportedErrors(decision, callIndex, false);
-      dataLossActive_ = false;
+      m_dataLossActive = false;
       processed += consumed;
-      traceIndex_ += consumed;
+      m_traceIndex += consumed;
     }
   }
 
@@ -251,68 +251,68 @@ private:
     // Bound backpressure handling so a broken decoder cannot stall a file forever.
     static constexpr std::uint32_t kMaxFlushCalls = 1024U;
     for (std::uint32_t call = 0; call < kMaxFlushCalls; ++call) {
-      collector_.beginTransaction();
-      errorController_.beginDataPathCall();
-      const auto response = session_->flush();
-      collector_.rethrowOutputError();
-      const auto decision = errorController_.decide(response);
+      m_collector.beginTransaction();
+      m_errorController.beginDataPathCall();
+      const auto response = m_session->flush();
+      m_collector.rethrowOutputError();
+      const auto decision = m_errorController.decide(response);
       if (decision.action == OpenCsdErrorController::Action::Abort) {
-        abortDecode(decision, 0U, traceIndex_, 0U, "OpenCSD aborted while flushing a WAIT response: ");
+        abortDecode(decision, 0U, m_traceIndex, 0U, "OpenCSD aborted while flushing a WAIT response: ");
       }
       if (decision.action == OpenCsdErrorController::Action::RecoverStream) {
-        const auto sourceOffset = OpenCsdErrorController::errorOffset(decision, traceIndex_);
-        collector_.commitTransactionBefore(sourceOffset);
-        appendReportedErrors(decision, traceIndex_, true);
+        const auto sourceOffset = OpenCsdErrorController::errorOffset(decision, m_traceIndex);
+        m_collector.commitTransactionBefore(sourceOffset);
+        appendReportedErrors(decision, m_traceIndex, true);
         resetDecoder();
         return;
       }
-      if (collector_.transactionElementCount() == 0U) {
-        collector_.rollbackTransaction();
+      if (m_collector.transactionElementCount() == 0U) {
+        m_collector.rollbackTransaction();
       } else {
-        collector_.commitTransaction();
+        m_collector.commitTransaction();
       }
-      appendReportedErrors(decision, traceIndex_, false);
+      appendReportedErrors(decision, m_traceIndex, false);
       if (decision.action == OpenCsdErrorController::Action::Continue) {
         return;
       }
     }
     const auto limit = std::to_string(kMaxFlushCalls);
-    collector_.appendDecodeError(traceIndex_,
+    m_collector.appendDecodeError(m_traceIndex,
                                  "OpenCSD WAIT did not clear after " + limit + " FLUSH operations; decode aborted",
                                  "opencsd-wait-timeout");
     throw OpenCsdFatalError("OpenCSD WAIT did not clear after " + limit + " FLUSH operations",
-                            static_cast<std::uint64_t>(traceIndex_));
+                            static_cast<std::uint64_t>(m_traceIndex));
   }
 
   void resetDecoder()
   {
-    errorController_.beginDataPathCall();
-    const auto response = session_->reset();
-    collector_.rethrowOutputError();
-    const auto decision = errorController_.decide(response);
+    m_errorController.beginDataPathCall();
+    const auto response = m_session->reset();
+    m_collector.rethrowOutputError();
+    const auto decision = m_errorController.decide(response);
     if (decision.action != OpenCsdErrorController::Action::Continue) {
-      appendReportedErrors(decision, traceIndex_, true, true);
+      appendReportedErrors(decision, m_traceIndex, true, true);
       throw OpenCsdFatalError("OpenCSD decoder reset failed: " + OpenCsdErrorController::describe(decision),
-                              static_cast<std::uint64_t>(traceIndex_));
+                              static_cast<std::uint64_t>(m_traceIndex));
     }
-    appendReportedErrors(decision, traceIndex_, false);
+    appendReportedErrors(decision, m_traceIndex, false);
   }
 
   [[noreturn]] void failInitialization(const std::string& message)
   {
-    collector_.appendDecodeError(traceIndex_, message, "opencsd-initialization-error", false);
-    throw OpenCsdFatalError(message, static_cast<std::uint64_t>(traceIndex_));
+    m_collector.appendDecodeError(m_traceIndex, message, "opencsd-initialization-error", false);
+    throw OpenCsdFatalError(message, static_cast<std::uint64_t>(m_traceIndex));
   }
 
-  OpenCsdPacketCollector collector_;
-  OpenCsdErrorController errorController_;
-  std::unique_ptr<OpenCsdItmSessionInterface> session_;
-  ocsd_trc_index_t traceIndex_ = 0;
-  bool dataLossActive_ = false;
-  std::optional<std::uint64_t> consumedDataLossStart_;
-  bool consumedDataLossBoundaryMarked_ = false;
-  OpenCsdItmDecodeResult result_;
-  bool finished_ = false;
+  OpenCsdPacketCollector m_collector;
+  OpenCsdErrorController m_errorController;
+  std::unique_ptr<OpenCsdItmSessionInterface> m_session;
+  ocsd_trc_index_t m_traceIndex = 0;
+  bool m_dataLossActive = false;
+  std::optional<std::uint64_t> m_consumedDataLossStart;
+  bool m_consumedDataLossBoundaryMarked = false;
+  OpenCsdItmDecodeResult m_result;
+  bool m_finished = false;
 };
 
 OpenCsdItmDecoder::OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink)
@@ -324,7 +324,7 @@ OpenCsdItmDecoder::OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink)
 
 OpenCsdItmDecoder::OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink,
                                      const OpenCsdItmSessionFactory& sessionFactory)
-  : impl_(std::make_unique<OpenCsdItmDecoderImpl>(elementSink, sessionFactory))
+  : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(elementSink, sessionFactory))
 {
 }
 
@@ -332,10 +332,10 @@ OpenCsdItmDecoder::~OpenCsdItmDecoder() = default;
 
 void OpenCsdItmDecoder::push(const std::uint8_t* data, std::uint32_t size)
 {
-  impl_->push(data, size);
+  m_impl->push(data, size);
 }
 
 OpenCsdItmDecodeResult OpenCsdItmDecoder::finish()
 {
-  return impl_->finish();
+  return m_impl->finish();
 }

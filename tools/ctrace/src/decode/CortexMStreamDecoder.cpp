@@ -19,7 +19,7 @@
 #include <utility>
 
 CortexMStreamDecoder::CortexMStreamDecoder(ItmTimestampPrescalers prescalers, TraceEventSink& eventSink)
-  : prescalers_(std::move(prescalers)), eventSink_(eventSink)
+  : m_prescalers(std::move(prescalers)), m_eventSink(eventSink)
 {
 }
 
@@ -35,7 +35,7 @@ void CortexMStreamDecoder::append(OpenCsdTraceElement element)
 
 void CortexMStreamDecoder::finish()
 {
-  for (auto& [stream, decoder] : decoders_) {
+  for (auto& [stream, decoder] : m_decoders) {
     (void)stream;
     decoder->finish();
   }
@@ -44,7 +44,7 @@ void CortexMStreamDecoder::finish()
 std::uint64_t CortexMStreamDecoder::eventCount() const
 {
   std::uint64_t count = 0U;
-  for (const auto& [stream, decoder] : decoders_) {
+  for (const auto& [stream, decoder] : m_decoders) {
     (void)stream;
     count += decoder->eventCount();
   }
@@ -53,12 +53,12 @@ std::uint64_t CortexMStreamDecoder::eventCount() const
 
 std::uint32_t CortexMStreamDecoder::prescaler(std::uint8_t traceBusId) const
 {
-  const auto found = prescalers_.byTraceBusId.find(traceBusId);
-  if (found != prescalers_.byTraceBusId.end()) {
+  const auto found = m_prescalers.byTraceBusId.find(traceBusId);
+  if (found != m_prescalers.byTraceBusId.end()) {
     return found->second;
   }
-  if (prescalers_.fallback.has_value()) {
-    return *prescalers_.fallback;
+  if (m_prescalers.fallback.has_value()) {
+    return *m_prescalers.fallback;
   }
   if (traceBusId == 0U) {
     throw std::runtime_error("ITM timestamps with Trace Bus ID 0 cannot be assigned to "
@@ -70,9 +70,9 @@ std::uint32_t CortexMStreamDecoder::prescaler(std::uint8_t traceBusId) const
 
 CortexMPostDecoder& CortexMStreamDecoder::decoder(std::uint8_t traceBusId)
 {
-  auto& result = decoders_[traceBusId];
+  auto& result = m_decoders[traceBusId];
   if (!result) {
-    result = std::make_unique<CortexMPostDecoder>(eventSink_);
+    result = std::make_unique<CortexMPostDecoder>(m_eventSink);
   }
   return *result;
 }

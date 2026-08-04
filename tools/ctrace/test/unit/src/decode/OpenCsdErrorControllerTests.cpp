@@ -26,12 +26,20 @@ public:
   /** @brief Appends one logger message. */
   void printOutStr(const std::string& message) override
   {
-    messages += message;
+    m_messages += message;
   }
 
-  std::string messages;
+  /** @brief Returns all collected logger text. */
+  const std::string& messages() const
+  {
+    return m_messages;
+  }
+
+private:
+  std::string m_messages;
 };
 
+/** @brief Creates an OpenCSD error decision for formatting tests. */
 static OpenCsdErrorController::Decision makeDecision(ocsd_datapath_resp_t response, ocsd_err_t code,
                                                      std::optional<std::uint64_t> offset = std::nullopt)
 {
@@ -250,14 +258,14 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerForwardsLoggerMessages)
   const auto source = controller.RegisterErrorSource("ITM decoder");
   controller.LogMessage(source, OCSD_ERR_SEV_INFO, "configured");
   controller.LogMessage(99U, OCSD_ERR_SEV_ERROR, "fallback");
-  EXPECT_NE(sink.messages.find("ITM decoder : configured"), std::string::npos);
-  EXPECT_NE(sink.messages.find("unknown : fallback"), std::string::npos);
+  EXPECT_NE(sink.messages().find("ITM decoder : configured"), std::string::npos);
+  EXPECT_NE(sink.messages().find("unknown : fallback"), std::string::npos);
 
   logger.setLogOpts(ocsdMsgLogger::OUT_NONE);
   controller.LogMessage(source, OCSD_ERR_SEV_INFO, "muted");
-  EXPECT_EQ(sink.messages.find("muted"), std::string::npos);
+  EXPECT_EQ(sink.messages().find("muted"), std::string::npos);
 
   controller.setOutputLogger(nullptr);
   controller.LogMessage(source, OCSD_ERR_SEV_ERROR, "disabled");
-  EXPECT_EQ(sink.messages.find("disabled"), std::string::npos);
+  EXPECT_EQ(sink.messages().find("disabled"), std::string::npos);
 }

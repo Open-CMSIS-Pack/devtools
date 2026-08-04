@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+/** @brief Creates the default trace-run configuration used by directory tests. */
 static TraceRunConfig defaultTraceRunConfig()
 {
   TraceRunConfig config;
@@ -39,29 +40,35 @@ class TestTraceRunConfigReader final : public TraceRunConfigReader {
 public:
   /** @brief Creates a reader with fixed data and an optional failure mode. */
   explicit TestTraceRunConfigReader(TraceRunConfig config = defaultTraceRunConfig(), bool fail = false)
-    : config_(std::move(config)), fail_(fail)
+    : m_config(std::move(config)), m_fail(fail)
   {
   }
 
   /** @brief Records the path and returns or rejects the configured data. */
   TraceRunConfig read(const std::string& path) const override
   {
-    paths.push_back(path);
-    if (fail_) {
+    m_paths.push_back(path);
+    if (m_fail) {
       throw std::runtime_error("synthetic config failure");
     }
-    auto config = config_;
+    auto config = m_config;
     config.path = path;
     return config;
   }
 
-  mutable std::vector<std::string> paths;
+  /** @brief Returns every configuration path requested from this reader. */
+  const std::vector<std::string>& paths() const
+  {
+    return m_paths;
+  }
 
 private:
-  TraceRunConfig config_;
-  bool fail_ = false;
+  mutable std::vector<std::string> m_paths;
+  TraceRunConfig m_config;
+  bool m_fail = false;
 };
 
+/** @brief Writes trace-run and raw-input pairs for selected test targets. */
 static void writeTraceInputs(const std::filesystem::path& traceDirectory,
                              std::initializer_list<std::string_view> targetNames)
 {
@@ -91,8 +98,8 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
   job.run();
 
   require(diagnostics.failureCount() == checkpoint, "TraceDirectoryJob target run failed");
-  require(reader.paths.size() == 1U, "TraceDirectoryJob should read one selected YAML file");
-  require(std::filesystem::path(reader.paths[0]).filename() == "Alpha.ctrace-run.yml",
+  require(reader.paths().size() == 1U, "TraceDirectoryJob should read one selected YAML file");
+  require(std::filesystem::path(reader.paths()[0]).filename() == "Alpha.ctrace-run.yml",
           "TraceDirectoryJob reader path mismatch");
   require(std::filesystem::is_regular_file(traceDir / "Alpha.SWO.csv"), "TraceDirectoryJob CSV output name mismatch");
   require(std::filesystem::is_regular_file(traceDir / "Alpha.ctf" / "metadata"),
@@ -120,7 +127,7 @@ TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
   batchJob.run();
 
   require(diagnostics.failureCount() == batchCheckpoint, "TraceDirectoryJob batch check failed");
-  require(batchReader.paths.size() == 2U, "TraceDirectoryJob batch should read every trace-run file");
+  require(batchReader.paths().size() == 2U, "TraceDirectoryJob batch should read every trace-run file");
   require(!std::filesystem::exists(traceDir / "Alpha.SWO.csv"), "check-only batch should not create CSV output");
   require(!std::filesystem::exists(traceDir / "Alpha.ctf"), "check-only batch should not create CTF output");
 

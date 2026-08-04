@@ -33,11 +33,13 @@
 
 using Node = YAML::Node;
 
+/** @brief Converts a YAML mark to a one-based line number. */
 static std::size_t lineNumber(const Node& node)
 {
   return node.Mark().line >= 0 ? static_cast<std::size_t>(node.Mark().line + 1) : 0U;
 }
 
+/** @brief Formats a YAML validation error with file and line. */
 static std::string errorMessage(const std::string& path, const Node& node, const std::string& message)
 {
   std::ostringstream out;
@@ -59,6 +61,7 @@ struct NodeLookup {
   Node value{YAML::NodeType::Undefined};
 };
 
+/** @brief Looks up one mapping key while preserving duplicate information. */
 static NodeLookup lookupNode(const Node& element, const std::string_view& tag)
 {
   NodeLookup result;
@@ -72,17 +75,20 @@ static NodeLookup lookupNode(const Node& element, const std::string_view& tag)
   return result;
 }
 
+/** @brief Returns an optional unique child node. */
 static Node childNode(const Node& element, const std::string_view& tag)
 {
   return lookupNode(element, tag).value;
 }
 
+/** @brief Returns an optional unique child mapping or sequence container. */
 static Node childContainer(const Node& element, const std::string_view& tag)
 {
   const auto node = childNode(element, tag);
   return node && (node.IsMap() || node.IsSequence()) ? node : Node(YAML::NodeType::Undefined);
 }
 
+/** @brief Reads one optional scalar mapping value as text. */
 static std::optional<std::string> optionalAttribute(const Node& element, const std::string_view& name)
 {
   const auto node = childNode(element, name);
@@ -98,6 +104,7 @@ static std::optional<std::string> optionalAttribute(const Node& element, const s
   return node.Scalar();
 }
 
+/** @brief Reads and validates an optional processor name. */
 static std::optional<std::string> processorNameAttribute(const std::string& path, const Node& element)
 {
   const auto node = childNode(element, "pname");
@@ -110,6 +117,7 @@ static std::optional<std::string> processorNameAttribute(const std::string& path
   return TraceRunSchema::normalizedProcessorName(std::optional<std::string>(node.Scalar()));
 }
 
+/** @brief Reads a processor name without making unrelated YAML fatal. */
 static std::optional<std::string> bestEffortProcessorName(const Node& element)
 {
   const auto lookup = lookupNode(element, "pname");
@@ -119,6 +127,7 @@ static std::optional<std::string> bestEffortProcessorName(const Node& element)
   return TraceRunSchema::normalizedProcessorName(std::optional<std::string>(lookup.value.Scalar()));
 }
 
+/** @brief Parses and range-checks one required unsigned mapping value. */
 static std::uint64_t unsignedValue(const std::string& path, const Node& element, const std::string_view& name,
                                    const std::string& value, std::uint64_t maximum)
 {
@@ -140,6 +149,7 @@ static std::uint64_t unsignedValue(const std::string& path, const Node& element,
   return parsed;
 }
 
+/** @brief Parses and range-checks one optional unsigned mapping value. */
 static std::optional<std::uint64_t> optionalUnsignedAttribute(const std::string& path, const Node& element,
                                                               const std::string_view& name, std::uint64_t maximum)
 {
@@ -150,6 +160,7 @@ static std::optional<std::uint64_t> optionalUnsignedAttribute(const std::string&
   return unsignedValue(path, element, name, *value, maximum);
 }
 
+/** @brief Parses an optional unsigned value while deferring validation errors. */
 static std::optional<std::uint64_t> deferredUnsignedAttribute(const std::string& path, const Node& element,
                                                               const std::string_view& name, std::uint64_t maximum,
                                                               std::optional<std::string>& error)
@@ -162,6 +173,7 @@ static std::optional<std::uint64_t> deferredUnsignedAttribute(const std::string&
   }
 }
 
+/** @brief Parses an optional unsigned value only when its setup is consumed. */
 static std::optional<std::uint64_t> bestEffortUnsignedAttribute(const std::string& path, const Node& element,
                                                                 const std::string_view& name, std::uint64_t maximum)
 {
@@ -174,6 +186,7 @@ static std::optional<std::uint64_t> bestEffortUnsignedAttribute(const std::strin
 
 // ctrace-ref identifies the originating ctrace.yml node. The data index links
 // a generated DWT route to its copied ctrace-setup.data metadata.
+/** @brief Extracts a DWT data setup index from a ctrace reference path. */
 static std::optional<std::size_t> dwtDataIndex(const std::string_view& ctraceRef)
 {
   constexpr std::string_view marker = "data#";
@@ -193,6 +206,7 @@ static std::optional<std::size_t> dwtDataIndex(const std::string_view& ctraceRef
   return index;
 }
 
+/** @brief Collects data setup indices consumed by matching references. */
 static std::set<std::size_t> referencedDataSetupIndices(const std::vector<TraceRunReference>& references,
                                                         const std::optional<std::string>& setupProcessorName)
 {
@@ -212,6 +226,7 @@ static std::set<std::size_t> referencedDataSetupIndices(const std::vector<TraceR
   return indices;
 }
 
+/** @brief Tests whether a processor has any consumed DWT data setup. */
 static bool hasReferencedDataForProcessor(const std::vector<TraceRunReference>& references,
                                           const std::optional<std::string>& setupProcessorName)
 {
@@ -224,6 +239,7 @@ static bool hasReferencedDataForProcessor(const std::vector<TraceRunReference>& 
   return false;
 }
 
+/** @brief Tests whether best-effort parsing must retain one setup's data. */
 static bool setupDataMayBeConsumed(const Node& setup, const std::vector<TraceRunReference>& references)
 {
   bool hasProcessorName = false;
@@ -247,6 +263,7 @@ static bool setupDataMayBeConsumed(const Node& setup, const std::vector<TraceRun
   return !hasProcessorName && hasReferencedDataForProcessor(references, std::nullopt);
 }
 
+/** @brief Requires one YAML node to be a sequence. */
 static void requireSequence(const std::string& path, const Node& element, const std::string_view& name)
 {
   if (!element.IsSequence()) {
@@ -254,6 +271,7 @@ static void requireSequence(const std::string& path, const Node& element, const 
   }
 }
 
+/** @brief Locates and validates the root trace-run mapping. */
 static Node traceRunRoot(const std::string& path, const Node& document)
 {
   if (!document.IsMap()) {
@@ -270,6 +288,7 @@ static Node traceRunRoot(const std::string& path, const Node& document)
   return root;
 }
 
+/** @brief Parses scalar or sequence source identifiers from one reference. */
 static std::pair<std::vector<std::uint32_t>, bool> parseSources(const std::string& path, const Node& reference)
 {
   const auto sourceNode = childNode(reference, "source");
@@ -303,6 +322,7 @@ struct ReferenceDiagnostics {
   std::optional<std::string> error;
 };
 
+/** @brief Parses optional informational diagnostics attached to a reference. */
 static ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, const Node& element)
 {
   const auto message = [&](const std::string_view& name) {
@@ -319,6 +339,7 @@ static ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, c
   };
 }
 
+/** @brief Parses one relevant trace-run reference. */
 static std::optional<TraceRunReference> parseReference(const std::string& path, const Node& element)
 {
   if (!element.IsMap()) {
@@ -407,6 +428,7 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
   return reference;
 }
 
+/** @brief Parses every consumed reference from the trace-run root. */
 static std::vector<TraceRunReference> parseReferences(const std::string& path, const Node& root)
 {
   const auto referencesNode = childNode(root, "ctrace-refs");
@@ -425,6 +447,7 @@ static std::vector<TraceRunReference> parseReferences(const std::string& path, c
   return references;
 }
 
+/** @brief Parses timestamp metadata from one consumed setup. */
 static std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::string& path, const Node& element)
 {
   const auto timestampsLookup = lookupNode(element, "timestamps");
@@ -467,6 +490,7 @@ static std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::stri
   return timestamps;
 }
 
+/** @brief Parses ITM enable-mask metadata from one consumed setup. */
 static std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, const Node& element)
 {
   const auto itmNode = childNode(element, "itm");
@@ -484,6 +508,7 @@ static std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, co
       unsignedValue(path, enableNode, "itm.enable", enableNode.Scalar(), std::numeric_limits<std::uint32_t>::max()))};
 }
 
+/** @brief Parses only DWT data setups referenced by consumed routes. */
 static std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::string& path, const Node& element,
                                                                 const std::set<std::size_t>& referencedIndices)
 {
@@ -524,6 +549,7 @@ static std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::strin
   return foundReferencedEntry ? dataSetups : std::vector<TraceRunDataSetup>{};
 }
 
+/** @brief Parses one trace setup and its consumed metadata groups. */
 static TraceRunSetup parseSetup(const std::string& path, const Node& element,
                                 const std::vector<TraceRunReference>& references)
 {
@@ -537,6 +563,7 @@ static TraceRunSetup parseSetup(const std::string& path, const Node& element,
   return setup;
 }
 
+/** @brief Parses all trace setups referenced by relevant routes. */
 static std::vector<TraceRunSetup> parseSetups(const std::string& path, const Node& root,
                                               const std::vector<TraceRunReference>& references)
 {

@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+/** @brief Builds diagnostic context for one trace-run reference. */
 static std::vector<std::pair<std::string, std::string>> referenceContext(const TraceRunConfig& config,
                                                                          const TraceRunReference& reference)
 {
@@ -40,6 +41,7 @@ static std::vector<std::pair<std::string, std::string>> referenceContext(const T
   return context;
 }
 
+/** @brief Reports informational, warning, and error annotations from trace-run references. */
 static void reportTraceRunDiagnostics(const TraceRunConfig& config, DiagnosticSink& diagnostics)
 {
   for (const auto& reference : config.references) {
@@ -78,15 +80,15 @@ static void reportTraceRunDiagnostics(const TraceRunConfig& config, DiagnosticSi
 
 TraceDirectoryJob::TraceDirectoryJob(CliOptions options, DiagnosticSink& diagnostics,
                                      const TraceRunConfigReader& configReader)
-  : options_(std::move(options)), diagnostics_(diagnostics), configReader_(configReader)
+  : m_options(std::move(options)), m_diagnostics(diagnostics), m_configReader(configReader)
 {
 }
 
 void TraceDirectoryJob::run()
 {
   std::vector<std::filesystem::path> configFiles;
-  if (options_.traceDir.has_value()) {
-    configFiles = TraceRunDiscovery::selectConfigFiles(*options_.traceDir, options_.targetName);
+  if (m_options.traceDir.has_value()) {
+    configFiles = TraceRunDiscovery::selectConfigFiles(*m_options.traceDir, m_options.targetName);
   } else {
     throw std::runtime_error("trace directory job requires <trace-dir>");
   }
@@ -94,8 +96,8 @@ void TraceDirectoryJob::run()
   for (const auto& configFile : configFiles) {
     const auto solutionSet = TraceRunDiscovery::solutionSetName(configFile);
     try {
-      const auto config = configReader_.read(configFile.string());
-      diagnostics_.report({
+      const auto config = m_configReader.read(configFile.string());
+      m_diagnostics.report({
           DiagnosticSink::Severity::Info,
           DiagnosticSink::Category::Input,
           "trace-run-config",
@@ -107,13 +109,13 @@ void TraceDirectoryJob::run()
               {"setups", std::to_string(config.setups.size())},
           },
       });
-      reportTraceRunDiagnostics(config, diagnostics_);
+      reportTraceRunDiagnostics(config, m_diagnostics);
       const auto ctraceRunMeta = CtraceRunMeta::fromConfig(config);
       const auto rawInputs = TraceRunDiscovery::rawInputs(configFile);
       bool processedSolutionSet = false;
       for (const auto& rawInput : rawInputs) {
         if (rawInput.channel != "SWO") {
-          diagnostics_.report({
+          m_diagnostics.report({
               DiagnosticSink::Severity::Warning,
               DiagnosticSink::Category::Input,
               "unsupported-trace-channel",
@@ -127,12 +129,12 @@ void TraceDirectoryJob::run()
           continue;
         }
 
-        FileDecodeJob fileJob(options_, rawInput.path, diagnostics_, ctraceRunMeta);
+        FileDecodeJob fileJob(m_options, rawInput.path, m_diagnostics, ctraceRunMeta);
         fileJob.run();
         processedSolutionSet = true;
       }
       if (!processedSolutionSet) {
-        diagnostics_.report({
+        m_diagnostics.report({
             DiagnosticSink::Severity::Error,
             DiagnosticSink::Category::Input,
             "missing-swo-raw-input",
@@ -144,7 +146,7 @@ void TraceDirectoryJob::run()
         });
       }
     } catch (const std::exception& error) {
-      diagnostics_.report({
+      m_diagnostics.report({
           DiagnosticSink::Severity::Error,
           DiagnosticSink::Category::Input,
           "solution-set-failed",

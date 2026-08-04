@@ -23,13 +23,13 @@ public:
   /** @brief Stores one emitted OpenCSD element. */
   void append(OpenCsdTraceElement element) override
   {
-    elements.push_back(std::move(element));
+    m_elements.push_back(std::move(element));
   }
 
   /** @brief Tests whether the collected elements include an issue code. */
   bool hasIssue(std::string_view code) const
   {
-    for (const auto& element : elements) {
+    for (const auto& element : m_elements) {
       if (element.issueCode == code) {
         return true;
       }
@@ -37,9 +37,17 @@ public:
     return false;
   }
 
-  std::vector<OpenCsdTraceElement> elements;
+  /** @brief Returns all collected OpenCSD elements. */
+  const std::vector<OpenCsdTraceElement>& elements() const
+  {
+    return m_elements;
+  }
+
+private:
+  std::vector<OpenCsdTraceElement> m_elements;
 };
 
+/** @brief Creates a basic OpenCSD element for a test. */
 inline OpenCsdTraceElement openCsdElement(OpenCsdTraceElement::Kind kind, std::uint64_t index = 0U,
                                           std::uint8_t stream = 0U)
 {
@@ -50,6 +58,7 @@ inline OpenCsdTraceElement openCsdElement(OpenCsdTraceElement::Kind kind, std::u
   return element;
 }
 
+/** @brief Creates an OpenCSD software element for a test. */
 inline OpenCsdTraceElement openCsdSoftwareElement(std::uint32_t channel, std::uint32_t value = 0U,
                                                   std::uint64_t index = 0U, std::uint8_t stream = 0U,
                                                   std::uint8_t size = 1U)
@@ -61,6 +70,7 @@ inline OpenCsdTraceElement openCsdSoftwareElement(std::uint32_t channel, std::ui
   return element;
 }
 
+/** @brief Creates an OpenCSD local timestamp element for a test. */
 inline OpenCsdTraceElement
 openCsdTimestampElement(std::uint64_t tcyc, std::uint64_t index = 0U, std::uint8_t stream = 0U,
                         LocalTimestampRelation relation = LocalTimestampRelation::Synchronous)

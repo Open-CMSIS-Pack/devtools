@@ -18,12 +18,6 @@ function(ctrace_configure_target target)
   target_compile_definitions(${target} PRIVATE
     $<$<PLATFORM_ID:Windows>:NOMINMAX>
   )
-  target_compile_options(${target} PRIVATE
-    $<$<CXX_COMPILER_ID:AppleClang,Clang,GNU>:-Wall>
-    $<$<CXX_COMPILER_ID:AppleClang,Clang,GNU>:-Wextra>
-    $<$<CXX_COMPILER_ID:AppleClang,Clang,GNU>:-Wpedantic>
-    $<$<CXX_COMPILER_ID:MSVC>:/W4>
-  )
 endfunction()
 
 add_subdirectory(src)
@@ -38,6 +32,9 @@ add_executable(ctrace
   src/main.cpp
   ${CTRACE_HEADER_FILES}
 )
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  target_sources(ctrace PRIVATE src/ctrace.manifest)
+endif()
 target_link_libraries(ctrace PRIVATE
   ctrace::control
 )

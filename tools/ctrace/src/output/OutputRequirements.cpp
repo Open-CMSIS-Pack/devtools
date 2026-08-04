@@ -34,6 +34,7 @@ struct OutputPaths {
   std::filesystem::path traceCompassXml;
 };
 
+/** @brief Derives all output targets from one raw input path. */
 static OutputPaths outputPaths(const std::filesystem::path& rawInputPath)
 {
   const auto captureName = rawInputPath.filename().stem();
@@ -55,6 +56,7 @@ static OutputPaths outputPaths(const std::filesystem::path& rawInputPath)
   };
 }
 
+/** @brief Tests whether one configured source route is selected for output. */
 static bool routeMatchesSelection(const CtraceRunSourceMeta& source, const TraceSelection& selection)
 {
   return selection.includesType(source.type) && selection.includesStream(source.traceBusId);
@@ -74,6 +76,7 @@ routeContext(const std::string_view& backend, const CtraceRunMeta& ctraceRunMeta
   return context;
 }
 
+/** @brief Reports one output preflight failure with optional context. */
 static void reportRequirementError(DiagnosticSink& diagnostics, std::string code, std::string message,
                                    std::vector<std::pair<std::string, std::string>> context)
 {
@@ -86,6 +89,7 @@ static void reportRequirementError(DiagnosticSink& diagnostics, std::string code
   });
 }
 
+/** @brief Validates that selected CTF routes have unambiguous stream identities. */
 static bool validateCtfRouteIdentity(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,
                                      DiagnosticSink& diagnostics)
 {
@@ -133,6 +137,7 @@ struct SelectedClockResolution {
   bool valid{true};
 };
 
+/** @brief Resolves a common clock from all selected stream routes. */
 static SelectedClockResolution resolveSelectedCtfClock(const CtraceRunMeta& ctraceRunMeta,
                                                        const TraceSelection& selection, DiagnosticSink& diagnostics)
 {
@@ -196,6 +201,7 @@ static SelectedClockResolution resolveSelectedCtfClock(const CtraceRunMeta& ctra
   return result;
 }
 
+/** @brief Resolves the fallback CTF clock when no selected route supplies one. */
 static std::optional<std::uint64_t> resolveDefaultCtfClock(const CtraceRunMeta& ctraceRunMeta,
                                                            const TraceSelection& selection, DiagnosticSink& diagnostics)
 {
@@ -242,6 +248,7 @@ static std::optional<std::uint64_t> resolveDefaultCtfClock(const CtraceRunMeta& 
   return ctraceRunMeta.timestampClockHz();
 }
 
+/** @brief Resolves and validates the clock used by a CTF output. */
 static std::optional<std::uint64_t> resolveCtfClock(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,
                                                     DiagnosticSink& diagnostics)
 {
@@ -255,6 +262,7 @@ static std::optional<std::uint64_t> resolveCtfClock(const CtraceRunMeta& ctraceR
   return resolveDefaultCtfClock(ctraceRunMeta, selection, diagnostics);
 }
 
+/** @brief Validates value type and size metadata for selected DWT routes. */
 static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,
                                    DiagnosticSink& diagnostics)
 {
@@ -309,6 +317,7 @@ static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const Tra
   return valid;
 }
 
+/** @brief Converts selected trace-run sources into normalized CTF routes. */
 static std::vector<ResolvedTraceSource> resolveCtfSources(const CtraceRunMeta& ctraceRunMeta,
                                                           const TraceSelection& selection)
 {

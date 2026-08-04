@@ -53,17 +53,24 @@ private:
     ContextState state = ContextState::Running;
   };
 
+  /** @brief Switches the emitted active lane to one context. */
   void setActiveContext(std::uint32_t number, const RecordEmitter& emit);
+  /** @brief Closes the currently emitted active lane. */
   void closeActiveContext(const RecordEmitter& emit);
+  /** @brief Reconciles emitted lane state with the context stack. */
   void updateActiveContext(const RecordEmitter& emit);
+  /** @brief Emits and records one lane transition. */
   void emitRecord(std::uint32_t number, RecordAction action, const RecordEmitter& emit);
+  /** @brief Pushes or reactivates an entered exception context. */
   void enterContext(std::uint32_t number);
+  /** @brief Removes an exited exception context. */
   void exitContext(std::uint32_t number);
+  /** @brief Returns the stack to a previously active context. */
   void returnToContext(std::uint32_t number);
 
-  std::vector<ContextFrame> contextStack_;
-  std::optional<std::uint32_t> activeContextNumber_;
-  std::vector<std::uint32_t> observedExceptionNumbers_;
+  std::vector<ContextFrame> m_contextStack;
+  std::optional<std::uint32_t> m_activeContextNumber;
+  std::vector<std::uint32_t> m_observedExceptionNumbers;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_CTF_CTFEXCEPTIONLANETRACKER_H

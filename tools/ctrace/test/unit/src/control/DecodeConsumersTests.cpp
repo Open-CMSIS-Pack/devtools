@@ -23,17 +23,17 @@ using TraceOutputTestSupport::TestTraceOutput;
 class OrderingDiagnosticSink final : public DiagnosticSink {
 public:
   /** @brief Creates a sink that appends to the supplied call sequence. */
-  explicit OrderingDiagnosticSink(std::vector<std::string>& calls) : calls_(calls) {}
+  explicit OrderingDiagnosticSink(std::vector<std::string>& calls) : m_calls(calls) {}
 
 protected:
   /** @brief Records one diagnostic delivery. */
   void write(const Event&) override
   {
-    calls_.push_back("diagnostic");
+    m_calls.push_back("diagnostic");
   }
 
 private:
-  std::vector<std::string>& calls_;
+  std::vector<std::string>& m_calls;
 };
 
 TEST(CtraceUnitTests, testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOutputs)

@@ -20,16 +20,19 @@
 
 constexpr std::string_view ConfigSuffix = ".ctrace-run.yml";
 
+/** @brief Tests whether a string ends in the supplied suffix. */
 static bool endsWith(const std::string_view& value, const std::string_view& suffix)
 {
   return value.size() >= suffix.size() && value.substr(value.size() - suffix.size()) == suffix;
 }
 
+/** @brief Tests whether a file extension names a supported trace channel. */
 static bool isTraceChannel(const std::string_view& value)
 {
   return value == "SWO" || value == "TB" || value == "ER";
 }
 
+/** @brief Tests whether a solution-set name is reserved by Windows. */
 static bool isWindowsReservedFilename(const std::string_view& value)
 {
   const auto extension = value.find('.');
@@ -47,6 +50,7 @@ static bool isWindowsReservedFilename(const std::string_view& value)
          upper[3] >= '1' && upper[3] <= '9';
 }
 
+/** @brief Tests whether a solution-set name is portable and path-safe. */
 static bool isSafeSolutionSetName(const std::string_view& value)
 {
   if (value.empty() || value == "." || value == ".." || value.back() == '.' || value.back() == ' ' ||
@@ -61,6 +65,7 @@ static bool isSafeSolutionSetName(const std::string_view& value)
   });
 }
 
+/** @brief Rejects absent, non-regular, or unreadable trace-run files. */
 static void requireReadableConfigFile(const std::filesystem::path& path)
 {
   if (!std::filesystem::is_regular_file(path)) {

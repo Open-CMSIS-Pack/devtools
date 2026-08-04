@@ -29,7 +29,14 @@ struct TraceOutputPlan {
   bool hasEnabledOutputs() const;
 };
 
-/** @brief Validates output requirements and returns the formats that can be generated. */
+/**
+ * @brief Validates output requirements and returns the formats that can be generated.
+ * @param request User-requested output formats, targets, and filters.
+ * @param rawInputPath Raw input used to derive default target names.
+ * @param ctraceRunMeta Metadata required by output formats.
+ * @param diagnostics Sink receiving independently reported format failures.
+ * @return Plan retaining every requested format whose requirements are satisfied.
+ */
 TraceOutputPlan planTraceOutputs(const TraceOutputRequest& request, const std::filesystem::path& rawInputPath,
                                  const CtraceRunMeta& ctraceRunMeta, DiagnosticSink& diagnostics);
 

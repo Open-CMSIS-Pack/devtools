@@ -36,6 +36,7 @@ struct CtfRecord {
   std::vector<unsigned char> payload;
 };
 
+/** @brief Reads an unsigned little-endian integer from test stream bytes. */
 template <typename Integer> inline Integer readLittleEndian(const std::vector<unsigned char>& bytes, std::size_t offset)
 {
   static_assert(std::is_integral_v<Integer> && std::is_unsigned_v<Integer>);
@@ -47,21 +48,25 @@ template <typename Integer> inline Integer readLittleEndian(const std::vector<un
   return value;
 }
 
+/** @brief Reads a 16-bit little-endian test value. */
 inline std::uint16_t readLe16(const std::vector<unsigned char>& bytes, std::size_t offset)
 {
   return readLittleEndian<std::uint16_t>(bytes, offset);
 }
 
+/** @brief Reads a 32-bit little-endian test value. */
 inline std::uint32_t readLe32(const std::vector<unsigned char>& bytes, std::size_t offset)
 {
   return readLittleEndian<std::uint32_t>(bytes, offset);
 }
 
+/** @brief Reads a 64-bit little-endian test value. */
 inline std::uint64_t readLe64(const std::vector<unsigned char>& bytes, std::size_t offset)
 {
   return readLittleEndian<std::uint64_t>(bytes, offset);
 }
 
+/** @brief Returns the encoded size of a test CTF value variant. */
 inline std::size_t ctfValueSize(std::uint8_t tag)
 {
   static constexpr std::array<std::size_t, 8U> sizes{{1U, 1U, 1U, 2U, 2U, 4U, 4U, 4U}};
@@ -69,6 +74,7 @@ inline std::size_t ctfValueSize(std::uint8_t tag)
   return sizes[tag];
 }
 
+/** @brief Determines one encoded CTF event payload size. */
 inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::size_t payloadOffset,
                                   std::size_t contentEnd, std::uint32_t eventId)
 {
@@ -108,6 +114,7 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
   return 0U;
 }
 
+/** @brief Parses all records from an encoded test CTF stream. */
 inline std::vector<CtfRecord> parseCtfRecords(const std::vector<unsigned char>& bytes)
 {
   std::vector<CtfRecord> records;
@@ -141,11 +148,13 @@ inline std::vector<CtfRecord> parseCtfRecords(const std::vector<unsigned char>& 
   return records;
 }
 
+/** @brief Reads and parses records from a test CTF stream file. */
 inline std::vector<CtfRecord> readCtfRecords(const std::filesystem::path& streamPath)
 {
   return parseCtfRecords(readTestBinaryFile(streamPath));
 }
 
+/** @brief Returns the first record with a required CTF event ID. */
 inline const CtfRecord& requireFirstCtfRecord(const std::vector<CtfRecord>& records, CtfSchema::EventId id,
                                               const std::string& message)
 {
@@ -156,6 +165,7 @@ inline const CtfRecord& requireFirstCtfRecord(const std::vector<CtfRecord>& reco
   return *found;
 }
 
+/** @brief Requires a stream containing one ITM event on the expected channel. */
 inline void requireSingleItmEvent(const std::filesystem::path& streamPath, std::uint8_t expectedChannel,
                                   const std::string& message)
 {

@@ -75,9 +75,10 @@ public:
   void LogError(ocsd_hndl_err_log_t handle, const ocsdError* error) override;
 
 private:
+  /** @brief Copies stable fields from an OpenCSD error callback. */
   static OpenCsdErrorRecord makeRecord(const ocsdError& error);
 
-  std::vector<OpenCsdErrorRecord> callErrors_;
+  std::vector<OpenCsdErrorRecord> m_callErrors;
 };
 
 #endif  // CTRACE_SRC_DECODE_OPENCSDERRORCONTROLLER_H

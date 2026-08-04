@@ -14,6 +14,7 @@
 #include <string_view>
 #include <utility>
 
+/** @brief Renders a structured diagnostic in the stable command-line format. */
 static std::string formatDiagnosticEvent(const DiagnosticSink::Event& event)
 {
   std::ostringstream out;
@@ -32,14 +33,14 @@ static std::string formatDiagnosticEvent(const DiagnosticSink::Event& event)
 void DiagnosticSink::report(const Event& event)
 {
   if (event.impact == Impact::Failing) {
-    ++failureCount_;
+    ++m_failureCount;
   }
   write(event);
 }
 
 std::uint64_t DiagnosticSink::failureCount() const noexcept
 {
-  return failureCount_;
+  return m_failureCount;
 }
 
 std::string_view toString(DiagnosticSink::Severity severity)

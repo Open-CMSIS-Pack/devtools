@@ -46,14 +46,17 @@ private:
     Failed,
   };
 
+  /** @brief Marks one backend failed and reports the captured exception. */
   void fail(std::size_t index, const char* phase, const std::exception_ptr& error) noexcept;
+  /** @brief Aborts one backend and suppresses cleanup exceptions. */
   void abortNoexcept(std::size_t index) noexcept;
+  /** @brief Aborts every backend that is still active. */
   void abortActiveNoexcept() noexcept;
 
-  std::vector<std::unique_ptr<TraceOutput>> outputs_;
-  DiagnosticSink& diagnostics_;
-  std::vector<State> states_;
-  bool finished_ = false;
+  std::vector<std::unique_ptr<TraceOutput>> m_outputs;
+  DiagnosticSink& m_diagnostics;
+  std::vector<State> m_states;
+  bool m_finished = false;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_TRACEOUTPUTLIFECYCLE_H

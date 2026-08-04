@@ -15,11 +15,13 @@
 #include <utility>
 #include <vector>
 
+/** @brief Appends a raw input offset to a diagnostic when available. */
 static std::string atRawOffset(const std::string& message, const TraceEvent& event)
 {
   return message + " at raw offset " + std::to_string(event.index);
 }
 
+/** @brief Creates the concise CSV representation of a trace issue. */
 static std::string compactErrorMessage(const TraceEvent& event, const TraceIssueEvent& issue, const std::string& code)
 {
   if (code == "data-loss") {
@@ -51,7 +53,7 @@ static std::string compactErrorMessage(const TraceEvent& event, const TraceIssue
   return atRawOffset("trace decode error", event);
 }
 
-TraceIssueReporter::TraceIssueReporter(DiagnosticSink& diagnostics) : diagnostics_(diagnostics) {}
+TraceIssueReporter::TraceIssueReporter(DiagnosticSink& diagnostics) : m_diagnostics(diagnostics) {}
 
 void TraceIssueReporter::append(const TraceEvent& event)
 {
@@ -66,17 +68,17 @@ void TraceIssueReporter::append(const TraceEvent& event)
 
 void TraceIssueReporter::finish()
 {
-  if (finished_) {
+  if (m_finished) {
     return;
   }
-  finished_ = true;
-  if (overflowPackets_ == 0U) {
+  m_finished = true;
+  if (m_overflowPackets == 0U) {
     return;
   }
 
-  const auto additionalOverflows = overflowPackets_ - 1U;
-  const auto firstOverflow = firstOverflowTimestamp_.has_value()
-                                 ? "cycle timestamp " + std::to_string(*firstOverflowTimestamp_)
+  const auto additionalOverflows = m_overflowPackets - 1U;
+  const auto firstOverflow = m_firstOverflowTimestamp.has_value()
+                                 ? "cycle timestamp " + std::to_string(*m_firstOverflowTimestamp)
                                  : std::string("an unknown cycle timestamp");
   auto summary = "first overflow occurred at " + firstOverflow;
   if (additionalOverflows > 0U) {
@@ -91,10 +93,10 @@ void TraceIssueReporter::finish()
 
 void TraceIssueReporter::reportOverflow(const TraceEvent& event)
 {
-  if (overflowPackets_ == 0U) {
-    firstOverflowTimestamp_ = event.tcyc;
+  if (m_overflowPackets == 0U) {
+    m_firstOverflowTimestamp = event.tcyc;
   }
-  ++overflowPackets_;
+  ++m_overflowPackets;
 }
 
 void TraceIssueReporter::reportError(const TraceEvent& event, const TraceIssueEvent& issue)
@@ -121,7 +123,7 @@ void TraceIssueReporter::reportError(const TraceEvent& event, const TraceIssueEv
 void TraceIssueReporter::report(DiagnosticSink::Severity severity, std::string code, std::string message,
                                 std::optional<std::string> compactMessage)
 {
-  diagnostics_.report({
+  m_diagnostics.report({
       severity,
       DiagnosticSink::Category::Decode,
       std::move(code),

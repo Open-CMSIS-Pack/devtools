@@ -17,6 +17,7 @@ public:
   static void writeFile(const std::filesystem::path& path);
 
 private:
+  /** @brief Prevents construction of this stateless XML utility. */
   TraceCompassXmlWriter() = delete;
 };
 

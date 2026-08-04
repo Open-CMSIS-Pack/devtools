@@ -27,6 +27,7 @@ constexpr std::size_t kPacketHeaderSize = 24U;
 constexpr std::size_t kPacketContextSize = 32U;
 constexpr std::size_t kPacketOverhead = kPacketHeaderSize + kPacketContextSize;
 constexpr std::size_t kEventPrefixSize = 13U;
+/** @brief Formats a binary UUID in canonical textual form. */
 static std::string formatUuid(const std::array<std::uint8_t, 16U>& uuid)
 {
   std::ostringstream out;
@@ -41,13 +42,13 @@ static std::string formatUuid(const std::array<std::uint8_t, 16U>& uuid)
 }
 
 CtfStreamWriter::Record::Record(std::vector<std::uint8_t>& buffer, std::size_t offset, std::size_t endOffset)
-  : buffer_(buffer), offset_(offset), endOffset_(endOffset)
+  : m_buffer(buffer), m_offset(offset), m_endOffset(endOffset)
 {
 }
 
 void CtfStreamWriter::Record::requireSpace(std::size_t size) const
 {
-  if (size > endOffset_ - offset_) {
+  if (size > m_endOffset - m_offset) {
     throw std::logic_error("CTF record payload exceeds its declared size");
   }
 }
@@ -55,7 +56,7 @@ void CtfStreamWriter::Record::requireSpace(std::size_t size) const
 void CtfStreamWriter::Record::writeU8(std::uint8_t value)
 {
   requireSpace(1U);
-  buffer_[offset_++] = value;
+  m_buffer[m_offset++] = value;
 }
 
 void CtfStreamWriter::Record::writeU16(std::uint16_t value)
@@ -89,133 +90,133 @@ CtfStreamWriter::~CtfStreamWriter()
 void CtfStreamWriter::open(const std::filesystem::path& filePath, std::uint32_t streamId)
 {
   abort();
-  filePath_ = filePath;
-  streamId_ = streamId;
-  packetSequence_ = 0U;
-  lastTimestamp_.reset();
-  uuid_.fill(0U);
+  m_filePath = filePath;
+  m_streamId = streamId;
+  m_packetSequence = 0U;
+  m_lastTimestamp.reset();
+  m_uuid.fill(0U);
 
   std::random_device random;
-  for (auto& byte : uuid_) {
+  for (auto& byte : m_uuid) {
     byte = static_cast<std::uint8_t>(random());
   }
-  uuid_[6] = static_cast<std::uint8_t>((uuid_[6] & 0x0fU) | 0x40U);
-  uuid_[8] = static_cast<std::uint8_t>((uuid_[8] & 0x3fU) | 0x80U);
-  uuidString_ = formatUuid(uuid_);
+  m_uuid[6] = static_cast<std::uint8_t>((m_uuid[6] & 0x0fU) | 0x40U);
+  m_uuid[8] = static_cast<std::uint8_t>((m_uuid[8] & 0x3fU) | 0x80U);
+  m_uuidString = formatUuid(m_uuid);
 
-  packetBuffer_.assign(kPacketSizeBytes, 0U);
+  m_packetBuffer.assign(kPacketSizeBytes, 0U);
   beginPacket();
-  file_.open(filePath_, std::ios::binary | std::ios::out | std::ios::trunc);
-  if (!file_) {
+  m_file.open(m_filePath, std::ios::binary | std::ios::out | std::ios::trunc);
+  if (!m_file) {
     abort();
     throw std::runtime_error("Failed to open CTF stream " + filePath.string());
   }
-  open_ = true;
+  m_open = true;
 }
 
 void CtfStreamWriter::close()
 {
-  if (!open_) {
+  if (!m_open) {
     return;
   }
   flushPacket();
-  file_.close();
-  open_ = false;
-  packetBuffer_.clear();
-  if (!file_) {
-    throw std::runtime_error("Failed to write CTF stream in " + filePath_.parent_path().string());
+  m_file.close();
+  m_open = false;
+  m_packetBuffer.clear();
+  if (!m_file) {
+    throw std::runtime_error("Failed to write CTF stream in " + m_filePath.parent_path().string());
   }
 }
 
 void CtfStreamWriter::abort() noexcept
 {
-  if (file_.is_open()) {
-    file_.close();
+  if (m_file.is_open()) {
+    m_file.close();
   }
-  open_ = false;
-  packetBuffer_.clear();
-  filePath_.clear();
+  m_open = false;
+  m_packetBuffer.clear();
+  m_filePath.clear();
 }
 
 void CtfStreamWriter::writeRecord(std::uint32_t eventId, std::uint64_t timestamp, std::uint8_t traceBusId,
                                   std::size_t payloadSize, const RecordCallback& writePayload)
 {
-  if (!open_) {
+  if (!m_open) {
     return;
   }
   const auto totalSize = kEventPrefixSize + payloadSize;
   if (totalSize > kPacketSizeBytes - kPacketOverhead) {
     throw std::invalid_argument("CTF record does not fit into a packet");
   }
-  if (contentOffset_ + totalSize > kPacketSizeBytes) {
+  if (m_contentOffset + totalSize > kPacketSizeBytes) {
     flushPacket();
   }
 
   timestamp = monotonicTimestamp(timestamp);
-  const auto recordEnd = contentOffset_ + totalSize;
-  Record record(packetBuffer_, contentOffset_, recordEnd);
+  const auto recordEnd = m_contentOffset + totalSize;
+  Record record(m_packetBuffer, m_contentOffset, recordEnd);
   record.writeU32(eventId);
   record.writeU64(timestamp);
   record.writeU8(traceBusId);
   writePayload(record);
-  if (record.offset_ != recordEnd) {
+  if (record.m_offset != recordEnd) {
     throw std::logic_error("CTF record payload is shorter than its declared size");
   }
 
-  contentOffset_ = recordEnd;
-  if (eventCount_ == 0U) {
-    timestampBegin_ = timestamp;
-    timestampEnd_ = timestamp;
+  m_contentOffset = recordEnd;
+  if (m_eventCount == 0U) {
+    m_timestampBegin = timestamp;
+    m_timestampEnd = timestamp;
   } else {
-    timestampBegin_ = std::min(timestampBegin_, timestamp);
-    timestampEnd_ = std::max(timestampEnd_, timestamp);
+    m_timestampBegin = std::min(m_timestampBegin, timestamp);
+    m_timestampEnd = std::max(m_timestampEnd, timestamp);
   }
-  ++eventCount_;
+  ++m_eventCount;
 }
 
 const std::string& CtfStreamWriter::uuidString() const noexcept
 {
-  return uuidString_;
+  return m_uuidString;
 }
 
 void CtfStreamWriter::beginPacket()
 {
-  std::fill(packetBuffer_.begin(), packetBuffer_.end(), std::uint8_t{0});
-  contentOffset_ = kPacketOverhead;
-  eventCount_ = 0U;
-  timestampBegin_ = 0U;
-  timestampEnd_ = 0U;
+  std::fill(m_packetBuffer.begin(), m_packetBuffer.end(), std::uint8_t{0});
+  m_contentOffset = kPacketOverhead;
+  m_eventCount = 0U;
+  m_timestampBegin = 0U;
+  m_timestampEnd = 0U;
 }
 
 void CtfStreamWriter::flushPacket()
 {
-  if (eventCount_ == 0U) {
+  if (m_eventCount == 0U) {
     return;
   }
 
-  Record header(packetBuffer_, 0U, kPacketOverhead);
+  Record header(m_packetBuffer, 0U, kPacketOverhead);
   header.writeU32(CtfSchema::Magic);
-  for (const auto byte : uuid_) {
+  for (const auto byte : m_uuid) {
     header.writeU8(byte);
   }
-  header.writeU32(streamId_);
+  header.writeU32(m_streamId);
   header.writeU32(static_cast<std::uint32_t>(kPacketSizeBytes * 8U));
-  header.writeU32(static_cast<std::uint32_t>(contentOffset_ * 8U));
-  header.writeU64(timestampBegin_);
-  header.writeU64(timestampEnd_);
+  header.writeU32(static_cast<std::uint32_t>(m_contentOffset * 8U));
+  header.writeU64(m_timestampBegin);
+  header.writeU64(m_timestampEnd);
   header.writeU32(0U);
-  header.writeU32(packetSequence_);
+  header.writeU32(m_packetSequence);
 
-  file_.write(reinterpret_cast<const char*>(packetBuffer_.data()), static_cast<std::streamsize>(packetBuffer_.size()));
-  ++packetSequence_;
+  m_file.write(reinterpret_cast<const char*>(m_packetBuffer.data()), static_cast<std::streamsize>(m_packetBuffer.size()));
+  ++m_packetSequence;
   beginPacket();
 }
 
 std::uint64_t CtfStreamWriter::monotonicTimestamp(std::uint64_t timestamp)
 {
-  if (lastTimestamp_.has_value() && timestamp < *lastTimestamp_) {
-    timestamp = *lastTimestamp_;
+  if (m_lastTimestamp.has_value() && timestamp < *m_lastTimestamp) {
+    timestamp = *m_lastTimestamp;
   }
-  lastTimestamp_ = timestamp;
+  m_lastTimestamp = timestamp;
   return timestamp;
 }

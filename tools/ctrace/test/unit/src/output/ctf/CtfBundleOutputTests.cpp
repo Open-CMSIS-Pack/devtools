@@ -35,6 +35,7 @@ using CtfTestSupport::readLe64;
 using CtfTestSupport::requireFirstCtfRecord;
 using CtfTestSupport::requireSingleItmEvent;
 
+/** @brief Derives the Trace Compass XML path used by bundle tests. */
 static std::filesystem::path testTraceCompassXmlPath(const std::filesystem::path& outputDirectory)
 {
   auto basePath = outputDirectory;
@@ -45,11 +46,13 @@ static std::filesystem::path testTraceCompassXmlPath(const std::filesystem::path
   return basePath;
 }
 
+/** @brief Creates a CTF bundle configuration with test defaults. */
 static CtfOutputConfig makeCtfBundleConfig(const std::filesystem::path& outputDirectory, std::uint64_t coreClockHz)
 {
   return CtfOutputConfig(outputDirectory, testTraceCompassXmlPath(outputDirectory), coreClockHz, {}, {});
 }
 
+/** @brief Requires all files of a completed CTF bundle. */
 static void requireCompleteCtfBundle(const std::filesystem::path& ctfDirectory, const std::filesystem::path& xmlPath,
                                      const std::string& message)
 {
@@ -62,19 +65,20 @@ static void requireCompleteCtfBundle(const std::filesystem::path& ctfDirectory, 
 class TemporaryCtfOutput {
 public:
   /** @brief Creates a temporary CTF output path. */
-  explicit TemporaryCtfOutput(const std::string& name) : root_(name), outputDirectory_(root_.path() / "output.ctf") {}
+  explicit TemporaryCtfOutput(const std::string& name) : m_root(name), m_outputDirectory(m_root.path() / "output.ctf") {}
 
   /** @brief Returns the temporary output directory. */
   const std::filesystem::path& outputDirectory() const
   {
-    return outputDirectory_;
+    return m_outputDirectory;
   }
 
 private:
-  TemporaryTestPath root_;
-  std::filesystem::path outputDirectory_;
+  TemporaryTestPath m_root;
+  std::filesystem::path m_outputDirectory;
 };
 
+/** @brief Converts normalized trace-run source metadata for output tests. */
 static ResolvedTraceSource resolvedSource(const CtraceRunSourceMeta& source)
 {
   return {
@@ -88,6 +92,7 @@ static ResolvedTraceSource resolvedSource(const CtraceRunSourceMeta& source)
   };
 }
 
+/** @brief Reads compact exception records from a test CTF stream. */
 static std::vector<std::string> readCtfExceptionRecords(const std::filesystem::path& streamPath)
 {
   std::vector<std::string> records;
@@ -101,6 +106,7 @@ static std::vector<std::string> readCtfExceptionRecords(const std::filesystem::p
   return records;
 }
 
+/** @brief Reads trace-status reasons while requiring no other event types. */
 static std::vector<std::uint8_t> readOnlyCtfTraceStatusReasons(const std::filesystem::path& streamPath)
 {
   std::vector<std::uint8_t> reasons;
@@ -111,6 +117,7 @@ static std::vector<std::uint8_t> readOnlyCtfTraceStatusReasons(const std::filesy
   return reasons;
 }
 
+/** @brief Reads the first encoded DWT value tag from a test stream. */
 static std::uint8_t readFirstCtfDwtValueTag(const std::filesystem::path& streamPath)
 {
   const auto records = readCtfRecords(streamPath);
@@ -433,7 +440,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
   output.stop();
   require(readOnlyCtfTraceStatusReasons(outputDir / "stream_0") == std::vector<std::uint8_t>({4U}),
           "CTF must exclude software channel zero payload but retain its decoder errors");
-  require(!std::filesystem::exists(outputDir / ("stream_" + std::to_string(1))), "CTF must not create a second stream");
+  require(!std::filesystem::exists(outputDir / ("m_stream" + std::to_string(1))), "CTF must not create a second stream");
 
   const auto metadata = readTestTextFile(outputDir / "metadata");
   require(metadata.find("ITM" + std::to_string(0)) == std::string::npos,

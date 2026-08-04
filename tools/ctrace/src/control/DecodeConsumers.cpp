@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+/** @brief Formats an ITM enable mask as a fixed-width hexadecimal value. */
 static std::string hexMask(std::uint32_t value)
 {
   std::ostringstream out;
@@ -33,18 +34,18 @@ static std::string hexMask(std::uint32_t value)
 DecodeConsumers::DecodeConsumers(std::vector<std::unique_ptr<TraceOutput>> outputs, DiagnosticSink& diagnostics,
                                  std::optional<std::uint32_t> itmEnableMask,
                                  std::map<std::uint8_t, std::uint32_t> itmEnableMasksByTraceBusId)
-  : diagnostics_(diagnostics), itmEnableMask_(itmEnableMask),
-    itmEnableMasksByTraceBusId_(std::move(itmEnableMasksByTraceBusId)), issueReporter_(diagnostics),
-    outputLifecycle_(std::move(outputs), diagnostics)
+  : m_diagnostics(diagnostics), m_itmEnableMask(itmEnableMask),
+    m_itmEnableMasksByTraceBusId(std::move(itmEnableMasksByTraceBusId)), m_issueReporter(diagnostics),
+    m_outputLifecycle(std::move(outputs), diagnostics)
 {
 }
 
 void DecodeConsumers::append(const TraceEvent& event)
 {
-  ++eventCount_;
-  outputLifecycle_.append(event);
+  ++m_eventCount;
+  m_outputLifecycle.append(event);
   reportItmConfigurationMismatch(event);
-  issueReporter_.append(event);
+  m_issueReporter.append(event);
 }
 
 void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
@@ -54,17 +55,17 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
     return;
   }
 
-  auto enableMask = itmEnableMask_;
-  const auto streamMask = itmEnableMasksByTraceBusId_.find(event.traceBusId);
-  if (streamMask != itmEnableMasksByTraceBusId_.end()) {
+  auto enableMask = m_itmEnableMask;
+  const auto streamMask = m_itmEnableMasksByTraceBusId.find(event.traceBusId);
+  if (streamMask != m_itmEnableMasksByTraceBusId.end()) {
     enableMask = streamMask->second;
   }
   if (!enableMask.has_value() || ((*enableMask & (1U << software->channel)) != 0U) ||
-      !reportedDisabledItmChannels_.emplace(event.traceBusId, software->channel).second) {
+      !m_reportedDisabledItmChannels.emplace(event.traceBusId, software->channel).second) {
     return;
   }
 
-  diagnostics_.report({
+  m_diagnostics.report({
       DiagnosticSink::Severity::Warning,
       DiagnosticSink::Category::Input,
       "itm-channel-not-enabled",
@@ -79,20 +80,20 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
 
 std::uint64_t DecodeConsumers::eventCount() const
 {
-  return eventCount_;
+  return m_eventCount;
 }
 
 void DecodeConsumers::finishIssues()
 {
-  issueReporter_.finish();
+  m_issueReporter.finish();
 }
 
 void DecodeConsumers::finishOutputs() noexcept
 {
-  outputLifecycle_.finish();
+  m_outputLifecycle.finish();
 }
 
 void DecodeConsumers::abortOutputs() noexcept
 {
-  outputLifecycle_.abort();
+  m_outputLifecycle.abort();
 }

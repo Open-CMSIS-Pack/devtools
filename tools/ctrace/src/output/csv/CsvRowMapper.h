@@ -21,6 +21,7 @@ public:
   static std::string row(const TraceEvent& event);
 
 private:
+  /** @brief Prevents construction of this stateless mapping utility. */
   CsvRowMapper() = delete;
 };
 

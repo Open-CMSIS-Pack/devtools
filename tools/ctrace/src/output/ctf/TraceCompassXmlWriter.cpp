@@ -19,6 +19,7 @@
 
 constexpr const char* kTraceCompassAnalysisVersionPlaceholder = "__SWO_ANALYSIS_VERSION__";
 
+/** @brief Reads the analysis version encoded in generated Trace Compass XML. */
 static std::uint32_t traceCompassAnalysisVersion(const std::string& xml)
 {
   constexpr std::uint32_t kFnvOffsetBasis = 2166136261U;
@@ -34,6 +35,7 @@ static std::uint32_t traceCompassAnalysisVersion(const std::string& xml)
   return version == 0U ? 1U : version;
 }
 
+/** @brief Inserts the current analysis version into generated XML. */
 static std::string withTraceCompassAnalysisVersion(std::string xml)
 {
   const auto version = std::to_string(traceCompassAnalysisVersion(xml));
@@ -43,6 +45,7 @@ static std::string withTraceCompassAnalysisVersion(std::string xml)
   return xml;
 }
 
+/** @brief Generates Trace Compass value handlers for one CTF event route. */
 static std::string valueHandlers(CtfSchema::EventId eventId, const char* prefix, const char* routeField,
                                  const char* valueAttribute)
 {
@@ -51,7 +54,7 @@ static std::string valueHandlers(CtfSchema::EventId eventId, const char* prefix,
     handlers << R"(            <stateChange>
                 <if>
                     <condition>
-                        <stateValue type="eventField" value="cmsis_)"
+                        <stateValue type="eventField" value="m_cmsis)"
              << prefix << R"(_value_type" />
                         <stateValue type="string" value=")"
              << arm.name << R"(" />
@@ -64,7 +67,7 @@ static std::string valueHandlers(CtfSchema::EventId eventId, const char* prefix,
              << routeField << R"(" />
                     <stateAttribute type="constant" value=")"
              << valueAttribute << R"(" />
-                    <stateValue type="eventField" value="cmsis_)"
+                    <stateValue type="eventField" value="m_cmsis)"
              << prefix << R"(_value.)" << arm.name << R"(" forcedType=")" << arm.traceCompassType << R"(" />
                 </then>
             </stateChange>
@@ -73,6 +76,7 @@ static std::string valueHandlers(CtfSchema::EventId eventId, const char* prefix,
   return handlers.str();
 }
 
+/** @brief Generates the Trace Compass state-provider definition. */
 static std::string stateProviderXml()
 {
   std::ostringstream xml;
@@ -144,6 +148,7 @@ static std::string stateProviderXml()
   return xml.str();
 }
 
+/** @brief Generates the Trace Compass time-graph view definitions. */
 static std::string viewsXml()
 {
   std::ostringstream xml;
@@ -186,6 +191,7 @@ static std::string viewsXml()
   return xml.str();
 }
 
+/** @brief Assembles the complete versioned Trace Compass analysis XML. */
 static std::string traceCompassXml()
 {
   std::ostringstream xml;

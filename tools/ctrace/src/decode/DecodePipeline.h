@@ -36,22 +36,43 @@ struct DecodeResult {
 /** @brief Connects raw OpenCSD decoding with Cortex-M semantic post-decoding. */
 class DecodePipeline final {
 public:
-  /** @brief Creates a pipeline using one timestamp prescaler for every stream. */
+  /**
+   * @brief Creates a pipeline using one timestamp prescaler for every stream.
+   * @param timestampPrescaler Prescaler used to reconstruct cycle timestamps.
+   * @param eventSink Sink receiving decoded events synchronously.
+   */
   DecodePipeline(std::uint32_t timestampPrescaler, TraceEventSink& eventSink);
-  /** @brief Creates a pipeline with stream-specific timestamp prescalers. */
+  /**
+   * @brief Creates a pipeline with stream-specific timestamp prescalers.
+   * @param timestampPrescalers Default and per-stream timestamp prescalers.
+   * @param eventSink Sink receiving decoded events synchronously.
+   */
   DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink);
-  /** @brief Creates a pipeline with an injected OpenCSD session factory. */
+  /**
+   * @brief Creates a pipeline with an injected OpenCSD session factory.
+   * @param timestampPrescalers Default and per-stream timestamp prescalers.
+   * @param eventSink Sink receiving decoded events synchronously.
+   * @param sessionFactory Factory used to create the OpenCSD session.
+   */
   DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
                  const OpenCsdItmSessionFactory& sessionFactory);
 
-  /** @brief Pushes the next contiguous chunk of raw trace bytes. */
+  /**
+   * @brief Pushes the next contiguous chunk of raw trace bytes.
+   * @param bytes Non-owning byte view that remains valid for this call.
+   * @throws OpenCsdFatalError If the external decoder cannot continue safely.
+   */
   void push(RawByteView bytes);
-  /** @brief Finalizes decoding and returns aggregate counters. */
+  /**
+   * @brief Finalizes decoding and returns aggregate counters.
+   * @return Total raw bytes consumed and semantic packets emitted.
+   * @throws OpenCsdFatalError If decoder finalization fails.
+   */
   DecodeResult finish();
 
 private:
-  CortexMStreamDecoder streamDecoder_;
-  OpenCsdItmDecoder decoder_;
+  CortexMStreamDecoder m_streamDecoder;
+  OpenCsdItmDecoder m_decoder;
 };
 
 #endif  // CTRACE_SRC_DECODE_DECODEPIPELINE_H

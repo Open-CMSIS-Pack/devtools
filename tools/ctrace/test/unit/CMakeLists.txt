@@ -17,6 +17,8 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 add_executable(CtraceUnitTests
+  ${CTRACE_SOURCE_DIR}/src/CtraceMain.cpp
+  src/CtraceMainTests.cpp
   src/cli/CliParserTests.cpp
   src/control/DecodeConsumersTests.cpp
   src/control/TraceDirectoryJobTests.cpp
@@ -49,6 +51,7 @@ target_link_libraries(CtraceUnitTests PRIVATE
 )
 
 target_include_directories(CtraceUnitTests PRIVATE
+  "${CTRACE_SOURCE_DIR}/src"
   "${CMAKE_CURRENT_SOURCE_DIR}/support"
 )
 

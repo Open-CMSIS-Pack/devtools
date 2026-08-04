@@ -36,13 +36,15 @@ public:
   private:
     friend class CtfStreamWriter;
 
+    /** @brief Creates a bounded view over one reserved payload range. */
     Record(std::vector<std::uint8_t>& buffer, std::size_t offset, std::size_t endOffset);
 
+    /** @brief Rejects writes that exceed the reserved payload range. */
     void requireSpace(std::size_t size) const;
 
-    std::vector<std::uint8_t>& buffer_;
-    std::size_t offset_;
-    std::size_t endOffset_;
+    std::vector<std::uint8_t>& m_buffer;
+    std::size_t m_offset;
+    std::size_t m_endOffset;
   };
 
   /** @brief Writes a caller-defined record payload. */
@@ -73,23 +75,26 @@ public:
   const std::string& uuidString() const noexcept;
 
 private:
+  /** @brief Initializes a new packet buffer and writes its fixed context. */
   void beginPacket();
+  /** @brief Finalizes and writes the current packet when it contains events. */
   void flushPacket();
+  /** @brief Clamps a timestamp to the last emitted stream timestamp. */
   std::uint64_t monotonicTimestamp(std::uint64_t timestamp);
 
-  std::filesystem::path filePath_;
-  std::ofstream file_;
-  std::vector<std::uint8_t> packetBuffer_;
-  std::size_t contentOffset_ = 0;
-  std::uint32_t eventCount_ = 0;
-  std::uint64_t timestampBegin_ = 0;
-  std::uint64_t timestampEnd_ = 0;
-  std::optional<std::uint64_t> lastTimestamp_;
-  std::uint32_t streamId_ = 0;
-  std::uint32_t packetSequence_ = 0;
-  std::array<std::uint8_t, 16U> uuid_{};
-  std::string uuidString_;
-  bool open_ = false;
+  std::filesystem::path m_filePath;
+  std::ofstream m_file;
+  std::vector<std::uint8_t> m_packetBuffer;
+  std::size_t m_contentOffset = 0;
+  std::uint32_t m_eventCount = 0;
+  std::uint64_t m_timestampBegin = 0;
+  std::uint64_t m_timestampEnd = 0;
+  std::optional<std::uint64_t> m_lastTimestamp;
+  std::uint32_t m_streamId = 0;
+  std::uint32_t m_packetSequence = 0;
+  std::array<std::uint8_t, 16U> m_uuid{};
+  std::string m_uuidString;
+  bool m_open = false;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_CTF_CTFSTREAMWRITER_H

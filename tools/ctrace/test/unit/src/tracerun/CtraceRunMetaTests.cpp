@@ -20,6 +20,7 @@
 using TraceRunTestSupport::makeReference;
 using TraceRunTestSupport::makeTimestampSetup;
 
+/** @brief Tests whether metadata normalization rejects a configuration. */
 static bool metaRejects(const TraceRunConfig& config, std::string_view message)
 {
   return throwsWithMessage([&config] { (void)CtraceRunMeta::fromConfig(config); }, message);

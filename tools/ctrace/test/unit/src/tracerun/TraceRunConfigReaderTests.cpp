@@ -24,12 +24,12 @@
 class TraceRunFixture {
 public:
   /** @brief Creates a fixture with a process-specific file path. */
-  explicit TraceRunFixture(const std::string& name) : root_(name), path_(root_.path() / "Board.ctrace-run.yml") {}
+  explicit TraceRunFixture(const std::string& name) : m_root(name), m_path(m_root.path() / "Board.ctrace-run.yml") {}
 
   /** @brief Reads the current file content. */
   TraceRunConfig read() const
   {
-    return YmlTraceRunConfigReader().read(path_.string());
+    return YmlTraceRunConfigReader().read(m_path.string());
   }
 
   /** @brief Writes and reads the supplied YAML document. */
@@ -53,15 +53,17 @@ public:
   }
 
 private:
+  /** @brief Writes YAML content to the fixture file. */
   void write(std::string_view yaml)
   {
-    writeTestFile(path_, std::string(yaml));
+    writeTestFile(m_path, std::string(yaml));
   }
 
-  TemporaryTestPath root_;
-  std::filesystem::path path_;
+  TemporaryTestPath m_root;
+  std::filesystem::path m_path;
 };
 
+/** @brief Requires YAML input to produce expected reader error text. */
 static void expectReadError(TraceRunFixture& file, std::string_view yaml, std::string_view expected)
 {
   const auto error = file.error(yaml);

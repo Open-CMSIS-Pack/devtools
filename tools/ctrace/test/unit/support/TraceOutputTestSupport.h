@@ -25,18 +25,18 @@ class TestTraceOutput final : public TraceOutput {
 public:
   /** @brief Creates a test output with an optional failure point and target. */
   explicit TestTraceOutput(TestTraceOutputFailure failure = TestTraceOutputFailure::None, std::string target = {})
-    : failure_(failure), target_(std::move(target))
+    : m_failure(failure), m_target(std::move(target))
   {
   }
 
   /** @brief Creates a test output that records lifecycle calls. */
-  explicit TestTraceOutput(std::vector<std::string>& calls) : calls_(&calls) {}
+  explicit TestTraceOutput(std::vector<std::string>& calls) : m_calls(&calls) {}
 
   /** @brief Records start and optionally throws the configured failure. */
   void start() override
   {
     record("start");
-    if (failure_ == TestTraceOutputFailure::NonStandardStart) {
+    if (m_failure == TestTraceOutputFailure::NonStandardStart) {
       throw 42;
     }
     failAt(TestTraceOutputFailure::Start, "intentional start failure");
@@ -56,7 +56,7 @@ public:
   {
     record("abort");
     failAt(TestTraceOutputFailure::Abort, "intentional abort cleanup failure");
-    aborted_ = true;
+    m_aborted = true;
   }
 
   /** @brief Records an event write and optionally throws the configured failure. */
@@ -69,34 +69,36 @@ public:
   /** @brief Returns the configured output target. */
   std::string targetPath() const override
   {
-    return target_.empty() ? TraceOutput::targetPath() : target_;
+    return m_target.empty() ? TraceOutput::targetPath() : m_target;
   }
 
   /** @brief Reports whether abort completed successfully. */
   bool aborted() const
   {
-    return aborted_;
+    return m_aborted;
   }
 
 private:
+  /** @brief Records a lifecycle call when call collection is enabled. */
   void record(const char* call)
   {
-    if (calls_ != nullptr) {
-      calls_->emplace_back(call);
+    if (m_calls != nullptr) {
+      m_calls->emplace_back(call);
     }
   }
 
+  /** @brief Throws when the supplied operation is the configured failure point. */
   void failAt(TestTraceOutputFailure point, const char* message) const
   {
-    if (failure_ == point) {
+    if (m_failure == point) {
       throw std::runtime_error(message);
     }
   }
 
-  TestTraceOutputFailure failure_ = TestTraceOutputFailure::None;
-  std::string target_;
-  std::vector<std::string>* calls_ = nullptr;
-  bool aborted_ = false;
+  TestTraceOutputFailure m_failure = TestTraceOutputFailure::None;
+  std::string m_target;
+  std::vector<std::string>* m_calls = nullptr;
+  bool m_aborted = false;
 };
 
 } // namespace TraceOutputTestSupport

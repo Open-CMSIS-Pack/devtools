@@ -29,16 +29,19 @@ using OpenCsdTestSupport::openCsdElement;
 using OpenCsdTestSupport::openCsdSoftwareElement;
 using OpenCsdTestSupport::openCsdTimestampElement;
 
+/** @brief Returns the software payload from a test event when present. */
 static const SoftwareTraceEvent* softwareEvent(const TraceEvent& event)
 {
   return traceEventPayload<SoftwareTraceEvent>(event);
 }
 
+/** @brief Returns the issue payload from a test event when present. */
 static const TraceIssueEvent* issueEvent(const TraceEvent& event)
 {
   return traceEventPayload<TraceIssueEvent>(event);
 }
 
+/** @brief Tests whether decoded events contain a software value and channel. */
 static bool hasSoftwareValue(const std::vector<TraceEvent>& events, std::uint8_t value, std::uint32_t channel = 0U)
 {
   for (const auto& event : events) {
@@ -50,6 +53,7 @@ static bool hasSoftwareValue(const std::vector<TraceEvent>& events, std::uint8_t
   return false;
 }
 
+/** @brief Finds a decoded issue by code and optional raw offset. */
 static const TraceIssueEvent* findIssue(const std::vector<TraceEvent>& events, const std::string& code,
                                         std::optional<std::uint64_t> index = std::nullopt)
 {
@@ -62,6 +66,7 @@ static const TraceIssueEvent* findIssue(const std::vector<TraceEvent>& events, c
   return nullptr;
 }
 
+/** @brief Counts decoded issues having a stable code. */
 static std::size_t countIssues(const std::vector<TraceEvent>& events, const std::string& code)
 {
   std::size_t count = 0U;
@@ -79,6 +84,7 @@ template <std::size_t Size> static constexpr RawByteView rawBytes(const std::uin
   return {bytes, Size};
 }
 
+/** @brief Creates a non-owning raw byte view for a test vector. */
 static RawByteView rawBytes(const std::vector<std::uint8_t>& bytes)
 {
   return {bytes.data(), bytes.size()};
@@ -90,6 +96,7 @@ struct DecodedTrace {
   std::vector<TraceEvent> events;
 };
 
+/** @brief Decodes test chunks and returns counters and collected events. */
 static DecodedTrace decodeTrace(std::initializer_list<RawByteView> chunks, std::uint32_t timestampPrescaler = 16U)
 {
   CollectingEventSink sink;
@@ -97,7 +104,7 @@ static DecodedTrace decodeTrace(std::initializer_list<RawByteView> chunks, std::
   for (const auto chunk : chunks) {
     pipeline.push(chunk);
   }
-  return {pipeline.finish(), std::move(sink.events)};
+  return {pipeline.finish(), std::move(sink.events())};
 }
 
 TEST(CtraceUnitTests, testCortexMPostDecoderSoftwareTimestampBoundary)
@@ -109,7 +116,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderSoftwareTimestampBoundary)
   decoder.append(openCsdTimestampElement(120U, 5U, 1U));
 
   decoder.finish();
-  const auto& packets = sink.events;
+  const auto& packets = sink.events();
   require(packets.size() == 2, "CortexMPostDecoder packet count mismatch");
   const auto* decodedSoftware = softwareEvent(packets[0]);
   require(decodedSoftware != nullptr, "CortexMPostDecoder first packet type mismatch");
@@ -140,10 +147,10 @@ TEST(CtraceUnitTests, testCortexMStreamDecoderAppliesPerStreamPrescalers)
   decoder.append(stream2Timestamp);
   decoder.finish();
 
-  require(sink.events.size() == 4U, "per-stream timestamp event count mismatch");
-  require(sink.events[0].traceBusId == 1U && sink.events[0].tcyc == std::optional<std::uint64_t>(40U),
+  require(sink.events().size() == 4U, "per-stream timestamp event count mismatch");
+  require(sink.events()[0].traceBusId == 1U && sink.events()[0].tcyc == std::optional<std::uint64_t>(40U),
           "stream 1 timestamp prescaler mismatch");
-  require(sink.events[2].traceBusId == 2U && sink.events[2].tcyc == std::optional<std::uint64_t>(160U),
+  require(sink.events()[2].traceBusId == 2U && sink.events()[2].tcyc == std::optional<std::uint64_t>(160U),
           "stream 2 timestamp prescaler mismatch");
 }
 
@@ -155,8 +162,8 @@ TEST(CtraceUnitTests, testCortexMStreamDecoderValidatesAndSaturatesPrescalers)
   CortexMStreamDecoder saturating(ItmTimestampPrescalers{2U, {}}, sink);
   saturating.append(timestamp);
   saturating.finish();
-  ASSERT_EQ(sink.events.size(), 1U);
-  EXPECT_EQ(sink.events.front().tcyc, std::numeric_limits<std::uint64_t>::max());
+  ASSERT_EQ(sink.events().size(), 1U);
+  EXPECT_EQ(sink.events().front().tcyc, std::numeric_limits<std::uint64_t>::max());
   EXPECT_EQ(saturating.eventCount(), 1U);
 
   CortexMStreamDecoder zero(ItmTimestampPrescalers{0U, {}}, sink);
@@ -198,7 +205,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderReportsDiscontinuityInterval)
   decoder.append(openCsdTimestampElement(42U, 10U));
 
   decoder.finish();
-  const auto& packets = sink.events;
+  const auto& packets = sink.events();
   require(packets.size() == 3U, "discontinuity interval packet count mismatch");
   const auto* discontinuityIssue = issueEvent(packets[0]);
   require(discontinuityIssue != nullptr, "discontinuity interval should start with its error");
@@ -232,7 +239,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderSeparatesRecoveryCauseAndDataLoss)
   decoder.append(openCsdTimestampElement(42U, 12U));
 
   decoder.finish();
-  const auto& packets = sink.events;
+  const auto& packets = sink.events();
   require(packets.size() == 3U, "recovery cause/data-loss packet count mismatch");
   const auto* causeIssue = issueEvent(packets[0]);
   const auto* lossIssue = issueEvent(packets[1]);
@@ -275,7 +282,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderOverflowFlushesDwtSegments)
   decoder.append(secondTimestamp);
 
   decoder.finish();
-  const auto& packets = sink.events;
+  const auto& packets = sink.events();
   require(packets.size() == 5, "CortexMPostDecoder overflow segment packet count mismatch");
   require(isTraceEvent<LocalTimestampTraceEvent>(packets[0]), "overflow segment first packet should be timestamp");
   const auto* address = traceEventPayload<DwtAddressTraceEvent>(packets[1]);
@@ -309,7 +316,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderPreservesDecoderTimestamps)
   decoder.append(secondTimestamp);
 
   decoder.finish();
-  const auto& packets = sink.events;
+  const auto& packets = sink.events();
   require(packets.size() == 2, "preserve timestamp packet count mismatch");
   require(packets[0].index == firstTimestamp.sourceIndex, "raw offsets must not truncate above 4 GiB");
   require(packets[0].tcyc.has_value() && packets[0].tcyc.value() == 100, "first preserved timestamp mismatch");
@@ -344,22 +351,22 @@ TEST(CtraceUnitTests, testCortexMPostDecoderPreservesGlobalTimestampOrder)
   decoder.append(localTimestamp);
   decoder.finish();
 
-  require(sink.events.size() == 5U, "global timestamp order packet count mismatch");
-  require(isTraceEvent<SoftwareTraceEvent>(sink.events[0]),
+  require(sink.events().size() == 5U, "global timestamp order packet count mismatch");
+  require(isTraceEvent<SoftwareTraceEvent>(sink.events()[0]),
           "global timestamp must not overtake preceding software data");
-  require(isTraceEvent<DwtAddressTraceEvent>(sink.events[1]),
+  require(isTraceEvent<DwtAddressTraceEvent>(sink.events()[1]),
           "global timestamp must flush and follow preceding DWT data");
-  const auto* timestamp = traceEventPayload<GlobalTimestampTraceEvent>(sink.events[2]);
+  const auto* timestamp = traceEventPayload<GlobalTimestampTraceEvent>(sink.events()[2]);
   require(timestamp != nullptr && timestamp->value == globalTimestamp.timestampValue,
           "global timestamp payload/order mismatch");
-  require(sink.events[0].tcyc == std::optional<std::uint64_t>(42U) &&
-              sink.events[1].tcyc == std::optional<std::uint64_t>(42U),
+  require(sink.events()[0].tcyc == std::optional<std::uint64_t>(42U) &&
+              sink.events()[1].tcyc == std::optional<std::uint64_t>(42U),
           "preceding payloads must retain the following local timestamp");
-  require(!sink.events[2].tcyc.has_value(), "global timestamp must remain independent of the local timestamp domain");
-  require(!sink.events[2].quality.has_value(), "global timestamp must not acquire local trace quality");
-  require(isTraceEvent<TraceIssueEvent>(sink.events[3]) && sink.events[3].tcyc == std::optional<std::uint64_t>(42U),
+  require(!sink.events()[2].tcyc.has_value(), "global timestamp must remain independent of the local timestamp domain");
+  require(!sink.events()[2].quality.has_value(), "global timestamp must not acquire local trace quality");
+  require(isTraceEvent<TraceIssueEvent>(sink.events()[3]) && sink.events()[3].tcyc == std::optional<std::uint64_t>(42U),
           "a warning must not overtake pending payload or global timestamp packets");
-  require(isTraceEvent<LocalTimestampTraceEvent>(sink.events[4]),
+  require(isTraceEvent<LocalTimestampTraceEvent>(sink.events()[4]),
           "local timestamp must remain after the global timestamp boundary");
 }
 

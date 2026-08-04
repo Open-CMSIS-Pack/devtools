@@ -25,6 +25,7 @@
 #include <cwctype>
 #endif
 
+/** @brief Rejects empty and root-like output targets. */
 static void requireOutputTarget(const std::filesystem::path& path, const char* description)
 {
   const auto normalized = path.lexically_normal();
@@ -34,6 +35,7 @@ static void requireOutputTarget(const std::filesystem::path& path, const char* d
   }
 }
 
+/** @brief Returns a lexically normalized absolute path for safety comparisons. */
 static std::filesystem::path normalizedAbsolutePath(const std::filesystem::path& path)
 {
   std::error_code error;
@@ -41,6 +43,7 @@ static std::filesystem::path normalizedAbsolutePath(const std::filesystem::path&
   return (error ? path : absolute).lexically_normal();
 }
 
+/** @brief Compares path components using platform-appropriate case rules. */
 static bool pathComponentEquals(const std::filesystem::path& lhs, const std::filesystem::path& rhs)
 {
 #ifdef _WIN32
@@ -56,6 +59,7 @@ static bool pathComponentEquals(const std::filesystem::path& lhs, const std::fil
 #endif
 }
 
+/** @brief Tests whether a candidate path contains another target path. */
 static bool isAncestorPath(const std::filesystem::path& candidate, const std::filesystem::path& path)
 {
   auto candidateComponent = candidate.begin();
@@ -68,6 +72,7 @@ static bool isAncestorPath(const std::filesystem::path& candidate, const std::fi
   return true;
 }
 
+/** @brief Rejects CTF and Trace Compass targets that overlap unsafely. */
 static void validateOutputTargets(const std::filesystem::path& ctfDirectory,
                                   const std::filesystem::path& traceCompassXml)
 {
@@ -80,6 +85,7 @@ static void validateOutputTargets(const std::filesystem::path& ctfDirectory,
   }
 }
 
+/** @brief Removes an existing CTF directory without following unsafe targets. */
 static void removeOutputDirectory(const std::filesystem::path& path)
 {
   std::error_code error;
@@ -89,6 +95,7 @@ static void removeOutputDirectory(const std::filesystem::path& path)
   }
 }
 
+/** @brief Verifies that existing output targets have replaceable filesystem types. */
 static void validateExistingOutputTypes(const std::filesystem::path& ctfDirectory,
                                         const std::filesystem::path& traceCompassXml)
 {
@@ -116,6 +123,7 @@ static void validateExistingOutputTypes(const std::filesystem::path& ctfDirector
   }
 }
 
+/** @brief Removes an existing regular output file. */
 static void removeOutputFile(const std::filesystem::path& path)
 {
   std::error_code error;
@@ -125,6 +133,7 @@ static void removeOutputFile(const std::filesystem::path& path)
   }
 }
 
+/** @brief Creates a prepared CTF output directory. */
 static void createOutputDirectory(const std::filesystem::path& path)
 {
   std::error_code error;
@@ -134,6 +143,7 @@ static void createOutputDirectory(const std::filesystem::path& path)
   }
 }
 
+/** @brief Removes all partial artifacts after an aborted bundle. */
 static void removeIncompleteOutputs(const std::filesystem::path& ctfDirectory,
                                     const std::filesystem::path& traceCompassXml)
 {
@@ -158,15 +168,15 @@ static void removeIncompleteOutputs(const std::filesystem::path& ctfDirectory,
 }
 
 CtfBundleOutput::CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnostics)
-  : ctfOutputDirectory_(std::move(config.outputDirectory)), traceCompassXmlPath_(std::move(config.traceCompassXmlPath)),
-    encoder_(CtfEncoderConfig{
+  : m_ctfOutputDirectory(std::move(config.outputDirectory)), m_traceCompassXmlPath(std::move(config.traceCompassXmlPath)),
+    m_encoder(CtfEncoderConfig{
         config.coreClockHz,
         std::move(config.selection),
         std::move(config.sources),
         diagnostics,
     })
 {
-  validateOutputTargets(ctfOutputDirectory_, traceCompassXmlPath_);
+  validateOutputTargets(m_ctfOutputDirectory, m_traceCompassXmlPath);
 }
 
 CtfBundleOutput::~CtfBundleOutput()
@@ -185,20 +195,20 @@ std::string_view CtfBundleOutput::backendName() const noexcept
 
 std::string CtfBundleOutput::targetPath() const
 {
-  return ctfOutputDirectory_.string();
+  return m_ctfOutputDirectory.string();
 }
 
 void CtfBundleOutput::start()
 {
   abort();
-  validateExistingOutputTypes(ctfOutputDirectory_, traceCompassXmlPath_);
-  removeOutputDirectory(ctfOutputDirectory_);
-  removeOutputFile(traceCompassXmlPath_);
-  createOutputDirectory(ctfOutputDirectory_);
-  active_ = true;
+  validateExistingOutputTypes(m_ctfOutputDirectory, m_traceCompassXmlPath);
+  removeOutputDirectory(m_ctfOutputDirectory);
+  removeOutputFile(m_traceCompassXmlPath);
+  createOutputDirectory(m_ctfOutputDirectory);
+  m_active = true;
   try {
-    encoder_.start(ctfOutputDirectory_);
-    TraceCompassXmlWriter::writeFile(traceCompassXmlPath_);
+    m_encoder.start(m_ctfOutputDirectory);
+    TraceCompassXmlWriter::writeFile(m_traceCompassXmlPath);
   } catch (...) {
     abort();
     throw;
@@ -207,12 +217,12 @@ void CtfBundleOutput::start()
 
 void CtfBundleOutput::stop()
 {
-  if (!active_) {
+  if (!m_active) {
     return;
   }
   try {
-    encoder_.stop();
-    active_ = false;
+    m_encoder.stop();
+    m_active = false;
   } catch (...) {
     abort();
     throw;
@@ -221,14 +231,14 @@ void CtfBundleOutput::stop()
 
 void CtfBundleOutput::abort()
 {
-  encoder_.abort();
-  if (active_) {
-    removeIncompleteOutputs(ctfOutputDirectory_, traceCompassXmlPath_);
-    active_ = false;
+  m_encoder.abort();
+  if (m_active) {
+    removeIncompleteOutputs(m_ctfOutputDirectory, m_traceCompassXmlPath);
+    m_active = false;
   }
 }
 
 void CtfBundleOutput::writeEvent(const TraceEvent& event)
 {
-  encoder_.writeEvent(event);
+  m_encoder.writeEvent(event);
 }

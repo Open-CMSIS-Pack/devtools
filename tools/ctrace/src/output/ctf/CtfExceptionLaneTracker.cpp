@@ -15,9 +15,9 @@
 
 void CtfExceptionLaneTracker::reset()
 {
-  contextStack_.clear();
-  activeContextNumber_.reset();
-  observedExceptionNumbers_.clear();
+  m_contextStack.clear();
+  m_activeContextNumber.reset();
+  m_observedExceptionNumbers.clear();
 }
 
 void CtfExceptionLaneTracker::startThreadMode(const RecordEmitter& emit)
@@ -27,7 +27,7 @@ void CtfExceptionLaneTracker::startThreadMode(const RecordEmitter& emit)
 
 void CtfExceptionLaneTracker::resetForDiscontinuity(const RecordEmitter& emit)
 {
-  contextStack_.clear();
+  m_contextStack.clear();
   closeActiveContext(emit);
 }
 
@@ -52,69 +52,69 @@ void CtfExceptionLaneTracker::consume(const ExceptionTraceEvent& event, const Re
 
 const std::vector<std::uint32_t>& CtfExceptionLaneTracker::observedExceptionNumbers() const
 {
-  return observedExceptionNumbers_;
+  return m_observedExceptionNumbers;
 }
 
 void CtfExceptionLaneTracker::setActiveContext(std::uint32_t number, const RecordEmitter& emit)
 {
-  if (activeContextNumber_.has_value() && *activeContextNumber_ == number) {
+  if (m_activeContextNumber.has_value() && *m_activeContextNumber == number) {
     return;
   }
-  if (activeContextNumber_.has_value()) {
-    emitRecord(*activeContextNumber_, RecordAction::Exit, emit);
+  if (m_activeContextNumber.has_value()) {
+    emitRecord(*m_activeContextNumber, RecordAction::Exit, emit);
   }
   emitRecord(number, RecordAction::Enter, emit);
-  activeContextNumber_ = number;
+  m_activeContextNumber = number;
 }
 
 void CtfExceptionLaneTracker::closeActiveContext(const RecordEmitter& emit)
 {
-  if (!activeContextNumber_.has_value()) {
+  if (!m_activeContextNumber.has_value()) {
     return;
   }
-  emitRecord(*activeContextNumber_, RecordAction::Exit, emit);
-  activeContextNumber_.reset();
+  emitRecord(*m_activeContextNumber, RecordAction::Exit, emit);
+  m_activeContextNumber.reset();
 }
 
 void CtfExceptionLaneTracker::updateActiveContext(const RecordEmitter& emit)
 {
-  setActiveContext(contextStack_.empty() ? kThreadModeNumber : contextStack_.back().number, emit);
+  setActiveContext(m_contextStack.empty() ? kThreadModeNumber : m_contextStack.back().number, emit);
 }
 
 void CtfExceptionLaneTracker::emitRecord(std::uint32_t number, RecordAction action, const RecordEmitter& emit)
 {
-  if (std::find(observedExceptionNumbers_.begin(), observedExceptionNumbers_.end(), number) ==
-      observedExceptionNumbers_.end()) {
-    observedExceptionNumbers_.push_back(number);
+  if (std::find(m_observedExceptionNumbers.begin(), m_observedExceptionNumbers.end(), number) ==
+      m_observedExceptionNumbers.end()) {
+    m_observedExceptionNumbers.push_back(number);
   }
   emit(number, action);
 }
 
 void CtfExceptionLaneTracker::enterContext(std::uint32_t number)
 {
-  if (!contextStack_.empty() && contextStack_.back().state == ContextState::Running) {
-    contextStack_.back().state = ContextState::Preempted;
+  if (!m_contextStack.empty() && m_contextStack.back().state == ContextState::Running) {
+    m_contextStack.back().state = ContextState::Preempted;
   }
-  contextStack_.push_back({number, ContextState::Running});
+  m_contextStack.push_back({number, ContextState::Running});
 }
 
 void CtfExceptionLaneTracker::exitContext(std::uint32_t number)
 {
-  if (contextStack_.empty() || contextStack_.back().number != number ||
-      contextStack_.back().state != ContextState::Running) {
+  if (m_contextStack.empty() || m_contextStack.back().number != number ||
+      m_contextStack.back().state != ContextState::Running) {
     return;
   }
-  contextStack_.pop_back();
+  m_contextStack.pop_back();
 }
 
 void CtfExceptionLaneTracker::returnToContext(std::uint32_t number)
 {
-  while (!contextStack_.empty() && contextStack_.back().number != number) {
-    contextStack_.pop_back();
+  while (!m_contextStack.empty() && m_contextStack.back().number != number) {
+    m_contextStack.pop_back();
   }
-  if (!contextStack_.empty()) {
-    contextStack_.back().state = ContextState::Running;
+  if (!m_contextStack.empty()) {
+    m_contextStack.back().state = ContextState::Running;
   } else if (number != kThreadModeNumber) {
-    contextStack_.push_back({number, ContextState::Running});
+    m_contextStack.push_back({number, ContextState::Running});
   }
 }

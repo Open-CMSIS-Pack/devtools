@@ -55,15 +55,20 @@ private:
     TraceQuality quality;
   };
 
+  /** @brief Accumulates one DWT data-trace packet and emits completed events. */
   void decodeDataTrace(const DwtPayloadPacket& payload, std::vector<TraceEvent>& output);
+  /** @brief Converts one complete pending comparator state into an event. */
   void sendDataTraceEvent(std::uint32_t comparator, const PendingDataTrace& event, const TraceQuality& quality,
                           std::uint64_t tcyc, std::vector<TraceEvent>& output);
+  /** @brief Flushes one comparator state and clears its pending fragments. */
   void flushPending(std::uint32_t comparator, const TraceQuality& quality, std::uint64_t tcyc,
                     std::vector<TraceEvent>& output);
+  /** @brief Combines quality captured by a fragment with the current boundary. */
   TraceQuality qualityForPendingFlush(const PendingDataTrace& pending, const TraceQuality& current) const;
 
+  /** @brief Maps an encoded DWT exception action to the semantic action. */
   static ExceptionAction exceptionAction(std::uint32_t value);
-  std::array<std::optional<PendingDataTrace>, kDataTraceComparatorCount> pendingDataTrace_;
+  std::array<std::optional<PendingDataTrace>, kDataTraceComparatorCount> m_pendingDataTrace;
 };
 
 #endif  // CTRACE_SRC_DECODE_DWTPACKETDECODER_H

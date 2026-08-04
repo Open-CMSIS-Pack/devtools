@@ -99,9 +99,9 @@ Each is implemented in the current code and covered by focused CTest cases.
   explicit download/copy/zip stages used by the other devtools workflows. Runtime contents remain subject to
   per-artifact inspection rather than being implicitly covered by the application dependency list.
 
-- **The Blinky SWO and TB captures are redistributable ctrace test assets.** Their purpose, origin, derived golden CSV,
-  and SPDX sidecars are documented in the [fixture README](../test/data/README.md); generated test output remains
-  confined to the build tree.
+- **The Blinky SWO and TB captures are redistributable ctrace test assets.** Their purpose, origin, and derived golden
+  CSV are documented in the [fixture README](../test/data/README.md); generated test output remains confined to the
+  build tree.
 
 ## Maintenance rule
 

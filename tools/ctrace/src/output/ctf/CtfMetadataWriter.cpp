@@ -25,6 +25,7 @@
 #include <string_view>
 #include <vector>
 
+/** @brief Escapes one string for use in TSDL metadata. */
 static std::string tsdlString(const std::string& value)
 {
   static constexpr char hexDigits[] = "0123456789ABCDEF";
@@ -52,6 +53,7 @@ static std::string tsdlString(const std::string& value)
   return out;
 }
 
+/** @brief Formats an integer as an unsigned hexadecimal TSDL value. */
 static std::string hexValue(std::uint64_t value)
 {
   std::ostringstream out;
@@ -59,6 +61,7 @@ static std::string hexValue(std::uint64_t value)
   return out.str();
 }
 
+/** @brief Allocates a stable unique label for one metadata enumeration value. */
 static std::string uniqueEnumLabel(const std::string& preferred, const std::string& fallback,
                                    std::set<std::string>& used)
 {
@@ -77,6 +80,7 @@ static std::string uniqueEnumLabel(const std::string& preferred, const std::stri
   }
 }
 
+/** @brief Returns a mapped metadata label or an empty string. */
 static std::string mapValueOrEmpty(const std::map<std::uint32_t, std::string>& values, std::uint32_t key)
 {
   const auto found = values.find(key);
@@ -96,6 +100,7 @@ exceptionNumbersWithDefaults(const std::vector<std::uint32_t>& observedException
   return exceptions;
 }
 
+/** @brief Returns the architectural name for a known Cortex-M exception. */
 static std::string exceptionName(std::uint32_t number)
 {
   switch (number) {
@@ -131,6 +136,7 @@ static std::string exceptionName(std::uint32_t number)
   }
 }
 
+/** @brief Returns the TSDL scalar type used by one value variant. */
 static std::string_view tsdlValueType(const CtfSchema::ValueVariant& variant)
 {
   if (variant.floatingPoint) {
@@ -145,6 +151,7 @@ static std::string_view tsdlValueType(const CtfSchema::ValueVariant& variant)
   return variant.byteSize == 1U ? "uint8_t" : variant.byteSize == 2U ? "uint16_t" : "uint32_t";
 }
 
+/** @brief Generates the variant-specific TSDL fields for sample values. */
 static std::string ctfValueFields(const std::string_view& prefix)
 {
   std::ostringstream out;
@@ -156,12 +163,12 @@ static std::string ctfValueFields(const std::string_view& prefix)
     }
     out << variant.name << " = " << static_cast<unsigned>(CtfSchema::value(variant.tag));
   }
-  out << " } cmsis_" << prefix << "_value_type;\n"
-      << "        variant <cmsis_" << prefix << "_value_type> {\n";
+  out << " } m_cmsis" << prefix << "_value_type;\n"
+      << "        variant <m_cmsis" << prefix << "_value_type> {\n";
   for (const auto& variant : CtfSchema::ValueVariants) {
     out << "            " << tsdlValueType(variant) << " " << variant.name << ";\n";
   }
-  out << "        } cmsis_" << prefix << "_value;\n";
+  out << "        } m_cmsis" << prefix << "_value;\n";
   return out.str();
 }
 
@@ -174,6 +181,7 @@ struct MetadataSymbols {
   std::map<std::uint32_t, std::uint64_t> dwtAddressEnds;
 };
 
+/** @brief Collects deduplicated source and exception symbols for metadata. */
 static MetadataSymbols collectMetadataSymbols(const std::vector<ResolvedTraceSource>& sources)
 {
   MetadataSymbols symbols;
@@ -203,6 +211,7 @@ static MetadataSymbols collectMetadataSymbols(const std::vector<ResolvedTraceSou
   return symbols;
 }
 
+/** @brief Writes the TSDL trace, environment, and clock declarations. */
 static void writeTraceEnvironment(std::ostream& out, const std::string& uuidString, std::uint64_t coreClockHz,
                                   const MetadataSymbols& symbols)
 {
@@ -247,6 +256,7 @@ clock {
 )";
 }
 
+/** @brief Writes reusable TSDL type and enumeration declarations. */
 static void writeTypeDefinitions(std::ostream& out, const MetadataSymbols& symbols,
                                  const std::vector<std::uint32_t>& observedExceptionNumbers)
 {
@@ -313,6 +323,7 @@ typealias enum : uint16_t {
 )";
 }
 
+/** @brief Writes the packet and event context definition for the SWO stream. */
 static void writeStreamDefinition(std::ostream& out)
 {
   out << R"(
@@ -338,6 +349,7 @@ stream {
 )";
 }
 
+/** @brief Writes the ITM software event declaration. */
 static void writeItmEvent(std::ostream& out)
 {
   out << R"(
@@ -358,6 +370,7 @@ event {
 )";
 }
 
+/** @brief Writes the DWT value event declaration. */
 static void writeDwtValueEvent(std::ostream& out)
 {
   out << R"(
@@ -383,6 +396,7 @@ event {
 )";
 }
 
+/** @brief Writes the DWT address event declaration. */
 static void writeDwtAddressEvent(std::ostream& out)
 {
   out << R"(
@@ -406,6 +420,7 @@ event {
 )";
 }
 
+/** @brief Writes status, exception, and global timestamp declarations. */
 static void writeStatusEvents(std::ostream& out)
 {
   out << R"(

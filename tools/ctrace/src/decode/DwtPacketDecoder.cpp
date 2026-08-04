@@ -122,14 +122,14 @@ std::vector<TraceEvent> DwtPacketDecoder::flush(const TraceQuality& quality, std
 {
   std::vector<TraceEvent> output;
   std::vector<std::uint32_t> comparators;
-  for (std::uint32_t comparator = 0; comparator < pendingDataTrace_.size(); ++comparator) {
-    if (pendingDataTrace_[comparator].has_value()) {
+  for (std::uint32_t comparator = 0; comparator < m_pendingDataTrace.size(); ++comparator) {
+    if (m_pendingDataTrace[comparator].has_value()) {
       comparators.push_back(comparator);
     }
   }
   std::sort(comparators.begin(), comparators.end(), [this](const auto left, const auto right) {
-    const auto leftIndex = pendingDataTrace_[left]->index;
-    const auto rightIndex = pendingDataTrace_[right]->index;
+    const auto leftIndex = m_pendingDataTrace[left]->index;
+    const auto rightIndex = m_pendingDataTrace[right]->index;
     return leftIndex == rightIndex ? left < right : leftIndex < rightIndex;
   });
   for (const auto comparator : comparators) {
@@ -140,7 +140,7 @@ std::vector<TraceEvent> DwtPacketDecoder::flush(const TraceQuality& quality, std
 
 void DwtPacketDecoder::reset()
 {
-  for (auto& pending : pendingDataTrace_) {
+  for (auto& pending : m_pendingDataTrace) {
     pending.reset();
   }
 }
@@ -204,7 +204,7 @@ void DwtPacketDecoder::sendDataTraceEvent(std::uint32_t comparator, const Pendin
                                           const TraceQuality& quality, std::uint64_t tcyc,
                                           std::vector<TraceEvent>& output)
 {
-  auto& pending = pendingDataTrace_[comparator];
+  auto& pending = m_pendingDataTrace[comparator];
   if (!pending.has_value()) {
     pending = event;
     return;
@@ -242,7 +242,7 @@ void DwtPacketDecoder::sendDataTraceEvent(std::uint32_t comparator, const Pendin
 void DwtPacketDecoder::flushPending(std::uint32_t comparator, const TraceQuality& quality, std::uint64_t tcyc,
                                     std::vector<TraceEvent>& output)
 {
-  auto& pending = pendingDataTrace_[comparator];
+  auto& pending = m_pendingDataTrace[comparator];
 
   const auto makePacket = [&]() -> TraceEvent {
     if (pending->hasValue) {

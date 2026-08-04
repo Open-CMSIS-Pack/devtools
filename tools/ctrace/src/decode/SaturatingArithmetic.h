@@ -33,6 +33,7 @@ public:
   }
 
 private:
+  /** @brief Prevents construction of this stateless arithmetic utility. */
   SaturatingArithmetic() = delete;
 };
 

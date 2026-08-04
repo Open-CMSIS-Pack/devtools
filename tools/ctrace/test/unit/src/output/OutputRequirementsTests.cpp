@@ -18,23 +18,27 @@
 #include <string>
 #include <utility>
 
+/** @brief Creates an output request selecting test formats. */
 static TraceOutputRequest outputRequest(bool csv, bool ctf)
 {
   return {csv, ctf, {}};
 }
 
+/** @brief Plans outputs using explicitly supplied trace metadata. */
 static TraceOutputPlan planOutputs(const TraceOutputRequest& request, const std::filesystem::path& rawInputPath,
                                    const CtraceRunMeta& meta, DiagnosticSink& diagnostics)
 {
   return planTraceOutputs(request, rawInputPath, meta, diagnostics);
 }
 
+/** @brief Plans outputs after normalizing a trace-run configuration. */
 static TraceOutputPlan planOutputs(const TraceOutputRequest& request, const std::filesystem::path& rawInputPath,
                                    const TraceRunConfig& config, DiagnosticSink& diagnostics)
 {
   return planOutputs(request, rawInputPath, CtraceRunMeta::fromConfig(config), diagnostics);
 }
 
+/** @brief Creates metadata satisfying the default backend requirements. */
 static TraceRunConfig backendRequirementsConfig()
 {
   TraceRunConfig config;

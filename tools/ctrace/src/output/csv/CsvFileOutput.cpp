@@ -27,20 +27,21 @@ class CsvFileStream final : public CsvFileOutput::Stream {
 public:
   /** @brief Opens a new binary output file, replacing an existing file. */
   explicit CsvFileStream(const std::filesystem::path& path)
-    : stream_(path, std::ios::out | std::ios::trunc | std::ios::binary)
+    : m_stream(path, std::ios::out | std::ios::trunc | std::ios::binary)
   {
   }
 
   /** @brief Returns the underlying output file stream. */
-  std::ostream& output() override { return stream_; }
+  std::ostream& output() override { return m_stream; }
 
   /** @brief Closes the underlying output file stream. */
-  void close() override { stream_.close(); }
+  void close() override { m_stream.close(); }
 
 private:
-  std::ofstream stream_;
+  std::ofstream m_stream;
 };
 
+/** @brief Safely removes an existing non-directory CSV target. */
 static void removeExistingCsv(const std::filesystem::path& path)
 {
   const auto normalized = path.lexically_normal();
@@ -63,6 +64,7 @@ static void removeExistingCsv(const std::filesystem::path& path)
   }
 }
 
+/** @brief Creates the parent directory of a CSV target when needed. */
 static void createParentDirectory(const std::filesystem::path& path)
 {
   const auto parent = path.parent_path();
@@ -84,9 +86,9 @@ CsvFileOutput::CsvFileOutput(std::filesystem::path outputFile, TraceSelection se
 }
 
 CsvFileOutput::CsvFileOutput(std::filesystem::path outputFile, TraceSelection selection, StreamFactory streamFactory)
-  : outputFile_(std::move(outputFile)), selection_(std::move(selection)), streamFactory_(std::move(streamFactory))
+  : m_outputFile(std::move(outputFile)), m_selection(std::move(selection)), m_streamFactory(std::move(streamFactory))
 {
-  if (!streamFactory_) {
+  if (!m_streamFactory) {
     throw std::invalid_argument("CSV stream factory must be configured");
   }
 }
@@ -107,60 +109,60 @@ std::string_view CsvFileOutput::backendName() const noexcept
 
 std::string CsvFileOutput::targetPath() const
 {
-  return outputFile_.string();
+  return m_outputFile.string();
 }
 
 void CsvFileOutput::start()
 {
   abort();
-  const auto& outputPath = outputFile_;
+  const auto& outputPath = m_outputFile;
   removeExistingCsv(outputPath);
   createParentDirectory(outputPath);
-  active_ = true;
-  stream_ = streamFactory_(outputPath);
-  if (stream_ == nullptr || !stream_->output()) {
+  m_active = true;
+  m_stream = m_streamFactory(outputPath);
+  if (m_stream == nullptr || !m_stream->output()) {
     abort();
     throw std::runtime_error("Failed to open CSV output " + outputPath.string());
   }
 
-  stream_->output() << CsvRowMapper::header() << "\n";
-  if (!stream_->output()) {
+  m_stream->output() << CsvRowMapper::header() << "\n";
+  if (!m_stream->output()) {
     abort();
-    throw std::runtime_error("Failed to write CSV output " + outputFile_.string());
+    throw std::runtime_error("Failed to write CSV output " + m_outputFile.string());
   }
 }
 
 void CsvFileOutput::stop()
 {
-  if (stream_ != nullptr) {
-    stream_->close();
+  if (m_stream != nullptr) {
+    m_stream->close();
   }
-  const auto failed = stream_ != nullptr && !stream_->output();
-  stream_.reset();
+  const auto failed = m_stream != nullptr && !m_stream->output();
+  m_stream.reset();
   if (failed) {
     abort();
-    throw std::runtime_error("Failed to write CSV output " + outputFile_.string());
+    throw std::runtime_error("Failed to write CSV output " + m_outputFile.string());
   }
-  active_ = false;
+  m_active = false;
 }
 
 void CsvFileOutput::abort()
 {
-  stream_.reset();
-  if (active_) {
-    removeExistingCsv(outputFile_);
-    active_ = false;
+  m_stream.reset();
+  if (m_active) {
+    removeExistingCsv(m_outputFile);
+    m_active = false;
   }
 }
 
 void CsvFileOutput::writeEvent(const TraceEvent& event)
 {
-  if (stream_ == nullptr) {
+  if (m_stream == nullptr) {
     return;
   }
-  if (!traceEventSelectedForOutput(event, selection_)) {
+  if (!traceEventSelectedForOutput(event, m_selection)) {
     return;
   }
 
-  stream_->output() << CsvRowMapper::row(event) << "\n";
+  m_stream->output() << CsvRowMapper::row(event) << "\n";
 }

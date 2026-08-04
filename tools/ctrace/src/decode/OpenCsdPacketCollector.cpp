@@ -24,60 +24,60 @@
 #include <utility>
 #include <vector>
 
-OpenCsdPacketCollector::OpenCsdPacketCollector(OpenCsdTraceElementSink& elementSink) : elementSink_(elementSink) {}
+OpenCsdPacketCollector::OpenCsdPacketCollector(OpenCsdTraceElementSink& elementSink) : m_elementSink(elementSink) {}
 
 void OpenCsdPacketCollector::beginTransaction()
 {
-  transactionActive_ = true;
-  transactionElements_.clear();
+  m_transactionActive = true;
+  m_transactionElements.clear();
 }
 
 void OpenCsdPacketCollector::commitTransaction()
 {
-  for (auto& element : transactionElements_) {
+  for (auto& element : m_transactionElements) {
     appendCommitted(std::move(element));
   }
-  transactionElements_.clear();
-  transactionActive_ = false;
+  m_transactionElements.clear();
+  m_transactionActive = false;
 }
 
 void OpenCsdPacketCollector::commitTransactionBefore(std::uint64_t sourceOffset)
 {
-  for (auto& element : transactionElements_) {
+  for (auto& element : m_transactionElements) {
     const auto elementOffset = element.sourceIndex;
     if (elementOffset < sourceOffset && element.kind != OpenCsdTraceElement::Kind::Error) {
       appendCommitted(std::move(element));
     }
   }
-  transactionElements_.clear();
-  transactionActive_ = false;
+  m_transactionElements.clear();
+  m_transactionActive = false;
 }
 
 void OpenCsdPacketCollector::rollbackTransaction()
 {
-  transactionElements_.clear();
-  transactionActive_ = false;
+  m_transactionElements.clear();
+  m_transactionActive = false;
 }
 
 void OpenCsdPacketCollector::rethrowOutputError()
 {
-  if (!outputError_) {
+  if (!m_outputError) {
     return;
   }
-  auto error = outputError_;
-  outputError_ = nullptr;
+  auto error = m_outputError;
+  m_outputError = nullptr;
   std::rethrow_exception(error);
 }
 
 std::size_t OpenCsdPacketCollector::transactionElementCount() const
 {
-  return transactionElements_.size();
+  return m_transactionElements.size();
 }
 
 std::optional<std::uint64_t> OpenCsdPacketCollector::transactionFirstSourceOffset() const
 {
   std::optional<std::uint64_t> firstOffset;
-  for (const auto& element : transactionElements_) {
+  for (const auto& element : m_transactionElements) {
     const auto offset = element.sourceIndex;
     if (!firstOffset.has_value() || offset < *firstOffset) {
       firstOffset = offset;
@@ -111,8 +111,8 @@ void OpenCsdPacketCollector::prependDiscontinuity(ocsd_trc_index_t index, const 
   element.issueCode = issueCode;
   element.errorMessage = message;
   element.rawBytesConsumed = rawBytesConsumed;
-  if (transactionActive_) {
-    transactionElements_.insert(transactionElements_.begin(), std::move(element));
+  if (m_transactionActive) {
+    m_transactionElements.insert(m_transactionElements.begin(), std::move(element));
     return;
   }
   appendElement(std::move(element));
@@ -128,8 +128,8 @@ void OpenCsdPacketCollector::prependDataLossError(ocsd_trc_index_t index, const 
   element.errorMessage = message;
   element.rawBytesConsumed = rawBytesConsumed;
   element.awaitingResumeTimestamp = true;
-  if (transactionActive_) {
-    transactionElements_.insert(transactionElements_.begin(), std::move(element));
+  if (m_transactionActive) {
+    m_transactionElements.insert(m_transactionElements.begin(), std::move(element));
     return;
   }
   appendElement(std::move(element));
@@ -163,8 +163,8 @@ ocsd_datapath_resp_t OpenCsdPacketCollector::TraceElemIn(const ocsd_trc_index_t 
       break;
     }
   } catch (...) {
-    if (!outputError_) {
-      outputError_ = std::current_exception();
+    if (!m_outputError) {
+      m_outputError = std::current_exception();
     }
     return OCSD_RESP_FATAL_SYS_ERR;
   }
@@ -211,8 +211,8 @@ void OpenCsdPacketCollector::RawPacketDataMon(const ocsd_datapath_op_t op, const
       break;
     }
   } catch (...) {
-    if (!outputError_) {
-      outputError_ = std::current_exception();
+    if (!m_outputError) {
+      m_outputError = std::current_exception();
     }
   }
 }
@@ -314,8 +314,8 @@ LocalTimestampRelation OpenCsdPacketCollector::timestampRelation(swt_itm_type ty
 
 void OpenCsdPacketCollector::appendElement(OpenCsdTraceElement element)
 {
-  if (transactionActive_) {
-    transactionElements_.push_back(std::move(element));
+  if (m_transactionActive) {
+    m_transactionElements.push_back(std::move(element));
     return;
   }
   appendCommitted(std::move(element));
@@ -323,5 +323,5 @@ void OpenCsdPacketCollector::appendElement(OpenCsdTraceElement element)
 
 void OpenCsdPacketCollector::appendCommitted(OpenCsdTraceElement element)
 {
-  elementSink_.append(std::move(element));
+  m_elementSink.append(std::move(element));
 }

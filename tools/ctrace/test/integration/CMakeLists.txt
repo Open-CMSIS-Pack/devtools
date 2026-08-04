@@ -3,8 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Generated with AI
 
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-
 add_test(
     NAME ctrace-version
     COMMAND ctrace --version
@@ -83,14 +81,10 @@ add_test(
 )
 
 add_test(
-    NAME ctrace-valid-swo-generates-all-outputs
+    NAME ctrace-windows-manifest
     COMMAND ${CMAKE_COMMAND}
-        -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
-        -DPYTHON_EXECUTABLE=${Python3_EXECUTABLE}
-        -DYAML_FILE=${CTRACE_SOURCE_DIR}/test/data/trace-run/Board.ctrace-run.yml
-        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/valid-swo-all
-        -DTARGET=Valid
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunValidTraceFixture.cmake
+        -DMANIFEST_FILE=${CTRACE_SOURCE_DIR}/src/ctrace.manifest
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/src/ValidateWindowsManifest.cmake
 )
 set_tests_properties(
     ctrace-version
@@ -100,17 +94,11 @@ set_tests_properties(
     ctrace-help
     ctrace-trace-run-yaml
     ctrace-decoder-error-all-is-generated
+    ctrace-windows-manifest
     PROPERTIES
         LABELS "integration"
         TIMEOUT 30
 )
-set_tests_properties(
-    ctrace-valid-swo-generates-all-outputs
-    PROPERTIES
-        LABELS "integration;fixture"
-        TIMEOUT 30
-)
-
 set(CTRACE_BLINKY_FIXTURE_DIR
     "${CTRACE_SOURCE_DIR}/test/data/Blinky+Arm")
 

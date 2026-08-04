@@ -41,7 +41,14 @@ struct CtraceRunTimestampMeta {
 /** @brief Provides validated trace-run metadata consumed by decoding and output. */
 class CtraceRunMeta {
 public:
-  /** @brief Normalizes a parsed trace-run configuration. */
+  /**
+   * @brief Normalizes a parsed trace-run configuration.
+   * @param config Parsed trace-run configuration.
+   * @return Metadata indexed for decoder and output consumption.
+   *
+   * Ambiguous processor-wide values remain absent while per-stream values and
+   * validation errors are retained for diagnostics and output planning.
+   */
   static CtraceRunMeta fromConfig(const TraceRunConfig& config);
 
   /** @brief Returns the source trace-run configuration path. */
@@ -68,17 +75,17 @@ public:
   const std::vector<CtraceRunSourceMeta>& sources() const;
 
 private:
-  std::string configPath_;
-  std::optional<std::uint64_t> timestampClockHz_;
-  std::map<std::uint8_t, CtraceRunTimestampMeta> timestampsByTraceBusId_;
-  std::optional<std::uint32_t> timestampPrescaler_;
-  std::map<std::uint8_t, std::uint32_t> timestampPrescalersByTraceBusId_;
-  std::optional<std::uint32_t> itmEnableMask_;
-  std::map<std::uint8_t, std::uint32_t> itmEnableMasksByTraceBusId_;
-  std::vector<std::string> timestampClockErrors_;
-  std::size_t processorCount_ = 0;
-  bool distinctProcessorPrescalers_ = false;
-  std::vector<CtraceRunSourceMeta> sources_;
+  std::string m_configPath;
+  std::optional<std::uint64_t> m_timestampClockHz;
+  std::map<std::uint8_t, CtraceRunTimestampMeta> m_timestampsByTraceBusId;
+  std::optional<std::uint32_t> m_timestampPrescaler;
+  std::map<std::uint8_t, std::uint32_t> m_timestampPrescalersByTraceBusId;
+  std::optional<std::uint32_t> m_itmEnableMask;
+  std::map<std::uint8_t, std::uint32_t> m_itmEnableMasksByTraceBusId;
+  std::vector<std::string> m_timestampClockErrors;
+  std::size_t m_processorCount = 0;
+  bool m_distinctProcessorPrescalers = false;
+  std::vector<CtraceRunSourceMeta> m_sources;
 };
 
 #endif  // CTRACE_SRC_TRACERUN_CTRACERUNMETA_H

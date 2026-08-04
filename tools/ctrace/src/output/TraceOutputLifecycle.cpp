@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+/** @brief Extracts a stable message from a captured backend exception. */
 static std::string exceptionMessage(const std::exception_ptr& error)
 {
   try {
@@ -33,12 +34,12 @@ static std::string exceptionMessage(const std::exception_ptr& error)
 
 TraceOutputLifecycle::TraceOutputLifecycle(std::vector<std::unique_ptr<TraceOutput>> outputs,
                                            DiagnosticSink& diagnostics)
-  : outputs_(std::move(outputs)), diagnostics_(diagnostics), states_(outputs_.size(), State::Inactive)
+  : m_outputs(std::move(outputs)), m_diagnostics(diagnostics), m_states(m_outputs.size(), State::Inactive)
 {
-  for (std::size_t index = 0; index < outputs_.size(); ++index) {
+  for (std::size_t index = 0; index < m_outputs.size(); ++index) {
     try {
-      outputs_[index]->start();
-      states_[index] = State::Active;
+      m_outputs[index]->start();
+      m_states[index] = State::Active;
     } catch (...) {
       fail(index, "start", std::current_exception());
       abortNoexcept(index);
@@ -53,12 +54,12 @@ TraceOutputLifecycle::~TraceOutputLifecycle() noexcept
 
 void TraceOutputLifecycle::append(const TraceEvent& event)
 {
-  for (std::size_t index = 0; index < outputs_.size(); ++index) {
-    if (states_[index] != State::Active) {
+  for (std::size_t index = 0; index < m_outputs.size(); ++index) {
+    if (m_states[index] != State::Active) {
       continue;
     }
     try {
-      outputs_[index]->writeEvent(event);
+      m_outputs[index]->writeEvent(event);
     } catch (...) {
       fail(index, "write", std::current_exception());
       abortNoexcept(index);
@@ -73,34 +74,34 @@ void TraceOutputLifecycle::abort() noexcept
 
 void TraceOutputLifecycle::finish() noexcept
 {
-  if (finished_) {
+  if (m_finished) {
     return;
   }
 
-  for (std::size_t index = outputs_.size(); index > 0U; --index) {
+  for (std::size_t index = m_outputs.size(); index > 0U; --index) {
     const auto outputIndex = index - 1U;
-    if (states_[outputIndex] != State::Active) {
+    if (m_states[outputIndex] != State::Active) {
       continue;
     }
     try {
-      outputs_[outputIndex]->stop();
-      states_[outputIndex] = State::Completed;
+      m_outputs[outputIndex]->stop();
+      m_states[outputIndex] = State::Completed;
     } catch (...) {
       fail(outputIndex, "stop", std::current_exception());
       abortNoexcept(outputIndex);
     }
   }
-  finished_ = true;
+  m_finished = true;
 }
 
 void TraceOutputLifecycle::fail(std::size_t index, const char* phase, const std::exception_ptr& error) noexcept
 {
-  states_[index] = State::Failed;
+  m_states[index] = State::Failed;
   try {
     const auto message = exceptionMessage(error);
-    const auto backend = std::string(outputs_[index]->backendName());
-    const auto target = outputs_[index]->targetPath();
-    diagnostics_.report({
+    const auto backend = std::string(m_outputs[index]->backendName());
+    const auto target = m_outputs[index]->targetPath();
+    m_diagnostics.report({
         DiagnosticSink::Severity::Error,
         DiagnosticSink::Category::Output,
         "output-failed",
@@ -124,19 +125,19 @@ void TraceOutputLifecycle::fail(std::size_t index, const char* phase, const std:
 void TraceOutputLifecycle::abortNoexcept(std::size_t index) noexcept
 {
   try {
-    outputs_[index]->abort();
+    m_outputs[index]->abort();
   } catch (...) {
     fail(index, "abort", std::current_exception());
   }
-  states_[index] = State::Failed;
+  m_states[index] = State::Failed;
 }
 
 void TraceOutputLifecycle::abortActiveNoexcept() noexcept
 {
-  for (std::size_t index = 0; index < outputs_.size(); ++index) {
-    if (states_[index] == State::Active) {
+  for (std::size_t index = 0; index < m_outputs.size(); ++index) {
+    if (m_states[index] == State::Active) {
       abortNoexcept(index);
     }
   }
-  finished_ = true;
+  m_finished = true;
 }

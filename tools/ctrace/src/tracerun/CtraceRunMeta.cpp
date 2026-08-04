@@ -46,6 +46,7 @@ struct ProcessorIdentity {
 
 using ReferenceProblem = TraceRunSchema::ReferenceProblem;
 
+/** @brief Formats a trace-run validation error with source location. */
 static std::string configError(const TraceRunConfig& config, std::size_t line, const std::string& message)
 {
   auto location = config.path;
@@ -55,6 +56,7 @@ static std::string configError(const TraceRunConfig& config, std::size_t line, c
   return location + ": " + message;
 }
 
+/** @brief Formats the structural validation problem of one reference. */
 static std::string referenceProblemMessage(const TraceRunConfig& config, const TraceRunReference& reference,
                                            ReferenceProblem problem)
 {
@@ -75,6 +77,7 @@ static std::string referenceProblemMessage(const TraceRunConfig& config, const T
                                          : "ITM source must be between 0 and 31");
 }
 
+/** @brief Tests whether a setup contributes metadata to any consumed route. */
 static bool consumesSetup(const TraceRunConfig& config, const TraceRunSetup& setup)
 {
   if (setup.timestamps.has_value() || setup.itm.has_value()) {
@@ -93,12 +96,14 @@ static bool consumesSetup(const TraceRunConfig& config, const TraceRunSetup& set
   return false;
 }
 
+/** @brief Tests whether a reference can bind a processor to one stream. */
 static bool isUsableStreamBinding(const TraceRunReference& reference)
 {
   return TraceRunSchema::contributesStreamBinding(reference) &&
          TraceRunSchema::referenceProblem(reference) == ReferenceProblem::None;
 }
 
+/** @brief Resolves the unambiguous processor identity of a trace-run file. */
 static ProcessorIdentity processorIdentity(const TraceRunConfig& config)
 {
   std::set<std::string> setupNames;
@@ -186,6 +191,7 @@ static ProcessorIdentity processorIdentity(const TraceRunConfig& config)
   };
 }
 
+/** @brief Resolves the data setup referenced by one DWT route. */
 static const TraceRunDataSetup* referencedDataSetup(const TraceRunConfig& config, const TraceRunReference& reference)
 {
   const auto index = reference.dataSetupIndex;
@@ -204,6 +210,7 @@ static const TraceRunDataSetup* referencedDataSetup(const TraceRunConfig& config
   return nullptr;
 }
 
+/** @brief Converts one validated reference into normalized source metadata. */
 static CtraceRunSourceMeta sourceMeta(const TraceRunConfig& config, const TraceRunReference& reference,
                                       std::uint32_t source, const ProcessorIdentity& processorIdentity)
 {
@@ -224,6 +231,7 @@ static CtraceRunSourceMeta sourceMeta(const TraceRunConfig& config, const TraceR
   };
 }
 
+/** @brief Returns or creates accumulated metadata for one processor. */
 static ProcessorMeta& processorMeta(std::vector<ProcessorMeta>& processors, const std::optional<std::string>& name)
 {
   const auto found = std::find_if(processors.begin(), processors.end(),
@@ -237,6 +245,7 @@ static ProcessorMeta& processorMeta(std::vector<ProcessorMeta>& processors, cons
 }
 
 template <typename Value>
+/** @brief Returns a setting only when all relevant processors agree. */
 static std::optional<Value> commonProcessorSetting(const std::vector<ProcessorMeta>& processors,
                                                    const std::optional<Value> ProcessorMeta::* member)
 {
@@ -257,6 +266,7 @@ static std::optional<Value> commonProcessorSetting(const std::vector<ProcessorMe
   return common;
 }
 
+/** @brief Finds accumulated metadata for an optional processor identity. */
 static const ProcessorMeta* findProcessor(const std::vector<ProcessorMeta>& processors,
                                           const std::optional<std::string>& name)
 {
@@ -273,6 +283,7 @@ struct ResolvedStreamBinding {
   const ProcessorMeta* processor = nullptr;
 };
 
+/** @brief Resolves validated processor-to-stream bindings for all references. */
 static std::vector<ResolvedStreamBinding> resolveStreamBindings(const TraceRunConfig& config,
                                                                 const ProcessorIdentity& processorIdentity,
                                                                 const std::vector<ProcessorMeta>& processors)
@@ -336,6 +347,7 @@ buildTimestampPrescalersByTraceBusId(const TraceRunConfig& config, const std::ve
   return result;
 }
 
+/** @brief Returns the common ITM enable mask across relevant processors. */
 static std::optional<std::uint32_t> commonItmEnableMask(const std::vector<ProcessorMeta>& processors)
 {
   std::optional<std::uint32_t> common;
@@ -373,6 +385,7 @@ buildItmEnableMasksByTraceBusId(const std::vector<ResolvedStreamBinding>& bindin
   return result;
 }
 
+/** @brief Tests whether processors require different timestamp prescalers. */
 static bool containsDistinctProcessorPrescalers(const std::vector<ProcessorMeta>& processors)
 {
   std::optional<std::uint32_t> first;
@@ -391,7 +404,7 @@ static bool containsDistinctProcessorPrescalers(const std::vector<ProcessorMeta>
 CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
 {
   CtraceRunMeta ctraceRunMeta;
-  ctraceRunMeta.configPath_ = config.path;
+  ctraceRunMeta.m_configPath = config.path;
 
   for (const auto& reference : config.references) {
     if (!TraceRunSchema::hasConsumedRouteShape(reference) && !TraceRunSchema::contributesStreamBinding(reference)) {
@@ -430,7 +443,7 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
       processor.timestampPrescaler =
           setup.timestamps->timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
       if (setup.timestamps->clockError.has_value()) {
-        ctraceRunMeta.timestampClockErrors_.push_back(*setup.timestamps->clockError);
+        ctraceRunMeta.m_timestampClockErrors.push_back(*setup.timestamps->clockError);
       }
     }
     if (setup.itm.has_value()) {
@@ -446,73 +459,73 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
       continue;
     }
     for (const auto source : reference.sources) {
-      ctraceRunMeta.sources_.push_back(sourceMeta(config, reference, source, identity));
+      ctraceRunMeta.m_sources.push_back(sourceMeta(config, reference, source, identity));
     }
   }
   const auto streamBindings = resolveStreamBindings(config, identity, processors);
-  ctraceRunMeta.timestampClockHz_ = commonProcessorSetting(processors, &ProcessorMeta::timestampClockHz);
-  ctraceRunMeta.timestampsByTraceBusId_ = buildTimestampsByTraceBusId(streamBindings);
-  ctraceRunMeta.timestampPrescaler_ = commonProcessorSetting(processors, &ProcessorMeta::timestampPrescaler);
-  ctraceRunMeta.timestampPrescalersByTraceBusId_ = buildTimestampPrescalersByTraceBusId(config, streamBindings);
-  ctraceRunMeta.itmEnableMask_ = commonItmEnableMask(processors);
-  ctraceRunMeta.itmEnableMasksByTraceBusId_ = buildItmEnableMasksByTraceBusId(streamBindings);
-  ctraceRunMeta.processorCount_ = processors.size();
-  ctraceRunMeta.distinctProcessorPrescalers_ = containsDistinctProcessorPrescalers(processors);
+  ctraceRunMeta.m_timestampClockHz = commonProcessorSetting(processors, &ProcessorMeta::timestampClockHz);
+  ctraceRunMeta.m_timestampsByTraceBusId = buildTimestampsByTraceBusId(streamBindings);
+  ctraceRunMeta.m_timestampPrescaler = commonProcessorSetting(processors, &ProcessorMeta::timestampPrescaler);
+  ctraceRunMeta.m_timestampPrescalersByTraceBusId = buildTimestampPrescalersByTraceBusId(config, streamBindings);
+  ctraceRunMeta.m_itmEnableMask = commonItmEnableMask(processors);
+  ctraceRunMeta.m_itmEnableMasksByTraceBusId = buildItmEnableMasksByTraceBusId(streamBindings);
+  ctraceRunMeta.m_processorCount = processors.size();
+  ctraceRunMeta.m_distinctProcessorPrescalers = containsDistinctProcessorPrescalers(processors);
 
   return ctraceRunMeta;
 }
 
 const std::string& CtraceRunMeta::configPath() const
 {
-  return configPath_;
+  return m_configPath;
 }
 
 const std::optional<std::uint64_t>& CtraceRunMeta::timestampClockHz() const
 {
-  return timestampClockHz_;
+  return m_timestampClockHz;
 }
 
 const std::map<std::uint8_t, CtraceRunTimestampMeta>& CtraceRunMeta::timestampsByTraceBusId() const
 {
-  return timestampsByTraceBusId_;
+  return m_timestampsByTraceBusId;
 }
 
 const std::optional<std::uint32_t>& CtraceRunMeta::timestampPrescaler() const
 {
-  return timestampPrescaler_;
+  return m_timestampPrescaler;
 }
 
 const std::map<std::uint8_t, std::uint32_t>& CtraceRunMeta::timestampPrescalersByTraceBusId() const
 {
-  return timestampPrescalersByTraceBusId_;
+  return m_timestampPrescalersByTraceBusId;
 }
 
 const std::optional<std::uint32_t>& CtraceRunMeta::itmEnableMask() const
 {
-  return itmEnableMask_;
+  return m_itmEnableMask;
 }
 
 const std::map<std::uint8_t, std::uint32_t>& CtraceRunMeta::itmEnableMasksByTraceBusId() const
 {
-  return itmEnableMasksByTraceBusId_;
+  return m_itmEnableMasksByTraceBusId;
 }
 
 const std::vector<std::string>& CtraceRunMeta::timestampClockErrors() const
 {
-  return timestampClockErrors_;
+  return m_timestampClockErrors;
 }
 
 bool CtraceRunMeta::hasDistinctProcessorPrescalers() const
 {
-  return distinctProcessorPrescalers_;
+  return m_distinctProcessorPrescalers;
 }
 
 std::size_t CtraceRunMeta::processorCount() const
 {
-  return processorCount_;
+  return m_processorCount;
 }
 
 const std::vector<CtraceRunSourceMeta>& CtraceRunMeta::sources() const
 {
-  return sources_;
+  return m_sources;
 }

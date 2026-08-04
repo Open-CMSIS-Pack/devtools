@@ -79,9 +79,6 @@ compact [remaining TODO list](docs/todo.md).
 
 Initialize all dependencies and configure the repository from its root:
 
-Python 3 is required when configuring the integration tests because one small, textual SWO byte sequence is
-materialized below the build tree.
-
 ```bash
 git submodule update --init --recursive
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
@@ -125,6 +122,6 @@ cover them. Release artifacts are currently unsigned; signing, archive checksums
 SBOM remain explicit release-hardening decisions.
 
 The code, build, test, and packaging structure is ready for release-candidate validation. The Blinky SWO and TB
-captures are approved redistributable test assets with SPDX sidecars, as documented in the
-[fixture README](test/data/README.md). Publishing the current statically linked Linux artifacts additionally requires
-the runtime-license and relinking work tracked in the [release TODO](docs/todo.md).
+captures are approved redistributable test assets, as documented in the [fixture README](test/data/README.md).
+Publishing the current statically linked Linux artifacts additionally requires the runtime-license and relinking work
+tracked in the [release TODO](docs/todo.md).

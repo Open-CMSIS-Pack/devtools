@@ -42,15 +42,16 @@ public:
   void abortOutputs() noexcept;
 
 private:
+  /** @brief Reports an ITM event that contradicts the configured enable mask. */
   void reportItmConfigurationMismatch(const TraceEvent& event);
 
-  DiagnosticSink& diagnostics_;
-  std::optional<std::uint32_t> itmEnableMask_;
-  std::map<std::uint8_t, std::uint32_t> itmEnableMasksByTraceBusId_;
-  std::set<std::pair<std::uint8_t, std::uint32_t>> reportedDisabledItmChannels_;
-  TraceIssueReporter issueReporter_;
-  TraceOutputLifecycle outputLifecycle_;
-  std::uint64_t eventCount_ = 0;
+  DiagnosticSink& m_diagnostics;
+  std::optional<std::uint32_t> m_itmEnableMask;
+  std::map<std::uint8_t, std::uint32_t> m_itmEnableMasksByTraceBusId;
+  std::set<std::pair<std::uint8_t, std::uint32_t>> m_reportedDisabledItmChannels;
+  TraceIssueReporter m_issueReporter;
+  TraceOutputLifecycle m_outputLifecycle;
+  std::uint64_t m_eventCount = 0;
 };
 
 #endif  // CTRACE_SRC_CONTROL_DECODECONSUMERS_H

@@ -30,42 +30,42 @@ enum class CsvStreamFailure {
 class FailingCsvStreamBuffer final : public std::streambuf {
 public:
   /** @brief Creates a buffer that fails at the selected operation. */
-  explicit FailingCsvStreamBuffer(CsvStreamFailure failure) : failure_(failure) {}
+  explicit FailingCsvStreamBuffer(CsvStreamFailure failure) : m_failure(failure) {}
 
 protected:
   /** @brief Accepts or rejects one output character. */
   int_type overflow(int_type character) override
   {
-    return failure_ == CsvStreamFailure::Write ? traits_type::eof() : character;
+    return m_failure == CsvStreamFailure::Write ? traits_type::eof() : character;
   }
 
   /** @brief Accepts or rejects a stream flush. */
   int sync() override
   {
-    return failure_ == CsvStreamFailure::Flush ? -1 : 0;
+    return m_failure == CsvStreamFailure::Flush ? -1 : 0;
   }
 
 private:
-  CsvStreamFailure failure_;
+  CsvStreamFailure m_failure;
 };
 
 /** @brief Provides a CSV stream around a synthetic failing stream buffer. */
 class FailingCsvStream final : public CsvFileOutput::Stream {
 public:
   /** @brief Creates a stream that fails at the selected operation. */
-  explicit FailingCsvStream(CsvStreamFailure failure) : buffer_(failure), stream_(&buffer_)
+  explicit FailingCsvStream(CsvStreamFailure failure) : m_buffer(failure), m_stream(&m_buffer)
   {
   }
 
   /** @brief Returns the synthetic output stream. */
-  std::ostream& output() override { return stream_; }
+  std::ostream& output() override { return m_stream; }
 
   /** @brief Flushes the synthetic output stream. */
-  void close() override { stream_.flush(); }
+  void close() override { m_stream.flush(); }
 
 private:
-  FailingCsvStreamBuffer buffer_;
-  std::ostream stream_;
+  FailingCsvStreamBuffer m_buffer;
+  std::ostream m_stream;
 };
 
 TEST(CtraceUnitTests, testCsvFileOutputCriteria)

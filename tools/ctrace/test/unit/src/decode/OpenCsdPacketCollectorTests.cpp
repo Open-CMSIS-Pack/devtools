@@ -39,6 +39,7 @@ public:
   }
 };
 
+/** @brief Creates a generic OpenCSD ITM element for callback tests. */
 static OcsdTraceElement itmElement(swt_itm_type type, std::uint8_t source = 0U, std::uint8_t size = 0U,
                                    std::uint32_t value = 0U, bool overflow = false)
 {
@@ -64,8 +65,8 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorUsesReconstructedGlobalTimestamp
 
   require(collector.TraceElemIn(42U, 7U, globalTimestamp) == OCSD_RESP_CONT,
           "OpenCSD global timestamp collection failed");
-  require(sink.elements.size() == 1U, "reconstructed global timestamp element missing");
-  const auto element = sink.elements.front();
+  require(sink.elements().size() == 1U, "reconstructed global timestamp element missing");
+  const auto element = sink.elements().front();
   require(element.kind == OpenCsdTraceElement::Kind::GlobalTimestamp, "reconstructed global timestamp kind mismatch");
   require(element.sourceIndex == 42U, "reconstructed global timestamp source index mismatch");
   require(element.traceBusId == 7U, "OpenCSD Trace Bus ID was not preserved");
@@ -74,7 +75,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorUsesReconstructedGlobalTimestamp
 
   require(collector.TraceElemIn(43U, 0xffU, globalTimestamp) == OCSD_RESP_CONT,
           "OpenCSD global timestamp collection with missing source ID failed");
-  require(sink.elements.back().traceBusId == 0U, "an unavailable OpenCSD Trace Bus ID must fall back to zero");
+  require(sink.elements().back().traceBusId == 0U, "an unavailable OpenCSD Trace Bus ID must fall back to zero");
 
   ItmTrcPacket rawGts1;
   rawGts1.setPktType(ITM_PKT_TS_GLOBAL_1);
@@ -85,7 +86,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorUsesReconstructedGlobalTimestamp
   rawGts2.setPktType(ITM_PKT_TS_GLOBAL_2);
   rawGts2.setExtValue(0x123456789ULL);
   collector.RawPacketDataMon(OCSD_OP_DATA, 44U, &rawGts2, 0U, nullptr);
-  require(sink.elements.size() == 2U, "raw GTS fragments must not be published as independent global timestamps");
+  require(sink.elements().size() == 2U, "raw GTS fragments must not be published as independent global timestamps");
 
   TraceEvent packet{GlobalTimestampTraceEvent{element.timestampValue, false}};
   require(CsvRowMapper::row(packet) == std::to_string(element.timestampValue) + ",0,global_ts,,,,,",
@@ -110,10 +111,10 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsLocalTimestampRelations)
     require(collector.TraceElemIn(index, 0U, timestamp) == OCSD_RESP_CONT, "OpenCSD local timestamp collection failed");
   }
 
-  require(sink.elements.size() == cases.size(), "local timestamp relation count mismatch");
+  require(sink.elements().size() == cases.size(), "local timestamp relation count mismatch");
   for (std::size_t index = 0; index < cases.size(); ++index) {
-    require(sink.elements[index].kind == OpenCsdTraceElement::Kind::LocalTimestamp, "local timestamp kind mismatch");
-    require(sink.elements[index].timestampRelation == cases[index].second, "local timestamp relation mismatch");
+    require(sink.elements()[index].kind == OpenCsdTraceElement::Kind::LocalTimestamp, "local timestamp kind mismatch");
+    require(sink.elements()[index].timestampRelation == cases[index].second, "local timestamp relation mismatch");
   }
 }
 
@@ -124,33 +125,33 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
 
   const auto software = itmElement(SWIT_PAYLOAD, 7U, 4U, 0x12345678U, true);
   EXPECT_EQ(collector.TraceElemIn(10U, 3U, software), OCSD_RESP_CONT);
-  ASSERT_EQ(sink.elements.size(), 1U);
-  EXPECT_EQ(sink.elements.back().kind, OpenCsdTraceElement::Kind::Software);
-  EXPECT_EQ(sink.elements.back().channel, 7U);
-  EXPECT_EQ(sink.elements.back().size, 4U);
-  EXPECT_EQ(sink.elements.back().value, 0x12345678U);
-  EXPECT_TRUE(sink.elements.back().overflow);
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().back().kind, OpenCsdTraceElement::Kind::Software);
+  EXPECT_EQ(sink.elements().back().channel, 7U);
+  EXPECT_EQ(sink.elements().back().size, 4U);
+  EXPECT_EQ(sink.elements().back().value, 0x12345678U);
+  EXPECT_TRUE(sink.elements().back().overflow);
 
   const auto hardware = itmElement(DWT_PAYLOAD, 9U, 2U, 0x1234U);
   EXPECT_EQ(collector.TraceElemIn(11U, 4U, hardware), OCSD_RESP_CONT);
-  ASSERT_EQ(sink.elements.size(), 2U);
-  EXPECT_EQ(sink.elements.back().kind, OpenCsdTraceElement::Kind::Hardware);
-  EXPECT_EQ(sink.elements.back().discriminator, 9U);
+  ASSERT_EQ(sink.elements().size(), 2U);
+  EXPECT_EQ(sink.elements().back().kind, OpenCsdTraceElement::Kind::Hardware);
+  EXPECT_EQ(sink.elements().back().discriminator, 9U);
 
   OcsdTraceElement unrelated;
   unrelated.setType(OCSD_GEN_TRC_ELEM_NO_SYNC);
   EXPECT_EQ(collector.TraceElemIn(12U, 5U, unrelated), OCSD_RESP_CONT);
-  EXPECT_EQ(sink.elements.size(), 2U);
+  EXPECT_EQ(sink.elements().size(), 2U);
 
   const auto unknown = itmElement(static_cast<swt_itm_type>(7));
   EXPECT_EQ(collector.TraceElemIn(12U, 5U, unknown), OCSD_RESP_CONT);
-  EXPECT_EQ(sink.elements.size(), 2U);
+  EXPECT_EQ(sink.elements().size(), 2U);
 
   collector.RawPacketDataMon(OCSD_OP_DATA, 13U, nullptr, 0U, nullptr);
   ItmTrcPacket packet;
   packet.setPktType(ITM_PKT_ASYNC);
   collector.RawPacketDataMon(OCSD_OP_RESET, 14U, &packet, 0U, nullptr);
-  EXPECT_EQ(sink.elements.size(), 2U);
+  EXPECT_EQ(sink.elements().size(), 2U);
 
   /** @brief Describes one raw-packet callback mapping test case. */
   struct RawPacketCase {
@@ -173,15 +174,15 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
     const auto& testCase = rawPacketCases[index];
     packet.setPktType(testCase.type);
     collector.RawPacketDataMon(testCase.operation, 15U + index, &packet, 0U, nullptr);
-    ASSERT_EQ(sink.elements.size(), 3U + index);
-    EXPECT_EQ(sink.elements.back().kind, testCase.kind);
-    EXPECT_EQ(sink.elements.back().errorMessage, testCase.errorMessage);
-    EXPECT_EQ(sink.elements.back().issueCode, testCase.issueCode);
+    ASSERT_EQ(sink.elements().size(), 3U + index);
+    EXPECT_EQ(sink.elements().back().kind, testCase.kind);
+    EXPECT_EQ(sink.elements().back().errorMessage, testCase.errorMessage);
+    EXPECT_EQ(sink.elements().back().issueCode, testCase.issueCode);
   }
 
   packet.setPktType(ITM_PKT_SWIT);
   collector.RawPacketDataMon(OCSD_OP_DATA, 19U, &packet, 0U, nullptr);
-  EXPECT_EQ(sink.elements.size(), 6U);
+  EXPECT_EQ(sink.elements().size(), 6U);
 }
 
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommittedElements)
@@ -198,24 +199,24 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommitte
   EXPECT_EQ(collector.transactionElementCount(), 3U);
   EXPECT_EQ(collector.transactionFirstSourceOffset(), 3U);
   collector.commitTransactionBefore(5U);
-  ASSERT_EQ(sink.elements.size(), 1U);
-  EXPECT_EQ(sink.elements.front().kind, OpenCsdTraceElement::Kind::Discontinuity);
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().kind, OpenCsdTraceElement::Kind::Discontinuity);
 
   collector.beginTransaction();
   collector.appendDecodeError(7U, "rolled back");
   collector.rollbackTransaction();
-  EXPECT_EQ(sink.elements.size(), 1U);
+  EXPECT_EQ(sink.elements().size(), 1U);
 
   collector.prependDiscontinuity(8U, "outside", "gap");
   collector.prependDataLossError(9U, "outside loss", 4U);
-  ASSERT_EQ(sink.elements.size(), 3U);
-  EXPECT_EQ(sink.elements.back().rawBytesConsumed, 4U);
+  ASSERT_EQ(sink.elements().size(), 3U);
+  EXPECT_EQ(sink.elements().back().rawBytesConsumed, 4U);
 
   collector.beginTransaction();
   collector.appendDecodeError(10U, "committed");
   collector.commitTransaction();
-  ASSERT_EQ(sink.elements.size(), 4U);
-  EXPECT_EQ(sink.elements.back().sourceIndex, 10U);
+  ASSERT_EQ(sink.elements().size(), 4U);
+  EXPECT_EQ(sink.elements().back().sourceIndex, 10U);
 }
 
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorDefersOutputFailures)
@@ -226,7 +227,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorDefersOutputFailures)
 
   EXPECT_EQ(collector.TraceElemIn(1U, 1U, software), OCSD_RESP_FATAL_SYS_ERR);
   EXPECT_EQ(collector.TraceElemIn(2U, 1U, software), OCSD_RESP_FATAL_SYS_ERR);
-  EXPECT_EQ(sink.elements.size(), 2U);
+  EXPECT_EQ(sink.elements().size(), 2U);
   EXPECT_THROW(collector.rethrowOutputError(), std::runtime_error);
   EXPECT_NO_THROW(collector.rethrowOutputError());
 
@@ -234,6 +235,6 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorDefersOutputFailures)
   packet.setPktType(ITM_PKT_ASYNC);
   collector.RawPacketDataMon(OCSD_OP_DATA, 3U, &packet, 0U, nullptr);
   collector.RawPacketDataMon(OCSD_OP_DATA, 4U, &packet, 0U, nullptr);
-  EXPECT_EQ(sink.elements.size(), 4U);
+  EXPECT_EQ(sink.elements().size(), 4U);
   EXPECT_THROW(collector.rethrowOutputError(), std::runtime_error);
 }

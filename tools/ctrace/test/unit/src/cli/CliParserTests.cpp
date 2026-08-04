@@ -17,11 +17,13 @@
 #include <string_view>
 #include <vector>
 
+/** @brief Parses a compact command-line argument list. */
 static CliOptions parse(std::initializer_list<const char*> arguments)
 {
   return CliParser::parse(std::vector<std::string>(arguments.begin(), arguments.end()));
 }
 
+/** @brief Parses and validates a compact command-line argument list. */
 static CliOptions parseAndValidate(std::initializer_list<const char*> arguments)
 {
   auto options = parse(arguments);
@@ -29,6 +31,7 @@ static CliOptions parseAndValidate(std::initializer_list<const char*> arguments)
   return options;
 }
 
+/** @brief Tests whether CLI validation reports expected text. */
 static bool validationErrorContains(std::initializer_list<const char*> arguments, std::string_view expected)
 {
   return throwsWithMessage(
@@ -39,11 +42,13 @@ static bool validationErrorContains(std::initializer_list<const char*> arguments
       expected);
 }
 
+/** @brief Tests whether parsing the supplied command line fails. */
 static bool parseFails(std::initializer_list<const char*> arguments)
 {
   return throwsException([&arguments] { (void)parse(arguments); });
 }
 
+/** @brief Requires a command line to select the expected output format. */
 static void expectOutputFormat(std::initializer_list<const char*> arguments, OutputFormat expected)
 {
   EXPECT_EQ(parseAndValidate(arguments).outputFormat, expected);

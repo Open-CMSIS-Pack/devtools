@@ -45,12 +45,14 @@ public:
   std::uint64_t eventCount() const;
 
 private:
+  /** @brief Resolves the configured timestamp prescaler for one Trace Bus ID. */
   std::uint32_t prescaler(std::uint8_t traceBusId) const;
+  /** @brief Returns or lazily creates the post-decoder for one Trace Bus ID. */
   CortexMPostDecoder& decoder(std::uint8_t traceBusId);
 
-  ItmTimestampPrescalers prescalers_;
-  TraceEventSink& eventSink_;
-  std::map<std::uint8_t, std::unique_ptr<CortexMPostDecoder>> decoders_;
+  ItmTimestampPrescalers m_prescalers;
+  TraceEventSink& m_eventSink;
+  std::map<std::uint8_t, std::unique_ptr<CortexMPostDecoder>> m_decoders;
 };
 
 #endif  // CTRACE_SRC_DECODE_CORTEXMSTREAMDECODER_H

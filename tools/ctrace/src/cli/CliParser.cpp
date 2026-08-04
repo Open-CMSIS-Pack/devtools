@@ -21,11 +21,13 @@
 #include <system_error>
 #include <vector>
 
+/** @brief Tests whether a command-line token begins with an option prefix. */
 static bool startsWithDash(const std::string& value)
 {
   return !value.empty() && value.front() == '-';
 }
 
+/** @brief Parses a complete unsigned command-line value or reports its option. */
 static std::uint32_t parseUnsignedInteger(const std::string& value, const std::string& option)
 {
   std::uint32_t parsed = 0;
@@ -36,6 +38,7 @@ static std::uint32_t parseUnsignedInteger(const std::string& value, const std::s
   return parsed;
 }
 
+/** @brief Consumes one repeated or space-separated multi-value option. */
 static std::optional<std::vector<std::string>> consumeMultiValueOption(const std::string& arg,
                                                                        const std::string& option, std::size_t& index,
                                                                        const std::vector<std::string>& arguments)
@@ -67,6 +70,7 @@ static std::optional<std::vector<std::string>> consumeMultiValueOption(const std
   return values;
 }
 
+/** @brief Expands multi-value options into the representation expected by cxxopts. */
 static std::vector<std::string> normalizeArgsForCxxopts(const std::vector<std::string>& arguments)
 {
   std::vector<std::string> args;
@@ -96,6 +100,7 @@ static std::vector<std::string> normalizeArgsForCxxopts(const std::vector<std::s
   return args;
 }
 
+/** @brief Creates a stable argv view over owned argument strings. */
 static std::vector<const char*> asArgv(const std::vector<std::string>& args)
 {
   std::vector<const char*> argv;
@@ -106,6 +111,7 @@ static std::vector<const char*> asArgv(const std::vector<std::string>& args)
   return argv;
 }
 
+/** @brief Resolves output switches into one normalized format selection. */
 static OutputFormat selectedOutputFormat(bool csvRequested, bool ctfRequested, bool allRequested)
 {
   if (allRequested || (csvRequested && ctfRequested)) {
@@ -120,6 +126,7 @@ static OutputFormat selectedOutputFormat(bool csvRequested, bool ctfRequested, b
   return OutputFormat::None;
 }
 
+/** @brief Registers the complete ctrace command-line grammar. */
 static void configureCliParser(cxxopts::Options& parser)
 {
   parser.custom_help("<trace-dir> [options]");
@@ -132,6 +139,7 @@ static void configureCliParser(cxxopts::Options& parser)
                    "sel [...]");
 }
 
+/** @brief Parses normalized command-line arguments into ctrace options. */
 static CliOptions parseCliArgs(const std::vector<std::string>& arguments)
 {
   CliOptions options;
@@ -179,6 +187,7 @@ static CliOptions parseCliArgs(const std::vector<std::string>& arguments)
   return options;
 }
 
+/** @brief Validates semantic relationships between parsed options. */
 static void validateCliOptions(const CliOptions& options)
 {
   if (options.help) {

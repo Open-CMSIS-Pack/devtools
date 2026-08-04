@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-CortexMPostDecoder::CortexMPostDecoder(TraceEventSink& eventSink) : eventSink_(eventSink) {}
+CortexMPostDecoder::CortexMPostDecoder(TraceEventSink& eventSink) : m_eventSink(eventSink) {}
 
 void CortexMPostDecoder::append(OpenCsdTraceElement element)
 {
@@ -61,10 +61,10 @@ void CortexMPostDecoder::mapTimestampSegment(OpenCsdTraceElement& element)
   switch (element.kind) {
   case OpenCsdTraceElement::Kind::LocalTimestamp:
     if (element.tcyc.has_value()) {
-      const auto mapped = SaturatingArithmetic::add(timestampSegmentBase_, *element.tcyc);
+      const auto mapped = SaturatingArithmetic::add(m_timestampSegmentBase, *element.tcyc);
       element.tcyc = mapped;
-      mappedTimeline_ = mapped;
-      timelineKnown_ = true;
+      m_mappedTimeline = mapped;
+      m_timelineKnown = true;
     }
     break;
   case OpenCsdTraceElement::Kind::Overflow:
@@ -86,7 +86,7 @@ void CortexMPostDecoder::mapTimestampSegment(OpenCsdTraceElement& element)
 
 void CortexMPostDecoder::startNewTimestampSegment()
 {
-  timestampSegmentBase_ = timelineKnown_ ? mappedTimeline_ : 0U;
+  m_timestampSegmentBase = m_timelineKnown ? m_mappedTimeline : 0U;
 }
 
 void CortexMPostDecoder::finish()
@@ -98,7 +98,7 @@ void CortexMPostDecoder::finish()
 
 std::uint64_t CortexMPostDecoder::eventCount() const
 {
-  return eventCount_;
+  return m_eventCount;
 }
 
 void CortexMPostDecoder::appendSync(const OpenCsdTraceElement& element)
@@ -116,15 +116,15 @@ void CortexMPostDecoder::appendOverflow(const OpenCsdTraceElement& element)
   finalizePendingDiscontinuityIssues(std::nullopt);
   flushPendingDataTrace(status);
   flushPendingEvents(std::nullopt, status);
-  dwtDecoder_.reset();
+  m_dwtDecoder.reset();
 
   TraceEvent event{OverflowTraceEvent{
       "overflow: new timestamp segment; time across boundary may be unreliable",
   }};
   event.index = element.sourceIndex;
   event.traceBusId = element.traceBusId;
-  event.tcyc = timelineKnown_ ? std::optional<std::uint64_t>(currentTcyc_) : std::nullopt;
-  event.quality = TraceQuality{true, false, overflowCount_};
+  event.tcyc = m_timelineKnown ? std::optional<std::uint64_t>(m_currentTcyc) : std::nullopt;
+  event.quality = TraceQuality{true, false, m_overflowCount};
   emitEvent(event);
 }
 
@@ -137,7 +137,7 @@ void CortexMPostDecoder::appendGlobalTimestamp(const OpenCsdTraceElement& elemen
   }};
   event.index = element.sourceIndex;
   event.traceBusId = element.traceBusId;
-  pendingEvents_.push_back(std::move(event));
+  m_pendingEvents.push_back(std::move(event));
 }
 
 void CortexMPostDecoder::appendDiscontinuity(const OpenCsdTraceElement& element)
@@ -164,11 +164,11 @@ void CortexMPostDecoder::appendError(const OpenCsdTraceElement& element)
   }};
   event.index = element.sourceIndex;
   event.traceBusId = element.traceBusId;
-  event.tcyc = currentTcyc_;
+  event.tcyc = m_currentTcyc;
   event.quality = status;
   if (element.awaitingResumeTimestamp) {
-    std::get<TraceIssueEvent>(event.payload).lastValidTcyc = currentTcyc_;
-    pendingEvents_.push_back(std::move(event));
+    std::get<TraceIssueEvent>(event.payload).lastValidTcyc = m_currentTcyc;
+    m_pendingEvents.push_back(std::move(event));
     return;
   }
   queueOrEmitWhileAwaitingTimestamp(std::move(event));
@@ -184,20 +184,20 @@ void CortexMPostDecoder::appendSoftware(const OpenCsdTraceElement& element)
   }};
   event.index = element.sourceIndex;
   event.traceBusId = element.traceBusId;
-  event.tcyc = currentTcyc_;
+  event.tcyc = m_currentTcyc;
   event.quality = currentTraceStatus(element.overflow);
-  pendingEvents_.push_back(std::move(event));
+  m_pendingEvents.push_back(std::move(event));
 }
 
 void CortexMPostDecoder::appendDwt(const OpenCsdTraceElement& element)
 {
-  auto events = dwtDecoder_.decode({
+  auto events = m_dwtDecoder.decode({
       element.sourceIndex,
       element.traceBusId,
       static_cast<std::uint8_t>(element.discriminator),
       element.size,
       element.value,
-      currentTcyc_,
+      m_currentTcyc,
       currentTraceStatus(element.overflow),
   });
   appendPendingEvents(std::move(events));
@@ -205,32 +205,32 @@ void CortexMPostDecoder::appendDwt(const OpenCsdTraceElement& element)
 
 void CortexMPostDecoder::appendTimestamp(const OpenCsdTraceElement& element)
 {
-  currentTcyc_ = element.tcyc.value_or(0);
-  timestampReliable_ = true;
+  m_currentTcyc = element.tcyc.value_or(0);
+  m_timestampReliable = true;
 
   const auto status = statusResolvedByTimestamp(element.timestampRelation);
-  finalizePendingDiscontinuityIssues(currentTcyc_);
+  finalizePendingDiscontinuityIssues(m_currentTcyc);
   flushPendingDataTrace(status);
-  flushPendingEvents(currentTcyc_, status);
+  flushPendingEvents(m_currentTcyc, status);
 
   TraceEvent event{LocalTimestampTraceEvent{}};
   event.index = element.sourceIndex;
   event.traceBusId = element.traceBusId;
-  event.tcyc = currentTcyc_;
+  event.tcyc = m_currentTcyc;
   emitEvent(event);
 
-  timestampReliable_ = true;
-  dataLossSinceLastTimestamp_ = false;
+  m_timestampReliable = true;
+  m_dataLossSinceLastTimestamp = false;
 }
 
 void CortexMPostDecoder::flushPendingDataTrace(const TraceQuality& quality)
 {
-  appendPendingEvents(dwtDecoder_.flush(quality, currentTcyc_));
+  appendPendingEvents(m_dwtDecoder.flush(quality, m_currentTcyc));
 }
 
 void CortexMPostDecoder::flushPendingEvents(std::optional<std::uint64_t> tcyc, const TraceQuality& quality)
 {
-  for (auto& event : pendingEvents_) {
+  for (auto& event : m_pendingEvents) {
     const auto* issue = traceEventPayload<TraceIssueEvent>(event);
     const auto hasLastValidTcyc = issue != nullptr && issue->lastValidTcyc.has_value();
     const auto isControlEvent = isTraceEvent<SyncTraceEvent>(event) || isTraceEvent<GlobalTimestampTraceEvent>(event);
@@ -242,12 +242,12 @@ void CortexMPostDecoder::flushPendingEvents(std::optional<std::uint64_t> tcyc, c
     }
     emitEvent(event);
   }
-  pendingEvents_.clear();
+  m_pendingEvents.clear();
 }
 
 void CortexMPostDecoder::appendPendingEvents(std::vector<TraceEvent> events)
 {
-  pendingEvents_.insert(pendingEvents_.end(), std::make_move_iterator(events.begin()),
+  m_pendingEvents.insert(m_pendingEvents.end(), std::make_move_iterator(events.begin()),
                         std::make_move_iterator(events.end()));
 }
 
@@ -261,18 +261,18 @@ void CortexMPostDecoder::queueDiscontinuityIssue(std::uint64_t sourceIndex, std:
       TraceIssueSeverity::Error,
       message,
       rawBytesConsumed,
-      currentTcyc_,
+      m_currentTcyc,
   }};
   event.index = sourceIndex;
   event.traceBusId = traceBusId;
-  event.tcyc = currentTcyc_;
+  event.tcyc = m_currentTcyc;
   event.quality = quality;
-  pendingEvents_.push_back(std::move(event));
+  m_pendingEvents.push_back(std::move(event));
 }
 
 void CortexMPostDecoder::finalizePendingDiscontinuityIssues(std::optional<std::uint64_t> firstResumedTcyc)
 {
-  for (auto& event : pendingEvents_) {
+  for (auto& event : m_pendingEvents) {
     auto* issue = traceEventPayload<TraceIssueEvent>(event);
     if (issue == nullptr || !issue->lastValidTcyc.has_value()) {
       continue;
@@ -284,8 +284,8 @@ void CortexMPostDecoder::finalizePendingDiscontinuityIssues(std::optional<std::u
 
 void CortexMPostDecoder::queueOrEmitWhileAwaitingTimestamp(TraceEvent event)
 {
-  if (!pendingEvents_.empty()) {
-    pendingEvents_.push_back(std::move(event));
+  if (!m_pendingEvents.empty()) {
+    m_pendingEvents.push_back(std::move(event));
     return;
   }
   emitEvent(event);
@@ -298,39 +298,39 @@ TraceQuality CortexMPostDecoder::markDiscontinuity()
   finalizePendingDiscontinuityIssues(std::nullopt);
   flushPendingDataTrace(status);
   flushPendingEvents(std::nullopt, status);
-  dwtDecoder_.reset();
-  pendingEvents_.clear();
-  timestampReliable_ = false;
-  dataLossSinceLastTimestamp_ = true;
+  m_dwtDecoder.reset();
+  m_pendingEvents.clear();
+  m_timestampReliable = false;
+  m_dataLossSinceLastTimestamp = true;
   return status;
 }
 
 void CortexMPostDecoder::emitEvent(const TraceEvent& event)
 {
-  eventSink_.append(event);
-  ++eventCount_;
+  m_eventSink.append(event);
+  ++m_eventCount;
 }
 
 TraceQuality CortexMPostDecoder::currentTraceStatus(bool packetOverflow) const
 {
   return {
-      dataLossSinceLastTimestamp_ || !timestampReliable_ || packetOverflow,
-      timestampReliable_ && !dataLossSinceLastTimestamp_ && !packetOverflow,
-      overflowCount_,
+      m_dataLossSinceLastTimestamp || !m_timestampReliable || packetOverflow,
+      m_timestampReliable && !m_dataLossSinceLastTimestamp && !packetOverflow,
+      m_overflowCount,
   };
 }
 
 TraceQuality CortexMPostDecoder::statusResolvedByTimestamp(LocalTimestampRelation relation) const
 {
-  const auto dataIntact = !dataLossSinceLastTimestamp_;
+  const auto dataIntact = !m_dataLossSinceLastTimestamp;
   const auto payloadDelayed = relation == LocalTimestampRelation::PayloadDelayed ||
                               relation == LocalTimestampRelation::TimestampAndPayloadDelayed;
-  return {!dataIntact, dataIntact && !payloadDelayed, overflowCount_};
+  return {!dataIntact, dataIntact && !payloadDelayed, m_overflowCount};
 }
 
 void CortexMPostDecoder::noteOverflow()
 {
-  ++overflowCount_;
-  dataLossSinceLastTimestamp_ = true;
-  timestampReliable_ = false;
+  ++m_overflowCount;
+  m_dataLossSinceLastTimestamp = true;
+  m_timestampReliable = false;
 }

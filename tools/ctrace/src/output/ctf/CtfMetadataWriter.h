@@ -24,6 +24,7 @@ public:
                     const std::vector<std::uint32_t>& observedExceptionNumbers);
 
 private:
+  /** @brief Prevents construction of this stateless metadata utility. */
   CtfMetadataWriter() = delete;
 };
 

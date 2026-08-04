@@ -70,7 +70,7 @@ public:
   /** @brief Creates a session backed by shared scripted state. */
   ScriptedOpenCsdSession(std::shared_ptr<SessionScript> script, OpenCsdPacketCollector& collector,
                          OpenCsdErrorController& errors)
-    : script_(std::move(script)), collector_(collector), errors_(errors)
+    : m_script(std::move(script)), m_collector(collector), m_errors(errors)
   {
   }
 
@@ -78,8 +78,8 @@ public:
   ocsd_datapath_resp_t pushData(ocsd_trc_index_t index, std::uint32_t size, const std::uint8_t*,
                                 std::uint32_t& processed) override
   {
-    ++script_->pushCalls;
-    auto step = take(script_->pushes, SessionStep{});
+    ++m_script->pushCalls;
+    auto step = take(m_script->pushes, SessionStep{});
     processed = step.processed.value_or(size);
     apply(step, index);
     return step.response;
@@ -88,8 +88,8 @@ public:
   /** @brief Applies the next scripted flush response. */
   ocsd_datapath_resp_t flush() override
   {
-    ++script_->flushCalls;
-    auto step = take(script_->flushes, SessionStep{script_->defaultFlushResponse});
+    ++m_script->flushCalls;
+    auto step = take(m_script->flushes, SessionStep{m_script->defaultFlushResponse});
     apply(step, 0U);
     return step.response;
   }
@@ -97,8 +97,8 @@ public:
   /** @brief Applies the next scripted reset response. */
   ocsd_datapath_resp_t reset() override
   {
-    ++script_->resetCalls;
-    auto step = take(script_->resets, SessionStep{});
+    ++m_script->resetCalls;
+    auto step = take(m_script->resets, SessionStep{});
     apply(step, 0U);
     return step.response;
   }
@@ -106,12 +106,13 @@ public:
   /** @brief Applies the next scripted end-of-trace response. */
   ocsd_datapath_resp_t endOfTrace() override
   {
-    auto step = take(script_->ends, SessionStep{});
+    auto step = take(m_script->ends, SessionStep{});
     apply(step, 0U);
     return step.response;
   }
 
 private:
+  /** @brief Removes and returns the next scripted step or a fallback. */
   static SessionStep take(std::deque<SessionStep>& steps, SessionStep fallback)
   {
     if (steps.empty()) {
@@ -122,24 +123,26 @@ private:
     return step;
   }
 
+  /** @brief Applies scripted errors and synchronization side effects. */
   void apply(const SessionStep& step, ocsd_trc_index_t index)
   {
     for (const auto& error : step.errors) {
       const ocsdError reported(error.severity, error.code, error.index, 1U, error.message);
-      errors_.LogError(0U, &reported);
+      m_errors.LogError(0U, &reported);
     }
     if (step.emitSync) {
       ItmTrcPacket packet;
       packet.setPktType(ITM_PKT_ASYNC);
-      collector_.RawPacketDataMon(OCSD_OP_DATA, index, &packet, 0U, nullptr);
+      m_collector.RawPacketDataMon(OCSD_OP_DATA, index, &packet, 0U, nullptr);
     }
   }
 
-  std::shared_ptr<SessionScript> script_;
-  OpenCsdPacketCollector& collector_;
-  OpenCsdErrorController& errors_;
+  std::shared_ptr<SessionScript> m_script;
+  OpenCsdPacketCollector& m_collector;
+  OpenCsdErrorController& m_errors;
 };
 
+/** @brief Creates a session factory sharing the supplied script. */
 inline OpenCsdItmSessionFactory scriptedFactory(const std::shared_ptr<SessionScript>& script)
 {
   return [script](OpenCsdPacketCollector& collector,
@@ -152,21 +155,41 @@ inline OpenCsdItmSessionFactory scriptedFactory(const std::shared_ptr<SessionScr
 class ScriptedDecoderHarness {
 public:
   /** @brief Creates a decoder connected to a new empty session script. */
-  ScriptedDecoderHarness() : script(std::make_shared<SessionScript>()), decoder(sink, scriptedFactory(script)) {}
+  ScriptedDecoderHarness()
+    : m_script(std::make_shared<SessionScript>()), m_decoder(m_sink, scriptedFactory(m_script))
+  {
+  }
 
   /** @brief Pushes a zero-filled raw byte block through the decoder. */
   void push(std::uint32_t size)
   {
-    input_.assign(size, 0U);
-    decoder.push(input_.data(), size);
+    m_input.assign(size, 0U);
+    m_decoder.push(m_input.data(), size);
   }
 
-  OpenCsdTestSupport::CollectingOpenCsdElementSink sink;
-  std::shared_ptr<SessionScript> script;
-  OpenCsdItmDecoder decoder;
+  /** @brief Returns the collecting element sink. */
+  OpenCsdTestSupport::CollectingOpenCsdElementSink& sink()
+  {
+    return m_sink;
+  }
+
+  /** @brief Returns the mutable session script. */
+  SessionScript& script()
+  {
+    return *m_script;
+  }
+
+  /** @brief Returns the decoder under test. */
+  OpenCsdItmDecoder& decoder()
+  {
+    return m_decoder;
+  }
 
 private:
-  std::vector<std::uint8_t> input_;
+  OpenCsdTestSupport::CollectingOpenCsdElementSink m_sink;
+  std::shared_ptr<SessionScript> m_script;
+  OpenCsdItmDecoder m_decoder;
+  std::vector<std::uint8_t> m_input;
 };
 
 } // namespace OpenCsdSessionTestSupport

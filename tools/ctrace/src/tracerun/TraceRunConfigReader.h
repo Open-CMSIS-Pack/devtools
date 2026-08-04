@@ -18,7 +18,12 @@ public:
   /** @brief Destroys a trace-run reader through its interface. */
   virtual ~TraceRunConfigReader() = default;
 
-  /** @brief Reads and validates a trace-run configuration file. */
+  /**
+   * @brief Reads and validates a trace-run configuration file.
+   * @param path Configuration file path.
+   * @return Parsed configuration including all ctrace-relevant fields.
+   * @throws std::runtime_error If the file cannot be read or is invalid.
+   */
   virtual TraceRunConfig read(const std::string& path) const = 0;
 };
 

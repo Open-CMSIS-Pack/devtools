@@ -19,6 +19,7 @@
 #include <unistd.h>
 #endif
 
+/** @brief Creates a process-specific path in the system temporary directory. */
 inline std::filesystem::path testTemporaryPath(const std::string& name)
 {
 #if defined(_WIN32)
@@ -33,12 +34,12 @@ inline std::filesystem::path testTemporaryPath(const std::string& name)
 class TemporaryTestPath {
 public:
   /** @brief Prepares an empty path with the supplied test name. */
-  explicit TemporaryTestPath(const std::string& name) : path_(testTemporaryPath(name))
+  explicit TemporaryTestPath(const std::string& name) : m_path(testTemporaryPath(name))
   {
     std::error_code error;
-    std::filesystem::remove_all(path_, error);
+    std::filesystem::remove_all(m_path, error);
     if (error) {
-      throw std::runtime_error("failed to prepare temporary test path: " + path_.string());
+      throw std::runtime_error("failed to prepare temporary test path: " + m_path.string());
     }
   }
 
@@ -46,7 +47,7 @@ public:
   ~TemporaryTestPath()
   {
     std::error_code ignored;
-    std::filesystem::remove_all(path_, ignored);
+    std::filesystem::remove_all(m_path, ignored);
   }
 
   /** @brief Disables copying to preserve unique path ownership. */
@@ -57,18 +58,18 @@ public:
   /** @brief Returns the owned temporary path. */
   const std::filesystem::path& path() const
   {
-    return path_;
+    return m_path;
   }
 
   /** @brief Creates and returns the owned path as a directory. */
   const std::filesystem::path& createDirectory() const
   {
-    std::filesystem::create_directories(path_);
-    return path_;
+    std::filesystem::create_directories(m_path);
+    return m_path;
   }
 
 private:
-  std::filesystem::path path_;
+  std::filesystem::path m_path;
 };
 
 #endif  // CTRACE_TEST_UNIT_SUPPORT_TESTPATH_H

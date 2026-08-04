@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <optional>
 
+/** @brief Creates a DWT payload packet with test defaults. */
 static DwtPayloadPacket dwtPayload(std::uint8_t discriminator, std::uint8_t size = 0U, std::uint32_t value = 0U,
                                    std::uint64_t index = 0U, std::uint8_t traceBusId = 0U, std::uint64_t tcyc = 0U)
 {

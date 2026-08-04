@@ -33,12 +33,25 @@ public:
     virtual void close() = 0;
   };
 
-  /** @brief Creates an output stream for a validated CSV target path. */
+  /**
+   * @brief Creates an output stream for a validated CSV target path.
+   * @param outputFile Final CSV path.
+   * @return Owned, writable stream abstraction.
+   */
   using StreamFactory = std::function<std::unique_ptr<Stream>(const std::filesystem::path&)>;
 
-  /** @brief Creates a CSV output for one target file. */
+  /**
+   * @brief Creates a CSV output for one target file.
+   * @param outputFile Final CSV path.
+   * @param selection Optional event and stream filters.
+   */
   explicit CsvFileOutput(std::filesystem::path outputFile, TraceSelection selection = {});
-  /** @brief Creates a CSV output using an injected stream factory. */
+  /**
+   * @brief Creates a CSV output using an injected stream factory.
+   * @param outputFile Final CSV path.
+   * @param selection Optional event and stream filters.
+   * @param streamFactory Factory used to open the target stream.
+   */
   CsvFileOutput(std::filesystem::path outputFile, TraceSelection selection, StreamFactory streamFactory);
   /** @brief Closes an active stream without throwing. */
   ~CsvFileOutput() override;
@@ -49,7 +62,10 @@ public:
   void stop() override;
   /** @brief Closes and removes an incomplete CSV file. */
   void abort() override;
-  /** @brief Writes one selected event as a CSV row. */
+  /**
+   * @brief Writes one selected event as a CSV row.
+   * @param event Event evaluated against the configured selection.
+   */
   void writeEvent(const TraceEvent& event) override;
   /** @brief Returns the CSV backend name. */
   std::string_view backendName() const noexcept override;
@@ -57,11 +73,11 @@ public:
   std::string targetPath() const override;
 
 private:
-  std::filesystem::path outputFile_;
-  TraceSelection selection_;
-  StreamFactory streamFactory_;
-  std::unique_ptr<Stream> stream_;
-  bool active_ = false;
+  std::filesystem::path m_outputFile;
+  TraceSelection m_selection;
+  StreamFactory m_streamFactory;
+  std::unique_ptr<Stream> m_stream;
+  bool m_active = false;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_CSV_CSVFILEOUTPUT_H

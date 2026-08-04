@@ -35,6 +35,7 @@ using CtfTestSupport::readLe32;
 using CtfTestSupport::requireFirstCtfRecord;
 using CtfTestSupport::requireSingleItmEvent;
 
+/** @brief Formats an encoded CTF UUID for comparison. */
 static std::string formatCtfUuid(const std::vector<unsigned char>& bytes, std::size_t offset)
 {
   static constexpr char hexDigits[] = "0123456789abcdef";
@@ -51,6 +52,7 @@ static std::string formatCtfUuid(const std::vector<unsigned char>& bytes, std::s
   return result;
 }
 
+/** @brief Creates resolved DWT source metadata for encoder tests. */
 static ResolvedTraceSource resolvedDwtSource(std::uint32_t comparator, std::uint8_t traceBusId, std::string type,
                                              std::uint8_t size)
 {
