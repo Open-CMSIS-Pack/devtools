@@ -75,7 +75,21 @@ TEST(CtraceUnitTests, testCliParserOutputOptions)
 
   const auto help = parseAndValidate({"ctrace", "--help"});
   require(help.help, "CliParser help option mismatch");
-  require(CliParser::helpString().find("--help") != std::string::npos, "CliParser help text must list --help");
+  const auto shortHelp = parseAndValidate({"ctrace", "-h"});
+  require(shortHelp.help, "CliParser short help alias mismatch");
+  const auto helpText = CliParser::helpString();
+  require(helpText.find("--help") == std::string::npos, "CliParser help text must hide --help");
+  for (const auto expected : {
+           "Generate only CSV output",
+           "Generate only CTF / Trace Compass XML output",
+           "Generate CSV and CTF / XML output",
+           "Filter output for specific packet types (default: all)",
+           "Filter output for specific streams (default: all)",
+           "Specify a trace solution-set (default: all)",
+           "Print version",
+       }) {
+    require(helpText.find(expected) != std::string::npos, "CliParser help text differs from the specification");
+  }
 
   const auto trailingTraceDirectory =
       parseAndValidate({"ctrace", "--type", "dwt", "itm", "--stream", "1", "2", "--all", "--", ".trace"});
