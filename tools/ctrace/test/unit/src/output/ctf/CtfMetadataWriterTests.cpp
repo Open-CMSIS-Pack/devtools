@@ -31,7 +31,8 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
       {"itm", 3U, 1U, std::string("ITM3"), std::nullopt, "unsigned int", 4U},
       {"itm", 4U, 1U, std::string("line\rbreak"), std::nullopt, "unsigned int", 4U},
       {"itm", 5U, 1U, std::nullopt, std::nullopt, "unsigned int", 4U},
-      {"future", 6U, 1U, std::string("ignored"), std::nullopt, "unsigned int", 4U},
+      {"itm", 6U, 1U, std::string("ITM3"), std::nullopt, "unsigned int", 4U},
+      {"future", 7U, 1U, std::string("ignored"), std::nullopt, "unsigned int", 4U},
       {"dwt", 0U, 1U, std::nullopt, std::numeric_limits<std::uint64_t>::max(), "unsigned int", 4U},
   };
 
@@ -39,6 +40,7 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
                            {8U, 10U, 13U, 16U, 54U});
   const auto metadata = readTestTextFile(path.path() / "metadata");
   EXPECT_NE(metadata.find("ITM3_2"), std::string::npos);
+  EXPECT_NE(metadata.find("\"ITM6\" = 6"), std::string::npos);
   EXPECT_NE(metadata.find("line\\rbreak"), std::string::npos);
   EXPECT_NE(metadata.find("\"Reserved 8\" = 8"), std::string::npos);
   EXPECT_NE(metadata.find("\"Reserved 10\" = 10"), std::string::npos);
