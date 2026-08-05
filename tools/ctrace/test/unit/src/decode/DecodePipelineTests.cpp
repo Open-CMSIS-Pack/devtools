@@ -22,7 +22,9 @@
 #include <initializer_list>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using OpenCsdTestSupport::openCsdElement;
@@ -54,7 +56,7 @@ static bool hasSoftwareValue(const std::vector<TraceEvent>& events, std::uint8_t
 }
 
 /** @brief Finds a decoded issue by code and optional raw offset. */
-static const TraceIssueEvent* findIssue(const std::vector<TraceEvent>& events, const std::string& code,
+static const TraceIssueEvent* findIssue(const std::vector<TraceEvent>& events, TraceIssueCode code,
                                         std::optional<std::uint64_t> index = std::nullopt)
 {
   for (const auto& event : events) {
@@ -67,7 +69,7 @@ static const TraceIssueEvent* findIssue(const std::vector<TraceEvent>& events, c
 }
 
 /** @brief Counts decoded issues having a stable code. */
-static std::size_t countIssues(const std::vector<TraceEvent>& events, const std::string& code)
+static std::size_t countIssues(const std::vector<TraceEvent>& events, TraceIssueCode code)
 {
   std::size_t count = 0U;
   for (const auto& event : events) {
@@ -100,7 +102,7 @@ struct DecodedTrace {
 static DecodedTrace decodeTrace(std::initializer_list<RawByteView> chunks, std::uint32_t timestampPrescaler = 16U)
 {
   CollectingEventSink sink;
-  DecodePipeline pipeline(timestampPrescaler, sink);
+  DecodePipeline pipeline(ItmTimestampPrescalers{timestampPrescaler, {}}, sink);
   for (const auto chunk : chunks) {
     pipeline.push(chunk);
   }
@@ -181,13 +183,13 @@ TEST(CtraceUnitTests, testCortexMStreamDecoderValidatesAndSaturatesPrescalers)
 TEST(CtraceUnitTests, testDecodePipelineRejectsInvalidChunkSizes)
 {
   CollectingEventSink sink;
-  DecodePipeline pipeline(1U, sink);
+  DecodePipeline pipeline(ItmTimestampPrescalers{1U, {}}, sink);
   EXPECT_NO_THROW(pipeline.push({nullptr, 0U}));
   EXPECT_THROW(pipeline.push({nullptr, static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()) + 1U}),
                std::runtime_error);
   const auto result = pipeline.finish();
   EXPECT_EQ(result.bytesIn, 0U);
-  EXPECT_EQ(result.packetsOut, 0U);
+  EXPECT_EQ(result.eventsOut, 0U);
 }
 
 TEST(CtraceUnitTests, testCortexMPostDecoderReportsDiscontinuityInterval)
@@ -196,7 +198,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderReportsDiscontinuityInterval)
   CortexMPostDecoder decoder(sink);
 
   auto discontinuity = openCsdElement(OpenCsdTraceElement::Kind::Discontinuity);
-  discontinuity.issueCode = "data-loss";
+  discontinuity.issueCode = TraceIssueCode::DataLoss;
   discontinuity.errorMessage = "OpenCSD consumed 2 raw bytes";
   discontinuity.rawBytesConsumed = 2U;
   decoder.append(discontinuity);
@@ -225,13 +227,13 @@ TEST(CtraceUnitTests, testCortexMPostDecoderSeparatesRecoveryCauseAndDataLoss)
 
   auto cause = openCsdElement(OpenCsdTraceElement::Kind::Error, 8U);
   cause.discontinuity = true;
-  cause.issueCode = "opencsd-bad-packet-sequence";
+  cause.issueCode = TraceIssueCode::OpenCsdBadPacketSequence;
   cause.errorMessage = "OpenCSD detected an invalid ITM packet sequence at raw offset 8.";
   decoder.append(cause);
 
   auto loss = openCsdElement(OpenCsdTraceElement::Kind::Error, 10U);
   loss.awaitingResumeTimestamp = true;
-  loss.issueCode = "data-loss";
+  loss.issueCode = TraceIssueCode::DataLoss;
   loss.errorMessage = "OpenCSD consumed 2 raw bytes";
   loss.rawBytesConsumed = 2U;
   decoder.append(loss);
@@ -243,11 +245,12 @@ TEST(CtraceUnitTests, testCortexMPostDecoderSeparatesRecoveryCauseAndDataLoss)
   require(packets.size() == 3U, "recovery cause/data-loss packet count mismatch");
   const auto* causeIssue = issueEvent(packets[0]);
   const auto* lossIssue = issueEvent(packets[1]);
-  require(causeIssue != nullptr && causeIssue->code == "opencsd-bad-packet-sequence",
+  require(causeIssue != nullptr && causeIssue->code == TraceIssueCode::OpenCsdBadPacketSequence,
           "recovery cause should be emitted first");
   require(causeIssue->message.find("timestamp") == std::string::npos,
           "recovery cause should not contain the data-loss timestamp interval");
-  require(lossIssue != nullptr && lossIssue->code == "data-loss", "recovery data loss should be a separate error");
+  require(lossIssue != nullptr && lossIssue->code == TraceIssueCode::DataLoss,
+          "recovery data loss should be a separate error");
   require(lossIssue->message.find("timestamp 0 .. 42.") != std::string::npos, "recovery data-loss interval mismatch");
   require(packets[0].quality.has_value() && packets[0].quality->overflowCount == 1U && packets[1].quality.has_value() &&
               packets[1].quality->overflowCount == 1U,
@@ -342,7 +345,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderPreservesGlobalTimestampOrder)
   decoder.append(globalTimestamp);
 
   auto warning = openCsdElement(OpenCsdTraceElement::Kind::Error, 4U);
-  warning.issueCode = "opencsd-warning";
+  warning.issueCode = TraceIssueCode::OpenCsdDecodeError;
   warning.issueSeverity = TraceIssueSeverity::Warning;
   warning.errorMessage = "decoder warning";
   decoder.append(warning);
@@ -381,7 +384,7 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversAtRealSync)
   require(decoded.result.bytesIn == sizeof(trace), "recovery byte count mismatch");
   require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('A')),
           "recovery should preserve packets before the damaged section");
-  const auto* error = findIssue(decoded.events, "opencsd-bad-packet-sequence", 8U);
+  const auto* error = findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence, 8U);
   require(error != nullptr && error->message == "OpenCSD detected an invalid ITM packet sequence at raw offset 8.",
           "recovery should report the exact OpenCSD error offset");
   require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
@@ -402,7 +405,7 @@ TEST(CtraceUnitTests, testDecodePipelineKeepsCallbacksAttachedAcrossRepeatedRese
               hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')) &&
               hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('C')),
           "decoder resets must retain all OpenCSD callbacks");
-  require(countIssues(decoded.events, "opencsd-bad-packet-sequence") == 2U,
+  require(countIssues(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence) == 2U,
           "each damaged section must trigger one recoverable reset");
 }
 
@@ -472,7 +475,7 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversWhenErrorSpansChunks)
   const auto decoded = decodeTrace({rawBytes(firstChunk), rawBytes(secondChunk)});
 
   require(decoded.result.bytesIn == sizeof(firstChunk) + sizeof(secondChunk), "split recovery byte count mismatch");
-  require(findIssue(decoded.events, "opencsd-bad-packet-sequence", 8U) != nullptr,
+  require(findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence, 8U) != nullptr,
           "split bad packet should retain its header offset");
   require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
           "recovery should resume after a split bad packet");
@@ -486,7 +489,7 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversFromReservedHeader)
   };
   const auto decoded = decodeTrace({rawBytes(trace)});
 
-  const auto* error = findIssue(decoded.events, "opencsd-invalid-packet-header", 8U);
+  const auto* error = findIssue(decoded.events, TraceIssueCode::OpenCsdInvalidPacketHeader, 8U);
   require(error != nullptr && error->message == "OpenCSD detected an invalid ITM packet header at raw offset 8.",
           "reserved header should report its exact OpenCSD error");
   require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
@@ -501,7 +504,7 @@ TEST(CtraceUnitTests, testDecodePipelineFinishesWithoutLaterSync)
   const auto decoded = decodeTrace({rawBytes(trace)});
 
   require(decoded.result.bytesIn == sizeof(trace), "bad-tail byte count mismatch");
-  require(findIssue(decoded.events, "opencsd-bad-packet-sequence", 8U) != nullptr,
+  require(findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence, 8U) != nullptr,
           "bad tail should report its exact OpenCSD error and finish");
 }
 
@@ -516,7 +519,7 @@ TEST(CtraceUnitTests, testDecodePipelineReportsIncompletePacketAtEndOfInput)
   const auto& last = decoded.events.back();
   const auto* issue = issueEvent(last);
   require(issue != nullptr, "incomplete trace should end with an error packet");
-  require(issue->code == "opencsd-incomplete-tail", "incomplete trace issue code mismatch");
+  require(issue->code == TraceIssueCode::OpenCsdIncompleteTail, "incomplete trace issue code mismatch");
   require(last.index == 8U, "incomplete trace should report the partial packet header offset");
 }
 
@@ -539,7 +542,7 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversFromOverlongContinuationPackets)
 
     const auto decoded = decodeTrace({rawBytes(trace)});
 
-    require(findIssue(decoded.events, "opencsd-bad-packet-sequence") != nullptr,
+    require(findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence) != nullptr,
             "overlong continuation packet should emit the OpenCSD error");
     require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
             "decode should resume after an overlong continuation packet");
@@ -579,7 +582,7 @@ TEST(CtraceUnitTests, testDecodePipelineDoesNotInjectSync)
       foundPayload = true;
     }
     const auto* issue = issueEvent(packet);
-    if (issue != nullptr && issue->code == "data-loss") {
+    if (issue != nullptr && issue->code == TraceIssueCode::DataLoss) {
       foundDataLoss = true;
       require(issue->rawBytesConsumed == std::optional<std::uint64_t>(sizeof(validWithoutAsync)),
               "decode should count all raw bytes consumed before synchronization");
@@ -605,7 +608,7 @@ TEST(CtraceUnitTests, testDecodePipelineCountsBytesUntilRealSync)
   bool foundPayloadAfterDataLoss = false;
   for (const auto& packet : decoded.events) {
     const auto* issue = issueEvent(packet);
-    if (issue != nullptr && issue->code == "data-loss") {
+    if (issue != nullptr && issue->code == TraceIssueCode::DataLoss) {
       foundDataLoss = true;
       require(issue->rawBytesConsumed == std::optional<std::uint64_t>(sizeof(leading)),
               "decode should count bytes only up to the real sync offset");

@@ -48,39 +48,49 @@ static void reportTraceRunDiagnostics(const TraceRunConfig& config, DiagnosticSi
     if (TraceRunSchema::isItmChannelZero(reference)) {
       continue;
     }
-    const auto report = [&](DiagnosticSink::Severity severity, const std::string& code,
-                            const std::optional<std::string>& message) {
+    const auto report = [&](DiagnosticSink::Severity severity, const std::optional<std::string>& message) {
       if (!message.has_value() || message->empty()) {
         return;
       }
       diagnostics.report({
           severity,
-          DiagnosticSink::Category::Input,
-          code,
           *message,
           referenceContext(config, reference),
       });
     };
-    report(DiagnosticSink::Severity::Info, "trace-run-generation-info", reference.info);
-    report(DiagnosticSink::Severity::Warning, "trace-run-generation-warning", reference.warning);
+    report(DiagnosticSink::Severity::Info, reference.info);
+    report(DiagnosticSink::Severity::Warning, reference.warning);
     if (reference.error.has_value()) {
       auto context = referenceContext(config, reference);
       diagnostics.report({
           DiagnosticSink::Severity::Error,
-          DiagnosticSink::Category::Input,
-          "trace-run-generation-error",
           reference.error->empty() ? "trace generation setup failed without a diagnostic message" : *reference.error,
           std::move(context),
-          std::nullopt,
           DiagnosticSink::Impact::NonFailing,
       });
     }
   }
 }
 
+/** @brief Reports non-fatal inconsistencies ignored while normalizing trace-run metadata. */
+static void reportTraceRunWarnings(const CtraceRunMeta& meta, DiagnosticSink& diagnostics)
+{
+  for (const auto& warning : meta.warnings()) {
+    auto context = warning.context;
+    context.insert(context.begin(), {"config", meta.configPath()});
+    diagnostics.report({
+        DiagnosticSink::Severity::Warning,
+        warning.message,
+        std::move(context),
+    });
+  }
+}
+
 TraceDirectoryJob::TraceDirectoryJob(CliOptions options, DiagnosticSink& diagnostics,
                                      const TraceRunConfigReader& configReader)
-  : m_options(std::move(options)), m_diagnostics(diagnostics), m_configReader(configReader)
+  : m_options(std::move(options)),
+    m_diagnostics(diagnostics),
+    m_configReader(configReader)
 {
 }
 
@@ -99,8 +109,6 @@ void TraceDirectoryJob::run()
       const auto config = m_configReader.read(configFile.string());
       m_diagnostics.report({
           DiagnosticSink::Severity::Info,
-          DiagnosticSink::Category::Input,
-          "trace-run-config",
           "selected trace-run configuration",
           {
               {"solutionSet", solutionSet},
@@ -111,14 +119,13 @@ void TraceDirectoryJob::run()
       });
       reportTraceRunDiagnostics(config, m_diagnostics);
       const auto ctraceRunMeta = CtraceRunMeta::fromConfig(config);
+      reportTraceRunWarnings(ctraceRunMeta, m_diagnostics);
       const auto rawInputs = TraceRunDiscovery::rawInputs(configFile);
       bool processedSolutionSet = false;
       for (const auto& rawInput : rawInputs) {
         if (rawInput.channel != "SWO") {
           m_diagnostics.report({
               DiagnosticSink::Severity::Warning,
-              DiagnosticSink::Category::Input,
-              "unsupported-trace-channel",
               "skipping raw trace channel that is not implemented yet",
               {
                   {"solutionSet", solutionSet},
@@ -136,8 +143,6 @@ void TraceDirectoryJob::run()
       if (!processedSolutionSet) {
         m_diagnostics.report({
             DiagnosticSink::Severity::Error,
-            DiagnosticSink::Category::Input,
-            "missing-swo-raw-input",
             "no supported <solution-set>.SWO.raw input found",
             {
                 {"solutionSet", solutionSet},
@@ -148,8 +153,6 @@ void TraceDirectoryJob::run()
     } catch (const std::exception& error) {
       m_diagnostics.report({
           DiagnosticSink::Severity::Error,
-          DiagnosticSink::Category::Input,
-          "solution-set-failed",
           error.what(),
           {
               {"solutionSet", solutionSet},

@@ -33,6 +33,21 @@ struct ProcessorMeta {
 struct ProcessorIdentity {
   bool multipleProcessors = false;
   std::optional<std::string> singleProcessorName;
+  bool constrainedBySetups = false;
+  std::set<std::string> setupNames;
+
+  /** @brief Tests whether a reference is consistent with the active setups. */
+  bool accepts(const TraceRunReference& reference) const
+  {
+    if (!constrainedBySetups || setupNames.empty()) {
+      return true;
+    }
+    const auto name = TraceRunSchema::normalizedProcessorName(reference.processorName);
+    if (!name.has_value()) {
+      return setupNames.size() == 1U;
+    }
+    return setupNames.find(*name) != setupNames.end();
+  }
 
   /** @brief Resolves an optional processor name to its canonical binding name. */
   std::optional<std::string> canonicalName(const std::optional<std::string>& name) const
@@ -56,6 +71,32 @@ static std::string configError(const TraceRunConfig& config, std::size_t line, c
   return location + ": " + message;
 }
 
+/** @brief Builds warning context for one trace-run reference. */
+static std::vector<std::pair<std::string, std::string>> warningContext(const TraceRunReference& reference)
+{
+  std::vector<std::pair<std::string, std::string>> context{
+      {"ctraceRef", reference.ctraceRef},
+      {"type", reference.type},
+  };
+  if (reference.line > 0U) {
+    context.emplace_back("line", std::to_string(reference.line));
+  }
+  if (reference.processorName.has_value()) {
+    context.emplace_back("pname", *reference.processorName);
+  }
+  if (reference.stream.has_value()) {
+    context.emplace_back("stream", std::to_string(*reference.stream));
+  }
+  return context;
+}
+
+/** @brief Retains one ignored root-node inconsistency for non-fatal reporting. */
+static void addRootInconsistency(std::vector<CtraceRunWarning>& warnings, std::string message,
+                                 std::vector<std::pair<std::string, std::string>> context = {})
+{
+  warnings.push_back({std::move(message), std::move(context)});
+}
+
 /** @brief Formats the structural validation problem of one reference. */
 static std::string referenceProblemMessage(const TraceRunConfig& config, const TraceRunReference& reference,
                                            ReferenceProblem problem)
@@ -68,9 +109,6 @@ static std::string referenceProblemMessage(const TraceRunConfig& config, const T
     return configError(config, reference.line,
                        reference.line > 0U ? "'stream' must be a CoreSight ATB trace ID between 1 and 111"
                                            : "stream must be a CoreSight ATB trace ID between 1 and 111");
-  }
-  if (problem == ReferenceProblem::UnsupportedSourceArray) {
-    return configError(config, reference.line, "source arrays are only supported for DWT references");
   }
   return configError(config, reference.line,
                      reference.line > 0U ? "ITM 'source' must be between 0 and 31"
@@ -104,7 +142,7 @@ static bool isUsableStreamBinding(const TraceRunReference& reference)
 }
 
 /** @brief Resolves the unambiguous processor identity of a trace-run file. */
-static ProcessorIdentity processorIdentity(const TraceRunConfig& config)
+static ProcessorIdentity processorIdentity(const TraceRunConfig& config, std::vector<CtraceRunWarning>& warnings)
 {
   std::set<std::string> setupNames;
   std::set<std::optional<std::string>> uniqueSetupNames;
@@ -146,35 +184,54 @@ static ProcessorIdentity processorIdentity(const TraceRunConfig& config)
   }
 
   if (setupCount > 1U) {
-    if (unnamedSetup || unnamedReference) {
-      throw std::runtime_error(config.path + ": pname is required for every ctrace-setup and ctrace-ref "
-                                             "in a multi-processor configuration");
+    if (unnamedSetup) {
+      throw std::runtime_error(config.path +
+                               ": pname is required for every ctrace-setup in a multi-processor configuration");
     }
-    for (const auto& name : referenceNames) {
-      if (setupNames.find(name) == setupNames.end()) {
-        throw std::runtime_error(config.path + ": ctrace-ref pname '" + name + "' has no matching ctrace-setup");
+    for (const auto& reference : config.references) {
+      if (!isUsableStreamBinding(reference)) {
+        continue;
+      }
+      const auto name = TraceRunSchema::normalizedProcessorName(reference.processorName);
+      if (!name.has_value()) {
+        addRootInconsistency(warnings,
+                             "ignoring ctrace-ref without pname because multiple ctrace-setup processors are active",
+                             warningContext(reference));
+      } else if (setupNames.find(*name) == setupNames.end()) {
+        addRootInconsistency(warnings, "ignoring ctrace-ref pname '" + *name +
+                                           "' because it has no matching ctrace-setup",
+                             warningContext(reference));
       }
     }
-    return {true, std::nullopt};
+    return {true, std::nullopt, true, setupNames};
   }
 
   if (setupCount == 1U) {
     const auto setupName = TraceRunSchema::normalizedProcessorName(singleActiveSetup->processorName);
     if (setupName.has_value()) {
-      for (const auto& name : referenceNames) {
-        if (name != *setupName) {
-          throw std::runtime_error(config.path + ": ctrace-ref pname '" + name +
-                                   "' has no matching ctrace-setup pname '" + *setupName + "'");
+      for (const auto& reference : config.references) {
+        if (!isUsableStreamBinding(reference)) {
+          continue;
+        }
+        const auto name = TraceRunSchema::normalizedProcessorName(reference.processorName);
+        if (name.has_value() && *name != *setupName) {
+          addRootInconsistency(warnings, "ignoring ctrace-ref pname '" + *name +
+                                             "' because it does not match ctrace-setup pname '" + *setupName + "'",
+                               warningContext(reference));
         }
       }
-      return {false, setupName};
+      return {false, setupName, true, setupNames};
     }
     if (referenceNames.size() > 1U) {
-      throw std::runtime_error(config.path + ": pname is required for ctrace-setup in a multi-processor configuration");
+      addRootInconsistency(warnings,
+                           "ignoring conflicting ctrace-ref pnames because the single ctrace-setup has no pname",
+                           {{"ctraceRefPnames", std::to_string(referenceNames.size())}});
     }
     return {
         false,
-        referenceNames.empty() ? std::nullopt : std::optional<std::string>(*referenceNames.begin()),
+        referenceNames.size() == 1U ? std::optional<std::string>(*referenceNames.begin()) : std::nullopt,
+        true,
+        {},
     };
   }
 
@@ -188,6 +245,8 @@ static ProcessorIdentity processorIdentity(const TraceRunConfig& config)
   return {
       false,
       referenceNames.empty() ? std::nullopt : std::optional<std::string>(*referenceNames.begin()),
+      false,
+      {},
   };
 }
 
@@ -280,8 +339,25 @@ struct ResolvedStreamBinding {
   std::size_t line = 0U;
   std::uint8_t traceBusId = 0U;
   std::optional<std::string> processorName;
+  std::string ctraceRef;
   const ProcessorMeta* processor = nullptr;
 };
+
+/** @brief Builds warning context for one resolved stream binding. */
+static std::vector<std::pair<std::string, std::string>> warningContext(const ResolvedStreamBinding& binding)
+{
+  std::vector<std::pair<std::string, std::string>> context{
+      {"ctraceRef", binding.ctraceRef},
+      {"stream", std::to_string(binding.traceBusId)},
+  };
+  if (binding.line > 0U) {
+    context.emplace_back("line", std::to_string(binding.line));
+  }
+  if (binding.processorName.has_value()) {
+    context.emplace_back("pname", *binding.processorName);
+  }
+  return context;
+}
 
 /** @brief Resolves validated processor-to-stream bindings for all references. */
 static std::vector<ResolvedStreamBinding> resolveStreamBindings(const TraceRunConfig& config,
@@ -290,7 +366,7 @@ static std::vector<ResolvedStreamBinding> resolveStreamBindings(const TraceRunCo
 {
   std::vector<ResolvedStreamBinding> bindings;
   for (const auto& reference : config.references) {
-    if (!isUsableStreamBinding(reference)) {
+    if (!isUsableStreamBinding(reference) || !processorIdentity.accepts(reference)) {
       continue;
     }
     const auto processorName = processorIdentity.canonicalName(reference.processorName);
@@ -298,6 +374,7 @@ static std::vector<ResolvedStreamBinding> resolveStreamBindings(const TraceRunCo
         reference.line,
         static_cast<std::uint8_t>(reference.stream.value_or(0U)),
         processorName,
+        reference.ctraceRef,
         findProcessor(processors, processorName),
     });
   }
@@ -305,7 +382,8 @@ static std::vector<ResolvedStreamBinding> resolveStreamBindings(const TraceRunCo
 }
 
 static std::map<std::uint8_t, CtraceRunTimestampMeta>
-buildTimestampsByTraceBusId(const std::vector<ResolvedStreamBinding>& bindings)
+buildTimestampsByTraceBusId(const std::vector<ResolvedStreamBinding>& bindings,
+                            std::vector<CtraceRunWarning>& warnings)
 {
   std::map<std::uint8_t, CtraceRunTimestampMeta> result;
   for (const auto& binding : bindings) {
@@ -321,15 +399,17 @@ buildTimestampsByTraceBusId(const std::vector<ResolvedStreamBinding>& bindings)
                      found->second.clockHz == candidate.clockHz && found->second.clockError == candidate.clockError)) {
       continue;
     }
-    found->second.clockHz.reset();
-    found->second.clockError = "CoreSight Trace Bus ID " + std::to_string(binding.traceBusId) +
-                               " is assigned to multiple processors with different timestamps.clock settings";
+    addRootInconsistency(warnings,
+                         "ignoring conflicting ctrace-setup timestamps.clock assignment for CoreSight Trace Bus ID " +
+                             std::to_string(binding.traceBusId),
+                         warningContext(binding));
   }
   return result;
 }
 
 static std::map<std::uint8_t, std::uint32_t>
-buildTimestampPrescalersByTraceBusId(const TraceRunConfig& config, const std::vector<ResolvedStreamBinding>& bindings)
+buildTimestampPrescalersByTraceBusId(const std::vector<ResolvedStreamBinding>& bindings,
+                                     std::vector<CtraceRunWarning>& warnings)
 {
   std::map<std::uint8_t, std::uint32_t> result;
   for (const auto& binding : bindings) {
@@ -338,10 +418,11 @@ buildTimestampPrescalersByTraceBusId(const TraceRunConfig& config, const std::ve
                                : TraceRunSchema::kDefaultTimestampPrescaler;
     const auto [found, inserted] = result.emplace(binding.traceBusId, prescaler);
     if (!inserted && found->second != prescaler) {
-      throw std::runtime_error(configError(config, binding.line,
-                                           "CoreSight Trace Bus ID " + std::to_string(binding.traceBusId) +
-                                               " is assigned to processors with different "
-                                               "timestamps.itm-prescaler values"));
+      addRootInconsistency(
+          warnings,
+          "ignoring conflicting ctrace-setup timestamps.itm-prescaler assignment for CoreSight Trace Bus ID " +
+              std::to_string(binding.traceBusId),
+          warningContext(binding));
     }
   }
   return result;
@@ -364,21 +445,24 @@ static std::optional<std::uint32_t> commonItmEnableMask(const std::vector<Proces
 }
 
 static std::map<std::uint8_t, std::uint32_t>
-buildItmEnableMasksByTraceBusId(const std::vector<ResolvedStreamBinding>& bindings)
+buildItmEnableMasksByTraceBusId(const std::vector<ResolvedStreamBinding>& bindings,
+                               std::vector<CtraceRunWarning>& warnings)
 {
   std::map<std::uint8_t, std::optional<std::uint32_t>> candidates;
-  std::set<std::uint8_t> ambiguous;
   for (const auto& binding : bindings) {
     const auto enableMask = binding.processor != nullptr ? binding.processor->itmEnableMask : std::nullopt;
     const auto [found, inserted] = candidates.emplace(binding.traceBusId, enableMask);
     if (!inserted && found->second != enableMask) {
-      ambiguous.insert(binding.traceBusId);
+      addRootInconsistency(warnings,
+                           "ignoring conflicting ctrace-setup itm.enable assignment for CoreSight Trace Bus ID " +
+                               std::to_string(binding.traceBusId),
+                           warningContext(binding));
     }
   }
 
   std::map<std::uint8_t, std::uint32_t> result;
   for (const auto& [traceBusId, enableMask] : candidates) {
-    if (enableMask.has_value() && ambiguous.find(traceBusId) == ambiguous.end()) {
+    if (enableMask.has_value()) {
       result.emplace(traceBusId, *enableMask);
     }
   }
@@ -427,7 +511,7 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
                                              : "ctrace-setup timestamps.itm-prescaler must be one of 1, 4, 16, or 64"));
   }
 
-  const auto identity = processorIdentity(config);
+  const auto identity = processorIdentity(config, ctraceRunMeta.m_warnings);
   std::vector<ProcessorMeta> processors;
 
   for (const auto& setup : config.setups) {
@@ -452,10 +536,10 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
   }
 
   for (const auto& reference : config.references) {
-    if (isUsableStreamBinding(reference)) {
+    if (isUsableStreamBinding(reference) && identity.accepts(reference)) {
       (void)processorMeta(processors, identity.canonicalName(reference.processorName));
     }
-    if (!TraceRunSchema::isUsableReference(reference)) {
+    if (!TraceRunSchema::isUsableReference(reference) || !identity.accepts(reference)) {
       continue;
     }
     for (const auto source : reference.sources) {
@@ -464,11 +548,14 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
   }
   const auto streamBindings = resolveStreamBindings(config, identity, processors);
   ctraceRunMeta.m_timestampClockHz = commonProcessorSetting(processors, &ProcessorMeta::timestampClockHz);
-  ctraceRunMeta.m_timestampsByTraceBusId = buildTimestampsByTraceBusId(streamBindings);
+  ctraceRunMeta.m_timestampsByTraceBusId =
+      buildTimestampsByTraceBusId(streamBindings, ctraceRunMeta.m_warnings);
   ctraceRunMeta.m_timestampPrescaler = commonProcessorSetting(processors, &ProcessorMeta::timestampPrescaler);
-  ctraceRunMeta.m_timestampPrescalersByTraceBusId = buildTimestampPrescalersByTraceBusId(config, streamBindings);
+  ctraceRunMeta.m_timestampPrescalersByTraceBusId =
+      buildTimestampPrescalersByTraceBusId(streamBindings, ctraceRunMeta.m_warnings);
   ctraceRunMeta.m_itmEnableMask = commonItmEnableMask(processors);
-  ctraceRunMeta.m_itmEnableMasksByTraceBusId = buildItmEnableMasksByTraceBusId(streamBindings);
+  ctraceRunMeta.m_itmEnableMasksByTraceBusId =
+      buildItmEnableMasksByTraceBusId(streamBindings, ctraceRunMeta.m_warnings);
   ctraceRunMeta.m_processorCount = processors.size();
   ctraceRunMeta.m_distinctProcessorPrescalers = containsDistinctProcessorPrescalers(processors);
 
@@ -528,4 +615,9 @@ std::size_t CtraceRunMeta::processorCount() const
 const std::vector<CtraceRunSourceMeta>& CtraceRunMeta::sources() const
 {
   return m_sources;
+}
+
+const std::vector<CtraceRunWarning>& CtraceRunMeta::warnings() const
+{
+  return m_warnings;
 }

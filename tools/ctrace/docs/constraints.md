@@ -56,17 +56,20 @@ Each is implemented in the current code and covered by focused CTest cases.
 
 ## Events, diagnostics, and output
 
-- **The first public output profile contains exactly `itm`, `dwt`, `exception`, `global_ts`, `overflow`, and
-  `error`.** `TraceSelection` owns this stable name set. Event-counter and PMU events have no public output type, and
-  periodic PC samples remain suppressed; `testTraceSelection`, `testCliParser`, `testCsvRowMapper`, and
+- **The stable selector set contains `itm`, `dwt`, `event`, `pmu`, `exception`, `pcsample`, `global_ts`, `overflow`,
+  and `error`; the implemented output profile currently contains only `itm`, `dwt`, `exception`, `global_ts`,
+  `overflow`, and `error`.** Event-counter and PMU packets are not mapped to their reserved selectors yet, and periodic
+  PC samples remain suppressed; `testTraceSelection`, `testCliParser`, `testCsvRowMapper`, and
   `testDwtPcSampleIsSuppressedUntilDedicatedEventExists` enforce the boundary.
 
 - **Decoder warnings and errors remain observable independently of payload filtering; errors fail the command.**
   `testTraceIssueReporterReportsEveryIssue` and
   `testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOutputs` verify ordering and impact.
 
-- **ITM channel `0` is excluded from trace artifacts, but associated decoder errors remain visible.**
-  `testTraceSelection` and `testCtfBundleOutputExcludesSoftwareChannelZero` cover selection and CTF metadata.
+- **ITM stream decoding accepts stimulus ports `0` through `31`, while public payload output is restricted to ports
+  `1` through `31`.** Port `0` is excluded from trace artifacts, but associated decoder errors remain visible;
+  out-of-domain port values are rejected. `testTraceSelection` and `testCtfBundleOutputExcludesSoftwareChannelZero`
+  cover selection and CTF metadata.
 
 - **CTF timestamps never regress; global timestamps do not establish local timestamp quality.**
   `testCtfHoldsRegressingEventTimestamps` and `testCtfGlobalTimestampDoesNotEstablishLocalTimeQuality` verify both.

@@ -8,6 +8,7 @@
 #ifndef CTRACE_SRC_DECODE_OPENCSDERRORCONTROLLER_H
 #define CTRACE_SRC_DECODE_OPENCSDERRORCONTROLLER_H
 
+#include "TraceEvent.h"
 #include "common/ocsd_error_logger.h"
 #include "opencsd/ocsd_if_types.h"
 
@@ -56,20 +57,14 @@ public:
   static bool isRecoverableStreamError(ocsd_err_t code);
   /** @brief Tests whether an OpenCSD response reports an error condition. */
   static bool responseReportsError(ocsd_datapath_resp_t response);
-  /** @brief Returns the symbolic name of an OpenCSD response. */
-  static std::string responseName(ocsd_datapath_resp_t response);
-  /** @brief Returns the symbolic name of an OpenCSD error code. */
-  static std::string errorCodeName(ocsd_err_t code);
   /** @brief Returns the captured raw offset or a supplied fallback. */
   static std::uint64_t errorOffset(const Decision& decision, std::uint64_t fallback);
-  /** @brief Returns the stable ctrace issue code for a decision. */
-  static std::string issueCode(const Decision& decision);
+  /** @brief Returns the ctrace issue state for a decision. */
+  static TraceIssueCode issueCode(const Decision& decision);
   /** @brief Formats an OpenCSD API setup failure. */
   static std::string describeApiError(ocsd_err_t code, const std::string& message);
   /** @brief Formats the user-facing summary for a decoder decision. */
   static std::string describeSummary(const Decision& decision);
-  /** @brief Formats the complete diagnostic representation of a decision. */
-  static std::string describe(const Decision& decision);
 
   /** @brief Captures an OpenCSD callback while preserving default logging behavior. */
   void LogError(ocsd_hndl_err_log_t handle, const ocsdError* error) override;
@@ -81,4 +76,4 @@ private:
   std::vector<OpenCsdErrorRecord> m_callErrors;
 };
 
-#endif  // CTRACE_SRC_DECODE_OPENCSDERRORCONTROLLER_H
+#endif // CTRACE_SRC_DECODE_OPENCSDERRORCONTROLLER_H

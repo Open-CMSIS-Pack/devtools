@@ -18,6 +18,7 @@
 #include <ios>
 #include <limits>
 #include <map>
+#include <ostream>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -141,9 +142,6 @@ static std::string_view tsdlValueType(const CtfSchema::ValueVariant& variant)
 {
   if (variant.floatingPoint) {
     return "ieee_float32_t";
-  }
-  if (variant.tag == CtfSchema::ValueTag::Character8) {
-    return "uint8_t";
   }
   if (variant.signedInteger) {
     return variant.byteSize == 1U ? "int8_t" : variant.byteSize == 2U ? "int16_t" : "int32_t";

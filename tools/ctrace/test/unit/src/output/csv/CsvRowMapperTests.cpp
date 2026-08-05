@@ -19,10 +19,13 @@
 
 TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
 {
-  const std::array<std::string_view, 6> expectedTypes{{
+  const std::array<std::string_view, 9> expectedTypes{{
       "itm",
       "dwt",
+      "event",
+      "pmu",
       "exception",
+      "pcsample",
       "global_ts",
       "overflow",
       "error",
@@ -30,10 +33,6 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
   require(kTraceEventTypeNames == expectedTypes, "trace event type names mismatch");
   for (const auto type : kTraceEventTypeNames) {
     require(parseTraceEventType(type).has_value(), "declared trace event type should parse");
-  }
-  for (const auto* type : {"event", "pmu", "pcsample"}) {
-    require(!parseTraceEventType(type).has_value(),
-            std::string(type) + " must not be selectable before a semantic output event exists");
   }
   require(!parseTraceEventType("timestamp").has_value(), "undeclared trace event type should be rejected");
   const std::vector<std::pair<TraceEvent, std::optional<TraceEventType>>> semanticTypes{
@@ -80,7 +79,7 @@ TEST(CtraceUnitTests, testCsvRowMapperCoversAddressAndExceptionVariants)
 
 TEST(CtraceUnitTests, testCsvRowMapperEscapesDiagnosticText)
 {
-  const auto issue = onStream(issuePacket("decode-error", "comma, quote \" and\nnewline"), 7U);
+  const auto issue = onStream(issuePacket(TraceIssueCode::DecodeError, "comma, quote \" and\nnewline"), 7U);
   EXPECT_EQ(CsvRowMapper::row(issue), ",7,error,,,,,\"comma, quote \"\" and\nnewline\"");
 
   EXPECT_EQ(CsvRowMapper::row(atCycle(TraceEvent{GlobalTimestampTraceEvent{123U, false}}, 99U)),

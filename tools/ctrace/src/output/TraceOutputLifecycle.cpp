@@ -34,7 +34,9 @@ static std::string exceptionMessage(const std::exception_ptr& error)
 
 TraceOutputLifecycle::TraceOutputLifecycle(std::vector<std::unique_ptr<TraceOutput>> outputs,
                                            DiagnosticSink& diagnostics)
-  : m_outputs(std::move(outputs)), m_diagnostics(diagnostics), m_states(m_outputs.size(), State::Inactive)
+  : m_outputs(std::move(outputs)),
+    m_diagnostics(diagnostics),
+    m_states(m_outputs.size(), State::Inactive)
 {
   for (std::size_t index = 0; index < m_outputs.size(); ++index) {
     try {
@@ -101,11 +103,12 @@ void TraceOutputLifecycle::fail(std::size_t index, const char* phase, const std:
     const auto message = exceptionMessage(error);
     const auto backend = std::string(m_outputs[index]->backendName());
     const auto target = m_outputs[index]->targetPath();
+    const auto displayMessage =
+        backend + " output" + (target.empty() ? std::string() : " '" + target + "'") + " failed during " + phase +
+        ": " + message;
     m_diagnostics.report({
         DiagnosticSink::Severity::Error,
-        DiagnosticSink::Category::Output,
-        "output-failed",
-        "trace output failed",
+        displayMessage,
         {
             {"outputIndex", std::to_string(index)},
             {"backend", backend},
@@ -113,8 +116,6 @@ void TraceOutputLifecycle::fail(std::size_t index, const char* phase, const std:
             {"phase", phase},
             {"error", message},
         },
-        backend + " output" + (target.empty() ? std::string() : " '" + target + "'") + " failed during " + phase +
-            ": " + message,
     });
   } catch (...) {
     // Diagnostics must never escape this noexcept failure path.

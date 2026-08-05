@@ -24,7 +24,11 @@
 class TraceRunFixture {
 public:
   /** @brief Creates a fixture with a process-specific file path. */
-  explicit TraceRunFixture(const std::string& name) : m_root(name), m_path(m_root.path() / "Board.ctrace-run.yml") {}
+  explicit TraceRunFixture(const std::string& name)
+    : m_root(name),
+      m_path(m_root.path() / "Board.ctrace-run.yml")
+  {
+  }
 
   /** @brief Reads the current file content. */
   TraceRunConfig read() const
@@ -156,16 +160,51 @@ ctrace-run:
   EXPECT_TRUE(empty.setups.empty());
 }
 
-TEST(CtraceUnitTests, TraceRunReaderValidatesConsumedFields)
+TEST(CtraceUnitTests, TraceRunReaderAcceptsScalarAndArraySourceNotation)
 {
   TraceRunFixture file("ctrace-run-reader-consumed-fields-test");
-  EXPECT_THROW((void)file.read(R"yml(ctrace-run:
+  const auto config = file.read(R"yml(ctrace-run:
   ctrace-refs:
     - ctrace-ref: relevant/itm
       type: itm
-      source: [1]
-)yml"),
-               std::runtime_error);
+      source: [1, 2]
+    - ctrace-ref: relevant/dwt-scalar
+      type: dwt
+      source: 3
+    - ctrace-ref: relevant/dwt-array
+      type: dwt
+      source: [4, 5]
+)yml");
+  ASSERT_EQ(config.references.size(), 3U);
+  EXPECT_TRUE(config.references[0].sources == std::vector<std::uint32_t>({1U, 2U}));
+  EXPECT_TRUE(config.references[1].sources == std::vector<std::uint32_t>({3U}));
+  EXPECT_TRUE(config.references[2].sources == std::vector<std::uint32_t>({4U, 5U}));
+}
+
+TEST(CtraceUnitTests, TraceRunReaderAcceptsProcessorItmReferenceWithoutEnabledChannels)
+{
+  TraceRunFixture file("ctrace-run-reader-empty-itm-reference-test");
+  const auto config = file.read(R"yml(ctrace-run:
+  ctrace-setup:
+    - pname: core0
+      itm:
+        enable: 0
+  ctrace-refs:
+    - ctrace-ref: core0/itm
+      pname: core0
+      type: itm
+      stream: 2
+)yml");
+
+  ASSERT_EQ(config.references.size(), 1U);
+  EXPECT_TRUE(config.references.front().sources.empty());
+
+  const auto meta = CtraceRunMeta::fromConfig(config);
+  EXPECT_EQ(meta.processorCount(), 1U);
+  EXPECT_TRUE(meta.sources().empty());
+  EXPECT_EQ(meta.itmEnableMask(), std::optional<std::uint32_t>(0U));
+  ASSERT_EQ(meta.itmEnableMasksByTraceBusId().size(), 1U);
+  EXPECT_EQ(meta.itmEnableMasksByTraceBusId().at(2U), 0U);
 }
 
 TEST(CtraceUnitTests, TraceRunReaderReportsDocumentErrors)
@@ -214,7 +253,6 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceRoutes)
       {"source: 4294967296", "'source' must be an unsigned integer in range"},
       {"source: [1, {}]", "each 'source' entry must be an unsigned integer"},
       {"source: [1, '']", "each 'source' entry must be an unsigned integer"},
-      {"source: [1, 2]", "ITM 'source' must be a single channel number"},
       {"source: 1\n      source: 2", "map keys must be unique"},
       {"source: 1\n      info: []", "'info' must be a scalar message"},
       {"source: 1\n      warning: {}", "'warning' must be a scalar message"},

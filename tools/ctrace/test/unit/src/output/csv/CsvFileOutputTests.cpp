@@ -6,6 +6,7 @@
  */
 
 #include "TestPath.h"
+#include "TestPlatform.h"
 #include "TestSupport.h"
 #include <gtest/gtest.h>
 #include "TraceEvent.h"
@@ -30,7 +31,10 @@ enum class CsvStreamFailure {
 class FailingCsvStreamBuffer final : public std::streambuf {
 public:
   /** @brief Creates a buffer that fails at the selected operation. */
-  explicit FailingCsvStreamBuffer(CsvStreamFailure failure) : m_failure(failure) {}
+  explicit FailingCsvStreamBuffer(CsvStreamFailure failure)
+    : m_failure(failure)
+  {
+  }
 
 protected:
   /** @brief Accepts or rejects one output character. */
@@ -53,15 +57,23 @@ private:
 class FailingCsvStream final : public CsvFileOutput::Stream {
 public:
   /** @brief Creates a stream that fails at the selected operation. */
-  explicit FailingCsvStream(CsvStreamFailure failure) : m_buffer(failure), m_stream(&m_buffer)
+  explicit FailingCsvStream(CsvStreamFailure failure)
+    : m_buffer(failure),
+      m_stream(&m_buffer)
   {
   }
 
   /** @brief Returns the synthetic output stream. */
-  std::ostream& output() override { return m_stream; }
+  std::ostream& output() override
+  {
+    return m_stream;
+  }
 
   /** @brief Flushes the synthetic output stream. */
-  void close() override { m_stream.flush(); }
+  void close() override
+  {
+    m_stream.flush();
+  }
 
 private:
   FailingCsvStreamBuffer m_buffer;
@@ -87,7 +99,7 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
   std::get<SoftwareTraceEvent>(excludedChannel.payload).channel = 0U;
   output.writeEvent(excludedChannel);
 
-  output.writeEvent(onStream(issuePacket("decode-error"), accepted.traceBusId));
+  output.writeEvent(onStream(issuePacket(TraceIssueCode::DecodeError), accepted.traceBusId));
   output.stop();
 
   require(readTestTextFile(outputPath.path()) == "cycles,stream,type,source,value,pc,offset,note\n,2,itm,1,0x41,,,\n",
@@ -96,7 +108,7 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
   const TemporaryTestPath errorOutputPath("ctrace-filtered-errors.csv");
   CsvFileOutput errorOutput(errorOutputPath.path(), TraceSelection{{"error"}, {}});
   errorOutput.start();
-  errorOutput.writeEvent(issuePacket("decode-warning", "decoder warning", TraceIssueSeverity::Warning));
+  errorOutput.writeEvent(issuePacket(TraceIssueCode::DecodeError, "decoder warning", TraceIssueSeverity::Warning));
   errorOutput.stop();
   require(readTestTextFile(errorOutputPath.path()).find(",0,error,,,,,decoder warning\n") != std::string::npos,
           "the error selector must include warning-severity decoder issue packets");
@@ -140,7 +152,7 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
   output.start();
   output.writeEvent(overflowPacket(1234));
 
-  output.writeEvent(atCycle(issuePacket("data-loss", "trace data lost before resynchronization"), 1235U));
+  output.writeEvent(atCycle(issuePacket(TraceIssueCode::DataLoss, "trace data lost before resynchronization"), 1235U));
   output.stop();
 
   const auto lines = readTestLines(csvPath);
@@ -260,25 +272,27 @@ TEST(CtraceUnitTests, testCsvFileOutputReportsInjectedStreamFailures)
   flushFailure.start();
   EXPECT_THROW(flushFailure.stop(), std::runtime_error);
 
-  CsvFileOutput openFailure(temporaryPath.path(), {}, [](const std::filesystem::path&) {
-    return std::unique_ptr<CsvFileOutput::Stream>{};
-  });
+  CsvFileOutput openFailure(temporaryPath.path(), {},
+                            [](const std::filesystem::path&) { return std::unique_ptr<CsvFileOutput::Stream>{}; });
   EXPECT_THROW(openFailure.start(), std::runtime_error);
 
   EXPECT_THROW((void)CsvFileOutput(temporaryPath.path(), {}, {}), std::invalid_argument);
 }
 
-#if defined(__linux__)
 TEST(CtraceUnitTests, testCsvFileOutputReportsPseudoFilesystemOpenFailure)
 {
-  CsvFileOutput output("/proc/ctrace-coverage-output.csv");
+  if (!TestPlatform::supports(TestPlatformCapability::LinuxSpecialFiles)) {
+    GTEST_SKIP();
+  }
+  CsvFileOutput output(TestPlatform::creationFailurePath("ctrace-coverage-output.csv"));
   EXPECT_THROW(output.start(), std::runtime_error);
 }
-#endif
 
-#if !defined(_WIN32)
 TEST(CtraceUnitTests, testCsvFileOutputReportsPermissionFailures)
 {
+  if (!TestPlatform::supports(TestPlatformCapability::PosixPermissions)) {
+    GTEST_SKIP();
+  }
   const TemporaryTestPath temporaryPath("ctrace-csv-permission-failure-test");
   const auto& root = temporaryPath.createDirectory();
   const auto outputPath = root / "output.csv";
@@ -297,4 +311,3 @@ TEST(CtraceUnitTests, testCsvFileOutputReportsPermissionFailures)
   EXPECT_THROW(createFailure.start(), std::runtime_error);
   std::filesystem::permissions(root, std::filesystem::perms::owner_all);
 }
-#endif

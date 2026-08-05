@@ -15,6 +15,14 @@ namespace CoreSight {
 inline constexpr std::uint8_t kMinAtbTraceId = 0x01U;
 inline constexpr std::uint8_t kMaxAtbTraceId = 0x6fU;
 inline constexpr std::uint8_t kUnformattedTraceBusId = 0x00U;
+inline constexpr std::uint8_t kExcludedItmStimulusPort = 0U;
+inline constexpr std::uint8_t kMaxItmStimulusPort = 31U;
+
+/** @brief Tests whether a value is an architectural ITM stimulus port. */
+constexpr bool isItmStimulusPort(std::uint32_t value)
+{
+  return value <= kMaxItmStimulusPort;
+}
 
 /** @brief Tests whether a value is a valid formatted CoreSight ATB trace ID. */
 constexpr bool isAtbTraceId(std::uint32_t value)
@@ -30,4 +38,4 @@ constexpr bool isTraceBusId(std::uint32_t value)
 
 } // namespace CoreSight
 
-#endif  // CTRACE_SRC_MODEL_TRACESTREAMID_H
+#endif // CTRACE_SRC_MODEL_TRACESTREAMID_H

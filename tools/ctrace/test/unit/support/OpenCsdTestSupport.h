@@ -11,7 +11,6 @@
 #include "OpenCsdTraceElement.h"
 
 #include <cstdint>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -27,10 +26,10 @@ public:
   }
 
   /** @brief Tests whether the collected elements include an issue code. */
-  bool hasIssue(std::string_view code) const
+  bool hasIssue(TraceIssueCode code) const
   {
     for (const auto& element : m_elements) {
-      if (element.issueCode == code) {
+      if (element.issueCode.has_value() && *element.issueCode == code) {
         return true;
       }
     }
@@ -83,4 +82,4 @@ openCsdTimestampElement(std::uint64_t tcyc, std::uint64_t index = 0U, std::uint8
 
 } // namespace OpenCsdTestSupport
 
-#endif  // CTRACE_TEST_UNIT_SUPPORT_OPENCSDTESTSUPPORT_H
+#endif // CTRACE_TEST_UNIT_SUPPORT_OPENCSDTESTSUPPORT_H

@@ -5,6 +5,8 @@ combines a `<solution-set>.ctrace-run.yml` description with matching raw trace f
 
 The current implementation decodes SWO/ITM and DWT data. Trace Bus (`*.TB.raw`) files are discovered and reported,
 but deliberately skipped until that decoder is implemented.
+ITM payload output supports stimulus ports `1` through `31`. Port `0` remains part of stream decoding but is
+deliberately excluded from CSV and CTF event output. Trace Compass observes the same filtered CTF stream.
 
 ![ctrace architecture](docs/architecture.svg)
 
@@ -28,8 +30,9 @@ If the directory follows them, terminate option parsing explicitly, for example
 `ctrace --type itm dwt -- .trace`. With no output option, `ctrace` validates and decodes the capture without writing
 output files.
 
-The first release exposes output selectors for `itm`, `dwt`, `exception`, `global_ts`, `overflow`, and `error`.
-Decoded DWT event counters, PMU packets, and PC samples remain disabled until their output semantics are implemented.
+The `--type` option accepts the specification-defined selectors `itm`, `dwt`, `event`, `pmu`, `exception`,
+`pcsample`, `global_ts`, `overflow`, and `error`. Decoded DWT event counters, PMU packets, and PC samples remain
+disabled until their output semantics are implemented, so their selectors currently produce no rows.
 
 A trace directory uses solution-set-based file names:
 
@@ -81,7 +84,7 @@ Initialize all dependencies and configure the repository from its root:
 
 ```bash
 git submodule update --init --recursive
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build build --target ctrace CtraceUnitTests
 ```
 
@@ -89,13 +92,6 @@ Run the independently discoverable GoogleTest cases and the executable-level int
 
 ```bash
 ctest --test-dir build -C Debug -R '^(CtraceUnitTests|ctrace-)'
-```
-
-Install only the ctrace executable from a completed build with the dedicated
-CMake component:
-
-```bash
-cmake --install build --component ctrace --prefix <install-dir>
 ```
 
 Editors using `clangd` should open the devtools repository root and configure into `build`. The tool-local

@@ -38,7 +38,8 @@ public:
    * @param bytesProcessed Raw bytes consumed before the failure.
    */
   OpenCsdFatalError(const std::string& message, std::uint64_t bytesProcessed)
-    : std::runtime_error(message), m_bytesProcessed(bytesProcessed)
+    : std::runtime_error(message),
+      m_bytesProcessed(bytesProcessed)
   {
   }
 

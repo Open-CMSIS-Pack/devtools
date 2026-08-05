@@ -9,10 +9,10 @@
 #include "TraceOutputTestSupport.h"
 #include <gtest/gtest.h>
 #include "DecodeConsumers.h"
+#include "DiagnosticSink.h"
+#include "TraceEvent.h"
 #include "TraceOutput.h"
-#include <cstdint>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -23,7 +23,10 @@ using TraceOutputTestSupport::TestTraceOutput;
 class OrderingDiagnosticSink final : public DiagnosticSink {
 public:
   /** @brief Creates a sink that appends to the supplied call sequence. */
-  explicit OrderingDiagnosticSink(std::vector<std::string>& calls) : m_calls(calls) {}
+  explicit OrderingDiagnosticSink(std::vector<std::string>& calls)
+    : m_calls(calls)
+  {
+  }
 
 protected:
   /** @brief Records one diagnostic delivery. */
@@ -44,22 +47,22 @@ TEST(CtraceUnitTests, testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOut
   OrderingDiagnosticSink diagnostics(calls);
   DecodeConsumers consumers(std::move(outputs), diagnostics);
 
-  TraceEvent warning = issuePacket("opencsd-warning", "decoder warning", TraceIssueSeverity::Warning);
+  TraceEvent warning = issuePacket(TraceIssueCode::OpenCsdDecodeError, "decoder warning", TraceIssueSeverity::Warning);
   consumers.append(warning);
   require(calls == std::vector<std::string>({"start", "write", "diagnostic"}),
           "warning packets must reach outputs before issue reporting");
-  require(consumers.eventCount() == 1U, "DecodeConsumers warning packet count mismatch");
+  require(consumers.eventCount() == 1U, "DecodeConsumers warning event count mismatch");
   require(diagnostics.failureCount() == 0U, "decoder warnings must not fail validation");
 
   TraceEvent error = warning;
   auto& errorIssue = std::get<TraceIssueEvent>(error.payload);
   errorIssue.severity = TraceIssueSeverity::Error;
-  errorIssue.code = "opencsd-error";
+  errorIssue.code = TraceIssueCode::OpenCsdDecodeError;
   errorIssue.message = "decoder error";
   consumers.append(error);
   require(calls == std::vector<std::string>({"start", "write", "diagnostic", "write", "diagnostic"}),
           "decoder error packets must reach outputs before issue reporting");
-  require(consumers.eventCount() == 2U, "DecodeConsumers error packet count mismatch");
+  require(consumers.eventCount() == 2U, "DecodeConsumers error event count mismatch");
   require(diagnostics.failureCount() == 1U, "decoder errors must fail validation even when outputs are configured");
 
   consumers.abortOutputs();
@@ -100,8 +103,7 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
 
   require(diagnostics.events().size() == 2U, "disabled ITM channels must produce one warning per Trace Bus ID/channel");
   for (const auto& event : diagnostics.events()) {
-    require(event.severity == DiagnosticSink::Severity::Warning && event.category == DiagnosticSink::Category::Input &&
-                event.code == "itm-channel-not-enabled" && event.impact == DiagnosticSink::Impact::NonFailing,
+    require(event.severity == DiagnosticSink::Severity::Warning && event.impact == DiagnosticSink::Impact::NonFailing,
             "ITM enable mismatch diagnostic classification mismatch");
   }
 }

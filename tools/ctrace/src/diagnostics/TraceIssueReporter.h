@@ -32,8 +32,7 @@ private:
   /** @brief Reports one semantic decoder issue. */
   void reportError(const TraceEvent& event, const TraceIssueEvent& issue);
   /** @brief Submits one normalized trace diagnostic to the sink. */
-  void report(DiagnosticSink::Severity severity, std::string code, std::string message,
-              std::optional<std::string> compactMessage = std::nullopt);
+  void report(DiagnosticSink::Severity severity, std::string message);
 
   DiagnosticSink& m_diagnostics;
   std::optional<std::uint64_t> m_firstOverflowTimestamp;

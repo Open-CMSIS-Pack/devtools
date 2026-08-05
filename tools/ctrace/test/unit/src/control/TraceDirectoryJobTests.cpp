@@ -7,6 +7,7 @@
 
 #include "OpenCsdSessionTestSupport.h"
 #include "TestPath.h"
+#include "TestPlatform.h"
 #include "TestSupport.h"
 #include "TraceRunTestSupport.h"
 #include <gtest/gtest.h>
@@ -16,7 +17,7 @@
 #include "TraceDirectoryJob.h"
 #include "TraceRunConfig.h"
 #include "TraceRunConfigReader.h"
-#include <cstdint>
+#include "opencsd/ocsd_if_types.h"
 #include <filesystem>
 #include <initializer_list>
 #include <memory>
@@ -40,7 +41,8 @@ class TestTraceRunConfigReader final : public TraceRunConfigReader {
 public:
   /** @brief Creates a reader with fixed data and an optional failure mode. */
   explicit TestTraceRunConfigReader(TraceRunConfig config = defaultTraceRunConfig(), bool fail = false)
-    : m_config(std::move(config)), m_fail(fail)
+    : m_config(std::move(config)),
+      m_fail(fail)
   {
   }
 
@@ -171,7 +173,9 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   noStream.stream.reset();
   noStream.warning.reset();
   noStream.error.reset();
-  config.references = {reported, emptyError, channelZero, noStream};
+  auto inconsistent = TraceRunTestSupport::makeReference("itm", "other", 3U, {1U}, "other/itm");
+  config.setups.push_back(TraceRunTestSupport::makeTimestampSetup("core"));
+  config.references = {reported, emptyError, channelZero, noStream, inconsistent};
 
   CliOptions options;
   options.traceDir = traceDir.string();
@@ -179,11 +183,12 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   TestTraceRunConfigReader reader(config);
   TraceDirectoryJob(options, diagnostics, reader).run();
 
-  EXPECT_TRUE(diagnostics.contains("trace-run-generation-info"));
-  EXPECT_TRUE(diagnostics.contains("trace-run-generation-warning"));
-  EXPECT_TRUE(diagnostics.contains("trace-run-generation-error"));
-  EXPECT_TRUE(diagnostics.contains("unsupported-trace-channel"));
-  EXPECT_TRUE(diagnostics.contains("missing-swo-raw-input"));
+  EXPECT_TRUE(diagnostics.containsMessage("producer note"));
+  EXPECT_TRUE(diagnostics.containsMessage("producer warning"));
+  EXPECT_TRUE(diagnostics.containsMessage("producer error"));
+  EXPECT_TRUE(diagnostics.containsMessage("does not match ctrace-setup pname"));
+  EXPECT_TRUE(diagnostics.containsMessage("skipping raw trace channel"));
+  EXPECT_TRUE(diagnostics.containsMessage("no supported <solution-set>.SWO.raw input found"));
 }
 
 TEST(CtraceUnitTests, testTraceDirectoryReportsConfigFailureAndRequiresDirectory)
@@ -198,7 +203,7 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsConfigFailureAndRequiresDirectory
   CliOptions options;
   options.traceDir = traceDir.string();
   TraceDirectoryJob(options, diagnostics, reader).run();
-  EXPECT_TRUE(diagnostics.contains("solution-set-failed"));
+  EXPECT_TRUE(diagnostics.containsMessage("synthetic config failure"));
 }
 
 TEST(CtraceUnitTests, testFileDecodeJobHandlesMissingInputAndDisabledCtf)
@@ -215,7 +220,7 @@ TEST(CtraceUnitTests, testFileDecodeJobHandlesMissingInputAndDisabledCtf)
   ctf.outputFormat = OutputFormat::Ctf;
   FileDecodeJob disabled(ctf, rawPath, diagnostics, CtraceRunMeta::fromConfig({}));
   EXPECT_NO_THROW(disabled.run());
-  EXPECT_TRUE(diagnostics.contains("ctf-timestamp-clock-missing"));
+  EXPECT_TRUE(diagnostics.containsMessage("CTF output requires timestamps.clock"));
 }
 
 TEST(CtraceUnitTests, testFileDecodeJobUsesPerStreamPrescalers)
@@ -237,7 +242,7 @@ TEST(CtraceUnitTests, testFileDecodeJobUsesPerStreamPrescalers)
   CollectingDiagnosticSink diagnostics;
   FileDecodeJob job(CliOptions{}, rawPath, diagnostics, CtraceRunMeta::fromConfig(config));
   EXPECT_NO_THROW(job.run());
-  EXPECT_TRUE(diagnostics.contains("timestamp-prescaler"));
+  EXPECT_TRUE(diagnostics.containsMessage("timestamp prescaler"));
 }
 
 TEST(CtraceUnitTests, testFileDecodeJobAbortsOutputsAfterFatalDecoderError)
@@ -258,13 +263,14 @@ TEST(CtraceUnitTests, testFileDecodeJobAbortsOutputsAfterFatalDecoderError)
   EXPECT_FALSE(std::filesystem::exists(temporaryPath.path() / "fatal.SWO.csv"));
 }
 
-#if defined(__linux__)
 TEST(CtraceUnitTests, testFileDecodeJobReportsRawInputReadFailures)
 {
+  if (!TestPlatform::supports(TestPlatformCapability::DirectoryReadFailure)) {
+    GTEST_SKIP();
+  }
   const TemporaryTestPath temporaryPath("ctrace-file-decode-read-failure-test");
   temporaryPath.createDirectory();
   CollectingDiagnosticSink diagnostics;
   FileDecodeJob job(CliOptions{}, temporaryPath.path(), diagnostics, CtraceRunMeta::fromConfig({}));
   EXPECT_THROW(job.run(), std::runtime_error);
 }
-#endif

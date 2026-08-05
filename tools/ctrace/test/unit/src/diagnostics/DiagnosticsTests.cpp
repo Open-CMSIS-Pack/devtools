@@ -7,8 +7,10 @@
 
 #include "TestSupport.h"
 #include <gtest/gtest.h>
+#include "DiagnosticSink.h"
+#include "TraceEvent.h"
 #include "TraceIssueReporter.h"
-#include <optional>
+#include <cstddef>
 #include <string>
 
 TEST(CtraceUnitTests, testDiagnosticCollection)
@@ -16,26 +18,19 @@ TEST(CtraceUnitTests, testDiagnosticCollection)
   CollectingDiagnosticSink sink;
   sink.report({
       DiagnosticSink::Severity::Warning,
-      DiagnosticSink::Category::Decode,
-      "timestamp",
       "timestamp discontinuity",
       {{"offset", "42"}},
   });
 
   require(sink.events().size() == 1, "diagnostic event count mismatch");
   require(sink.events()[0].severity == DiagnosticSink::Severity::Warning, "diagnostic severity mismatch");
-  require(sink.events()[0].category == DiagnosticSink::Category::Decode, "diagnostic category mismatch");
   require(toString(sink.events()[0].severity) == "warning", "diagnostic severity text mismatch");
-  require(toString(sink.events()[0].category) == "decode", "diagnostic category text mismatch");
   require(sink.failureCount() == 0U, "warnings must not fail the command");
 
   sink.report({
       DiagnosticSink::Severity::Error,
-      DiagnosticSink::Category::Input,
-      "generator-error",
       "generator could not create an irrelevant register",
       {},
-      std::nullopt,
       DiagnosticSink::Impact::NonFailing,
   });
   require(sink.events().back().impact == DiagnosticSink::Impact::NonFailing && sink.failureCount() == 0U,
@@ -43,50 +38,35 @@ TEST(CtraceUnitTests, testDiagnosticCollection)
 
   sink.report({
       DiagnosticSink::Severity::Error,
-      DiagnosticSink::Category::Input,
-      "required-input-missing",
       "required input is missing",
   });
   require(sink.events().back().impact == DiagnosticSink::Impact::Failing && sink.failureCount() == 1U,
           "failing errors must fail the job");
 }
 
-TEST(CtraceUnitTests, testDiagnosticTextCoversAllValuesAndFormatting)
+TEST(CtraceUnitTests, testDiagnosticTextCoversSeverityAndFormatting)
 {
   EXPECT_EQ(toString(DiagnosticSink::Severity::Info), "info");
   EXPECT_EQ(toString(DiagnosticSink::Severity::Warning), "warning");
   EXPECT_EQ(toString(DiagnosticSink::Severity::Error), "error");
   EXPECT_EQ(toString(static_cast<DiagnosticSink::Severity>(99)), "unknown");
-  EXPECT_EQ(toString(DiagnosticSink::Category::Cli), "cli");
-  EXPECT_EQ(toString(DiagnosticSink::Category::Input), "input");
-  EXPECT_EQ(toString(DiagnosticSink::Category::Decode), "decode");
-  EXPECT_EQ(toString(DiagnosticSink::Category::Output), "output");
-  EXPECT_EQ(toString(static_cast<DiagnosticSink::Category>(99)), "unknown");
-  EXPECT_EQ(toString(DiagnosticSink::Impact::NonFailing), "non-failing");
-  EXPECT_EQ(toString(DiagnosticSink::Impact::Failing), "failing");
-  EXPECT_EQ(toString(static_cast<DiagnosticSink::Impact>(99)), "unknown");
 
   StderrDiagnosticSink sink;
   testing::internal::CaptureStderr();
-  sink.report(
-      {DiagnosticSink::Severity::Info, DiagnosticSink::Category::Cli, "", "full message", {{"argument", "--all"}}});
-  sink.report({DiagnosticSink::Severity::Error,
-               DiagnosticSink::Category::Output,
-               "write",
-               "long message",
-               {},
-               "compact",
-               DiagnosticSink::Impact::Failing});
+  sink.report({DiagnosticSink::Severity::Info, "message with context", {{"argument", "--all"}}});
+  sink.report({DiagnosticSink::Severity::Error, "plain message", {}, DiagnosticSink::Impact::Failing});
   const auto text = testing::internal::GetCapturedStderr();
-  EXPECT_NE(text.find("[info] cli: full message argument=--all"), std::string::npos);
-  EXPECT_NE(text.find("[error] output/write: compact"), std::string::npos);
+  EXPECT_NE(text.find("[info] message with context: argument=--all"), std::string::npos);
+  EXPECT_NE(text.find("[error] plain message"), std::string::npos);
+  EXPECT_EQ(text.find("cli"), std::string::npos);
+  EXPECT_EQ(text.find("output/write"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
 {
   CollectingDiagnosticSink payloadIndependentDiagnostics;
   TraceIssueReporter payloadIndependentReporter(payloadIndependentDiagnostics);
-  TraceEvent payloadIndependentError = issuePacket("opencsd-incomplete-tail");
+  TraceEvent payloadIndependentError = issuePacket(TraceIssueCode::OpenCsdIncompleteTail);
   payloadIndependentReporter.append(payloadIndependentError);
   require(payloadIndependentDiagnostics.events().size() == 1U,
           "decoder errors must remain visible independently of payload filtering");
@@ -101,31 +81,29 @@ TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
   reporter.finish();
   reporter.finish();
 
-  TraceEvent dataLoss = issuePacket("data-loss", "trace data was lost");
+  TraceEvent dataLoss = issuePacket(TraceIssueCode::DataLoss, "trace data was lost");
   dataLoss.index = 12U;
   std::get<TraceIssueEvent>(dataLoss.payload).rawBytesConsumed = 3U;
   reporter.append(dataLoss);
   reporter.append(dataLoss);
 
-  TraceEvent warning = issuePacket("opencsd-warning", "decoder warning", TraceIssueSeverity::Warning);
+  TraceEvent warning = issuePacket(TraceIssueCode::OpenCsdDecodeError, "decoder warning", TraceIssueSeverity::Warning);
   reporter.append(warning);
 
-  TraceEvent initializationError = issuePacket("opencsd-initialization-error", "decoder setup failed");
+  TraceEvent initializationError = issuePacket(TraceIssueCode::OpenCsdInitializationError, "decoder setup failed");
   reporter.append(initializationError);
 
   require(diagnostics.events().size() == 5U, "TraceIssueReporter should report every error and warning occurrence");
-  require(diagnostics.events()[0].code == "overflow", "TraceIssueReporter overflow code mismatch");
   require(diagnostics.events()[0].severity == DiagnosticSink::Severity::Warning,
           "TraceIssueReporter overflow severity mismatch");
   EXPECT_NE(diagnostics.events()[0].message.find("1 more occurred"), std::string::npos);
-  require(diagnostics.events()[1].code == "data-loss", "TraceIssueReporter data-loss code mismatch");
   require(diagnostics.events()[1].severity == DiagnosticSink::Severity::Error,
           "TraceIssueReporter data-loss severity mismatch");
   require(diagnostics.events()[1].context.empty(), "TraceIssueReporter context mismatch");
-  require(diagnostics.events()[1].compactMessage.has_value() &&
-              diagnostics.events()[1].compactMessage->find("3 raw bytes") != std::string::npos,
-          "TraceIssueReporter should provide a compact stderr message");
-  require(diagnostics.events()[2].code == "data-loss", "TraceIssueReporter repeated data-loss missing");
+  require(diagnostics.events()[1].message.find("3 raw bytes") != std::string::npos,
+          "TraceIssueReporter should include the lost byte count");
+  require(diagnostics.events()[2].message == diagnostics.events()[1].message,
+          "TraceIssueReporter repeated data-loss message mismatch");
   require(diagnostics.events()[3].severity == DiagnosticSink::Severity::Warning,
           "TraceIssueReporter should preserve warning severity");
   require(diagnostics.events()[4].context.empty(), "TraceIssueReporter context mismatch");
@@ -145,24 +123,24 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsUnknownOverflowTimestamp)
   EXPECT_EQ(diagnostics.events().front().message.find("0 more occurred"), std::string::npos);
 }
 
-TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryCompactErrorKind)
+TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
 {
   CollectingDiagnosticSink diagnostics;
   TraceIssueReporter reporter(diagnostics);
 
-  /** @brief Describes one compact diagnostic formatting test case. */
+  /** @brief Describes one diagnostic formatting test case. */
   struct Case {
-    const char* code;
-    const char* compactMessage;
+    TraceIssueCode code;
+    const char* message;
   };
   constexpr Case cases[]{
-      {"opencsd-bad-packet-sequence", "invalid ITM packet sequence at raw offset 42"},
-      {"opencsd-invalid-packet-header", "invalid ITM packet header at raw offset 42"},
-      {"opencsd-incomplete-tail", "incomplete ITM packet starting at raw offset 42 at end of input"},
-      {"opencsd-no-progress", "OpenCSD made no decode progress at raw offset 42"},
-      {"opencsd-wait-timeout", "OpenCSD remained blocked while flushing pending data"},
-      {"opencsd-initialization-error", "OpenCSD initialization failed"},
-      {"other-error", "trace decode error at raw offset 42"},
+      {TraceIssueCode::OpenCsdBadPacketSequence, "invalid ITM packet sequence at raw offset 42"},
+      {TraceIssueCode::OpenCsdInvalidPacketHeader, "invalid ITM packet header at raw offset 42"},
+      {TraceIssueCode::OpenCsdIncompleteTail, "incomplete ITM packet starting at raw offset 42 at end of input"},
+      {TraceIssueCode::OpenCsdNoProgress, "OpenCSD made no decode progress at raw offset 42"},
+      {TraceIssueCode::OpenCsdWaitTimeout, "OpenCSD remained blocked while flushing pending data"},
+      {TraceIssueCode::OpenCsdInitializationError, "OpenCSD initialization failed"},
+      {TraceIssueCode::DecodeError, "trace decode error at raw offset 42"},
   };
   for (const auto& testCase : cases) {
     auto event = issuePacket(testCase.code);
@@ -170,20 +148,19 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryCompactErrorKind)
     reporter.append(event);
   }
 
-  auto dataLoss = issuePacket("data-loss");
+  auto dataLoss = issuePacket(TraceIssueCode::DataLoss);
   dataLoss.index = 43U;
   reporter.append(dataLoss);
 
-  auto warningDataLoss = issuePacket("data-loss", "warning loss", TraceIssueSeverity::Warning);
+  auto warningDataLoss = issuePacket(TraceIssueCode::DataLoss, "warning loss", TraceIssueSeverity::Warning);
   reporter.append(warningDataLoss);
-  reporter.append(issuePacket(""));
+  reporter.append(issuePacket(TraceIssueCode::DecodeError));
 
   ASSERT_EQ(diagnostics.events().size(), std::size(cases) + 3U);
   for (std::size_t index = 0U; index < std::size(cases); ++index) {
-    EXPECT_EQ(diagnostics.events()[index].compactMessage, cases[index].compactMessage);
+    EXPECT_EQ(diagnostics.events()[index].message, cases[index].message);
   }
-  EXPECT_NE(diagnostics.events()[std::size(cases)].message.find("Trace data loss detected"), std::string::npos);
-  EXPECT_NE(diagnostics.events()[std::size(cases)].compactMessage->find("raw offset 43"), std::string::npos);
+  EXPECT_NE(diagnostics.events()[std::size(cases)].message.find("raw offset 43"), std::string::npos);
   EXPECT_EQ(diagnostics.events()[std::size(cases) + 1U].severity, DiagnosticSink::Severity::Warning);
-  EXPECT_EQ(diagnostics.events().back().code, "decode-error");
+  EXPECT_EQ(diagnostics.events().back().message, "trace decode error at raw offset 0");
 }

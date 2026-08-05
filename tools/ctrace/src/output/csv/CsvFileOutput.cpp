@@ -86,7 +86,9 @@ CsvFileOutput::CsvFileOutput(std::filesystem::path outputFile, TraceSelection se
 }
 
 CsvFileOutput::CsvFileOutput(std::filesystem::path outputFile, TraceSelection selection, StreamFactory streamFactory)
-  : m_outputFile(std::move(outputFile)), m_selection(std::move(selection)), m_streamFactory(std::move(streamFactory))
+  : m_outputFile(std::move(outputFile)),
+    m_selection(std::move(selection)),
+    m_streamFactory(std::move(streamFactory))
 {
   if (!m_streamFactory) {
     throw std::invalid_argument("CSV stream factory must be configured");

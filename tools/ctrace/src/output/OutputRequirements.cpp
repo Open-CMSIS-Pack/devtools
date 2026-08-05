@@ -14,7 +14,6 @@
 #include "TraceOutputConfig.h"
 #include "TraceRunConfig.h"
 
-#include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <map>
@@ -77,13 +76,11 @@ routeContext(const std::string_view& backend, const CtraceRunMeta& ctraceRunMeta
 }
 
 /** @brief Reports one output preflight failure with optional context. */
-static void reportRequirementError(DiagnosticSink& diagnostics, std::string code, std::string message,
+static void reportRequirementError(DiagnosticSink& diagnostics, std::string message,
                                    std::vector<std::pair<std::string, std::string>> context)
 {
   diagnostics.report({
       DiagnosticSink::Severity::Error,
-      DiagnosticSink::Category::Output,
-      std::move(code),
       std::move(message),
       std::move(context),
   });
@@ -123,7 +120,7 @@ static bool validateCtfRouteIdentity(const CtraceRunMeta& ctraceRunMeta, const T
     context.emplace_back("otherProcessor", source.processorName.value_or("<unspecified>"));
     context.emplace_back("firstStream", std::to_string(first.traceBusId));
     reportRequirementError(
-        diagnostics, "ctf-trace-route-ambiguous",
+        diagnostics,
         "CTF metadata cannot describe conflicting active type/source routes from different processors or Trace Bus IDs",
         std::move(context));
   }
@@ -149,7 +146,7 @@ static SelectedClockResolution resolveSelectedCtfClock(const CtraceRunMeta& ctra
     result.hasRoutes = true;
     if (timestamp.clockError.has_value()) {
       result.valid = false;
-      reportRequirementError(diagnostics, "ctf-timestamp-clock-invalid",
+      reportRequirementError(diagnostics,
                              "CTF output cannot use the configured timestamps.clock",
                              {
                                  {"backend", "ctf"},
@@ -162,7 +159,7 @@ static SelectedClockResolution resolveSelectedCtfClock(const CtraceRunMeta& ctra
     }
     if (!timestamp.clockHz.has_value()) {
       result.valid = false;
-      reportRequirementError(diagnostics, "ctf-timestamp-clock-missing",
+      reportRequirementError(diagnostics,
                              "CTF output requires timestamps.clock for the processor assigned to this Trace Bus ID",
                              {
                                  {"backend", "ctf"},
@@ -174,7 +171,7 @@ static SelectedClockResolution resolveSelectedCtfClock(const CtraceRunMeta& ctra
     }
     if (*timestamp.clockHz == 0U) {
       result.valid = false;
-      reportRequirementError(diagnostics, "ctf-timestamp-clock-invalid",
+      reportRequirementError(diagnostics,
                              "CTF output requires timestamps.clock to be greater than zero",
                              {
                                  {"backend", "ctf"},
@@ -186,7 +183,7 @@ static SelectedClockResolution resolveSelectedCtfClock(const CtraceRunMeta& ctra
     }
     if (result.clockHz.has_value() && *result.clockHz != *timestamp.clockHz) {
       result.valid = false;
-      reportRequirementError(diagnostics, "ctf-timestamp-clock-ambiguous",
+      reportRequirementError(diagnostics,
                              "CTF output cannot combine selected Trace Bus IDs with different timestamps.clock values",
                              {
                                  {"backend", "ctf"},
@@ -206,7 +203,7 @@ static std::optional<std::uint64_t> resolveDefaultCtfClock(const CtraceRunMeta& 
                                                            const TraceSelection& selection, DiagnosticSink& diagnostics)
 {
   for (const auto& error : ctraceRunMeta.timestampClockErrors()) {
-    reportRequirementError(diagnostics, "ctf-timestamp-clock-invalid",
+    reportRequirementError(diagnostics,
                            "CTF output cannot use the configured timestamps.clock",
                            {
                                {"backend", "ctf"},
@@ -219,7 +216,7 @@ static std::optional<std::uint64_t> resolveDefaultCtfClock(const CtraceRunMeta& 
   }
   if (!ctraceRunMeta.timestampClockHz().has_value()) {
     if (!selection.streams.empty() && !ctraceRunMeta.timestampsByTraceBusId().empty()) {
-      reportRequirementError(diagnostics, "ctf-timestamp-clock-ambiguous",
+      reportRequirementError(diagnostics,
                              "CTF output cannot assign unformatted or unknown Trace Bus IDs to processors with "
                              "different timestamps.clock values",
                              {
@@ -228,7 +225,7 @@ static std::optional<std::uint64_t> resolveDefaultCtfClock(const CtraceRunMeta& 
                              });
       return std::nullopt;
     }
-    reportRequirementError(diagnostics, "ctf-timestamp-clock-missing",
+    reportRequirementError(diagnostics,
                            "CTF output requires timestamps.clock from an active ctrace-setup; no default is assumed",
                            {
                                {"backend", "ctf"},
@@ -237,7 +234,7 @@ static std::optional<std::uint64_t> resolveDefaultCtfClock(const CtraceRunMeta& 
     return std::nullopt;
   }
   if (*ctraceRunMeta.timestampClockHz() == 0U) {
-    reportRequirementError(diagnostics, "ctf-timestamp-clock-invalid",
+    reportRequirementError(diagnostics,
                            "CTF output requires timestamps.clock to be greater than zero",
                            {
                                {"backend", "ctf"},
@@ -277,7 +274,7 @@ static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const Tra
       sourceValid = false;
       auto context = routeContext("ctf", ctraceRunMeta, source);
       context.emplace_back("error", *source.symbolTypeError);
-      reportRequirementError(diagnostics, "ctf-dwt-symbol-type-invalid",
+      reportRequirementError(diagnostics,
                              "CTF output cannot use the configured ctrace-run data.symbol-type", std::move(context));
     }
     if (source.symbolSizeError.has_value()) {
@@ -285,7 +282,7 @@ static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const Tra
       sourceValid = false;
       auto context = routeContext("ctf", ctraceRunMeta, source);
       context.emplace_back("error", *source.symbolSizeError);
-      reportRequirementError(diagnostics, "ctf-dwt-symbol-size-invalid",
+      reportRequirementError(diagnostics,
                              "CTF output cannot use the configured ctrace-run data.symbol-size", std::move(context));
     }
     if (!sourceValid) {
@@ -297,7 +294,7 @@ static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const Tra
       valid = false;
       auto context = routeContext("ctf", ctraceRunMeta, source);
       context.emplace_back("dataType", source.valueType);
-      reportRequirementError(diagnostics, "ctf-dwt-symbol-type-invalid",
+      reportRequirementError(diagnostics,
                              "CTF output cannot use ctrace-run data.symbol-type '" + source.valueType + "'; " +
                                  std::string(CtfSchema::ValueTypeRequirements),
                              std::move(context));
@@ -307,7 +304,7 @@ static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const Tra
       auto context = routeContext("ctf", ctraceRunMeta, source);
       context.emplace_back("dataType", source.valueType);
       context.emplace_back("dataSize", std::to_string(source.valueSize));
-      reportRequirementError(diagnostics, "ctf-dwt-symbol-size-invalid",
+      reportRequirementError(diagnostics,
                              "CTF output cannot use ctrace-run data.symbol-size " + std::to_string(source.valueSize) +
                                  " with data.symbol-type '" + source.valueType + "'; " +
                                  std::string(CtfSchema::ValueTypeRequirements),

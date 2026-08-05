@@ -58,21 +58,21 @@ public:
    * @brief Appends a decoder issue element.
    * @param index Raw source offset associated with the issue.
    * @param message Human-readable diagnostic text.
-   * @param issueCode Stable machine-readable issue code.
+   * @param issueCode Decoder issue state.
    * @param discontinuity Whether the issue breaks semantic continuity.
    * @param severity Output severity assigned to the issue.
    */
   void appendDecodeError(ocsd_trc_index_t index, const std::string& message,
-                         const std::string& issueCode = "opencsd-decode-error", bool discontinuity = true,
+                         TraceIssueCode issueCode = TraceIssueCode::OpenCsdDecodeError, bool discontinuity = true,
                          TraceIssueSeverity severity = TraceIssueSeverity::Error);
   /**
    * @brief Prepends a discontinuity before buffered resumed events.
    * @param index Raw source offset at which decoding resumes.
    * @param message Human-readable recovery description.
-   * @param issueCode Stable machine-readable issue code.
+   * @param issueCode Decoder issue state.
    * @param rawBytesConsumed Number of discarded bytes, when known.
    */
-  void prependDiscontinuity(ocsd_trc_index_t index, const std::string& message, const std::string& issueCode,
+  void prependDiscontinuity(ocsd_trc_index_t index, const std::string& message, TraceIssueCode issueCode,
                             std::optional<std::uint64_t> rawBytesConsumed = std::nullopt);
   /**
    * @brief Prepends a data-loss error before buffered resumed events.
@@ -116,4 +116,4 @@ private:
   std::exception_ptr m_outputError;
 };
 
-#endif  // CTRACE_SRC_DECODE_OPENCSDPACKETCOLLECTOR_H
+#endif // CTRACE_SRC_DECODE_OPENCSDPACKETCOLLECTOR_H

@@ -11,6 +11,7 @@
 #include "TraceEvent.h"
 
 #include <cstdint>
+#include <optional>
 #include <string>
 
 /** @brief Describes ordering between a local timestamp and adjacent payloads. */
@@ -55,7 +56,7 @@ struct OpenCsdTraceElement {
 
   bool clockChange = false;
 
-  std::string issueCode;
+  std::optional<TraceIssueCode> issueCode;
   TraceIssueSeverity issueSeverity = TraceIssueSeverity::Error;
   std::string errorMessage;
 };
@@ -70,4 +71,4 @@ public:
   virtual void append(OpenCsdTraceElement element) = 0;
 };
 
-#endif  // CTRACE_SRC_DECODE_OPENCSDTRACEELEMENT_H
+#endif // CTRACE_SRC_DECODE_OPENCSDTRACEELEMENT_H

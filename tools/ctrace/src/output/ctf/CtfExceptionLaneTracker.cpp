@@ -13,13 +13,6 @@
 #include <cstdint>
 #include <vector>
 
-void CtfExceptionLaneTracker::reset()
-{
-  m_contextStack.clear();
-  m_activeContextNumber.reset();
-  m_observedExceptionNumbers.clear();
-}
-
 void CtfExceptionLaneTracker::startThreadMode(const RecordEmitter& emit)
 {
   setActiveContext(kThreadModeNumber, emit);

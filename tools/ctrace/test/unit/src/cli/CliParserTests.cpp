@@ -12,7 +12,6 @@
 #include <cstdint>
 #include <initializer_list>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -64,6 +63,10 @@ TEST(CtraceUnitTests, testCliParserOutputOptions)
   require(all.selection.types == std::vector<std::string>({"dwt", "itm"}), "CliParser type filter mismatch");
   require(all.selection.streams == std::vector<std::uint8_t>({1U, 2U}), "CliParser stream filter mismatch");
 
+  const auto futureTypes = parseAndValidate({"ctrace", ".trace", "--type", "event", "pmu", "pcsample"});
+  require(futureTypes.selection.types == std::vector<std::string>({"event", "pmu", "pcsample"}),
+          "CliParser must accept specified packet types before their output semantics are implemented");
+
   expectOutputFormat({"ctrace", ".trace"}, OutputFormat::None);
   expectOutputFormat({"ctrace", ".trace", "--csv"}, OutputFormat::Csv);
   expectOutputFormat({"ctrace", ".trace", "--ctf"}, OutputFormat::Ctf);
@@ -112,11 +115,6 @@ TEST(CtraceUnitTests, testCliParserRejectsInvalidSelections)
   require(validationErrorContains({"ctrace", ".trace", "--type", "dwt", "invalid", "--all"},
                                   "Invalid --type value: invalid"),
           "CliParser should reject an invalid selector after a valid selector");
-
-  for (const auto* type : {"event", "pmu", "pcsample"}) {
-    require(validationErrorContains({"ctrace", ".trace", "--type", type}, "Invalid --type value"),
-            std::string("CliParser should reject unimplemented type ") + type);
-  }
 
   require(validationErrorContains({"ctrace", ".trace", "--type", "DWT"}, "Invalid --type value: DWT"),
           "CliParser should enforce case-sensitive packet type names");

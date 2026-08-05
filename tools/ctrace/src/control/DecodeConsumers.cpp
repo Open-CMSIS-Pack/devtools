@@ -11,6 +11,7 @@
 #include "TraceEvent.h"
 #include "TraceOutput.h"
 #include "TraceOutputLifecycle.h"
+#include "TraceStreamId.h"
 
 #include <cstdint>
 #include <iomanip>
@@ -34,8 +35,10 @@ static std::string hexMask(std::uint32_t value)
 DecodeConsumers::DecodeConsumers(std::vector<std::unique_ptr<TraceOutput>> outputs, DiagnosticSink& diagnostics,
                                  std::optional<std::uint32_t> itmEnableMask,
                                  std::map<std::uint8_t, std::uint32_t> itmEnableMasksByTraceBusId)
-  : m_diagnostics(diagnostics), m_itmEnableMask(itmEnableMask),
-    m_itmEnableMasksByTraceBusId(std::move(itmEnableMasksByTraceBusId)), m_issueReporter(diagnostics),
+  : m_diagnostics(diagnostics),
+    m_itmEnableMask(itmEnableMask),
+    m_itmEnableMasksByTraceBusId(std::move(itmEnableMasksByTraceBusId)),
+    m_issueReporter(diagnostics),
     m_outputLifecycle(std::move(outputs), diagnostics)
 {
 }
@@ -51,7 +54,8 @@ void DecodeConsumers::append(const TraceEvent& event)
 void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
 {
   const auto* software = traceEventPayload<SoftwareTraceEvent>(event);
-  if (software == nullptr || software->channel == 0U || software->channel >= 32U) {
+  if (software == nullptr || software->channel == CoreSight::kExcludedItmStimulusPort ||
+      !CoreSight::isItmStimulusPort(software->channel)) {
     return;
   }
 
@@ -67,8 +71,6 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
 
   m_diagnostics.report({
       DiagnosticSink::Severity::Warning,
-      DiagnosticSink::Category::Input,
-      "itm-channel-not-enabled",
       "ITM data was received on a channel not enabled by ctrace-setup.itm.enable",
       {
           {"stream", std::to_string(event.traceBusId)},

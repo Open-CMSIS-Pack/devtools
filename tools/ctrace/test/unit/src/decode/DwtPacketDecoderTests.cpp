@@ -82,7 +82,8 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsReservedExceptionAction)
   require(packets.size() == 1U, "DwtPacketDecoder reserved exception action packet count mismatch");
   const auto* issue = traceEventPayload<TraceIssueEvent>(packets[0]);
   require(issue != nullptr, "DwtPacketDecoder reserved exception action should emit only an error");
-  require(issue->code == "invalid-exception-action", "DwtPacketDecoder reserved exception action code mismatch");
+  require(issue->code == TraceIssueCode::InvalidExceptionAction,
+          "DwtPacketDecoder reserved exception action code mismatch");
   require(issue->message == "invalid exception action 0x0 for exception 11",
           "DwtPacketDecoder reserved exception action message mismatch");
   require(packets[0].index == 17U && packets[0].traceBusId == 3U,
@@ -167,7 +168,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
     const auto packets = decoder.decode(payload);
     require(packets.size() == 1U, "unsupported DWT address width must emit one error");
     const auto* issue = traceEventPayload<TraceIssueEvent>(packets.front());
-    require(issue != nullptr && issue->code == "unsupported-dwt-address-payload" &&
+    require(issue != nullptr && issue->code == TraceIssueCode::UnsupportedDwtAddressPayload &&
                 issue->severity == TraceIssueSeverity::Error,
             "unsupported DWT address width diagnostic mismatch");
     require(packets.front().index == 17U && packets.front().traceBusId == 3U &&

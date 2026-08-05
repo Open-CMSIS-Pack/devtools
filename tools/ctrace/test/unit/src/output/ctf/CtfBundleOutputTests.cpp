@@ -7,18 +7,21 @@
 
 // CTF bundle metadata, event handling, and direct-output lifecycle tests.
 #include "CtfTestSupport.h"
+#include "TestPlatform.h"
 #include "TestSupport.h"
 #include "TraceRunTestSupport.h"
 
 #include <gtest/gtest.h>
 
 #include "ctf/CtfBundleOutput.h"
+#include "ctf/CtfSchema.h"
 #include "CtraceRunMeta.h"
 #include "OutputRequirements.h"
 #include "TestPath.h"
 #include "TraceEvent.h"
 #include "TraceOutputConfig.h"
 #include "TraceRunConfig.h"
+#include "TraceSelection.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -65,7 +68,11 @@ static void requireCompleteCtfBundle(const std::filesystem::path& ctfDirectory, 
 class TemporaryCtfOutput {
 public:
   /** @brief Creates a temporary CTF output path. */
-  explicit TemporaryCtfOutput(const std::string& name) : m_root(name), m_outputDirectory(m_root.path() / "output.ctf") {}
+  explicit TemporaryCtfOutput(const std::string& name)
+    : m_root(name),
+      m_outputDirectory(m_root.path() / "output.ctf")
+  {
+  }
 
   /** @brief Returns the temporary output directory. */
   const std::filesystem::path& outputDirectory() const
@@ -143,19 +150,19 @@ TEST(CtraceUnitTests, testCtfBundleOutputExceptionContext)
   const auto records = readCtfExceptionRecords(outputDir / "stream_0");
   const auto metadata = readTestTextFile(outputDir / "metadata");
 
-  require(metadata.find("\"entered\" = 1") != std::string::npos, "CTF exception entered label mismatch");
-  require(metadata.find("\"exited\" = 2") != std::string::npos, "CTF exception exited label mismatch");
+  require(metadata.find("\"entered\" = 0") != std::string::npos, "CTF exception entered label mismatch");
+  require(metadata.find("\"exited\" = 1") != std::string::npos, "CTF exception exited label mismatch");
 
   require(records == std::vector<std::string>({
+                         "0:0",
                          "0:1",
-                         "0:2",
+                         "15:0",
                          "15:1",
-                         "15:2",
+                         "54:0",
                          "54:1",
-                         "54:2",
+                         "15:0",
                          "15:1",
-                         "15:2",
-                         "0:1",
+                         "0:0",
                      }),
           "CtfBundleOutput exception active-context records mismatch");
 }
@@ -218,7 +225,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
   const auto& dwtRecord =
       requireFirstCtfRecord(records, CtfSchema::EventId::DwtValue, "expected CTF DWT value event missing");
   require(dwtRecord.traceBusId == 7U, "CTF event context must preserve the CoreSight Trace Bus ID");
-  require(dwtRecord.payload[2U] == 1U, "CTF one-byte int payload must select the i8 variant");
+  require(dwtRecord.payload[2U] == 0U, "CTF one-byte int payload must select the i8 variant");
   require(dwtRecord.payload[3U] == 0xffU, "CTF signed-byte payload mismatch");
 }
 
@@ -246,9 +253,9 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   defaultOutput.writeEvent(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Write}});
   defaultOutput.writeEvent(TraceEvent{DwtDataTraceEvent{0U, 2U, 0xffffU, AccessType::Write}});
   defaultOutput.stop();
-  require(readFirstCtfDwtValueTag(defaultOutputDir / "stream_0") == 6U,
+  require(readFirstCtfDwtValueTag(defaultOutputDir / "stream_0") == 5U,
           "default DWT metadata must select the unsigned 32-bit CTF variant");
-  const auto& sizeWarning = diagnostics.singleEvent("dwt-symbol-size-mismatch");
+  const auto& sizeWarning = diagnostics.singleEvent();
   require(sizeWarning.severity == DiagnosticSink::Severity::Warning && diagnostics.failureCount() == 0U,
           "DWT size mismatch must be reported once per channel");
 
@@ -267,7 +274,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   signedOutput.start();
   signedOutput.writeEvent(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Write}});
   signedOutput.stop();
-  require(readFirstCtfDwtValueTag(signedOutputDir / "stream_0") == 1U,
+  require(readFirstCtfDwtValueTag(signedOutputDir / "stream_0") == 0U,
           "explicit signed int/1 metadata must select the signed 8-bit CTF variant");
   require(signedDiagnostics.events().empty(), "matching DWT sizes must not produce a warning");
 
@@ -301,10 +308,11 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   filteredOptions.selection.types.push_back("error");
   CtfBundleOutput filtered(std::move(filteredOptions));
   filtered.start();
-  TraceEvent warning = issuePacket("opencsd-warning", "decoder warning", TraceIssueSeverity::Warning);
+  TraceEvent warning = issuePacket(TraceIssueCode::OpenCsdDecodeError, "decoder warning", TraceIssueSeverity::Warning);
   filtered.writeEvent(warning);
   filtered.stop();
-  require(readOnlyCtfTraceStatusReasons(filteredDir / "stream_0") == std::vector<std::uint8_t>({4U}),
+  require(readOnlyCtfTraceStatusReasons(filteredDir / "stream_0") ==
+              std::vector<std::uint8_t>({CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError)}),
           "--type error must retain decoder warnings in CTF");
 
   CtfBundleOutput context(makeCtfBundleConfig(contextDir, 1000000U));
@@ -314,7 +322,7 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   context.writeEvent(exceptionPacket(54U, ExceptionAction::Entered, 20U));
   context.stop();
   require(readCtfExceptionRecords(contextDir / "stream_0") ==
-              std::vector<std::string>({"0:1", "0:2", "15:1", "15:2", "54:1"}),
+              std::vector<std::string>({"0:0", "0:1", "15:0", "15:1", "54:0"}),
           "a decoder warning must not reset the active CTF exception context");
 
   auto dataLossOptions = makeCtfBundleConfig(dataLossDir, 1000000U);
@@ -322,11 +330,11 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   CtfBundleOutput dataLoss(std::move(dataLossOptions));
   dataLoss.start();
   dataLoss.writeEvent(exceptionPacket(15U, ExceptionAction::Entered, 10U));
-  dataLoss.writeEvent(issuePacket("data-loss", "decoder data loss"));
+  dataLoss.writeEvent(issuePacket(TraceIssueCode::DataLoss, "decoder data loss"));
   dataLoss.writeEvent(exceptionPacket(15U, ExceptionAction::Returned, 20U));
   dataLoss.stop();
   require(readCtfExceptionRecords(dataLossDir / "stream_0") ==
-              std::vector<std::string>({"0:1", "0:2", "15:1", "15:2", "15:1"}),
+              std::vector<std::string>({"0:0", "0:1", "15:0", "15:1", "15:0"}),
           "filtered data-loss must still reset the CTF exception context");
 }
 
@@ -343,7 +351,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputTypeFilterExcludesSyntheticEvents)
   output.writeEvent(atCycle(softwarePacket(1U, 1U, 'A'), 100U));
   output.writeEvent(exceptionPacket(15, ExceptionAction::Entered, 200));
   output.writeEvent(overflowPacket(300));
-  auto error = atCycle(issuePacket("opencsd-bad-packet-sequence"), 400U);
+  auto error = atCycle(issuePacket(TraceIssueCode::OpenCsdBadPacketSequence), 400U);
   error.quality = TraceQuality{true, false, 1U};
   output.writeEvent(error);
   output.stop();
@@ -436,11 +444,13 @@ TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
   CtfBundleOutput output(std::move(options));
   output.start();
   output.writeEvent(atCycle(softwarePacket(0U, 1U, 'A'), 100U));
-  output.writeEvent(atCycle(issuePacket("opencsd-incomplete-tail"), 101U));
+  output.writeEvent(atCycle(issuePacket(TraceIssueCode::OpenCsdIncompleteTail), 101U));
   output.stop();
-  require(readOnlyCtfTraceStatusReasons(outputDir / "stream_0") == std::vector<std::uint8_t>({4U}),
+  require(readOnlyCtfTraceStatusReasons(outputDir / "stream_0") ==
+              std::vector<std::uint8_t>({CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError)}),
           "CTF must exclude software channel zero payload but retain its decoder errors");
-  require(!std::filesystem::exists(outputDir / ("m_stream" + std::to_string(1))), "CTF must not create a second stream");
+  require(!std::filesystem::exists(outputDir / ("m_stream" + std::to_string(1))),
+          "CTF must not create a second stream");
 
   const auto metadata = readTestTextFile(outputDir / "metadata");
   require(metadata.find("ITM" + std::to_string(0)) == std::string::npos,
@@ -522,13 +532,11 @@ TEST(CtraceUnitTests, testCtfBundleOutputRejectsOverlappingTargetsBeforeDeletion
               std::filesystem::is_directory(wrongTypeXml),
           "CTF start must reject unexpected target types before deleting either target");
 
-#ifdef _WIN32
   const auto rejectedCaseInsensitiveOverlap = throwsException<std::invalid_argument>([&] {
     CtfBundleOutput output(
         CtfOutputConfig(root / "Bundle.ctf", root / "BUNDLE.CTF" / "Bundle.SWO.traceanalysis.xml", 1000000U, {}, {}));
   });
-  require(rejectedCaseInsensitiveOverlap, "Windows CTF target overlap checks must be case-insensitive");
-#endif
+  require(rejectedCaseInsensitiveOverlap, "CTF target overlap checks must conservatively ignore ASCII case");
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputOwnsDirectLifecycle)
@@ -640,20 +648,24 @@ TEST(CtraceUnitTests, testCtfBundleOutputCleansUpAfterTraceCompassStartFailure)
   EXPECT_FALSE(std::filesystem::exists(outputDirectory));
 }
 
-#if defined(__linux__)
 TEST(CtraceUnitTests, testCtfBundleOutputReportsPseudoFilesystemStartFailure)
 {
+  if (!TestPlatform::supports(TestPlatformCapability::LinuxSpecialFiles)) {
+    GTEST_SKIP();
+  }
   const TemporaryTestPath temporaryPath("ctrace-ctf-pseudo-filesystem-test");
   const auto outputDirectory = temporaryPath.path() / "output.ctf";
-  CtfBundleOutput output(CtfOutputConfig(outputDirectory, "/proc/ctrace-coverage-output.xml", 1000000U, {}, {}));
+  CtfBundleOutput output(CtfOutputConfig(
+      outputDirectory, TestPlatform::creationFailurePath("ctrace-coverage-output.xml"), 1000000U, {}, {}));
   EXPECT_THROW(output.start(), std::runtime_error);
   EXPECT_FALSE(std::filesystem::exists(outputDirectory));
 }
-#endif
 
-#if !defined(_WIN32)
 TEST(CtraceUnitTests, testCtfBundleOutputReportsPermissionFailures)
 {
+  if (!TestPlatform::supports(TestPlatformCapability::PosixPermissions)) {
+    GTEST_SKIP();
+  }
   const TemporaryTestPath temporaryPath("ctrace-ctf-permission-failure-test");
   const auto& root = temporaryPath.createDirectory();
 
@@ -685,28 +697,21 @@ TEST(CtraceUnitTests, testCtfBundleOutputReportsPermissionFailures)
   std::filesystem::create_directories(blockedParent);
   const auto blockedXml = blockedParent / "existing.xml";
   writeTestFile(blockedXml, "existing");
-  std::filesystem::permissions(blockedParent,
-                               std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
-  CtfBundleOutput removeFileFailure(
-      CtfOutputConfig(writableParent / "output.ctf", blockedXml, 1000000U, {}, {}));
+  std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+  CtfBundleOutput removeFileFailure(CtfOutputConfig(writableParent / "output.ctf", blockedXml, 1000000U, {}, {}));
   EXPECT_THROW(removeFileFailure.start(), std::runtime_error);
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_all);
 
   const auto cleanupCtf = writableParent / "cleanup.ctf";
-  std::filesystem::permissions(blockedParent,
-                               std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
-  CtfBundleOutput startCleanupFailure(
-      CtfOutputConfig(cleanupCtf, blockedParent / "new.xml", 1000000U, {}, {}));
+  std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+  CtfBundleOutput startCleanupFailure(CtfOutputConfig(cleanupCtf, blockedParent / "new.xml", 1000000U, {}, {}));
   EXPECT_THROW(startCleanupFailure.start(), std::runtime_error);
   EXPECT_FALSE(std::filesystem::exists(cleanupCtf));
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_all);
 
   const auto blockedCtf = blockedParent / "new.ctf";
-  std::filesystem::permissions(blockedParent,
-                               std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
-  CtfBundleOutput createDirectoryFailure(
-      CtfOutputConfig(blockedCtf, writableParent / "new.xml", 1000000U, {}, {}));
+  std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+  CtfBundleOutput createDirectoryFailure(CtfOutputConfig(blockedCtf, writableParent / "new.xml", 1000000U, {}, {}));
   EXPECT_THROW(createDirectoryFailure.start(), std::runtime_error);
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_all);
 }
-#endif

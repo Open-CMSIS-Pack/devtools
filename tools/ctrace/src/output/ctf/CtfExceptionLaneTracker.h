@@ -27,15 +27,13 @@ public:
   /** @brief Emits one exception-lane record. */
   using RecordEmitter = std::function<void(std::uint32_t number, RecordAction action)>;
 
-  /** @brief Clears all tracked exception contexts. */
-  void reset();
   /** @brief Starts the initial thread-mode context. */
   void startThreadMode(const RecordEmitter& emit);
   /** @brief Closes the active lane and clears state at a discontinuity. */
   void resetForDiscontinuity(const RecordEmitter& emit);
   /** @brief Applies one exception transition and emits resulting lane records. */
   void consume(const ExceptionTraceEvent& event, const RecordEmitter& emit);
-  /** @brief Returns exception numbers observed since the last reset. */
+  /** @brief Returns exception numbers observed by this tracker. */
   const std::vector<std::uint32_t>& observedExceptionNumbers() const;
 
 private:

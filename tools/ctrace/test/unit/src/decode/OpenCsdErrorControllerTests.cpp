@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "OpenCsdErrorController.h"
+#include "TraceEvent.h"
 #include "common/ocsd_error.h"
 #include "common/ocsd_msg_logger.h"
 #include "opencsd/ocsd_if_types.h"
@@ -68,17 +69,14 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerClassifiesResponses)
           "OpenCSD error offset should be preserved");
   require(recovery.errors.size() == 1U && recovery.errors[0].code == OCSD_ERR_BAD_PACKET_SEQ,
           "OpenCSD decision should retain every error reported for the datapath call");
-  const auto description = OpenCsdErrorController::describe(recovery);
-  require(description.find("OCSD_ERR_BAD_PACKET_SEQ") != std::string::npos &&
-              description.find("raw offset 123") != std::string::npos,
-          "OpenCSD recovery description should contain code and offset");
   require(OpenCsdErrorController::describeSummary(recovery) ==
               "OpenCSD detected an invalid ITM packet sequence at raw offset 123.",
           "OpenCSD error module should provide a concise user-facing summary");
-  require(OpenCsdErrorController::issueCode(recovery) == "opencsd-bad-packet-sequence",
+  require(OpenCsdErrorController::issueCode(recovery) == TraceIssueCode::OpenCsdBadPacketSequence,
           "OpenCSD error module should own issue-code selection");
-  require(OpenCsdErrorController::describeApiError(OCSD_ERR_MEM, "decoder setup failed") ==
-              "decoder setup failed (OCSD_ERR_MEM)",
+  const auto apiError = OpenCsdErrorController::describeApiError(OCSD_ERR_MEM, "decoder setup failed");
+  require(apiError.find("OCSD_ERR_MEM") != std::string::npos &&
+              apiError.find("decoder setup failed") != std::string::npos,
           "OpenCSD error module should own API error formatting");
 
   controller.beginDataPathCall();
@@ -126,26 +124,8 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerClassifiesResponses)
           "CONT response should continue");
 }
 
-TEST(CtraceUnitTests, testOpenCsdErrorControllerNamesResponsesAndErrors)
+TEST(CtraceUnitTests, testOpenCsdErrorControllerClassifiesErrorConditions)
 {
-  constexpr std::array responses{
-      std::pair{OCSD_RESP_CONT, "OCSD_RESP_CONT"},
-      std::pair{OCSD_RESP_WARN_CONT, "OCSD_RESP_WARN_CONT"},
-      std::pair{OCSD_RESP_ERR_CONT, "OCSD_RESP_ERR_CONT"},
-      std::pair{OCSD_RESP_WAIT, "OCSD_RESP_WAIT"},
-      std::pair{OCSD_RESP_WARN_WAIT, "OCSD_RESP_WARN_WAIT"},
-      std::pair{OCSD_RESP_ERR_WAIT, "OCSD_RESP_ERR_WAIT"},
-      std::pair{OCSD_RESP_FATAL_NOT_INIT, "OCSD_RESP_FATAL_NOT_INIT"},
-      std::pair{OCSD_RESP_FATAL_INVALID_OP, "OCSD_RESP_FATAL_INVALID_OP"},
-      std::pair{OCSD_RESP_FATAL_INVALID_PARAM, "OCSD_RESP_FATAL_INVALID_PARAM"},
-      std::pair{OCSD_RESP_FATAL_INVALID_DATA, "OCSD_RESP_FATAL_INVALID_DATA"},
-      std::pair{OCSD_RESP_FATAL_SYS_ERR, "OCSD_RESP_FATAL_SYS_ERR"},
-  };
-  for (const auto& [response, name] : responses) {
-    EXPECT_EQ(OpenCsdErrorController::responseName(response), name);
-  }
-  EXPECT_EQ(OpenCsdErrorController::responseName(static_cast<ocsd_datapath_resp_t>(11)), "OCSD_RESP_UNKNOWN(11)");
-
   EXPECT_FALSE(OpenCsdErrorController::responseReportsError(OCSD_RESP_CONT));
   EXPECT_TRUE(OpenCsdErrorController::responseReportsError(OCSD_RESP_ERR_CONT));
   EXPECT_TRUE(OpenCsdErrorController::responseReportsError(OCSD_RESP_ERR_WAIT));
@@ -153,31 +133,22 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerNamesResponsesAndErrors)
   EXPECT_TRUE(OpenCsdErrorController::isRecoverableStreamError(OCSD_ERR_BAD_PACKET_SEQ));
   EXPECT_TRUE(OpenCsdErrorController::isRecoverableStreamError(OCSD_ERR_INVALID_PCKT_HDR));
   EXPECT_FALSE(OpenCsdErrorController::isRecoverableStreamError(OCSD_ERR_MEM));
-
-  EXPECT_EQ(OpenCsdErrorController::errorCodeName(OCSD_OK), "OCSD_OK");
-  EXPECT_EQ(OpenCsdErrorController::errorCodeName(OCSD_ERR_LAST), "OCSD_ERR_LAST");
-  EXPECT_EQ(OpenCsdErrorController::errorCodeName(static_cast<ocsd_err_t>(48)), "OCSD_ERR_UNKNOWN(48)");
 }
 
-TEST(CtraceUnitTests, testOpenCsdErrorControllerFormatsDecisionDetails)
+TEST(CtraceUnitTests, testOpenCsdErrorControllerMapsDecisionDetails)
 {
   OpenCsdErrorController::Decision noError;
   noError.response = OCSD_RESP_CONT;
   EXPECT_EQ(OpenCsdErrorController::errorOffset(noError, 42U), 42U);
-  EXPECT_EQ(OpenCsdErrorController::issueCode(noError), "opencsd-decode-error");
-  EXPECT_EQ(OpenCsdErrorController::describe(noError), "OCSD_RESP_CONT");
+  EXPECT_EQ(OpenCsdErrorController::issueCode(noError), TraceIssueCode::OpenCsdDecodeError);
 
-  auto headerError = makeDecision(OCSD_RESP_ERR_CONT, OCSD_ERR_INVALID_PCKT_HDR, 17U);
-  headerError.error->message = "reserved header";
+  const auto headerError = makeDecision(OCSD_RESP_ERR_CONT, OCSD_ERR_INVALID_PCKT_HDR, 17U);
   EXPECT_EQ(OpenCsdErrorController::errorOffset(headerError, 42U), 17U);
-  EXPECT_EQ(OpenCsdErrorController::issueCode(headerError), "opencsd-invalid-packet-header");
-  EXPECT_EQ(OpenCsdErrorController::describe(headerError),
-            "OCSD_RESP_ERR_CONT: OCSD_ERR_INVALID_PCKT_HDR at raw offset 17: reserved header");
+  EXPECT_EQ(OpenCsdErrorController::issueCode(headerError), TraceIssueCode::OpenCsdInvalidPacketHeader);
 
-  auto ordinaryError = makeDecision(OCSD_RESP_ERR_CONT, OCSD_ERR_MEM);
+  const auto ordinaryError = makeDecision(OCSD_RESP_ERR_CONT, OCSD_ERR_MEM);
   EXPECT_EQ(OpenCsdErrorController::errorOffset(ordinaryError, 42U), 42U);
-  EXPECT_EQ(OpenCsdErrorController::issueCode(ordinaryError), "opencsd-decode-error");
-  EXPECT_EQ(OpenCsdErrorController::describe(ordinaryError), "OCSD_RESP_ERR_CONT: OCSD_ERR_MEM");
+  EXPECT_EQ(OpenCsdErrorController::issueCode(ordinaryError), TraceIssueCode::OpenCsdDecodeError);
 }
 
 TEST(CtraceUnitTests, testOpenCsdErrorControllerSummarizesKnownFailures)

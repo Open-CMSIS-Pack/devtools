@@ -32,7 +32,7 @@ execute_process(
 )
 ctrace_require_result(result EXPECTED_RESULT stderr)
 
-if(NOT stderr MATCHES "unsupported-trace-channel:.*channel=TB")
+if(NOT stderr MATCHES "skipping raw trace channel that is not implemented yet:.*channel=TB")
     message(FATAL_ERROR
         "ctrace did not report TB as an unimplemented trace channel:\n${stderr}")
 endif()

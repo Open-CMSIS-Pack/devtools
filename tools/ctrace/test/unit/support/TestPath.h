@@ -8,33 +8,30 @@
 #ifndef CTRACE_TEST_UNIT_SUPPORT_TESTPATH_H
 #define CTRACE_TEST_UNIT_SUPPORT_TESTPATH_H
 
+#include <atomic>
+#include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <system_error>
 
-#if defined(_WIN32)
-#include <process.h>
-#else
-#include <unistd.h>
-#endif
-
 /** @brief Creates a process-specific path in the system temporary directory. */
 inline std::filesystem::path testTemporaryPath(const std::string& name)
 {
-#if defined(_WIN32)
-  const auto processId = _getpid();
-#else
-  const auto processId = getpid();
-#endif
-  return std::filesystem::temp_directory_path() / (name + '-' + std::to_string(processId));
+  static std::atomic<std::uint64_t> sequence{0U};
+  const auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
+  const auto uniqueId = sequence.fetch_add(1U, std::memory_order_relaxed);
+  return std::filesystem::temp_directory_path() /
+         (name + '-' + std::to_string(timestamp) + '-' + std::to_string(uniqueId));
 }
 
 /** @brief Owns and removes one process-specific temporary test path. */
 class TemporaryTestPath {
 public:
   /** @brief Prepares an empty path with the supplied test name. */
-  explicit TemporaryTestPath(const std::string& name) : m_path(testTemporaryPath(name))
+  explicit TemporaryTestPath(const std::string& name)
+    : m_path(testTemporaryPath(name))
   {
     std::error_code error;
     std::filesystem::remove_all(m_path, error);
@@ -72,4 +69,4 @@ private:
   std::filesystem::path m_path;
 };
 
-#endif  // CTRACE_TEST_UNIT_SUPPORT_TESTPATH_H
+#endif // CTRACE_TEST_UNIT_SUPPORT_TESTPATH_H

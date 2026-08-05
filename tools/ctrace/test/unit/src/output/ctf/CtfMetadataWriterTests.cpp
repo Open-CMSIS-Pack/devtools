@@ -6,19 +6,24 @@
  */
 
 #include "TestPath.h"
+#include "TestPlatform.h"
 #include "TestSupport.h"
 
 #include <gtest/gtest.h>
 
 #include "ctf/CtfMetadataWriter.h"
+#include "ctf/CtfSchema.h"
 #include "ctf/TraceCompassXmlWriter.h"
 #include "TraceOutputConfig.h"
 
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <string>
+#include <system_error>
 #include <vector>
 
 TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
@@ -72,13 +77,29 @@ TEST(CtraceUnitTests, testTraceCompassXmlWriterSupportsParentlessTarget)
   std::filesystem::remove(path, ignored);
 }
 
-#if defined(__linux__)
+TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
+{
+  const TemporaryTestPath path("ctrace-trace-compass-schema.xml");
+  TraceCompassXmlWriter::writeFile(path.path());
+  const auto xml = readTestTextFile(path.path());
+  constexpr std::array<CtfSchema::EventId, 5U> visualizedEvents{
+      CtfSchema::EventId::Itm,       CtfSchema::EventId::DwtValue,    CtfSchema::EventId::DwtAddress,
+      CtfSchema::EventId::Exception, CtfSchema::EventId::TraceStatus,
+  };
+
+  for (const auto eventId : visualizedEvents) {
+    EXPECT_NE(xml.find("eventName=\"" + std::string(CtfSchema::eventName(eventId)) + "\""), std::string::npos);
+  }
+}
+
 TEST(CtraceUnitTests, testCtfTextWritersReportDeviceWriteFailures)
 {
+  if (!TestPlatform::supports(TestPlatformCapability::LinuxSpecialFiles)) {
+    GTEST_SKIP();
+  }
   const TemporaryTestPath path("ctrace-metadata-device-failure");
   path.createDirectory();
-  std::filesystem::create_symlink("/dev/full", path.path() / "metadata");
+  std::filesystem::create_symlink(TestPlatform::writeFailurePath(), path.path() / "metadata");
   EXPECT_THROW(CtfMetadataWriter::write(path.path(), "uuid", 1U, {}, {}), std::runtime_error);
-  EXPECT_THROW(TraceCompassXmlWriter::writeFile("/dev/full"), std::runtime_error);
+  EXPECT_THROW(TraceCompassXmlWriter::writeFile(TestPlatform::writeFailurePath()), std::runtime_error);
 }
-#endif

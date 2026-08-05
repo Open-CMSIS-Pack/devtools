@@ -11,14 +11,14 @@ dump_cmake_project_version()
 
 set(CTRACE_VERSION_FULL "${PROJECT_VERSION_FULL}")
 set(CTRACE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(CTRACE_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+configure_file(
+  src/cli/ProductInfo.h.in
+  "${CTRACE_GENERATED_INCLUDE_DIR}/ProductInfo.h"
+  @ONLY
+)
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT ctrace)
-
-function(ctrace_configure_target target)
-  target_compile_definitions(${target} PRIVATE
-    $<$<PLATFORM_ID:Windows>:NOMINMAX>
-  )
-endfunction()
 
 add_subdirectory(src)
 
@@ -38,7 +38,6 @@ endif()
 target_link_libraries(ctrace PRIVATE
   ctrace::control
 )
-ctrace_configure_target(ctrace)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
    (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR

@@ -22,7 +22,10 @@ struct TraceEvent;
 enum class TraceEventType : std::size_t {
   Itm,
   Dwt,
+  Event,
+  Pmu,
   Exception,
+  PcSample,
   GlobalTimestamp,
   Overflow,
   Error,
@@ -32,7 +35,10 @@ enum class TraceEventType : std::size_t {
 inline constexpr std::array<std::string_view, static_cast<std::size_t>(TraceEventType::Count)> kTraceEventTypeNames{{
     "itm",
     "dwt",
+    "event",
+    "pmu",
     "exception",
+    "pcsample",
     "global_ts",
     "overflow",
     "error",
@@ -52,8 +58,6 @@ struct TraceSelection {
   std::vector<std::string> types;
   std::vector<std::uint8_t> streams;
 
-  /** @brief Reports whether no output filters are configured. */
-  bool empty() const;
   /** @brief Tests whether an event type is included. */
   bool includesType(const std::string_view& type) const;
   /** @brief Tests whether a Trace Bus ID is included. */

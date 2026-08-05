@@ -65,32 +65,28 @@ public:
     return m_events;
   }
 
-  /** @brief Tests whether a diagnostic code was collected. */
-  bool contains(std::string_view code) const
+  /** @brief Tests whether a diagnostic message contains the requested text. */
+  bool containsMessage(std::string_view text) const
   {
     for (const auto& event : m_events) {
-      if (event.code == code) {
+      if (event.message.find(text) != std::string::npos) {
         return true;
       }
     }
     return false;
   }
 
-  /** @brief Returns the only collected event after checking its code. */
-  const Event& singleEvent(std::string_view code) const
+  /** @brief Returns the only collected event. */
+  const Event& singleEvent() const
   {
     require(m_events.size() == 1U, "expected exactly one diagnostic event");
-    require(m_events.front().code == code, "unexpected diagnostic code: " + m_events.front().code);
     return m_events.front();
   }
 
   /** @brief Tests whether a diagnostic contains one context entry. */
-  bool containsContext(std::string_view code, std::string_view key, std::string_view value) const
+  bool containsContext(std::string_view key, std::string_view value) const
   {
     for (const auto& event : m_events) {
-      if (event.code != code) {
-        continue;
-      }
       for (const auto& [contextKey, contextValue] : event.context) {
         if (contextKey == key && contextValue == value) {
           return true;
@@ -219,14 +215,14 @@ inline TraceEvent onStream(TraceEvent event, std::uint8_t traceBusId)
 }
 
 /** @brief Creates a decoder issue event for a test. */
-inline TraceEvent issuePacket(std::string code, std::string message = {},
+inline TraceEvent issuePacket(TraceIssueCode code, std::string message = {},
                               TraceIssueSeverity severity = TraceIssueSeverity::Error)
 {
   return TraceEvent{TraceIssueEvent{
-      std::move(code),
+      code,
       severity,
       std::move(message),
   }};
 }
 
-#endif  // CTRACE_TEST_UNIT_SUPPORT_TESTSUPPORT_H
+#endif // CTRACE_TEST_UNIT_SUPPORT_TESTSUPPORT_H

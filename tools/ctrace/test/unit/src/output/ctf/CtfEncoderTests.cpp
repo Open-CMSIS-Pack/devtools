@@ -11,8 +11,10 @@
 #include <gtest/gtest.h>
 
 #include "ctf/CtfEncoder.h"
+#include "ctf/CtfSchema.h"
 #include "TestPath.h"
 #include "TraceEvent.h"
+#include "TraceOutputConfig.h"
 #include "TraceSelection.h"
 
 #include <algorithm>
@@ -20,6 +22,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -333,11 +336,11 @@ TEST(CtraceUnitTests, testCtfEncoderStreamSelectionKeepsStartAndResyncContext)
                                CtfSchema::value(CtfSchema::TraceStatusReason::Resync),
                            }));
   EXPECT_EQ(exceptionRecords, (std::vector<std::pair<std::uint64_t, std::string>>({
-                                  {0U, "0:1"},
-                                  {10U, "0:2"},
-                                  {10U, "15:1"},
-                                  {20U, "15:2"},
-                                  {20U, "54:1"},
+                                  {0U, "0:0"},
+                                  {10U, "0:1"},
+                                  {10U, "15:0"},
+                                  {20U, "15:1"},
+                                  {20U, "54:0"},
                               })));
 }
 

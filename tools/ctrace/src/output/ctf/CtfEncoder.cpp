@@ -112,7 +112,8 @@ static void writeVariantValue(CtfStreamWriter::Record& record, std::uint32_t dat
   }
 }
 
-CtfEncoder::CtfEncoder(CtfEncoderConfig config) : m_config(std::move(config))
+CtfEncoder::CtfEncoder(CtfEncoderConfig config)
+  : m_config(std::move(config))
 {
   if (m_config.coreClockHz == 0U) {
     throw std::invalid_argument("CTF output requires a non-zero timestamps.clock");
@@ -218,7 +219,7 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
       writeGlobalTimestampEvent(event, *timestamp);
     }
   } else if (const auto* issue = traceEventPayload<TraceIssueEvent>(event)) {
-    if (issue->code == "data-loss") {
+    if (issue->code == TraceIssueCode::DataLoss) {
       writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss), event.traceBusId, selected);
     } else {
       if (event.quality.has_value() && event.quality->overflow) {
@@ -248,13 +249,13 @@ void CtfEncoder::writeSoftwareEvent(const TraceEvent& event, const SoftwareTrace
   const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
   const auto payloadSize = 1U + 1U + variant->byteSize + 1U + 4U;
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::Itm), eventTimestamp, event.traceBusId, payloadSize,
-                      [&](CtfStreamWriter::Record& record) {
-                        record.writeU8(static_cast<std::uint8_t>(software.channel & 0xffU));
-                        record.writeU8(CtfSchema::value(variant->tag));
-                        writeVariantValue(record, software.value, software.size, *variant);
-                        record.writeU8(quality.first);
-                        record.writeU32(quality.second);
-                      });
+                       [&](CtfStreamWriter::Record& record) {
+                         record.writeU8(static_cast<std::uint8_t>(software.channel & 0xffU));
+                         record.writeU8(CtfSchema::value(variant->tag));
+                         writeVariantValue(record, software.value, software.size, *variant);
+                         record.writeU8(quality.first);
+                         record.writeU32(quality.second);
+                       });
 }
 
 void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceEvent& data)
@@ -268,23 +269,24 @@ void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceE
   const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
   const auto quality = computeSampleQuality(event);
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtValue), eventTimestamp, event.traceBusId, payloadSize,
-                      [&](CtfStreamWriter::Record& record) {
-                        record.writeU8(static_cast<std::uint8_t>(data.comparator & 0xffU));
-                        record.writeU8(CtfSchema::value(data.access == AccessType::Read ? CtfSchema::DwtAccess::Read
-                                                                                        : CtfSchema::DwtAccess::Write));
-                        record.writeU8(CtfSchema::value(variant.tag));
-                        writeVariantValue(record, data.value, data.size, variant);
-                        record.writeU8(static_cast<std::uint8_t>(hasPc));
-                        if (hasPc != 0U) {
-                          record.writeU32(*data.pc);
-                        }
-                        record.writeU8(static_cast<std::uint8_t>(hasAddress));
-                        if (hasAddress != 0U) {
-                          record.writeU16(static_cast<std::uint16_t>(*data.addressLo16 & 0xffffU));
-                        }
-                        record.writeU8(quality.first);
-                        record.writeU32(quality.second);
-                      });
+                       [&](CtfStreamWriter::Record& record) {
+                         record.writeU8(static_cast<std::uint8_t>(data.comparator & 0xffU));
+                         record.writeU8(CtfSchema::value(data.access == AccessType::Read
+                                                             ? CtfSchema::DwtAccess::Read
+                                                             : CtfSchema::DwtAccess::Write));
+                         record.writeU8(CtfSchema::value(variant.tag));
+                         writeVariantValue(record, data.value, data.size, variant);
+                         record.writeU8(static_cast<std::uint8_t>(hasPc));
+                         if (hasPc != 0U) {
+                           record.writeU32(*data.pc);
+                         }
+                         record.writeU8(static_cast<std::uint8_t>(hasAddress));
+                         if (hasAddress != 0U) {
+                           record.writeU16(static_cast<std::uint16_t>(*data.addressLo16 & 0xffffU));
+                         }
+                         record.writeU8(quality.first);
+                         record.writeU32(quality.second);
+                       });
 }
 
 void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data,
@@ -305,8 +307,6 @@ void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTra
   context.emplace_back("stream", std::to_string(event.traceBusId));
   m_config.diagnostics->report({
       DiagnosticSink::Severity::Warning,
-      DiagnosticSink::Category::Output,
-      "dwt-symbol-size-mismatch",
       "configured ctrace-run data.symbol-size does not match the decoded SWO payload size",
       std::move(context),
   });
@@ -322,15 +322,15 @@ void CtfEncoder::writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTrac
   const auto hasPc = pc.has_value() ? 1U : 0U;
   const auto hasAddress = addressOffset.has_value() ? 1U : 0U;
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtAddress), eventTimestamp, event.traceBusId, payloadSize,
-                      [&](CtfStreamWriter::Record& record) {
-                        record.writeU8(static_cast<std::uint8_t>(address.comparator & 0xffU));
-                        record.writeU8(static_cast<std::uint8_t>(hasPc));
-                        record.writeU8(static_cast<std::uint8_t>(hasAddress));
-                        record.writeU32(pc.value_or(0U));
-                        record.writeU16(static_cast<std::uint16_t>(addressOffset.value_or(0U) & 0xffffU));
-                        record.writeU8(quality.first);
-                        record.writeU32(quality.second);
-                      });
+                       [&](CtfStreamWriter::Record& record) {
+                         record.writeU8(static_cast<std::uint8_t>(address.comparator & 0xffU));
+                         record.writeU8(static_cast<std::uint8_t>(hasPc));
+                         record.writeU8(static_cast<std::uint8_t>(hasAddress));
+                         record.writeU32(pc.value_or(0U));
+                         record.writeU16(static_cast<std::uint16_t>(addressOffset.value_or(0U) & 0xffffU));
+                         record.writeU8(quality.first);
+                         record.writeU32(quality.second);
+                       });
 }
 
 void CtfEncoder::writeGlobalTimestampEvent(const TraceEvent& event, const GlobalTimestampTraceEvent& timestamp)
@@ -338,10 +338,10 @@ void CtfEncoder::writeGlobalTimestampEvent(const TraceEvent& event, const Global
   constexpr auto payloadSize = 8U + 1U;
   const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::GlobalTimestamp), eventTimestamp, event.traceBusId,
-                      payloadSize, [&](CtfStreamWriter::Record& record) {
-                        record.writeU64(timestamp.value);
-                        record.writeU8(timestamp.clockChange ? 1U : 0U);
-                      });
+                       payloadSize, [&](CtfStreamWriter::Record& record) {
+                         record.writeU64(timestamp.value);
+                         record.writeU8(timestamp.clockChange ? 1U : 0U);
+                       });
 }
 
 void CtfEncoder::writeTraceStatusEvent(std::uint8_t reason, std::uint8_t traceBusId, bool emitEvent)
@@ -350,10 +350,10 @@ void CtfEncoder::writeTraceStatusEvent(std::uint8_t reason, std::uint8_t traceBu
     constexpr auto payloadSize = 1U + 4U;
     const auto eventTimestamp = allocateEventTimestamp(traceBusId);
     m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::TraceStatus), eventTimestamp, traceBusId, payloadSize,
-                        [&](CtfStreamWriter::Record& record) {
-                          record.writeU8(reason);
-                          record.writeU32(ctfOverflowCount(m_streamStates[traceBusId].overflowCount));
-                        });
+                         [&](CtfStreamWriter::Record& record) {
+                           record.writeU8(reason);
+                           record.writeU32(ctfOverflowCount(m_streamStates[traceBusId].overflowCount));
+                         });
   }
 
   if (reason == CtfSchema::value(CtfSchema::TraceStatusReason::Overflow) ||
@@ -393,11 +393,11 @@ void CtfEncoder::emitExceptionRecord(std::uint8_t traceBusId, std::uint32_t numb
       CtfSchema::value(action == CtfExceptionLaneTracker::RecordAction::Enter ? CtfSchema::ExceptionAction::Entered
                                                                               : CtfSchema::ExceptionAction::Exited);
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::Exception), eventTimestamp, traceBusId, payloadSize,
-                      [&](CtfStreamWriter::Record& record) {
-                        record.writeU16(static_cast<std::uint16_t>(number & 0xffffU));
-                        record.writeU8(encodedAction);
-                        record.writeU16(static_cast<std::uint16_t>(number & 0xffffU));
-                      });
+                       [&](CtfStreamWriter::Record& record) {
+                         record.writeU16(static_cast<std::uint16_t>(number & 0xffffU));
+                         record.writeU8(encodedAction);
+                         record.writeU16(static_cast<std::uint16_t>(number & 0xffffU));
+                       });
 }
 
 CtfExceptionLaneTracker& CtfEncoder::exceptionLane(std::uint8_t traceBusId)

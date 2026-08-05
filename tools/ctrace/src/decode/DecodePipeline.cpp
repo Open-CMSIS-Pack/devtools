@@ -8,6 +8,7 @@
 #include "DecodePipeline.h"
 
 #include "CortexMStreamDecoder.h"
+#include "OpenCsdItmDecoder.h"
 #include "TraceEvent.h"
 
 #include <cstdint>
@@ -15,19 +16,16 @@
 #include <stdexcept>
 #include <utility>
 
-DecodePipeline::DecodePipeline(std::uint32_t timestampPrescaler, TraceEventSink& eventSink)
-  : DecodePipeline(ItmTimestampPrescalers{timestampPrescaler, {}}, eventSink)
-{
-}
-
 DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink)
-  : m_streamDecoder(std::move(timestampPrescalers), eventSink), m_decoder(m_streamDecoder)
+  : m_streamDecoder(std::move(timestampPrescalers), eventSink),
+    m_decoder(m_streamDecoder)
 {
 }
 
 DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
                                const OpenCsdItmSessionFactory& sessionFactory)
-  : m_streamDecoder(std::move(timestampPrescalers), eventSink), m_decoder(m_streamDecoder, sessionFactory)
+  : m_streamDecoder(std::move(timestampPrescalers), eventSink),
+    m_decoder(m_streamDecoder, sessionFactory)
 {
 }
 

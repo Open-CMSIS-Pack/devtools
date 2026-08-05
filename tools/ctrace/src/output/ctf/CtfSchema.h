@@ -21,11 +21,11 @@ inline constexpr std::uint32_t SwoStreamId = 0U;
 /** @brief Identifies the event records emitted by ctrace CTF output. */
 enum class EventId : std::uint32_t {
   Itm = 0U,
-  DwtValue = 4U,
-  TraceStatus = 5U,
-  DwtAddress = 6U,
-  Exception = 7U,
-  GlobalTimestamp = 8U,
+  DwtValue = 1U,
+  DwtAddress = 2U,
+  TraceStatus = 3U,
+  Exception = 4U,
+  GlobalTimestamp = 5U,
 };
 
 /** @brief Classifies CTF trace-status records. */
@@ -33,8 +33,8 @@ enum class TraceStatusReason : std::uint8_t {
   TraceStart = 0U,
   Resync = 1U,
   Overflow = 2U,
-  DecodeError = 4U,
-  DataLoss = 5U,
+  DecodeError = 3U,
+  DataLoss = 4U,
 };
 
 /** @brief Encodes DWT read and write access in CTF records. */
@@ -45,20 +45,19 @@ enum class DwtAccess : std::uint8_t {
 
 /** @brief Encodes exception entry and exit actions in CTF records. */
 enum class ExceptionAction : std::uint8_t {
-  Entered = 1U,
-  Exited = 2U,
+  Entered = 0U,
+  Exited = 1U,
 };
 
 /** @brief Identifies the supported CTF sample value encodings. */
 enum class ValueTag : std::uint8_t {
-  Character8 = 0U,
-  Signed8 = 1U,
-  Unsigned8 = 2U,
-  Signed16 = 3U,
-  Unsigned16 = 4U,
-  Signed32 = 5U,
-  Unsigned32 = 6U,
-  Float32 = 7U,
+  Signed8 = 0U,
+  Unsigned8 = 1U,
+  Signed16 = 2U,
+  Unsigned16 = 3U,
+  Signed32 = 4U,
+  Unsigned32 = 5U,
+  Float32 = 6U,
 };
 
 /** @brief Describes one supported CTF sample value encoding. */
@@ -71,8 +70,7 @@ struct ValueVariant {
   bool signedInteger;
 };
 
-inline constexpr std::array<ValueVariant, 8U> ValueVariants{{
-    {ValueTag::Character8, "c8", "long", 1U, false, false},
+inline constexpr std::array<ValueVariant, 7U> ValueVariants{{
     {ValueTag::Signed8, "i8", "long", 1U, false, true},
     {ValueTag::Unsigned8, "u8", "long", 1U, false, false},
     {ValueTag::Signed16, "i16", "long", 2U, false, true},
@@ -171,4 +169,4 @@ constexpr std::string_view eventName(EventId id)
 
 } // namespace CtfSchema
 
-#endif  // CTRACE_SRC_OUTPUT_CTF_CTFSCHEMA_H
+#endif // CTRACE_SRC_OUTPUT_CTF_CTFSCHEMA_H

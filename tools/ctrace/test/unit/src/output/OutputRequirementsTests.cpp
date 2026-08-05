@@ -10,11 +10,13 @@
 #include <gtest/gtest.h>
 #include "CtraceRunMeta.h"
 #include "OutputRequirements.h"
+#include "TraceOutputConfig.h"
 #include "TraceRunConfig.h"
 #include <cstdint>
 #include <filesystem>
 #include <map>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -95,7 +97,7 @@ TEST(CtraceUnitTests, testBackendRequirementsUsePerStreamMetadata)
   const auto allClockPlan =
       planOutputs(ctfRequest, "captures/Multicore.SWO.raw", distinctClockMeta, allClockDiagnostics);
   require(!allClockPlan.ctf.has_value(), "CTF must reject selected Trace Bus IDs with different clocks");
-  allClockDiagnostics.singleEvent("ctf-timestamp-clock-ambiguous");
+  allClockDiagnostics.singleEvent();
 
   ctfRequest.selection.streams = {2U};
   CollectingDiagnosticSink selectedClockDiagnostics;
@@ -142,7 +144,7 @@ TEST(CtraceUnitTests, testDwtDataMetadataDefaultsAndValidation)
   const auto invalidSizePlan = planOutputs(allRequest, "DwtSize.SWO.raw", config, invalidSizeDiagnostics);
   require(invalidSizePlan.csv.has_value() && !invalidSizePlan.ctf.has_value(),
           "invalid data.symbol-size must disable only CTF");
-  invalidSizeDiagnostics.singleEvent("ctf-dwt-symbol-size-invalid");
+  invalidSizeDiagnostics.singleEvent();
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
@@ -161,7 +163,7 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
   const auto invalidTypeAll = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, invalidTypeAllDiagnostics);
   require(invalidTypeAll.csv.has_value() && !invalidTypeAll.ctf.has_value(),
           "an invalid explicit data.symbol-type must disable only CTF for --all");
-  invalidTypeAllDiagnostics.singleEvent("ctf-dwt-symbol-type-invalid");
+  invalidTypeAllDiagnostics.singleEvent();
 
   config.setups[0].data[0].symbolType.reset();
   config.setups[0].data[0].symbolSize.reset();
@@ -191,7 +193,7 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
   const auto malformedSize = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, malformedSizeDiagnostics);
   require(malformedSize.csv.has_value() && !malformedSize.ctf.has_value(),
           "malformed data.symbol-size must disable only CTF");
-  malformedSizeDiagnostics.singleEvent("ctf-dwt-symbol-size-invalid");
+  malformedSizeDiagnostics.singleEvent();
 }
 
 TEST(CtraceUnitTests, testCtfOutputRequiresAValidClock)
@@ -256,7 +258,7 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   const auto plan = planOutputs(allRequest, "captures/AmbiguousRoutes.SWO.raw", config, diagnostics);
   require(plan.csv.has_value() && !plan.ctf.has_value(),
           "conflicting CTF route labels must not disable independent CSV output");
-  diagnostics.singleEvent("ctf-trace-route-ambiguous");
+  diagnostics.singleEvent();
 
   config.references[1].stream = 2U;
   config.references[1].label = "core-one";
@@ -315,20 +317,20 @@ TEST(CtraceUnitTests, testOutputRequirementsValidateDefaultClockWithoutRoutes)
   CollectingDiagnosticSink missingDiagnostics;
   auto plan = planOutputs(ctfRequest, "Clock.SWO.raw", config, missingDiagnostics);
   ASSERT_FALSE(plan.ctf.has_value());
-  missingDiagnostics.singleEvent("ctf-timestamp-clock-missing");
+  missingDiagnostics.singleEvent();
 
   config.setups[0].timestamps->clockError = "clock must be an unsigned integer";
   CollectingDiagnosticSink malformedDiagnostics;
   plan = planOutputs(ctfRequest, "Clock.SWO.raw", config, malformedDiagnostics);
   ASSERT_FALSE(plan.ctf.has_value());
-  malformedDiagnostics.singleEvent("ctf-timestamp-clock-invalid");
+  malformedDiagnostics.singleEvent();
 
   config.setups[0].timestamps->clockError.reset();
   config.setups[0].timestamps->clockHz = 0U;
   CollectingDiagnosticSink zeroDiagnostics;
   plan = planOutputs(ctfRequest, "Clock.SWO.raw", config, zeroDiagnostics);
   ASSERT_FALSE(plan.ctf.has_value());
-  zeroDiagnostics.singleEvent("ctf-timestamp-clock-invalid");
+  zeroDiagnostics.singleEvent();
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsRejectUnknownStreamWithMultipleClocks)
@@ -349,7 +351,7 @@ TEST(CtraceUnitTests, testOutputRequirementsRejectUnknownStreamWithMultipleClock
   CollectingDiagnosticSink diagnostics;
   const auto plan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, diagnostics);
   ASSERT_FALSE(plan.ctf.has_value());
-  diagnostics.singleEvent("ctf-timestamp-clock-ambiguous");
+  diagnostics.singleEvent();
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsRejectsInputWithoutArtifactName)

@@ -13,7 +13,7 @@ add_test(
     COMMAND ${CMAKE_COMMAND}
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
         "-DCTRACE_ARGS=--version;--type;DWT"
-        "-DEXPECTED_STDERR=\\[error\\] cli/invalid-arguments:"
+        "-DEXPECTED_STDERR=\\[error\\] Invalid --type value: DWT"
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunExpectedFailure.cmake
 )
 
@@ -22,7 +22,7 @@ add_test(
     COMMAND ${CMAKE_COMMAND}
         -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
         -DCTRACE_ARGS=${CMAKE_CURRENT_BINARY_DIR}/__missing_trace_directory_4b66b86f__
-        "-DEXPECTED_STDERR=\\[error\\] input/trace-directory-failed:"
+        "-DEXPECTED_STDERR=\\[error\\] trace directory not found:"
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunExpectedFailure.cmake
 )
 
@@ -58,8 +58,8 @@ add_test(
         -DEXPECTED_RESULT=0
         "-DEXPECTED_STDERR=aligned DWT range"
         "-DEXPECTED_STDERR_2=configured DWT data trace"
-        "-DEXPECTED_STDERR_3=input/ctrace-run-meta: applied ctrace-run meta"
-        "-DUNEXPECTED_STDERR=configured ITM channel|decode/ctrace-run-meta"
+        "-DEXPECTED_STDERR_3=applied ctrace-run meta"
+        "-DUNEXPECTED_STDERR=configured ITM channel"
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunTraceRunYaml.cmake
 )
 
@@ -76,7 +76,7 @@ add_test(
         -DEXPECT_CSV=TRUE
         -DEXPECT_CTF=TRUE
         -DEXPECT_CSV_ERROR_ROW=TRUE
-        "-DEXPECTED_STDERR=summary"
+        "-DEXPECTED_STDERR=\\[info\\] decoded 1 events from 2 bytes"
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/RunTraceRunYaml.cmake
 )
 
@@ -84,6 +84,9 @@ add_test(
     NAME ctrace-windows-manifest
     COMMAND ${CMAKE_COMMAND}
         -DMANIFEST_FILE=${CTRACE_SOURCE_DIR}/src/ctrace.manifest
+        -DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>
+        -DMT_EXECUTABLE=${CMAKE_MT}
+        -DEMBEDDED_MANIFEST_FILE=${CMAKE_CURRENT_BINARY_DIR}/ctrace-embedded.manifest
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/ValidateWindowsManifest.cmake
 )
 set_tests_properties(

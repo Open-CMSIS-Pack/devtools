@@ -3,21 +3,42 @@
 This list contains only work that is currently open in ctrace. Completed work and duplicated implementation details
 are intentionally omitted.
 
+## SWO, ITM, and DWT profile
+
 - [ ] **Input schema:** select and document the supported CMSIS-Toolbox trace revision and define the architecture,
   comparator-role, grouped-source, and symbol metadata required for complete decoding.
-- [ ] **Metadata model:** preserve logical references, bindings, grouped resources, processor identity, and exact route
-  context instead of flattening DWT source arrays.
-- [ ] **DWT architecture:** complete Armv7-M comparator semantics and add Armv8-M match, compressed address/PC,
-  linked-pair reconstruction, recovery boundaries, and architecture-specific diagnostics.
+- [ ] **Metadata model:** preserve logical reference and grouping identities plus the exact setup-to-run binding context
+  when expanding DWT source arrays.
+- [ ] **Armv7-M DWT:** complete comparator-role semantics, including linked comparators, address ranges, value matches,
+  grouped sources, and diagnostics for configurations that cannot be reconstructed safely.
+- [ ] **Armv8-M and Armv8.1-M DWT:** add architecture-aware `match`, `PC+offset`, compressed address/PC, linked-pair,
+  range, and value-match decoding.
+- [ ] **DWT event counters and PMU:** map the already retained packets to the existing `event` and `pmu` selectors and
+  implement CSV, CTF, and Trace Compass output.
+- [ ] **DWT PC samples:** add a backend-independent PC-sample event, stop suppressing periodic PC-sample packets in
+  the decoder, map it to the existing `pcsample` selector, and implement CSV, CTF, and Trace Compass output.
+- [ ] **Multicore:** carry processor identity and trace-route bindings through decoding, event selection, and outputs.
+- [ ] **Multiple trace clocks:** promote the preserved per-route clock values to explicit clock-domain identities, add
+  the required CTF clock classes, and implement cross-stream synchronization without assuming one shared trace clock.
+
+## Decoder roadmap
+
 - [ ] **Formatted trace:** add the OpenCSD frame deformatter and per-Trace-Bus-ID decoders for `*.TB.raw` input.
-- [ ] **Outputs:** add multiple CTF clock classes; define and enable `pcsample`, `event`, and `pmu`; extend CSV, CTF,
-  Trace Compass, multicore, and Armv8-M golden coverage.
+- [ ] **ETM instruction trace:** add target-image access, instruction-flow decoding, backend-independent instruction
+  events, and corresponding outputs.
+- [ ] **MTB instruction trace:** add MTB input and instruction-flow decoding, backend-independent instruction events,
+  and corresponding outputs.
+
+## Dependencies and release
+
 - [ ] **OpenCSD boundary:** remove the remaining dependency on OpenCSD `common/` and `interfaces/` private headers and
-  adopt an upstream-supported ITM-only target if one becomes available. OpenCSD 1.8.3's minimal static target includes
-  all protocol decoders; maintaining a private source list is deliberately avoided.
+  use supported public APIs instead.
+- [ ] **OpenCSD empty-buffer safety:** track the upstream resolution of the reachable empty-buffer access described in
+  the [OpenCSD issue notes](opencsd-issues.md) and update the pinned revision when a fix is available. The submodule is
+  deliberately used without a downstream source patch.
 - [ ] **Release verification:** inspect the first generated multi-platform ZIP, checksums, license texts, OpenCSD
-  notices, and runtime dependencies. The hosted Windows, Linux, and macOS matrix and local AddressSanitizer/
-  UndefinedBehaviorSanitizer suite are green; the final production-artifact inspection remains to be recorded.
+  notices, and runtime dependencies after a fresh hosted Windows, Linux, and macOS matrix and local AddressSanitizer/
+  UndefinedBehaviorSanitizer run over the final changes.
 - [ ] **Static runtime compliance:** inspect the GNU and Microsoft runtime code incorporated by the pinned release
   toolchains. For each Linux architecture, record the exact glibc, libstdc++, and libgcc provenance; provide the
   applicable notices and license texts, corresponding sources, and a tested LGPL 2.1 section 6 relinking mechanism.
@@ -26,5 +47,3 @@ are intentionally omitted.
   machine-readable SBOM or a separately published archive checksum. Until then, release artifacts are explicitly
   unsigned; the archive contains per-file SHA-256 checksums and the documented application-dependency notices and
   license texts.
-- [ ] **Release coverage:** add an Armv8-M end-to-end fixture when the corresponding DWT semantics are implemented;
-  this extends the supported profile and does not block the initial ITM/DWT-focused release.

@@ -15,10 +15,12 @@
 #include "OpenCsdItmDecoder.h"
 #include "OpenCsdItmSession.h"
 #include "OpenCsdPacketCollector.h"
-#include "OpenCsdTraceElement.h"
+#include "TraceEvent.h"
+#include "opencsd/ocsd_if_types.h"
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -33,7 +35,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderChunksAndFinishesOnce)
   EXPECT_EQ(harness.decoder().finish().bytesIn, 5000U);
   EXPECT_EQ(harness.decoder().finish().bytesIn, 5000U);
   EXPECT_THROW(harness.push(1U), std::runtime_error);
-  EXPECT_TRUE(harness.sink().hasIssue("data-loss"));
+  EXPECT_TRUE(harness.sink().hasIssue(TraceIssueCode::DataLoss));
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderRecoversAndMarksConsumedDataLoss)
@@ -47,8 +49,8 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderRecoversAndMarksConsumedDataLoss)
   harness.push(6U);
   EXPECT_EQ(harness.decoder().finish().bytesIn, 6U);
   EXPECT_EQ(harness.script().resetCalls, 1U);
-  EXPECT_TRUE(harness.sink().hasIssue("opencsd-invalid-packet-header"));
-  EXPECT_TRUE(harness.sink().hasIssue("data-loss"));
+  EXPECT_TRUE(harness.sink().hasIssue(TraceIssueCode::OpenCsdInvalidPacketHeader));
+  EXPECT_TRUE(harness.sink().hasIssue(TraceIssueCode::DataLoss));
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderMarksUnframedDataBeforeSync)
@@ -60,7 +62,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderMarksUnframedDataBeforeSync)
   };
   harness.push(4U);
   harness.decoder().finish();
-  EXPECT_TRUE(harness.sink().hasIssue("data-loss"));
+  EXPECT_TRUE(harness.sink().hasIssue(TraceIssueCode::DataLoss));
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderFlushesWaitResponses)
@@ -80,12 +82,12 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsWarningsAndImplicitErrors)
 {
   ScriptedDecoderHarness harness;
   harness.script().pushes = {{OCSD_RESP_ERR_CONT,
-                             1U,
-                             false,
-                             {
-                                 {OCSD_ERR_SEV_INFO, OCSD_ERR_FAIL, 0U, "info"},
-                                 {OCSD_ERR_SEV_WARN, OCSD_ERR_BAD_PACKET_SEQ, 0U, "warning"},
-                             }}};
+                              1U,
+                              false,
+                              {
+                                  {OCSD_ERR_SEV_INFO, OCSD_ERR_FAIL, 0U, "info"},
+                                  {OCSD_ERR_SEV_WARN, OCSD_ERR_BAD_PACKET_SEQ, 0U, "warning"},
+                              }}};
   harness.push(1U);
   harness.decoder().finish();
   ASSERT_GE(harness.sink().elements().size(), 2U);
@@ -99,7 +101,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderHandlesEndOfTraceDecisions)
   recovery.script().ends = {
       {OCSD_RESP_ERR_CONT, std::nullopt, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_BAD_PACKET_SEQ, 0U, "bad tail"}}}};
   EXPECT_NO_THROW(recovery.decoder().finish());
-  EXPECT_TRUE(recovery.sink().hasIssue("opencsd-bad-packet-sequence"));
+  EXPECT_TRUE(recovery.sink().hasIssue(TraceIssueCode::OpenCsdBadPacketSequence));
 
   ScriptedDecoderHarness wait;
   wait.script().ends = {{OCSD_RESP_WAIT}};
@@ -126,7 +128,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderAbortsFatalAndNoProgressData)
   ScriptedDecoderHarness stalled;
   stalled.script().pushes = {{OCSD_RESP_CONT, 0U}, {OCSD_RESP_CONT, 0U}};
   EXPECT_THROW(stalled.push(1U), OpenCsdFatalError);
-  EXPECT_TRUE(stalled.sink().hasIssue("opencsd-no-progress"));
+  EXPECT_TRUE(stalled.sink().hasIssue(TraceIssueCode::OpenCsdNoProgress));
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderBoundsZeroProgressRecoveryAndWaitRetries)
@@ -139,7 +141,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderBoundsZeroProgressRecoveryAndWaitRetr
   EXPECT_THROW(recovery.push(1U), OpenCsdFatalError);
   EXPECT_EQ(recovery.script().pushCalls, 2U);
   EXPECT_EQ(recovery.script().resetCalls, 1U);
-  EXPECT_TRUE(recovery.sink().hasIssue("opencsd-no-progress"));
+  EXPECT_TRUE(recovery.sink().hasIssue(TraceIssueCode::OpenCsdNoProgress));
 
   ScriptedDecoderHarness wait;
   wait.script().pushes = {
@@ -150,7 +152,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderBoundsZeroProgressRecoveryAndWaitRetr
   EXPECT_THROW(wait.push(1U), OpenCsdFatalError);
   EXPECT_EQ(wait.script().pushCalls, 2U);
   EXPECT_EQ(wait.script().flushCalls, 1U);
-  EXPECT_TRUE(wait.sink().hasIssue("opencsd-no-progress"));
+  EXPECT_TRUE(wait.sink().hasIssue(TraceIssueCode::OpenCsdNoProgress));
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderAllowsZeroProgressRetriesToResume)
@@ -203,7 +205,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderHandlesFlushRecoveryAndTimeout)
   timeout.script().defaultFlushResponse = OCSD_RESP_WAIT;
   EXPECT_THROW((void)timeout.decoder().finish(), OpenCsdFatalError);
   EXPECT_EQ(timeout.script().flushCalls, 1024U);
-  EXPECT_TRUE(timeout.sink().hasIssue("opencsd-wait-timeout"));
+  EXPECT_TRUE(timeout.sink().hasIssue(TraceIssueCode::OpenCsdWaitTimeout));
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsResetAndInitializationFailures)
@@ -220,7 +222,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsResetAndInitializationFailures
     return nullptr;
   };
   EXPECT_THROW((void)OpenCsdItmDecoder(nullSink, nullFactory), OpenCsdFatalError);
-  EXPECT_TRUE(nullSink.hasIssue("opencsd-initialization-error"));
+  EXPECT_TRUE(nullSink.hasIssue(TraceIssueCode::OpenCsdInitializationError));
 
   CollectingOpenCsdElementSink errorSink;
   const OpenCsdItmSessionFactory errorFactory =
@@ -228,7 +230,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsResetAndInitializationFailures
     throw OpenCsdItmSessionError("synthetic session setup failure");
   };
   EXPECT_THROW((void)OpenCsdItmDecoder(errorSink, errorFactory), OpenCsdFatalError);
-  EXPECT_TRUE(errorSink.hasIssue("opencsd-initialization-error"));
+  EXPECT_TRUE(errorSink.hasIssue(TraceIssueCode::OpenCsdInitializationError));
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmSessionAcceptsEmptyDataPathOperations)
@@ -253,7 +255,8 @@ TEST(CtraceUnitTests, testOpenCsdSessionValidationRejectsInvalidApiResults)
   const auto message = captureExceptionMessage<OpenCsdItmSessionError>(
       [] { OpenCsdSessionValidation::requireSuccess(OCSD_ERR_MEM, "decoder setup failed"); });
   ASSERT_TRUE(message.has_value());
-  EXPECT_NE(message->find("decoder setup failed (OCSD_ERR_MEM)"), std::string::npos);
+  EXPECT_NE(message->find("OCSD_ERR_MEM"), std::string::npos);
+  EXPECT_NE(message->find("decoder setup failed"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmSessionRejectsMissingDecoderRegistry)

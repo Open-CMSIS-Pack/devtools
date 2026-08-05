@@ -25,12 +25,16 @@ class TestTraceOutput final : public TraceOutput {
 public:
   /** @brief Creates a test output with an optional failure point and target. */
   explicit TestTraceOutput(TestTraceOutputFailure failure = TestTraceOutputFailure::None, std::string target = {})
-    : m_failure(failure), m_target(std::move(target))
+    : m_failure(failure),
+      m_target(std::move(target))
   {
   }
 
   /** @brief Creates a test output that records lifecycle calls. */
-  explicit TestTraceOutput(std::vector<std::string>& calls) : m_calls(&calls) {}
+  explicit TestTraceOutput(std::vector<std::string>& calls)
+    : m_calls(&calls)
+  {
+  }
 
   /** @brief Records start and optionally throws the configured failure. */
   void start() override

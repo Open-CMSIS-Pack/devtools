@@ -34,6 +34,21 @@ enum class TraceIssueSeverity {
   Error,
 };
 
+/** @brief Identifies one decoder issue without relying on textual state. */
+enum class TraceIssueCode {
+  DecodeError,
+  DataLoss,
+  InvalidExceptionAction,
+  UnsupportedDwtAddressPayload,
+  OpenCsdDecodeError,
+  OpenCsdBadPacketSequence,
+  OpenCsdInvalidPacketHeader,
+  OpenCsdIncompleteTail,
+  OpenCsdNoProgress,
+  OpenCsdWaitTimeout,
+  OpenCsdInitializationError,
+};
+
 /** @brief Contains one decoded ITM software stimulus event. */
 struct SoftwareTraceEvent {
   std::uint32_t channel = 0;
@@ -139,7 +154,7 @@ struct SyncTraceEvent {};
 
 /** @brief Retains a decoder warning or error in output order. */
 struct TraceIssueEvent {
-  std::string code;
+  TraceIssueCode code = TraceIssueCode::DecodeError;
   TraceIssueSeverity severity = TraceIssueSeverity::Error;
   std::string message;
   std::optional<std::uint64_t> rawBytesConsumed = std::nullopt;
@@ -161,7 +176,11 @@ struct TraceQuality {
 /** @brief Wraps a semantic payload with stream, position, time, and quality metadata. */
 struct TraceEvent {
   /** @brief Constructs an event from one supported semantic payload. */
-  template <typename Payload> explicit TraceEvent(Payload eventPayload) : payload(std::move(eventPayload)) {}
+  template <typename Payload>
+  explicit TraceEvent(Payload eventPayload)
+    : payload(std::move(eventPayload))
+  {
+  }
 
   std::uint64_t index = 0;
   // CoreSight Trace Bus ID. ID 0 identifies unformatted single-source input.
@@ -202,4 +221,4 @@ public:
   virtual void append(const TraceEvent& event) = 0;
 };
 
-#endif  // CTRACE_SRC_MODEL_TRACEEVENT_H
+#endif // CTRACE_SRC_MODEL_TRACEEVENT_H

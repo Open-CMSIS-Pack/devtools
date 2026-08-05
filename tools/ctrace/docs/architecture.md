@@ -12,11 +12,16 @@ work.
 `ctrace` combines a trace-run configuration with raw CoreSight trace data and converts supported trace channels into
 backend-independent semantic events. Output backends consume these events to create CSV or CTF artifacts.
 
-The first release profile supports SWO data containing ITM and DWT packets. Its stable output types are `itm`, `dwt`,
-`exception`, `global_ts`, `overflow`, and `error`. DWT event-counter and PMU packets are retained internally but do
-not have public output semantics yet; periodic PC samples remain disabled. Trace Bus input is discovered so that a
-complete trace directory can be inspected, but `*.TB.raw` files are reported and skipped until a decoder is
-implemented.
+The first release profile supports SWO data containing ITM and DWT packets. The command line accepts the stable type
+names `itm`, `dwt`, `event`, `pmu`, `exception`, `pcsample`, `global_ts`, `overflow`, and `error`. Output semantics are
+currently implemented for `itm`, `dwt`, `exception`, `global_ts`, `overflow`, and `error`. DWT event-counter and PMU
+packets are retained internally but are not mapped to their selectors yet; periodic PC samples remain disabled. Trace
+Bus input is discovered so that a complete trace directory can be inspected, but `*.TB.raw` files are reported and
+skipped until a decoder is implemented.
+
+ITM stream decoding covers the architectural stimulus-port domain `0` through `31`. Public ITM payload output is
+restricted to ports `1` through `31`; port `0` is decoded for stream integrity but excluded from CSV and CTF event
+output. Trace Compass observes the same filtered CTF stream.
 
 The architecture separates protocol decoding, semantic interpretation, and output generation. This keeps output
 formats independent of OpenCSD and allows another raw trace channel to reuse the event model and output backends.
@@ -198,15 +203,16 @@ another backend fails. Decode or finalization failures trigger cleanup of incomp
 
 ## Diagnostics and failure semantics
 
-Diagnostics carry a severity, category, code, message, context, and impact. Severity describes the issue, while impact
+Diagnostics carry a severity, message, context, and impact. Severity describes the issue, while impact
 determines whether the current job must fail. This distinction allows a trace-run generation error to remain visible
 without necessarily preventing the decoding of otherwise valid trace input.
 
-Decoder issue packets remain part of the event stream. They can therefore be written to CSV or CTF and reported to
-stderr independently of payload filters. Repeated issues are not silently collapsed.
+Decoder issue packets remain part of the event stream. `DecodeConsumers` reports every issue to stderr independently
+of output filters and forwards all events to the backends. The backends apply stream and type selection internally;
+selected issues become CSV error rows or CTF trace-status events. Repeated issues are not silently collapsed.
 
 Processing continues with other solution sets where possible. Errors are rendered as `error` even when their impact
-causes a non-zero exit status; `fatal` is reserved for an internal ctrace crash.
+causes a non-zero exit status. Unhandled internal ctrace failures also terminate the command after an error diagnostic.
 
 ## External dependencies
 

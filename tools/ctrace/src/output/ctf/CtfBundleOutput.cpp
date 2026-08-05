@@ -12,6 +12,7 @@
 #include "TraceEvent.h"
 #include "TraceOutputConfig.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <sstream>
 #include <stdexcept>
@@ -19,11 +20,6 @@
 #include <string_view>
 #include <system_error>
 #include <utility>
-
-#ifdef _WIN32
-#include <algorithm>
-#include <cwctype>
-#endif
 
 /** @brief Rejects empty and root-like output targets. */
 static void requireOutputTarget(const std::filesystem::path& path, const char* description)
@@ -43,20 +39,21 @@ static std::filesystem::path normalizedAbsolutePath(const std::filesystem::path&
   return (error ? path : absolute).lexically_normal();
 }
 
-/** @brief Compares path components using platform-appropriate case rules. */
+/** @brief Folds one ASCII character for conservative portable path comparison. */
+static char foldedPathCharacter(char character)
+{
+  return character >= 'A' && character <= 'Z' ? static_cast<char>(character + ('a' - 'A')) : character;
+}
+
+/** @brief Compares path components without relying on target-platform case rules. */
 static bool pathComponentEquals(const std::filesystem::path& lhs, const std::filesystem::path& rhs)
 {
-#ifdef _WIN32
-  const auto& lhsNative = lhs.native();
-  const auto& rhsNative = rhs.native();
-  return lhsNative.size() == rhsNative.size() &&
-         std::equal(lhsNative.begin(), lhsNative.end(), rhsNative.begin(),
-                    [](wchar_t lhsCharacter, wchar_t rhsCharacter) {
-                      return std::towlower(lhsCharacter) == std::towlower(rhsCharacter);
-                    });
-#else
-  return lhs == rhs;
-#endif
+  const auto lhsText = lhs.generic_u8string();
+  const auto rhsText = rhs.generic_u8string();
+  return lhsText.size() == rhsText.size() &&
+         std::equal(lhsText.begin(), lhsText.end(), rhsText.begin(), [](char lhsCharacter, char rhsCharacter) {
+           return foldedPathCharacter(lhsCharacter) == foldedPathCharacter(rhsCharacter);
+         });
 }
 
 /** @brief Tests whether a candidate path contains another target path. */
@@ -168,7 +165,8 @@ static void removeIncompleteOutputs(const std::filesystem::path& ctfDirectory,
 }
 
 CtfBundleOutput::CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnostics)
-  : m_ctfOutputDirectory(std::move(config.outputDirectory)), m_traceCompassXmlPath(std::move(config.traceCompassXmlPath)),
+  : m_ctfOutputDirectory(std::move(config.outputDirectory)),
+    m_traceCompassXmlPath(std::move(config.traceCompassXmlPath)),
     m_encoder(CtfEncoderConfig{
         config.coreClockHz,
         std::move(config.selection),

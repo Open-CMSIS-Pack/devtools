@@ -12,7 +12,6 @@
 #include "TraceRunConfig.h"
 #include <cstdint>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -60,8 +59,6 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidReferences)
   cases.push_back({makeReference("dwt", std::nullopt, 1U, {1U, 1U}), "duplicate value in source array"});
   cases.push_back(
       {makeReference("itm", std::nullopt, 0U, {1U}), "stream must be a CoreSight ATB trace ID between 1 and 111"});
-  cases.push_back(
-      {makeReference("itm", std::nullopt, 1U, {1U, 2U}), "source arrays are only supported for DWT references"});
   cases.push_back({makeReference("itm", std::nullopt, 1U, {32U}), "ITM source must be between 0 and 31"});
 
   for (const auto& testCase : cases) {
@@ -90,6 +87,24 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidReferences)
   EXPECT_TRUE(meta.timestampsByTraceBusId().empty());
 }
 
+TEST(CtraceUnitTests, testCtraceRunMetaExpandsItmAndDwtSourceArrays)
+{
+  TraceRunConfig config;
+  config.references.push_back(makeReference("itm", std::nullopt, 1U, {1U, 2U}));
+  config.references.push_back(makeReference("dwt", std::nullopt, 1U, {3U, 4U}));
+
+  const auto meta = CtraceRunMeta::fromConfig(config);
+  ASSERT_EQ(meta.sources().size(), 4U);
+  EXPECT_EQ(meta.sources()[0].type, "itm");
+  EXPECT_EQ(meta.sources()[0].source, 1U);
+  EXPECT_EQ(meta.sources()[1].type, "itm");
+  EXPECT_EQ(meta.sources()[1].source, 2U);
+  EXPECT_EQ(meta.sources()[2].type, "dwt");
+  EXPECT_EQ(meta.sources()[2].source, 3U);
+  EXPECT_EQ(meta.sources()[3].type, "dwt");
+  EXPECT_EQ(meta.sources()[3].source, 4U);
+}
+
 TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidPrescalers)
 {
   TraceRunConfig config;
@@ -101,7 +116,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidPrescalers)
   EXPECT_TRUE(metaRejects(config, "trace.yml(12): 'timestamps.itm-prescaler' must be one of"));
 }
 
-TEST(CtraceUnitTests, testCtraceRunMetaRejectsAmbiguousProcessorIdentity)
+TEST(CtraceUnitTests, testCtraceRunMetaRejectsDuplicateSetups)
 {
   TraceRunConfig duplicate;
   duplicate.path = "trace.yml";
@@ -109,25 +124,37 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsAmbiguousProcessorIdentity)
   EXPECT_TRUE(metaRejects(duplicate, "duplicate active ctrace-setup for pname '<unnamed>'"));
   duplicate.setups.back().line = 9U;
   EXPECT_TRUE(metaRejects(duplicate, "duplicate active 'ctrace-setup' for pname '<unnamed>'"));
+}
 
+TEST(CtraceUnitTests, testCtraceRunMetaWarnsForCrossRootProcessorIdentityConflicts)
+{
   TraceRunConfig multiUnnamed;
   multiUnnamed.path = "trace.yml";
   multiUnnamed.setups = {makeTimestampSetup("a"), makeTimestampSetup("b")};
   multiUnnamed.references.push_back(makeReference("itm", std::nullopt, 1U, {1U}));
-  EXPECT_TRUE(metaRejects(multiUnnamed, "pname is required for every ctrace-setup and ctrace-ref"));
+  const auto unnamedMeta = CtraceRunMeta::fromConfig(multiUnnamed);
+  EXPECT_EQ(unnamedMeta.processorCount(), 2U);
+  EXPECT_TRUE(unnamedMeta.sources().empty());
+  ASSERT_EQ(unnamedMeta.warnings().size(), 1U);
+  EXPECT_NE(unnamedMeta.warnings().front().message.find("without pname"), std::string::npos);
 
   TraceRunConfig multiUnmatched = multiUnnamed;
   multiUnmatched.references.front().processorName = "c";
-  EXPECT_TRUE(metaRejects(multiUnmatched, "pname 'c' has no matching ctrace-setup"));
+  const auto unmatchedMeta = CtraceRunMeta::fromConfig(multiUnmatched);
+  EXPECT_TRUE(unmatchedMeta.sources().empty());
+  ASSERT_EQ(unmatchedMeta.warnings().size(), 1U);
+  EXPECT_NE(unmatchedMeta.warnings().front().message.find("no matching ctrace-setup"), std::string::npos);
 }
 
-TEST(CtraceUnitTests, testCtraceRunMetaRejectsSingleAndReferenceOnlyIdentityConflicts)
+TEST(CtraceUnitTests, testCtraceRunMetaWarnsForSingleSetupIdentityConflicts)
 {
   TraceRunConfig namedSetup;
   namedSetup.path = "trace.yml";
   namedSetup.setups.push_back(makeTimestampSetup("a"));
   namedSetup.references.push_back(makeReference("itm", "b", 1U, {1U}));
-  EXPECT_TRUE(metaRejects(namedSetup, "no matching ctrace-setup pname 'a'"));
+  const auto namedMeta = CtraceRunMeta::fromConfig(namedSetup);
+  EXPECT_TRUE(namedMeta.sources().empty());
+  ASSERT_EQ(namedMeta.warnings().size(), 1U);
 
   TraceRunConfig unnamedSetup;
   unnamedSetup.path = "trace.yml";
@@ -136,7 +163,10 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsSingleAndReferenceOnlyIdentityConf
       makeReference("itm", "a", 1U, {1U}),
       makeReference("itm", "b", 2U, {2U}),
   };
-  EXPECT_TRUE(metaRejects(unnamedSetup, "pname is required for ctrace-setup"));
+  const auto unnamedMeta = CtraceRunMeta::fromConfig(unnamedSetup);
+  EXPECT_EQ(unnamedMeta.processorCount(), 1U);
+  EXPECT_EQ(unnamedMeta.sources().size(), 2U);
+  ASSERT_EQ(unnamedMeta.warnings().size(), 1U);
 
   TraceRunConfig referencesOnly;
   referencesOnly.path = "trace.yml";
@@ -167,10 +197,12 @@ TEST(CtraceUnitTests, testCtraceRunMetaMapsDistinctProcessorSettings)
   EXPECT_FALSE(meta.timestampClockHz().has_value());
   EXPECT_EQ(meta.timestampPrescaler(), std::optional<std::uint32_t>(4U));
   EXPECT_FALSE(meta.itmEnableMask().has_value());
-  EXPECT_TRUE(meta.itmEnableMasksByTraceBusId().empty());
+  ASSERT_EQ(meta.itmEnableMasksByTraceBusId().size(), 1U);
+  EXPECT_EQ(meta.itmEnableMasksByTraceBusId().at(5U), 1U);
   ASSERT_EQ(meta.timestampsByTraceBusId().size(), 1U);
-  EXPECT_FALSE(meta.timestampsByTraceBusId().at(5U).clockHz.has_value());
-  EXPECT_NE(meta.timestampsByTraceBusId().at(5U).clockError->find("multiple processors"), std::string::npos);
+  EXPECT_EQ(meta.timestampsByTraceBusId().at(5U).clockHz, std::optional<std::uint64_t>(100U));
+  EXPECT_FALSE(meta.timestampsByTraceBusId().at(5U).clockError.has_value());
+  EXPECT_EQ(meta.warnings().size(), 2U);
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaMapsDistinctPrescalersPerStream)
@@ -193,7 +225,9 @@ TEST(CtraceUnitTests, testCtraceRunMetaMapsDistinctPrescalersPerStream)
   config.path = "trace.yml";
   config.references.back().stream = 5U;
   config.references.back().line = 23U;
-  EXPECT_TRUE(metaRejects(config, "trace.yml(23): CoreSight Trace Bus ID 5"));
+  const auto conflictingMeta = CtraceRunMeta::fromConfig(config);
+  EXPECT_EQ(conflictingMeta.timestampPrescalersByTraceBusId().at(5U), 4U);
+  EXPECT_EQ(conflictingMeta.warnings().size(), 2U);
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaResolvesDwtDataAndDefaults)

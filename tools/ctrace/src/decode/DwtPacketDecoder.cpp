@@ -79,7 +79,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
     const auto action = exceptionAction((payload.value >> kExceptionActionShift) & kExceptionActionMask);
     if (action == ExceptionAction::Unknown) {
       TraceEvent error{TraceIssueEvent{
-          "invalid-exception-action",
+          TraceIssueCode::InvalidExceptionAction,
           TraceIssueSeverity::Error,
           "invalid exception action 0x0 for exception " + std::to_string(exceptionNumber),
           std::nullopt,
@@ -165,7 +165,7 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
       auto flushed = flush(payload.quality, payload.tcyc);
       output.insert(output.end(), std::make_move_iterator(flushed.begin()), std::make_move_iterator(flushed.end()));
       TraceEvent error{TraceIssueEvent{
-          "unsupported-dwt-address-payload",
+          TraceIssueCode::UnsupportedDwtAddressPayload,
           TraceIssueSeverity::Error,
           "unsupported DWT " + std::string(secondarySubtype ? "address" : "PC or match") + " payload size " +
               std::to_string(payload.size) +

@@ -69,7 +69,7 @@ inline std::uint64_t readLe64(const std::vector<unsigned char>& bytes, std::size
 /** @brief Returns the encoded size of a test CTF value variant. */
 inline std::size_t ctfValueSize(std::uint8_t tag)
 {
-  static constexpr std::array<std::size_t, 8U> sizes{{1U, 1U, 1U, 2U, 2U, 4U, 4U, 4U}};
+  static constexpr std::array<std::size_t, 7U> sizes{{1U, 1U, 2U, 2U, 4U, 4U, 4U}};
   require(tag < sizes.size(), "CTF test parser encountered an invalid value tag");
   return sizes[tag];
 }

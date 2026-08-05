@@ -6,13 +6,13 @@
  */
 
 #include "TestPath.h"
+#include "TestPlatform.h"
 
 #include <gtest/gtest.h>
 
 #include "ctf/CtfStreamWriter.h"
 
 #include <cstddef>
-#include <cstdint>
 #include <stdexcept>
 
 TEST(CtraceUnitTests, testCtfStreamWriterHandlesInactiveAndEmptyStreams)
@@ -35,8 +35,7 @@ TEST(CtraceUnitTests, testCtfStreamWriterValidatesDeclaredPayloadSize)
 
   EXPECT_THROW(writer.writeRecord(1U, 1U, 1U, 65536U, [](CtfStreamWriter::Record&) {}), std::invalid_argument);
   EXPECT_THROW(writer.writeRecord(1U, 1U, 1U, 1U, [](CtfStreamWriter::Record&) {}), std::logic_error);
-  EXPECT_THROW(writer.writeRecord(1U, 1U, 1U, 1U,
-                                  [](CtfStreamWriter::Record& record) { record.writeU16(0x1234U); }),
+  EXPECT_THROW(writer.writeRecord(1U, 1U, 1U, 1U, [](CtfStreamWriter::Record& record) { record.writeU16(0x1234U); }),
                std::logic_error);
   writer.abort();
 }
@@ -51,12 +50,13 @@ TEST(CtraceUnitTests, testCtfStreamWriterHoldsRegressingTimestamps)
   EXPECT_NO_THROW(writer.close());
 }
 
-#if defined(__linux__)
 TEST(CtraceUnitTests, testCtfStreamWriterReportsDeviceWriteFailures)
 {
+  if (!TestPlatform::supports(TestPlatformCapability::LinuxSpecialFiles)) {
+    GTEST_SKIP();
+  }
   CtfStreamWriter writer;
-  writer.open("/dev/full", 7U);
+  writer.open(TestPlatform::writeFailurePath(), 7U);
   writer.writeRecord(1U, 1U, 1U, 1U, [](CtfStreamWriter::Record& record) { record.writeU8(1U); });
   EXPECT_THROW(writer.close(), std::runtime_error);
 }
-#endif

@@ -7,24 +7,21 @@
 
 #include "DiagnosticSink.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <string_view>
-#include <utility>
 
 /** @brief Renders a structured diagnostic in the stable command-line format. */
 static std::string formatDiagnosticEvent(const DiagnosticSink::Event& event)
 {
   std::ostringstream out;
-  out << "[" << toString(event.severity) << "] " << toString(event.category);
-  if (!event.code.empty()) {
-    out << "/" << event.code;
-  }
-  out << ": " << event.compactMessage.value_or(event.message);
-  for (const auto& item : event.context) {
-    out << " " << item.first << "=" << item.second;
+  out << "[" << toString(event.severity) << "] " << event.message;
+  for (std::size_t index = 0; index < event.context.size(); ++index) {
+    const auto& item = event.context[index];
+    out << (index == 0U ? ": " : ", ") << item.first << "=" << item.second;
   }
   out << "\n";
   return out.str();
@@ -52,32 +49,6 @@ std::string_view toString(DiagnosticSink::Severity severity)
     return "warning";
   case DiagnosticSink::Severity::Error:
     return "error";
-  }
-  return "unknown";
-}
-
-std::string_view toString(DiagnosticSink::Category category)
-{
-  switch (category) {
-  case DiagnosticSink::Category::Cli:
-    return "cli";
-  case DiagnosticSink::Category::Input:
-    return "input";
-  case DiagnosticSink::Category::Decode:
-    return "decode";
-  case DiagnosticSink::Category::Output:
-    return "output";
-  }
-  return "unknown";
-}
-
-std::string_view toString(DiagnosticSink::Impact impact)
-{
-  switch (impact) {
-  case DiagnosticSink::Impact::NonFailing:
-    return "non-failing";
-  case DiagnosticSink::Impact::Failing:
-    return "failing";
   }
   return "unknown";
 }

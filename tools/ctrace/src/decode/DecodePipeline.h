@@ -27,21 +27,15 @@ struct RawByteView {
   }
 };
 
-/** @brief Summarizes raw bytes consumed and semantic packets produced. */
+/** @brief Summarizes raw bytes consumed and semantic events produced. */
 struct DecodeResult {
   std::uint64_t bytesIn = 0;
-  std::uint64_t packetsOut = 0;
+  std::uint64_t eventsOut = 0;
 };
 
 /** @brief Connects raw OpenCSD decoding with Cortex-M semantic post-decoding. */
 class DecodePipeline final {
 public:
-  /**
-   * @brief Creates a pipeline using one timestamp prescaler for every stream.
-   * @param timestampPrescaler Prescaler used to reconstruct cycle timestamps.
-   * @param eventSink Sink receiving decoded events synchronously.
-   */
-  DecodePipeline(std::uint32_t timestampPrescaler, TraceEventSink& eventSink);
   /**
    * @brief Creates a pipeline with stream-specific timestamp prescalers.
    * @param timestampPrescalers Default and per-stream timestamp prescalers.
@@ -65,7 +59,7 @@ public:
   void push(RawByteView bytes);
   /**
    * @brief Finalizes decoding and returns aggregate counters.
-   * @return Total raw bytes consumed and semantic packets emitted.
+   * @return Total raw bytes consumed and semantic events emitted.
    * @throws OpenCsdFatalError If decoder finalization fails.
    */
   DecodeResult finish();

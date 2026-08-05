@@ -46,8 +46,11 @@ struct CtfOutputConfig {
   /** @brief Creates a complete CTF output configuration. */
   CtfOutputConfig(std::filesystem::path outputDirectory, std::filesystem::path traceCompassXmlPath,
                   std::uint64_t clockHz, TraceSelection selection, std::vector<ResolvedTraceSource> sources)
-    : outputDirectory(std::move(outputDirectory)), traceCompassXmlPath(std::move(traceCompassXmlPath)),
-      coreClockHz(clockHz), selection(std::move(selection)), sources(std::move(sources))
+    : outputDirectory(std::move(outputDirectory)),
+      traceCompassXmlPath(std::move(traceCompassXmlPath)),
+      coreClockHz(clockHz),
+      selection(std::move(selection)),
+      sources(std::move(sources))
   {
   }
 

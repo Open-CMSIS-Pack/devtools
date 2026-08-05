@@ -24,7 +24,10 @@
 #include <utility>
 #include <vector>
 
-OpenCsdPacketCollector::OpenCsdPacketCollector(OpenCsdTraceElementSink& elementSink) : m_elementSink(elementSink) {}
+OpenCsdPacketCollector::OpenCsdPacketCollector(OpenCsdTraceElementSink& elementSink)
+  : m_elementSink(elementSink)
+{
+}
 
 void OpenCsdPacketCollector::beginTransaction()
 {
@@ -87,7 +90,7 @@ std::optional<std::uint64_t> OpenCsdPacketCollector::transactionFirstSourceOffse
 }
 
 void OpenCsdPacketCollector::appendDecodeError(ocsd_trc_index_t index, const std::string& message,
-                                               const std::string& issueCode, bool discontinuity,
+                                               TraceIssueCode issueCode, bool discontinuity,
                                                TraceIssueSeverity severity)
 {
   OpenCsdTraceElement element;
@@ -101,7 +104,7 @@ void OpenCsdPacketCollector::appendDecodeError(ocsd_trc_index_t index, const std
 }
 
 void OpenCsdPacketCollector::prependDiscontinuity(ocsd_trc_index_t index, const std::string& message,
-                                                  const std::string& issueCode,
+                                                  TraceIssueCode issueCode,
                                                   std::optional<std::uint64_t> rawBytesConsumed)
 {
   OpenCsdTraceElement element;
@@ -124,7 +127,7 @@ void OpenCsdPacketCollector::prependDataLossError(ocsd_trc_index_t index, const 
   OpenCsdTraceElement element;
   element.kind = OpenCsdTraceElement::Kind::Error;
   element.sourceIndex = static_cast<std::uint64_t>(index);
-  element.issueCode = "data-loss";
+  element.issueCode = TraceIssueCode::DataLoss;
   element.errorMessage = message;
   element.rawBytesConsumed = rawBytesConsumed;
   element.awaitingResumeTimestamp = true;
@@ -182,7 +185,7 @@ void OpenCsdPacketCollector::RawPacketDataMon(const ocsd_datapath_op_t op, const
     // OpenCSD publishes the incomplete packet through the raw monitor as DATA
     // while processing EOT; its following EOT monitor notification has no packet.
     if (pkt->getPktType() == ITM_PKT_INCOMPLETE_EOT) {
-      appendDecodeError(index_sop, "incomplete ITM packet at end of input", "opencsd-incomplete-tail", true,
+      appendDecodeError(index_sop, "incomplete ITM packet at end of input", TraceIssueCode::OpenCsdIncompleteTail, true,
                         TraceIssueSeverity::Error);
       return;
     }
@@ -250,7 +253,7 @@ void OpenCsdPacketCollector::appendError(ocsd_trc_index_t index, const ItmTrcPac
   OpenCsdTraceElement element;
   element.kind = OpenCsdTraceElement::Kind::Error;
   element.sourceIndex = static_cast<std::uint64_t>(index);
-  element.issueCode = "opencsd-decode-error";
+  element.issueCode = TraceIssueCode::OpenCsdDecodeError;
   element.errorMessage = pkt.getPktType() == ITM_PKT_RESERVED ? "Reserved ITM packet" : "Bad ITM packet sequence";
   appendElement(std::move(element));
 }

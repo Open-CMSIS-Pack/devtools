@@ -19,7 +19,10 @@
 #include <utility>
 #include <vector>
 
-CortexMPostDecoder::CortexMPostDecoder(TraceEventSink& eventSink) : m_eventSink(eventSink) {}
+CortexMPostDecoder::CortexMPostDecoder(TraceEventSink& eventSink)
+  : m_eventSink(eventSink)
+{
+}
 
 void CortexMPostDecoder::append(OpenCsdTraceElement element)
 {
@@ -145,7 +148,7 @@ void CortexMPostDecoder::appendDiscontinuity(const OpenCsdTraceElement& element)
   const auto status = markDiscontinuity();
 
   queueDiscontinuityIssue(
-      element.sourceIndex, element.traceBusId, status, element.issueCode.empty() ? "data-loss" : element.issueCode,
+      element.sourceIndex, element.traceBusId, status, element.issueCode.value_or(TraceIssueCode::DataLoss),
       element.errorMessage.empty() ? "data loss/resync boundary; timestamps across this point may not match"
                                    : element.errorMessage,
       element.rawBytesConsumed);
@@ -156,7 +159,7 @@ void CortexMPostDecoder::appendError(const OpenCsdTraceElement& element)
   const auto status = element.discontinuity ? markDiscontinuity() : currentTraceStatus();
 
   TraceEvent event{TraceIssueEvent{
-      element.issueCode.empty() ? "opencsd-decode-error" : element.issueCode,
+      element.issueCode.value_or(TraceIssueCode::OpenCsdDecodeError),
       element.issueSeverity,
       element.errorMessage,
       element.rawBytesConsumed,
@@ -248,11 +251,11 @@ void CortexMPostDecoder::flushPendingEvents(std::optional<std::uint64_t> tcyc, c
 void CortexMPostDecoder::appendPendingEvents(std::vector<TraceEvent> events)
 {
   m_pendingEvents.insert(m_pendingEvents.end(), std::make_move_iterator(events.begin()),
-                        std::make_move_iterator(events.end()));
+                         std::make_move_iterator(events.end()));
 }
 
 void CortexMPostDecoder::queueDiscontinuityIssue(std::uint64_t sourceIndex, std::uint8_t traceBusId,
-                                                 const TraceQuality& quality, const std::string& issueCode,
+                                                 const TraceQuality& quality, TraceIssueCode issueCode,
                                                  const std::string& message,
                                                  std::optional<std::uint64_t> rawBytesConsumed)
 {

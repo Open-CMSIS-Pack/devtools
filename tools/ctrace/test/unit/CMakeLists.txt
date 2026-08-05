@@ -7,6 +7,7 @@ set(CTRACE_TEST_HEADER_FILES
   support/OpenCsdSessionTestSupport.h
   support/OpenCsdTestSupport.h
   support/TestPath.h
+  support/TestPlatform.h
   support/TestSupport.h
   support/TraceOutputTestSupport.h
   support/TraceRunTestSupport.h
@@ -15,6 +16,14 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
   PREFIX "Header Files"
   FILES ${CTRACE_TEST_HEADER_FILES}
 )
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  set(CTRACE_TEST_RETARGET_SOURCE_FILE support/retarget/windows/TestPlatform.cpp)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(CTRACE_TEST_RETARGET_SOURCE_FILE support/retarget/linux/TestPlatform.cpp)
+else()
+  set(CTRACE_TEST_RETARGET_SOURCE_FILE support/retarget/posix/TestPlatform.cpp)
+endif()
 
 add_executable(CtraceUnitTests
   ${CTRACE_SOURCE_DIR}/src/CtraceMain.cpp
@@ -42,6 +51,7 @@ add_executable(CtraceUnitTests
   src/tracerun/CtraceRunMetaTests.cpp
   src/tracerun/TraceRunConfigReaderTests.cpp
   src/tracerun/TraceRunDiscoveryTests.cpp
+  ${CTRACE_TEST_RETARGET_SOURCE_FILE}
   ${CTRACE_TEST_HEADER_FILES}
 )
 
@@ -54,8 +64,6 @@ target_include_directories(CtraceUnitTests PRIVATE
   "${CTRACE_SOURCE_DIR}/src"
   "${CMAKE_CURRENT_SOURCE_DIR}/support"
 )
-
-ctrace_configure_target(CtraceUnitTests)
 
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/test_reports")
 include(GoogleTest)

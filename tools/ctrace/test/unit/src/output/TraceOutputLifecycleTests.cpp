@@ -10,9 +10,14 @@
 #include "TraceOutputTestSupport.h"
 #include <gtest/gtest.h>
 #include "csv/CsvFileOutput.h"
+#include "DiagnosticSink.h"
+#include "TraceEvent.h"
+#include "TraceOutput.h"
 #include "TraceOutputLifecycle.h"
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
 
 using TraceOutputTestSupport::TestTraceOutput;
@@ -61,7 +66,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleReportsAbortFailures)
   TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
   lifecycle.abort();
 
-  require(diagnostics.failureCount() == 1U && diagnostics.containsContext("output-failed", "phase", "abort"),
+  require(diagnostics.failureCount() == 1U && diagnostics.containsContext("phase", "abort"),
           "output lifecycle must report a failed direct-output cleanup");
 }
 
@@ -80,7 +85,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleReportsWriteFailuresAndFinishesOnc
 
   ASSERT_EQ(diagnostics.events().size(), 1U);
   EXPECT_TRUE(failingPointer->aborted());
-  EXPECT_EQ(diagnostics.events().front().compactMessage,
+  EXPECT_EQ(diagnostics.events().front().message,
             "trace output 'synthetic.trace' failed during write: intentional write failure");
 }
 

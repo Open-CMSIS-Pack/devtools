@@ -13,9 +13,50 @@
 #include "ctf/CtfSchema.h"
 #include "TraceEvent.h"
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
+
+TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
+{
+  constexpr std::array<std::uint32_t, 6U> eventIds{
+      CtfSchema::value(CtfSchema::EventId::Itm),        CtfSchema::value(CtfSchema::EventId::DwtValue),
+      CtfSchema::value(CtfSchema::EventId::DwtAddress), CtfSchema::value(CtfSchema::EventId::TraceStatus),
+      CtfSchema::value(CtfSchema::EventId::Exception),  CtfSchema::value(CtfSchema::EventId::GlobalTimestamp),
+  };
+  constexpr std::array<std::uint8_t, 5U> statusReasons{
+      CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart),
+      CtfSchema::value(CtfSchema::TraceStatusReason::Resync),
+      CtfSchema::value(CtfSchema::TraceStatusReason::Overflow),
+      CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError),
+      CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss),
+  };
+  constexpr std::array<std::uint8_t, 2U> exceptionActions{
+      CtfSchema::value(CtfSchema::ExceptionAction::Entered),
+      CtfSchema::value(CtfSchema::ExceptionAction::Exited),
+  };
+  constexpr std::array<std::uint8_t, 7U> valueTags{
+      CtfSchema::value(CtfSchema::ValueTag::Signed8),    CtfSchema::value(CtfSchema::ValueTag::Unsigned8),
+      CtfSchema::value(CtfSchema::ValueTag::Signed16),  CtfSchema::value(CtfSchema::ValueTag::Unsigned16),
+      CtfSchema::value(CtfSchema::ValueTag::Signed32),  CtfSchema::value(CtfSchema::ValueTag::Unsigned32),
+      CtfSchema::value(CtfSchema::ValueTag::Float32),
+  };
+
+  for (std::size_t index = 0U; index < eventIds.size(); ++index) {
+    EXPECT_EQ(eventIds[index], static_cast<std::uint32_t>(index));
+  }
+  for (std::size_t index = 0U; index < statusReasons.size(); ++index) {
+    EXPECT_EQ(statusReasons[index], static_cast<std::uint8_t>(index));
+  }
+  for (std::size_t index = 0U; index < exceptionActions.size(); ++index) {
+    EXPECT_EQ(exceptionActions[index], static_cast<std::uint8_t>(index));
+  }
+  for (std::size_t index = 0U; index < valueTags.size(); ++index) {
+    EXPECT_EQ(valueTags[index], static_cast<std::uint8_t>(index));
+  }
+}
 
 TEST(CtraceUnitTests, testCtfValueTypes)
 {
@@ -92,29 +133,29 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
   tracker.consume(ExceptionTraceEvent{0, ExceptionAction::Unknown}, emit);
   require(records.size() == recordCount, "CtfExceptionLaneTracker must ignore unknown exception actions");
 
-  tracker.reset();
-  tracker.startThreadMode(emit);
-  require(tracker.observedExceptionNumbers() == std::vector<std::uint32_t>({0U}),
-          "CtfExceptionLaneTracker reset must clear observed lanes");
+  CtfExceptionLaneTracker resumedTracker;
+  resumedTracker.startThreadMode(emit);
+  require(resumedTracker.observedExceptionNumbers() == std::vector<std::uint32_t>({0U}),
+          "a new CtfExceptionLaneTracker must start with an empty lane history");
 
   records.clear();
-  tracker.consume(ExceptionTraceEvent{3, ExceptionAction::Entered}, emit);
-  tracker.consume(ExceptionTraceEvent{15, ExceptionAction::Entered}, emit);
-  tracker.consume(ExceptionTraceEvent{15, ExceptionAction::Exited}, emit);
+  resumedTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Entered}, emit);
+  resumedTracker.consume(ExceptionTraceEvent{15, ExceptionAction::Entered}, emit);
+  resumedTracker.consume(ExceptionTraceEvent{15, ExceptionAction::Exited}, emit);
   const auto preemptedRecordCount = records.size();
-  tracker.consume(ExceptionTraceEvent{3, ExceptionAction::Exited}, emit);
+  resumedTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Exited}, emit);
   require(records.size() == preemptedRecordCount,
           "CtfExceptionLaneTracker must not exit a preempted context before its return packet");
-  tracker.consume(ExceptionTraceEvent{3, ExceptionAction::Returned}, emit);
-  tracker.consume(ExceptionTraceEvent{3, ExceptionAction::Exited}, emit);
+  resumedTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Returned}, emit);
+  resumedTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Exited}, emit);
   require(records.size() == preemptedRecordCount + 2U && records[records.size() - 2U] == "3:exit" &&
               records.back() == "0:enter",
           "CtfExceptionLaneTracker must exit a resumed context");
 
-  tracker.reset();
+  CtfExceptionLaneTracker returnTracker;
   records.clear();
-  tracker.consume(ExceptionTraceEvent{3, ExceptionAction::Entered}, emit);
-  tracker.consume(ExceptionTraceEvent{15, ExceptionAction::Entered}, emit);
-  tracker.consume(ExceptionTraceEvent{3, ExceptionAction::Returned}, emit);
+  returnTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Entered}, emit);
+  returnTracker.consume(ExceptionTraceEvent{15, ExceptionAction::Entered}, emit);
+  returnTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Returned}, emit);
   EXPECT_EQ(records.back(), "3:enter");
 }

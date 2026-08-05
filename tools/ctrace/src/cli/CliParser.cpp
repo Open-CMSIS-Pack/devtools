@@ -8,6 +8,7 @@
 #include "CliParser.h"
 
 #include "CliOptions.h"
+#include "ProductInfo.h"
 #include "TraceSelection.h"
 #include "TraceStreamId.h"
 
@@ -134,16 +135,13 @@ static void configureCliParser(cxxopts::Options& parser)
   parser.custom_help("<trace-dir> [options]");
   parser.set_width(100U);
   parser.allow_unrecognised_options();
-  parser.add_options()
-      ("csv", "Generate only CSV output")
-      ("ctf", "Generate only CTF / Trace Compass XML output")
-      ("a,all", "Generate CSV and CTF / XML output")
-      ("type", "Filter output for specific packet types (default: all)", cxxopts::value<SelectionValues>(), "sel [...]")
-      ("stream", "Filter output for specific streams (default: all)", cxxopts::value<SelectionValues>(), "sel [...]")
-      ("t,target", "Specify a trace solution-set (default: all)", cxxopts::value<std::string>())
-      ("V,version", "Print version");
-  parser.add_options("Hidden")
-      ("h,help", "Print help");
+  parser.add_options()("csv", "Generate only CSV output")("ctf", "Generate only CTF / Trace Compass XML output")(
+      "a,all", "Generate CSV and CTF / XML output")("type", "Filter output for specific packet types (default: all)",
+                                                    cxxopts::value<SelectionValues>(), "sel [...]")(
+      "stream", "Filter output for specific streams (default: all)", cxxopts::value<SelectionValues>(),
+      "sel [...]")("t,target", "Specify a trace solution-set (default: all)",
+                   cxxopts::value<std::string>())("V,version", "Print version");
+  parser.add_options("Hidden")("h,help", "Print help");
 }
 
 /** @brief Parses normalized command-line arguments into ctrace options. */
@@ -232,5 +230,5 @@ std::string CliParser::helpString()
 
 std::string CliParser::versionString()
 {
-  return std::string("ctrace ") + CTRACE_VERSION;
+  return std::string("ctrace ") + CtraceVersion;
 }

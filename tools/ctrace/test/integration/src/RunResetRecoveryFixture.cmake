@@ -50,16 +50,16 @@ if(NOT result EQUAL 1)
 endif()
 
 foreach(expected_stderr IN ITEMS
-        "\\[error\\] decode/opencsd-bad-packet-sequence: invalid ITM packet sequence at raw offset 10"
-        "\\[error\\] decode/data-loss: 116 raw bytes from raw offset 12 could not be decoded before the next hardware ITM sync"
-        "decode/summary: decoded 52374 packets from 131071 bytes")
+        "\\[error\\] invalid ITM packet sequence at raw offset 10"
+        "\\[error\\] 116 raw bytes from raw offset 12 could not be decoded before the next hardware ITM sync"
+        "\\[info\\] decoded 52374 events from 131071 bytes")
     if(NOT stderr MATCHES "${expected_stderr}")
         message(FATAL_ERROR
             "ctrace did not report expected reset recovery '${expected_stderr}'\n"
             "stderr:\n${stderr}")
     endif()
 endforeach()
-if(stderr MATCHES "opencsd-no-progress|trace-directory-failed")
+if(stderr MATCHES "OpenCSD made no (decode )?progress|decode aborted")
     message(FATAL_ERROR
         "ctrace aborted instead of recovering after the reset discontinuity:\n${stderr}")
 endif()

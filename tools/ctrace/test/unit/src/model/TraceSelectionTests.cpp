@@ -19,9 +19,9 @@ TEST(CtraceUnitTests, testTraceSelection)
   EXPECT_FALSE(CoreSight::isAtbTraceId(0U));
   EXPECT_TRUE(CoreSight::isAtbTraceId(1U));
   EXPECT_FALSE(CoreSight::isAtbTraceId(112U));
-  EXPECT_TRUE(TraceSelection{}.empty());
-  EXPECT_FALSE((TraceSelection{{"itm"}, {}}.empty()));
-  EXPECT_FALSE((TraceSelection{{}, {1U}}.empty()));
+  EXPECT_TRUE(CoreSight::isItmStimulusPort(0U));
+  EXPECT_TRUE(CoreSight::isItmStimulusPort(31U));
+  EXPECT_FALSE(CoreSight::isItmStimulusPort(32U));
   EXPECT_TRUE(TraceRunSchema::isDwtDataType("unsigned int"));
   EXPECT_TRUE(TraceRunSchema::isDwtDataType("signed int"));
   EXPECT_TRUE(TraceRunSchema::isDwtDataType("float"));
@@ -51,7 +51,7 @@ TEST(CtraceUnitTests, testTraceSelection)
   require(!traceEventSelectedForOutput(itm, TraceSelection{{"itm"}, {1U}}),
           "TraceSelection selectors must not enable software channel zero");
 
-  TraceEvent softwareError = issuePacket("decode-error");
+  TraceEvent softwareError = issuePacket(TraceIssueCode::DecodeError);
   require(traceEventSelectedForOutput(softwareError, TraceSelection{}), "TraceSelection must retain decoder errors");
 
   TraceEvent dwt{DwtDataTraceEvent{2U}};

@@ -10,6 +10,7 @@ set(CTRACE_MODEL_HEADER_FILES
 set(CTRACE_CLI_HEADER_FILES
   cli/CliOptions.h
   cli/CliParser.h
+  cli/ProductInfo.h.in
 )
 set(CTRACE_TRACE_RUN_HEADER_FILES
   tracerun/CtraceRunMeta.h
@@ -75,24 +76,22 @@ add_library(ctrace::model ALIAS ctrace-model)
 target_include_directories(ctrace-model PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/model"
 )
-ctrace_configure_target(ctrace-model)
 
 add_library(ctrace-cli STATIC
   cli/CliParser.cpp
   ${CTRACE_CLI_HEADER_FILES}
 )
 add_library(ctrace::cli ALIAS ctrace-cli)
-target_compile_definitions(ctrace-cli PRIVATE
-  CTRACE_VERSION="${CTRACE_VERSION_FULL}"
-)
 target_include_directories(ctrace-cli PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/cli"
+)
+target_include_directories(ctrace-cli PRIVATE
+  "${CTRACE_GENERATED_INCLUDE_DIR}"
 )
 target_link_libraries(ctrace-cli
   PUBLIC ctrace::model
   PRIVATE cxxopts
 )
-ctrace_configure_target(ctrace-cli)
 
 add_library(ctrace-trace-run STATIC
   tracerun/TraceRunDiscovery.cpp
@@ -111,7 +110,6 @@ target_link_libraries(ctrace-trace-run
   PUBLIC ctrace::model
   PRIVATE yaml-cpp
 )
-ctrace_configure_target(ctrace-trace-run)
 
 add_library(ctrace-diagnostics STATIC
   diagnostics/DiagnosticSink.cpp
@@ -125,7 +123,6 @@ target_include_directories(ctrace-diagnostics PUBLIC
 target_link_libraries(ctrace-diagnostics PUBLIC
   ctrace::model
 )
-ctrace_configure_target(ctrace-diagnostics)
 
 add_library(ctrace-decode STATIC
   decode/CortexMPostDecoder.cpp
@@ -150,7 +147,6 @@ target_link_libraries(ctrace-decode PUBLIC
 target_link_libraries(ctrace-decode PUBLIC
   ctrace::opencsd
 )
-ctrace_configure_target(ctrace-decode)
 
 add_library(ctrace-output STATIC
   output/csv/CsvFileOutput.cpp
@@ -176,7 +172,6 @@ target_link_libraries(ctrace-output
   PRIVATE
     ctrace::trace-run
 )
-ctrace_configure_target(ctrace-output)
 
 add_library(ctrace-control STATIC
   control/DecodeConsumers.cpp
@@ -199,4 +194,3 @@ target_link_libraries(ctrace-control PUBLIC
 target_link_libraries(ctrace-control PUBLIC
   ctrace::decode
 )
-ctrace_configure_target(ctrace-control)

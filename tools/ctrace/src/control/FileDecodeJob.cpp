@@ -46,7 +46,9 @@ public:
 
   /** @brief Opens a raw trace input for binary reading. */
   explicit RawFileReader(std::filesystem::path path)
-    : m_path(std::move(path)), m_stream(m_path, std::ios::binary), m_buffer(64U * 1024U)
+    : m_path(std::move(path)),
+      m_stream(m_path, std::ios::binary),
+      m_buffer(64U * 1024U)
   {
     if (!m_stream) {
       throw std::runtime_error("failed to open input file: " + m_path.string());
@@ -85,7 +87,7 @@ private:
   bool m_eof = false;
 };
 
-/** @brief Formats packet count, input size, elapsed time, and throughput. */
+/** @brief Formats event count, input size, elapsed time, and throughput. */
 static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady_clock::duration elapsed)
 {
   const auto seconds = std::chrono::duration<double>(elapsed).count();
@@ -93,7 +95,7 @@ static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady
   const auto mebibytesPerSecond = seconds > 0.0 ? mebibytes / seconds : 0.0;
 
   std::ostringstream out;
-  out << "decoded " << decode.packetsOut << " packets from " << decode.bytesIn << " bytes in " << std::fixed
+  out << "decoded " << decode.eventsOut << " events from " << decode.bytesIn << " bytes in " << std::fixed
       << std::setprecision(3) << seconds << " s (" << std::setprecision(2) << mebibytesPerSecond << " MiB/s)";
   return out.str();
 }
@@ -127,8 +129,6 @@ static std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const T
     outputs.push_back(std::make_unique<CtfBundleOutput>(*outputPlan.ctf, &diagnostics));
     diagnostics.report({
         DiagnosticSink::Severity::Info,
-        DiagnosticSink::Category::Output,
-        "trace-compass-xml",
         "configured Trace Compass XML",
         {{"path", outputPlan.ctf->traceCompassXmlPath.string()}},
     });
@@ -141,15 +141,20 @@ static std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const T
 
 FileDecodeJob::FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
                              CtraceRunMeta ctraceRunMeta)
-  : m_options(std::move(options)), m_rawInputPath(std::move(rawInputPath)), m_diagnostics(diagnostics),
+  : m_options(std::move(options)),
+    m_rawInputPath(std::move(rawInputPath)),
+    m_diagnostics(diagnostics),
     m_ctraceRunMeta(std::move(ctraceRunMeta))
 {
 }
 
 FileDecodeJob::FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
                              CtraceRunMeta ctraceRunMeta, OpenCsdItmSessionFactory sessionFactory)
-  : m_options(std::move(options)), m_rawInputPath(std::move(rawInputPath)), m_diagnostics(diagnostics),
-    m_ctraceRunMeta(std::move(ctraceRunMeta)), m_sessionFactory(std::move(sessionFactory))
+  : m_options(std::move(options)),
+    m_rawInputPath(std::move(rawInputPath)),
+    m_diagnostics(diagnostics),
+    m_ctraceRunMeta(std::move(ctraceRunMeta)),
+    m_sessionFactory(std::move(sessionFactory))
 {
 }
 
@@ -162,8 +167,6 @@ void FileDecodeJob::run()
   }
   m_diagnostics.report({
       DiagnosticSink::Severity::Info,
-      DiagnosticSink::Category::Input,
-      "ctrace-run-meta",
       "applied ctrace-run meta",
       {
           {"path", m_ctraceRunMeta.configPath()},
@@ -178,16 +181,12 @@ void FileDecodeJob::run()
   if (prescalers.fallback.has_value()) {
     m_diagnostics.report({
         DiagnosticSink::Severity::Info,
-        DiagnosticSink::Category::Input,
-        "timestamp-prescaler",
         "using timestamp prescaler",
         {{"value", std::to_string(*prescalers.fallback)}},
     });
   } else {
     m_diagnostics.report({
         DiagnosticSink::Severity::Info,
-        DiagnosticSink::Category::Input,
-        "timestamp-prescaler",
         "using Trace-Bus-ID-specific timestamp prescalers",
         {{"traceBusIds", std::to_string(prescalers.byTraceBusId.size())}},
     });
@@ -214,14 +213,12 @@ void FileDecodeJob::run()
   } catch (const OpenCsdFatalError& error) {
     decoderFatal = true;
     decode.bytesIn = error.bytesProcessed();
-    decode.packetsOut = consumers.eventCount();
+    decode.eventsOut = consumers.eventCount();
   }
   consumers.finishIssues();
   const auto decodeEnd = std::chrono::steady_clock::now();
   m_diagnostics.report({
       DiagnosticSink::Severity::Info,
-      DiagnosticSink::Category::Decode,
-      "summary",
       decodeSummary(decode, decodeEnd - decodeStart),
   });
   if (decoderFatal) {

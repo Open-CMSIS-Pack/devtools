@@ -19,7 +19,8 @@
 #include <utility>
 
 CortexMStreamDecoder::CortexMStreamDecoder(ItmTimestampPrescalers prescalers, TraceEventSink& eventSink)
-  : m_prescalers(std::move(prescalers)), m_eventSink(eventSink)
+  : m_prescalers(std::move(prescalers)),
+    m_eventSink(eventSink)
 {
 }
 

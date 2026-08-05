@@ -19,13 +19,10 @@
 #include <vector>
 
 /** @brief Converts a caught application failure into one structured diagnostic. */
-static void reportFailure(DiagnosticSink& diagnostics, DiagnosticSink::Category category, const char* code,
-                          const std::exception& error)
+static void reportFailure(DiagnosticSink& diagnostics, const std::exception& error)
 {
   diagnostics.report({
       DiagnosticSink::Severity::Error,
-      category,
-      code,
       error.what(),
   });
 }
@@ -50,7 +47,7 @@ int CtraceMain(const std::vector<std::string>& arguments)
       return 0;
     }
   } catch (const std::exception& error) {
-    reportFailure(diagnostics, DiagnosticSink::Category::Cli, "invalid-arguments", error);
+    reportFailure(diagnostics, error);
     return 1;
   }
 
@@ -60,7 +57,7 @@ int CtraceMain(const std::vector<std::string>& arguments)
     job.run();
     return diagnostics.failureCount() == 0U ? 0 : 1;
   } catch (const std::exception& error) {
-    reportFailure(diagnostics, DiagnosticSink::Category::Input, "trace-directory-failed", error);
+    reportFailure(diagnostics, error);
     return 1;
   }
 }

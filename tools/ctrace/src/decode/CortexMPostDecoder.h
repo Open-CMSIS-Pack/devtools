@@ -51,7 +51,7 @@ private:
 
   /** @brief Queues an issue whose final interval ends at the next reliable timestamp. */
   void queueDiscontinuityIssue(std::uint64_t sourceIndex, std::uint8_t traceBusId, const TraceQuality& quality,
-                               const std::string& issueCode, const std::string& message,
+                               TraceIssueCode issueCode, const std::string& message,
                                std::optional<std::uint64_t> rawBytesConsumed = std::nullopt);
   /** @brief Finalizes queued discontinuity intervals at the first resumed timestamp. */
   void finalizePendingDiscontinuityIssues(std::optional<std::uint64_t> firstResumedTcyc);
@@ -92,4 +92,4 @@ private:
   std::uint64_t m_timestampSegmentBase = 0;
 };
 
-#endif  // CTRACE_SRC_DECODE_CORTEXMPOSTDECODER_H
+#endif // CTRACE_SRC_DECODE_CORTEXMPOSTDECODER_H

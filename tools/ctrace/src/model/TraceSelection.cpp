@@ -8,9 +8,11 @@
 #include "TraceSelection.h"
 
 #include "TraceEvent.h"
+#include "TraceStreamId.h"
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -40,13 +42,13 @@ static std::optional<TraceEventType> typeFor(const ExceptionTraceEvent&)
   return TraceEventType::Exception;
 }
 
-/** @brief Maps a DWT counter payload to its selectable event type. */
+/** @brief Keeps DWT counter payloads disabled until their output semantics are implemented. */
 static std::optional<TraceEventType> typeFor(const DwtEventTraceEvent&)
 {
   return std::nullopt;
 }
 
-/** @brief Maps a PMU payload to its selectable event type. */
+/** @brief Keeps PMU payloads disabled until their output semantics are implemented. */
 static std::optional<TraceEventType> typeFor(const PmuTraceEvent&)
 {
   return std::nullopt;
@@ -58,13 +60,13 @@ static std::optional<TraceEventType> typeFor(const LocalTimestampTraceEvent&)
   return std::nullopt;
 }
 
-/** @brief Excludes global timestamp control packets from type selection. */
+/** @brief Exposes global timestamp packets through their public output selector. */
 static std::optional<TraceEventType> typeFor(const GlobalTimestampTraceEvent&)
 {
   return TraceEventType::GlobalTimestamp;
 }
 
-/** @brief Excludes overflow control packets from type selection. */
+/** @brief Exposes overflow packets through their public output selector. */
 static std::optional<TraceEventType> typeFor(const OverflowTraceEvent&)
 {
   return TraceEventType::Overflow;
@@ -76,7 +78,7 @@ static std::optional<TraceEventType> typeFor(const SyncTraceEvent&)
   return std::nullopt;
 }
 
-/** @brief Excludes retained diagnostic events from type selection. */
+/** @brief Exposes retained diagnostic events through the error selector. */
 static std::optional<TraceEventType> typeFor(const TraceIssueEvent&)
 {
   return TraceEventType::Error;
@@ -115,11 +117,6 @@ std::optional<TraceEventType> traceEventType(const TraceEvent& event)
   return std::visit([](const auto& payload) { return typeFor(payload); }, event.payload);
 }
 
-bool TraceSelection::empty() const
-{
-  return types.empty() && streams.empty();
-}
-
 bool TraceSelection::includesType(const std::string_view& type) const
 {
   return types.empty() || std::find(types.begin(), types.end(), type) != types.end();
@@ -134,7 +131,7 @@ bool traceEventSelectedForOutput(const TraceEvent& event, const TraceSelection& 
 {
   const auto type = traceEventType(event);
   const auto* software = traceEventPayload<SoftwareTraceEvent>(event);
-  if (software != nullptr && software->channel == 0U) {
+  if (software != nullptr && software->channel == CoreSight::kExcludedItmStimulusPort) {
     return false;
   }
   if (!selection.includesStream(event.traceBusId)) {

@@ -23,7 +23,9 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 using OpenCsdTestSupport::CollectingOpenCsdElementSink;
@@ -159,15 +161,16 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
     ocsd_datapath_op_t operation;
     OpenCsdTraceElement::Kind kind;
     const char* errorMessage;
-    const char* issueCode;
+    std::optional<TraceIssueCode> issueCode;
   };
   constexpr RawPacketCase rawPacketCases[]{
-      {ITM_PKT_OVERFLOW, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Overflow, "", ""},
-      {ITM_PKT_RESERVED, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Error, "Reserved ITM packet", "opencsd-decode-error"},
+      {ITM_PKT_OVERFLOW, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Overflow, "", std::nullopt},
+      {ITM_PKT_RESERVED, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Error, "Reserved ITM packet",
+       TraceIssueCode::OpenCsdDecodeError},
       {ITM_PKT_BAD_SEQUENCE, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Error, "Bad ITM packet sequence",
-       "opencsd-decode-error"},
+       TraceIssueCode::OpenCsdDecodeError},
       {ITM_PKT_INCOMPLETE_EOT, OCSD_OP_EOT, OpenCsdTraceElement::Kind::Error, "incomplete ITM packet at end of input",
-       "opencsd-incomplete-tail"},
+       TraceIssueCode::OpenCsdIncompleteTail},
   };
   for (std::size_t index = 0U; index < std::size(rawPacketCases); ++index) {
     SCOPED_TRACE(index);
@@ -193,8 +196,8 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommitte
   EXPECT_FALSE(collector.transactionFirstSourceOffset().has_value());
 
   collector.beginTransaction();
-  collector.appendDecodeError(5U, "decode", "decode-error");
-  collector.prependDiscontinuity(4U, "gap", "data-loss", 2U);
+  collector.appendDecodeError(5U, "decode", TraceIssueCode::DecodeError);
+  collector.prependDiscontinuity(4U, "gap", TraceIssueCode::DataLoss, 2U);
   collector.prependDataLossError(3U, "loss", 3U);
   EXPECT_EQ(collector.transactionElementCount(), 3U);
   EXPECT_EQ(collector.transactionFirstSourceOffset(), 3U);
@@ -207,7 +210,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommitte
   collector.rollbackTransaction();
   EXPECT_EQ(sink.elements().size(), 1U);
 
-  collector.prependDiscontinuity(8U, "outside", "gap");
+  collector.prependDiscontinuity(8U, "outside", TraceIssueCode::DataLoss);
   collector.prependDataLossError(9U, "outside loss", 4U);
   ASSERT_EQ(sink.elements().size(), 3U);
   EXPECT_EQ(sink.elements().back().rawBytesConsumed, 4U);

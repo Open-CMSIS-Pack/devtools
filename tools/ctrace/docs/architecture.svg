@@ -8,8 +8,8 @@
   <title id="title">ctrace software architecture</title>
   <desc id="description">
     Seven library modules and the first-release ITM and DWT data flow from command-line, trace-run YAML, and SWO raw
-    input through orchestration, hardware-sync recovery, the trace event model, diagnostics, and CSV and CTF output
-    backends. Trace Bus input is discovered but not decoded.
+    input through orchestration, hardware-sync recovery, the trace event model, DecodeConsumers, diagnostics, and CSV
+    and CTF output backends. Trace Bus input is discovered but not decoded.
   </desc>
 
   <defs>
@@ -87,7 +87,7 @@
 
   <rect x="760" y="400" width="250" height="82" class="box support"/>
   <text x="885" y="432" class="box-title">diagnostics</text>
-  <text x="885" y="454" class="box-detail">structured issues and severity</text>
+  <text x="885" y="454" class="box-detail">severity · context · impact</text>
 
   <path d="M 160 197 L 170 285" class="flow"/>
   <path d="M 440 197 L 440 285" class="flow"/>
@@ -114,18 +114,24 @@
   <text x="680" y="645" class="box-detail">timestamps and DWT semantics</text>
 
   <rect x="830" y="590" width="210" height="86" class="box model"/>
-  <text x="935" y="623" class="box-title">model</text>
+  <text x="935" y="623" class="box-title">TraceEvent model</text>
   <text x="935" y="645" class="box-detail">events, type mapping, selection</text>
 
   <rect x="320" y="710" width="210" height="52" class="box external"/>
   <text x="425" y="733" class="box-title">OpenCSD 1.8.3</text>
   <text x="425" y="750" class="box-detail">pinned external library</text>
 
+  <rect x="830" y="710" width="210" height="52" class="box control"/>
+  <text x="935" y="733" class="box-title">DecodeConsumers</text>
+  <text x="935" y="750" class="box-detail">outputs · issue reporting</text>
+
   <path d="M 400 482 L 400 530 L 250 530 L 250 590" class="flow"/>
   <path d="M 275 633 L 320 633" class="flow"/>
   <path d="M 530 633 L 575 633" class="flow"/>
   <path d="M 785 633 L 830 633" class="flow"/>
   <path d="M 425 676 L 425 710" class="dependency"/>
+  <path d="M 935 676 L 935 710" class="flow"/>
+  <path d="M 1040 736 L 1060 736 L 1060 441 L 1010 441" class="flow"/>
 
   <text x="50" y="835" class="section">OUTPUTS</text>
   <rect x="40" y="850" width="1200" height="190" class="group"/>
@@ -142,7 +148,7 @@
   <text x="745" y="995" class="box-title">CTF backend</text>
   <text x="745" y="1016" class="box-detail">*.ctf + Trace Compass XML</text>
 
-  <path d="M 935 676 L 935 815 L 410 815 L 410 875" class="flow"/>
+  <path d="M 935 762 L 935 815 L 410 815 L 410 875" class="flow"/>
   <path d="M 350 943 L 350 955 L 280 955 L 280 970" class="flow"/>
   <path d="M 470 943 L 470 955 L 745 955 L 745 970" class="flow"/>
 

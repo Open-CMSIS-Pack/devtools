@@ -10,12 +10,9 @@
 #include "TraceRunConfig.h"
 #include "yaml-cpp/exceptions.h"
 #include "yaml-cpp/node/node.h"
-#include "yaml-cpp/node/type.h"
-#include "yaml-cpp/node/impl.h"    // IWYU pragma: keep
-#include "yaml-cpp/node/convert.h" // IWYU pragma: keep
-#include "yaml-cpp/node/iterator.h"
-#include "yaml-cpp/node/detail/impl.h" // IWYU pragma: keep
 #include "yaml-cpp/node/parse.h"
+#include "yaml-cpp/node/type.h"
+#include "yaml-cpp/yaml.h" // IWYU pragma: keep
 
 #include <charconv>
 #include <cstddef>
@@ -56,32 +53,19 @@ static std::string errorMessage(const std::string& path, const Node& node, const
   throw std::runtime_error(errorMessage(path, node, message));
 }
 
-/** @brief Stores a best-effort YAML child-node lookup result. */
-struct NodeLookup {
-  Node value{YAML::NodeType::Undefined};
-};
-
-/** @brief Looks up one mapping key while preserving duplicate information. */
-static NodeLookup lookupNode(const Node& element, const std::string_view& tag)
+/** @brief Returns the child node for one scalar mapping key, if present. */
+static Node childNode(const Node& element, const std::string_view& tag)
 {
-  NodeLookup result;
   for (const auto& entry : element) {
     if (!entry.first.IsScalar() || entry.first.Scalar() != tag) {
       continue;
     }
-    result.value = entry.second;
-    break;
+    return entry.second;
   }
-  return result;
+  return Node(YAML::NodeType::Undefined);
 }
 
-/** @brief Returns an optional unique child node. */
-static Node childNode(const Node& element, const std::string_view& tag)
-{
-  return lookupNode(element, tag).value;
-}
-
-/** @brief Returns an optional unique child mapping or sequence container. */
+/** @brief Returns a child mapping or sequence container, if present. */
 static Node childContainer(const Node& element, const std::string_view& tag)
 {
   const auto node = childNode(element, tag);
@@ -120,11 +104,11 @@ static std::optional<std::string> processorNameAttribute(const std::string& path
 /** @brief Reads a processor name without making unrelated YAML fatal. */
 static std::optional<std::string> bestEffortProcessorName(const Node& element)
 {
-  const auto lookup = lookupNode(element, "pname");
-  if (!lookup.value || lookup.value.IsNull() || !lookup.value.IsScalar()) {
+  const auto node = childNode(element, "pname");
+  if (!node || node.IsNull() || !node.IsScalar()) {
     return std::nullopt;
   }
-  return TraceRunSchema::normalizedProcessorName(std::optional<std::string>(lookup.value.Scalar()));
+  return TraceRunSchema::normalizedProcessorName(std::optional<std::string>(node.Scalar()));
 }
 
 /** @brief Parses and range-checks one required unsigned mapping value. */
@@ -289,17 +273,16 @@ static Node traceRunRoot(const std::string& path, const Node& document)
 }
 
 /** @brief Parses scalar or sequence source identifiers from one reference. */
-static std::pair<std::vector<std::uint32_t>, bool> parseSources(const std::string& path, const Node& reference)
+static std::vector<std::uint32_t> parseSources(const std::string& path, const Node& reference)
 {
   const auto sourceNode = childNode(reference, "source");
   if (!sourceNode) {
-    return {{}, false};
+    return {};
   }
   if (sourceNode.IsScalar() || sourceNode.IsNull()) {
     const auto scalarSource = sourceNode.IsScalar() ? sourceNode.Scalar() : std::string{};
-    return {{static_cast<std::uint32_t>(
-                unsignedValue(path, sourceNode, "source", scalarSource, std::numeric_limits<std::uint32_t>::max()))},
-            false};
+    return {static_cast<std::uint32_t>(
+        unsignedValue(path, sourceNode, "source", scalarSource, std::numeric_limits<std::uint32_t>::max()))};
   }
 
   requireSequence(path, sourceNode, "source");
@@ -312,7 +295,7 @@ static std::pair<std::vector<std::uint32_t>, bool> parseSources(const std::strin
         unsignedValue(path, item, "source", item.Scalar(), std::numeric_limits<std::uint32_t>::max()));
     sources.push_back(source);
   }
-  return {std::move(sources), true};
+  return sources;
 }
 
 /** @brief Stores diagnostics copied from one parsed trace reference. */
@@ -354,8 +337,7 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
     return node.Scalar();
   };
 
-  const auto typeLookup = lookupNode(element, "type");
-  const auto typeNode = typeLookup.value;
+  const auto typeNode = childNode(element, "type");
   if (!typeNode || !typeNode.IsScalar() || typeNode.Scalar().empty()) {
     return std::nullopt;
   }
@@ -390,11 +372,7 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
   const auto parseRoute = [&]() {
     reference.processorName = processorNameAttribute(path, element);
     reference.stream = parseStream();
-    auto parsedSources = parseSources(path, element);
-    if (reference.type == "itm" && parsedSources.second) {
-      fail(path, element, "ITM 'source' must be a single channel number");
-    }
-    reference.sources = std::move(parsedSources.first);
+    reference.sources = parseSources(path, element);
     if (reference.type == "dwt") {
       reference.symbolAddress =
           bestEffortUnsignedAttribute(path, element, "symbol-address", std::numeric_limits<std::uint64_t>::max());
@@ -450,8 +428,7 @@ static std::vector<TraceRunReference> parseReferences(const std::string& path, c
 /** @brief Parses timestamp metadata from one consumed setup. */
 static std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::string& path, const Node& element)
 {
-  const auto timestampsLookup = lookupNode(element, "timestamps");
-  const auto timestampsNode = timestampsLookup.value;
+  const auto timestampsNode = childNode(element, "timestamps");
   if (!timestampsNode) {
     return std::nullopt;
   }
@@ -472,8 +449,8 @@ static std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::stri
 
   TraceRunTimestampSetup timestamps;
   timestamps.line = lineNumber(timestampsNode);
-  const auto clock = lookupNode(timestampsNode, "clock");
-  if (clock.value && !clock.value.IsScalar() && !clock.value.IsNull()) {
+  const auto clock = childNode(timestampsNode, "clock");
+  if (clock && !clock.IsScalar() && !clock.IsNull()) {
     timestamps.clockError = "'timestamps.clock' must be a scalar unsigned integer";
   } else {
     timestamps.clockHz = deferredUnsignedAttribute(path, timestampsNode, "clock",
@@ -512,15 +489,16 @@ static std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, co
 static std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::string& path, const Node& element,
                                                                 const std::set<std::size_t>& referencedIndices)
 {
-  const auto dataLookup = referencedIndices.empty() ? NodeLookup{} : lookupNode(element, "data");
-  if (!dataLookup.value || !dataLookup.value.IsSequence()) {
+  const auto dataNode =
+      referencedIndices.empty() ? Node(YAML::NodeType::Undefined) : childNode(element, "data");
+  if (!dataNode || !dataNode.IsSequence()) {
     return {};
   }
 
   std::vector<TraceRunDataSetup> dataSetups;
   std::size_t index = 0U;
   bool foundReferencedEntry = false;
-  for (const auto& item : dataLookup.value) {
+  for (const auto& item : dataNode) {
     if (referencedIndices.find(index++) == referencedIndices.end()) {
       dataSetups.emplace_back();
       continue;
@@ -531,16 +509,16 @@ static std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::strin
       dataSetups.push_back(std::move(data));
       continue;
     }
-    const auto type = lookupNode(item, "symbol-type");
-    if (type.value && !type.value.IsScalar() && !type.value.IsNull()) {
+    const auto type = childNode(item, "symbol-type");
+    if (type && !type.IsScalar() && !type.IsNull()) {
       data.symbolTypeError = "'data.symbol-type' must be a scalar string";
-    } else if (type.value && !type.value.IsNull()) {
+    } else if (type && !type.IsNull()) {
       data.symbolType = optionalAttribute(item, "symbol-type");
     }
-    const auto size = lookupNode(item, "symbol-size");
-    if (size.value && !size.value.IsScalar() && !size.value.IsNull()) {
+    const auto size = childNode(item, "symbol-size");
+    if (size && !size.IsScalar() && !size.IsNull()) {
       data.symbolSizeError = "'data.symbol-size' must be a scalar unsigned integer";
-    } else if (size.value && !size.value.IsNull()) {
+    } else if (size && !size.IsNull()) {
       data.symbolSize = deferredUnsignedAttribute(path, item, "symbol-size", std::numeric_limits<std::uint64_t>::max(),
                                                   data.symbolSizeError);
     }
@@ -567,8 +545,7 @@ static TraceRunSetup parseSetup(const std::string& path, const Node& element,
 static std::vector<TraceRunSetup> parseSetups(const std::string& path, const Node& root,
                                               const std::vector<TraceRunReference>& references)
 {
-  const auto setupLookup = lookupNode(root, "ctrace-setup");
-  const auto setupNode = setupLookup.value;
+  const auto setupNode = childNode(root, "ctrace-setup");
   if (!setupNode) {
     return {};
   }
@@ -581,18 +558,18 @@ static std::vector<TraceRunSetup> parseSetups(const std::string& path, const Nod
     if (!item.IsMap()) {
       continue;
     }
-    const auto timestamps = lookupNode(item, "timestamps");
-    const auto itm = lookupNode(item, "itm");
-    const auto data = lookupNode(item, "data");
-    const auto consumesData = data.value && setupDataMayBeConsumed(item, references);
-    if (!timestamps.value && !itm.value && !consumesData) {
+    const auto timestamps = childNode(item, "timestamps");
+    const auto itm = childNode(item, "itm");
+    const auto data = childNode(item, "data");
+    const auto consumesData = data && setupDataMayBeConsumed(item, references);
+    if (!timestamps && !itm && !consumesData) {
       continue;
     }
     // The copied ctrace.yml setup semantics define the presence of
     // 'disable' itself as sufficient to ignore the complete list entry.
     // Its value therefore has no schema that ctrace needs to validate.
-    const auto disable = lookupNode(item, "disable");
-    if (disable.value) {
+    const auto disable = childNode(item, "disable");
+    if (disable) {
       continue;
     }
     auto setup = parseSetup(path, item, references);

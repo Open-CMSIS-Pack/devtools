@@ -42,7 +42,10 @@ struct SessionStep {
   SessionStep(ocsd_datapath_resp_t stepResponse = OCSD_RESP_CONT,
               std::optional<std::uint32_t> stepProcessed = std::nullopt, bool stepEmitSync = false,
               std::vector<ScriptedError> stepErrors = {})
-    : response(stepResponse), processed(stepProcessed), emitSync(stepEmitSync), errors(std::move(stepErrors))
+    : response(stepResponse),
+      processed(stepProcessed),
+      emitSync(stepEmitSync),
+      errors(std::move(stepErrors))
   {
   }
 
@@ -70,7 +73,9 @@ public:
   /** @brief Creates a session backed by shared scripted state. */
   ScriptedOpenCsdSession(std::shared_ptr<SessionScript> script, OpenCsdPacketCollector& collector,
                          OpenCsdErrorController& errors)
-    : m_script(std::move(script)), m_collector(collector), m_errors(errors)
+    : m_script(std::move(script)),
+      m_collector(collector),
+      m_errors(errors)
   {
   }
 
@@ -156,7 +161,8 @@ class ScriptedDecoderHarness {
 public:
   /** @brief Creates a decoder connected to a new empty session script. */
   ScriptedDecoderHarness()
-    : m_script(std::make_shared<SessionScript>()), m_decoder(m_sink, scriptedFactory(m_script))
+    : m_script(std::make_shared<SessionScript>()),
+      m_decoder(m_sink, scriptedFactory(m_script))
   {
   }
 

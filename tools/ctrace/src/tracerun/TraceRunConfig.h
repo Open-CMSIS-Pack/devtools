@@ -72,16 +72,10 @@ constexpr bool consumesReferenceMetadata(const std::string_view& type)
   return type == "dwt" || type == "itm" || type == "event" || type == "pmu" || type == "pcsample";
 }
 
-/** @brief Tests whether a reference type permits multiple source identifiers. */
-constexpr bool supportsSourceArray(const std::string_view& type)
-{
-  return type == "dwt";
-}
-
 /** @brief Tests whether an ITM stimulus port number is valid. */
 constexpr bool isItmSource(std::uint32_t source)
 {
-  return source <= 31U;
+  return CoreSight::isItmStimulusPort(source);
 }
 
 /** @brief Converts empty processor names to an absent value. */
@@ -130,14 +124,14 @@ enum class ReferenceProblem {
   None,
   DuplicateSource,
   InvalidStream,
-  UnsupportedSourceArray,
   InvalidItmSource,
 };
 
-/** @brief Tests whether a reference selects reserved ITM stimulus port zero. */
+/** @brief Tests whether a reference selects ITM stimulus port zero, which is excluded from output. */
 inline bool isItmChannelZero(const TraceRunReference& reference)
 {
-  return reference.type == "itm" && reference.sources.size() == 1U && reference.sources.front() == 0U;
+  return reference.type == "itm" && reference.sources.size() == 1U &&
+         reference.sources.front() == CoreSight::kExcludedItmStimulusPort;
 }
 
 /** @brief Tests whether a reference has the fields needed for a decoded route. */
@@ -162,11 +156,21 @@ inline bool isTimestampReference(const TraceRunReference& reference)
   return leaf == name;
 }
 
+/** @brief Tests whether a reference configures the processor ITM, including its ATB stream ID. */
+inline bool isProcessorItmReference(const TraceRunReference& reference)
+{
+  constexpr std::string_view name = "itm";
+  const auto separator = reference.ctraceRef.rfind('/');
+  const auto leaf = separator == std::string::npos ? std::string_view(reference.ctraceRef)
+                                                   : std::string_view(reference.ctraceRef).substr(separator + 1U);
+  return reference.type == "itm" && leaf == name;
+}
+
 /** @brief Tests whether a reference participates in processor-to-stream binding. */
 inline bool contributesStreamBinding(const TraceRunReference& reference)
 {
   return (reference.type == "dwt" || reference.type == "itm") &&
-         (!reference.sources.empty() || isTimestampReference(reference));
+         (!reference.sources.empty() || isTimestampReference(reference) || isProcessorItmReference(reference));
 }
 
 /** @brief Returns the first structural problem detected in a reference. */
@@ -181,9 +185,6 @@ inline ReferenceProblem referenceProblem(const TraceRunReference& reference)
   }
   if (reference.stream.has_value() && !CoreSight::isAtbTraceId(*reference.stream)) {
     return ReferenceProblem::InvalidStream;
-  }
-  if (!supportsSourceArray(reference.type) && reference.sources.size() > 1U) {
-    return ReferenceProblem::UnsupportedSourceArray;
   }
   if (reference.type == "itm") {
     for (const auto source : reference.sources) {
@@ -240,4 +241,4 @@ struct TraceRunConfig {
   std::vector<TraceRunSetup> setups;
 };
 
-#endif  // CTRACE_SRC_TRACERUN_TRACERUNCONFIG_H
+#endif // CTRACE_SRC_TRACERUN_TRACERUNCONFIG_H

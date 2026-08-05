@@ -13,6 +13,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct TraceRunConfig;
@@ -36,6 +37,12 @@ struct CtraceRunTimestampMeta {
   std::optional<std::string> processorName;
   std::optional<std::uint64_t> clockHz;
   std::optional<std::string> clockError;
+};
+
+/** @brief Describes one non-fatal inconsistency between ctrace-setup and ctrace-refs. */
+struct CtraceRunWarning {
+  std::string message;
+  std::vector<std::pair<std::string, std::string>> context;
 };
 
 /** @brief Provides validated trace-run metadata consumed by decoding and output. */
@@ -73,6 +80,8 @@ public:
   std::size_t processorCount() const;
   /** @brief Returns all normalized source routes. */
   const std::vector<CtraceRunSourceMeta>& sources() const;
+  /** @brief Returns non-fatal inconsistencies ignored during normalization. */
+  const std::vector<CtraceRunWarning>& warnings() const;
 
 private:
   std::string m_configPath;
@@ -86,6 +95,7 @@ private:
   std::size_t m_processorCount = 0;
   bool m_distinctProcessorPrescalers = false;
   std::vector<CtraceRunSourceMeta> m_sources;
+  std::vector<CtraceRunWarning> m_warnings;
 };
 
 #endif  // CTRACE_SRC_TRACERUN_CTRACERUNMETA_H

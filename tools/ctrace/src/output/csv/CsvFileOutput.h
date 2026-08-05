@@ -17,6 +17,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <string_view>
 
 /** @brief Writes selected trace events directly to a CSV file. */
 class CsvFileOutput final : public TraceOutput {

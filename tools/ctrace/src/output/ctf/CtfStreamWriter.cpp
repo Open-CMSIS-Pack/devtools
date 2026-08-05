@@ -42,7 +42,9 @@ static std::string formatUuid(const std::array<std::uint8_t, 16U>& uuid)
 }
 
 CtfStreamWriter::Record::Record(std::vector<std::uint8_t>& buffer, std::size_t offset, std::size_t endOffset)
-  : m_buffer(buffer), m_offset(offset), m_endOffset(endOffset)
+  : m_buffer(buffer),
+    m_offset(offset),
+    m_endOffset(endOffset)
 {
 }
 
