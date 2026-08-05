@@ -28,6 +28,10 @@ TEST(CtraceUnitTests, testTraceSelection)
   TraceRunReference timestampReference;
   timestampReference.ctraceRef = "timestamps";
   EXPECT_TRUE(TraceRunSchema::isTimestampReference(timestampReference));
+  TraceRunReference itmReference;
+  itmReference.type = "itm";
+  itmReference.ctraceRef = "itm";
+  EXPECT_TRUE(TraceRunSchema::isProcessorItmReference(itmReference));
   TraceEvent itm = softwarePacket(1U);
   itm.traceBusId = 1;
   require(traceEventSelectedForOutput(itm, TraceSelection{{"itm"}, {}}), "TraceSelection ITM type mismatch");

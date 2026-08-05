@@ -141,6 +141,7 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
       {TraceIssueCode::OpenCsdWaitTimeout, "OpenCSD remained blocked while flushing pending data"},
       {TraceIssueCode::OpenCsdInitializationError, "OpenCSD initialization failed"},
       {TraceIssueCode::DecodeError, "trace decode error at raw offset 42"},
+      {static_cast<TraceIssueCode>(255U), "trace decode error at raw offset 42"},
   };
   for (const auto& testCase : cases) {
     auto event = issuePacket(testCase.code);

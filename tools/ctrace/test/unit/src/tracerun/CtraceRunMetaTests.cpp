@@ -124,6 +124,12 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsDuplicateSetups)
   EXPECT_TRUE(metaRejects(duplicate, "duplicate active ctrace-setup for pname '<unnamed>'"));
   duplicate.setups.back().line = 9U;
   EXPECT_TRUE(metaRejects(duplicate, "duplicate active 'ctrace-setup' for pname '<unnamed>'"));
+
+  TraceRunConfig unnamedMultiProcessor;
+  unnamedMultiProcessor.path = "trace.yml";
+  unnamedMultiProcessor.setups = {makeTimestampSetup("a"), makeTimestampSetup(std::nullopt)};
+  EXPECT_TRUE(metaRejects(unnamedMultiProcessor,
+                          "pname is required for every ctrace-setup in a multi-processor configuration"));
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaWarnsForCrossRootProcessorIdentityConflicts)
@@ -132,11 +138,17 @@ TEST(CtraceUnitTests, testCtraceRunMetaWarnsForCrossRootProcessorIdentityConflic
   multiUnnamed.path = "trace.yml";
   multiUnnamed.setups = {makeTimestampSetup("a"), makeTimestampSetup("b")};
   multiUnnamed.references.push_back(makeReference("itm", std::nullopt, 1U, {1U}));
+  multiUnnamed.references.front().line = 17U;
+  auto diagnosedReference = makeReference("itm", "a", 0U, {99U});
+  diagnosedReference.error = "producer rejected this route";
+  multiUnnamed.references.push_back(diagnosedReference);
   const auto unnamedMeta = CtraceRunMeta::fromConfig(multiUnnamed);
   EXPECT_EQ(unnamedMeta.processorCount(), 2U);
   EXPECT_TRUE(unnamedMeta.sources().empty());
   ASSERT_EQ(unnamedMeta.warnings().size(), 1U);
   EXPECT_NE(unnamedMeta.warnings().front().message.find("without pname"), std::string::npos);
+  ASSERT_EQ(unnamedMeta.warnings().front().context.size(), 4U);
+  EXPECT_EQ(unnamedMeta.warnings().front().context[2], (std::pair<std::string, std::string>{"line", "17"}));
 
   TraceRunConfig multiUnmatched = multiUnnamed;
   multiUnmatched.references.front().processorName = "c";
