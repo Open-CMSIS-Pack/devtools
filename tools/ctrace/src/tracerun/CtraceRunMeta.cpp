@@ -144,6 +144,7 @@ static bool isUsableStreamBinding(const TraceRunReference& reference)
 /** @brief Resolves the unambiguous processor identity of a trace-run file. */
 static ProcessorIdentity processorIdentity(const TraceRunConfig& config, std::vector<CtraceRunWarning>& warnings)
 {
+  // Active setups define the authoritative processor set when present.
   std::set<std::string> setupNames;
   std::set<std::optional<std::string>> uniqueSetupNames;
   bool unnamedSetup = false;
@@ -169,6 +170,7 @@ static ProcessorIdentity processorIdentity(const TraceRunConfig& config, std::ve
     }
   }
 
+  // Only usable stream bindings may contribute fallback processor identities.
   std::set<std::string> referenceNames;
   bool unnamedReference = false;
   for (const auto& reference : config.references) {
@@ -183,6 +185,7 @@ static ProcessorIdentity processorIdentity(const TraceRunConfig& config, std::ve
     }
   }
 
+  // Reconcile references according to the number and naming of active setups.
   if (setupCount > 1U) {
     if (unnamedSetup) {
       throw std::runtime_error(config.path +
