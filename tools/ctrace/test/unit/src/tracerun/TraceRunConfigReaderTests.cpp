@@ -271,6 +271,7 @@ TEST(CtraceUnitTests, TraceRunReaderParsesTimestampSetupVariants)
     - timestamps: { clock: invalid }
     - timestamps: { clock: null }
     - timestamps: { clock: 0X10, itm-prescaler: 0x4 }
+  ctrace-refs: []
 )yml");
   ASSERT_EQ(config.setups.size(), 7U);
   EXPECT_FALSE(config.setups[0].timestamps->clockError.has_value());
@@ -292,7 +293,7 @@ TEST(CtraceUnitTests, TraceRunReaderParsesTimestampSetupVariants)
 TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedConsumedSetups)
 {
   TraceRunFixture file("ctrace-run-reader-setup-errors-test");
-  constexpr std::string_view prefix = "ctrace-run:\n  ctrace-setup:\n    - ";
+  constexpr std::string_view prefix = "ctrace-run:\n  ctrace-refs: []\n  ctrace-setup:\n    - ";
   /** @brief Describes malformed setup fields and their expected errors. */
   struct Case {
     const char* setup;
@@ -345,6 +346,7 @@ TEST(CtraceUnitTests, TraceRunReaderParsesReferencedDataVariants)
         - { symbol-size: [] }
         - { symbol-type: null, symbol-size: null }
         - { symbol-size: invalid }
+        - {}
     - pname: core1
       data: not-an-array
     - pname: core2
@@ -354,7 +356,7 @@ TEST(CtraceUnitTests, TraceRunReaderParsesReferencedDataVariants)
     - data: [{}]
 )yml");
   ASSERT_EQ(config.setups.size(), 4U);
-  ASSERT_EQ(config.setups[0].data.size(), 6U);
+  ASSERT_EQ(config.setups[0].data.size(), 7U);
   EXPECT_FALSE(config.setups[0].data[1].symbolType.has_value());
   EXPECT_EQ(config.setups[0].data[2].symbolTypeError,
             std::optional<std::string>("'data.symbol-type' must be a scalar string"));
@@ -382,6 +384,7 @@ TEST(CtraceUnitTests, TraceRunReaderSkipsDisabledSetup)
     - disable:
       timestamps:
         clock: 400000000
+  ctrace-refs: []
 )yml")
                   .setups.empty());
 }
