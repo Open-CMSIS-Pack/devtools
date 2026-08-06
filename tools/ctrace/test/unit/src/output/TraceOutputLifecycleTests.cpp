@@ -54,7 +54,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesIndependentOutputs)
 
   const auto contents = readTestTextFile(path);
   require(contents.find("cycles,stream,type,source,value,pc,offset,note\n") == 0U &&
-              contents.find(",0,itm,1,0x41,,,\n") != std::string::npos,
+              contents.find(",,itm,1,0x41,,,\n") != std::string::npos,
           "output lifecycle should complete successful outputs despite another output failure");
 }
 

@@ -26,7 +26,8 @@ remains authoritative for the external `*.ctrace-run.yml` format.
 - File-read chunks are not packet boundaries. Decoder state must survive arbitrary read boundaries.
 - Incomplete input and unrecoverable decoder responses remain visible errors. Discontinuities flush or clear pending
   DWT state and invalidate timestamp quality before decoding continues.
-- Unformatted input uses Trace Bus ID `0`; routed IDs are restricted to `1` through `111`.
+- Internally, unformatted input uses Trace Bus ID `0`; its CSV `stream` field is empty. Routed IDs are restricted to
+  `1` through `111`.
 - ITM stimulus ports are restricted to `0` through `31`. Timestamp prescalers are stream-specific, default to `1`,
   and accept only `1`, `4`, `16`, or `64`.
 

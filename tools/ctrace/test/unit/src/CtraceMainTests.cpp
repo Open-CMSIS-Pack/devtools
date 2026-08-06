@@ -38,7 +38,7 @@ TEST(CtraceUnitTests, testCtraceMainGeneratesAllOutputs)
   EXPECT_EQ(CtraceMain({"ctrace", directory.string(), "--target", "Minimal", "--all"}), 0);
   EXPECT_EQ(readTestTextFile(directory / "Minimal.SWO.csv"),
             "cycles,stream,type,source,value,pc,offset,note\n"
-            "0,0,itm,1,0x41,,,\n");
+            "0,,itm,1,0x41,,,\n");
   expectNonEmptyFile(directory / "Minimal.ctf" / "metadata");
   expectNonEmptyFile(directory / "Minimal.ctf" / "stream_0");
   expectNonEmptyFile(directory / "Minimal.SWO.traceanalysis.xml");

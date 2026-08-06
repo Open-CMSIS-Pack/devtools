@@ -73,11 +73,11 @@ if(csv MATCHES ",itm,")
 endif()
 
 set(recovery_error
-    "0,0,error,,,,,OpenCSD detected an invalid ITM packet sequence at raw offset 10.")
+    "0,,error,,,,,OpenCSD detected an invalid ITM packet sequence at raw offset 10.")
 set(data_loss
-    "0,0,error,,,,,OpenCSD consumed 116 raw bytes while waiting for usable ITM trace packets")
-set(first_resumed_event "271773258,0,dwt,0,0x00,,,")
-set(late_resumed_event "425766493,0,dwt,0,0x2a,,,")
+    "0,,error,,,,,OpenCSD consumed 116 raw bytes while waiting for usable ITM trace packets")
+set(first_resumed_event "271773258,,dwt,0,0x00,,,")
+set(late_resumed_event "425766493,,dwt,0,0x2a,,,")
 
 string(FIND "${csv}" "${recovery_error}" recovery_error_position)
 string(FIND "${csv}" "${data_loss}" data_loss_position)

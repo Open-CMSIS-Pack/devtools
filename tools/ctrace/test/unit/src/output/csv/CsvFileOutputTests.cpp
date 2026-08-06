@@ -110,7 +110,7 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
   errorOutput.start();
   errorOutput.writeEvent(issuePacket(TraceIssueCode::DecodeError, "decoder warning", TraceIssueSeverity::Warning));
   errorOutput.stop();
-  require(readTestTextFile(errorOutputPath.path()).find(",0,error,,,,,decoder warning\n") != std::string::npos,
+  require(readTestTextFile(errorOutputPath.path()).find(",,error,,,,,decoder warning\n") != std::string::npos,
           "the error selector must include warning-severity decoder issue packets");
 }
 
@@ -139,8 +139,8 @@ TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
 
   require(lines.size() == 3U, "CSV specification row count mismatch");
   require(lines[0] == "cycles,stream,type,source,value,pc,offset,note", "CSV specification header mismatch");
-  require(lines[1] == "949338400,0,dwt,2,0xfffffdf9,0x08001234,0xfdf9,", "CSV DWT row schema mismatch");
-  require(lines[2] == "950364820,0,exception,11,0x1,,,", "CSV exception state schema mismatch");
+  require(lines[1] == "949338400,,dwt,2,0xfffffdf9,0x08001234,0xfdf9,", "CSV DWT row schema mismatch");
+  require(lines[2] == "950364820,,exception,11,0x1,,,", "CSV exception state schema mismatch");
 }
 
 TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
@@ -159,9 +159,9 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
 
   require(lines.size() == 3U, "CSV issue row count mismatch");
   require(lines[0] == "cycles,stream,type,source,value,pc,offset,note", "CSV issue header mismatch");
-  require(lines[1] == "1234,0,overflow,,,,,overflow: new timestamp segment; time across boundary may be unreliable",
+  require(lines[1] == "1234,,overflow,,,,,overflow: new timestamp segment; time across boundary may be unreliable",
           "CSV overflow issue row mismatch");
-  require(lines[2] == "1235,0,error,,,,,trace data lost before resynchronization", "CSV data-loss issue row mismatch");
+  require(lines[2] == "1235,,error,,,,,trace data lost before resynchronization", "CSV data-loss issue row mismatch");
 }
 
 TEST(CtraceUnitTests, testCsvFileOutputWritesDirectly)

@@ -129,7 +129,9 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
   if (event.tcyc.has_value()) {
     row[column(CsvColumn::Cycles)] = std::to_string(*event.tcyc);
   }
-  row[column(CsvColumn::Stream)] = std::to_string(event.traceBusId);
+  if (event.traceBusId != 0U) {
+    row[column(CsvColumn::Stream)] = std::to_string(event.traceBusId);
+  }
   if (const auto type = traceEventType(event)) {
     row[column(CsvColumn::Type)] = traceEventTypeName(*type);
   }

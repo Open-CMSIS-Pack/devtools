@@ -91,7 +91,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorUsesReconstructedGlobalTimestamp
   require(sink.elements().size() == 2U, "raw GTS fragments must not be published as independent global timestamps");
 
   TraceEvent packet{GlobalTimestampTraceEvent{element.timestampValue, false}};
-  require(CsvRowMapper::row(packet) == std::to_string(element.timestampValue) + ",0,global_ts,,,,,",
+  require(CsvRowMapper::row(packet) == std::to_string(element.timestampValue) + ",,global_ts,,,,,",
           "CSV must preserve all 64 global timestamp bits in the cycles column");
 }
 
