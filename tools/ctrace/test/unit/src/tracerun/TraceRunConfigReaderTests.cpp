@@ -142,6 +142,8 @@ TEST(CtraceUnitTests, TraceRunReaderAcceptsScalarAndArraySourceNotation)
     - ctrace-ref: relevant/dwt-array
       type: dwt
       source: [4, 5]
+    - ctrace-ref: ignored/unsupported
+      type: unsupported
 )yml");
   ASSERT_EQ(config.references.size(), 3U);
   EXPECT_TRUE(config.references[0].sources == std::vector<std::uint32_t>({1U, 2U}));
@@ -193,8 +195,16 @@ TEST(CtraceUnitTests, TraceRunReaderReportsDocumentErrors)
 TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceContainers)
 {
   TraceRunFixture file("ctrace-run-reader-reference-container-errors-test");
+  expectReadError(file, "ctrace-run: {}\n", "missing required 'ctrace-refs' array");
   expectReadError(file, "ctrace-run:\n  ctrace-refs: {}\n", "'ctrace-refs' must be an array");
   expectReadError(file, "ctrace-run:\n  ctrace-refs: []\n  ctrace-refs: []\n", "map keys must be unique");
+  expectReadError(file, "ctrace-run:\n  ctrace-refs: [invalid]\n", "each 'ctrace-refs' entry must be a map");
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { ctrace-ref: core/itm, source: 1 }\n",
+                  "missing required 'type' scalar");
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: [], ctrace-ref: core/itm, source: 1 }\n",
+                  "missing required 'type' scalar");
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: '', ctrace-ref: core/itm, source: 1 }\n",
+                  "missing required 'type' scalar");
   expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - type: itm\n      source: 1\n",
                   "missing required 'ctrace-ref' scalar");
   expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: itm, ctrace-ref: [], source: 1 }\n",
@@ -312,6 +322,11 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedConsumedSetups)
   for (const auto& testCase : cases) {
     expectReadError(file, std::string(prefix) + testCase.setup + "\n", testCase.error);
   }
+
+  expectReadError(file, "ctrace-run:\n  ctrace-refs: []\n  ctrace-setup: {}\n",
+                  "'ctrace-setup' must be an array");
+  expectReadError(file, "ctrace-run:\n  ctrace-refs: []\n  ctrace-setup: [invalid]\n",
+                  "each 'ctrace-setup' entry must be a map");
 
   expectReadError(file, R"yml(ctrace-run:
   ctrace-refs:

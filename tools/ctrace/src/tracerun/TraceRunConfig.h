@@ -81,8 +81,8 @@ constexpr bool isItmSource(std::uint32_t source)
 /** @brief Converts empty processor names to an absent value. */
 inline std::optional<std::string> normalizedProcessorName(std::optional<std::string> name)
 {
-  if (name.has_value() && name->empty()) {
-    name.reset();
+  if (!name.has_value() || name->empty()) {
+    return std::nullopt;
   }
   return name;
 }

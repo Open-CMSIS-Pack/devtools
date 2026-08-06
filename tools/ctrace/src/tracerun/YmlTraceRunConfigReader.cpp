@@ -210,43 +210,6 @@ static std::set<std::size_t> referencedDataSetupIndices(const std::vector<TraceR
   return indices;
 }
 
-/** @brief Tests whether a processor has any consumed DWT data setup. */
-static bool hasReferencedDataForProcessor(const std::vector<TraceRunReference>& references,
-                                          const std::optional<std::string>& setupProcessorName)
-{
-  for (const auto& reference : references) {
-    if (reference.type == "dwt" && TraceRunSchema::isUsableReference(reference) &&
-        TraceRunSchema::processorNamesMayBind(setupProcessorName, reference.processorName)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/** @brief Tests whether best-effort parsing must retain one setup's data. */
-static bool setupDataMayBeConsumed(const Node& setup, const std::vector<TraceRunReference>& references)
-{
-  bool hasProcessorName = false;
-  for (const auto& entry : setup) {
-    if (!entry.first.IsScalar() || entry.first.Scalar() != "pname") {
-      continue;
-    }
-    hasProcessorName = true;
-    if (!entry.second.IsScalar() && !entry.second.IsNull()) {
-      // It could name a referenced processor. Let strict parsing report
-      // it when this setup contains otherwise consumed data.
-      return true;
-    }
-    auto processorName = entry.second.IsScalar() ? std::optional<std::string>(entry.second.Scalar())
-                                                 : std::optional<std::string>(std::string{});
-    processorName = TraceRunSchema::normalizedProcessorName(std::move(processorName));
-    if (hasReferencedDataForProcessor(references, processorName)) {
-      return true;
-    }
-  }
-  return !hasProcessorName && hasReferencedDataForProcessor(references, std::nullopt);
-}
-
 /** @brief Requires one YAML node to be a sequence. */
 static void requireSequence(const std::string& path, const Node& element, const std::string_view& name)
 {
@@ -326,7 +289,7 @@ static ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, c
 static std::optional<TraceRunReference> parseReference(const std::string& path, const Node& element)
 {
   if (!element.IsMap()) {
-    return std::nullopt;
+    fail(path, element, "each 'ctrace-refs' entry must be a map");
   }
 
   const auto requiredScalar = [&](const std::string_view& name) {
@@ -337,13 +300,8 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
     return node.Scalar();
   };
 
-  const auto typeNode = childNode(element, "type");
-  if (!typeNode || !typeNode.IsScalar() || typeNode.Scalar().empty()) {
-    return std::nullopt;
-  }
-
   TraceRunReference reference;
-  reference.type = typeNode.Scalar();
+  reference.type = requiredScalar("type");
   if (!TraceRunSchema::consumesReferenceMetadata(reference.type)) {
     return std::nullopt;
   }
@@ -411,7 +369,7 @@ static std::vector<TraceRunReference> parseReferences(const std::string& path, c
 {
   const auto referencesNode = childNode(root, "ctrace-refs");
   if (!referencesNode) {
-    return {};
+    fail(path, root, "missing required 'ctrace-refs' array");
   }
   requireSequence(path, referencesNode, "ctrace-refs");
 
@@ -549,21 +507,12 @@ static std::vector<TraceRunSetup> parseSetups(const std::string& path, const Nod
   if (!setupNode) {
     return {};
   }
-  if (!setupNode.IsSequence()) {
-    return {};
-  }
+  requireSequence(path, setupNode, "ctrace-setup");
 
   std::vector<TraceRunSetup> setups;
   for (const auto& item : setupNode) {
     if (!item.IsMap()) {
-      continue;
-    }
-    const auto timestamps = childNode(item, "timestamps");
-    const auto itm = childNode(item, "itm");
-    const auto data = childNode(item, "data");
-    const auto consumesData = data && setupDataMayBeConsumed(item, references);
-    if (!timestamps && !itm && !consumesData) {
-      continue;
+      fail(path, item, "each 'ctrace-setup' entry must be a map");
     }
     // The copied ctrace.yml setup semantics define the presence of
     // 'disable' itself as sufficient to ignore the complete list entry.
