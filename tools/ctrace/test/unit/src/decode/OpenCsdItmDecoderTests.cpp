@@ -34,6 +34,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderChunksAndFinishesOnce)
   EXPECT_EQ(harness.script().pushCalls, 2U);
   EXPECT_EQ(harness.decoder().finish().bytesIn, 5000U);
   EXPECT_EQ(harness.decoder().finish().bytesIn, 5000U);
+  EXPECT_EQ(harness.script().endCalls, 1U);
   EXPECT_THROW(harness.push(1U), std::runtime_error);
   EXPECT_TRUE(harness.sink().hasIssue(TraceIssueCode::DataLoss));
 }

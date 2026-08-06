@@ -9,14 +9,7 @@ get_version_from_git_tag("tools/ctrace/")
 project(ctrace VERSION "${PROJECT_VERSION}")
 dump_cmake_project_version()
 
-set(CTRACE_VERSION_FULL "${PROJECT_VERSION_FULL}")
-set(CTRACE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-set(CTRACE_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-configure_file(
-  src/cli/ProductInfo.h.in
-  "${CTRACE_GENERATED_INCLUDE_DIR}/ProductInfo.h"
-  @ONLY
-)
+configure_file(src/cli/ProductInfo.h.in ProductInfo.h)
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT ctrace)
 
@@ -27,16 +20,23 @@ set(CTRACE_HEADER_FILES
 )
 source_group("Header Files" FILES ${CTRACE_HEADER_FILES})
 
-add_executable(ctrace
+add_library(ctracelib OBJECT
   src/CtraceMain.cpp
-  src/main.cpp
   ${CTRACE_HEADER_FILES}
 )
+target_link_libraries(ctracelib PUBLIC
+  ctrace::control
+)
+target_include_directories(ctracelib PUBLIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
+
+add_executable(ctrace src/main.cpp)
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   target_sources(ctrace PRIVATE src/ctrace.manifest)
 endif()
 target_link_libraries(ctrace PRIVATE
-  ctrace::control
+  ctracelib
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND

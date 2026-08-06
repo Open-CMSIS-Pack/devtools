@@ -8,6 +8,6 @@
 #ifndef CTRACE_SRC_CLI_PRODUCTINFO_H
 #define CTRACE_SRC_CLI_PRODUCTINFO_H
 
-inline constexpr char CtraceVersion[] = "@CTRACE_VERSION_FULL@";
+inline constexpr char CtraceVersion[] = "@PROJECT_VERSION_FULL@";
 
 #endif // CTRACE_SRC_CLI_PRODUCTINFO_H

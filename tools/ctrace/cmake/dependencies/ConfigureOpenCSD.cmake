@@ -16,7 +16,7 @@ function(ctrace_remove_opencsd_clang_cl_option_for_msvc)
   endif()
 
   set_property(TARGET opencsd_options PROPERTY INTERFACE_COMPILE_OPTIONS)
-  target_compile_options(opencsd PRIVATE /EHsc /W0)
+  target_compile_options(opencsd PRIVATE /EHsc /W1)
 endfunction()
 
 set(OPENCSD_BUILD_MIN_LIB_STATIC ON CACHE BOOL "" FORCE)

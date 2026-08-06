@@ -13,11 +13,13 @@
 #include <gtest/gtest.h>
 #include "CliOptions.h"
 #include "CtraceRunMeta.h"
+#include "DiagnosticSink.h"
 #include "FileDecodeJob.h"
 #include "TraceDirectoryJob.h"
 #include "TraceRunConfig.h"
 #include "TraceRunConfigReader.h"
 #include "opencsd/ocsd_if_types.h"
+#include <algorithm>
 #include <filesystem>
 #include <initializer_list>
 #include <memory>
@@ -223,7 +225,7 @@ TEST(CtraceUnitTests, testFileDecodeJobHandlesMissingInputAndDisabledCtf)
   EXPECT_TRUE(diagnostics.containsMessage("CTF output requires timestamps.clock"));
 }
 
-TEST(CtraceUnitTests, testFileDecodeJobUsesPerStreamPrescalers)
+TEST(CtraceUnitTests, testFileDecodeJobReportsPerStreamPrescalers)
 {
   const TemporaryTestPath temporaryPath("ctrace-file-decode-prescalers-test");
   const auto rawPath = temporaryPath.path() / "empty.SWO.raw";
@@ -242,7 +244,13 @@ TEST(CtraceUnitTests, testFileDecodeJobUsesPerStreamPrescalers)
   CollectingDiagnosticSink diagnostics;
   FileDecodeJob job(CliOptions{}, rawPath, diagnostics, CtraceRunMeta::fromConfig(config));
   EXPECT_NO_THROW(job.run());
-  EXPECT_TRUE(diagnostics.containsMessage("timestamp prescaler"));
+  const auto diagnostic = std::find_if(diagnostics.events().begin(), diagnostics.events().end(), [](const auto& event) {
+    return event.message == "using Trace-Bus-ID-specific timestamp prescalers";
+  });
+  ASSERT_NE(diagnostic, diagnostics.events().end());
+  EXPECT_EQ(diagnostic->severity, DiagnosticSink::Severity::Info);
+  EXPECT_EQ(diagnostic->context,
+            (std::vector<std::pair<std::string, std::string>>{{"traceBusIds", "2"}}));
 }
 
 TEST(CtraceUnitTests, testFileDecodeJobAbortsOutputsAfterFatalDecoderError)

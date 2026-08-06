@@ -23,6 +23,7 @@
 #include "TraceRunConfig.h"
 #include "TraceSelection.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -449,8 +450,13 @@ TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
   require(readOnlyCtfTraceStatusReasons(outputDir / "stream_0") ==
               std::vector<std::uint8_t>({CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError)}),
           "CTF must exclude software channel zero payload but retain its decoder errors");
-  require(!std::filesystem::exists(outputDir / ("m_stream" + std::to_string(1))),
-          "CTF must not create a second stream");
+  std::vector<std::string> bundleEntries;
+  for (const auto& entry : std::filesystem::directory_iterator(outputDir)) {
+    bundleEntries.push_back(entry.path().filename().string());
+  }
+  std::sort(bundleEntries.begin(), bundleEntries.end());
+  require(bundleEntries == std::vector<std::string>({"metadata", "stream_0"}),
+          "CTF bundle must contain only metadata and the primary stream");
 
   const auto metadata = readTestTextFile(outputDir / "metadata");
   require(metadata.find("ITM" + std::to_string(0)) == std::string::npos,

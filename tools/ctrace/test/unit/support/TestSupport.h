@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <ios>
 #include <iterator>
 #include <optional>
 #include <stdexcept>

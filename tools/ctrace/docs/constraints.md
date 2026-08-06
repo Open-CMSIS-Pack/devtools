@@ -1,112 +1,44 @@
-# Internal ctrace Design Constraints
+# ctrace Constraints
 
-This is maintainer documentation for implementation boundaries and regression
-tests. User-facing operation belongs in the [ctrace README](../README.md). The
-CMSIS-Toolbox [trace specification](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/Experimental-Features.md#file-structure-of-ctrace-runyml)
-defines the external `*.ctrace-run.yml` format and remains authoritative; this
-document does not redefine it.
+This document records contracts that implementation changes must preserve. It intentionally does not describe the
+runtime flow, module inventory, supported feature profile, build, or release process; those belong in the
+[architecture description](architecture.md), [README](../README.md), and [TODO list](todo.md). The CMSIS-Toolbox
+[trace specification](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/Experimental-Features.md#file-structure-of-ctrace-runyml)
+remains authoritative for the external `*.ctrace-run.yml` format.
 
-The constraints below describe only ctrace-specific implementation decisions.
-Each is implemented in the current code and covered by focused CTest cases.
+## Boundaries
 
-## Architecture
+- OpenCSD types remain inside the decode layer. Other modules and output backends consume semantic `TraceEvent`
+  values.
+- An OpenCSD API migration must retain access to typed ITM configuration and packet data and must preserve every
+  structured decoder error from each data-path operation; falling back to only the last error or formatted log text
+  would change recovery behavior.
+- YAML types remain inside the trace-run reader. The rest of ctrace consumes normalized configuration and metadata.
+- The YAML reader validates fields consumed by ctrace; unrelated fields are outside its validation scope. Malformed
+  consumed fields remain errors. An ITM reference without `source` values is valid and contributes no source events.
+- Backend-specific requirements and failures remain independent; requesting CTF must not disable otherwise valid CSV
+  output, or vice versa.
 
-- **OpenCSD details remain inside the decode layer; outputs consume semantic `TraceEvent` values.**
-  OpenCSD includes occur only below [`src/decode`](../src/decode); output targets depend on `model`, not OpenCSD.
+## Decode invariants
 
-- **YAML syntax and nodes do not escape the trace-run reader boundary.**
-  YAML types occur only in
-  [`YmlTraceRunConfigReader.cpp`](../src/tracerun/YmlTraceRunConfigReader.cpp); normalized configuration and metadata
-  cross the boundary.
+- Raw trace bytes are passed to the decoder unchanged; ctrace never injects synthetic synchronization. Recovery
+  resumes only at synchronization present in the input.
+- File-read chunks are not packet boundaries. Decoder state must survive arbitrary read boundaries.
+- Incomplete input and unrecoverable decoder responses remain visible errors. Discontinuities flush or clear pending
+  DWT state and invalidate timestamp quality before decoding continues.
+- Unformatted input uses Trace Bus ID `0`; routed IDs are restricted to `1` through `111`.
+- ITM stimulus ports are restricted to `0` through `31`. Timestamp prescalers are stream-specific, default to `1`,
+  and accept only `1`, `4`, `16`, or `64`.
 
-- **The YAML reader validates the fields consumed by ctrace and ignores unrelated extensions.**
-  `TraceRunReaderConsumesOnlyRelevantFields` and `TraceRunReaderValidatesConsumedFields` cover both sides.
+## Observable behavior and output safety
 
-- **Production dependencies retain seven explicit, cycle-free module boundaries and point toward lower-level
-  modules.** [`src/CMakeLists.txt`](../src/CMakeLists.txt) defines model, CLI, trace-run, diagnostics, decode, output,
-  and control targets. The executable adds the platform-independent `CtraceMain` entry point directly; raw-file
-  reading remains private to control rather than creating another target.
+- ITM port `0` is decoded for stream integrity but excluded from payload output. Decoder warnings and errors remain
+  observable regardless of payload filtering.
+- Structured diagnostic impact determines command failure; formatted stderr text does not.
+- CTF timestamps never regress, and a global timestamp does not by itself establish local timestamp quality.
+- Validation-only mode creates no output. Unsupported trace channels are diagnosed and skipped.
+- Cleanup of incomplete output artifacts is attempted after failure, and cleanup failures are reported. Incompatible
+  target types and overlapping CTF/XML paths are rejected before replacement.
 
-- **CSV and CTF requirements are evaluated independently after shared decode configuration.**
-  `testOutputRequirementsAreBackendSpecific` verifies that CTF-only failures do not disable valid CSV output.
-
-## Input and decoding
-
-- **Raw SWO input is authoritative; recovery never rewrites input or injects synthetic synchronization.**
-  `testDecodePipelineDoesNotInjectSync`, `testDecodePipelineRecoversAtRealSync`, and
-  `testDecodePipelineCountsBytesUntilRealSync` exercise the rule.
-
-- **File-read boundaries are not packet boundaries; partial OpenCSD state survives across chunks.**
-  `FileDecodeJob` reads 64 KiB blocks and passes non-owning `RawByteView` values to `DecodePipeline`.
-  `testDecodePipelineRecoversWhenErrorSpansChunks` and the persistent `OpenCsdItmSession` cover chunked input.
-
-- **Incomplete input and unrecoverable decoder responses remain visible errors, not successful packets.**
-  `testDecodePipelineReportsIncompletePacketAtEndOfInput` and `testOpenCsdErrorControllerClassifiesResponses` verify
-  classification.
-
-- **Overflow, reset, synchronization, and recovery boundaries cannot retain stale DWT state silently.**
-  `testCortexMPostDecoderOverflowFlushesDwtSegments` and post-decoder reset paths flush or clear pending state.
-
-- **Unformatted input uses Trace Bus ID `0`; formatted IDs are restricted to `1` through `111`.**
-  [`TraceStreamId.h`](../src/model/TraceStreamId.h), `testTraceSelection`, and `testCliParser` enforce the domains.
-
-- **ITM timestamp prescalers default to `1`, accept `1`, `4`, `16`, or `64`, and remain stream-specific.**
-  `testTimestampPrescalerMetadataDefaults`, `testCortexMStreamDecoderAppliesPerStreamPrescalers`, and metadata tests
-  cover the behavior.
-
-## Events, diagnostics, and output
-
-- **The stable selector set contains `itm`, `dwt`, `event`, `pmu`, `exception`, `pcsample`, `global_ts`, `overflow`,
-  and `error`; the implemented output profile currently contains only `itm`, `dwt`, `exception`, `global_ts`,
-  `overflow`, and `error`.** Event-counter and PMU packets are not mapped to their reserved selectors yet, and periodic
-  PC samples remain suppressed; `testTraceSelection`, `testCliParser`, `testCsvRowMapper`, and
-  `testDwtPcSampleIsSuppressedUntilDedicatedEventExists` enforce the boundary.
-
-- **Decoder warnings and errors remain observable independently of payload filtering; errors fail the command.**
-  `testTraceIssueReporterReportsEveryIssue` and
-  `testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOutputs` verify ordering and impact.
-
-- **ITM stream decoding accepts stimulus ports `0` through `31`, while public payload output is restricted to ports
-  `1` through `31`.** Port `0` is excluded from trace artifacts, but associated decoder errors remain visible;
-  out-of-domain port values are rejected. `testTraceSelection` and `testCtfBundleOutputExcludesSoftwareChannelZero`
-  cover selection and CTF metadata.
-
-- **CTF timestamps never regress; global timestamps do not establish local timestamp quality.**
-  `testCtfHoldsRegressingEventTimestamps` and `testCtfGlobalTimestampDoesNotEstablishLocalTimeQuality` verify both.
-
-- **Each output owns a direct lifecycle and removes incomplete artifacts after failure.**
-  `testCsvFileOutputWritesDirectly`, `testCtfBundleOutputAbortRemovesPartialBundle`, and lifecycle tests cover cleanup
-  and independent completion.
-
-- **Existing directories or overlapping CTF/XML targets are rejected before destructive replacement.**
-  `testCtfBundleOutputRejectsOverlappingTargetsBeforeDeletion` and CSV path tests cover target safety.
-
-- **Validation-only mode creates no output; unsupported trace channels are diagnosed and skipped.**
-  `TraceDirectoryJob`, `ctrace-trace-run-yaml`, and the SWO/TB fixture integration test enforce the workflow.
-
-- **Process success comes from structured diagnostic impact, not formatted stderr text.**
-  [`DiagnosticSink`](../src/diagnostics/DiagnosticSink.h) tracks failure impact independently of the rendered
-  severity; `CtraceMain` returns failure when the failure count is non-zero.
-
-## Distribution
-
-- **The executable version and release workflow are tool-specific.** A release tag named `tools/ctrace/<version>`
-  supplies the compiled version and selects the ctrace workflow. Its matrix builds Windows AMD64/Arm64, Linux
-  AMD64/Arm64, and macOS Arm64 artifacts. Tests execute on Windows AMD64 and Linux AMD64; ARM64 targets are compiled
-  but not executed, matching the other devtools workflows.
-
-- **Product dependencies come from devtools and carry repository-level license records.** `cxxopts`, `yaml-cpp`, and
-  the pinned OpenCSD submodule are listed in the top-level `LICENSE.md`. The release archive includes the project
-  license, [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md), OpenCSD source-file copyright notices, application
-  dependency license texts, and verified per-file checksums. The release workflow assembles this archive with the same
-  explicit download/copy/zip stages used by the other devtools workflows. Runtime contents remain subject to
-  per-artifact inspection rather than being implicitly covered by the application dependency list.
-
-- **The Blinky SWO and TB captures are redistributable ctrace test assets.** Their purpose, origin, and derived golden
-  CSV are documented in the [fixture README](../test/data/README.md); generated test output remains confined to the
-  build tree.
-
-## Maintenance rule
-
-When changing one of these contracts, update its focused unit test, the relevant integration scenario, this document,
-and the [architecture description](architecture.md) in the same change.
+Changes to these contracts require corresponding unit or integration coverage. Update the architecture document only
+when the implementation structure or data flow changes.

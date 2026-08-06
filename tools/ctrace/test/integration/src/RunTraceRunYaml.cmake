@@ -62,12 +62,15 @@ if(DEFINED EXPECT_CSV)
 endif()
 if(DEFINED EXPECT_CTF)
     if(EXPECT_CTF)
-        if(NOT EXISTS "${ctf_path}/metadata"
-           OR NOT EXISTS "${ctf_stream_path}"
-           OR NOT EXISTS "${xml_path}")
+        if(NOT IS_DIRECTORY "${ctf_path}")
             message(FATAL_ERROR
                 "ctrace did not generate the complete expected CTF bundle: ${ctf_path}")
         endif()
+        ctrace_require_nonempty_files(
+            "${ctf_path}/metadata"
+            "${ctf_stream_path}"
+            "${xml_path}"
+        )
     elseif(EXISTS "${ctf_path}" OR EXISTS "${xml_path}")
         message(FATAL_ERROR
             "ctrace unexpectedly generated a CTF bundle: ${ctf_path}")

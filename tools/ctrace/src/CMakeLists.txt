@@ -10,7 +10,6 @@ set(CTRACE_MODEL_HEADER_FILES
 set(CTRACE_CLI_HEADER_FILES
   cli/CliOptions.h
   cli/CliParser.h
-  cli/ProductInfo.h.in
 )
 set(CTRACE_TRACE_RUN_HEADER_FILES
   tracerun/CtraceRunMeta.h
@@ -82,11 +81,9 @@ add_library(ctrace-cli STATIC
   ${CTRACE_CLI_HEADER_FILES}
 )
 add_library(ctrace::cli ALIAS ctrace-cli)
-target_include_directories(ctrace-cli PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/cli"
-)
-target_include_directories(ctrace-cli PRIVATE
-  "${CTRACE_GENERATED_INCLUDE_DIR}"
+target_include_directories(ctrace-cli
+  PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/cli"
+  PRIVATE "${PROJECT_BINARY_DIR}"
 )
 target_link_libraries(ctrace-cli
   PUBLIC ctrace::model
@@ -139,12 +136,10 @@ add_library(ctrace::decode ALIAS ctrace-decode)
 target_include_directories(ctrace-decode PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/decode"
 )
-target_link_libraries(ctrace-decode PUBLIC
-  ctrace::model
-)
 # Decode headers contain OpenCSD interface types; propagate that build-time
 # dependency. ctrace installs no library headers or C++ API.
 target_link_libraries(ctrace-decode PUBLIC
+  ctrace::model
   ctrace::opencsd
 )
 
@@ -183,14 +178,12 @@ add_library(ctrace::control ALIAS ctrace-control)
 target_include_directories(ctrace-control PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/control"
 )
+# FileDecodeJob.h exposes decoder types to build-tree consumers.
 target_link_libraries(ctrace-control PUBLIC
   ctrace::cli
+  ctrace::decode
   ctrace::diagnostics
   ctrace::model
   ctrace::output
   ctrace::trace-run
-)
-# FileDecodeJob.h exposes decoder types to build-tree consumers.
-target_link_libraries(ctrace-control PUBLIC
-  ctrace::decode
 )

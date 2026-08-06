@@ -26,7 +26,6 @@ else()
 endif()
 
 add_executable(CtraceUnitTests
-  ${CTRACE_SOURCE_DIR}/src/CtraceMain.cpp
   src/CtraceMainTests.cpp
   src/cli/CliParserTests.cpp
   src/control/DecodeConsumersTests.cpp
@@ -56,22 +55,18 @@ add_executable(CtraceUnitTests
 )
 
 target_link_libraries(CtraceUnitTests PRIVATE
-  ctrace::control
+  ctracelib
   gtest_main
 )
 
 target_include_directories(CtraceUnitTests PRIVATE
-  "${CTRACE_SOURCE_DIR}/src"
   "${CMAKE_CURRENT_SOURCE_DIR}/support"
 )
 
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/test_reports")
-include(GoogleTest)
-gtest_discover_tests(CtraceUnitTests
+add_test(
+  NAME CtraceUnitTests
+  COMMAND CtraceUnitTests
+    --gtest_output=xml:test_reports/ctraceunittests-report-${SYSTEM}-${CPU_ARCH}.xml
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-  PROPERTIES
-    TIMEOUT 30
-    LABELS "ctrace-unit"
-  XML_OUTPUT_DIR "${CMAKE_BINARY_DIR}/test_reports"
-  DISCOVERY_MODE PRE_TEST
 )

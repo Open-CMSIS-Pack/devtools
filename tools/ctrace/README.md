@@ -88,7 +88,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build build --target ctrace CtraceUnitTests
 ```
 
-Run the independently discoverable GoogleTest cases and the executable-level integration tests:
+Run the GoogleTest unit suite and the executable-level integration tests:
 
 ```bash
 ctest --test-dir build -C Debug -R '^(CtraceUnitTests|ctrace-)'

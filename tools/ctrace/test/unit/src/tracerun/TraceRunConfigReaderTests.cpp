@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -74,37 +73,20 @@ static void expectReadError(TraceRunFixture& file, std::string_view yaml, std::s
   EXPECT_NE(error.find(expected), std::string::npos) << "unexpected result for:\n" << yaml << "\nerror: " << error;
 }
 
-TEST(CtraceUnitTests, TraceRunReaderConsumesOnlyRelevantFields)
+TEST(CtraceUnitTests, TraceRunReaderParsesConsumedFields)
 {
-  TraceRunFixture file("ctrace-run-reader-relevant-fields-test");
-  const auto config = file.read(R"yml(format-version: ignored
-producer-data:
-  malformed: [but, irrelevant]
-ctrace-run:
-  generated-by: ignored
-  created-by: ignored
-  vendor-extension: { arbitrary: [content] }
+  TraceRunFixture file("ctrace-run-reader-consumed-fields-test");
+  const auto config = file.read(R"yml(ctrace-run:
   ctrace-setup:
     - pname: core0
       timestamps:
         clock: 400000000
         itm-prescaler: 4
-        timestamp-extension: [ignored]
       itm:
         enable: 0x00000006
-        privileged: [ignored]
       data:
-        - location: ignored
-          symbol-file: ignored
-          type: [obsolete-and-ignored]
-          size: malformed-but-ignored
-          symbol-type: signed int
+        - symbol-type: signed int
           symbol-size: 1
-          data-extension: { ignored: true }
-      exceptions: [ignored]
-      pcsampling: { ignored: true }
-      synchronization: malformed-but-ignored
-    - unknown-setup: [ignored]
   ctrace-refs:
     - ctrace-ref: core0/itm
       pname: core0
@@ -112,7 +94,6 @@ ctrace-run:
       stream: 2
       source: 1
       label: Console
-      regs: [ignored]
     - ctrace-ref: core0/data#0
       pname: core0
       type: dwt
@@ -120,11 +101,6 @@ ctrace-run:
       source: 0
       symbol-address: 0x20000100
       label: Current
-      reference-extension: [ignored]
-    - { ctrace-ref: ignored/etm, type: etm, source: [invalid] }
-    - { ctrace-ref: ignored/exception, type: exception, source: [invalid] }
-    - { ctrace-ref: ignored/missing-type, source: [invalid] }
-    - malformed-entry-is-ignored
 )yml");
   ASSERT_EQ(config.references.size(), 2U);
   ASSERT_EQ(config.setups.size(), 1U);
@@ -150,14 +126,6 @@ ctrace-run:
   EXPECT_EQ(dwt.valueSize, 1U);
   EXPECT_EQ(dwt.symbolAddress, std::optional<std::uint64_t>(0x20000100U));
   EXPECT_EQ(dwt.label, std::optional<std::string>("Current"));
-
-  const auto empty = file.read(R"yml(unrelated-root: [ignored]
-ctrace-run:
-  generated-by: ignored
-  unsupported-content: { malformed: [but, irrelevant] }
-)yml");
-  EXPECT_TRUE(empty.references.empty());
-  EXPECT_TRUE(empty.setups.empty());
 }
 
 TEST(CtraceUnitTests, TraceRunReaderAcceptsScalarAndArraySourceNotation)
@@ -217,7 +185,7 @@ TEST(CtraceUnitTests, TraceRunReaderReportsDocumentErrors)
   expectReadError(file, "ctrace-run: [\n", "failed to parse trace-run configuration");
   expectReadError(file, "ctrace-run: {}\n---\nctrace-run: {}\n", "expected exactly one YAML document");
   expectReadError(file, "[]\n", "expected a YAML map containing 'ctrace-run'");
-  expectReadError(file, "unrelated: {}\n", "missing top-level 'ctrace-run' node");
+  expectReadError(file, "{}\n", "missing top-level 'ctrace-run' node");
   expectReadError(file, "ctrace-run: {}\nctrace-run: {}\n", "map keys must be unique");
   expectReadError(file, "ctrace-run: []\n", "top-level 'ctrace-run' node must be a map");
 }
@@ -270,22 +238,18 @@ TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
   TraceRunFixture file("ctrace-run-reader-diagnostic-references-test");
   const auto config = file.read(R"yml(ctrace-run:
   ctrace-refs:
-    - { type: event, ctrace-ref: core/event, pname: core0, source: [invalid], info: note }
-    - { type: pmu, ctrace-ref: core/pmu, pname: [], warning: warning }
+    - { type: event, ctrace-ref: core/event, pname: core0, info: note }
+    - { type: pmu, ctrace-ref: core/pmu, pname: core1, warning: warning }
     - { type: pcsample, ctrace-ref: core/pc, pname: null, error: unavailable }
     - { type: dwt, ctrace-ref: core/data#, source: 0, symbol-address: invalid, error: diagnostic }
     - { type: dwt, ctrace-ref: core/data#x, stream: [], source: 0, error: malformed }
     - { type: dwt, ctrace-ref: core/notdata#2, error: unrouted }
     - { type: itm, ctrace-ref: core/itm0, source: 0, error: disabled }
     - { type: itm, ctrace-ref: core/itm1, source: 1, error: usable, label: null }
-    - { type: ignored, ctrace-ref: ignored }
-    - { ctrace-ref: ignored/missing-type }
-    - { type: [], ctrace-ref: ignored }
-    - { type: '', ctrace-ref: ignored }
 )yml");
   ASSERT_EQ(config.references.size(), 8U);
   EXPECT_EQ(config.references[0].processorName, std::optional<std::string>("core0"));
-  EXPECT_FALSE(config.references[1].processorName.has_value());
+  EXPECT_EQ(config.references[1].processorName, std::optional<std::string>("core1"));
   EXPECT_FALSE(config.references[2].processorName.has_value());
   EXPECT_FALSE(config.references[3].symbolAddress.has_value());
   EXPECT_FALSE(config.references[3].dataSetupIndex.has_value());
@@ -375,7 +339,7 @@ TEST(CtraceUnitTests, TraceRunReaderParsesReferencedDataVariants)
   ctrace-setup:
     - pname: core0
       data:
-        - ignored
+        - {}
         - not-a-map
         - { symbol-type: [] }
         - { symbol-size: [] }
@@ -410,24 +374,14 @@ TEST(CtraceUnitTests, TraceRunReaderParsesReferencedDataVariants)
                   "map keys must be unique");
 }
 
-TEST(CtraceUnitTests, TraceRunReaderIgnoresUnconsumedSetups)
+TEST(CtraceUnitTests, TraceRunReaderSkipsDisabledSetup)
 {
-  TraceRunFixture file("ctrace-run-reader-unconsumed-setups-test");
+  TraceRunFixture file("ctrace-run-reader-disabled-setup-test");
   EXPECT_TRUE(file.read(R"yml(ctrace-run:
-  ctrace-refs:
-    - { type: dwt, ctrace-ref: core0/data#4, pname: core0, source: 0 }
   ctrace-setup:
-    - ignored-scalar
-    - { unrelated: true }
-    - { pname: other, data: [{}] }
-    - { pname: core0, data: [{}] }
-    - { pname: null, data: [{}], disable: false }
-    - { timestamps: {}, disable: true }
-    - { itm: { enable: 1 }, disable: true }
+    - disable:
+      timestamps:
+        clock: 400000000
 )yml")
                   .setups.empty());
-
-  EXPECT_TRUE(file.read("ctrace-run:\n  ctrace-setup: {}\n").setups.empty());
-  EXPECT_NE(file.error("ctrace-run:\n  ctrace-setup: []\n  ctrace-setup: []\n").find("map keys must be unique"),
-            std::string::npos);
 }

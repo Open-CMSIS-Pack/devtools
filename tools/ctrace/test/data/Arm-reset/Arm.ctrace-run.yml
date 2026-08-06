@@ -1,18 +1,8 @@
 ctrace-run:
-  generated-by: ctrace integration test
   ctrace-setup:
     - timestamps:
         clock: 280000000
         itm-prescaler: 1
-      data:
-        - type: signed int
-          size: 1
-        - type: signed int
-          size: 4
-        - type: signed int
-          size: 4
-        - type: signed int
-          size: 4
   ctrace-refs:
     - ctrace-ref: timestamps
       type: itm

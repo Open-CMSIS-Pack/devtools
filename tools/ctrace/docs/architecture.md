@@ -224,6 +224,11 @@ causes a non-zero exit status. Unhandled internal ctrace failures also terminate
 | GoogleTest | Unit-test framework; not linked into the product executable |
 
 Dependencies are provided by the devtools repository. `tools/ctrace` does not maintain private library copies.
+The ITM adapter currently uses OpenCSD `common/` and `interfaces/` headers because the public OpenCSD 1.8.3 boundary
+does not provide equivalent access: its installed headers omit the ITM configuration and packet types required by the
+decoder callbacks, and its C API exposes only the last structured error rather than all errors from one data-path
+operation. Moving the adapter to the public API therefore also requires resolving these two gaps.
+
 The pinned OpenCSD source is built without a downstream source patch. A known unsafe empty-buffer access in an
 upstream diagnostic path, its reachability, and a proposed upstream fix are recorded in the
 [OpenCSD issue notes](opencsd-issues.md).
@@ -249,22 +254,21 @@ Do not introduce backend-specific state into the decode pipeline or event model.
 ## Test architecture
 
 Unit tests under `test/unit/src` mirror the production modules. Shared file, event, and diagnostic helpers live under
-`test/unit/support`. GoogleTest discovery registers every test case separately with CTest, so IDEs and CI can execute
-individual cases.
+`test/unit/support`. One CTest entry runs the complete GoogleTest executable and writes its XML report.
 
 Integration tests under `test/integration` execute the real `ctrace` binary and verify command-line behavior,
 diagnostics, output cleanup, and fixture conversion. Test data and expected artifacts live under `test/data`; generated
 files are written only below the CMake build directory.
 
-The `CtraceUnitTests` target preserves one CI entry point while linking the ctrace modules explicitly. Integration
-tests use the `ctrace-` CTest name prefix. CI runs both suites on Windows AMD64 and Linux AMD64. ARM64 targets are
-compiled but not executed, matching the other devtools workflows.
+The `CtraceUnitTests` target links the same `ctracelib` application object used by the executable. Integration tests
+use the `ctrace-` CTest name prefix. CI runs both suites on Windows AMD64 and Linux AMD64. ARM64 targets are compiled
+but not executed, matching the other devtools workflows.
 
 ## Build and release structure
 
 The source tree has seven static library targets: `model`, `cli`, `trace-run`, `diagnostics`, `decode`, `output`, and
-`control`. The `ctrace` executable adds only the platform trampoline and `CtraceMain`. Dependencies form a directed,
-cycle-free graph with `control` as the composition root.
+`control`. The shared `ctracelib` object contains `CtraceMain`; the executable adds only the platform trampoline and
+manifest where required. Dependencies form a directed, cycle-free graph with `control` as the composition root.
 
 The tool-specific GitHub workflow is selected by a `tools/ctrace/<version>` release tag. It builds Windows AMD64 and
 Arm64, Linux AMD64 and Arm64, and macOS Arm64 binaries.
@@ -276,13 +280,3 @@ production release.
 The checked-in SWO and TB captures are approved ctrace test assets and may be redistributed with devtools. Together
 with the tool-specific build, test, packaging, versioning, and license integration, this forms the technical basis for
 the first open-source release.
-
-## Architectural constraints
-
-- Runtime dependencies point from orchestration toward decode, model, and output modules.
-- Output modules consume semantic events and never OpenCSD packet types.
-- YAML nodes do not cross the `tracerun` boundary.
-- Diagnostics are structured and are not inferred from formatted stderr text inside the application.
-- Output backends own their artifacts and must support cleanup after partial failure.
-- Published test fixtures must be approved for redistribution and must not contain private or unstable trace
-  payloads.

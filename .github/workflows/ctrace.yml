@@ -7,8 +7,15 @@ on:
     paths:
       - '.github/workflows/ctrace.yml'
       - '.github/matrix_includes_ctrace.json'
+      - '.gitmodules'
       - 'cmake/**'
       - 'CMakeLists.txt'
+      - 'external/OpenCSD'
+      - 'external/cxxopts'
+      - 'external/cxxopts.patch'
+      - 'external/googletest'
+      - 'external/yaml-cpp'
+      - 'external/yaml-cpp.patch'
       - 'tools/ctrace/**'
       - '!**/docs/**/*'
       - '!**/*.md'
@@ -16,8 +23,15 @@ on:
     paths:
       - '.github/workflows/ctrace.yml'
       - '.github/matrix_includes_ctrace.json'
+      - '.gitmodules'
       - 'cmake/**'
       - 'CMakeLists.txt'
+      - 'external/OpenCSD'
+      - 'external/cxxopts'
+      - 'external/cxxopts.patch'
+      - 'external/googletest'
+      - 'external/yaml-cpp'
+      - 'external/yaml-cpp.patch'
       - 'tools/ctrace/**'
       - '!**/docs/**/*'
       - '!**/*.md'
@@ -167,7 +181,7 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 25
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     steps:
       - name: Harden Runner
@@ -183,6 +197,7 @@ jobs:
 
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CtraceUnitTests
+        id: build_unit_tests
         uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
         with:
           target: CtraceUnitTests
@@ -190,24 +205,39 @@ jobs:
           arch: ${{ matrix.arch }}
 
       - name: Build ctrace integration target
-        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
-        with:
-          target: ctrace
-          build_type: Debug
-          arch: ${{ matrix.arch }}
-
-      - name: Run ctrace tests
-        if: matrix.arch != 'arm64'
-        run: ctest -V -C Debug -R '^(CtraceUnitTests|ctrace-)'
+        id: build_integration_target
+        run: cmake --build . --target ctrace
         working-directory: ./build
 
-      - name: Archive unit tests results
+      - name: Run ctrace unit tests
+        id: run_unit_tests
+        if: always() && (matrix.arch != 'arm64') && (steps.build_unit_tests.outcome == 'success')
+        run: ctest -V -C Debug -R '^CtraceUnitTests$'
+        working-directory: ./build
+
+      - name: Run ctrace integration tests
+        id: run_integration_tests
+        if: always() && (matrix.arch != 'arm64') && (steps.build_integration_target.outcome == 'success')
+        run: ctest -V -C Debug -R '^ctrace-' --output-junit test_reports/ctraceintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
+        working-directory: ./build
+
+      - name: Archive unit test results
         # Keep the report available when test execution fails.
-        if: always() && (matrix.arch != 'arm64')
+        if: always() && (matrix.arch != 'arm64') && (steps.run_unit_tests.outcome != 'skipped')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_ctrace-${{ matrix.target }}-${{ matrix.arch }}
-          path: ./build/test_reports/CtraceUnitTests.*.xml
+          path: ./build/test_reports/ctraceunittests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
+          retention-days: ${{ needs.setup.outputs.retention_days }}
+          if-no-files-found: error
+
+      - name: Archive integration test results
+        # Keep the report available when test execution fails.
+        if: always() && (matrix.arch != 'arm64') && (steps.run_integration_tests.outcome != 'skipped')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: integ_test_result_ctrace-${{ matrix.target }}-${{ matrix.arch }}
+          path: ./build/test_reports/ctraceintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
           retention-days: ${{ needs.setup.outputs.retention_days }}
           if-no-files-found: error
 
@@ -249,8 +279,12 @@ jobs:
         run: cmake --build . --target ctrace
         working-directory: ./build
 
-      - name: Run ctrace tests
-        run: ctest -V -C Debug -R '^(CtraceUnitTests|ctrace-)'
+      - name: Run ctrace unit tests
+        run: ctest -V -C Debug -R '^CtraceUnitTests$'
+        working-directory: ./build
+
+      - name: Run ctrace integration tests
+        run: ctest -V -C Debug -R '^ctrace-' --output-junit test_reports/ctraceintegtests-report-linux-amd64.xml
         working-directory: ./build
 
       - name: Get retention days
@@ -258,12 +292,21 @@ jobs:
         run: |
           echo "retention_days=$(echo '${{ (!github.event.repository.private && (github.event_name == 'push' || github.event.schedule != '')) && '7' || '1' }}')" >> $GITHUB_OUTPUT
 
-      - name: Archive unit tests results
+      - name: Archive unit test results
         if: (github.event_name == 'push')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_ctrace-linux-amd64
-          path: ./build/test_reports/CtraceUnitTests.*.xml
+          path: ./build/test_reports/ctraceunittests-report-linux-amd64.xml
+          retention-days: ${{ steps.var.outputs.retention_days }}
+          if-no-files-found: error
+
+      - name: Archive integration test results
+        if: (github.event_name == 'push')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: integ_test_result_ctrace-linux-amd64
+          path: ./build/test_reports/ctraceintegtests-report-linux-amd64.xml
           retention-days: ${{ steps.var.outputs.retention_days }}
           if-no-files-found: error
 

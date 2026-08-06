@@ -5,11 +5,13 @@
  * Generated with AI
  */
 
+#include "CtfTestSupport.h"
 #include "TestPath.h"
 #include "TestPlatform.h"
 
 #include <gtest/gtest.h>
 
+#include "ctf/CtfSchema.h"
 #include "ctf/CtfStreamWriter.h"
 
 #include <cstddef>
@@ -45,9 +47,19 @@ TEST(CtraceUnitTests, testCtfStreamWriterHoldsRegressingTimestamps)
   const TemporaryTestPath path("ctrace-monotonic-stream");
   CtfStreamWriter writer;
   writer.open(path.path(), 7U);
-  writer.writeRecord(1U, 100U, 1U, 1U, [](CtfStreamWriter::Record& record) { record.writeU8(1U); });
-  writer.writeRecord(1U, 50U, 1U, 8U, [](CtfStreamWriter::Record& record) { record.writeU64(2U); });
-  EXPECT_NO_THROW(writer.close());
+  const auto eventId = CtfSchema::value(CtfSchema::EventId::TraceStatus);
+  const auto writePayload = [](CtfStreamWriter::Record& record) {
+    record.writeU8(CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError));
+    record.writeU32(1U);
+  };
+  writer.writeRecord(eventId, 100U, 1U, 5U, writePayload);
+  writer.writeRecord(eventId, 50U, 1U, 5U, writePayload);
+  writer.close();
+
+  const auto records = CtfTestSupport::readCtfRecords(path.path());
+  ASSERT_EQ(records.size(), 2U);
+  EXPECT_EQ(records[0].timestamp, 100U);
+  EXPECT_EQ(records[1].timestamp, 100U);
 }
 
 TEST(CtraceUnitTests, testCtfStreamWriterReportsDeviceWriteFailures)

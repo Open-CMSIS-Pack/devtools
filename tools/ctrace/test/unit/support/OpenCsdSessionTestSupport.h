@@ -15,6 +15,7 @@
 #include "OpenCsdItmSession.h"
 #include "OpenCsdPacketCollector.h"
 #include "common/ocsd_error.h"
+#include "opencsd/ocsd_if_types.h"
 #include "opencsd/itm/trc_pkt_elem_itm.h"
 #include "opencsd/itm/trc_pkt_types_itm.h"
 
@@ -65,6 +66,7 @@ struct SessionScript {
   std::uint32_t pushCalls = 0U;
   std::uint32_t flushCalls = 0U;
   std::uint32_t resetCalls = 0U;
+  std::uint32_t endCalls = 0U;
 };
 
 /** @brief Implements a deterministic OpenCSD session for decoder unit tests. */
@@ -111,6 +113,7 @@ public:
   /** @brief Applies the next scripted end-of-trace response. */
   ocsd_datapath_resp_t endOfTrace() override
   {
+    ++m_script->endCalls;
     auto step = take(m_script->ends, SessionStep{});
     apply(step, 0U);
     return step.response;

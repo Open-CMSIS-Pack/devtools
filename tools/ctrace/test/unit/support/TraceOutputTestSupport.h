@@ -9,6 +9,7 @@
 #define CTRACE_TEST_UNIT_SUPPORT_TRACEOUTPUTTESTSUPPORT_H
 
 #include "TraceOutput.h"
+#include "TraceEvent.h"
 
 #include <stdexcept>
 #include <string>

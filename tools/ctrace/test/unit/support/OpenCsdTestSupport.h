@@ -9,6 +9,7 @@
 #define CTRACE_TEST_UNIT_SUPPORT_OPENCSDTESTSUPPORT_H
 
 #include "OpenCsdTraceElement.h"
+#include "TraceEvent.h"
 
 #include <cstdint>
 #include <utility>
