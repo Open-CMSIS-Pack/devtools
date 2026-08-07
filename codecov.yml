@@ -37,7 +37,8 @@ coverage:
           - svdconv-cov
 
       ctrace-cov:
-        target: auto
+        # The previous minimal ctrace implementation had a non-comparable 100% baseline.
+        target: 96%
         threshold: 0.1%
         flags:
           - ctrace-cov
