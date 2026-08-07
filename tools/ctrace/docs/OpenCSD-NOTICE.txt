@@ -1,0 +1,25 @@
+OpenCSD 1.8.3
+https://github.com/Linaro/OpenCSD
+
+The ctrace executable incorporates unmodified OpenCSD source code from the
+pinned revision. The following copyright notices are retained from the
+incorporated OpenCSD source files (capitalization and punctuation are
+preserved):
+
+Copyright (c) 2015, ARM Limited. All Rights Reserved.
+Copyright (c) 2015, 2019 ARM Limited. All Rights Reserved.
+Copyright (c) 2015, 2019, ARM Limited. All Rights Reserved.
+Copyright (c) 2015,2019,2022 ARM Limited. All Rights Reserved.
+Copyright (c) 2015,2023 ARM Limited. All Rights Reserved.
+Copyright (c) 2016, ARM Limited. All Rights Reserved.
+Copyright (c) 2017, ARM Limited. All Rights Reserved.
+Copyright (c) 2018, ARM Limited. All Rights Reserved.
+Copyright (c) 2019, ARM Limited. All Rights Reserved.
+Copyright (c) 2020, ARM Limited. All Rights Reserved.
+Copyright (c) 2022, ARM Limited. All Rights Reserved.
+Copyright (c) 2023, ARM Limited. All Rights Reserved.
+Copyright (c) 2024, ARM Limited. All Rights Reserved.
+
+The applicable BSD-3-Clause license conditions and disclaimer are provided
+in THIRD_PARTY_LICENSES/OpenCSD.txt. The OpenCSD build configuration used by
+devtools is described in THIRD_PARTY_NOTICES.md.

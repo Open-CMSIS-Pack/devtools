@@ -1,0 +1,20 @@
+ctrace-run:
+  ctrace-setup:
+    - timestamps:
+        clock: 400000000
+        itm-prescaler: 1
+      itm:
+        enable: 0xFFFFFFFE
+  ctrace-refs:
+    - ctrace-ref: opaque/printf-route
+      type: itm
+      info: configured ITM channel
+      stream: 1
+      source: 0
+    - ctrace-ref: data#0
+      type: dwt
+      info: configured DWT data trace
+      warning: aligned DWT range
+      label: sample counter
+      stream: 1
+      source: [0, 1]

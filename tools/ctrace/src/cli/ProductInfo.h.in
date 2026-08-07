@@ -1,0 +1,13 @@
+/*
+ * Copyright (c) 2026 Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * Generated with AI
+ */
+
+#ifndef CTRACE_SRC_CLI_PRODUCTINFO_H
+#define CTRACE_SRC_CLI_PRODUCTINFO_H
+
+inline constexpr char CtraceVersion[] = "@PROJECT_VERSION_FULL@";
+
+#endif // CTRACE_SRC_CLI_PRODUCTINFO_H

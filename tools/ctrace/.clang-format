@@ -1,0 +1,18 @@
+---
+BasedOnStyle: LLVM
+IndentWidth: 2
+ContinuationIndentWidth: 4
+ConstructorInitializerIndentWidth: 2
+PackConstructorInitializers: Never
+TabWidth: 2
+UseTab: Never
+ColumnLimit: 120
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+PointerAlignment: Left
+DerivePointerAlignment: false
+SortIncludes: Never
+SpaceBeforeParens: ControlStatements
+AllowShortFunctionsOnASingleLine: Empty
+...

@@ -1,0 +1,28 @@
+ctrace-run:
+  ctrace-setup:
+    - timestamps:
+        clock: 280000000
+        itm-prescaler: 1
+  ctrace-refs:
+    - ctrace-ref: timestamps
+      type: itm
+    - ctrace-ref: data#0
+      type: dwt
+      source: 0
+      symbol-address: 0x2404AEA4
+      label: Sine
+    - ctrace-ref: data#1
+      type: dwt
+      source: 1
+      symbol-address: 0x2404AEA0
+      label: Rectangle
+    - ctrace-ref: data#2
+      type: dwt
+      source: 2
+      symbol-address: 0x2404AE9C
+      label: Random
+    - ctrace-ref: data#3
+      type: dwt
+      source: 3
+      symbol-address: 0x24000E88
+      label: Current

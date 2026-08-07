@@ -6,6 +6,7 @@ should be committed into this folder.
 
 ```txt
     📂external
+    ┣ 📂OpenCSD
     ┣ 📂cxxopts
     ┣ 📂fmt
     ┣ 📂googletest
@@ -13,6 +14,13 @@ should be committed into this folder.
     ┣ 📂json-schema-validator
     ┗ 📂yaml-cpp
 ```
+
+## OpenCSD
+
+<!-- markdown-link-check-disable-next-line -->
+The [OpenCSD](./OpenCSD) directory contains the CoreSight trace decode library
+used by ctrace and is fetched from
+[here](https://github.com/Linaro/OpenCSD).
 
 ## cxxopts
 
