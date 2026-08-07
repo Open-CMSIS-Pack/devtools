@@ -101,17 +101,18 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
   const auto checkpoint = diagnostics.failureCount();
   job.run();
 
-  require(diagnostics.failureCount() == checkpoint, "TraceDirectoryJob target run failed");
-  require(reader.paths().size() == 1U, "TraceDirectoryJob should read one selected YAML file");
-  require(std::filesystem::path(reader.paths()[0]).filename() == "Alpha.ctrace-run.yml",
-          "TraceDirectoryJob reader path mismatch");
-  require(std::filesystem::is_regular_file(traceDir / "Alpha.SWO.csv"), "TraceDirectoryJob CSV output name mismatch");
-  require(std::filesystem::is_regular_file(traceDir / "Alpha.ctf" / "metadata"),
-          "TraceDirectoryJob CTF output name mismatch");
-  require(std::filesystem::is_regular_file(traceDir / "Alpha.SWO.traceanalysis.xml"),
-          "TraceDirectoryJob XML output name mismatch");
-  require(!std::filesystem::exists(traceDir / "Beta.SWO.csv"),
-          "TraceDirectoryJob should not process unselected target");
+  ASSERT_TRUE(diagnostics.failureCount() == checkpoint) << "TraceDirectoryJob target run failed";
+  ASSERT_TRUE(reader.paths().size() == 1U) << "TraceDirectoryJob should read one selected YAML file";
+  ASSERT_TRUE(std::filesystem::path(reader.paths()[0]).filename() == "Alpha.ctrace-run.yml")
+      << "TraceDirectoryJob reader path mismatch";
+  ASSERT_TRUE(std::filesystem::is_regular_file(traceDir / "Alpha.SWO.csv"))
+      << "TraceDirectoryJob CSV output name mismatch";
+  ASSERT_TRUE(std::filesystem::is_regular_file(traceDir / "Alpha.ctf" / "metadata"))
+      << "TraceDirectoryJob CTF output name mismatch";
+  ASSERT_TRUE(std::filesystem::is_regular_file(traceDir / "Alpha.SWO.traceanalysis.xml"))
+      << "TraceDirectoryJob XML output name mismatch";
+  ASSERT_TRUE(!std::filesystem::exists(traceDir / "Beta.SWO.csv"))
+      << "TraceDirectoryJob should not process unselected target";
 }
 
 TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
@@ -130,10 +131,10 @@ TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
   const auto batchCheckpoint = diagnostics.failureCount();
   batchJob.run();
 
-  require(diagnostics.failureCount() == batchCheckpoint, "TraceDirectoryJob batch check failed");
-  require(batchReader.paths().size() == 2U, "TraceDirectoryJob batch should read every trace-run file");
-  require(!std::filesystem::exists(traceDir / "Alpha.SWO.csv"), "check-only batch should not create CSV output");
-  require(!std::filesystem::exists(traceDir / "Alpha.ctf"), "check-only batch should not create CTF output");
+  ASSERT_TRUE(diagnostics.failureCount() == batchCheckpoint) << "TraceDirectoryJob batch check failed";
+  ASSERT_TRUE(batchReader.paths().size() == 2U) << "TraceDirectoryJob batch should read every trace-run file";
+  ASSERT_TRUE(!std::filesystem::exists(traceDir / "Alpha.SWO.csv")) << "check-only batch should not create CSV output";
+  ASSERT_TRUE(!std::filesystem::exists(traceDir / "Alpha.ctf")) << "check-only batch should not create CTF output";
 
   writeTestFile(traceDir / "Broken.ctrace-run.yml", "ctrace-run:\n");
   writeTestFile(traceDir / "Broken.SWO.raw", std::string{static_cast<char>(0x01), 'A'});
@@ -146,8 +147,8 @@ TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
   TraceDirectoryJob brokenJob(brokenOptions, diagnostics, brokenReader);
   const auto brokenCheckpoint = diagnostics.failureCount();
   brokenJob.run();
-  require(diagnostics.failureCount() > brokenCheckpoint,
-          "check-only trace directory should fail on decoder error packets");
+  ASSERT_TRUE(diagnostics.failureCount() > brokenCheckpoint)
+      << "check-only trace directory should fail on decoder error packets";
 }
 
 TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSwo)
@@ -249,8 +250,7 @@ TEST(CtraceUnitTests, testFileDecodeJobReportsPerStreamPrescalers)
   });
   ASSERT_NE(diagnostic, diagnostics.events().end());
   EXPECT_EQ(diagnostic->severity, DiagnosticSink::Severity::Info);
-  EXPECT_EQ(diagnostic->context,
-            (std::vector<std::pair<std::string, std::string>>{{"traceBusIds", "2"}}));
+  EXPECT_EQ(diagnostic->context, (std::vector<std::pair<std::string, std::string>>{{"traceBusIds", "2"}}));
 }
 
 TEST(CtraceUnitTests, testFileDecodeJobAbortsOutputsAfterFatalDecoderError)

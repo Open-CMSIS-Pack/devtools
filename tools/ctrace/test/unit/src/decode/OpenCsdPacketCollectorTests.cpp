@@ -65,19 +65,20 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorUsesReconstructedGlobalTimestamp
   auto globalTimestamp = itmElement(TS_GLOBAL);
   globalTimestamp.setTS(0xfedcba9876543210ULL, true);
 
-  require(collector.TraceElemIn(42U, 7U, globalTimestamp) == OCSD_RESP_CONT,
-          "OpenCSD global timestamp collection failed");
-  require(sink.elements().size() == 1U, "reconstructed global timestamp element missing");
+  ASSERT_TRUE(collector.TraceElemIn(42U, 7U, globalTimestamp) == OCSD_RESP_CONT)
+      << "OpenCSD global timestamp collection failed";
+  ASSERT_TRUE(sink.elements().size() == 1U) << "reconstructed global timestamp element missing";
   const auto element = sink.elements().front();
-  require(element.kind == OpenCsdTraceElement::Kind::GlobalTimestamp, "reconstructed global timestamp kind mismatch");
-  require(element.sourceIndex == 42U, "reconstructed global timestamp source index mismatch");
-  require(element.traceBusId == 7U, "OpenCSD Trace Bus ID was not preserved");
-  require(element.timestampValue == 0xfedcba9876543210ULL, "reconstructed global timestamp value mismatch");
-  require(element.clockChange, "reconstructed global timestamp clock-change flag missing");
+  ASSERT_TRUE(element.kind == OpenCsdTraceElement::Kind::GlobalTimestamp)
+      << "reconstructed global timestamp kind mismatch";
+  ASSERT_TRUE(element.sourceIndex == 42U) << "reconstructed global timestamp source index mismatch";
+  ASSERT_TRUE(element.traceBusId == 7U) << "OpenCSD Trace Bus ID was not preserved";
+  ASSERT_TRUE(element.timestampValue == 0xfedcba9876543210ULL) << "reconstructed global timestamp value mismatch";
+  ASSERT_TRUE(element.clockChange) << "reconstructed global timestamp clock-change flag missing";
 
-  require(collector.TraceElemIn(43U, 0xffU, globalTimestamp) == OCSD_RESP_CONT,
-          "OpenCSD global timestamp collection with missing source ID failed");
-  require(sink.elements().back().traceBusId == 0U, "an unavailable OpenCSD Trace Bus ID must fall back to zero");
+  ASSERT_TRUE(collector.TraceElemIn(43U, 0xffU, globalTimestamp) == OCSD_RESP_CONT)
+      << "OpenCSD global timestamp collection with missing source ID failed";
+  ASSERT_TRUE(sink.elements().back().traceBusId == 0U) << "an unavailable OpenCSD Trace Bus ID must fall back to zero";
 
   ItmTrcPacket rawGts1;
   rawGts1.setPktType(ITM_PKT_TS_GLOBAL_1);
@@ -88,11 +89,12 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorUsesReconstructedGlobalTimestamp
   rawGts2.setPktType(ITM_PKT_TS_GLOBAL_2);
   rawGts2.setExtValue(0x123456789ULL);
   collector.RawPacketDataMon(OCSD_OP_DATA, 44U, &rawGts2, 0U, nullptr);
-  require(sink.elements().size() == 2U, "raw GTS fragments must not be published as independent global timestamps");
+  ASSERT_TRUE(sink.elements().size() == 2U)
+      << "raw GTS fragments must not be published as independent global timestamps";
 
   TraceEvent packet{GlobalTimestampTraceEvent{element.timestampValue, false}};
-  require(CsvRowMapper::row(packet) == std::to_string(element.timestampValue) + ",,global_ts,,,,,",
-          "CSV must preserve all 64 global timestamp bits in the cycles column");
+  ASSERT_TRUE(CsvRowMapper::row(packet) == std::to_string(element.timestampValue) + ",,global_ts,,,,,")
+      << "CSV must preserve all 64 global timestamp bits in the cycles column";
 }
 
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsLocalTimestampRelations)
@@ -110,13 +112,15 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsLocalTimestampRelations)
     auto timestamp = itmElement(cases[index].first);
     timestamp.setTS(100U + index, false);
 
-    require(collector.TraceElemIn(index, 0U, timestamp) == OCSD_RESP_CONT, "OpenCSD local timestamp collection failed");
+    ASSERT_TRUE(collector.TraceElemIn(index, 0U, timestamp) == OCSD_RESP_CONT)
+        << "OpenCSD local timestamp collection failed";
   }
 
-  require(sink.elements().size() == cases.size(), "local timestamp relation count mismatch");
+  ASSERT_TRUE(sink.elements().size() == cases.size()) << "local timestamp relation count mismatch";
   for (std::size_t index = 0; index < cases.size(); ++index) {
-    require(sink.elements()[index].kind == OpenCsdTraceElement::Kind::LocalTimestamp, "local timestamp kind mismatch");
-    require(sink.elements()[index].timestampRelation == cases[index].second, "local timestamp relation mismatch");
+    ASSERT_TRUE(sink.elements()[index].kind == OpenCsdTraceElement::Kind::LocalTimestamp)
+        << "local timestamp kind mismatch";
+    ASSERT_TRUE(sink.elements()[index].timestampRelation == cases[index].second) << "local timestamp relation mismatch";
   }
 }
 

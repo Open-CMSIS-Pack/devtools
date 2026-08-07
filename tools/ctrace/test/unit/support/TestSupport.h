@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-/** @brief Throws a test failure message when a required condition is false. */
+/** @brief Throws from low-level test support where fatal GoogleTest macros cannot terminate the caller. */
 inline void require(bool condition, const std::string& message)
 {
   if (!condition) {

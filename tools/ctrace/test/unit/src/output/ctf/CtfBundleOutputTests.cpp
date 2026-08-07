@@ -60,9 +60,9 @@ static CtfOutputConfig makeCtfBundleConfig(const std::filesystem::path& outputDi
 static void requireCompleteCtfBundle(const std::filesystem::path& ctfDirectory, const std::filesystem::path& xmlPath,
                                      const std::string& message)
 {
-  require(std::filesystem::is_regular_file(ctfDirectory / "metadata") &&
-              std::filesystem::is_regular_file(ctfDirectory / "stream_0") && std::filesystem::is_regular_file(xmlPath),
-          message);
+  ASSERT_TRUE(std::filesystem::is_regular_file(ctfDirectory / "metadata") &&
+              std::filesystem::is_regular_file(ctfDirectory / "stream_0") && std::filesystem::is_regular_file(xmlPath))
+      << message;
 }
 
 /** @brief Owns the temporary directory used by one CTF output test. */
@@ -119,7 +119,9 @@ static std::vector<std::uint8_t> readOnlyCtfTraceStatusReasons(const std::filesy
 {
   std::vector<std::uint8_t> reasons;
   for (const auto& record : readCtfRecords(streamPath)) {
-    require(record.id == CtfSchema::value(CtfSchema::EventId::TraceStatus), "expected only CTF trace-status events");
+    if (record.id != CtfSchema::value(CtfSchema::EventId::TraceStatus)) {
+      throw std::runtime_error("expected only CTF trace-status events");
+    }
     reasons.push_back(record.payload.front());
   }
   return reasons;
@@ -151,21 +153,21 @@ TEST(CtraceUnitTests, testCtfBundleOutputExceptionContext)
   const auto records = readCtfExceptionRecords(outputDir / "stream_0");
   const auto metadata = readTestTextFile(outputDir / "metadata");
 
-  require(metadata.find("\"entered\" = 0") != std::string::npos, "CTF exception entered label mismatch");
-  require(metadata.find("\"exited\" = 1") != std::string::npos, "CTF exception exited label mismatch");
+  ASSERT_TRUE(metadata.find("\"entered\" = 0") != std::string::npos) << "CTF exception entered label mismatch";
+  ASSERT_TRUE(metadata.find("\"exited\" = 1") != std::string::npos) << "CTF exception exited label mismatch";
 
-  require(records == std::vector<std::string>({
-                         "0:0",
-                         "0:1",
-                         "15:0",
-                         "15:1",
-                         "54:0",
-                         "54:1",
-                         "15:0",
-                         "15:1",
-                         "0:0",
-                     }),
-          "CtfBundleOutput exception active-context records mismatch");
+  ASSERT_TRUE(records == std::vector<std::string>({
+                             "0:0",
+                             "0:1",
+                             "15:0",
+                             "15:1",
+                             "54:0",
+                             "54:1",
+                             "15:0",
+                             "15:1",
+                             "0:0",
+                         }))
+      << "CtfBundleOutput exception active-context records mismatch";
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
@@ -197,11 +199,11 @@ TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
   CollectingDiagnosticSink preflightDiagnostics;
   auto outputPlan = planTraceOutputs({false, true, {}}, outputDir.parent_path() / "output.SWO.raw",
                                      CtraceRunMeta::fromConfig(traceRun), preflightDiagnostics);
-  require(outputPlan.ctf.has_value() && preflightDiagnostics.events().empty(), "resolved CTF source missing");
+  ASSERT_TRUE(outputPlan.ctf.has_value() && preflightDiagnostics.events().empty()) << "resolved CTF source missing";
   auto options = std::move(*outputPlan.ctf);
-  require(!options.sources.empty(), "resolved CTF source missing");
-  require(options.sources.front().traceBusId == 7U, "resolved CTF source must retain its Trace Bus ID");
-  require(options.sources.front().valueType == "signed int", "resolved CTF source must retain its value type");
+  ASSERT_TRUE(!options.sources.empty()) << "resolved CTF source missing";
+  ASSERT_TRUE(options.sources.front().traceBusId == 7U) << "resolved CTF source must retain its Trace Bus ID";
+  ASSERT_TRUE(options.sources.front().valueType == "signed int") << "resolved CTF source must retain its value type";
   CtfBundleOutput output(std::move(options));
   output.start();
   output.writeEvent(atCycle(onStream(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Write}}, 7U), 100U));
@@ -210,24 +212,26 @@ TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
   const auto metadata = readTestTextFile(outputDir / "metadata");
   const auto stream = readTestBinaryFile(outputDir / "stream_0");
 
-  require(metadata.find("freq = 280000000") != std::string::npos, "CTF trace-run clock mismatch");
-  require(metadata.find("cmsis_dwt0_value_type = \"signed int\"") != std::string::npos,
-          "CTF signed-byte source type mismatch");
-  require(metadata.find("cmsis_dwt2_value_type = \"signed int\"") != std::string::npos, "CTF trace-run type mismatch");
-  require(metadata.find("cmsis_dwt2_address_start = \"0x24000E88\"") != std::string::npos,
-          "CTF trace-run start address mismatch");
-  require(metadata.find("cmsis_dwt2_address_end = \"0x24000E8B\"") != std::string::npos,
-          "CTF trace-run end address mismatch");
-  require(metadata.find("\"Current\\n\\t\\\"\\\\\\x01\" = 2") != std::string::npos,
-          "CTF trace-run label escaping mismatch");
+  ASSERT_TRUE(metadata.find("freq = 280000000") != std::string::npos) << "CTF trace-run clock mismatch";
+  ASSERT_TRUE(metadata.find("cmsis_dwt0_value_type = \"signed int\"") != std::string::npos)
+      << "CTF signed-byte source type mismatch";
+  ASSERT_TRUE(metadata.find("cmsis_dwt2_value_type = \"signed int\"") != std::string::npos)
+      << "CTF trace-run type mismatch";
+  ASSERT_TRUE(metadata.find("cmsis_dwt2_address_start = \"0x24000E88\"") != std::string::npos)
+      << "CTF trace-run start address mismatch";
+  ASSERT_TRUE(metadata.find("cmsis_dwt2_address_end = \"0x24000E8B\"") != std::string::npos)
+      << "CTF trace-run end address mismatch";
+  ASSERT_TRUE(metadata.find("\"Current\\n\\t\\\"\\\\\\x01\" = 2") != std::string::npos)
+      << "CTF trace-run label escaping mismatch";
 
   const auto records = parseCtfRecords(stream);
-  require(records.front().id == CtfSchema::value(CtfSchema::EventId::TraceStatus), "CTF trace-start event missing");
+  ASSERT_TRUE(records.front().id == CtfSchema::value(CtfSchema::EventId::TraceStatus))
+      << "CTF trace-start event missing";
   const auto& dwtRecord =
       requireFirstCtfRecord(records, CtfSchema::EventId::DwtValue, "expected CTF DWT value event missing");
-  require(dwtRecord.traceBusId == 7U, "CTF event context must preserve the CoreSight Trace Bus ID");
-  require(dwtRecord.payload[2U] == 0U, "CTF one-byte int payload must select the i8 variant");
-  require(dwtRecord.payload[3U] == 0xffU, "CTF signed-byte payload mismatch");
+  ASSERT_TRUE(dwtRecord.traceBusId == 7U) << "CTF event context must preserve the CoreSight Trace Bus ID";
+  ASSERT_TRUE(dwtRecord.payload[2U] == 0U) << "CTF one-byte int payload must select the i8 variant";
+  ASSERT_TRUE(dwtRecord.payload[3U] == 0xffU) << "CTF signed-byte payload mismatch";
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
@@ -241,9 +245,9 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   defaultReference.dataSetupIndex = 0U;
   defaultTraceRun.references.push_back(defaultReference);
   const auto defaultMeta = CtraceRunMeta::fromConfig(defaultTraceRun);
-  require(defaultMeta.sources().size() == 1U && defaultMeta.sources().front().valueType == "unsigned int" &&
-              defaultMeta.sources().front().valueSize == 4U,
-          "missing DWT data.symbol-type/data.symbol-size must default to unsigned int/4");
+  ASSERT_TRUE(defaultMeta.sources().size() == 1U && defaultMeta.sources().front().valueType == "unsigned int" &&
+              defaultMeta.sources().front().valueSize == 4U)
+      << "missing DWT data.symbol-type/data.symbol-size must default to unsigned int/4";
 
   const auto defaultOutputDir = root / "default";
   auto defaultOptions = makeCtfBundleConfig(defaultOutputDir, 1000000U);
@@ -254,11 +258,11 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   defaultOutput.writeEvent(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Write}});
   defaultOutput.writeEvent(TraceEvent{DwtDataTraceEvent{0U, 2U, 0xffffU, AccessType::Write}});
   defaultOutput.stop();
-  require(readFirstCtfDwtValueTag(defaultOutputDir / "stream_0") == 5U,
-          "default DWT metadata must select the unsigned 32-bit CTF variant");
+  ASSERT_TRUE(readFirstCtfDwtValueTag(defaultOutputDir / "stream_0") == 5U)
+      << "default DWT metadata must select the unsigned 32-bit CTF variant";
   const auto& sizeWarning = diagnostics.singleEvent();
-  require(sizeWarning.severity == DiagnosticSink::Severity::Warning && diagnostics.failureCount() == 0U,
-          "DWT size mismatch must be reported once per channel");
+  ASSERT_TRUE(sizeWarning.severity == DiagnosticSink::Severity::Warning && diagnostics.failureCount() == 0U)
+      << "DWT size mismatch must be reported once per channel";
 
   TraceRunConfig signedTraceRun;
   TraceRunSetup signedSetup;
@@ -266,7 +270,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   signedTraceRun.setups.push_back(std::move(signedSetup));
   signedTraceRun.references.push_back(defaultReference);
   const auto signedMeta = CtraceRunMeta::fromConfig(signedTraceRun);
-  require(signedMeta.sources().size() == 1U, "signed DWT source missing");
+  ASSERT_TRUE(signedMeta.sources().size() == 1U) << "signed DWT source missing";
   const auto signedOutputDir = root / "signed";
   auto signedOptions = makeCtfBundleConfig(signedOutputDir, 1000000U);
   signedOptions.sources = {resolvedSource(signedMeta.sources().front())};
@@ -275,9 +279,9 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   signedOutput.start();
   signedOutput.writeEvent(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Write}});
   signedOutput.stop();
-  require(readFirstCtfDwtValueTag(signedOutputDir / "stream_0") == 0U,
-          "explicit signed int/1 metadata must select the signed 8-bit CTF variant");
-  require(signedDiagnostics.events().empty(), "matching DWT sizes must not produce a warning");
+  ASSERT_TRUE(readFirstCtfDwtValueTag(signedOutputDir / "stream_0") == 0U)
+      << "explicit signed int/1 metadata must select the signed 8-bit CTF variant";
+  ASSERT_TRUE(signedDiagnostics.events().empty()) << "matching DWT sizes must not produce a warning";
 
   TraceRunConfig traceRun;
   traceRun.path = "ambiguous-streams.ctrace-run.yml";
@@ -292,9 +296,9 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   second.label = "core-two";
   traceRun.references = {first, second};
   const auto meta = CtraceRunMeta::fromConfig(traceRun);
-  require(meta.sources().size() == 2U && meta.sources().front().traceBusId == 1U &&
-              meta.sources().front().label == std::optional<std::string>("core-one"),
-          "trace-run metadata must preserve the exact DWT stream route");
+  ASSERT_TRUE(meta.sources().size() == 2U && meta.sources().front().traceBusId == 1U &&
+              meta.sources().front().label == std::optional<std::string>("core-one"))
+      << "trace-run metadata must preserve the exact DWT stream route";
 }
 
 TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
@@ -312,9 +316,9 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   TraceEvent warning = issuePacket(TraceIssueCode::OpenCsdDecodeError, "decoder warning", TraceIssueSeverity::Warning);
   filtered.writeEvent(warning);
   filtered.stop();
-  require(readOnlyCtfTraceStatusReasons(filteredDir / "stream_0") ==
-              std::vector<std::uint8_t>({CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError)}),
-          "--type error must retain decoder warnings in CTF");
+  ASSERT_TRUE(readOnlyCtfTraceStatusReasons(filteredDir / "stream_0") ==
+              std::vector<std::uint8_t>({CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError)}))
+      << "--type error must retain decoder warnings in CTF";
 
   CtfBundleOutput context(makeCtfBundleConfig(contextDir, 1000000U));
   context.start();
@@ -322,9 +326,9 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   context.writeEvent(warning);
   context.writeEvent(exceptionPacket(54U, ExceptionAction::Entered, 20U));
   context.stop();
-  require(readCtfExceptionRecords(contextDir / "stream_0") ==
-              std::vector<std::string>({"0:0", "0:1", "15:0", "15:1", "54:0"}),
-          "a decoder warning must not reset the active CTF exception context");
+  ASSERT_TRUE(readCtfExceptionRecords(contextDir / "stream_0") ==
+              std::vector<std::string>({"0:0", "0:1", "15:0", "15:1", "54:0"}))
+      << "a decoder warning must not reset the active CTF exception context";
 
   auto dataLossOptions = makeCtfBundleConfig(dataLossDir, 1000000U);
   dataLossOptions.selection.types.push_back("exception");
@@ -334,9 +338,9 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   dataLoss.writeEvent(issuePacket(TraceIssueCode::DataLoss, "decoder data loss"));
   dataLoss.writeEvent(exceptionPacket(15U, ExceptionAction::Returned, 20U));
   dataLoss.stop();
-  require(readCtfExceptionRecords(dataLossDir / "stream_0") ==
-              std::vector<std::string>({"0:0", "0:1", "15:0", "15:1", "15:0"}),
-          "filtered data-loss must still reset the CTF exception context");
+  ASSERT_TRUE(readCtfExceptionRecords(dataLossDir / "stream_0") ==
+              std::vector<std::string>({"0:0", "0:1", "15:0", "15:1", "15:0"}))
+      << "filtered data-loss must still reset the CTF exception context";
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputTypeFilterExcludesSyntheticEvents)
@@ -378,10 +382,10 @@ TEST(CtraceUnitTests, testCtfGlobalTimestampDoesNotEstablishLocalTimeQuality)
   const auto records = readCtfRecords(outputDir / "stream_0");
   constexpr std::uint8_t timestampReliable = 1U << 1U;
   constexpr std::uint8_t beforeFirstLocalTimestamp = 1U << 2U;
-  require(records.size() == 1U && records.front().id == CtfSchema::value(CtfSchema::EventId::Itm),
-          "CTF ITM event missing after global timestamp");
-  require(records.front().payload[3U] == (timestampReliable | beforeFirstLocalTimestamp),
-          "global timestamp must not mark following samples as locally timestamped");
+  ASSERT_TRUE(records.size() == 1U && records.front().id == CtfSchema::value(CtfSchema::EventId::Itm))
+      << "CTF ITM event missing after global timestamp";
+  ASSERT_TRUE(records.front().payload[3U] == (timestampReliable | beforeFirstLocalTimestamp))
+      << "global timestamp must not mark following samples as locally timestamped";
 }
 
 TEST(CtraceUnitTests, testCtfHoldsRegressingEventTimestamps)
@@ -398,8 +402,8 @@ TEST(CtraceUnitTests, testCtfHoldsRegressingEventTimestamps)
   output.stop();
 
   const auto records = readCtfRecords(outputDir / "stream_0");
-  require(records.size() == 2U && records[0].timestamp == 100U, "first CTF event timestamp mismatch");
-  require(records[1].timestamp == 100U, "CTF event timestamps must not regress");
+  ASSERT_TRUE(records.size() == 2U && records[0].timestamp == 100U) << "first CTF event timestamp mismatch";
+  ASSERT_TRUE(records[1].timestamp == 100U) << "CTF event timestamps must not regress";
 }
 
 TEST(CtraceUnitTests, testCtfGlobalTimestampEvent)
@@ -418,12 +422,14 @@ TEST(CtraceUnitTests, testCtfGlobalTimestampEvent)
   const auto records = readCtfRecords(outputDir / "stream_0");
   const auto metadata = readTestTextFile(outputDir / "metadata");
 
-  require(records.size() == 1U, "CTF global timestamp filter emitted unrelated events");
+  ASSERT_TRUE(records.size() == 1U) << "CTF global timestamp filter emitted unrelated events";
   const auto& record = records.front();
-  require(record.id == CtfSchema::value(CtfSchema::EventId::GlobalTimestamp), "CTF global timestamp event ID mismatch");
-  require(readLe64(record.payload, 0U) == timestampValue, "CTF global timestamp value mismatch");
-  require(record.payload[8U] == 1U, "CTF global timestamp clock-change flag mismatch");
-  require(metadata.find("name = \"GLOBAL_TIMESTAMP\"") != std::string::npos, "CTF global timestamp metadata missing");
+  ASSERT_TRUE(record.id == CtfSchema::value(CtfSchema::EventId::GlobalTimestamp))
+      << "CTF global timestamp event ID mismatch";
+  ASSERT_TRUE(readLe64(record.payload, 0U) == timestampValue) << "CTF global timestamp value mismatch";
+  ASSERT_TRUE(record.payload[8U] == 1U) << "CTF global timestamp clock-change flag mismatch";
+  ASSERT_TRUE(metadata.find("name = \"GLOBAL_TIMESTAMP\"") != std::string::npos)
+      << "CTF global timestamp metadata missing";
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
@@ -439,30 +445,30 @@ TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
   CollectingDiagnosticSink preflightDiagnostics;
   auto outputPlan = planTraceOutputs({false, true, selection}, outputDir.parent_path() / "output.SWO.raw",
                                      CtraceRunMeta::fromConfig(traceRun), preflightDiagnostics);
-  require(outputPlan.ctf.has_value() && outputPlan.ctf->sources.empty() && preflightDiagnostics.events().empty(),
-          "CTF preflight must exclude software channel zero metadata");
+  ASSERT_TRUE(outputPlan.ctf.has_value() && outputPlan.ctf->sources.empty() && preflightDiagnostics.events().empty())
+      << "CTF preflight must exclude software channel zero metadata";
   auto options = std::move(*outputPlan.ctf);
   CtfBundleOutput output(std::move(options));
   output.start();
   output.writeEvent(atCycle(softwarePacket(0U, 1U, 'A'), 100U));
   output.writeEvent(atCycle(issuePacket(TraceIssueCode::OpenCsdIncompleteTail), 101U));
   output.stop();
-  require(readOnlyCtfTraceStatusReasons(outputDir / "stream_0") ==
-              std::vector<std::uint8_t>({CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError)}),
-          "CTF must exclude software channel zero payload but retain its decoder errors");
+  ASSERT_TRUE(readOnlyCtfTraceStatusReasons(outputDir / "stream_0") ==
+              std::vector<std::uint8_t>({CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError)}))
+      << "CTF must exclude software channel zero payload but retain its decoder errors";
   std::vector<std::string> bundleEntries;
   for (const auto& entry : std::filesystem::directory_iterator(outputDir)) {
     bundleEntries.push_back(entry.path().filename().string());
   }
   std::sort(bundleEntries.begin(), bundleEntries.end());
-  require(bundleEntries == std::vector<std::string>({"metadata", "stream_0"}),
-          "CTF bundle must contain only metadata and the primary stream");
+  ASSERT_TRUE(bundleEntries == std::vector<std::string>({"metadata", "stream_0"}))
+      << "CTF bundle must contain only metadata and the primary stream";
 
   const auto metadata = readTestTextFile(outputDir / "metadata");
-  require(metadata.find("ITM" + std::to_string(0)) == std::string::npos,
-          "CTF metadata must not register software channel zero");
-  require(metadata.find("cmsis_itm0_") == std::string::npos && metadata.find("Console") == std::string::npos,
-          "CTF analysis metadata must not expose configured software channel zero");
+  ASSERT_TRUE(metadata.find("ITM" + std::to_string(0)) == std::string::npos)
+      << "CTF metadata must not register software channel zero";
+  ASSERT_TRUE(metadata.find("cmsis_itm0_") == std::string::npos && metadata.find("Console") == std::string::npos)
+      << "CTF analysis metadata must not expose configured software channel zero";
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputAbortRemovesPartialBundle)
@@ -476,15 +482,15 @@ TEST(CtraceUnitTests, testCtfBundleOutputAbortRemovesPartialBundle)
   auto options = makeCtfBundleConfig(outputDir, 1000000U);
   CtfBundleOutput output(std::move(options));
   output.start();
-  require(!std::filesystem::exists(outputDir / "old-marker") &&
-              std::filesystem::is_regular_file(outputDir / "stream_0") && readTestTextFile(xmlPath) != "old-xml",
-          "CTF start must remove both previous targets and write directly to their final paths");
+  ASSERT_TRUE(!std::filesystem::exists(outputDir / "old-marker") &&
+              std::filesystem::is_regular_file(outputDir / "stream_0") && readTestTextFile(xmlPath) != "old-xml")
+      << "CTF start must remove both previous targets and write directly to their final paths";
 
   TraceEvent software = softwarePacket(1U, 1U, 'A');
   output.writeEvent(software);
   output.abort();
-  require(!std::filesystem::exists(outputDir) && !std::filesystem::exists(xmlPath),
-          "CTF abort must remove the incomplete direct output");
+  ASSERT_TRUE(!std::filesystem::exists(outputDir) && !std::filesystem::exists(xmlPath))
+      << "CTF abort must remove the incomplete direct output";
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputReplacesExistingBundleAtStart)
@@ -499,16 +505,16 @@ TEST(CtraceUnitTests, testCtfBundleOutputReplacesExistingBundleAtStart)
   CtfBundleOutput output(std::move(options));
   output.start();
   const auto xml = readTestTextFile(xmlPath);
-  require(!std::filesystem::exists(outputDir / "old-marker") &&
+  ASSERT_TRUE(!std::filesystem::exists(outputDir / "old-marker") &&
               std::filesystem::is_regular_file(outputDir / "stream_0") &&
-              !std::filesystem::exists(outputDir / "metadata") && xml != "old-xml" && !xml.empty(),
-          "CTF start must replace existing output before decoding begins");
+              !std::filesystem::exists(outputDir / "metadata") && xml != "old-xml" && !xml.empty())
+      << "CTF start must replace existing output before decoding begins";
 
   output.writeEvent(atCycle(softwarePacket(1U, 1U, 'A'), 10U));
   output.stop();
-  require(std::filesystem::is_regular_file(outputDir / "metadata") &&
-              std::filesystem::file_size(outputDir / "stream_0") > 0U && std::filesystem::is_regular_file(xmlPath),
-          "CTF stop must complete the directly written bundle");
+  ASSERT_TRUE(std::filesystem::is_regular_file(outputDir / "metadata") &&
+              std::filesystem::file_size(outputDir / "stream_0") > 0U && std::filesystem::is_regular_file(xmlPath))
+      << "CTF stop must complete the directly written bundle";
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputRejectsOverlappingTargetsBeforeDeletion)
@@ -522,9 +528,9 @@ TEST(CtraceUnitTests, testCtfBundleOutputRejectsOverlappingTargetsBeforeDeletion
 
   const auto rejected = throwsException<std::invalid_argument>(
       [&] { CtfBundleOutput output(CtfOutputConfig(ctfDirectory, nestedXml, 1000000U, {}, {})); });
-  require(rejected && readTestTextFile(ctfDirectory / "old-marker") == "old-ctf" &&
-              readTestTextFile(nestedXml) == "old-xml",
-          "overlapping CTF targets must be rejected before either existing target is deleted");
+  ASSERT_TRUE(rejected && readTestTextFile(ctfDirectory / "old-marker") == "old-ctf" &&
+              readTestTextFile(nestedXml) == "old-xml")
+      << "overlapping CTF targets must be rejected before either existing target is deleted";
 
   const auto wrongTypeCtf = root / "WrongType.ctf";
   const auto wrongTypeXml = root / "WrongType.SWO.traceanalysis.xml";
@@ -534,15 +540,15 @@ TEST(CtraceUnitTests, testCtfBundleOutputRejectsOverlappingTargetsBeforeDeletion
     CtfBundleOutput output(CtfOutputConfig(wrongTypeCtf, wrongTypeXml, 1000000U, {}, {}));
     output.start();
   });
-  require(rejectedWrongTypes && readTestTextFile(wrongTypeCtf) == "not-a-directory" &&
-              std::filesystem::is_directory(wrongTypeXml),
-          "CTF start must reject unexpected target types before deleting either target");
+  ASSERT_TRUE(rejectedWrongTypes && readTestTextFile(wrongTypeCtf) == "not-a-directory" &&
+              std::filesystem::is_directory(wrongTypeXml))
+      << "CTF start must reject unexpected target types before deleting either target";
 
   const auto rejectedCaseInsensitiveOverlap = throwsException<std::invalid_argument>([&] {
     CtfBundleOutput output(
         CtfOutputConfig(root / "Bundle.ctf", root / "BUNDLE.CTF" / "Bundle.SWO.traceanalysis.xml", 1000000U, {}, {}));
   });
-  require(rejectedCaseInsensitiveOverlap, "CTF target overlap checks must conservatively ignore ASCII case");
+  ASSERT_TRUE(rejectedCaseInsensitiveOverlap) << "CTF target overlap checks must conservatively ignore ASCII case";
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputOwnsDirectLifecycle)
@@ -561,14 +567,14 @@ TEST(CtraceUnitTests, testCtfBundleOutputOwnsDirectLifecycle)
   output.stop();
 
   requireCompleteCtfBundle(ctfDirectory, xmlPath, "CTF bundle must support Unicode output paths");
-  require(!readTestTextFile(xmlPath).empty(), "CTF bundle did not write the Trace Compass XML");
+  ASSERT_TRUE(!readTestTextFile(xmlPath).empty()) << "CTF bundle did not write the Trace Compass XML";
 
   writeTestFile(ctfDirectory / "stale-marker", "stale");
   writeTestFile(xmlPath, "stale-xml");
   output.start();
-  require(!std::filesystem::exists(ctfDirectory / "stale-marker") &&
-              !std::filesystem::exists(ctfDirectory / "metadata") && readTestTextFile(xmlPath) != "stale-xml",
-          "restarting CTF output must delete the previous bundle before writing");
+  ASSERT_TRUE(!std::filesystem::exists(ctfDirectory / "stale-marker") &&
+              !std::filesystem::exists(ctfDirectory / "metadata") && readTestTextFile(xmlPath) != "stale-xml")
+      << "restarting CTF output must delete the previous bundle before writing";
   output.writeEvent(software);
   output.stop();
   requireCompleteCtfBundle(ctfDirectory, xmlPath, "restarted CTF bundle must complete normally");
@@ -581,9 +587,9 @@ TEST(CtraceUnitTests, testCtfBundleOutputOwnsDirectLifecycle)
   relativeOutput.start();
   relativeOutput.writeEvent(software);
   relativeOutput.stop();
-  require(std::filesystem::is_regular_file(testRoot / "captures" / "Relative.ctf" / "metadata") &&
-              std::filesystem::is_regular_file(testRoot / "captures" / "Relative.SWO.traceanalysis.xml"),
-          "CTF output must accept a legitimate parent-relative trace path");
+  ASSERT_TRUE(std::filesystem::is_regular_file(testRoot / "captures" / "Relative.ctf" / "metadata") &&
+              std::filesystem::is_regular_file(testRoot / "captures" / "Relative.SWO.traceanalysis.xml"))
+      << "CTF output must accept a legitimate parent-relative trace path";
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputReportsIdentityAndSupportsInactiveStop)

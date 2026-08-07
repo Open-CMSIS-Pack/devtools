@@ -30,11 +30,11 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
       "overflow",
       "error",
   }};
-  require(kTraceEventTypeNames == expectedTypes, "trace event type names mismatch");
+  ASSERT_TRUE(kTraceEventTypeNames == expectedTypes) << "trace event type names mismatch";
   for (const auto type : kTraceEventTypeNames) {
-    require(parseTraceEventType(type).has_value(), "declared trace event type should parse");
+    ASSERT_TRUE(parseTraceEventType(type).has_value()) << "declared trace event type should parse";
   }
-  require(!parseTraceEventType("timestamp").has_value(), "undeclared trace event type should be rejected");
+  ASSERT_TRUE(!parseTraceEventType("timestamp").has_value()) << "undeclared trace event type should be rejected";
   const std::vector<std::pair<TraceEvent, std::optional<TraceEventType>>> semanticTypes{
       {TraceEvent{SoftwareTraceEvent{}}, TraceEventType::Itm},
       {TraceEvent{DwtDataTraceEvent{}}, TraceEventType::Dwt},
@@ -49,19 +49,21 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
       {TraceEvent{TraceIssueEvent{}}, TraceEventType::Error},
   };
   for (const auto& [event, expectedType] : semanticTypes) {
-    require(traceEventType(event) == expectedType, "semantic TraceEvent type mapping mismatch");
+    ASSERT_TRUE(traceEventType(event) == expectedType) << "semantic TraceEvent type mapping mismatch";
   }
 
-  require(CsvRowMapper::header() == "cycles,stream,type,source,value,pc,offset,note",
-          "CSV schema header integration mismatch");
-  require(CsvRowMapper::row(TraceEvent{ExceptionTraceEvent{11U, ExceptionAction::Entered}}) == ",,exception,11,0x1,,,",
-          "CSV exception value mismatch");
-  require(CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 1U, 0x0aU, AccessType::Write}}) == ",,dwt,0,0x0a,,,",
-          "CSV must render the raw hexadecimal DWT value with the one-byte SWO width");
-  require(CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 2U, 0x0aU, AccessType::Write}}) == ",,dwt,0,0x000a,,,",
-          "CSV must render the raw hexadecimal DWT value with the two-byte SWO width");
-  require(CsvRowMapper::row(softwarePacket(1U)) == ",,itm,1,0x00,,,",
-          "CSV must leave the stream field empty for unformatted input");
+  ASSERT_TRUE(CsvRowMapper::header() == "cycles,stream,type,source,value,pc,offset,note")
+      << "CSV schema header integration mismatch";
+  ASSERT_TRUE(
+      (CsvRowMapper::row(TraceEvent{ExceptionTraceEvent{11U, ExceptionAction::Entered}}) == ",,exception,11,0x1,,,"))
+      << "CSV exception value mismatch";
+  ASSERT_TRUE(CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 1U, 0x0aU, AccessType::Write}}) == ",,dwt,0,0x0a,,,")
+      << "CSV must render the raw hexadecimal DWT value with the one-byte SWO width";
+  ASSERT_TRUE(
+      (CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 2U, 0x0aU, AccessType::Write}}) == ",,dwt,0,0x000a,,,"))
+      << "CSV must render the raw hexadecimal DWT value with the two-byte SWO width";
+  ASSERT_TRUE(CsvRowMapper::row(softwarePacket(1U)) == ",,itm,1,0x00,,,")
+      << "CSV must leave the stream field empty for unformatted input";
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperCoversAddressAndExceptionVariants)
@@ -82,8 +84,7 @@ TEST(CtraceUnitTests, testCsvRowMapperEscapesDiagnosticText)
   const auto issue = onStream(issuePacket(TraceIssueCode::DecodeError, "comma, quote \" and\nnewline"), 7U);
   EXPECT_EQ(CsvRowMapper::row(issue), ",7,error,,,,,\"comma, quote \"\" and\nnewline\"");
 
-  EXPECT_EQ(CsvRowMapper::row(atCycle(TraceEvent{GlobalTimestampTraceEvent{123U, false}}, 99U)),
-            "123,,global_ts,,,,,");
+  EXPECT_EQ(CsvRowMapper::row(atCycle(TraceEvent{GlobalTimestampTraceEvent{123U, false}}, 99U)), "123,,global_ts,,,,,");
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperHandlesInternalAndCustomOverflowEvents)

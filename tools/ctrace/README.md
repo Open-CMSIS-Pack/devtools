@@ -71,7 +71,7 @@ field is an error; an unneeded extension to the trace-run format does not break 
 | `src/output/ctf` | CTF bundle and Trace Compass XML writers |
 | `src/diagnostics` | Structured diagnostics and trace-issue reporting |
 | `test/unit` | GoogleTest cases, arranged like the production modules |
-| `test/integration` | File-oriented executable tests run through CTest |
+| `test/integration` | GoogleTest integration suite for the application entry point and stable fixtures |
 | `test/data` | Stable fixtures and expected output |
 
 The module boundaries, dependency direction, runtime flow, and extension points are described in the
@@ -85,13 +85,13 @@ Initialize all dependencies and configure the repository from its root:
 ```bash
 git submodule update --init --recursive
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-cmake --build build --target ctrace CtraceUnitTests
+cmake --build build --target ctrace CtraceUnitTests CtraceIntegTests
 ```
 
-Run the GoogleTest unit suite and the executable-level integration tests:
+Run the GoogleTest unit and integration suites plus the executable smoke tests:
 
 ```bash
-ctest --test-dir build -C Debug -R '^(CtraceUnitTests|ctrace-)'
+ctest --test-dir build -C Debug -R '^(CtraceUnitTests|CtraceIntegTests|ctrace-)'
 ```
 
 Editors using `clangd` should open the devtools repository root and configure into `build`. The tool-local

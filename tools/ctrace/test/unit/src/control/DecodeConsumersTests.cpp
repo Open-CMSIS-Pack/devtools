@@ -7,11 +7,13 @@
 
 #include "TestSupport.h"
 #include "TraceOutputTestSupport.h"
-#include <gtest/gtest.h>
 #include "DecodeConsumers.h"
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
 #include "TraceOutput.h"
+
+#include <gtest/gtest.h>
+
 #include <memory>
 #include <string>
 #include <utility>
@@ -49,10 +51,9 @@ TEST(CtraceUnitTests, testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOut
 
   TraceEvent warning = issuePacket(TraceIssueCode::OpenCsdDecodeError, "decoder warning", TraceIssueSeverity::Warning);
   consumers.append(warning);
-  require(calls == std::vector<std::string>({"start", "write", "diagnostic"}),
-          "warning packets must reach outputs before issue reporting");
-  require(consumers.eventCount() == 1U, "DecodeConsumers warning event count mismatch");
-  require(diagnostics.failureCount() == 0U, "decoder warnings must not fail validation");
+  EXPECT_EQ((std::vector<std::string>{"start", "write", "diagnostic"}), calls);
+  EXPECT_EQ(1U, consumers.eventCount());
+  EXPECT_EQ(0U, diagnostics.failureCount());
 
   TraceEvent error = warning;
   auto& errorIssue = std::get<TraceIssueEvent>(error.payload);
@@ -60,14 +61,12 @@ TEST(CtraceUnitTests, testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOut
   errorIssue.code = TraceIssueCode::OpenCsdDecodeError;
   errorIssue.message = "decoder error";
   consumers.append(error);
-  require(calls == std::vector<std::string>({"start", "write", "diagnostic", "write", "diagnostic"}),
-          "decoder error packets must reach outputs before issue reporting");
-  require(consumers.eventCount() == 2U, "DecodeConsumers error event count mismatch");
-  require(diagnostics.failureCount() == 1U, "decoder errors must fail validation even when outputs are configured");
+  EXPECT_EQ((std::vector<std::string>{"start", "write", "diagnostic", "write", "diagnostic"}), calls);
+  EXPECT_EQ(2U, consumers.eventCount());
+  EXPECT_EQ(1U, diagnostics.failureCount());
 
   consumers.abortOutputs();
-  require(calls == std::vector<std::string>({"start", "write", "diagnostic", "write", "diagnostic", "abort"}),
-          "failed decode cleanup must abort and remove partial outputs");
+  EXPECT_EQ((std::vector<std::string>{"start", "write", "diagnostic", "write", "diagnostic", "abort"}), calls);
 }
 
 TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
@@ -75,7 +74,7 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
   CollectingDiagnosticSink unknownDiagnostics;
   DecodeConsumers unknownConsumers({}, unknownDiagnostics);
   unknownConsumers.append(softwarePacket(3U));
-  require(unknownDiagnostics.events().empty(), "an absent ctrace-setup.itm node must not invent an ITM enable warning");
+  EXPECT_TRUE(unknownDiagnostics.events().empty());
 
   CollectingDiagnosticSink diagnostics;
   DecodeConsumers consumers({}, diagnostics, 0x00000002U, {{2U, 0x00000004U}});
@@ -101,9 +100,9 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
   streamSpecificEnabled.traceBusId = 2U;
   consumers.append(streamSpecificEnabled);
 
-  require(diagnostics.events().size() == 2U, "disabled ITM channels must produce one warning per Trace Bus ID/channel");
+  ASSERT_EQ(2U, diagnostics.events().size());
   for (const auto& event : diagnostics.events()) {
-    require(event.severity == DiagnosticSink::Severity::Warning && event.impact == DiagnosticSink::Impact::NonFailing,
-            "ITM enable mismatch diagnostic classification mismatch");
+    EXPECT_EQ(DiagnosticSink::Severity::Warning, event.severity);
+    EXPECT_EQ(DiagnosticSink::Impact::NonFailing, event.impact);
   }
 }

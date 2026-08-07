@@ -50,12 +50,12 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesIndependentOutputs)
   TraceEvent packet = softwarePacket(1U, 1U, 'A');
   lifecycle.append(packet);
   lifecycle.finish();
-  require(diagnostics.failureCount() == 2U, "output lifecycle should report start and finalization failures");
+  ASSERT_TRUE(diagnostics.failureCount() == 2U) << "output lifecycle should report start and finalization failures";
 
   const auto contents = readTestTextFile(path);
-  require(contents.find("cycles,stream,type,source,value,pc,offset,note\n") == 0U &&
-              contents.find(",,itm,1,0x41,,,\n") != std::string::npos,
-          "output lifecycle should complete successful outputs despite another output failure");
+  ASSERT_TRUE(contents.find("cycles,stream,type,source,value,pc,offset,note\n") == 0U &&
+              contents.find(",,itm,1,0x41,,,\n") != std::string::npos)
+      << "output lifecycle should complete successful outputs despite another output failure";
 }
 
 TEST(CtraceUnitTests, testTraceOutputLifecycleReportsAbortFailures)
@@ -66,8 +66,8 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleReportsAbortFailures)
   TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
   lifecycle.abort();
 
-  require(diagnostics.failureCount() == 1U && diagnostics.containsContext("phase", "abort"),
-          "output lifecycle must report a failed direct-output cleanup");
+  ASSERT_TRUE(diagnostics.failureCount() == 1U && diagnostics.containsContext("phase", "abort"))
+      << "output lifecycle must report a failed direct-output cleanup";
 }
 
 TEST(CtraceUnitTests, testTraceOutputLifecycleReportsWriteFailuresAndFinishesOnce)

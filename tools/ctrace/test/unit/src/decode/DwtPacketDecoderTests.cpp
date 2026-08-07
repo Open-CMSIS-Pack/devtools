@@ -32,7 +32,7 @@ TEST(CtraceUnitTests, testDwtPcSampleIsSuppressedUntilDedicatedEventExists)
   payload.quality.timestampReliable = true;
 
   const auto packets = decoder.decode(payload);
-  require(packets.empty(), "DWT PC samples must remain suppressed until their output event is defined");
+  ASSERT_TRUE(packets.empty()) << "DWT PC samples must remain suppressed until their output event is defined";
 }
 
 TEST(CtraceUnitTests, testDwtCounterPacketsArePreservedUntilOutputSemanticsExist)
@@ -45,27 +45,27 @@ TEST(CtraceUnitTests, testDwtCounterPacketsArePreservedUntilOutputSemanticsExist
     payload.quality.overflowCount = 7U;
 
     const auto packets = decoder.decode(payload);
-    require(packets.size() == 1U, "DWT counter packet must be preserved internally");
+    ASSERT_TRUE(packets.size() == 1U) << "DWT counter packet must be preserved internally";
     const auto& packet = packets.front();
     const auto* event = traceEventPayload<DwtEventTraceEvent>(packet);
     const auto* pmu = traceEventPayload<PmuTraceEvent>(packet);
-    require((discriminator == 0U && event != nullptr && pmu == nullptr) ||
-                (discriminator == 3U && event == nullptr && pmu != nullptr),
-            "DWT counter semantic event type mismatch");
+    ASSERT_TRUE((discriminator == 0U && event != nullptr && pmu == nullptr) ||
+                (discriminator == 3U && event == nullptr && pmu != nullptr))
+        << "DWT counter semantic event type mismatch";
     const auto actualDiscriminator = event != nullptr ? event->discriminator : pmu->discriminator;
     const auto actualSize = event != nullptr ? event->size : pmu->size;
     const auto actualValue = event != nullptr ? event->value : pmu->value;
-    require(actualDiscriminator == discriminator, "DWT counter discriminator mismatch");
-    require(actualSize == 1U && actualValue == 0x21U, "DWT counter payload mismatch");
-    require(packet.index == 23U && packet.traceBusId == 4U, "DWT counter identity mismatch");
-    require(packet.tcyc == 949339100U, "DWT counter timestamp mismatch");
-    require(packet.quality.has_value() && packet.quality->overflow, "DWT counter overflow status mismatch");
-    require(packet.quality->overflowCount == 7U, "DWT counter overflow count mismatch");
-    require(!traceEventType(packet).has_value(), "unimplemented DWT counter must not expose an output type");
-    require(!traceEventSelectedForOutput(packet, TraceSelection{}),
-            "DWT counter packet must remain disabled by default");
-    require(!traceEventSelectedForOutput(packet, TraceSelection{{selector}, {}}),
-            "DWT counter selector must remain disabled until output semantics exist");
+    ASSERT_TRUE(actualDiscriminator == discriminator) << "DWT counter discriminator mismatch";
+    ASSERT_TRUE(actualSize == 1U && actualValue == 0x21U) << "DWT counter payload mismatch";
+    ASSERT_TRUE(packet.index == 23U && packet.traceBusId == 4U) << "DWT counter identity mismatch";
+    ASSERT_TRUE(packet.tcyc == 949339100U) << "DWT counter timestamp mismatch";
+    ASSERT_TRUE(packet.quality.has_value() && packet.quality->overflow) << "DWT counter overflow status mismatch";
+    ASSERT_TRUE(packet.quality->overflowCount == 7U) << "DWT counter overflow count mismatch";
+    ASSERT_TRUE(!traceEventType(packet).has_value()) << "unimplemented DWT counter must not expose an output type";
+    ASSERT_TRUE(!traceEventSelectedForOutput(packet, TraceSelection{}))
+        << "DWT counter packet must remain disabled by default";
+    ASSERT_TRUE(!traceEventSelectedForOutput(packet, TraceSelection{{selector}, {}}))
+        << "DWT counter selector must remain disabled until output semantics exist";
   };
 
   verify(0U, "event");
@@ -79,19 +79,19 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsReservedExceptionAction)
   payload.quality.timestampReliable = true;
 
   const auto packets = decoder.decode(payload);
-  require(packets.size() == 1U, "DwtPacketDecoder reserved exception action packet count mismatch");
+  ASSERT_TRUE(packets.size() == 1U) << "DwtPacketDecoder reserved exception action packet count mismatch";
   const auto* issue = traceEventPayload<TraceIssueEvent>(packets[0]);
-  require(issue != nullptr, "DwtPacketDecoder reserved exception action should emit only an error");
-  require(issue->code == TraceIssueCode::InvalidExceptionAction,
-          "DwtPacketDecoder reserved exception action code mismatch");
-  require(issue->message == "invalid exception action 0x0 for exception 11",
-          "DwtPacketDecoder reserved exception action message mismatch");
-  require(packets[0].index == 17U && packets[0].traceBusId == 3U,
-          "DwtPacketDecoder reserved exception action identity mismatch");
-  require(packets[0].tcyc.has_value() && *packets[0].tcyc == 1234U,
-          "DwtPacketDecoder reserved exception action timestamp mismatch");
-  require(CsvRowMapper::row(packets[0]) == "1234,3,error,,,,,invalid exception action 0x0 for exception 11",
-          "DwtPacketDecoder reserved exception error CSV mismatch");
+  ASSERT_TRUE(issue != nullptr) << "DwtPacketDecoder reserved exception action should emit only an error";
+  ASSERT_TRUE(issue->code == TraceIssueCode::InvalidExceptionAction)
+      << "DwtPacketDecoder reserved exception action code mismatch";
+  ASSERT_TRUE(issue->message == "invalid exception action 0x0 for exception 11")
+      << "DwtPacketDecoder reserved exception action message mismatch";
+  ASSERT_TRUE(packets[0].index == 17U && packets[0].traceBusId == 3U)
+      << "DwtPacketDecoder reserved exception action identity mismatch";
+  ASSERT_TRUE(packets[0].tcyc.has_value() && *packets[0].tcyc == 1234U)
+      << "DwtPacketDecoder reserved exception action timestamp mismatch";
+  ASSERT_TRUE(CsvRowMapper::row(packets[0]) == "1234,3,error,,,,,invalid exception action 0x0 for exception 11")
+      << "DwtPacketDecoder reserved exception error CSV mismatch";
 }
 
 TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingEventsInRawOrder)
@@ -99,26 +99,27 @@ TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingEventsInRawOrder)
   DwtPacketDecoder decoder;
 
   const auto comparatorThree = dwtPayload(14U, 4U, 0x08003000U, 10U, 3U);
-  require(decoder.decode(comparatorThree).empty(), "an incomplete DWT comparator-three event must remain pending");
+  ASSERT_TRUE(decoder.decode(comparatorThree).empty())
+      << "an incomplete DWT comparator-three event must remain pending";
 
   const auto comparatorOne = dwtPayload(10U, 4U, 0x08001000U, 10U, 3U);
-  require(decoder.decode(comparatorOne).empty(), "an incomplete DWT comparator-one event must remain pending");
+  ASSERT_TRUE(decoder.decode(comparatorOne).empty()) << "an incomplete DWT comparator-one event must remain pending";
 
   const auto comparatorZero = dwtPayload(8U, 4U, 0x08000000U, 20U, 4U);
-  require(decoder.decode(comparatorZero).empty(), "an incomplete DWT comparator-zero event must remain pending");
+  ASSERT_TRUE(decoder.decode(comparatorZero).empty()) << "an incomplete DWT comparator-zero event must remain pending";
 
   const auto packets = decoder.flush({}, 123U);
-  require(packets.size() == 3U, "DWT flush must emit all pending comparator events");
-  require(packets[0].index == 10U && packets[1].index == 10U && packets[2].index == 20U,
-          "DWT flush must preserve raw-stream order across comparators");
-  require(packets[0].traceBusId == 3U && packets[1].traceBusId == 3U && packets[2].traceBusId == 4U,
-          "DWT flush must preserve the identity of each pending event");
+  ASSERT_TRUE(packets.size() == 3U) << "DWT flush must emit all pending comparator events";
+  ASSERT_TRUE(packets[0].index == 10U && packets[1].index == 10U && packets[2].index == 20U)
+      << "DWT flush must preserve raw-stream order across comparators";
+  ASSERT_TRUE(packets[0].traceBusId == 3U && packets[1].traceBusId == 3U && packets[2].traceBusId == 4U)
+      << "DWT flush must preserve the identity of each pending event";
   const auto* first = traceEventPayload<DwtAddressTraceEvent>(packets[0]);
   const auto* second = traceEventPayload<DwtAddressTraceEvent>(packets[1]);
   const auto* third = traceEventPayload<DwtAddressTraceEvent>(packets[2]);
-  require(first != nullptr && first->comparator == 1U && second != nullptr && second->comparator == 3U &&
-              third != nullptr && third->comparator == 0U,
-          "DWT raw-order regression must not rewrite comparator identities");
+  ASSERT_TRUE(first != nullptr && first->comparator == 1U && second != nullptr && second->comparator == 3U &&
+              third != nullptr && third->comparator == 0U)
+      << "DWT raw-order regression must not rewrite comparator identities";
 }
 
 TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRepeatedAddressFragments)
@@ -127,30 +128,30 @@ TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRepeatedAddressFragments)
     DwtPacketDecoder decoder;
     const auto size = static_cast<std::uint8_t>((discriminator & 1U) == 0U ? 4U : 2U);
     const auto first = dwtPayload(discriminator, size, firstValue, 10U, 3U);
-    require(decoder.decode(first).empty(), "first DWT address fragment must remain pending");
+    ASSERT_TRUE(decoder.decode(first).empty()) << "first DWT address fragment must remain pending";
 
     auto packets = decoder.decode(dwtPayload(discriminator, size, secondValue, 20U, 4U, 200U));
-    require(packets.size() == 1U, "a repeated DWT address fragment must flush its predecessor");
+    ASSERT_TRUE(packets.size() == 1U) << "a repeated DWT address fragment must flush its predecessor";
     const auto* firstAddress = traceEventPayload<DwtAddressTraceEvent>(packets.front());
-    require(firstAddress != nullptr && packets.front().index == 10U && packets.front().traceBusId == 3U,
-            "the first repeated DWT address fragment lost its identity");
+    ASSERT_TRUE(firstAddress != nullptr && packets.front().index == 10U && packets.front().traceBusId == 3U)
+        << "the first repeated DWT address fragment lost its identity";
     const auto firstPc = dwtAddressPc(*firstAddress);
     const auto firstOffset = dwtAddressOffset(*firstAddress);
 
     packets = decoder.flush({}, 300U);
-    require(packets.size() == 1U, "the second DWT address fragment must remain available");
+    ASSERT_TRUE(packets.size() == 1U) << "the second DWT address fragment must remain available";
     const auto* secondAddress = traceEventPayload<DwtAddressTraceEvent>(packets.front());
-    require(secondAddress != nullptr && packets.front().index == 20U && packets.front().traceBusId == 4U,
-            "the second repeated DWT address fragment lost its identity");
+    ASSERT_TRUE(secondAddress != nullptr && packets.front().index == 20U && packets.front().traceBusId == 4U)
+        << "the second repeated DWT address fragment lost its identity";
 
     if (discriminator == 8U) {
-      require(firstPc == std::optional<std::uint32_t>(firstValue) &&
-                  dwtAddressPc(*secondAddress) == std::optional<std::uint32_t>(secondValue),
-              "repeated DWT PC fragments were overwritten");
+      ASSERT_TRUE(firstPc == std::optional<std::uint32_t>(firstValue) &&
+                  dwtAddressPc(*secondAddress) == std::optional<std::uint32_t>(secondValue))
+          << "repeated DWT PC fragments were overwritten";
     } else {
-      require(firstOffset == std::optional<std::uint32_t>(firstValue) &&
-                  dwtAddressOffset(*secondAddress) == std::optional<std::uint32_t>(secondValue),
-              "repeated DWT offset fragments were overwritten");
+      ASSERT_TRUE(firstOffset == std::optional<std::uint32_t>(firstValue) &&
+                  dwtAddressOffset(*secondAddress) == std::optional<std::uint32_t>(secondValue))
+          << "repeated DWT offset fragments were overwritten";
     }
   };
 
@@ -166,14 +167,14 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
     payload.quality.timestampReliable = true;
 
     const auto packets = decoder.decode(payload);
-    require(packets.size() == 1U, "unsupported DWT address width must emit one error");
+    ASSERT_TRUE(packets.size() == 1U) << "unsupported DWT address width must emit one error";
     const auto* issue = traceEventPayload<TraceIssueEvent>(packets.front());
-    require(issue != nullptr && issue->code == TraceIssueCode::UnsupportedDwtAddressPayload &&
-                issue->severity == TraceIssueSeverity::Error,
-            "unsupported DWT address width diagnostic mismatch");
-    require(packets.front().index == 17U && packets.front().traceBusId == 3U &&
-                packets.front().tcyc == std::optional<std::uint64_t>(99U),
-            "unsupported DWT address width diagnostic lost packet identity");
+    ASSERT_TRUE(issue != nullptr && issue->code == TraceIssueCode::UnsupportedDwtAddressPayload &&
+                issue->severity == TraceIssueSeverity::Error)
+        << "unsupported DWT address width diagnostic mismatch";
+    ASSERT_TRUE(packets.front().index == 17U && packets.front().traceBusId == 3U &&
+                packets.front().tcyc == std::optional<std::uint64_t>(99U))
+        << "unsupported DWT address width diagnostic lost packet identity";
   };
 
   verify(8U, 1U);

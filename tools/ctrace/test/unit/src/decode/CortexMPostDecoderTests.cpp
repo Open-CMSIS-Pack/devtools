@@ -38,10 +38,10 @@ TEST(CtraceUnitTests, testCortexMPostDecoderUsesLocalTimestampRelations)
     decoder.append(openCsdTimestampElement(100U, 0U, 0U, relation));
     decoder.finish();
 
-    require(sink.events().size() == 2U, "local timestamp relation event count mismatch");
-    require(sink.events().front().quality.has_value() &&
-                sink.events().front().quality->timestampReliable == expectedReliable,
-            "local timestamp relation reliability mismatch");
+    ASSERT_TRUE(sink.events().size() == 2U) << "local timestamp relation event count mismatch";
+    ASSERT_TRUE(sink.events().front().quality.has_value() &&
+                sink.events().front().quality->timestampReliable == expectedReliable)
+        << "local timestamp relation reliability mismatch";
   }
 }
 
@@ -57,10 +57,10 @@ TEST(CtraceUnitTests, testCortexMPostDecoderOffsetsTimestampsAfterOverflow)
   decoder.append(openCsdTimestampElement(10U));
   decoder.append(openCsdTimestampElement(15U));
 
-  require(sink.events().size() == 4, "timestamp segment overflow event count mismatch");
-  require(sink.events()[0].tcyc == 100U, "timestamp segment first tcyc mismatch");
-  require(sink.events()[2].tcyc == 110U, "timestamp segment post-overflow tcyc mismatch");
-  require(sink.events()[3].tcyc == 115U, "timestamp segment post-overflow increment mismatch");
+  ASSERT_TRUE(sink.events().size() == 4) << "timestamp segment overflow event count mismatch";
+  ASSERT_TRUE(sink.events()[0].tcyc == 100U) << "timestamp segment first tcyc mismatch";
+  ASSERT_TRUE(sink.events()[2].tcyc == 110U) << "timestamp segment post-overflow tcyc mismatch";
+  ASSERT_TRUE(sink.events()[3].tcyc == 115U) << "timestamp segment post-overflow increment mismatch";
 }
 
 TEST(CtraceUnitTests, testCortexMPostDecoderLeavesInitialOverflowTimestampUnknown)
@@ -85,8 +85,8 @@ TEST(CtraceUnitTests, testCortexMPostDecoderUsesTimestampOverflowFlag)
   timestamp.overflow = true;
   decoder.append(timestamp);
 
-  require(sink.events().size() == 2, "timestamp overflow flag event count mismatch");
-  require(sink.events()[1].tcyc == 109U, "post-decoder should use packet overflow flag as segment boundary");
+  ASSERT_TRUE(sink.events().size() == 2) << "timestamp overflow flag event count mismatch";
+  ASSERT_TRUE(sink.events()[1].tcyc == 109U) << "post-decoder should use packet overflow flag as segment boundary";
 }
 
 TEST(CtraceUnitTests, testCortexMPostDecoderMapsDiscontinuityTimestamp)
@@ -98,6 +98,6 @@ TEST(CtraceUnitTests, testCortexMPostDecoderMapsDiscontinuityTimestamp)
   decoder.append(openCsdElement(OpenCsdTraceElement::Kind::Discontinuity));
   decoder.append(openCsdTimestampElement(7U));
 
-  require(sink.events().size() == 3, "timestamp discontinuity event count mismatch");
-  require(sink.events()[2].tcyc == 207U, "post-decoder explicit discontinuity timestamp mismatch");
+  ASSERT_TRUE(sink.events().size() == 3) << "timestamp discontinuity event count mismatch";
+  ASSERT_TRUE(sink.events()[2].tcyc == 207U) << "post-decoder explicit discontinuity timestamp mismatch";
 }

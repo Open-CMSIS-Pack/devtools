@@ -22,10 +22,10 @@ TEST(CtraceUnitTests, testDiagnosticCollection)
       {{"offset", "42"}},
   });
 
-  require(sink.events().size() == 1, "diagnostic event count mismatch");
-  require(sink.events()[0].severity == DiagnosticSink::Severity::Warning, "diagnostic severity mismatch");
-  require(toString(sink.events()[0].severity) == "warning", "diagnostic severity text mismatch");
-  require(sink.failureCount() == 0U, "warnings must not fail the command");
+  ASSERT_TRUE(sink.events().size() == 1) << "diagnostic event count mismatch";
+  ASSERT_TRUE(sink.events()[0].severity == DiagnosticSink::Severity::Warning) << "diagnostic severity mismatch";
+  ASSERT_TRUE(toString(sink.events()[0].severity) == "warning") << "diagnostic severity text mismatch";
+  ASSERT_TRUE(sink.failureCount() == 0U) << "warnings must not fail the command";
 
   sink.report({
       DiagnosticSink::Severity::Error,
@@ -33,15 +33,15 @@ TEST(CtraceUnitTests, testDiagnosticCollection)
       {},
       DiagnosticSink::Impact::NonFailing,
   });
-  require(sink.events().back().impact == DiagnosticSink::Impact::NonFailing && sink.failureCount() == 0U,
-          "non-failing errors must retain error severity without failing the job");
+  ASSERT_TRUE(sink.events().back().impact == DiagnosticSink::Impact::NonFailing && sink.failureCount() == 0U)
+      << "non-failing errors must retain error severity without failing the job";
 
   sink.report({
       DiagnosticSink::Severity::Error,
       "required input is missing",
   });
-  require(sink.events().back().impact == DiagnosticSink::Impact::Failing && sink.failureCount() == 1U,
-          "failing errors must fail the job");
+  ASSERT_TRUE(sink.events().back().impact == DiagnosticSink::Impact::Failing && sink.failureCount() == 1U)
+      << "failing errors must fail the job";
 }
 
 TEST(CtraceUnitTests, testDiagnosticTextCoversSeverityAndFormatting)
@@ -68,10 +68,10 @@ TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
   TraceIssueReporter payloadIndependentReporter(payloadIndependentDiagnostics);
   TraceEvent payloadIndependentError = issuePacket(TraceIssueCode::OpenCsdIncompleteTail);
   payloadIndependentReporter.append(payloadIndependentError);
-  require(payloadIndependentDiagnostics.events().size() == 1U,
-          "decoder errors must remain visible independently of payload filtering");
-  require(payloadIndependentDiagnostics.failureCount() == 1U,
-          "decoder errors must fail validation independently of payload filtering");
+  ASSERT_TRUE(payloadIndependentDiagnostics.events().size() == 1U)
+      << "decoder errors must remain visible independently of payload filtering";
+  ASSERT_TRUE(payloadIndependentDiagnostics.failureCount() == 1U)
+      << "decoder errors must fail validation independently of payload filtering";
 
   CollectingDiagnosticSink diagnostics;
   TraceIssueReporter reporter(diagnostics);
@@ -93,21 +93,22 @@ TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
   TraceEvent initializationError = issuePacket(TraceIssueCode::OpenCsdInitializationError, "decoder setup failed");
   reporter.append(initializationError);
 
-  require(diagnostics.events().size() == 5U, "TraceIssueReporter should report every error and warning occurrence");
-  require(diagnostics.events()[0].severity == DiagnosticSink::Severity::Warning,
-          "TraceIssueReporter overflow severity mismatch");
+  ASSERT_TRUE(diagnostics.events().size() == 5U)
+      << "TraceIssueReporter should report every error and warning occurrence";
+  ASSERT_TRUE(diagnostics.events()[0].severity == DiagnosticSink::Severity::Warning)
+      << "TraceIssueReporter overflow severity mismatch";
   EXPECT_NE(diagnostics.events()[0].message.find("1 more occurred"), std::string::npos);
-  require(diagnostics.events()[1].severity == DiagnosticSink::Severity::Error,
-          "TraceIssueReporter data-loss severity mismatch");
-  require(diagnostics.events()[1].context.empty(), "TraceIssueReporter context mismatch");
-  require(diagnostics.events()[1].message.find("3 raw bytes") != std::string::npos,
-          "TraceIssueReporter should include the lost byte count");
-  require(diagnostics.events()[2].message == diagnostics.events()[1].message,
-          "TraceIssueReporter repeated data-loss message mismatch");
-  require(diagnostics.events()[3].severity == DiagnosticSink::Severity::Warning,
-          "TraceIssueReporter should preserve warning severity");
-  require(diagnostics.events()[4].context.empty(), "TraceIssueReporter context mismatch");
-  require(diagnostics.failureCount() == 3U, "TraceIssueReporter should classify decoder errors as failing");
+  ASSERT_TRUE(diagnostics.events()[1].severity == DiagnosticSink::Severity::Error)
+      << "TraceIssueReporter data-loss severity mismatch";
+  ASSERT_TRUE(diagnostics.events()[1].context.empty()) << "TraceIssueReporter context mismatch";
+  ASSERT_TRUE(diagnostics.events()[1].message.find("3 raw bytes") != std::string::npos)
+      << "TraceIssueReporter should include the lost byte count";
+  ASSERT_TRUE(diagnostics.events()[2].message == diagnostics.events()[1].message)
+      << "TraceIssueReporter repeated data-loss message mismatch";
+  ASSERT_TRUE(diagnostics.events()[3].severity == DiagnosticSink::Severity::Warning)
+      << "TraceIssueReporter should preserve warning severity";
+  ASSERT_TRUE(diagnostics.events()[4].context.empty()) << "TraceIssueReporter context mismatch";
+  ASSERT_TRUE(diagnostics.failureCount() == 3U) << "TraceIssueReporter should classify decoder errors as failing";
 }
 
 TEST(CtraceUnitTests, testTraceIssueReporterFormatsUnknownOverflowTimestamp)

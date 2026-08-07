@@ -32,20 +32,20 @@ TEST(CtraceUnitTests, testTraceRunDiscovery)
   std::filesystem::create_directories(traceDir / "Alpha.SWO.raw.dir");
 
   const auto batch = TraceRunDiscovery::selectConfigFiles(traceDir, std::nullopt);
-  require(batch.size() == 2U, "TraceRunDiscovery batch configuration count mismatch");
-  require(batch[0].filename() == "Alpha.ctrace-run.yml", "TraceRunDiscovery batch sort mismatch");
-  require(batch[1].filename() == "Beta.ctrace-run.yml", "TraceRunDiscovery second batch item mismatch");
+  ASSERT_TRUE(batch.size() == 2U) << "TraceRunDiscovery batch configuration count mismatch";
+  ASSERT_TRUE(batch[0].filename() == "Alpha.ctrace-run.yml") << "TraceRunDiscovery batch sort mismatch";
+  ASSERT_TRUE(batch[1].filename() == "Beta.ctrace-run.yml") << "TraceRunDiscovery second batch item mismatch";
 
   const auto selected = TraceRunDiscovery::selectConfigFiles(traceDir, std::string("Alpha"));
-  require(selected.size() == 1U, "TraceRunDiscovery target selection count mismatch");
-  require(selected[0].filename() == "Alpha.ctrace-run.yml", "TraceRunDiscovery target path mismatch");
-  require(TraceRunDiscovery::solutionSetName(selected[0]) == "Alpha", "TraceRunDiscovery solution-set mismatch");
+  ASSERT_TRUE(selected.size() == 1U) << "TraceRunDiscovery target selection count mismatch";
+  ASSERT_TRUE(selected[0].filename() == "Alpha.ctrace-run.yml") << "TraceRunDiscovery target path mismatch";
+  ASSERT_TRUE(TraceRunDiscovery::solutionSetName(selected[0]) == "Alpha") << "TraceRunDiscovery solution-set mismatch";
 
   const auto rawInputs = TraceRunDiscovery::rawInputs(selected[0]);
-  require(rawInputs.size() == 3U, "TraceRunDiscovery must accept only the specified trace channels");
-  require(rawInputs[0].channel == "ER", "TraceRunDiscovery ER channel mismatch");
-  require(rawInputs[1].channel == "SWO", "TraceRunDiscovery SWO channel mismatch");
-  require(rawInputs[2].channel == "TB", "TraceRunDiscovery TB channel mismatch");
+  ASSERT_TRUE(rawInputs.size() == 3U) << "TraceRunDiscovery must accept only the specified trace channels";
+  ASSERT_TRUE(rawInputs[0].channel == "ER") << "TraceRunDiscovery ER channel mismatch";
+  ASSERT_TRUE(rawInputs[1].channel == "SWO") << "TraceRunDiscovery SWO channel mismatch";
+  ASSERT_TRUE(rawInputs[2].channel == "TB") << "TraceRunDiscovery TB channel mismatch";
 
   const std::vector<std::string> unsafeTargets{
       "",
@@ -73,9 +73,9 @@ TEST(CtraceUnitTests, testTraceRunDiscovery)
       "bad\x01name",
   };
   for (const auto& unsafeTarget : unsafeTargets) {
-    require(throwsWithMessage([&] { (void)TraceRunDiscovery::selectConfigFiles(traceDir, unsafeTarget); },
-                              "solution-set name"),
-            "TraceRunDiscovery should reject unsafe target name: " + unsafeTarget);
+    ASSERT_TRUE(throwsWithMessage([&] { (void)TraceRunDiscovery::selectConfigFiles(traceDir, unsafeTarget); },
+                                  "solution-set name"))
+        << "TraceRunDiscovery should reject unsafe target name: " + unsafeTarget;
   }
 
   EXPECT_THROW((void)TraceRunDiscovery::selectConfigFiles(traceDir, std::string("Missing")), std::runtime_error);

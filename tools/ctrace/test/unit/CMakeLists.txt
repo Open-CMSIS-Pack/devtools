@@ -26,7 +26,6 @@ else()
 endif()
 
 add_executable(CtraceUnitTests
-  src/CtraceMainTests.cpp
   src/cli/CliParserTests.cpp
   src/control/DecodeConsumersTests.cpp
   src/control/TraceDirectoryJobTests.cpp

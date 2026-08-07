@@ -190,10 +190,14 @@ jobs:
           build_type: Debug
           arch: ${{ matrix.arch }}
 
-      - name: Build ctrace integration target
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build CtraceIntegTests
         id: build_integration_target
-        run: cmake --build . --target ctrace
-        working-directory: ./build
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
+        with:
+          target: CtraceIntegTests
+          build_type: Debug
+          arch: ${{ matrix.arch }}
 
       - name: Run ctrace unit tests
         id: run_unit_tests
@@ -204,7 +208,7 @@ jobs:
       - name: Run ctrace integration tests
         id: run_integration_tests
         if: always() && (matrix.arch != 'arm64') && (steps.build_integration_target.outcome == 'success')
-        run: ctest -V -C Debug -R '^ctrace-' --output-junit test_reports/ctraceintegtests-report-${{ matrix.target }}-${{ matrix.arch }}.xml
+        run: ctest -V -C Debug -R '^(CtraceIntegTests|ctrace-)'
         working-directory: ./build
 
       - name: Archive unit test results
@@ -261,16 +265,21 @@ jobs:
           build_type: Debug
           target: CtraceUnitTests
 
-      - name: Build ctrace integration target
-        run: cmake --build . --target ctrace
-        working-directory: ./build
+      # https://github.com/Open-CMSIS-Pack/devtools-build-action
+      - name: Build CtraceIntegTests
+        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
+        with:
+          add_cmake_variables: -DCOVERAGE=ON
+          arch: amd64
+          build_type: Debug
+          target: CtraceIntegTests
 
       - name: Run ctrace unit tests
         run: ctest -V -C Debug -R '^CtraceUnitTests$'
         working-directory: ./build
 
       - name: Run ctrace integration tests
-        run: ctest -V -C Debug -R '^ctrace-' --output-junit test_reports/ctraceintegtests-report-linux-amd64.xml
+        run: ctest -V -C Debug -R '^(CtraceIntegTests|ctrace-)'
         working-directory: ./build
 
       - name: Get retention days

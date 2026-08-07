@@ -119,16 +119,19 @@ TEST(CtraceUnitTests, testCortexMPostDecoderSoftwareTimestampBoundary)
 
   decoder.finish();
   const auto& packets = sink.events();
-  require(packets.size() == 2, "CortexMPostDecoder packet count mismatch");
+  ASSERT_TRUE(packets.size() == 2) << "CortexMPostDecoder packet count mismatch";
   const auto* decodedSoftware = softwareEvent(packets[0]);
-  require(decodedSoftware != nullptr, "CortexMPostDecoder first packet type mismatch");
-  require(decodedSoftware->channel == 0, "CortexMPostDecoder software channel mismatch");
-  require(decodedSoftware->size == 1U && decodedSoftware->value == 'A', "CortexMPostDecoder payload mismatch");
-  require(packets[0].tcyc.has_value() && packets[0].tcyc.value() == 120, "CortexMPostDecoder software tcyc mismatch");
-  require(packets[0].quality.has_value() && packets[0].quality->timestampReliable,
-          "CortexMPostDecoder software timestamp reliability mismatch");
-  require(isTraceEvent<LocalTimestampTraceEvent>(packets[1]), "CortexMPostDecoder timestamp packet type mismatch");
-  require(packets[1].tcyc.has_value() && packets[1].tcyc.value() == 120, "CortexMPostDecoder timestamp tcyc mismatch");
+  ASSERT_TRUE(decodedSoftware != nullptr) << "CortexMPostDecoder first packet type mismatch";
+  ASSERT_TRUE(decodedSoftware->channel == 0) << "CortexMPostDecoder software channel mismatch";
+  ASSERT_TRUE(decodedSoftware->size == 1U && decodedSoftware->value == 'A') << "CortexMPostDecoder payload mismatch";
+  ASSERT_TRUE(packets[0].tcyc.has_value() && packets[0].tcyc.value() == 120)
+      << "CortexMPostDecoder software tcyc mismatch";
+  ASSERT_TRUE(packets[0].quality.has_value() && packets[0].quality->timestampReliable)
+      << "CortexMPostDecoder software timestamp reliability mismatch";
+  ASSERT_TRUE(isTraceEvent<LocalTimestampTraceEvent>(packets[1]))
+      << "CortexMPostDecoder timestamp packet type mismatch";
+  ASSERT_TRUE(packets[1].tcyc.has_value() && packets[1].tcyc.value() == 120)
+      << "CortexMPostDecoder timestamp tcyc mismatch";
 }
 
 TEST(CtraceUnitTests, testCortexMStreamDecoderAppliesPerStreamPrescalers)
@@ -149,11 +152,11 @@ TEST(CtraceUnitTests, testCortexMStreamDecoderAppliesPerStreamPrescalers)
   decoder.append(stream2Timestamp);
   decoder.finish();
 
-  require(sink.events().size() == 4U, "per-stream timestamp event count mismatch");
-  require(sink.events()[0].traceBusId == 1U && sink.events()[0].tcyc == std::optional<std::uint64_t>(40U),
-          "stream 1 timestamp prescaler mismatch");
-  require(sink.events()[2].traceBusId == 2U && sink.events()[2].tcyc == std::optional<std::uint64_t>(160U),
-          "stream 2 timestamp prescaler mismatch");
+  ASSERT_TRUE(sink.events().size() == 4U) << "per-stream timestamp event count mismatch";
+  ASSERT_TRUE(sink.events()[0].traceBusId == 1U && sink.events()[0].tcyc == std::optional<std::uint64_t>(40U))
+      << "stream 1 timestamp prescaler mismatch";
+  ASSERT_TRUE(sink.events()[2].traceBusId == 2U && sink.events()[2].tcyc == std::optional<std::uint64_t>(160U))
+      << "stream 2 timestamp prescaler mismatch";
 }
 
 TEST(CtraceUnitTests, testCortexMStreamDecoderValidatesAndSaturatesPrescalers)
@@ -208,16 +211,17 @@ TEST(CtraceUnitTests, testCortexMPostDecoderReportsDiscontinuityInterval)
 
   decoder.finish();
   const auto& packets = sink.events();
-  require(packets.size() == 3U, "discontinuity interval packet count mismatch");
+  ASSERT_TRUE(packets.size() == 3U) << "discontinuity interval packet count mismatch";
   const auto* discontinuityIssue = issueEvent(packets[0]);
-  require(discontinuityIssue != nullptr, "discontinuity interval should start with its error");
-  require(packets[0].tcyc == std::optional<std::uint64_t>(0U), "discontinuity last valid timestamp mismatch");
-  require(discontinuityIssue->lastValidTcyc == std::optional<std::uint64_t>(0U), "discontinuity start field mismatch");
-  require(discontinuityIssue->message.find("timestamp 0 .. 42.") != std::string::npos,
-          "discontinuity interval message mismatch");
-  require(isTraceEvent<SoftwareTraceEvent>(packets[1]), "discontinuity interval payload order mismatch");
-  require(packets[1].tcyc == std::optional<std::uint64_t>(42U), "resumed payload timestamp mismatch");
-  require(isTraceEvent<LocalTimestampTraceEvent>(packets[2]), "discontinuity interval timestamp order mismatch");
+  ASSERT_TRUE(discontinuityIssue != nullptr) << "discontinuity interval should start with its error";
+  ASSERT_TRUE(packets[0].tcyc == std::optional<std::uint64_t>(0U)) << "discontinuity last valid timestamp mismatch";
+  ASSERT_TRUE(discontinuityIssue->lastValidTcyc == std::optional<std::uint64_t>(0U))
+      << "discontinuity start field mismatch";
+  ASSERT_TRUE(discontinuityIssue->message.find("timestamp 0 .. 42.") != std::string::npos)
+      << "discontinuity interval message mismatch";
+  ASSERT_TRUE(isTraceEvent<SoftwareTraceEvent>(packets[1])) << "discontinuity interval payload order mismatch";
+  ASSERT_TRUE(packets[1].tcyc == std::optional<std::uint64_t>(42U)) << "resumed payload timestamp mismatch";
+  ASSERT_TRUE(isTraceEvent<LocalTimestampTraceEvent>(packets[2])) << "discontinuity interval timestamp order mismatch";
 }
 
 TEST(CtraceUnitTests, testCortexMPostDecoderSeparatesRecoveryCauseAndDataLoss)
@@ -242,20 +246,21 @@ TEST(CtraceUnitTests, testCortexMPostDecoderSeparatesRecoveryCauseAndDataLoss)
 
   decoder.finish();
   const auto& packets = sink.events();
-  require(packets.size() == 3U, "recovery cause/data-loss packet count mismatch");
+  ASSERT_TRUE(packets.size() == 3U) << "recovery cause/data-loss packet count mismatch";
   const auto* causeIssue = issueEvent(packets[0]);
   const auto* lossIssue = issueEvent(packets[1]);
-  require(causeIssue != nullptr && causeIssue->code == TraceIssueCode::OpenCsdBadPacketSequence,
-          "recovery cause should be emitted first");
-  require(causeIssue->message.find("timestamp") == std::string::npos,
-          "recovery cause should not contain the data-loss timestamp interval");
-  require(lossIssue != nullptr && lossIssue->code == TraceIssueCode::DataLoss,
-          "recovery data loss should be a separate error");
-  require(lossIssue->message.find("timestamp 0 .. 42.") != std::string::npos, "recovery data-loss interval mismatch");
-  require(packets[0].quality.has_value() && packets[0].quality->overflowCount == 1U && packets[1].quality.has_value() &&
-              packets[1].quality->overflowCount == 1U,
-          "separate data-loss error must not count a second discontinuity");
-  require(isTraceEvent<LocalTimestampTraceEvent>(packets[2]), "recovery timestamp packet missing");
+  ASSERT_TRUE(causeIssue != nullptr && causeIssue->code == TraceIssueCode::OpenCsdBadPacketSequence)
+      << "recovery cause should be emitted first";
+  ASSERT_TRUE(causeIssue->message.find("timestamp") == std::string::npos)
+      << "recovery cause should not contain the data-loss timestamp interval";
+  ASSERT_TRUE(lossIssue != nullptr && lossIssue->code == TraceIssueCode::DataLoss)
+      << "recovery data loss should be a separate error";
+  ASSERT_TRUE(lossIssue->message.find("timestamp 0 .. 42.") != std::string::npos)
+      << "recovery data-loss interval mismatch";
+  ASSERT_TRUE(packets[0].quality.has_value() && packets[0].quality->overflowCount == 1U &&
+              packets[1].quality.has_value() && packets[1].quality->overflowCount == 1U)
+      << "separate data-loss error must not count a second discontinuity";
+  ASSERT_TRUE(isTraceEvent<LocalTimestampTraceEvent>(packets[2])) << "recovery timestamp packet missing";
 }
 
 TEST(CtraceUnitTests, testCortexMPostDecoderOverflowFlushesDwtSegments)
@@ -286,25 +291,28 @@ TEST(CtraceUnitTests, testCortexMPostDecoderOverflowFlushesDwtSegments)
 
   decoder.finish();
   const auto& packets = sink.events();
-  require(packets.size() == 5, "CortexMPostDecoder overflow segment packet count mismatch");
-  require(isTraceEvent<LocalTimestampTraceEvent>(packets[0]), "overflow segment first packet should be timestamp");
+  ASSERT_TRUE(packets.size() == 5) << "CortexMPostDecoder overflow segment packet count mismatch";
+  ASSERT_TRUE(isTraceEvent<LocalTimestampTraceEvent>(packets[0]))
+      << "overflow segment first packet should be timestamp";
   const auto* address = traceEventPayload<DwtAddressTraceEvent>(packets[1]);
-  require(address != nullptr, "overflow should flush pending DWT fragment as an address event");
-  require(dwtAddressPc(*address) == std::optional<std::uint32_t>(0x08001234U), "flushed DWT PC mismatch");
-  require(packets[1].tcyc.has_value() && packets[1].tcyc.value() == 100, "flushed DWT PC timestamp mismatch");
-  require(packets[1].quality.has_value() && packets[1].quality->overflow,
-          "flushed DWT PC should carry overflow status");
-  require(!packets[1].quality->timestampReliable, "flushed DWT PC should be timestamp-unreliable");
-  require(isTraceEvent<OverflowTraceEvent>(packets[2]), "overflow segment should emit overflow marker");
+  ASSERT_TRUE(address != nullptr) << "overflow should flush pending DWT fragment as an address event";
+  ASSERT_TRUE(dwtAddressPc(*address) == std::optional<std::uint32_t>(0x08001234U)) << "flushed DWT PC mismatch";
+  ASSERT_TRUE(packets[1].tcyc.has_value() && packets[1].tcyc.value() == 100) << "flushed DWT PC timestamp mismatch";
+  ASSERT_TRUE(packets[1].quality.has_value() && packets[1].quality->overflow)
+      << "flushed DWT PC should carry overflow status";
+  ASSERT_TRUE(!packets[1].quality->timestampReliable) << "flushed DWT PC should be timestamp-unreliable";
+  ASSERT_TRUE(isTraceEvent<OverflowTraceEvent>(packets[2])) << "overflow segment should emit overflow marker";
   const auto* data = traceEventPayload<DwtDataTraceEvent>(packets[3]);
-  require(data != nullptr, "post-overflow DWT value missing");
-  require(!data->pc.has_value(), "post-overflow DWT value must not inherit prior PC");
-  require(data->value == 0x55U, "post-overflow DWT value mismatch");
-  require(packets[3].tcyc.has_value() && packets[3].tcyc.value() == 120, "post-overflow DWT value timestamp mismatch");
-  require(packets[3].quality.has_value() && packets[3].quality->overflow,
-          "post-overflow DWT value should carry overflow status");
-  require(!packets[3].quality->timestampReliable, "post-overflow DWT value should be timestamp-unreliable");
-  require(isTraceEvent<LocalTimestampTraceEvent>(packets[4]), "overflow segment final packet should be timestamp");
+  ASSERT_TRUE(data != nullptr) << "post-overflow DWT value missing";
+  ASSERT_TRUE(!data->pc.has_value()) << "post-overflow DWT value must not inherit prior PC";
+  ASSERT_TRUE(data->value == 0x55U) << "post-overflow DWT value mismatch";
+  ASSERT_TRUE(packets[3].tcyc.has_value() && packets[3].tcyc.value() == 120)
+      << "post-overflow DWT value timestamp mismatch";
+  ASSERT_TRUE(packets[3].quality.has_value() && packets[3].quality->overflow)
+      << "post-overflow DWT value should carry overflow status";
+  ASSERT_TRUE(!packets[3].quality->timestampReliable) << "post-overflow DWT value should be timestamp-unreliable";
+  ASSERT_TRUE(isTraceEvent<LocalTimestampTraceEvent>(packets[4]))
+      << "overflow segment final packet should be timestamp";
 }
 
 TEST(CtraceUnitTests, testCortexMPostDecoderPreservesDecoderTimestamps)
@@ -320,10 +328,10 @@ TEST(CtraceUnitTests, testCortexMPostDecoderPreservesDecoderTimestamps)
 
   decoder.finish();
   const auto& packets = sink.events();
-  require(packets.size() == 2, "preserve timestamp packet count mismatch");
-  require(packets[0].index == firstTimestamp.sourceIndex, "raw offsets must not truncate above 4 GiB");
-  require(packets[0].tcyc.has_value() && packets[0].tcyc.value() == 100, "first preserved timestamp mismatch");
-  require(packets[1].tcyc.has_value() && packets[1].tcyc.value() == 10, "second preserved timestamp mismatch");
+  ASSERT_TRUE(packets.size() == 2) << "preserve timestamp packet count mismatch";
+  ASSERT_TRUE(packets[0].index == firstTimestamp.sourceIndex) << "raw offsets must not truncate above 4 GiB";
+  ASSERT_TRUE(packets[0].tcyc.has_value() && packets[0].tcyc.value() == 100) << "first preserved timestamp mismatch";
+  ASSERT_TRUE(packets[1].tcyc.has_value() && packets[1].tcyc.value() == 10) << "second preserved timestamp mismatch";
 }
 
 TEST(CtraceUnitTests, testCortexMPostDecoderPreservesGlobalTimestampOrder)
@@ -354,23 +362,25 @@ TEST(CtraceUnitTests, testCortexMPostDecoderPreservesGlobalTimestampOrder)
   decoder.append(localTimestamp);
   decoder.finish();
 
-  require(sink.events().size() == 5U, "global timestamp order packet count mismatch");
-  require(isTraceEvent<SoftwareTraceEvent>(sink.events()[0]),
-          "global timestamp must not overtake preceding software data");
-  require(isTraceEvent<DwtAddressTraceEvent>(sink.events()[1]),
-          "global timestamp must flush and follow preceding DWT data");
+  ASSERT_TRUE(sink.events().size() == 5U) << "global timestamp order packet count mismatch";
+  ASSERT_TRUE(isTraceEvent<SoftwareTraceEvent>(sink.events()[0]))
+      << "global timestamp must not overtake preceding software data";
+  ASSERT_TRUE(isTraceEvent<DwtAddressTraceEvent>(sink.events()[1]))
+      << "global timestamp must flush and follow preceding DWT data";
   const auto* timestamp = traceEventPayload<GlobalTimestampTraceEvent>(sink.events()[2]);
-  require(timestamp != nullptr && timestamp->value == globalTimestamp.timestampValue,
-          "global timestamp payload/order mismatch");
-  require(sink.events()[0].tcyc == std::optional<std::uint64_t>(42U) &&
-              sink.events()[1].tcyc == std::optional<std::uint64_t>(42U),
-          "preceding payloads must retain the following local timestamp");
-  require(!sink.events()[2].tcyc.has_value(), "global timestamp must remain independent of the local timestamp domain");
-  require(!sink.events()[2].quality.has_value(), "global timestamp must not acquire local trace quality");
-  require(isTraceEvent<TraceIssueEvent>(sink.events()[3]) && sink.events()[3].tcyc == std::optional<std::uint64_t>(42U),
-          "a warning must not overtake pending payload or global timestamp packets");
-  require(isTraceEvent<LocalTimestampTraceEvent>(sink.events()[4]),
-          "local timestamp must remain after the global timestamp boundary");
+  ASSERT_TRUE(timestamp != nullptr && timestamp->value == globalTimestamp.timestampValue)
+      << "global timestamp payload/order mismatch";
+  ASSERT_TRUE(sink.events()[0].tcyc == std::optional<std::uint64_t>(42U) &&
+              sink.events()[1].tcyc == std::optional<std::uint64_t>(42U))
+      << "preceding payloads must retain the following local timestamp";
+  ASSERT_TRUE(!sink.events()[2].tcyc.has_value())
+      << "global timestamp must remain independent of the local timestamp domain";
+  ASSERT_TRUE(!sink.events()[2].quality.has_value()) << "global timestamp must not acquire local trace quality";
+  ASSERT_TRUE(
+      (isTraceEvent<TraceIssueEvent>(sink.events()[3]) && sink.events()[3].tcyc == std::optional<std::uint64_t>(42U)))
+      << "a warning must not overtake pending payload or global timestamp packets";
+  ASSERT_TRUE(isTraceEvent<LocalTimestampTraceEvent>(sink.events()[4]))
+      << "local timestamp must remain after the global timestamp boundary";
 }
 
 TEST(CtraceUnitTests, testDecodePipelineRecoversAtRealSync)
@@ -381,14 +391,15 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversAtRealSync)
   };
   const auto decoded = decodeTrace({rawBytes(trace)});
 
-  require(decoded.result.bytesIn == sizeof(trace), "recovery byte count mismatch");
-  require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('A')),
-          "recovery should preserve packets before the damaged section");
+  ASSERT_TRUE(decoded.result.bytesIn == sizeof(trace)) << "recovery byte count mismatch";
+  ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('A')))
+      << "recovery should preserve packets before the damaged section";
   const auto* error = findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence, 8U);
-  require(error != nullptr && error->message == "OpenCSD detected an invalid ITM packet sequence at raw offset 8.",
-          "recovery should report the exact OpenCSD error offset");
-  require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
-          "recovery should resume after the next real ITM sync");
+  ASSERT_TRUE(
+      (error != nullptr && error->message == "OpenCSD detected an invalid ITM packet sequence at raw offset 8."))
+      << "recovery should report the exact OpenCSD error offset";
+  ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
+      << "recovery should resume after the next real ITM sync";
 }
 
 TEST(CtraceUnitTests, testDecodePipelineKeepsCallbacksAttachedAcrossRepeatedResets)
@@ -400,13 +411,13 @@ TEST(CtraceUnitTests, testDecodePipelineKeepsCallbacksAttachedAcrossRepeatedRese
   };
   const auto decoded = decodeTrace({rawBytes(trace)});
 
-  require(decoded.result.bytesIn == sizeof(trace), "repeated recovery byte count mismatch");
-  require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('A')) &&
+  ASSERT_TRUE(decoded.result.bytesIn == sizeof(trace)) << "repeated recovery byte count mismatch";
+  ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('A')) &&
               hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')) &&
-              hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('C')),
-          "decoder resets must retain all OpenCSD callbacks");
-  require(countIssues(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence) == 2U,
-          "each damaged section must trigger one recoverable reset");
+              hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('C')))
+      << "decoder resets must retain all OpenCSD callbacks";
+  ASSERT_TRUE(countIssues(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence) == 2U)
+      << "each damaged section must trigger one recoverable reset";
 }
 
 TEST(CtraceUnitTests, testDecodePipelineReconstructsGlobalTimestamp)
@@ -435,16 +446,16 @@ TEST(CtraceUnitTests, testDecodePipelineReconstructsGlobalTimestamp)
   };
   const auto decoded = decodeTrace({rawBytes(trace)}, 1U);
 
-  require(decoded.result.bytesIn == trace.size(), "global timestamp input byte count mismatch");
+  ASSERT_TRUE(decoded.result.bytesIn == trace.size()) << "global timestamp input byte count mismatch";
   std::size_t globalTimestampCount = 0U;
   for (const auto& packet : decoded.events) {
     if (const auto* timestamp = traceEventPayload<GlobalTimestampTraceEvent>(packet)) {
       ++globalTimestampCount;
-      require(timestamp->value == (upper | lower), "GTS1/GTS2 reconstruction lost timestamp bits");
-      require(!timestamp->clockChange, "unexpected global timestamp clock-change flag");
+      ASSERT_TRUE(timestamp->value == (upper | lower)) << "GTS1/GTS2 reconstruction lost timestamp bits";
+      ASSERT_TRUE(!timestamp->clockChange) << "unexpected global timestamp clock-change flag";
     }
   }
-  require(globalTimestampCount == 1U, "GTS1/GTS2 must produce exactly one reconstructed global timestamp");
+  ASSERT_TRUE(globalTimestampCount == 1U) << "GTS1/GTS2 must produce exactly one reconstructed global timestamp";
 }
 
 TEST(CtraceUnitTests, testDecodePipelineAppliesPrescalerAfterOpenCsd)
@@ -461,7 +472,7 @@ TEST(CtraceUnitTests, testDecodePipelineAppliesPrescalerAfterOpenCsd)
     foundScaledSoftware = foundScaledSoftware || (software != nullptr && software->channel == 1U &&
                                                   event.tcyc == std::optional<std::uint64_t>(32U));
   }
-  require(foundScaledSoftware, "DecodePipeline must apply the ITM prescaler after OpenCSD decoding");
+  ASSERT_TRUE(foundScaledSoftware) << "DecodePipeline must apply the ITM prescaler after OpenCSD decoding";
 }
 
 TEST(CtraceUnitTests, testDecodePipelineRecoversWhenErrorSpansChunks)
@@ -474,11 +485,12 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversWhenErrorSpansChunks)
   };
   const auto decoded = decodeTrace({rawBytes(firstChunk), rawBytes(secondChunk)});
 
-  require(decoded.result.bytesIn == sizeof(firstChunk) + sizeof(secondChunk), "split recovery byte count mismatch");
-  require(findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence, 8U) != nullptr,
-          "split bad packet should retain its header offset");
-  require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
-          "recovery should resume after a split bad packet");
+  ASSERT_TRUE(decoded.result.bytesIn == sizeof(firstChunk) + sizeof(secondChunk))
+      << "split recovery byte count mismatch";
+  ASSERT_TRUE(findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence, 8U) != nullptr)
+      << "split bad packet should retain its header offset";
+  ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
+      << "recovery should resume after a split bad packet";
 }
 
 TEST(CtraceUnitTests, testDecodePipelineRecoversFromReservedHeader)
@@ -490,10 +502,10 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversFromReservedHeader)
   const auto decoded = decodeTrace({rawBytes(trace)});
 
   const auto* error = findIssue(decoded.events, TraceIssueCode::OpenCsdInvalidPacketHeader, 8U);
-  require(error != nullptr && error->message == "OpenCSD detected an invalid ITM packet header at raw offset 8.",
-          "reserved header should report its exact OpenCSD error");
-  require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
-          "recovery should resume after a reserved header");
+  ASSERT_TRUE(error != nullptr && error->message == "OpenCSD detected an invalid ITM packet header at raw offset 8.")
+      << "reserved header should report its exact OpenCSD error";
+  ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
+      << "recovery should resume after a reserved header";
 }
 
 TEST(CtraceUnitTests, testDecodePipelineFinishesWithoutLaterSync)
@@ -503,9 +515,9 @@ TEST(CtraceUnitTests, testDecodePipelineFinishesWithoutLaterSync)
   };
   const auto decoded = decodeTrace({rawBytes(trace)});
 
-  require(decoded.result.bytesIn == sizeof(trace), "bad-tail byte count mismatch");
-  require(findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence, 8U) != nullptr,
-          "bad tail should report its exact OpenCSD error and finish");
+  ASSERT_TRUE(decoded.result.bytesIn == sizeof(trace)) << "bad-tail byte count mismatch";
+  ASSERT_TRUE(findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence, 8U) != nullptr)
+      << "bad tail should report its exact OpenCSD error and finish";
 }
 
 TEST(CtraceUnitTests, testDecodePipelineReportsIncompletePacketAtEndOfInput)
@@ -515,12 +527,12 @@ TEST(CtraceUnitTests, testDecodePipelineReportsIncompletePacketAtEndOfInput)
   };
   const auto decoded = decodeTrace({rawBytes(trace)});
 
-  require(!decoded.events.empty(), "incomplete trace should emit packets");
+  ASSERT_TRUE(!decoded.events.empty()) << "incomplete trace should emit packets";
   const auto& last = decoded.events.back();
   const auto* issue = issueEvent(last);
-  require(issue != nullptr, "incomplete trace should end with an error packet");
-  require(issue->code == TraceIssueCode::OpenCsdIncompleteTail, "incomplete trace issue code mismatch");
-  require(last.index == 8U, "incomplete trace should report the partial packet header offset");
+  ASSERT_TRUE(issue != nullptr) << "incomplete trace should end with an error packet";
+  ASSERT_TRUE(issue->code == TraceIssueCode::OpenCsdIncompleteTail) << "incomplete trace issue code mismatch";
+  ASSERT_TRUE(last.index == 8U) << "incomplete trace should report the partial packet header offset";
 }
 
 TEST(CtraceUnitTests, testDecodePipelineRecoversFromOverlongContinuationPackets)
@@ -542,10 +554,10 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversFromOverlongContinuationPackets)
 
     const auto decoded = decodeTrace({rawBytes(trace)});
 
-    require(findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence) != nullptr,
-            "overlong continuation packet should emit the OpenCSD error");
-    require(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')),
-            "decode should resume after an overlong continuation packet");
+    ASSERT_TRUE(findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence) != nullptr)
+        << "overlong continuation packet should emit the OpenCSD error";
+    ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
+        << "decode should resume after an overlong continuation packet";
   }
 }
 
@@ -565,8 +577,8 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesDwtEventAndPmuPackets)
         foundEvent || (event != nullptr && event->discriminator == 0U && event->size == 1U && event->value == 0x21U);
     foundPmu = foundPmu || (pmu != nullptr && pmu->discriminator == 3U && pmu->size == 1U && pmu->value == 0x81U);
   }
-  require(foundEvent, "OpenCSD DWT event-counter packet must survive post-decoding");
-  require(foundPmu, "OpenCSD PMU-overflow packet must survive post-decoding");
+  ASSERT_TRUE(foundEvent) << "OpenCSD DWT event-counter packet must survive post-decoding";
+  ASSERT_TRUE(foundPmu) << "OpenCSD PMU-overflow packet must survive post-decoding";
 }
 
 TEST(CtraceUnitTests, testDecodePipelineDoesNotInjectSync)
@@ -574,7 +586,7 @@ TEST(CtraceUnitTests, testDecodePipelineDoesNotInjectSync)
   const std::uint8_t validWithoutAsync[] = {0x01U, static_cast<std::uint8_t>('A')};
   const auto decoded = decodeTrace({rawBytes(validWithoutAsync)});
 
-  require(decoded.result.bytesIn == sizeof(validWithoutAsync), "decode byte count mismatch");
+  ASSERT_TRUE(decoded.result.bytesIn == sizeof(validWithoutAsync)) << "decode byte count mismatch";
   bool foundPayload = false;
   bool foundDataLoss = false;
   for (const auto& packet : decoded.events) {
@@ -584,16 +596,16 @@ TEST(CtraceUnitTests, testDecodePipelineDoesNotInjectSync)
     const auto* issue = issueEvent(packet);
     if (issue != nullptr && issue->code == TraceIssueCode::DataLoss) {
       foundDataLoss = true;
-      require(issue->rawBytesConsumed == std::optional<std::uint64_t>(sizeof(validWithoutAsync)),
-              "decode should count all raw bytes consumed before synchronization");
-      require(issue->message.find("OpenCSD consumed 2 raw bytes") != std::string::npos,
-              "decode data-loss message should include the consumed raw-byte count");
-      require(issue->message.find("timestamp 0 .. unknown.") != std::string::npos,
-              "decode should mark a missing post-recovery timestamp as unknown");
+      ASSERT_TRUE(issue->rawBytesConsumed == std::optional<std::uint64_t>(sizeof(validWithoutAsync)))
+          << "decode should count all raw bytes consumed before synchronization";
+      ASSERT_TRUE(issue->message.find("OpenCSD consumed 2 raw bytes") != std::string::npos)
+          << "decode data-loss message should include the consumed raw-byte count";
+      ASSERT_TRUE(issue->message.find("timestamp 0 .. unknown.") != std::string::npos)
+          << "decode should mark a missing post-recovery timestamp as unknown";
     }
   }
-  require(!foundPayload, "decode should not decode sync-less data by injecting sync");
-  require(foundDataLoss, "decode should mark sync-less data loss");
+  ASSERT_TRUE(!foundPayload) << "decode should not decode sync-less data by injecting sync";
+  ASSERT_TRUE(foundDataLoss) << "decode should mark sync-less data loss";
 }
 
 TEST(CtraceUnitTests, testDecodePipelineCountsBytesUntilRealSync)
@@ -610,8 +622,8 @@ TEST(CtraceUnitTests, testDecodePipelineCountsBytesUntilRealSync)
     const auto* issue = issueEvent(packet);
     if (issue != nullptr && issue->code == TraceIssueCode::DataLoss) {
       foundDataLoss = true;
-      require(issue->rawBytesConsumed == std::optional<std::uint64_t>(sizeof(leading)),
-              "decode should count bytes only up to the real sync offset");
+      ASSERT_TRUE(issue->rawBytesConsumed == std::optional<std::uint64_t>(sizeof(leading)))
+          << "decode should count bytes only up to the real sync offset";
       continue;
     }
     const auto* software = softwareEvent(packet);
@@ -621,6 +633,6 @@ TEST(CtraceUnitTests, testDecodePipelineCountsBytesUntilRealSync)
     }
   }
 
-  require(foundDataLoss, "decode should emit data loss before the recovered stream");
-  require(foundPayloadAfterDataLoss, "decode should emit synchronized payload after the counted data loss");
+  ASSERT_TRUE(foundDataLoss) << "decode should emit data loss before the recovered stream";
+  ASSERT_TRUE(foundPayloadAfterDataLoss) << "decode should emit synchronized payload after the counted data loss";
 }

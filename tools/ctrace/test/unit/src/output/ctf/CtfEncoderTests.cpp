@@ -81,21 +81,21 @@ TEST(CtraceUnitTests, testCtfEncoderWritesOnlyIntoProvidedDirectory)
       {},
   });
   const auto rejectedMissingDirectory = throwsException([&] { encoder.start(missingDirectory); });
-  require(rejectedMissingDirectory && !std::filesystem::exists(missingDirectory),
-          "CtfEncoder must not create or own its output directory");
+  ASSERT_TRUE(rejectedMissingDirectory && !std::filesystem::exists(missingDirectory))
+      << "CtfEncoder must not create or own its output directory";
 
   std::filesystem::create_directories(outputDirectory);
   encoder.start(outputDirectory);
   encoder.writeEvent(atCycle(softwarePacket(1U, 1U, 'A'), 10U));
   encoder.stop();
-  require(std::filesystem::is_regular_file(outputDirectory / "metadata") &&
-              std::filesystem::is_regular_file(outputDirectory / "stream_0"),
-          "CtfEncoder must encode metadata and stream data into the provided directory");
+  ASSERT_TRUE(std::filesystem::is_regular_file(outputDirectory / "metadata") &&
+              std::filesystem::is_regular_file(outputDirectory / "stream_0"))
+      << "CtfEncoder must encode metadata and stream data into the provided directory";
   requireSingleItmEvent(outputDirectory / "stream_0", 1U, "CtfEncoder encoded an unexpected ITM event");
 
   encoder.abort();
-  require(std::filesystem::is_regular_file(outputDirectory / "metadata"),
-          "CtfEncoder abort must not delete a directory owned by its caller");
+  ASSERT_TRUE(std::filesystem::is_regular_file(outputDirectory / "metadata"))
+      << "CtfEncoder abort must not delete a directory owned by its caller";
 }
 
 TEST(CtraceUnitTests, testCtfEncoderPacketBoundaryAndUuid)
@@ -124,25 +124,25 @@ TEST(CtraceUnitTests, testCtfEncoderPacketBoundaryAndUuid)
   constexpr std::size_t eventSize = 21U;
   constexpr auto firstContentSize = kCtfPacketHeaderSize + kCtfPacketContextSize + eventsInFirstPacket * eventSize;
   constexpr std::uint32_t ctfMagic = 0xc1fc1fc1U;
-  require(stream.size() == kCtfPacketSize * 2U, "CTF packet rollover must emit two complete 64-KiB packets");
-  require(readLe32(stream, 0U) == ctfMagic && readLe32(stream, kCtfPacketSize) == ctfMagic,
-          "CTF packet rollover emitted an invalid packet header");
-  require(readLe32(stream, kCtfPacketHeaderSize) == kCtfPacketSize * 8U &&
-              readLe32(stream, kCtfPacketHeaderSize + 4U) == firstContentSize * 8U,
-          "first CTF packet content size mismatch at rollover");
-  require(readLe32(stream, kCtfPacketSize + kCtfPacketHeaderSize + 4U) == (kCtfEventOffset + eventSize) * 8U,
-          "second CTF packet content size mismatch");
-  require(readLe32(stream, kCtfPacketHeaderSize + 28U) == 0U &&
-              readLe32(stream, kCtfPacketSize + kCtfPacketHeaderSize + 28U) == 1U,
-          "CTF packet sequence must advance across a 64-KiB boundary");
-  require(std::equal(stream.begin() + 4U, stream.begin() + 20U, stream.begin() + kCtfPacketSize + 4U),
-          "CTF packet UUID must remain stable across packet rollover");
+  ASSERT_TRUE(stream.size() == kCtfPacketSize * 2U) << "CTF packet rollover must emit two complete 64-KiB packets";
+  ASSERT_TRUE(readLe32(stream, 0U) == ctfMagic && readLe32(stream, kCtfPacketSize) == ctfMagic)
+      << "CTF packet rollover emitted an invalid packet header";
+  ASSERT_TRUE(readLe32(stream, kCtfPacketHeaderSize) == kCtfPacketSize * 8U &&
+              readLe32(stream, kCtfPacketHeaderSize + 4U) == firstContentSize * 8U)
+      << "first CTF packet content size mismatch at rollover";
+  ASSERT_TRUE(readLe32(stream, kCtfPacketSize + kCtfPacketHeaderSize + 4U) == (kCtfEventOffset + eventSize) * 8U)
+      << "second CTF packet content size mismatch";
+  ASSERT_TRUE(readLe32(stream, kCtfPacketHeaderSize + 28U) == 0U &&
+              readLe32(stream, kCtfPacketSize + kCtfPacketHeaderSize + 28U) == 1U)
+      << "CTF packet sequence must advance across a 64-KiB boundary";
+  ASSERT_TRUE(std::equal(stream.begin() + 4U, stream.begin() + 20U, stream.begin() + kCtfPacketSize + 4U))
+      << "CTF packet UUID must remain stable across packet rollover";
 
   const auto uuid = formatCtfUuid(stream, 4U);
-  require(metadata.find("uuid = \"" + uuid + "\";") != std::string::npos,
-          "CTF metadata UUID must match the binary packet UUID");
-  require((stream[4U + 6U] & 0xf0U) == 0x40U && (stream[4U + 8U] & 0xc0U) == 0x80U,
-          "CTF UUID must use RFC 4122 version-4 and variant bits");
+  ASSERT_TRUE(metadata.find("uuid = \"" + uuid + "\";") != std::string::npos)
+      << "CTF metadata UUID must match the binary packet UUID";
+  ASSERT_TRUE((stream[4U + 6U] & 0xf0U) == 0x40U && (stream[4U + 8U] & 0xc0U) == 0x80U)
+      << "CTF UUID must use RFC 4122 version-4 and variant bits";
 
   encoder.abort();
 }
@@ -168,13 +168,13 @@ TEST(CtraceUnitTests, testCtfEncoderDwtAddressEncoding)
   const auto records = readCtfRecords(outputDirectory / "stream_0");
   ASSERT_EQ(records.size(), 1U);
   const auto& record = records.front();
-  require(record.id == CtfSchema::value(CtfSchema::EventId::DwtAddress), "CTF DWT address event ID mismatch");
-  require(record.timestamp == 99U, "CTF DWT address timestamp mismatch");
-  require(record.payload.size() == 14U, "CTF DWT address event payload size mismatch");
-  require(record.payload[0U] == 3U && record.payload[1U] == 1U && record.payload[2U] == 1U,
-          "CTF DWT address comparator or presence flags mismatch");
-  require(readLe32(record.payload, 3U) == 0x12345678U && readLe16(record.payload, 7U) == 0xabcdU,
-          "CTF DWT PC/address payload mismatch");
+  ASSERT_TRUE(record.id == CtfSchema::value(CtfSchema::EventId::DwtAddress)) << "CTF DWT address event ID mismatch";
+  ASSERT_TRUE(record.timestamp == 99U) << "CTF DWT address timestamp mismatch";
+  ASSERT_TRUE(record.payload.size() == 14U) << "CTF DWT address event payload size mismatch";
+  ASSERT_TRUE(record.payload[0U] == 3U && record.payload[1U] == 1U && record.payload[2U] == 1U)
+      << "CTF DWT address comparator or presence flags mismatch";
+  ASSERT_TRUE(readLe32(record.payload, 3U) == 0x12345678U && readLe16(record.payload, 7U) == 0xabcdU)
+      << "CTF DWT PC/address payload mismatch";
 
   encoder.abort();
 }

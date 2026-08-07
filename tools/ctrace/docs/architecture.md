@@ -256,13 +256,13 @@ Do not introduce backend-specific state into the decode pipeline or event model.
 Unit tests under `test/unit/src` mirror the production modules. Shared file, event, and diagnostic helpers live under
 `test/unit/support`. One CTest entry runs the complete GoogleTest executable and writes its XML report.
 
-Integration tests under `test/integration` execute the real `ctrace` binary and verify command-line behavior,
-diagnostics, output cleanup, and fixture conversion. Test data and expected artifacts live under `test/data`; generated
-files are written only below the CMake build directory.
+The `CtraceIntegTests` GoogleTest target calls `CtraceMain` through the same `ctracelib` application object used by the
+executable. It verifies command-line behavior, diagnostics, output cleanup, and fixture conversion. A small set of
+`ctrace-` CTest smoke tests retains coverage of the platform executable and Windows manifest. Test data and expected
+artifacts live under `test/data`; generated files are written only below the CMake build directory.
 
-The `CtraceUnitTests` target links the same `ctracelib` application object used by the executable. Integration tests
-use the `ctrace-` CTest name prefix. CI runs both suites on Windows AMD64 and Linux AMD64. ARM64 targets are compiled
-but not executed, matching the other devtools workflows.
+CI runs the unit and integration suites on Windows AMD64 and Linux AMD64. ARM64 targets are compiled but not executed,
+matching the other devtools workflows.
 
 ## Build and release structure
 

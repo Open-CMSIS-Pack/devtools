@@ -102,16 +102,17 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
   output.writeEvent(onStream(issuePacket(TraceIssueCode::DecodeError), accepted.traceBusId));
   output.stop();
 
-  require(readTestTextFile(outputPath.path()) == "cycles,stream,type,source,value,pc,offset,note\n,2,itm,1,0x41,,,\n",
-          "CsvFileOutput criteria mismatch");
+  ASSERT_TRUE(
+      (readTestTextFile(outputPath.path()) == "cycles,stream,type,source,value,pc,offset,note\n,2,itm,1,0x41,,,\n"))
+      << "CsvFileOutput criteria mismatch";
 
   const TemporaryTestPath errorOutputPath("ctrace-filtered-errors.csv");
   CsvFileOutput errorOutput(errorOutputPath.path(), TraceSelection{{"error"}, {}});
   errorOutput.start();
   errorOutput.writeEvent(issuePacket(TraceIssueCode::DecodeError, "decoder warning", TraceIssueSeverity::Warning));
   errorOutput.stop();
-  require(readTestTextFile(errorOutputPath.path()).find(",,error,,,,,decoder warning\n") != std::string::npos,
-          "the error selector must include warning-severity decoder issue packets");
+  ASSERT_TRUE(readTestTextFile(errorOutputPath.path()).find(",,error,,,,,decoder warning\n") != std::string::npos)
+      << "the error selector must include warning-severity decoder issue packets";
 }
 
 TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
@@ -137,10 +138,10 @@ TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
 
   const auto lines = readTestLines(csvPath);
 
-  require(lines.size() == 3U, "CSV specification row count mismatch");
-  require(lines[0] == "cycles,stream,type,source,value,pc,offset,note", "CSV specification header mismatch");
-  require(lines[1] == "949338400,,dwt,2,0xfffffdf9,0x08001234,0xfdf9,", "CSV DWT row schema mismatch");
-  require(lines[2] == "950364820,,exception,11,0x1,,,", "CSV exception state schema mismatch");
+  ASSERT_TRUE(lines.size() == 3U) << "CSV specification row count mismatch";
+  ASSERT_TRUE(lines[0] == "cycles,stream,type,source,value,pc,offset,note") << "CSV specification header mismatch";
+  ASSERT_TRUE(lines[1] == "949338400,,dwt,2,0xfffffdf9,0x08001234,0xfdf9,") << "CSV DWT row schema mismatch";
+  ASSERT_TRUE(lines[2] == "950364820,,exception,11,0x1,,,") << "CSV exception state schema mismatch";
 }
 
 TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
@@ -157,11 +158,13 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
 
   const auto lines = readTestLines(csvPath);
 
-  require(lines.size() == 3U, "CSV issue row count mismatch");
-  require(lines[0] == "cycles,stream,type,source,value,pc,offset,note", "CSV issue header mismatch");
-  require(lines[1] == "1234,,overflow,,,,,overflow: new timestamp segment; time across boundary may be unreliable",
-          "CSV overflow issue row mismatch");
-  require(lines[2] == "1235,,error,,,,,trace data lost before resynchronization", "CSV data-loss issue row mismatch");
+  ASSERT_TRUE(lines.size() == 3U) << "CSV issue row count mismatch";
+  ASSERT_TRUE(lines[0] == "cycles,stream,type,source,value,pc,offset,note") << "CSV issue header mismatch";
+  ASSERT_TRUE(
+      (lines[1] == "1234,,overflow,,,,,overflow: new timestamp segment; time across boundary may be unreliable"))
+      << "CSV overflow issue row mismatch";
+  ASSERT_TRUE(lines[2] == "1235,,error,,,,,trace data lost before resynchronization")
+      << "CSV data-loss issue row mismatch";
 }
 
 TEST(CtraceUnitTests, testCsvFileOutputWritesDirectly)
@@ -173,20 +176,20 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesDirectly)
 
   CsvFileOutput output(csvPath);
   output.start();
-  require(std::filesystem::is_regular_file(csvPath),
-          "CSV start must replace the existing target with the direct output file");
+  ASSERT_TRUE(std::filesystem::is_regular_file(csvPath))
+      << "CSV start must replace the existing target with the direct output file";
   TraceEvent packet = softwarePacket(1U, 1U, 'A');
   output.writeEvent(packet);
   output.abort();
-  require(!std::filesystem::exists(csvPath), "CSV abort must remove the incomplete direct output");
+  ASSERT_TRUE(!std::filesystem::exists(csvPath)) << "CSV abort must remove the incomplete direct output";
 
   writeTestFile(csvPath, "stale-output\n");
   output.start();
   output.writeEvent(packet);
   output.stop();
   const auto contents = readTestTextFile(csvPath);
-  require(contents.find("cycles,stream,type") == 0 && contents.find("stale-output") == std::string::npos,
-          "completed CSV output must directly replace the previous file");
+  ASSERT_TRUE(contents.find("cycles,stream,type") == 0 && contents.find("stale-output") == std::string::npos)
+      << "completed CSV output must directly replace the previous file";
   std::filesystem::remove(csvPath);
 
   std::filesystem::create_directory(csvPath);
@@ -194,8 +197,8 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesDirectly)
     CsvFileOutput directoryOutput(csvPath);
     directoryOutput.start();
   });
-  require(rejectedDirectory && std::filesystem::is_directory(csvPath),
-          "CSV output must not delete a directory occupying its target path");
+  ASSERT_TRUE(rejectedDirectory && std::filesystem::is_directory(csvPath))
+      << "CSV output must not delete a directory occupying its target path";
   std::filesystem::remove_all(testRoot);
 
   std::filesystem::create_directories(testRoot / "working");
@@ -205,8 +208,8 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesDirectly)
   parentRelativeOutput.start();
   parentRelativeOutput.writeEvent(packet);
   parentRelativeOutput.stop();
-  require(std::filesystem::is_regular_file(testRoot / "captures" / "output.csv"),
-          "CSV output must accept a legitimate parent-relative trace path");
+  ASSERT_TRUE(std::filesystem::is_regular_file(testRoot / "captures" / "output.csv"))
+      << "CSV output must accept a legitimate parent-relative trace path";
 }
 
 TEST(CtraceUnitTests, testCsvFileOutputReportsIdentityAndIgnoresClosedWrites)
