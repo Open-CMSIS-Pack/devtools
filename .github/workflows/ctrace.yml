@@ -265,14 +265,11 @@ jobs:
           build_type: Debug
           target: CtraceUnitTests
 
-      # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CtraceIntegTests
-        uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
-        with:
-          add_cmake_variables: -DCOVERAGE=ON
-          arch: amd64
-          build_type: Debug
-          target: CtraceIntegTests
+        # Reconfiguring reapplies external patches and can make coverage
+        # metadata embedded in the previously linked test binary stale.
+        run: cmake --build . --target CtraceIntegTests
+        working-directory: ./build
 
       - name: Run ctrace unit tests
         run: ctest -V -C Debug -R '^CtraceUnitTests$'
