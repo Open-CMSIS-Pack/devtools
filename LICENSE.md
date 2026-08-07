@@ -39,8 +39,8 @@ binaries as indicated by the Usage column.
 | Component | Version | License | Origin | Usage |
 | --------- | ------- | ------- | ------ | ----- |
 |Google C++ Testing Framework|1.11.0|[BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause)|https://github.com/google/googletest.git| Testing |
-|cxxopts|3.0.0|[MIT](https://opensource.org/licenses/MIT)|https://github.com/jarro2783/cxxopts.git| packgen, ctrace |
-|yaml-cpp|0.8.0|[MIT](https://opensource.org/licenses/MIT)|https://github.com/jbeder/yaml-cpp.git| packgen, ctrace |
+|cxxopts|2.2.1|[MIT](https://opensource.org/licenses/MIT)|https://github.com/jarro2783/cxxopts.git| packgen, ctrace |
+|yaml-cpp|0.7.0|[MIT](https://opensource.org/licenses/MIT)|https://github.com/jbeder/yaml-cpp.git| packgen, ctrace |
 |OpenCSD|1.8.3|[BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause)|https://github.com/Linaro/OpenCSD.git| ctrace |
 |[GetGitRevisionDescription.cmake](./cmake/GetGitRevisionDescription.cmake)||[Boost Software License, Version 1.0](http://www.boost.org/LICENSE_1_0.txt)||Continuous integration|
 |[GetGitRevisionDescription.cmake.in](./cmake/GetGitRevisionDescription.cmake.in)||[Boost Software License, Version 1.0](http://www.boost.org/LICENSE_1_0.txt)||Continuous integration|
