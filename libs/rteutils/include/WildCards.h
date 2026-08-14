@@ -43,6 +43,14 @@ public:
   static bool Match(const std::string& s1, const std::string& s2);
 
   /**
+   * @brief match any pair of non-empty, pipe-separated strings
+   * @param s1 pipe-separated strings to be matched, can contain wild card patterns
+   * @param s2 pipe-separated strings to be matched, can contain wild card patterns
+   * @return true if any pair of strings matches, otherwise false
+  */
+  static bool MatchAny(const std::string& s1, const std::string& s2);
+
+  /**
    * @brief converts "*" to ".*" and "?" to "."
    * @param s string to be converted
    * @return converted string
