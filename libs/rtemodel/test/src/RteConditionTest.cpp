@@ -47,6 +47,49 @@ TEST(RteConditionValidateTest, Validate)
   EXPECT_FALSE(deviceExpression.Validate());
 }
 
+TEST_F(RteConditionTest, PipeSeparatedWildcardEvaluation) {
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_cprj);
+  ASSERT_NE(loadedCprjProject, nullptr);
+  EXPECT_TRUE(loadedCprjProject->Validate());
+
+  RteTarget* activeTarget = loadedCprjProject->GetActiveTarget();
+  ASSERT_NE(activeTarget, nullptr);
+  RteConditionContext* filterContext = activeTarget->GetFilterContext();
+  ASSERT_NE(filterContext, nullptr);
+
+  RteRequireExpression deviceExpression(nullptr);
+  deviceExpression.AddAttribute("Dname", "DoesNotMatch|RteTest_ARMCM?");
+  deviceExpression.ConstructID();
+  EXPECT_EQ(deviceExpression.Evaluate(filterContext), RteItem::FULFILLED);
+
+  deviceExpression.SetAttribute("Dname", "DoesNotMatch|RteTest_ARMCM4");
+  EXPECT_EQ(deviceExpression.Evaluate(filterContext), RteItem::FAILED);
+
+  activeTarget->SetAttribute("Tcompiler", "ARMCC|GCC");
+
+  RteRequireExpression armccExpression(nullptr);
+  armccExpression.AddAttribute("Tcompiler", "ARMCC");
+  armccExpression.ConstructID();
+  EXPECT_EQ(armccExpression.Evaluate(filterContext), RteItem::FULFILLED);
+
+  RteRequireExpression gccExpression(nullptr);
+  gccExpression.AddAttribute("Tcompiler", "GCC");
+  gccExpression.ConstructID();
+  EXPECT_EQ(gccExpression.Evaluate(filterContext), RteItem::FULFILLED);
+
+  RteRequireExpression alternativeCompilerExpression(nullptr);
+  alternativeCompilerExpression.AddAttribute("Tcompiler", "XC|GCC");
+  alternativeCompilerExpression.ConstructID();
+  EXPECT_EQ(alternativeCompilerExpression.Evaluate(filterContext), RteItem::FULFILLED);
+
+  RteRequireExpression unsupportedCompilerExpression(nullptr);
+  unsupportedCompilerExpression.AddAttribute("Tcompiler", "XC");
+  unsupportedCompilerExpression.ConstructID();
+  EXPECT_EQ(unsupportedCompilerExpression.Evaluate(filterContext), RteItem::FAILED);
+}
+
 TEST_F(RteConditionTest, MissingIgnoredFulfilledSelectable) {
   // load project to get a working target and condition contexts
   RteKernelSlim rteKernel;
