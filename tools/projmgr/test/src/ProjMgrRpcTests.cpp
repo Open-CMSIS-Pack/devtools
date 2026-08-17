@@ -623,8 +623,10 @@ TEST_F(ProjMgrRpcTests, RpcResolveComponents) {
 
 TEST_F(ProjMgrRpcTests, RpcGetComponentsTree) {
   string context = "selectable+CM0";
+  string context1 = "conflict+CM0";
   vector<string> contextList = {
-    context
+    context,
+    context1
   };
   string csolution = "/Validation/dependencies.csolution.yml";
   auto requests = CreateLoadRequests(csolution, "", contextList);
@@ -632,14 +634,17 @@ TEST_F(ProjMgrRpcTests, RpcGetComponentsTree) {
   requests += FormatRequest(4, "GetComponentsTree", json({{ "context", context }, {"all", false}}));
   requests += FormatRequest(5, "LoadSolution", json({{ "solution", testinput_folder + csolution }, { "activeTarget", "" }}));
   requests += FormatRequest(6, "GetComponentsTree", json({{ "context", context }, {"all", true}}));
+  requests += FormatRequest(7, "GetComponentsTree", json({{ "context", context1 }, {"all", true}}));
 
   const auto& responses = RunRpcMethods(requests);
 
   auto size3 = responses[2]["result"]["classes"].size();
   auto size4 = responses[3]["result"]["classes"].size();
   auto size6 = responses[5]["result"]["classes"].size();
+  auto size7 = responses[6]["result"]["classes"].size();
   EXPECT_TRUE(size3 > size4); // there are more components in all packs that in packs listed in solution
   EXPECT_EQ(size3, size6); // after solution reload, all components can be requested
+  EXPECT_EQ(size3, size7); // changing context respects all flag
 }
 
 
