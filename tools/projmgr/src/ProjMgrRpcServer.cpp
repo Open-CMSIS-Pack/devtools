@@ -369,7 +369,7 @@ RpcArgs::SuccessResult RpcHandler::LoadSolution(const string& solution, const st
 }
 
 void RpcHandler::UpdateFilter(const string& context, RteTarget* rteTarget, bool all) {
-  if(m_bUseAllPacks == all) {
+  if(m_bUseAllPacks == all && rteTarget->GetPackageFilter().IsUseAllPacks() == all) {
     return;
   }
   m_bUseAllPacks = all;
