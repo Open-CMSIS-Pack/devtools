@@ -13,6 +13,8 @@
 /******************************************************************************/
 
 #include "WildCards.h"
+#include "RteUtils.h"
+
 #include <regex>
 
 
@@ -34,6 +36,39 @@ bool WildCards::Match(const std::string& s1, const std::string& s2)
   // swap the arguments if s2 is a pattern
   if (IsWildcardPattern(s2) && MatchToPattern(s1, s2)) {
     return true;
+  }
+  return false;
+}
+
+bool WildCards::MatchAny(const std::string& s1, const std::string& s2)
+{
+  // first compare strings as is to save time by further match
+  if (s1 == s2) {
+    return true;
+  }
+
+  if (s1.empty() || s2.empty()) {
+    return false;
+  }
+
+
+  std::list<std::string> alternatives1;
+  std::list<std::string> alternatives2;
+  RteUtils::SplitString(alternatives1, s1, '|');
+  RteUtils::SplitString(alternatives2, s2, '|');
+
+  for (const auto& alternative1 : alternatives1) {
+    if (alternative1.empty()) {
+      continue;
+    }
+    for (const auto& alternative2 : alternatives2) {
+      if (alternative2.empty()) {
+        continue;
+      }
+      if (Match(alternative1, alternative2)) {
+        return true;
+      }
+    }
   }
   return false;
 }

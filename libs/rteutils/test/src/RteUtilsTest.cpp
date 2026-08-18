@@ -226,6 +226,7 @@ TEST(RteUtilsTest, WildCardsTo) {
 }
 
 TEST(RteUtilsTest, WildCardMatch) {
+  EXPECT_EQ(true, WildCards::Match("", ""));
   EXPECT_EQ(true, WildCards::Match("a", "a"));
   EXPECT_EQ(false, WildCards::Match("a", ""));
   EXPECT_EQ(false, WildCards::Match("", "d"));
@@ -284,6 +285,29 @@ TEST(RteUtilsTest, WildCardMatch) {
   for (auto iter = inputStr.cbegin(); iter != inputStr.cend() - 1; iter++) {
     EXPECT_TRUE(WildCards::Match(*iter, *(iter + 1))) << "Failed for " << (*iter) << " & " << *(iter + 1);
   }
+}
+
+TEST(RteUtilsTest, WildCardMatchAny) {
+  EXPECT_TRUE(WildCards::MatchAny("", ""));
+  EXPECT_TRUE(WildCards::MatchAny("*", "*"));
+  EXPECT_TRUE(WildCards::MatchAny("foo", "foo"));
+  EXPECT_TRUE(WildCards::MatchAny("foo*", "foo"));
+  EXPECT_TRUE(WildCards::MatchAny("foo*", "foo*"));
+  EXPECT_TRUE(WildCards::MatchAny("foo|bar", "bar"));
+  EXPECT_TRUE(WildCards::MatchAny("bar", "foo|bar"));
+  EXPECT_FALSE(WildCards::MatchAny("foo|bar", "baz|qux"));
+
+  EXPECT_TRUE(WildCards::MatchAny("foo*|bar", "food|baz"));
+  EXPECT_TRUE(WildCards::MatchAny("food|baz", "foo*|bar"));
+  EXPECT_TRUE(WildCards::MatchAny("foo?|bar", "f*|baz"));
+  EXPECT_TRUE(WildCards::MatchAny("foo", "foo"));
+
+  EXPECT_TRUE(WildCards::MatchAny("|foo||bar|", "||bar|"));
+  EXPECT_FALSE(WildCards::MatchAny("|foo||bar|", "||baz|"));
+  EXPECT_FALSE(WildCards::MatchAny("", "foo"));
+  EXPECT_FALSE(WildCards::MatchAny("foo", ""));
+
+  EXPECT_FALSE(WildCards::Match("foo|bar", "bar"));
 }
 
 TEST(RteUtilsTest, AlnumCmp_Char) {
