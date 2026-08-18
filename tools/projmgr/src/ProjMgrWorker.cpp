@@ -178,6 +178,7 @@ void ProjMgrWorker::AddContext(ContextDesc& descriptor, const TypePair& type, Co
     const string& buildType = (!type.build.empty() ? "." : "") + type.build;
     const string& targetType = (!type.target.empty() ? "+" : "") + type.target;
     context.name = context.cproject->name + buildType + targetType;
+    context.compilerAlias = context.csolution->compilerAlias;
     context.precedences = false;
 
     // default directories
@@ -1943,6 +1944,18 @@ bool ProjMgrWorker::ProcessToolchain(ContextItem& context) {
     context.targetAttributes["Toptions"] = context.toolchain.name;
   } else {
     context.targetAttributes["Tcompiler"] = context.toolchain.name;
+  }
+
+  // compiler alias
+  set<string> compilers = { context.targetAttributes["Tcompiler"] };
+  for (const auto& compilerAlias : context.compilerAlias) {
+    const string canonicalAlias = compilerAlias == "AC6" ? "ARMCC" : compilerAlias;
+    if (compilers.insert(canonicalAlias).second) {
+      context.targetAttributes["Tcompiler"] += '|' + canonicalAlias;
+    }
+    if (compilerAlias == "AC6") {
+      context.targetAttributes["Toptions"] = compilerAlias;
+    }
   }
   return true;
 }

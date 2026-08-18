@@ -86,6 +86,7 @@ bool ProjMgrYamlParser::ParseCsolution(const string& input,
     const YAML::Node& solutionNode = root[YAML_SOLUTION];
     ParseString(solutionNode, YAML_DESCRIPTION, csolution.description);
     ParseString(solutionNode, YAML_CREATED_FOR, csolution.createdFor);
+    ParseVectorOrString(solutionNode, YAML_COMPILER_ALIAS, csolution.compilerAlias);
     if (!ParseContexts(solutionNode, csolution)) {
       return false;
     }
@@ -1227,6 +1228,7 @@ const set<string> solutionKeys = {
   YAML_PACKS,
   YAML_PROCESSOR,
   YAML_COMPILER,
+  YAML_COMPILER_ALIAS,
   YAML_SELECT_COMPILER,
   YAML_OPTIMIZE,
   YAML_DEBUG,

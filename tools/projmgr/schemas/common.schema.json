@@ -1187,7 +1187,8 @@
           "type": "null",
           "description": "Enables use of cdefault.yml file for compiler controls."
         },
-        "compiler":        { "$ref": "#/definitions/CompilerType" },        
+        "compiler":        { "$ref": "#/definitions/CompilerType" },
+        "compiler-alias":  { "$ref": "#/definitions/CompilersType" },
         "created-by": {
           "title": "created-by:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#solution",
           "$ref": "#/definitions/CreatedInfoType",
