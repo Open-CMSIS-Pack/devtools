@@ -56,7 +56,7 @@ jobs:
 
   coverage:
     if: github.repository == 'Open-CMSIS-Pack/devtools'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [ buildmgr, ctrace, packchk, packgen, projmgr, svdconv, test_libs ]
 
     steps:
@@ -100,7 +100,7 @@ jobs:
   publish-test-results:
     if: always() && github.repository == 'Open-CMSIS-Pack/devtools'
     name: Publish Test Results
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [ buildmgr, ctrace, packchk, packgen, projmgr, svdconv, test_libs ]
     permissions:
       checks: write
