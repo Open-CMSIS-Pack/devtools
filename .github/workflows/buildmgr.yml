@@ -122,7 +122,7 @@ jobs:
         (github.event_name == 'push') ||
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/buildmgr/')) ||
         ((github.event.schedule != '') && (!github.event.repository.private))
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
       contents: write
@@ -223,7 +223,7 @@ jobs:
   create_installer:
     needs: [ setup, build, docs ]
     # Debian package generation in ubuntu 22.04 produces incompatible metadata
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
       contents: write
@@ -501,7 +501,7 @@ jobs:
         GCC_TOOLCHAIN_ROOT: ${{ github.workspace }}/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi/bin
         GCC_TOOLCHAIN_10_3_1: ${{ github.workspace }}/${{ matrix.toolchain_root }}
         AC6_TOOLCHAIN_6_18_0: ${{ github.workspace }}/${{ matrix.toolchain_root }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     steps:
@@ -666,7 +666,7 @@ jobs:
   sanity-check-docker:
     needs: create_installer
     timeout-minutes: 25
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container:
       image: ${{ matrix.image }}
     env:
@@ -713,7 +713,7 @@ jobs:
     name: "Publish Tests Results"
     if: ${{ always() }}
     needs: [ test ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}

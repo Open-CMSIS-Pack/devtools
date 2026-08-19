@@ -18,7 +18,7 @@ on:
 
 jobs:
   config:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: ${{ inputs.run_if }}
     outputs:
       nightly: ${{ steps.config.outputs.nightly }}

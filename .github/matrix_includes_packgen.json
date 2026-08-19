@@ -7,14 +7,14 @@
         "runOn": "publicRepo"
     },
     {
-        "runs_on":"ubuntu-22.04",
+        "runs_on":"ubuntu-24.04",
         "target":"linux",
         "arch": "amd64",
         "binary": "packgen",
         "runOn": "always"
     },
     {
-        "runs_on":"ubuntu-22.04",
+        "runs_on":"ubuntu-24.04",
         "target":"linux",
         "arch": "arm64",
         "binary": "packgen",
