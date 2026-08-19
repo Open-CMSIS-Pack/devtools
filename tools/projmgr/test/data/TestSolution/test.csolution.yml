@@ -2,6 +2,7 @@
 
 solution:
   description: test description string
+  compiler-alias: CLANG
   target-types:
     - type: CM0
       device: RteTest_ARMCM0

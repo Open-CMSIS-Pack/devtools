@@ -541,6 +541,7 @@ struct ContextItem {
   StrVec unusedPacks;
   std::vector<std::pair<ComponentItem, std::string>> componentRequirements;
   std::string compiler;
+  std::vector<std::string> compilerAlias;
   ToolchainItem toolchain;
   std::map<std::string, std::string> targetAttributes;
   std::map<std::string, RtePackage*> packages;

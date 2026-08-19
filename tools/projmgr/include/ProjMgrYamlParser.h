@@ -72,6 +72,7 @@ static constexpr const char* YAML_CURRENT_GENERATOR = "current-generator";
 static constexpr const char* YAML_CONSUMES = "consumes";
 static constexpr const char* YAML_COMMAND = "command";
 static constexpr const char* YAML_COMPILER = "compiler";
+static constexpr const char* YAML_COMPILER_ALIAS = "compiler-alias";
 static constexpr const char* YAML_COMPONENT = "component";
 static constexpr const char* YAML_COMPONENTS = "components";
 static constexpr const char* YAML_CONDITION = "condition";

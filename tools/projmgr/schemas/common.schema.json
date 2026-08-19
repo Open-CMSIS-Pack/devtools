@@ -190,6 +190,10 @@
       "pattern": "^(GCC|CLANG|AC6|IAR|CLANG_TI|XC)(@(>=)?([0-9]+\\.[0-9]+\\.[0-9]+((\\+|\\-)[a-zA-Z0-9_\\.\\+-]+)?))?$",
       "description": "Compiler toolchain to be used, optionally with version, for example AC6@6.23.0."
     },
+    "CompilerAliasType": {
+      "type": "string",
+      "pattern": "^(GCC|CLANG|AC6|IAR|CLANG_TI|XC)$"
+    },
     "ConsumesProvidesType": {
       "oneOf": [
         {"type": "string" },
@@ -221,6 +225,18 @@
         {"$ref": "#/definitions/CompilerType" }
       ],
       "description": "Include node for a list of compilers."
+    },
+    "CompilerAliasesType": {
+      "oneOf": [
+        {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/CompilerAliasType" }
+        },
+        { "$ref": "#/definitions/CompilerAliasType" }
+      ],
+      "description": "List of compiler aliases."
     },
     "ArrayOfBuildContextWithProjectName": {
       "type": "array",
@@ -1187,7 +1203,8 @@
           "type": "null",
           "description": "Enables use of cdefault.yml file for compiler controls."
         },
-        "compiler":        { "$ref": "#/definitions/CompilerType" },        
+        "compiler":        { "$ref": "#/definitions/CompilerType" },
+        "compiler-alias":  { "$ref": "#/definitions/CompilerAliasesType" },
         "created-by": {
           "title": "created-by:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#solution",
           "$ref": "#/definitions/CreatedInfoType",

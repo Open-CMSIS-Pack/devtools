@@ -642,6 +642,7 @@ struct CsolutionItem {
   std::string directory;
   std::string createdFor;
   DirectoriesItem directories;
+  std::vector<std::string> compilerAlias;
   std::vector<std::string> selectableCompilers;
   BuildTypes buildTypes;
   TargetTypes targetTypes;
