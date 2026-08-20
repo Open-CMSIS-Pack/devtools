@@ -631,7 +631,10 @@ bool PackGen::ParseReply(void) {
           YAML::Node dependencies = target["dependencies"];
           for (const auto& item : dependencies) {
             string dep = item["id"].as<string>();
-            dep = dep.substr(0, dep.find("::"));
+            const size_t delimiter = dep.find("::");
+            if (delimiter != string::npos) {
+              dep.resize(delimiter);
+            }
             m_target[name][build.name].dependency.insert(dep);
           }
 

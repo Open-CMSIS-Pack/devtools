@@ -242,7 +242,7 @@ std::string RtePackage::PackIdFromPath(const std::string& path)
   string commonID;
   string version;
   unsigned i = 0;
-  for (string s : segments) {
+  for (const auto& s : segments) {
     if (i == 0) {
       commonID = s;
     } else if (i == 1) {

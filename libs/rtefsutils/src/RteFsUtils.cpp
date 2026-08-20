@@ -837,10 +837,10 @@ string RteFsUtils::GetAbsPathFromLocalUrl(const string& url) {
   string filepath = url;
   // File URI scheme allows the literal 'localhost' to be omitted entirely
   // or may contain an empty hostname
-  static const string&& fileScheme = "file:/";
+  static const string fileScheme = "file:/";
   if (filepath.find(fileScheme) == 0) {
     filepath.erase(0, fileScheme.length());
-    static const string&& localhost = "/localhost/";
+    static const string localhost = "/localhost/";
     if (filepath.find(localhost) == 0) {
       filepath.erase(0, localhost.length());
     } else if (filepath.find("//") == 0) {

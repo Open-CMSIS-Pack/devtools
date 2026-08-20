@@ -1,6 +1,11 @@
 # we are not calling these methods directly
 # false positive
 unusedFunction:libs/xmltree/src/XMLTree.cpp:47
+unusedFunction:libs/xmlschemachecker/src/XmlErrorHandler.cpp:17
+unusedFunction:libs/xmlschemachecker/src/XmlErrorHandler.cpp:22
 unusedFunction:libs/xmlschemachecker/src/XmlErrorHandler.cpp:27
 unusedFunction:libs/xmlschemachecker/src/XmlErrorHandler.cpp:32
+unusedFunction:libs/ymltree/src/YmlTreeParserInterface.h:56
+unusedFunction:tools/ctrace/src/decode/OpenCsdPacketCollector.cpp:141
+unusedFunction:tools/ctrace/src/decode/OpenCsdPacketCollector.cpp:177
 unusedFunction:tools/projmgr/src/ProjMgrRpcServer.cpp
