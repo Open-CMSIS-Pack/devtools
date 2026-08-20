@@ -33,6 +33,24 @@ TEST_F(ProjMgrYamlParserUnitTests, ParseCbuildSet) {
   EXPECT_FALSE(ParseCbuildSet("unkownfile.cbuild-set.yml", buildSetItem, true));
 }
 
+TEST_F(ProjMgrYamlParserUnitTests, ParseCompilerAlias) {
+  const string csolutionFile = testinput_folder + "/TestSolution/test.csolution.yml";
+  CsolutionItem csolution;
+
+  EXPECT_TRUE(ParseCsolution(csolutionFile, csolution, true, false));
+  ASSERT_EQ(csolution.compilerAlias.size(), 1);
+  EXPECT_EQ(csolution.compilerAlias.front(), "CLANG");
+
+  YAML::Node solutionNode;
+  solutionNode[YAML_COMPILER_ALIAS].push_back("AC6");
+  solutionNode[YAML_COMPILER_ALIAS].push_back("GCC");
+  vector<string> compilerAliases;
+  ParseVectorOrString(solutionNode, YAML_COMPILER_ALIAS, compilerAliases);
+  ASSERT_EQ(compilerAliases.size(), 2);
+  EXPECT_EQ(compilerAliases[0], "AC6");
+  EXPECT_EQ(compilerAliases[1], "GCC");
+}
+
 TEST_F(ProjMgrYamlParserUnitTests, ValidateCbuildSet) {
   string cbuildSetFile = testinput_folder + "/TestSolution/invalid_keys_test.cbuild-set.yml";
   YAML::Node root = YAML::LoadFile(cbuildSetFile);

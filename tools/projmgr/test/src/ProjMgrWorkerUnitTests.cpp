@@ -51,14 +51,18 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchain) {
   ContextDesc descriptor;
   const string& filename = testinput_folder + "/TestProject/test.cproject.yml";
   EXPECT_TRUE(parser.ParseCproject(filename, true));
+  parser.GetCsolution().compilerAlias = { "AC6", "CLANG" };
   EXPECT_TRUE(AddContexts(parser, descriptor, filename));
   map<string, ContextItem>* contexts;
   GetContexts(contexts);
   ContextItem context = contexts->begin()->second;
+  EXPECT_EQ(context.compilerAlias, (vector<string>{ "AC6", "CLANG" }));
   EXPECT_TRUE(ProcessPrecedences(context));
   EXPECT_TRUE(ProcessToolchain(context));
   EXPECT_EQ(expected.name, context.toolchain.name);
   EXPECT_EQ(expected.version, context.toolchain.version);
+  EXPECT_EQ(context.targetAttributes["Tcompiler"], "ARMCC|CLANG");
+  EXPECT_EQ(context.targetAttributes["Toptions"], "AC6");
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessToolchainNoToolchainRegistered) {
@@ -112,6 +116,18 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessToolchainOptions) {
     EXPECT_EQ(input.second.compiler, context.targetAttributes["Tcompiler"]);
     EXPECT_EQ(input.second.version, context.toolchain.version);
   }
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ProcessToolchainDeduplicatesCanonicalAliases) {
+  ContextItem context;
+  CsolutionItem csolution;
+  context.csolution = &csolution;
+  context.compiler = "AC6";
+  context.compilerAlias = { "ARMCC", "AC6", "CLANG", "CLANG" };
+
+  EXPECT_TRUE(ProcessToolchain(context));
+  EXPECT_EQ(context.targetAttributes["Tcompiler"], "ARMCC|CLANG");
+  EXPECT_EQ(context.targetAttributes["Toptions"], "AC6");
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessDevice) {
