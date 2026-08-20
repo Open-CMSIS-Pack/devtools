@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+solution:
+
+  packs:
+    - pack: ARM::RteTest_DFP
+
+  compiler: AC6
+
+  target-types:
+    - type: CM0
+      board: RteTest Dummy board
+      target-set:
+        - set:
+          images:
+            - project-context: core0.Debug
+            - project-context: explicit-core1.Debug
+
+  build-types:
+    - type: Debug
+
+  projects:
+    - cmake:
+        source: ./cmake/core0
+        device: :cm0_core0
+        generator: Ninja
+        configure:
+          - -DCMAKE_BUILD_TYPE=Debug
+        target: core0-target
+        images:
+          - image: build/core0.elf
+            type: elf
+          - image: build/core0.hex
+            type: hex
+          - image: build/core0.bin
+            type: bin
+    - cmake:
+        source: ./cmake/core1
+        device: :cm0_core1
+        project-id: explicit-core1

@@ -509,6 +509,24 @@ struct WestDesc {
 };
 
 /**
+ * @brief CMake native project descriptor
+*/
+struct CmakeImage {
+  std::string image;
+  std::string type;
+};
+
+struct CmakeDesc {
+  std::string projectId;
+  std::string source;
+  std::string generator;
+  std::vector<std::string> configure;
+  std::string target;
+  std::vector<CmakeImage> images;
+  std::string device;
+};
+
+/**
  * @brief context descriptor containing
  *        cproject filename,
  *        type filter
@@ -517,6 +535,7 @@ struct ContextDesc {
   std::string cproject;
   TypeFilter type;
   WestDesc west;
+  CmakeDesc cmake;
 };
 
 /**
@@ -649,6 +668,7 @@ struct CsolutionItem {
   TargetType target;
   std::vector<std::string> cprojects;
   std::vector<std::string> westApps;
+  std::vector<std::string> cmakeApps;
   std::vector<ContextDesc> contexts;
   std::vector<PackItem> packs;
   bool enableCdefault;

@@ -585,6 +585,8 @@ struct ContextItem {
   bool imageOnly = false;
   WestDesc west;
   bool westOn = false;
+  CmakeDesc cmake;
+  bool cmakeOn = false;
   std::vector<VariablesConfiguration> variablesConfigurations;
   std::set<RteComponentInstance*> unresolvedComponents;
   StrMap availablePackVersions;
