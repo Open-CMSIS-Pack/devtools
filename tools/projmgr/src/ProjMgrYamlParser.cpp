@@ -877,6 +877,15 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
   if (parent[YAML_PROJECTS].IsDefined()) {
     const YAML::Node& projectsNode = parent[YAML_PROJECTS];
     for (const auto& projectsEntry : projectsNode) {
+      const size_t descriptorCount =
+        static_cast<size_t>(projectsEntry[YAML_PROJECT].IsDefined()) +
+        static_cast<size_t>(projectsEntry[YAML_WEST].IsDefined()) +
+        static_cast<size_t>(projectsEntry[YAML_CMAKE].IsDefined());
+      if (descriptorCount > 1) {
+        ProjMgrLogger::Get().Error("project descriptors 'project', 'west', and 'cmake' are mutually exclusive", "",
+          csolution.path, projectsEntry.Mark().line + 1, projectsEntry.Mark().column + 1);
+        return false;
+      }
       ContextDesc descriptor;
       if (!ParseTypeFilter(projectsEntry, descriptor.type)) {
         return false;
@@ -912,7 +921,7 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
           set<string> imageTypes;
           for (const auto& imageEntry : cmakeEntry[YAML_IMAGES]) {
             CmakeImage image;
-            ParseString(imageEntry, YAML_IMAGE, image.image);
+            ParsePortablePath(imageEntry, csolution.path, YAML_IMAGE, image.image);
             ParseString(imageEntry, YAML_TYPE, image.type);
             if (!imageTypes.insert(image.type).second) {
               ProjMgrLogger::Get().Error("duplicate CMake image type '" + image.type + "'", "", csolution.path,
