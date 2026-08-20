@@ -1944,7 +1944,7 @@ bool RteTarget::GenerateRteHeaders() {
 
   string content;
   const set<string>& strings = GetGlobalPreIncludeStrings();
-  for (auto s : strings) {
+  for (const auto& s : strings) {
     content += s + RteUtils::LF_STRING;
   }
 
