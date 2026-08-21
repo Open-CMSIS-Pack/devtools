@@ -113,11 +113,12 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
   if (cprojects.find(cprojectFile) != cprojects.end()) {
     context.cproject = &cprojects.at(cprojectFile);
   } else {
-    if (descriptor.west.app.empty()) {
+    if (descriptor.west.app.empty() && descriptor.cmake.source.empty()) {
       ProjMgrLogger::Get().Error("cproject not parsed, adding context failed", "", cprojectFile);
       return false;
     } else {
-      context.cproject = &cprojects[descriptor.west.projectId];
+      const string& projectId = descriptor.west.app.empty() ? descriptor.cmake.projectId : descriptor.west.projectId;
+      context.cproject = &cprojects[projectId];
     }
   }
 
@@ -130,6 +131,14 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
     context.cproject->name = context.west.projectId;
     context.cproject->output.type = { "elf", "hex" };
     CollectionUtils::PushBackUniquely(context.west.westDefs, "CONFIG_BUILD_OUTPUT_HEX=y");
+  }
+
+  // CMake native project
+  if (!descriptor.cmake.source.empty()) {
+    context.cmakeOn = true;
+    context.cmake = descriptor.cmake;
+    RteFsUtils::NormalizePath(context.cmake.source, context.csolution->directory);
+    context.cproject->name = context.cmake.projectId;
   }
 
   // No build/target-types
@@ -2342,7 +2351,7 @@ bool ProjMgrWorker::ProcessConfigFiles(ContextItem& context) {
     }
   }
   // Linker script
-  if (context.outputTypes.elf.on && !context.imageOnly && !context.westOn) {
+  if (context.outputTypes.elf.on && !context.imageOnly && !context.westOn && !context.cmakeOn) {
     if (context.linker.autoGen) {
       if (!context.linker.script.empty()) {
         ProjMgrLogger::Get().Warn("conflict: automatic linker script generation overrules specified script '" + context.linker.script + "'", context.name);
@@ -3043,6 +3052,12 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
 
   if (!context.west.device.empty()) {
     context.cproject->target.device = context.west.device;
+  }
+  if (!context.cmake.device.empty()) {
+    DeviceItem device;
+    GetDeviceItem(context.cproject->target.device, device);
+    device.pname = RteUtils::ExtractSuffix(context.cmake.device);
+    context.cproject->target.device = GetDeviceInfoString(device.vendor, device.name, device.pname);
   }
 
   StringCollection device = {
@@ -5566,6 +5581,10 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
     baseName = context.cproject->name;
   }
 
+  for (const auto& image : context.cmake.images) {
+    ProjMgrUtils::SetOutputType(image.type, context.outputTypes);
+  }
+
   // secure project requires cmse output type
   if (context.controls.processed.processor.trustzone == "secure") {
     context.outputTypes.cmse.on = true;
@@ -5579,14 +5598,15 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   }
 
   // default: elf
-  if (!context.outputTypes.lib.on && !context.outputTypes.elf.on && !context.imageOnly) {
+  if (!context.outputTypes.lib.on && !context.outputTypes.elf.on && !context.imageOnly &&
+      !(context.cmakeOn && !context.cmake.images.empty())) {
     context.outputTypes.elf.on = true;
   }
 
   // set output filename for each required output type
   const string toolchain = affixesMap.find(context.toolchain.name) != affixesMap.end() ? context.toolchain.name : "";
   if (context.outputTypes.elf.on) {
-    context.outputTypes.elf.filename = baseName + (context.westOn ? ".elf" : get<0>(affixesMap.at(toolchain)));
+    context.outputTypes.elf.filename = baseName + ((context.westOn || context.cmakeOn) ? ".elf" : get<0>(affixesMap.at(toolchain)));
   }
   if (context.outputTypes.lib.on) {
     context.outputTypes.lib.filename = get<1>(affixesMap.at(toolchain)) + baseName + get<2>(affixesMap.at(toolchain));
@@ -5596,6 +5616,17 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   }
   if (context.outputTypes.bin.on) {
     context.outputTypes.bin.filename = baseName + ".bin";
+  }
+  for (const auto& image : context.cmake.images) {
+    if (image.type == RteConstants::OUTPUT_TYPE_ELF) {
+      context.outputTypes.elf.filename = image.image;
+    } else if (image.type == RteConstants::OUTPUT_TYPE_HEX) {
+      context.outputTypes.hex.filename = image.image;
+    } else if (image.type == RteConstants::OUTPUT_TYPE_BIN) {
+      context.outputTypes.bin.filename = image.image;
+    } else if (image.type == RteConstants::OUTPUT_TYPE_LIB) {
+      context.outputTypes.lib.filename = image.image;
+    }
   }
   if (context.outputTypes.map.on) {
     context.outputTypes.map.filename = baseName + get<0>(affixesMap.at(toolchain)) + ".map";

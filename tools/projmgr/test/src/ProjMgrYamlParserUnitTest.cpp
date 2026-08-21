@@ -51,6 +51,32 @@ TEST_F(ProjMgrYamlParserUnitTests, ParseCompilerAlias) {
   EXPECT_EQ(compilerAliases[1], "GCC");
 }
 
+TEST_F(ProjMgrYamlParserUnitTests, RejectMultipleProjectDescriptors) {
+  const vector<vector<string>> descriptorCombinations = {
+    { YAML_PROJECT, YAML_WEST },
+    { YAML_PROJECT, YAML_CMAKE },
+    { YAML_WEST, YAML_CMAKE },
+    { YAML_PROJECT, YAML_WEST, YAML_CMAKE },
+  };
+
+  for (const auto& descriptors : descriptorCombinations) {
+    YAML::Node root;
+    YAML::Node project;
+    for (const auto& descriptor : descriptors) {
+      project[descriptor] = YAML::Node(YAML::NodeType::Map);
+    }
+    root[YAML_PROJECTS].push_back(project);
+
+    CsolutionItem csolution;
+    csolution.path = "multiple-descriptors.csolution.yml";
+    EXPECT_FALSE(ParseContexts(root, csolution));
+    EXPECT_TRUE(csolution.contexts.empty());
+    EXPECT_TRUE(csolution.cprojects.empty());
+    EXPECT_TRUE(csolution.westApps.empty());
+    EXPECT_TRUE(csolution.cmakeApps.empty());
+  }
+}
+
 TEST_F(ProjMgrYamlParserUnitTests, ValidateCbuildSet) {
   string cbuildSetFile = testinput_folder + "/TestSolution/invalid_keys_test.cbuild-set.yml";
   YAML::Node root = YAML::LoadFile(cbuildSetFile);

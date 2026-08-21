@@ -33,7 +33,7 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
   if (!processedContexts.empty()) {
     const auto& context = processedContexts.front();
     SetNodeValue(node[YAML_DESCRIPTION], context->csolution->description);
-    if (!parser->GetCdefault().path.empty() && !context->imageOnly && !context->westOn) {
+    if (!parser->GetCdefault().path.empty() && !context->imageOnly && !context->westOn && !context->cmakeOn) {
       SetNodeValue(node[YAML_CDEFAULT], FormatPath(parser->GetCdefault().path, directory));
     }
   }
@@ -128,6 +128,9 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
       SetNodeValue(cbuildNode[YAML_CBUILD], relativeFilename);
       if (context->westOn) {
         cbuildNode[YAML_WEST] = true;
+      }
+      if (context->cmakeOn) {
+        cbuildNode[YAML_CMAKE] = true;
       }
       if (context->cproject) {
         if (!context->imageOnly) {

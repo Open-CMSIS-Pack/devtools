@@ -103,6 +103,11 @@
     "ConditionIDType": {
       "type": "string"
     },
+    "ProjectIdType": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{1,32}$",
+      "description": "Project identifier used as a context name and output path component."
+    },
     "ForType": {
       "oneOf": [
         {"$ref": "#/definitions/ArrayOfBuildContext" },
@@ -738,13 +743,18 @@
           "description": "Path to the valid project file."
         },
         "west": { "$ref": "#/definitions/WestProjectType" },
+        "cmake": { "$ref": "#/definitions/CmakeProjectType" },
         "for-context":     { "$ref": "#/definitions/ForContext" },
         "not-for-context": { "$ref": "#/definitions/NotForContext" }
       },
       "additionalProperties": false,
       "allOf": [
         { "$ref": "#/definitions/TypeListMutualExclusion" },
-        { "oneOf": [ { "required": ["project"], "not": {"required": ["west"]} }, { "required": ["west"], "not": {"required": ["project"]} } ] }
+        { "oneOf": [
+          { "required": ["project"], "not": {"anyOf": [{"required": ["west"]}, {"required": ["cmake"]}]} },
+          { "required": ["west"], "not": {"anyOf": [{"required": ["project"]}, {"required": ["cmake"]}]} },
+          { "required": ["cmake"], "not": {"anyOf": [{"required": ["project"]}, {"required": ["west"]}]} }
+        ] }
       ]
     },
     "ProcessorTrustzone": {
@@ -1355,6 +1365,7 @@
       "properties": {
         "cbuild": { "type": "string", "description": "Path to <context>.cbuild.yml file." },
         "west": { "type": "boolean" },
+        "cmake": { "type": "boolean" },
         "project": { "type": "string", "description": "Project name." },
         "configuration": { "$ref": "#/definitions/BuildContext" },
         "depends-on": {
@@ -1510,7 +1521,8 @@
           "type": "array",
           "items": { "$ref": "#/definitions/LicenseInfoType" }
         },
-        "west": { "$ref": "#/definitions/WestProjectType" }
+        "west": { "$ref": "#/definitions/WestProjectType" },
+        "cmake": { "$ref": "#/definitions/CmakeProjectType" }
       },
       "additionalProperties": false,
       "required": ["generated-by"]
@@ -2649,6 +2661,38 @@
       },
       "additionalProperties": false,
       "required": ["app-path"]
+    },
+    "CmakeProjectType": {
+      "title": "cmake:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#cmake",
+      "description": "Enable native CMake project build orchestration.",
+      "type": "object",
+      "properties": {
+        "source":     { "type": "string", "minLength": 1, "description": "Path to the CMake source directory." },
+        "generator":  { "type": "string", "description": "CMake generator to use for the build (default: Ninja)." },
+        "configure":  { "type": "array", "description": "Options for the CMake configure command.", "items": { "type": "string" } },
+        "target":     { "type": "string", "description": "CMake build target." },
+        "images":     { "$ref": "#/definitions/CmakeImagesType" },
+        "device":     { "$ref": "#/definitions/ProcessorNameType" },
+        "project-id": { "$ref": "#/definitions/ProjectIdType", "description": "Project identifier (default: last sub-dir name of source)." }
+      },
+      "additionalProperties": false,
+      "required": ["source"]
+    },
+    "CmakeImagesType": {
+      "type": "array",
+      "description": "List of output images produced by the CMake project.",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/CmakeImageType" }
+    },
+    "CmakeImageType": {
+      "type": "object",
+      "properties": {
+        "image": { "type": "string", "minLength": 1, "description": "Path to the CMake build output image." },
+        "type":  { "enum": [ "elf", "hex", "bin", "lib" ], "description": "Output image type." }
+      },
+      "additionalProperties": false,
+      "required": ["image", "type"]
     },
     "ProcessorsCapabilitiesType": {
       "title": "processors:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-CBuild-Format/#processors",

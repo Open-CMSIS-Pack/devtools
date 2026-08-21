@@ -877,6 +877,15 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
   if (parent[YAML_PROJECTS].IsDefined()) {
     const YAML::Node& projectsNode = parent[YAML_PROJECTS];
     for (const auto& projectsEntry : projectsNode) {
+      const size_t descriptorCount =
+        static_cast<size_t>(projectsEntry[YAML_PROJECT].IsDefined()) +
+        static_cast<size_t>(projectsEntry[YAML_WEST].IsDefined()) +
+        static_cast<size_t>(projectsEntry[YAML_CMAKE].IsDefined());
+      if (descriptorCount > 1) {
+        ProjMgrLogger::Get().Error("project descriptors 'project', 'west', and 'cmake' are mutually exclusive", "",
+          csolution.path, projectsEntry.Mark().line + 1, projectsEntry.Mark().column + 1);
+        return false;
+      }
       ContextDesc descriptor;
       if (!ParseTypeFilter(projectsEntry, descriptor.type)) {
         return false;
@@ -900,6 +909,35 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
         }
         descriptor.west = west;
         CollectionUtils::PushBackUniquely(csolution.westApps, west.projectId);
+      }
+      if (projectsEntry[YAML_CMAKE].IsDefined()) {
+        const auto& cmakeEntry = projectsEntry[YAML_CMAKE];
+        CmakeDesc cmake;
+        ParsePortablePath(cmakeEntry, csolution.path, YAML_SOURCE, cmake.source);
+        ParseString(cmakeEntry, YAML_GENERATOR, cmake.generator);
+        ParseVector(cmakeEntry, YAML_CONFIGURE, cmake.configure);
+        ParseString(cmakeEntry, YAML_TARGET, cmake.target);
+        if (cmakeEntry[YAML_IMAGES].IsDefined()) {
+          set<string> imageTypes;
+          for (const auto& imageEntry : cmakeEntry[YAML_IMAGES]) {
+            CmakeImage image;
+            ParsePortablePath(imageEntry, csolution.path, YAML_IMAGE, image.image);
+            ParseString(imageEntry, YAML_TYPE, image.type);
+            if (!imageTypes.insert(image.type).second) {
+              ProjMgrLogger::Get().Error("duplicate CMake image type '" + image.type + "'", "", csolution.path,
+                imageEntry[YAML_TYPE].Mark().line + 1, imageEntry[YAML_TYPE].Mark().column + 1);
+              return false;
+            }
+            cmake.images.push_back(image);
+          }
+        }
+        ParseString(cmakeEntry, YAML_DEVICE, cmake.device);
+        ParseString(cmakeEntry, YAML_PROJECT_ID, cmake.projectId);
+        if (cmake.projectId.empty()) {
+          cmake.projectId = fs::path(cmake.source).filename().generic_string();
+        }
+        descriptor.cmake = cmake;
+        CollectionUtils::PushBackUniquely(csolution.cmakeApps, cmake.projectId);
       }
       csolution.contexts.push_back(descriptor);
     }
@@ -1256,7 +1294,8 @@ const set<string> projectsKeys = {
   YAML_PROJECT,
   YAML_FORCONTEXT,
   YAML_NOTFORCONTEXT,
-  YAML_WEST
+  YAML_WEST,
+  YAML_CMAKE
 };
 
 const set<string> projectKeys = {

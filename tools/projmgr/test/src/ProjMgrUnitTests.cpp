@@ -7754,6 +7754,61 @@ TEST_F(ProjMgrUnitTests, WestSupport) {
     testinput_folder + "/WestSupport/ref/core1.Debug+CM0.cbuild.yml");
 }
 
+TEST_F(ProjMgrUnitTests, CmakeSupport) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/CmakeSupport/solution.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--active";
+  argv[4] = (char*)"CM0";
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  const string base = testinput_folder + "/CmakeSupport/out/";
+  const YAML::Node& cbuild0 = YAML::LoadFile(base + "core0/CM0/Debug/core0.Debug+CM0.cbuild.yml");
+  const YAML::Node& cbuild1 = YAML::LoadFile(base + "explicit-core1/CM0/Debug/explicit-core1.Debug+CM0.cbuild.yml");
+  EXPECT_EQ("core0", cbuild0["build"]["cmake"]["project-id"].as<string>());
+  EXPECT_EQ("../../../../cmake/core0", cbuild0["build"]["cmake"]["source"].as<string>());
+  EXPECT_EQ("Ninja", cbuild0["build"]["cmake"]["generator"].as<string>());
+  EXPECT_EQ("-DCMAKE_BUILD_TYPE=Debug", cbuild0["build"]["cmake"]["configure"][0].as<string>());
+  EXPECT_EQ("core0-target", cbuild0["build"]["cmake"]["target"].as<string>());
+  EXPECT_EQ("build/core0.elf", cbuild0["build"]["cmake"]["images"][0]["image"].as<string>());
+  EXPECT_EQ("elf", cbuild0["build"]["cmake"]["images"][0]["type"].as<string>());
+  EXPECT_EQ("build/core0.hex", cbuild0["build"]["cmake"]["images"][1]["image"].as<string>());
+  EXPECT_EQ("hex", cbuild0["build"]["cmake"]["images"][1]["type"].as<string>());
+  EXPECT_EQ("build/core0.bin", cbuild0["build"]["cmake"]["images"][2]["image"].as<string>());
+  EXPECT_EQ("bin", cbuild0["build"]["cmake"]["images"][2]["type"].as<string>());
+  EXPECT_EQ("bin", cbuild0["build"]["output"][0]["type"].as<string>());
+  EXPECT_EQ("build/core0.bin", cbuild0["build"]["output"][0]["file"].as<string>());
+  EXPECT_EQ("elf", cbuild0["build"]["output"][1]["type"].as<string>());
+  EXPECT_EQ("build/core0.elf", cbuild0["build"]["output"][1]["file"].as<string>());
+  EXPECT_EQ("hex", cbuild0["build"]["output"][2]["type"].as<string>());
+  EXPECT_EQ("build/core0.hex", cbuild0["build"]["output"][2]["file"].as<string>());
+  EXPECT_EQ("ARM::RteTest_ARMCM0_Dual:cm0_core0", cbuild0["build"]["device"].as<string>());
+  EXPECT_EQ("explicit-core1", cbuild1["build"]["cmake"]["project-id"].as<string>());
+  EXPECT_EQ("../../../../cmake/core1", cbuild1["build"]["cmake"]["source"].as<string>());
+  EXPECT_EQ("ARM::RteTest_ARMCM0_Dual:cm0_core1", cbuild1["build"]["device"].as<string>());
+  EXPECT_EQ("elf", cbuild1["build"]["output"][0]["type"].as<string>());
+  EXPECT_EQ("explicit-core1.elf", cbuild1["build"]["output"][0]["file"].as<string>());
+  EXPECT_FALSE(cbuild1["build"]["cmake"]["generator"]);
+  EXPECT_FALSE(cbuild1["build"]["cmake"]["configure"]);
+  EXPECT_FALSE(cbuild1["build"]["cmake"]["target"]);
+  EXPECT_FALSE(cbuild1["build"]["cmake"]["images"]);
+
+  const YAML::Node& cbuildRun = YAML::LoadFile(base + "solution+CM0.cbuild-run.yml");
+  EXPECT_EQ("elf", cbuildRun["cbuild-run"]["output"][0]["type"].as<string>());
+  EXPECT_EQ("core0/CM0/Debug/build/core0.elf", cbuildRun["cbuild-run"]["output"][0]["file"].as<string>());
+  EXPECT_EQ("hex", cbuildRun["cbuild-run"]["output"][1]["type"].as<string>());
+  EXPECT_EQ("core0/CM0/Debug/build/core0.hex", cbuildRun["cbuild-run"]["output"][1]["file"].as<string>());
+  EXPECT_EQ("bin", cbuildRun["cbuild-run"]["output"][2]["type"].as<string>());
+  EXPECT_EQ("core0/CM0/Debug/build/core0.bin", cbuildRun["cbuild-run"]["output"][2]["file"].as<string>());
+  EXPECT_EQ("elf", cbuildRun["cbuild-run"]["output"][3]["type"].as<string>());
+  EXPECT_EQ("explicit-core1/CM0/Debug/explicit-core1.elf", cbuildRun["cbuild-run"]["output"][3]["file"].as<string>());
+
+  const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/CmakeSupport/solution.cbuild-idx.yml");
+  EXPECT_TRUE(cbuildIdx["build-idx"]["cbuilds"][0]["cmake"].as<bool>());
+  EXPECT_TRUE(cbuildIdx["build-idx"]["cbuilds"][1]["cmake"].as<bool>());
+}
+
 TEST_F(ProjMgrUnitTests, TargetSetDependencies) {
   char* argv[5];
   const string& csolution = testinput_folder + "/TestTargetSet/cross-dependency.csolution.yml";

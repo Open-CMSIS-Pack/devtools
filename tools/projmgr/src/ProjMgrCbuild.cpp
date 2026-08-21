@@ -44,6 +44,7 @@ private:
   void SetDebugConfigNode(YAML::Node node, const ContextItem* context);
   void SetPLMStatus(YAML::Node node, const ContextItem* context, const string& file);
   void SetWestNode(YAML::Node node, const ContextItem* context);
+  void SetCmakeNode(YAML::Node node, const ContextItem* context);
   bool m_ignoreRteFileMissing;
 };
 
@@ -89,12 +90,12 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
   }
   SetBooksNode(contextNode[YAML_DEVICE_BOOKS], context->deviceBooks, context->directories.cbuild);
   SetDebugConfigNode(contextNode[YAML_DBGCONF], context);
-  if (!context->imageOnly && !context->westOn) {
+  if (!context->imageOnly && !context->westOn && !context->cmakeOn) {
     SetProcessorNode(contextNode[YAML_PROCESSOR], context->targetAttributes);
     SetNpuInfoNode(contextNode[YAML_NPU_INFO], context);
   }
   SetPacksNode(contextNode[YAML_PACKS], context);
-  if (!context->imageOnly && !context->westOn) {
+  if (!context->imageOnly && !context->westOn && !context->cmakeOn) {
     SetControlsNode(contextNode, context, context->controls.processed);
     vector<string> defines;
     if (context->rteActiveTarget != nullptr) {
@@ -120,7 +121,7 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
     SetNodeValue(contextNode[YAML_OUTPUTDIRS][YAML_OUTPUT_OUTDIR], FormatPath(outDir, context->directories.cbuild));
   }  
   SetOutputNode(contextNode[YAML_OUTPUT], context);
-  if (!context->imageOnly && !context->westOn) {
+  if (!context->imageOnly && !context->westOn && !context->cmakeOn) {
     SetComponentsNode(contextNode[YAML_COMPONENTS], context);
     SetApisNode(contextNode[YAML_APIS], context);
     SetGeneratorsNode(contextNode[YAML_GENERATORS], context);
@@ -131,6 +132,9 @@ void ProjMgrCbuild::SetContextNode(YAML::Node contextNode, const ContextItem* co
   SetLicenseInfoNode(contextNode[YAML_LICENSES], context);
   if (context->westOn) {
     SetWestNode(contextNode[YAML_WEST], context);
+  }
+  if (context->cmakeOn) {
+    SetCmakeNode(contextNode[YAML_CMAKE], context);
   }
 }
 
@@ -629,6 +633,20 @@ void ProjMgrCbuild::SetWestNode(YAML::Node node, const ContextItem* context) {
   SetNodeValue(node[YAML_DEVICE], context->west.device);
   SetDefineNode(node[YAML_WEST_DEFS], context->west.westDefs);
   SetNodeValue(node[YAML_WEST_OPT], context->west.westOpt);
+}
+
+void ProjMgrCbuild::SetCmakeNode(YAML::Node node, const ContextItem* context) {
+  SetNodeValue(node[YAML_PROJECT_ID], context->cmake.projectId);
+  SetNodeValue(node[YAML_SOURCE], FormatPath(context->cmake.source, context->directories.cbuild));
+  SetNodeValue(node[YAML_GENERATOR], context->cmake.generator);
+  SetNodeValue(node[YAML_CONFIGURE], context->cmake.configure);
+  SetNodeValue(node[YAML_TARGET], context->cmake.target);
+  for (const auto& image : context->cmake.images) {
+    YAML::Node imageNode;
+    SetNodeValue(imageNode[YAML_IMAGE], image.image);
+    SetNodeValue(imageNode[YAML_TYPE], image.type);
+    node[YAML_IMAGES].push_back(imageNode);
+  }
 }
 
 //-- ProjMgrYamlEmitter::GenerateCbuild -----------------------------------------------------------
