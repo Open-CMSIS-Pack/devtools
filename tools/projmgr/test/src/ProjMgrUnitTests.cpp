@@ -7926,10 +7926,11 @@ TEST_F(ProjMgrUnitTests, GenerateMLOps) {
 
   // Ethos-U85 and 128 MACs both exist in the DFP, but not as the same NPU capability
   // verify that the type matches while the incompatible MAC count produces a warning
+  streamRedirect.ClearStringStreams();
   csolution = testinput_folder + "/MLOps/npu_mismatch.csolution.yml";
   argv[2] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
-  const string& warningStr = streamRedirect.GetErrorString();
+  const string warningStr = streamRedirect.GetErrorString();
   EXPECT_EQ(string::npos, warningStr.find("npu_mismatch.csolution.yml - warning csolution: "
     "mlops.npu.type value does not match DFP device information"));
   EXPECT_NE(string::npos, warningStr.find("npu_mismatch.csolution.yml - warning csolution: "
