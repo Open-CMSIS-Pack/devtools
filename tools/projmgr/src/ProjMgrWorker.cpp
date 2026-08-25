@@ -4353,6 +4353,14 @@ bool ProjMgrWorker::ListNpus(vector<string>& npus, const string& filter) {
     if (!LoadPacks(context)) {
       return false;
     }
+    if (!selectedContext.empty()) {
+      if (!ProcessPrecedences(context, BoardOrDevice::Both)) {
+        return false;
+      }
+      if (!SetTargetAttributes(context, context.targetAttributes)) {
+        return false;
+      }
+    }
     CollectNpuInfo(context);
     for (const auto& npuInfoItem : context.npuInfoItems) {
       string npuString = npuInfoItem.type + " (" + npuInfoItem.macs + "):";
@@ -6460,6 +6468,9 @@ void ProjMgrWorker::CollectNpuInfo(ContextItem& context) {
     }
     // collect NPU features for each processor
     for (const auto& [pname, processor] : device->GetProcessors()) {
+      if (!context.deviceItem.pname.empty() && context.deviceItem.pname != pname) {
+        continue;
+      }
       const auto& features = device->GetEffectiveProperties("feature", pname);
       for (const auto& feature : features) {
         if (feature->GetAttribute("type") != "NPU") {

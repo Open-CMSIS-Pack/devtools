@@ -618,6 +618,21 @@ Ethos-U55 \\(128MACs\\):\n\
   EXPECT_TRUE(regex_search(outStr, regex("\
 Ethos-U55 \\(128MACs\\):\n\
   ARM::RteTest_ARMCM0_Single, \\[cm0_core1\\] Cortex-M0\n")));
+
+  // verify NPU listing is restricted to the device and processor selected by a context
+  streamRedirect.ClearStringStreams();
+  const string& csolution = testinput_folder + "/MLOps/minimal.csolution.yml";
+  argv[3] = (char*)"--solution";
+  argv[4] = (char*)csolution.c_str();
+  argv[5] = (char*)"-c";
+  argv[6] = (char*)"core0+Hardware";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  outStr = streamRedirect.GetOutString();
+  EXPECT_NE(string::npos, outStr.find("ARM::RteTest_ARMCM0_Dual"));
+  EXPECT_NE(string::npos, outStr.find("[cm0_core0]"));
+  EXPECT_EQ(string::npos, outStr.find("ARM::RteTest_ARMCM0_Single"));
+  EXPECT_EQ(string::npos, outStr.find("[cm0_core1]"));
+  EXPECT_EQ(string::npos, outStr.find("Ethos-U55 (256MACs)"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListComponents) {
@@ -7869,6 +7884,7 @@ TEST_F(ProjMgrUnitTests, ParseCommandLine_MutualExclusionOptions) {
 }
 
 TEST_F(ProjMgrUnitTests, GenerateMLOps) {
+  StdStreamRedirect streamRedirect;
   char* argv[5];
   string csolution = testinput_folder + "/MLOps/minimal.csolution.yml";
   argv[1] = (char*)"convert";
@@ -7907,6 +7923,18 @@ TEST_F(ProjMgrUnitTests, GenerateMLOps) {
   const YAML::Node& mlopsMacsOnly = YAML::LoadFile(testinput_folder + "/MLOps/npu_macs_only.cbuild-mlops.yml");
   EXPECT_EQ("Ethos-U55", mlopsMacsOnly["cbuild-mlops"]["npu"]["type"].as<string>());
   EXPECT_EQ("128", mlopsMacsOnly["cbuild-mlops"]["npu"]["macs"].as<string>());
+
+  // Ethos-U85 and 128 MACs both exist in the DFP, but not as the same NPU capability
+  // verify that the type matches while the incompatible MAC count produces a warning
+  streamRedirect.ClearStringStreams();
+  csolution = testinput_folder + "/MLOps/npu_mismatch.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  const string warningStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(string::npos, warningStr.find("npu_mismatch.csolution.yml - warning csolution: "
+    "mlops.npu.type value does not match DFP device information"));
+  EXPECT_NE(string::npos, warningStr.find("npu_mismatch.csolution.yml - warning csolution: "
+    "mlops.npu.macs value does not match DFP device information"));
 
   // hardware target is not present
   csolution = testinput_folder + "/MLOps/no_hardware.csolution.yml";

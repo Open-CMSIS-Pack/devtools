@@ -10,6 +10,8 @@
 #include "ProjMgrParser.h"
 #include "ProjMgrUtils.h"
 
+#include <algorithm>
+
 using namespace std;
 
 ProjMgrMlops::ProjMgrMlops(ProjMgrWorker* worker) : m_worker(worker) {
@@ -56,31 +58,34 @@ bool ProjMgrMlops::GetTargetSetItemRef(const TargetType& targetType, optional<co
 
 bool ProjMgrMlops::ResolveTargetSet(const CsolutionItem& csolution, const MlopsTargetItem target,
   bool simulatorDefault, string& typeName, TargetSetItem& targetSetItem) const {
-  TargetType targetType;
   if (target.targetType.empty()) {
-    if (!csolution.targetTypes.empty()) {
-      // default simulator: last target-type, default hardware: first target-type
-      typeName = simulatorDefault ? csolution.targetTypes.back().first : csolution.targetTypes.front().first;
-      targetType = simulatorDefault ? csolution.targetTypes.back().second : csolution.targetTypes.front().second;
+    for (size_t index = 0; index < csolution.targetTypes.size(); index++) {
+      // default simulator: search target-types in reverse order, default hardware: in declaration order
+      const size_t candidate = simulatorDefault ? csolution.targetTypes.size() - index - 1 : index;
+      const auto& [name, type] = csolution.targetTypes[candidate];
+      if (GetTargetSetItemRef(type, nullopt, simulatorDefault, targetSetItem)) {
+        typeName = name;
+        return true;
+      }
     }
-  } else {
-    typeName = target.targetType; 
-    if (!FindTargetType(csolution, target.targetType, targetType)) {
-      // print error if specified target type was not found
-      ProjMgrLogger::Get().Error("mlops: target type '" + target.targetType + "' not found");
-      return false;
-    }
+    return true;
   }
-  // target set name = nullopt if target type is not specified, to differentiate from default (unnamed) target set
-  auto targetSetName = target.targetType.empty() ? nullopt : make_optional(target.targetSet);
+
+  TargetType targetType;
+  typeName = target.targetType;
+  if (!FindTargetType(csolution, target.targetType, targetType)) {
+    // print error if specified target type was not found
+    ProjMgrLogger::Get().Error("mlops: target type '" + target.targetType + "' not found");
+    return false;
+  }
+
+  const auto targetSetName = make_optional(target.targetSet);
   if (!GetTargetSetItemRef(targetType, targetSetName, simulatorDefault, targetSetItem)) {
-    if (targetSetName.has_value()) {
-      // print error if specified target set was not found
-      ProjMgrLogger::Get().Error("mlops: " + (target.targetSet.empty() ?
-        ("no default unnamed target set for '" + target.targetType + "'") :
-        ("target set '" + target.targetType + '@' + target.targetSet + "' not found")));
-      return false;
-    }
+    // print error if specified target set was not found
+    ProjMgrLogger::Get().Error("mlops: " + (target.targetSet.empty() ?
+      ("no default unnamed target set for '" + target.targetType + "'") :
+      ("target set '" + target.targetType + '@' + target.targetSet + "' not found")));
+    return false;
   }
   return true;
 }
@@ -260,6 +265,25 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
           break;
         }
       }
+    }
+  }
+
+  // print warnings if the required NPU type and/or MACs do not match the DFP device information
+  if (!solutionMlops.npu.type.empty()) {
+    const auto matchesType = [&solutionMlops](const NpuInfoItem& npu) {
+      return npu.type == solutionMlops.npu.type;
+    };
+    if (find_if(npuInfoItems.begin(), npuInfoItems.end(), matchesType) == npuInfoItems.end()) {
+      ProjMgrLogger::Get().Warn("mlops.npu.type value does not match DFP device information", "", csolution.path);
+    }
+  }
+  if (!solutionMlops.npu.macs.empty()) {
+    const auto matchesMacs = [&solutionMlops](const NpuInfoItem& npu) {
+      return (solutionMlops.npu.type.empty() || npu.type == solutionMlops.npu.type) &&
+        RteUtils::StringToULL(npu.macs) == RteUtils::StringToULL(solutionMlops.npu.macs);
+    };
+    if (find_if(npuInfoItems.begin(), npuInfoItems.end(), matchesMacs) == npuInfoItems.end()) {
+      ProjMgrLogger::Get().Warn("mlops.npu.macs value does not match DFP device information", "", csolution.path);
     }
   }
 
