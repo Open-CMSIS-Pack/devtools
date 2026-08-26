@@ -607,7 +607,7 @@ void ProjMgrRunDebug::CollectDebugTopology(const ContextItem& context, const vec
   if (traceBufferCount > 1 && unnamedTraceBufferCount > 0) {
     ProjMgrLogger::Get().Warn("valid <tracebuffer> elements must be named when more than one is declared");
   }
-  // no valid <trace> element in PDSC, add one unnamed element of each type
+  // no supported trace sink collected, add one unnamed element of each supported type
   if (m_runDebug.debugTopology.traceSinks.empty()) {
     m_runDebug.debugTopology.traceSinks = { { TRACE_SERIALWIRE, {} }, { TRACE_BUFFER, {} } };
   }
