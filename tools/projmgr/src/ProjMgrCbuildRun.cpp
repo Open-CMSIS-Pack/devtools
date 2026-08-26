@@ -30,6 +30,7 @@ protected:
   void SetDebugSequencesNode(YAML::Node node, const std::vector<DebugSequencesType>& algorithms);
   void SetDebugSequencesBlockNode(YAML::Node node, const std::vector<DebugSequencesBlockType>& blocks);
   void SetDebugTopologyNode(YAML::Node node, const DebugTopologyType& topology);
+  void SetTraceSinksNode(YAML::Node node, const std::vector<TraceSinkType>& traceSinks);
   void SetProcessorsNode(YAML::Node node, const std::vector<ProcessorType>& processors);
   void SetDebugPortsNode(YAML::Node node, const std::vector<DebugPortType>& debugPorts);
   void SetAccessPortsNode(YAML::Node node, const std::vector<AccessPortType>& accessPorts);
@@ -307,6 +308,7 @@ void ProjMgrCbuildRun::SetDebugSequencesBlockNode(YAML::Node node, const std::ve
 void ProjMgrCbuildRun::SetDebugTopologyNode(YAML::Node node, const DebugTopologyType& topology) {
   SetDebugPortsNode(node[YAML_DEBUGPORTS], topology.debugPorts);
   SetProcessorsNode(node[YAML_PROCESSORS], topology.processors);
+  SetTraceSinksNode(node[YAML_TRACE_SINKS], topology.traceSinks);
   if (topology.swj.has_value()) {
     node[YAML_SWJ] = topology.swj.value();
   }
@@ -315,6 +317,14 @@ void ProjMgrCbuildRun::SetDebugTopologyNode(YAML::Node node, const DebugTopology
   }
   if (!topology.sdf.empty()) {
     SetNodeValue(node[YAML_SDF], FormatPath(topology.sdf, m_directory));
+  }
+}
+
+void ProjMgrCbuildRun::SetTraceSinksNode(YAML::Node node, const vector<TraceSinkType>& traceSinks) {
+  for (const auto& sink : traceSinks) {
+    YAML::Node sinkNode;
+    sinkNode[sink.type] = sink.name.empty() ? YAML::Node(YAML::Null) : YAML::Node(sink.name);
+    node.push_back(sinkNode);
   }
 }
 

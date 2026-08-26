@@ -170,3 +170,6 @@ cbuild-run:
                 value: 0x00000090
                 mask: 0x000000FF
                 info: CIDR1
+    trace-sinks:
+      - serialwire: 
+      - tracebuffer: 

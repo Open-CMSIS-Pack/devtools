@@ -157,6 +157,10 @@
           <datapatch  __dp="0" address="0xE0040FCC" value="0x11" info="DEVTYPE"/>
           <datapatch  __dp="0" __ap="0" address="0xE0040FF0" value="0x0D" info="CIDR0"/>
         </debug>
+        <trace Pname="cm0_core0">
+          <serialwire/>
+          <tracebuffer name="IgnoredCoreBuffer"/>
+        </trace>
         <algorithm name="Device/ARM/Flash/CortexM4Dual.FLM" start="0x000A0000" size="0x00020000" RAMstart="0x000C0000" RAMsize="0x00040000" Pname="cm0_core1" default="1"/>
         <flashinfo name="Internal Flash 16KB" start="0x0000F000" blankval="0x0000000000000000" filler="0xCCCCCCCCCCCCCCCC" pagesize="0x00000040" ptime="100000" etime="1000000" Pname="cm0_core1">
           <block count="64" size="0x100" arg="0"/>
@@ -222,6 +226,15 @@
       <accessportV1 __apid="1" index="10"/>
       <accessportV2 __apid="2" address="0x00200000"/>
       <accessportV2 __apid="3" address="0x00300000" parent="2"/>
+      <trace>
+        <serialwire/>
+        <serialwire/>
+        <traceport width="1"/>
+        <tracebuffer/>
+        <tracebuffer/>
+        <tracebuffer name="ETF"/>
+        <tracebuffer name="MTB"/>
+      </trace>
 
       <memory name="FLASH" access="rx" start="0x00000000" size="0x00040000" startup="1" default="1"/>
       <memory name="SRAM"  access="rwx" start="0x20000000" size="0x00020000" uninit="1" default="1"/>

@@ -7146,6 +7146,7 @@ TEST_F(ProjMgrUnitTests, InvalidContextSet) {
 }
 
 TEST_F(ProjMgrUnitTests, TestRunDebug) {
+  StdStreamRedirect streamRedirect;
   char* argv[7];
   const string& csolution = testinput_folder + "/TestRunDebug/run-debug.csolution.yml";
   argv[1] = (char*)"convert";
@@ -7155,6 +7156,9 @@ TEST_F(ProjMgrUnitTests, TestRunDebug) {
   argv[5] = (char*)"--active";
   argv[6] = (char*)"TestHW";
   EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
+  const auto& errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find("more than one valid <serialwire> element found"));
+  EXPECT_NE(string::npos, errStr.find("valid <tracebuffer> elements must be named when more than one is declared"));
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/run-debug+TestHW.cbuild-run.yml",
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW.cbuild-run.yml");
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/out/run-debug/TestHW/run-debug+TestHW.cbuild.yml",

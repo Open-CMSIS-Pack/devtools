@@ -144,3 +144,6 @@ cbuild-run:
                 info: Family level datapatch
     processors:
       - apid: 0
+    trace-sinks:
+      - serialwire: 
+      - tracebuffer: 
