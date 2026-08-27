@@ -165,6 +165,11 @@ cbuild-run:
       - dpid: 1
         swd:
           targetsel: 8
+    trace-sinks:
+      - serialwire: 
+      - tracebuffer: 
+      - tracebuffer: ETF
+      - tracebuffer: MTB
     swj: false
     dormant: true
     sdf: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0/Device/ARM/Debug/ARMCM4.sdf

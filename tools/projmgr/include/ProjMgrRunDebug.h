@@ -197,11 +197,20 @@ struct DebugPortType {
 };
 
 /**
+ * @brief trace sink type
+*/
+struct TraceSinkType {
+  std::string type;
+  std::string name;
+};
+
+/**
  * @brief debug topology type
 */
 struct DebugTopologyType {
   std::vector<DebugPortType> debugPorts;
   std::vector<ProcessorType> processors;
+  std::vector<TraceSinkType> traceSinks;
   std::optional<bool> swj;
   std::optional<bool> dormant;
   std::string sdf;

@@ -22,6 +22,8 @@ static constexpr const char* LOAD_IMAGE_SYMBOLS = "image+symbols";
 static constexpr const char* LOAD_IMAGE = "image";
 static constexpr const char* LOAD_SYMBOLS = "symbols";
 static constexpr const char* LOAD_NONE = "none";
+static constexpr const char* TRACE_SERIALWIRE = "serialwire";
+static constexpr const char* TRACE_BUFFER = "tracebuffer";
 
 ProjMgrRunDebug::ProjMgrRunDebug(void) {
   // Reserved
@@ -568,6 +570,46 @@ void ProjMgrRunDebug::CollectDebugTopology(const ContextItem& context, const vec
     if (!sdf.empty()) {
       m_runDebug.debugTopology.sdf = debugConfig->GetAbsolutePackagePath() + sdf;
     }
+  }
+
+  const auto& traces = context.rteDevice->GetEffectiveProperties("trace", context.deviceItem.pname);
+  size_t serialWireCount = 0;
+  size_t traceBufferCount = 0;
+  size_t unnamedTraceBufferCount = 0;
+  set<string> traceBufferNames;
+  for (const auto& trace : traces) {
+    // pname is deprecated for trace elements; processor-specific traces are explicitly ignored
+    if (trace->HasAttribute("Pname")) {
+      continue;
+    }
+    // the <traceport> type is currently not supported and is explicitly ignored
+    for (const auto& sink : trace->GetChildren()) {
+      const auto& type = sink->GetTag();
+      if (type == TRACE_SERIALWIRE) {
+        if (serialWireCount++ == 0) {
+          m_runDebug.debugTopology.traceSinks.push_back({ type, {} });
+        }
+      } else if (type == TRACE_BUFFER) {
+        const auto& name = sink->GetAttribute("name");
+        traceBufferCount++;
+        if (name.empty()) {
+          unnamedTraceBufferCount++;
+        }
+        if (traceBufferNames.insert(name).second) {
+          m_runDebug.debugTopology.traceSinks.push_back({ type, name });
+        }
+      }
+    }
+  }
+  if (serialWireCount > 1) {
+    ProjMgrLogger::Get().Warn("more than one valid <serialwire> element found");
+  }
+  if (traceBufferCount > 1 && unnamedTraceBufferCount > 0) {
+    ProjMgrLogger::Get().Warn("valid <tracebuffer> elements must be named when more than one is declared");
+  }
+  // no supported trace sink collected, add one unnamed element of each supported type
+  if (m_runDebug.debugTopology.traceSinks.empty()) {
+    m_runDebug.debugTopology.traceSinks = { { TRACE_SERIALWIRE, {} }, { TRACE_BUFFER, {} } };
   }
 
   // debug and access ports collections

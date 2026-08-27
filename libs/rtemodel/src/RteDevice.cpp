@@ -337,10 +337,15 @@ RteDeviceProperty* RteDeviceDebug::CreateProperty(const string& tag)
 
 string RteTraceBuffer::ConstructID()
 {
+  const string& name = GetAttribute("name");
   const string& start = GetAttribute("start");
   const string& size = GetAttribute("size");
 
   string id = RteDeviceProperty::ConstructID();
+  if (!name.empty()) {
+    id += string(":");
+    id += name;
+  }
   if (!start.empty()) {
     id += string(":");
     id += start;

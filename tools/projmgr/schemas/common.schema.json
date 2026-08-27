@@ -2542,11 +2542,32 @@
       "properties": {
         "debugports": { "$ref": "#/definitions/DebugPortsType" },
         "processors": { "$ref": "#/definitions/DebugProcessorsType" },
+        "trace-sinks": { "$ref": "#/definitions/TraceSinksType" },
         "swj":        { "type": "boolean", "description": "Device allows switching between Serial Wire Debug (SWD) and JTAG protocols (true or false)." },
         "dormant":    { "type": "boolean", "description": "Device requires the dormant state to switch debug protocols (true or false)." },
         "sdf":        { "type": "string", "description": "System Description File (*.sdf) specified in the DFP." }
       },
       "additionalProperties": false
+    },
+    "TraceSinksType": {
+      "description": "Trace sinks supported by the device.",
+      "type": "array",
+      "items": { "$ref": "#/definitions/TraceSinkType" }
+    },
+    "TraceSinkType": {
+      "type": "object",
+      "oneOf": [
+        {
+          "properties": { "serialwire": { "type": "null", "description": "Serial Wire Output trace sink." } },
+          "additionalProperties": false,
+          "required": ["serialwire"]
+        },
+        {
+          "properties": { "tracebuffer": { "type": ["string", "null"], "description": "On-device trace buffer and its optional name." } },
+          "additionalProperties": false,
+          "required": ["tracebuffer"]
+        }
+      ]
     },
     "RunDebugDescType": {
       "description": "This section describes generated contents",

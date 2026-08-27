@@ -233,3 +233,6 @@ cbuild-run:
       - pname: cm0_core1
         apid: 1
         reset-sequence: ResetSystem1
+    trace-sinks:
+      - serialwire: 
+      - tracebuffer: 
