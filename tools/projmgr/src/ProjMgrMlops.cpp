@@ -228,6 +228,15 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
 
   const auto expand = [&context](string& value) {
     value = RteUtils::ExpandAccessSequences(value, context.variables);
+    // unresolved variables are empty in MLOps settings
+    size_t start = 0;
+    while ((start = value.find('$', start)) != string::npos) {
+      const size_t end = value.find('$', start + 1);
+      if (end == string::npos) {
+        break;
+      }
+      value.erase(start, end - start + 1);
+    }
   };
 
   // get hardware processor type ("Dcore")

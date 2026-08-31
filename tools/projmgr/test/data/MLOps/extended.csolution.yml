@@ -20,6 +20,7 @@ solution:
       clayer: $AI-Layer$          # path to layer or variable
       name: $Model-Name$          # optional model name (default Algorithm), serves as namespace
       extra: $Model-Extra$        # additional model property
+      unresolved: $Undefined$     # undefined variables resolve to an empty value
     hardware:                     # hardware target for testing
       target: Hardware            # explicit <target-type>[@<set>] (default: first target-type, first set)
     simulator:                    # simulator target for testing
