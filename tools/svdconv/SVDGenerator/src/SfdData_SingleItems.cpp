@@ -954,7 +954,11 @@ bool SfdData::CreateFieldItem(SvdField* field)
   if(bitWidth > MAX_BITWIDTH_FOR_COMBO && firstContHasChilds) {
     string msg = "Enumerated values list for field '";
     msg += field->GetNameCalculated();
-    msg += "' exceeds maximum of 256 elements. List will not be generated.";
+    msg += "' will not be generated: field width ";
+    msg += to_string(bitWidth);
+    msg += " exceeds the maximum of ";
+    msg += to_string(MAX_BITWIDTH_FOR_COMBO);
+    msg += " bits.";
     LogMsg("M227", MSG(msg), field->GetLineNumber());
   }
 
