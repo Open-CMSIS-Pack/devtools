@@ -85,8 +85,7 @@ TEST(CtraceUnitTests, TraceRunReaderParsesConsumedFields)
       itm:
         enable: 0x00000006
       data:
-        - symbol-type: signed int
-          symbol-size: 1
+        - size: 4
   ctrace-refs:
     - ctrace-ref: core0/itm
       pname: core0
@@ -99,7 +98,9 @@ TEST(CtraceUnitTests, TraceRunReaderParsesConsumedFields)
       type: dwt
       stream: 2
       source: 0
-      symbol-address: 0x20000100
+      address: 0x20000100
+      data-type: signed
+      size: 1
       label: Current
 )yml");
   ASSERT_EQ(config.references.size(), 2U);
@@ -122,9 +123,9 @@ TEST(CtraceUnitTests, TraceRunReaderParsesConsumedFields)
   EXPECT_EQ(dwt.type, "dwt");
   EXPECT_EQ(dwt.traceBusId, 2U);
   EXPECT_EQ(dwt.source, 0U);
-  EXPECT_EQ(dwt.valueType, "signed int");
-  EXPECT_EQ(dwt.valueSize, 1U);
-  EXPECT_EQ(dwt.symbolAddress, std::optional<std::uint64_t>(0x20000100U));
+  EXPECT_EQ(dwt.dataType, "signed");
+  EXPECT_EQ(dwt.dataSize, 1U);
+  EXPECT_EQ(dwt.address, std::optional<std::uint64_t>(0x20000100U));
   EXPECT_EQ(dwt.label, std::optional<std::string>("Current"));
 }
 
@@ -149,6 +150,68 @@ TEST(CtraceUnitTests, TraceRunReaderAcceptsScalarAndArraySourceNotation)
   EXPECT_TRUE(config.references[0].sources == std::vector<std::uint32_t>({1U, 2U}));
   EXPECT_TRUE(config.references[1].sources == std::vector<std::uint32_t>({3U}));
   EXPECT_TRUE(config.references[2].sources == std::vector<std::uint32_t>({4U, 5U}));
+}
+
+TEST(CtraceUnitTests, TraceRunReaderUsesReferencedSetupSizeAsFallback)
+{
+  TraceRunFixture file("ctrace-run-reader-setup-size-test");
+  const auto config = file.read(R"yml(ctrace-run:
+  ctrace-setup:
+    - data:
+        - size: 2
+  ctrace-refs:
+    - ctrace-ref: data#0
+      type: dwt
+      source: 0
+      data-type: signed
+)yml");
+
+  const auto meta = CtraceRunMeta::fromConfig(config);
+  ASSERT_EQ(meta.sources().size(), 1U);
+  EXPECT_FALSE(meta.sources()[0].address.has_value());
+  EXPECT_EQ(meta.sources()[0].dataType, "signed");
+  EXPECT_EQ(meta.sources()[0].dataSize, 2U);
+}
+
+TEST(CtraceUnitTests, TraceRunReaderIgnoresUnsupportedMetadataNames)
+{
+  TraceRunFixture file("ctrace-run-reader-unsupported-data-metadata-test");
+  const auto config = file.read(R"yml(ctrace-run:
+  ctrace-setup:
+    - data:
+        - symbol-type: signed int
+          symbol-size: 1
+  ctrace-refs:
+    - ctrace-ref: data#0
+      type: dwt
+      source: 0
+      symbol-address: 0x20000100
+)yml");
+
+  const auto meta = CtraceRunMeta::fromConfig(config);
+  ASSERT_EQ(meta.sources().size(), 1U);
+  EXPECT_FALSE(meta.sources()[0].address.has_value());
+  EXPECT_EQ(meta.sources()[0].dataType, "unsigned");
+  EXPECT_EQ(meta.sources()[0].dataSize, 4U);
+}
+
+TEST(CtraceUnitTests, TraceRunReaderDefersMalformedDwtMetadataToOutputPlanning)
+{
+  TraceRunFixture file("ctrace-run-reader-malformed-data-metadata-test");
+  const auto config = file.read(R"yml(ctrace-run:
+  ctrace-refs:
+    - ctrace-ref: data#0
+      type: dwt
+      source: 0
+      address: []
+      data-type: []
+      size: []
+)yml");
+
+  ASSERT_EQ(config.references.size(), 1U);
+  EXPECT_TRUE(config.references[0].addressError.has_value());
+  EXPECT_TRUE(config.references[0].dataTypeError.has_value());
+  EXPECT_TRUE(config.references[0].dataSizeError.has_value());
 }
 
 TEST(CtraceUnitTests, TraceRunReaderAcceptsProcessorItmReferenceWithoutEnabledChannels)
@@ -251,7 +314,7 @@ TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
     - { type: event, ctrace-ref: core/event, pname: core0, info: note }
     - { type: pmu, ctrace-ref: core/pmu, pname: core1, warning: warning }
     - { type: pcsample, ctrace-ref: core/pc, pname: null, error: unavailable }
-    - { type: dwt, ctrace-ref: core/data#, source: 0, symbol-address: invalid, error: diagnostic }
+    - { type: dwt, ctrace-ref: core/data#, source: 0, address: invalid, error: diagnostic }
     - { type: dwt, ctrace-ref: core/data#x, stream: [], source: 0, error: malformed }
     - { type: dwt, ctrace-ref: core/notdata#2, error: unrouted }
     - { type: itm, ctrace-ref: core/itm0, source: 0, error: disabled }
@@ -261,7 +324,7 @@ TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
   EXPECT_EQ(config.references[0].processorName, std::optional<std::string>("core0"));
   EXPECT_EQ(config.references[1].processorName, std::optional<std::string>("core1"));
   EXPECT_FALSE(config.references[2].processorName.has_value());
-  EXPECT_FALSE(config.references[3].symbolAddress.has_value());
+  EXPECT_FALSE(config.references[3].address.has_value());
   EXPECT_FALSE(config.references[3].dataSetupIndex.has_value());
   EXPECT_FALSE(config.references[4].stream.has_value());
   EXPECT_FALSE(config.references[4].dataSetupIndex.has_value());
@@ -357,36 +420,33 @@ TEST(CtraceUnitTests, TraceRunReaderParsesReferencedDataVariants)
       data:
         - {}
         - not-a-map
-        - { symbol-type: [] }
-        - { symbol-size: [] }
-        - { symbol-type: null, symbol-size: null }
-        - { symbol-size: invalid }
+        - { size: [] }
+        - { size: null }
+        - { size: invalid }
+        - { size: 2 }
         - {}
     - pname: core1
       data: not-an-array
     - pname: core2
       data: [{}]
     - data:
-        - { symbol-type: null, symbol-size: null }
+        - { size: null }
     - data: [{}]
 )yml");
   ASSERT_EQ(config.setups.size(), 4U);
   ASSERT_EQ(config.setups[0].data.size(), 7U);
-  EXPECT_FALSE(config.setups[0].data[1].symbolType.has_value());
-  EXPECT_EQ(config.setups[0].data[2].symbolTypeError,
-            std::optional<std::string>("'data.symbol-type' must be a scalar string"));
-  EXPECT_EQ(config.setups[0].data[3].symbolSizeError,
-            std::optional<std::string>("'data.symbol-size' must be a scalar unsigned integer"));
-  EXPECT_FALSE(config.setups[0].data[4].symbolType.has_value());
-  EXPECT_FALSE(config.setups[0].data[4].symbolSize.has_value());
-  EXPECT_TRUE(config.setups[0].data[5].symbolSizeError.has_value());
-  EXPECT_TRUE(config.setups[2].data[0].symbolType == std::nullopt);
-  EXPECT_TRUE(config.setups[2].data[0].symbolSize == std::nullopt);
+  EXPECT_FALSE(config.setups[0].data[1].size.has_value());
+  EXPECT_EQ(config.setups[0].data[2].sizeError,
+            std::optional<std::string>("'data.size' must be a scalar unsigned integer"));
+  EXPECT_FALSE(config.setups[0].data[3].size.has_value());
+  EXPECT_TRUE(config.setups[0].data[4].sizeError.has_value());
+  EXPECT_EQ(config.setups[0].data[5].size, std::optional<std::uint64_t>(2U));
+  EXPECT_TRUE(config.setups[2].data[0].size == std::nullopt);
 
   expectReadError(file, R"yml(ctrace-run:
   ctrace-refs: [{ type: dwt, ctrace-ref: data#0, source: 0 }]
   ctrace-setup:
-    - data: [{ symbol-type: one, symbol-type: two }]
+    - data: [{ size: 1, size: 2 }]
 )yml",
                   "map keys must be unique");
 }

@@ -1,11 +1,18 @@
 # ctrace TODO
 
+## Pull-request cleanup
+
+- [ ] Split commit `88c3f4dc`; it mixes PC Sampling and Exception-Return handling.
+- [ ] Submit Exception-Return preservation as an independent bug-fix PR.
+
 ## DWT
 
 - [ ] Preserve DWT reference, group, and setup-binding identities when expanding source arrays.
 - [ ] Complete Armv7-M linked-comparator, range, and value-match decoding.
 - [ ] Add Armv8-M and Armv8.1-M DWT decoding.
-- [ ] Add `event`, `pmu`, and `pcsample` events to CSV, CTF, and Trace Compass output.
+- [ ] Add `event` output in its own PR.
+- [ ] Add `pmu` output in its own PR.
+- [ ] Add PC Sampling in its own PR after agreeing the sleep/`PC_SAMPLE` CTF contract.
 
 ## Multiple streams
 
@@ -14,9 +21,10 @@
 
 ## Additional decoders
 
-- [ ] Decode formatted `*.TB.raw` input by Trace Bus ID.
-- [ ] Add ETM instruction trace decoding and output.
-- [ ] Add MTB instruction trace decoding and output.
+- [ ] Add named trace-buffer discovery (`TB_<name>`) in its own PR.
+- [ ] Decode formatted `*.TB.raw` input by Trace Bus ID in its own PR.
+- [ ] Add ETM instruction trace decoding and output in its own PR.
+- [ ] Add MTB instruction trace decoding and output in its own PR.
 
 ## Dependencies and release
 

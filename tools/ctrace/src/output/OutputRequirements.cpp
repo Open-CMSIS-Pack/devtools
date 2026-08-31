@@ -103,10 +103,11 @@ static bool validateCtfRouteIdentity(const CtraceRunMeta& ctraceRunMeta, const T
       continue;
     }
     const auto& first = *found->second;
-    const auto sameMetadata = first.label == source.label && first.symbolAddress == source.symbolAddress &&
-                              first.valueType == source.valueType && first.valueSize == source.valueSize &&
-                              first.symbolTypeError == source.symbolTypeError &&
-                              first.symbolSizeError == source.symbolSizeError;
+    const auto sameMetadata = first.label == source.label && first.address == source.address &&
+                              first.dataType == source.dataType && first.dataSize == source.dataSize &&
+                              first.addressError == source.addressError &&
+                              first.dataTypeError == source.dataTypeError &&
+                              first.dataSizeError == source.dataSizeError;
     const auto indistinguishableProcessors =
         first.traceBusId == source.traceBusId && first.processorName != source.processorName;
     if ((sameMetadata && !indistinguishableProcessors) || !reported.insert(key).second) {
@@ -259,7 +260,7 @@ static std::optional<std::uint64_t> resolveCtfClock(const CtraceRunMeta& ctraceR
   return resolveDefaultCtfClock(ctraceRunMeta, selection, diagnostics);
 }
 
-/** @brief Validates value type and size metadata for selected DWT routes. */
+/** @brief Validates address, data type, and size metadata for selected DWT routes. */
 static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,
                                    DiagnosticSink& diagnostics)
 {
@@ -269,44 +270,52 @@ static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const Tra
       continue;
     }
     bool sourceValid = true;
-    if (source.symbolTypeError.has_value()) {
+    if (source.addressError.has_value()) {
       valid = false;
       sourceValid = false;
       auto context = routeContext("ctf", ctraceRunMeta, source);
-      context.emplace_back("error", *source.symbolTypeError);
-      reportRequirementError(diagnostics,
-                             "CTF output cannot use the configured ctrace-run data.symbol-type", std::move(context));
+      context.emplace_back("error", *source.addressError);
+      reportRequirementError(diagnostics, "CTF output cannot use the configured ctrace-run address",
+                             std::move(context));
     }
-    if (source.symbolSizeError.has_value()) {
+    if (source.dataTypeError.has_value()) {
       valid = false;
       sourceValid = false;
       auto context = routeContext("ctf", ctraceRunMeta, source);
-      context.emplace_back("error", *source.symbolSizeError);
-      reportRequirementError(diagnostics,
-                             "CTF output cannot use the configured ctrace-run data.symbol-size", std::move(context));
+      context.emplace_back("error", *source.dataTypeError);
+      reportRequirementError(diagnostics, "CTF output cannot use the configured ctrace-run data-type",
+                             std::move(context));
+    }
+    if (source.dataSizeError.has_value()) {
+      valid = false;
+      sourceValid = false;
+      auto context = routeContext("ctf", ctraceRunMeta, source);
+      context.emplace_back("error", *source.dataSizeError);
+      reportRequirementError(diagnostics, "CTF output cannot use the configured ctrace-run size",
+                             std::move(context));
     }
     if (!sourceValid) {
       continue;
     }
-    const auto validType = TraceRunSchema::isDwtDataType(source.valueType);
-    const auto* valueVariant = CtfSchema::valueVariantForTraceRunType(source.valueType, source.valueSize);
+    const auto validType = TraceRunSchema::isDwtDataType(source.dataType);
+    const auto* valueVariant = CtfSchema::valueVariantForTraceRunType(source.dataType, source.dataSize);
     if (!validType) {
       valid = false;
       auto context = routeContext("ctf", ctraceRunMeta, source);
-      context.emplace_back("dataType", source.valueType);
+      context.emplace_back("dataType", source.dataType);
       reportRequirementError(diagnostics,
-                             "CTF output cannot use ctrace-run data.symbol-type '" + source.valueType + "'; " +
+                             "CTF output cannot use ctrace-run data-type '" + source.dataType + "'; " +
                                  std::string(CtfSchema::ValueTypeRequirements),
                              std::move(context));
     }
-    if (!TraceRunSchema::isDwtDataSize(source.valueSize) || (validType && valueVariant == nullptr)) {
+    if (!TraceRunSchema::isDwtDataSize(source.dataSize) || (validType && valueVariant == nullptr)) {
       valid = false;
       auto context = routeContext("ctf", ctraceRunMeta, source);
-      context.emplace_back("dataType", source.valueType);
-      context.emplace_back("dataSize", std::to_string(source.valueSize));
+      context.emplace_back("dataType", source.dataType);
+      context.emplace_back("dataSize", std::to_string(source.dataSize));
       reportRequirementError(diagnostics,
-                             "CTF output cannot use ctrace-run data.symbol-size " + std::to_string(source.valueSize) +
-                                 " with data.symbol-type '" + source.valueType + "'; " +
+                             "CTF output cannot use ctrace-run size " + std::to_string(source.dataSize) +
+                                 " with data-type '" + source.dataType + "'; " +
                                  std::string(CtfSchema::ValueTypeRequirements),
                              std::move(context));
     }
@@ -332,9 +341,9 @@ static std::vector<ResolvedTraceSource> resolveCtfSources(const CtraceRunMeta& c
         route.source,
         route.traceBusId,
         route.label,
-        route.symbolAddress,
-        route.valueType,
-        static_cast<std::uint8_t>(route.valueSize),
+        route.address,
+        route.dataType,
+        static_cast<std::uint8_t>(route.dataSize),
     });
   }
   return sources;

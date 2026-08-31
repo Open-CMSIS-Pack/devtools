@@ -277,20 +277,30 @@ static CtraceRunSourceMeta sourceMeta(const TraceRunConfig& config, const TraceR
                                       std::uint32_t source, const ProcessorIdentity& processorIdentity)
 {
   const auto* dataSetup = reference.type == "dwt" ? referencedDataSetup(config, reference) : nullptr;
-  return {
-      reference.type,
-      processorIdentity.canonicalName(reference.processorName),
-      static_cast<std::uint8_t>(reference.stream.value_or(0U)),
-      source,
-      reference.label,
-      reference.type == "dwt" ? reference.symbolAddress : std::nullopt,
-      dataSetup != nullptr ? dataSetup->symbolType.value_or(std::string(TraceRunSchema::kDefaultDwtDataType))
-                           : std::string(TraceRunSchema::kDefaultDwtDataType),
-      dataSetup != nullptr ? dataSetup->symbolSize.value_or(TraceRunSchema::kDefaultDwtDataSize)
-                           : TraceRunSchema::kDefaultDwtDataSize,
-      dataSetup != nullptr ? dataSetup->symbolTypeError : std::nullopt,
-      dataSetup != nullptr ? dataSetup->symbolSizeError : std::nullopt,
-  };
+  CtraceRunSourceMeta meta;
+  meta.type = reference.type;
+  meta.processorName = processorIdentity.canonicalName(reference.processorName);
+  meta.traceBusId = static_cast<std::uint8_t>(reference.stream.value_or(0U));
+  meta.source = source;
+  meta.label = reference.label;
+  if (reference.type != "dwt") {
+    return meta;
+  }
+
+  meta.address = reference.address;
+  meta.addressError = reference.addressError;
+  if (reference.dataType.has_value() || reference.dataTypeError.has_value()) {
+    meta.dataType = reference.dataType.value_or(std::string(TraceRunSchema::kDefaultDwtDataType));
+    meta.dataTypeError = reference.dataTypeError;
+  }
+  if (reference.dataSize.has_value() || reference.dataSizeError.has_value()) {
+    meta.dataSize = reference.dataSize.value_or(TraceRunSchema::kDefaultDwtDataSize);
+    meta.dataSizeError = reference.dataSizeError;
+  } else if (dataSetup != nullptr) {
+    meta.dataSize = dataSetup->size.value_or(TraceRunSchema::kDefaultDwtDataSize);
+    meta.dataSizeError = dataSetup->sizeError;
+  }
+  return meta;
 }
 
 /** @brief Returns or creates accumulated metadata for one processor. */

@@ -81,8 +81,8 @@ inline constexpr std::array<ValueVariant, 7U> ValueVariants{{
 }};
 
 inline constexpr std::string_view ValueTypeRequirements =
-    "supported data.symbol-type values are 'unsigned int', 'signed int', and 'float'; "
-    "data.symbol-size must be 1, 2, or 4, and float requires size 4";
+    "supported data-type values are 'unsigned', 'signed', and 'float'; "
+    "size must be 1, 2, or 4, and float requires size 4";
 
 /** @brief Returns the schema descriptor for a value tag. */
 constexpr const ValueVariant& valueVariant(ValueTag tag)
@@ -97,8 +97,8 @@ constexpr const ValueVariant* valueVariantForTraceRunType(const std::string_view
     return byteSize == 4U ? &valueVariant(ValueTag::Float32) : nullptr;
   }
 
-  const auto signedInteger = typeName == "signed int";
-  if (!signedInteger && typeName != "unsigned int") {
+  const auto signedInteger = typeName == "signed";
+  if (!signedInteger && typeName != "unsigned") {
     return nullptr;
   }
   if (byteSize == 1U) {

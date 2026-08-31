@@ -25,11 +25,12 @@ struct CtraceRunSourceMeta {
   std::uint8_t traceBusId = 0U;
   std::uint32_t source = 0;
   std::optional<std::string> label;
-  std::optional<std::uint64_t> symbolAddress;
-  std::string valueType = "unsigned int";
-  std::uint64_t valueSize = 4U;
-  std::optional<std::string> symbolTypeError;
-  std::optional<std::string> symbolSizeError;
+  std::optional<std::uint64_t> address;
+  std::string dataType = "unsigned";
+  std::uint64_t dataSize = 4U;
+  std::optional<std::string> addressError;
+  std::optional<std::string> dataTypeError;
+  std::optional<std::string> dataSizeError;
 };
 
 /** @brief Stores normalized timestamp metadata for one processor stream. */

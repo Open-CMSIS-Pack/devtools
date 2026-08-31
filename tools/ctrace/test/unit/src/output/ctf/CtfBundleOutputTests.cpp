@@ -94,9 +94,9 @@ static ResolvedTraceSource resolvedSource(const CtraceRunSourceMeta& source)
       source.source,
       source.traceBusId,
       source.label,
-      source.symbolAddress,
-      source.valueType,
-      static_cast<std::uint8_t>(source.valueSize),
+      source.address,
+      source.dataType,
+      static_cast<std::uint8_t>(source.dataSize),
   };
 }
 
@@ -180,19 +180,18 @@ TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
   auto signedByteReference = TraceRunTestSupport::makeReference("dwt", std::nullopt, 7U, {0U}, "opaque/signed-byte");
   signedByteReference.dataSetupIndex = 0U;
   signedByteReference.label = "Sine";
+  signedByteReference.dataType = "signed";
+  signedByteReference.dataSize = 1U;
   traceRun.references.push_back(signedByteReference);
 
   auto reference = TraceRunTestSupport::makeReference("dwt", std::nullopt, std::nullopt, {2U}, "opaque/current");
   reference.dataSetupIndex = 2U;
   reference.label = "Current\n\t\"\\\x01";
-  reference.symbolAddress = 0x24000e88U;
+  reference.address = 0x24000e88U;
+  reference.dataType = "signed";
+  reference.dataSize = 4U;
   traceRun.references.push_back(reference);
   TraceRunSetup setup;
-  setup.data.resize(3U);
-  setup.data[0].symbolType = "signed int";
-  setup.data[0].symbolSize = 1U;
-  setup.data[2].symbolType = "signed int";
-  setup.data[2].symbolSize = 4U;
   setup.timestamps = TraceRunTimestampSetup{280000000U, 1U};
   traceRun.setups.push_back(std::move(setup));
 
@@ -203,7 +202,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
   auto options = std::move(*outputPlan.ctf);
   ASSERT_TRUE(!options.sources.empty()) << "resolved CTF source missing";
   ASSERT_TRUE(options.sources.front().traceBusId == 7U) << "resolved CTF source must retain its Trace Bus ID";
-  ASSERT_TRUE(options.sources.front().valueType == "signed int") << "resolved CTF source must retain its value type";
+  ASSERT_TRUE(options.sources.front().dataType == "signed") << "resolved CTF source must retain its data type";
   CtfBundleOutput output(std::move(options));
   output.start();
   output.writeEvent(atCycle(onStream(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Write}}, 7U), 100U));
@@ -213,9 +212,9 @@ TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
   const auto stream = readTestBinaryFile(outputDir / "stream_0");
 
   ASSERT_TRUE(metadata.find("freq = 280000000") != std::string::npos) << "CTF trace-run clock mismatch";
-  ASSERT_TRUE(metadata.find("cmsis_dwt0_value_type = \"signed int\"") != std::string::npos)
+  ASSERT_TRUE(metadata.find("cmsis_dwt0_value_type = \"signed\"") != std::string::npos)
       << "CTF signed-byte source type mismatch";
-  ASSERT_TRUE(metadata.find("cmsis_dwt2_value_type = \"signed int\"") != std::string::npos)
+  ASSERT_TRUE(metadata.find("cmsis_dwt2_value_type = \"signed\"") != std::string::npos)
       << "CTF trace-run type mismatch";
   ASSERT_TRUE(metadata.find("cmsis_dwt2_address_start = \"0x24000E88\"") != std::string::npos)
       << "CTF trace-run start address mismatch";
@@ -245,9 +244,9 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   defaultReference.dataSetupIndex = 0U;
   defaultTraceRun.references.push_back(defaultReference);
   const auto defaultMeta = CtraceRunMeta::fromConfig(defaultTraceRun);
-  ASSERT_TRUE(defaultMeta.sources().size() == 1U && defaultMeta.sources().front().valueType == "unsigned int" &&
-              defaultMeta.sources().front().valueSize == 4U)
-      << "missing DWT data.symbol-type/data.symbol-size must default to unsigned int/4";
+  ASSERT_TRUE(defaultMeta.sources().size() == 1U && defaultMeta.sources().front().dataType == "unsigned" &&
+              defaultMeta.sources().front().dataSize == 4U)
+      << "missing DWT data-type/size must default to unsigned/4";
 
   const auto defaultOutputDir = root / "default";
   auto defaultOptions = makeCtfBundleConfig(defaultOutputDir, 1000000U);
@@ -265,10 +264,10 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
       << "DWT size mismatch must be reported once per channel";
 
   TraceRunConfig signedTraceRun;
-  TraceRunSetup signedSetup;
-  signedSetup.data.push_back(TraceRunDataSetup{"signed int", 1U});
-  signedTraceRun.setups.push_back(std::move(signedSetup));
-  signedTraceRun.references.push_back(defaultReference);
+  auto signedReference = defaultReference;
+  signedReference.dataType = "signed";
+  signedReference.dataSize = 1U;
+  signedTraceRun.references.push_back(signedReference);
   const auto signedMeta = CtraceRunMeta::fromConfig(signedTraceRun);
   ASSERT_TRUE(signedMeta.sources().size() == 1U) << "signed DWT source missing";
   const auto signedOutputDir = root / "signed";
@@ -280,17 +279,16 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   signedOutput.writeEvent(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Write}});
   signedOutput.stop();
   ASSERT_TRUE(readFirstCtfDwtValueTag(signedOutputDir / "stream_0") == 0U)
-      << "explicit signed int/1 metadata must select the signed 8-bit CTF variant";
+      << "explicit signed/1 metadata must select the signed 8-bit CTF variant";
   ASSERT_TRUE(signedDiagnostics.events().empty()) << "matching DWT sizes must not produce a warning";
 
   TraceRunConfig traceRun;
   traceRun.path = "ambiguous-streams.ctrace-run.yml";
-  TraceRunSetup setup;
-  setup.data.push_back(TraceRunDataSetup{"signed int", 4U});
-  traceRun.setups.push_back(std::move(setup));
   auto first = TraceRunTestSupport::makeReference("dwt", std::nullopt, 1U, {0U}, "opaque/dwt-route");
   first.dataSetupIndex = 0U;
   first.label = "core-one";
+  first.dataType = "signed";
+  first.dataSize = 4U;
   TraceRunReference second = first;
   second.stream = 2U;
   second.label = "core-two";
