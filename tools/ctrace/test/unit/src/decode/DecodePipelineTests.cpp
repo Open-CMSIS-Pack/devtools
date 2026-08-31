@@ -581,6 +581,28 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesDwtEventAndPmuPackets)
   ASSERT_TRUE(foundPmu) << "OpenCSD PMU-overflow packet must survive post-decoding";
 }
 
+TEST(CtraceUnitTests, testDecodePipelinePreservesPeriodicPcSamples)
+{
+  const std::uint8_t trace[] = {
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U,
+      0x17U, 0x34U, 0x12U, 0x00U, 0x08U,
+      0x15U, 0x00U,
+  };
+  const auto decoded = decodeTrace({rawBytes(trace)});
+
+  std::vector<PcSampleTraceEvent> samples;
+  for (const auto& event : decoded.events) {
+    if (const auto* sample = traceEventPayload<PcSampleTraceEvent>(event)) {
+      samples.push_back(*sample);
+    }
+  }
+  ASSERT_EQ(samples.size(), 2U) << "OpenCSD periodic PC-sample packet count mismatch";
+  EXPECT_EQ(samples[0].pc, 0x08001234U) << "OpenCSD periodic PC sample payload mismatch";
+  EXPECT_FALSE(samples[0].sleeping) << "OpenCSD periodic PC sample payload mismatch";
+  EXPECT_EQ(samples[1].pc, 0U) << "OpenCSD periodic PC sleep indication mismatch";
+  EXPECT_TRUE(samples[1].sleeping) << "OpenCSD periodic PC sleep indication mismatch";
+}
+
 TEST(CtraceUnitTests, testDecodePipelineDoesNotInjectSync)
 {
   const std::uint8_t validWithoutAsync[] = {0x01U, static_cast<std::uint8_t>('A')};

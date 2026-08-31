@@ -13,10 +13,11 @@ backend-independent semantic events. Output backends consume these events to cre
 
 The first release profile supports SWO data containing ITM and DWT packets. The command line accepts the stable type
 names `itm`, `dwt`, `event`, `pmu`, `exception`, `pcsample`, `global_ts`, `overflow`, and `error`. Output semantics are
-currently implemented for `itm`, `dwt`, `exception`, `global_ts`, `overflow`, and `error`. DWT event-counter and PMU
-packets are retained internally but are not mapped to their selectors yet; periodic PC samples remain disabled. Trace
-Bus input is discovered so that a complete trace directory can be inspected, but `*.TB.raw` files are reported and
-skipped until a decoder is implemented.
+currently implemented for `itm`, `dwt`, `exception`, `pcsample`, `global_ts`, `overflow`, and `error`. DWT event-counter
+and PMU packets are retained internally but are not mapped to their selectors yet. Periodic PC samples reach CSV and
+CTF as semantic events; the CTF event distinguishes a sampled PC from a processor-sleep indication, and Trace Compass
+shows processor-sleep intervals as a timeline. Trace Bus input is discovered so that a complete trace directory can be
+inspected, but `*.TB.raw` files are reported and skipped until a decoder is implemented.
 
 The architecture separates protocol decoding, semantic interpretation, and output generation. This keeps output
 formats independent of OpenCSD and allows another raw trace channel to reuse the event model and output backends.

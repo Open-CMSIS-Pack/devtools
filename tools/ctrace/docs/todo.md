@@ -12,7 +12,6 @@
 - [ ] Add Armv8-M and Armv8.1-M DWT decoding.
 - [ ] Add `event` output in its own PR.
 - [ ] Add `pmu` output in its own PR.
-- [ ] Add PC Sampling in its own PR after agreeing the sleep/`PC_SAMPLE` CTF contract.
 
 ## Multiple streams
 

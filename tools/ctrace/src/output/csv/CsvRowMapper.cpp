@@ -159,6 +159,10 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
   } else if (const auto* exception = traceEventPayload<ExceptionTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(exception->number);
     row[column(CsvColumn::Value)] = exceptionActionCsvValue(exception->action);
+  } else if (const auto* sample = traceEventPayload<PcSampleTraceEvent>(event)) {
+    if (!sample->sleeping) {
+      row[column(CsvColumn::Pc)] = hexValue(sample->pc, 4);
+    }
   } else if (const auto* timestamp = traceEventPayload<GlobalTimestampTraceEvent>(event)) {
     row[column(CsvColumn::Cycles)] = std::to_string(timestamp->value);
   } else if (const auto* overflow = traceEventPayload<OverflowTraceEvent>(event)) {

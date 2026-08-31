@@ -200,6 +200,10 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
     if (selected) {
       writeDwtAddrEvent(event, *address);
     }
+  } else if (const auto* sample = traceEventPayload<PcSampleTraceEvent>(event)) {
+    if (selected) {
+      writePcSampleEvent(event, *sample);
+    }
   } else if (isTraceEvent<OverflowTraceEvent>(event)) {
     auto& streamState = m_streamStates[event.traceBusId];
     if (event.quality.has_value()) {
@@ -229,6 +233,25 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
       }
     }
   }
+}
+
+void CtfEncoder::writePcSampleEvent(const TraceEvent& event, const PcSampleTraceEvent& sample)
+{
+  const auto pcSize = sample.sleeping ? 0U : 4U;
+  const auto payloadSize = 1U + pcSize + 1U + 4U;
+  const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
+  const auto quality = computeSampleQuality(event);
+  const auto state = CtfSchema::value(sample.sleeping ? CtfSchema::PcSampleState::Sleep
+                                                       : CtfSchema::PcSampleState::Pc);
+  m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::PcSample), eventTimestamp, event.traceBusId, payloadSize,
+                       [&](CtfStreamWriter::Record& record) {
+                         record.writeU8(state);
+                         if (!sample.sleeping) {
+                           record.writeU32(sample.pc);
+                         }
+                         record.writeU8(quality.first);
+                         record.writeU32(quality.second);
+                       });
 }
 
 std::uint64_t CtfEncoder::allocateEventTimestamp(std::uint8_t traceBusId)

@@ -45,6 +45,7 @@ static std::string displayErrorMessage(const TraceEvent& event, const TraceIssue
   case TraceIssueCode::DecodeError:
   case TraceIssueCode::InvalidExceptionAction:
   case TraceIssueCode::UnsupportedDwtAddressPayload:
+  case TraceIssueCode::UnsupportedDwtPcSamplePayload:
   case TraceIssueCode::OpenCsdDecodeError:
     return atRawOffset("trace decode error", event);
   }

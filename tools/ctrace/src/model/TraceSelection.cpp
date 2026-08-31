@@ -54,6 +54,12 @@ static std::optional<TraceEventType> typeFor(const PmuTraceEvent&)
   return std::nullopt;
 }
 
+/** @brief Exposes periodic DWT PC samples through their public output selector. */
+static std::optional<TraceEventType> typeFor(const PcSampleTraceEvent&)
+{
+  return TraceEventType::PcSample;
+}
+
 /** @brief Excludes local timestamp control packets from type selection. */
 static std::optional<TraceEventType> typeFor(const LocalTimestampTraceEvent&)
 {

@@ -26,6 +26,7 @@ enum class EventId : std::uint32_t {
   TraceStatus = 3U,
   Exception = 4U,
   GlobalTimestamp = 5U,
+  PcSample = 6U,
 };
 
 /** @brief Classifies CTF trace-status records. */
@@ -47,6 +48,12 @@ enum class DwtAccess : std::uint8_t {
 enum class ExceptionAction : std::uint8_t {
   Entered = 0U,
   Exited = 1U,
+};
+
+/** @brief Identifies whether a periodic PC sample carries a PC or reports processor sleep. */
+enum class PcSampleState : std::uint8_t {
+  Sleep = 0U,
+  Pc = 1U,
 };
 
 /** @brief Identifies the supported CTF sample value encodings. */
@@ -147,6 +154,12 @@ constexpr std::uint8_t value(ExceptionAction action)
   return static_cast<std::uint8_t>(action);
 }
 
+/** @brief Returns the integer representation of a PC-sample state. */
+constexpr std::uint8_t value(PcSampleState state)
+{
+  return static_cast<std::uint8_t>(state);
+}
+
 /** @brief Returns the stable schema name of a CTF event ID. */
 constexpr std::string_view eventName(EventId id)
 {
@@ -163,6 +176,8 @@ constexpr std::string_view eventName(EventId id)
     return "EXCEPTION";
   case EventId::GlobalTimestamp:
     return "GLOBAL_TIMESTAMP";
+  case EventId::PcSample:
+    return "PC_SAMPLE";
   }
   return "UNKNOWN";
 }

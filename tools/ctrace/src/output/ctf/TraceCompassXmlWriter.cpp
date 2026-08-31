@@ -79,6 +79,8 @@ static std::string valueHandlers(CtfSchema::EventId eventId, const char* prefix,
 /** @brief Generates the Trace Compass state-provider definition. */
 static std::string stateProviderXml()
 {
+  // Numeric time-graph states are exposed as TSP style keys; string states are
+  // serialized without a style and appear as gaps in compatible clients.
   std::ostringstream xml;
   xml << R"(    <stateProvider version="__SWO_ANALYSIS_VERSION__" id="arm.cmsis.swo.analysis.v1">
         <head><label value="SWO Trace Analysis" /></head>
@@ -135,12 +137,66 @@ static std::string stateProviderXml()
             </stateChange>
         </eventHandler>
         <eventHandler eventName=")"
+      << CtfSchema::eventName(CtfSchema::EventId::PcSample) << R"(">
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_pc_sample_state" />
+                        <stateValue type="long" value=")"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::PcSampleState::Sleep)) << R"(" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value=")"
+      << CtfSchema::eventName(CtfSchema::EventId::PcSample) << R"(" />
+                    <stateAttribute type="constant" value="Sleep" />
+                    <stateValue type="int" value=")"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::PcSampleState::Sleep)) << R"(" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_pc_sample_state" />
+                        <stateValue type="long" value=")"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::PcSampleState::Pc)) << R"(" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value=")"
+      << CtfSchema::eventName(CtfSchema::EventId::PcSample) << R"(" />
+                    <stateAttribute type="constant" value="Sleep" />
+                    <stateValue type="null" />
+                </then>
+            </stateChange>
+        </eventHandler>
+        <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus) << R"(">
             <stateChange>
                 <stateAttribute type="constant" value=")"
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus) << R"(" />
                 <stateAttribute type="eventField" value="cmsis_trace_status_reason" />
                 <stateValue type="eventField" value="cmsis_trace_status_reason" />
+            </stateChange>
+            <stateChange>
+                <if>
+                    <or>
+                        <condition>
+                            <stateValue type="eventField" value="cmsis_trace_status_reason" />
+                            <stateValue type="string" value="overflow" />
+                        </condition>
+                        <condition>
+                            <stateValue type="eventField" value="cmsis_trace_status_reason" />
+                            <stateValue type="string" value="data_loss" />
+                        </condition>
+                    </or>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value=")"
+      << CtfSchema::eventName(CtfSchema::EventId::PcSample) << R"(" />
+                    <stateAttribute type="constant" value="Sleep" />
+                    <stateValue type="null" />
+                </then>
             </stateChange>
         </eventHandler>
     </stateProvider>
@@ -186,6 +242,14 @@ static std::string viewsXml()
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus)
       << R"(/*" displayText="true"><display type="self" /><name type="self" /></entry>
+    </timeGraphView>
+    <timeGraphView id="arm.cmsis.swo.tg.pc_sample.v1">
+        <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value="PC Sampling" /></head>
+        <definedValue name="Sleep" value=")"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::PcSampleState::Sleep)) << R"(" color="#5B8FF9" />
+        <entry path=")"
+      << CtfSchema::eventName(CtfSchema::EventId::PcSample)
+      << R"(/*" displayText="true"><display type="self" /></entry>
     </timeGraphView>
 )";
   return xml.str();
