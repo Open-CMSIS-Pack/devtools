@@ -54,6 +54,7 @@ struct MlopsVelaType {
 struct MlopsModelType {
   std::string clayer;
   std::string name;
+  std::map<std::string, std::string> additional;
 };
 
 /**

@@ -226,6 +226,10 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   // mlops description
   mlops.description = solutionMlops.description;
 
+  const auto expand = [&context](string& value) {
+    value = RteUtils::ExpandAccessSequences(value, context.variables);
+  };
+
   // get hardware processor type ("Dcore")
   if (context.targetAttributes.find("Dcore") != context.targetAttributes.end()) {
     mlops.processor.type = context.targetAttributes.at("Dcore");
@@ -234,6 +238,8 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   // npu type and macs
   mlops.npu.type = solutionMlops.npu.type;
   mlops.npu.macs = solutionMlops.npu.macs;
+  expand(mlops.npu.type);
+  expand(mlops.npu.macs);
 
   // filter npu info items
   vector<NpuInfoItem> npuInfoItems;
@@ -269,18 +275,18 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   }
 
   // print warnings if the required NPU type and/or MACs do not match the DFP device information
-  if (!solutionMlops.npu.type.empty()) {
-    const auto matchesType = [&solutionMlops](const NpuInfoItem& npu) {
-      return npu.type == solutionMlops.npu.type;
+  if (!mlops.npu.type.empty()) {
+    const auto matchesType = [&mlops](const NpuInfoItem& npu) {
+      return npu.type == mlops.npu.type;
     };
     if (find_if(npuInfoItems.begin(), npuInfoItems.end(), matchesType) == npuInfoItems.end()) {
       ProjMgrLogger::Get().Warn("mlops.npu.type value does not match DFP device information", "", csolution.path);
     }
   }
-  if (!solutionMlops.npu.macs.empty()) {
-    const auto matchesMacs = [&solutionMlops](const NpuInfoItem& npu) {
-      return (solutionMlops.npu.type.empty() || npu.type == solutionMlops.npu.type) &&
-        RteUtils::StringToULL(npu.macs) == RteUtils::StringToULL(solutionMlops.npu.macs);
+  if (!mlops.npu.macs.empty()) {
+    const auto matchesMacs = [&mlops](const NpuInfoItem& npu) {
+      return (mlops.npu.type.empty() || npu.type == mlops.npu.type) &&
+        RteUtils::StringToULL(npu.macs) == RteUtils::StringToULL(mlops.npu.macs);
     };
     if (find_if(npuInfoItems.begin(), npuInfoItems.end(), matchesMacs) == npuInfoItems.end()) {
       ProjMgrLogger::Get().Warn("mlops.npu.macs value does not match DFP device information", "", csolution.path);
@@ -288,7 +294,11 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   }
 
   // vela options
-  mlops.vela.options = BuildVelaOptions(mlops.npu, solutionMlops.vela);
+  MlopsVelaItem vela = solutionMlops.vela;
+  expand(vela.system);
+  expand(vela.memory);
+  expand(vela.misc);
+  mlops.vela.options = BuildVelaOptions(mlops.npu, vela);
 
   // vela ini
   if (solutionMlops.vela.ini.empty()) {
@@ -318,13 +328,19 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   // model name and clayer
   if (!solutionMlops.model.clayer.empty()) {
     mlops.model.name = solutionMlops.model.name.empty() ? "Algorithm" : solutionMlops.model.name;
+    expand(mlops.model.name);
     mlops.model.clayer = solutionMlops.model.clayer;
+    expand(mlops.model.clayer);
     if (!m_worker->ProcessSequenceRelative(context, mlops.model.clayer, csolution.directory, false)) {
       return false;
     }
     if (RteFsUtils::IsRelative(mlops.model.clayer)) {
       RteFsUtils::NormalizePath(mlops.model.clayer, context.directories.cprj);
     }    
+  }
+  mlops.model.additional = solutionMlops.model.additional;
+  for (auto& [key, value] : mlops.model.additional) {
+    expand(value);
   }
   
   if (hardwareFound) {

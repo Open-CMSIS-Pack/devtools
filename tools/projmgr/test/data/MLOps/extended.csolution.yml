@@ -9,16 +9,17 @@ solution:
   mlops:                          # enable *.cbuild-mlops.yml
     description: ML model with extended configuration
     npu:
-      type: Ethos-U85             # specify NPU (default: first NPU from DFP device features)
-      macs: 256                   # specify MACs (default: first NPU from DFP device features)
+      type: $NPU-Type$            # specify NPU (default: first NPU from DFP device features)
+      macs: $NPU-Macs$            # specify MACs (default: first NPU from DFP device features)
     vela:     
       ini: vela/custom.ini        # explicit INI file (default: use INI file from DFP)
-      system: System_Config       # system configuration from INI file
-      memory: Memory_Mode         # memory configuration from INI file
-      misc: --extra-options       # string with additional options for Vela
+      system: $Vela-System$       # system configuration from INI file
+      memory: $Vela-Memory$       # memory configuration from INI file
+      misc: $Vela-Misc$           # additional options for Vela
     model:    
       clayer: $AI-Layer$          # path to layer or variable
-      name: Algorithm             # optional model name (default Algorithm), serves as namespace
+      name: $Model-Name$          # optional model name (default Algorithm), serves as namespace
+      extra: $Model-Extra$        # additional model property
     hardware:                     # hardware target for testing
       target: Hardware            # explicit <target-type>[@<set>] (default: first target-type, first set)
     simulator:                    # simulator target for testing
@@ -29,6 +30,13 @@ solution:
       device: RteTest_ARMCM0_Dual
       variables:
         - AI-Layer: $SolutionDir()$/ai_layer/ai_layer.clayer.yml
+        - NPU-Type: Ethos-U85
+        - NPU-Macs: 256
+        - Vela-System: System_Config
+        - Vela-Memory: Memory_Mode
+        - Vela-Misc: --extra-options
+        - Model-Name: ResolvedAlgorithm
+        - Model-Extra: extra-value
       target-set:
         - set:
           images:

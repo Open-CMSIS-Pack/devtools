@@ -11,7 +11,8 @@ cbuild-mlops:
     options: --accelerator-config ethos-u85-256 --system-config System_Config --memory-mode Memory_Mode --extra-options
   model:
     clayer: ai_layer/ai_layer.clayer.yml
-    name: Algorithm
+    name: ResolvedAlgorithm
+    extra: extra-value
   hardware:
     active: Hardware
     cbuild-run: out/extended+Hardware.cbuild-run.yml
