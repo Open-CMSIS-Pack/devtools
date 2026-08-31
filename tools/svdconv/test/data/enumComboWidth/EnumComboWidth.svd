@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+
+<device schemaVersion="1.1"
+xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
+  <name>EnumComboWidth</name>
+  <version>1.0</version>
+  <description>Test the SFD combo field width limit</description>
+  <addressUnitBits>8</addressUnitBits>
+  <width>32</width>
+  <size>0x20</size>
+  <resetValue>0x0</resetValue>
+  <resetMask>0xFFFFFFFF</resetMask>
+
+  <cpu>
+    <name>CM4</name>
+    <revision>r0p0</revision>
+    <endian>little</endian>
+    <fpuPresent>false</fpuPresent>
+    <nvicPrioBits>4</nvicPrioBits>
+    <deviceNumInterrupts>16</deviceNumInterrupts>
+  </cpu>
+
+  <peripherals>
+    <peripheral>
+      <name>TEST</name>
+      <description>Test peripheral</description>
+      <groupName>Enum Combo Width</groupName>
+      <baseAddress>0x40000000</baseAddress>
+      <addressBlock>
+        <offset>0x0</offset>
+        <size>0x4</size>
+        <usage>registers</usage>
+      </addressBlock>
+      <registers>
+        <register>
+          <name>CTRL</name>
+          <description>Test control register</description>
+          <addressOffset>0x0</addressOffset>
+          <size>0x20</size>
+          <access>read-only</access>
+          <resetValue>0x0</resetValue>
+          <fields>
+            <field>
+              <name>SIX_BIT</name>
+              <description>Six bit field</description>
+              <bitOffset>0</bitOffset>
+              <bitWidth>6</bitWidth>
+              <enumeratedValues>
+                <enumeratedValue>
+                  <name>ONE</name>
+                  <description>Value one</description>
+                  <value>1</value>
+                </enumeratedValue>
+              </enumeratedValues>
+            </field>
+            <field>
+              <name>SEVEN_BIT</name>
+              <description>Seven bit field</description>
+              <bitOffset>8</bitOffset>
+              <bitWidth>7</bitWidth>
+              <enumeratedValues>
+                <enumeratedValue>
+                  <name>NINE</name>
+                  <description>Value nine</description>
+                  <value>9</value>
+                </enumeratedValue>
+              </enumeratedValues>
+            </field>
+          </fields>
+        </register>
+      </registers>
+    </peripheral>
+  </peripherals>
+</device>
