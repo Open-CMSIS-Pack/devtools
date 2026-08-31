@@ -252,3 +252,53 @@ TEST_F(SvdConvIntegTests, CheckPosMaskDimFields) {
   EXPECT_EQ(string::npos, buf.find("#define TIM_DATA_PIN_Pos"));
   EXPECT_EQ(string::npos, buf.find("#define TIM_DATA_PIN_Msk"));
 }
+
+TEST_F(SvdConvIntegTests, CheckEnumComboWidthLimit) {
+  const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/enumComboWidth/EnumComboWidth.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/enumComboWidth";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=sfd", "--create-folder" });
+
+  SvdConv svdConv;
+  EXPECT_EQ(1, svdConv.Check(args, args, nullptr));
+
+  const auto msgs = ErrLog::Get()->GetLogMessages();
+  size_t m227Count = 0;
+  string allMessages;
+  for(const auto& msg : msgs) {
+    allMessages += msg;
+    if(msg.find("M227") != string::npos) {
+      ++m227Count;
+    }
+  }
+  EXPECT_EQ(1U, m227Count);
+  EXPECT_NE(string::npos, allMessages.find("field 'SEVEN_BIT'"));
+  EXPECT_NE(string::npos, allMessages.find("field width 7"));
+  EXPECT_NE(string::npos, allMessages.find("maximum of 6 bits"));
+
+  const string testOutSfd = testOut + "/EnumComboWidth.sfd";
+  ASSERT_TRUE(RteFsUtils::Exists(testOutSfd));
+
+  string buf;
+  RteFsUtils::ReadFile(testOutSfd, buf);
+  ASSERT_FALSE(buf.empty());
+
+  const auto sixBitField = buf.find("SFDITEM_FIELD__TEST_CTRL_SIX_BIT");
+  const auto sevenBitField = buf.find("SFDITEM_FIELD__TEST_CTRL_SEVEN_BIT");
+  ASSERT_NE(string::npos, sixBitField);
+  ASSERT_NE(string::npos, sevenBitField);
+  ASSERT_LT(sixBitField, sevenBitField);
+
+  const auto sixBitCombo = buf.find("//    <combo>", sixBitField);
+  EXPECT_NE(string::npos, sixBitCombo);
+  EXPECT_LT(sixBitCombo, sevenBitField);
+  const auto sixBitLastValue = buf.find("//        <63=>", sixBitCombo);
+  EXPECT_NE(string::npos, sixBitLastValue);
+  EXPECT_LT(sixBitLastValue, sevenBitField);
+
+  const auto sevenBitEdit = buf.find("//    <edit>", sevenBitField);
+  EXPECT_NE(string::npos, sevenBitEdit);
+  EXPECT_EQ(string::npos, buf.find("//    <combo>", sevenBitField));
+}
