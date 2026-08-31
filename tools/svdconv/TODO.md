@@ -1,6 +1,7 @@
 # SVDConv TODO
 
-This file collects findings from a source, generator, diagnostic, and test audit of SVDConv. The items are grouped by topic and should be addressed in focused pull requests rather than as one combined change.
+This file collects findings from a source, generator, diagnostic, and test audit of SVDConv. The items are
+grouped by topic and should be addressed in focused pull requests rather than as one combined change.
 
 Relevant references:
 
@@ -12,10 +13,12 @@ Relevant references:
 
 - [ ] Make 64-bit register and field handling consistent.
   - Decide whether SVDConv supports 64-bit registers and fields throughout or rejects them during validation.
-  - Remove shifts by the operand width in `SvdField.cpp`, `SvdRegister.cpp`, `SfdData_SingleItems.cpp`, and `HeaderData_PosMask.cpp`.
+  - Remove shifts by the operand width in `SvdField.cpp`, `SvdRegister.cpp`, `SfdData_SingleItems.cpp`, and
+    `HeaderData_PosMask.cpp`.
   - Replace the signed 32-bit mask calculation in `HeaderData_Field.cpp`.
   - Preserve 64-bit enumerated values instead of reading or copying only `Value::u32`.
-  - Cover checking, SFD generation, and header generation with sanitizer-enabled tests. The existing `ResetMask.svd` already exercises a 64-bit register and field.
+  - Cover checking, SFD generation, and header generation with sanitizer-enabled tests. The existing
+    `ResetMask.svd` already exercises a 64-bit register and field.
 
 - [ ] Reject unknown SAU region access values.
   - `SvdUtils::ConvertSauAccessType` currently returns success for values other than `c` and `n`.
@@ -29,7 +32,8 @@ Relevant references:
 - [ ] Implement or explicitly reject `writeConstraint`.
   - `writeAsRead`, `useEnumeratedValues`, and `range` are currently accepted but discarded.
   - Store and validate the selected, mutually exclusive constraint.
-  - Parse and validate `range/minimum` and `range/maximum`, including ordering and fit within the register or field width.
+  - Parse and validate `range/minimum` and `range/maximum`, including ordering and fit within the register or
+    field width.
   - Define inheritance from registers to fields and copying through `derivedFrom`.
   - Validate `useEnumeratedValues` against the applicable write enumeration.
   - Fix ownership of the register-level `SvdWriteConstraint` object.
@@ -54,7 +58,8 @@ Relevant references:
 - [ ] Align numeric parsing with the CMSIS-SVD numeric types.
   - Detect `uint64_t` overflow during multiplication and addition.
   - Reject overflow when converting to `uint32_t` or `int32_t` instead of truncating.
-  - Support or deliberately reject with a clear diagnostic the leading `+` and `k`, `m`, `g`, and `t` suffixes accepted by `scaledNonNegativeInteger`.
+  - Support or deliberately reject with a clear diagnostic the leading `+` and `k`, `m`, `g`, and `t` suffixes
+    accepted by `scaledNonNegativeInteger`.
   - Accept boolean text only for boolean elements, not through the general numeric parser.
   - Add boundary tests for every supported base and destination width.
 
@@ -69,8 +74,10 @@ Relevant references:
   - Add coverage for devices whose addressable unit is not eight bits.
 
 - [ ] Define and consistently enforce handling of unknown XML content.
-  - Replace the process-wide static ten-message limit for unknown elements with per-input accounting and a suppression summary, or remove the limit.
-  - Decide whether unknown attributes are accepted for forward compatibility or diagnosed; they are currently ignored silently.
+  - Replace the process-wide static ten-message limit for unknown elements with per-input accounting and a
+    suppression summary, or remove the limit.
+  - Decide whether unknown attributes are accepted for forward compatibility or diagnosed; they are currently
+    ignored silently.
   - Ensure the behavior is explicit because SVDConv performs model validation rather than XSD validation.
 
 ## Diagnostics and documentation
@@ -88,15 +95,21 @@ Relevant references:
 
 ## Tests and quality checks
 
-- [ ] Add focused regression tests for every correctness item above; the current suite has no coverage for `isDefault`, `writeConstraint`, invalid SAU access, invalid `modifiedWriteValues`, numeric overflow, scaled numbers, or read/write enumeration selection.
+- [ ] Add focused regression tests for every correctness item above.
+  - Missing coverage includes `isDefault`, `writeConstraint`, invalid SAU access, invalid `modifiedWriteValues`,
+    numeric overflow, scaled numbers, and read/write enumeration selection.
 - [ ] Enable and repair `SvdUtilsUnitTests.DISABLED_CheckTextGeneric_SfrCC2_escape`.
-- [ ] Decide how CP1252 input is handled, then enable or replace `SvdUtilsUnitTests.DISABLED_CheckTextGeneric_SfrCC2_CP1252_doubleQuote`.
+- [ ] Decide how CP1252 input is handled, then enable or replace
+  `SvdUtilsUnitTests.DISABLED_CheckTextGeneric_SfrCC2_CP1252_doubleQuote`.
 - [ ] Replace the empty `CodeGenerator.Check` test body with an active test or remove the test.
-- [ ] Restore the disabled `CheckDisableCondition` integration test; its current unconditional success does not test the feature.
+- [ ] Restore the disabled `CheckDisableCondition` integration test; its current unconditional success does not
+  test the feature.
 - [ ] Add an UndefinedBehaviorSanitizer test configuration for SVDConv model and generator paths.
 
 ## Additional robustness review
 
-- [ ] Preserve failures from `SvdItem::ProcessXmlAttributes`; `SvdItem::Construct` currently overwrites that result with the child-processing result.
-- [ ] Verify that an XML `ParseAll` failure stops model construction, validation, and generation instead of continuing with a partial tree.
+- [ ] Preserve failures from `SvdItem::ProcessXmlAttributes`; `SvdItem::Construct` currently overwrites that
+  result with the child-processing result.
+- [ ] Verify that an XML `ParseAll` failure stops model construction, validation, and generation instead of
+  continuing with a partial tree.
 - [ ] Propagate output create, write, and flush failures so an incomplete generated file cannot appear successful.
