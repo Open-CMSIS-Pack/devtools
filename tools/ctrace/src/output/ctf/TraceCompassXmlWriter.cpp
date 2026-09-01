@@ -127,7 +127,7 @@ static std::string stateProviderXml()
                 </if>
                 <then>
                     <stateAttribute type="constant" value="EXCEPTION_RETURN" />
-                    <stateAttribute type="constant" value="ExceptionReturn" />
+                    <stateAttribute type="constant" value="Exception Return" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="null" />
                 </then>
@@ -162,7 +162,7 @@ static std::string stateProviderXml()
                 </if>
                 <then>
                     <stateAttribute type="constant" value="EXCEPTION_RETURN" />
-                    <stateAttribute type="constant" value="ExceptionReturn" />
+                    <stateAttribute type="constant" value="Exception Return" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="eventField" value="cmsis_exception_number_value" forcedType="long" />
                 </then>
@@ -191,7 +191,7 @@ static std::string stateProviderXml()
                 </if>
                 <then>
                     <stateAttribute type="constant" value="EXCEPTION_RETURN" />
-                    <stateAttribute type="constant" value="ExceptionReturn" />
+                    <stateAttribute type="constant" value="Exception Return" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="null" />
                 </then>
@@ -214,7 +214,7 @@ static std::string stateProviderXml()
                 </if>
                 <then>
                     <stateAttribute type="constant" value="EXCEPTION_RETURN" />
-                    <stateAttribute type="constant" value="ExceptionReturn" />
+                    <stateAttribute type="constant" value="Exception Return" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="null" />
                 </then>
@@ -228,7 +228,7 @@ static std::string stateProviderXml()
                 </if>
                 <then>
                     <stateAttribute type="constant" value="EXCEPTION_RETURN" />
-                    <stateAttribute type="constant" value="ExceptionReturn" />
+                    <stateAttribute type="constant" value="Exception Return" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="null" />
                 </then>
@@ -269,11 +269,11 @@ static std::string viewsXml()
       << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(" /></head>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception)
-      << R"(/ThreadMode" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
+      << R"(/Thread Mode" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
         <entry path="EXCEPTION_RETURN/*" displayText="true"><display type="constant" value="action" /><name type="self" /></entry>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception)
-      << R"(/(?!ThreadMode).+" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
+      << R"(/(?!Thread Mode).+" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
     </timeGraphView>
     <timeGraphView id="arm.cmsis.swo.tg.trace_status.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"

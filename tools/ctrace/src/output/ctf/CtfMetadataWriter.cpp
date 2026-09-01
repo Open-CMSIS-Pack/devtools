@@ -106,7 +106,7 @@ static std::string exceptionName(std::uint32_t number)
 {
   switch (number) {
   case 0:
-    return "ThreadMode";
+    return "Thread Mode";
   case 1:
     return "Reset";
   case 2:
