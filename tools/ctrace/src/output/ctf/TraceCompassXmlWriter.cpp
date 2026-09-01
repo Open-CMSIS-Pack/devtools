@@ -127,7 +127,7 @@ static std::string stateProviderXml()
                 </if>
                 <then>
                     <stateAttribute type="constant" value="EXCEPTION_RETURN" />
-                    <stateAttribute type="constant" value="Return" />
+                    <stateAttribute type="constant" value="ExceptionReturn" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="null" />
                 </then>
@@ -162,7 +162,7 @@ static std::string stateProviderXml()
                 </if>
                 <then>
                     <stateAttribute type="constant" value="EXCEPTION_RETURN" />
-                    <stateAttribute type="constant" value="Return" />
+                    <stateAttribute type="constant" value="ExceptionReturn" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="eventField" value="cmsis_exception_number_value" forcedType="long" />
                 </then>
@@ -191,7 +191,7 @@ static std::string stateProviderXml()
                 </if>
                 <then>
                     <stateAttribute type="constant" value="EXCEPTION_RETURN" />
-                    <stateAttribute type="constant" value="Return" />
+                    <stateAttribute type="constant" value="ExceptionReturn" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="null" />
                 </then>
@@ -214,7 +214,7 @@ static std::string stateProviderXml()
                 </if>
                 <then>
                     <stateAttribute type="constant" value="EXCEPTION_RETURN" />
-                    <stateAttribute type="constant" value="Return" />
+                    <stateAttribute type="constant" value="ExceptionReturn" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="null" />
                 </then>
@@ -228,7 +228,7 @@ static std::string stateProviderXml()
                 </if>
                 <then>
                     <stateAttribute type="constant" value="EXCEPTION_RETURN" />
-                    <stateAttribute type="constant" value="Return" />
+                    <stateAttribute type="constant" value="ExceptionReturn" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="null" />
                 </then>
