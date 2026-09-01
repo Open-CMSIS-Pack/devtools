@@ -269,8 +269,11 @@ static std::string viewsXml()
       << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(" /></head>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception)
-      << R"(/*" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
+      << R"(/ThreadMode" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
         <entry path="EXCEPTION_RETURN/*" displayText="true"><display type="constant" value="action" /><name type="self" /></entry>
+        <entry path=")"
+      << CtfSchema::eventName(CtfSchema::EventId::Exception)
+      << R"(/(?!ThreadMode).+" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
     </timeGraphView>
     <timeGraphView id="arm.cmsis.swo.tg.trace_status.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"

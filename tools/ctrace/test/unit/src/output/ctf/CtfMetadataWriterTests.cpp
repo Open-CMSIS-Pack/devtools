@@ -95,7 +95,14 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   EXPECT_NE(xml.find("value=\"cmsis_exception_origin\""), std::string::npos);
   EXPECT_NE(xml.find("value=\"trace\""), std::string::npos);
   EXPECT_NE(xml.find("value=\"EXCEPTION_RETURN\""), std::string::npos);
-  EXPECT_NE(xml.find("path=\"EXCEPTION_RETURN/*\" displayText=\"true\""), std::string::npos);
+  const auto threadModeEntry = xml.find("path=\"EXCEPTION/ThreadMode\"");
+  const auto returnEntry = xml.find("path=\"EXCEPTION_RETURN/*\" displayText=\"true\"");
+  const auto interruptEntries = xml.find("path=\"EXCEPTION/(?!ThreadMode).+\"");
+  ASSERT_NE(threadModeEntry, std::string::npos);
+  ASSERT_NE(returnEntry, std::string::npos);
+  ASSERT_NE(interruptEntries, std::string::npos);
+  EXPECT_LT(threadModeEntry, returnEntry);
+  EXPECT_LT(returnEntry, interruptEntries);
 }
 
 TEST(CtraceUnitTests, testCtfTextWritersReportDeviceWriteFailures)
