@@ -310,6 +310,8 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
           m_undefLayerVars.insert(string(variable));
           continue;
         }
+        m_missingFiles.insert({ clayerFile, FileNode() });
+        continue;
       }
       if (m_parser->ParseClayer(clayerFile, m_checkSchema)) {
         context.clayers[clayerFile] = &m_parser->GetClayers().at(clayerFile);
