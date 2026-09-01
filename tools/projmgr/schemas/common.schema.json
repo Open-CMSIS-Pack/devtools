@@ -211,7 +211,7 @@
       "uniqueItems": true,
       "minItems": 1,
       "description": "List of variables. Can be used to define project components/layers.",
-      "items": {"type": "object", "additionalProperties": {"type": "string"}}
+      "items": {"type": "object", "additionalProperties": {"type": ["string", "number"]}}
     },
     "VersionType": {
       "type": "string",
@@ -2761,7 +2761,7 @@
           "description": "NPU configuration.",
           "properties": {
             "type": { "type": "string", "description": "NPU type (default: first NPU from DFP device features)." },
-            "macs": { "type": "number", "description": "Number of MACs (default: first NPU from DFP device features)." }
+            "macs": { "type": [ "string", "number" ], "description": "Number of MACs (default: first NPU from DFP device features)." }
           },
           "additionalProperties": false
         },
@@ -2783,7 +2783,7 @@
             "clayer": { "type": "string", "description": "Path to the AI clayer file or variable." },
             "name":   { "type": "string", "description": "Model name used as namespace (default: Algorithm)." }
           },
-          "additionalProperties": false
+          "additionalProperties": { "type": [ "string", "number" ] }
         },
         "hardware":    { "$ref": "#/definitions/MlopsTargetType" },
         "simulator":   { "$ref": "#/definitions/MlopsTargetType" }
@@ -2829,7 +2829,7 @@
             "clayer": { "type": "string", "description": "Path to the AI clayer file." },
             "name":   { "type": "string", "description": "Model name used as namespace." }
           },
-          "additionalProperties": false
+          "additionalProperties": { "type": [ "string", "number" ] }
         },
         "hardware":  { "$ref": "#/definitions/MlopsRunDescType" },
         "simulator": { "$ref": "#/definitions/MlopsRunDescType" }
