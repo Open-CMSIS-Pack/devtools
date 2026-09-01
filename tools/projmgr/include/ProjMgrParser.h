@@ -602,6 +602,7 @@ struct MlopsVelaItem {
 struct MlopsModelItem {
   std::string clayer;
   std::string name;
+  std::map<std::string, std::string> additional;
 };
 
 /**

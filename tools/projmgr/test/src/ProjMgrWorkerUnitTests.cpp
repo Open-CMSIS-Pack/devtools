@@ -208,6 +208,24 @@ TEST_F(ProjMgrWorkerUnitTests, ProcessDeviceUndefLayerVar) {
   EXPECT_FALSE(ProcessDevice(context));
 }
 
+TEST_F(ProjMgrWorkerUnitTests, ParseContextLayersDefersMissingClayer) {
+  ContextItem context;
+  CsolutionItem csolution;
+  CprojectItem cproject;
+  cproject.directory = testinput_folder;
+  cproject.clayers.push_back({ "missing.clayer.yml", "", false, {} });
+  context.csolution = &csolution;
+  context.cproject = &cproject;
+
+  string missingClayer = "missing.clayer.yml";
+  RteFsUtils::NormalizePath(missingClayer, cproject.directory);
+  ASSERT_FALSE(RteFsUtils::Exists(missingClayer));
+
+  EXPECT_TRUE(ParseContextLayers(context));
+  EXPECT_TRUE(context.clayers.empty());
+  EXPECT_NE(m_missingFiles.end(), m_missingFiles.find(missingClayer));
+}
+
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
   set<string> expected = {
     "ARM::Device:Startup&RteTest Startup@2.0.3",
