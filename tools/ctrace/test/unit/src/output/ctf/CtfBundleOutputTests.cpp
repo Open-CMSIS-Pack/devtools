@@ -176,6 +176,23 @@ TEST(CtraceUnitTests, testCtfBundleOutputExceptionContext)
       << "CtfBundleOutput exception active-context records mismatch";
 }
 
+TEST(CtraceUnitTests, testCtfBundleOutputOverflowClosesExceptionUntilReturn)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-exception-overflow-test");
+  const auto& outputDir = temporaryOutput.outputDirectory();
+
+  CtfBundleOutput output(makeCtfBundleConfig(outputDir, 1000000U));
+  output.start();
+  output.writeEvent(exceptionPacket(15U, ExceptionAction::Entered, 100U));
+  output.writeEvent(overflowPacket(200U));
+  output.writeEvent(exceptionPacket(0U, ExceptionAction::Returned, 300U));
+  output.stop();
+
+  ASSERT_TRUE(readCtfExceptionRecords(outputDir / "stream_0") ==
+              std::vector<std::string>({"0:0:1", "0:1:1", "15:0:0", "15:1:1", "0:2:0"}))
+      << "CTF overflow must close the active exception without inventing Thread Mode before its return";
+}
+
 TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
 {
   const TemporaryCtfOutput temporaryOutput("ctrace-ctf-ctrace-run-meta-test");

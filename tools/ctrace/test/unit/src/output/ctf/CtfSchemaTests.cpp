@@ -176,3 +176,21 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
   returnTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Returned}, emit);
   EXPECT_EQ(records.back(), "3:return:trace");
 }
+
+TEST(CtraceUnitTests, testCtfExceptionLaneTrackerPreservesReturnForActiveContext)
+{
+  CtfExceptionLaneTracker tracker;
+  std::vector<std::string> records;
+  const auto emit = [&records](std::uint32_t number, CtfExceptionLaneTracker::RecordAction action,
+                               CtfExceptionLaneTracker::RecordOrigin origin) {
+    const auto actionLabel = action == CtfExceptionLaneTracker::RecordAction::Return ? "return" : "unexpected";
+    const auto originLabel = origin == CtfExceptionLaneTracker::RecordOrigin::Trace ? "trace" : "synthetic";
+    records.push_back(std::to_string(number) + ":" + actionLabel + ":" + originLabel);
+  };
+
+  tracker.startThreadMode(emit);
+  records.clear();
+  tracker.consume(ExceptionTraceEvent{0U, ExceptionAction::Returned}, emit);
+
+  EXPECT_EQ(records, std::vector<std::string>({"0:return:trace"}));
+}
