@@ -50,6 +50,12 @@ enum class ExceptionAction : std::uint8_t {
   Returned = 2U,
 };
 
+/** @brief Identifies whether an exception record came from trace input or lane reconstruction. */
+enum class ExceptionOrigin : std::uint8_t {
+  Trace = 0U,
+  Synthetic = 1U,
+};
+
 /** @brief Identifies the supported CTF sample value encodings. */
 enum class ValueTag : std::uint8_t {
   Signed8 = 0U,
@@ -146,6 +152,12 @@ constexpr std::uint8_t value(DwtAccess access)
 constexpr std::uint8_t value(ExceptionAction action)
 {
   return static_cast<std::uint8_t>(action);
+}
+
+/** @brief Returns the integer representation of an exception record origin. */
+constexpr std::uint8_t value(ExceptionOrigin origin)
+{
+  return static_cast<std::uint8_t>(origin);
 }
 
 /** @brief Returns the stable schema name of a CTF event ID. */

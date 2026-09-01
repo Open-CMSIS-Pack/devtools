@@ -100,9 +100,11 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
     size += 1U + (hasAddress != 0U ? 2U : 0U);
     return size + 5U;
   }
-  if (eventId == CtfSchema::value(CtfSchema::EventId::TraceStatus) ||
-      eventId == CtfSchema::value(CtfSchema::EventId::Exception)) {
+  if (eventId == CtfSchema::value(CtfSchema::EventId::TraceStatus)) {
     return 5U;
+  }
+  if (eventId == CtfSchema::value(CtfSchema::EventId::Exception)) {
+    return 6U;
   }
   if (eventId == CtfSchema::value(CtfSchema::EventId::DwtAddress)) {
     return 14U;

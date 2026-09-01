@@ -328,7 +328,8 @@ TEST(CtraceUnitTests, testCtfEncoderStreamSelectionKeepsStartAndResyncContext)
       statusReasons.push_back(record.payload[0U]);
     } else if (record.id == CtfSchema::value(CtfSchema::EventId::Exception)) {
       exceptionRecords.emplace_back(record.timestamp, std::to_string(readLe16(record.payload, 0U)) + ":" +
-                                                          std::to_string(record.payload[2U]));
+                                                          std::to_string(record.payload[2U]) + ":" +
+                                                          std::to_string(record.payload[5U]));
     }
   }
   EXPECT_EQ(statusReasons, std::vector<std::uint8_t>({
@@ -336,11 +337,11 @@ TEST(CtraceUnitTests, testCtfEncoderStreamSelectionKeepsStartAndResyncContext)
                                CtfSchema::value(CtfSchema::TraceStatusReason::Resync),
                            }));
   EXPECT_EQ(exceptionRecords, (std::vector<std::pair<std::uint64_t, std::string>>({
-                                  {0U, "0:0"},
-                                  {10U, "0:1"},
-                                  {10U, "15:0"},
-                                  {20U, "15:1"},
-                                  {20U, "54:0"},
+                                  {0U, "0:0:1"},
+                                  {10U, "0:1:1"},
+                                  {10U, "15:0:0"},
+                                  {20U, "15:1:1"},
+                                  {20U, "54:0:0"},
                               })));
 }
 

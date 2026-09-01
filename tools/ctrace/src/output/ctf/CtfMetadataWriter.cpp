@@ -296,6 +296,12 @@ typealias enum : uint8_t {
       << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Returned)) << R"(
 } := cmsis_exception_action_t;
 typealias enum : uint8_t {
+    "trace" = )"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionOrigin::Trace)) << R"(,
+    "synthetic" = )"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionOrigin::Synthetic)) << R"(
+} := cmsis_exception_origin_t;
+typealias enum : uint8_t {
 )";
   std::set<std::string> itmLabels;
   for (std::uint32_t channel = 1U; channel < 32U; ++channel) {
@@ -448,6 +454,7 @@ event {
         cmsis_exception_number_t cmsis_exception_number;
         cmsis_exception_action_t cmsis_exception_action;
         uint16_t cmsis_exception_number_value;
+        cmsis_exception_origin_t cmsis_exception_origin;
     };
 };
 

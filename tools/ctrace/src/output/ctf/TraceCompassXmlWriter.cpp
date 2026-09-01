@@ -122,6 +122,20 @@ static std::string stateProviderXml()
                 <if>
                     <condition>
                         <stateValue type="eventField" value="cmsis_exception_action" />
+                        <stateValue type="string" value="entered" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
+                    <stateAttribute type="constant" value="Return" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="null" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_exception_action" />
                         <stateValue type="string" value="exited" />
                     </condition>
                 </if>
@@ -131,6 +145,26 @@ static std::string stateProviderXml()
                     <stateAttribute type="eventField" value="cmsis_exception_number" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="null" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <and>
+                        <condition>
+                            <stateValue type="eventField" value="cmsis_exception_action" />
+                            <stateValue type="string" value="exited" />
+                        </condition>
+                        <condition>
+                            <stateValue type="eventField" value="cmsis_exception_origin" />
+                            <stateValue type="string" value="trace" />
+                        </condition>
+                    </and>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
+                    <stateAttribute type="constant" value="Return" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="eventField" value="cmsis_exception_number_value" forcedType="long" />
                 </then>
             </stateChange>
             <stateChange>
@@ -148,6 +182,20 @@ static std::string stateProviderXml()
                     <stateValue type="eventField" value="cmsis_exception_number_value" forcedType="long" />
                 </then>
             </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_exception_action" />
+                        <stateValue type="string" value="returned" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
+                    <stateAttribute type="constant" value="Return" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="null" />
+                </then>
+            </stateChange>
         </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus) << R"(">
@@ -156,6 +204,34 @@ static std::string stateProviderXml()
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus) << R"(" />
                 <stateAttribute type="eventField" value="cmsis_trace_status_reason" />
                 <stateValue type="eventField" value="cmsis_trace_status_reason" />
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_trace_status_reason" />
+                        <stateValue type="string" value="overflow" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
+                    <stateAttribute type="constant" value="Return" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="null" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_trace_status_reason" />
+                        <stateValue type="string" value="data_loss" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
+                    <stateAttribute type="constant" value="Return" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="null" />
+                </then>
             </stateChange>
         </eventHandler>
     </stateProvider>
@@ -194,6 +270,7 @@ static std::string viewsXml()
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception)
       << R"(/*" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
+        <entry path="EXCEPTION_RETURN/*" displayText="true"><display type="constant" value="action" /><name type="self" /></entry>
     </timeGraphView>
     <timeGraphView id="arm.cmsis.swo.tg.trace_status.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"

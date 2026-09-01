@@ -25,8 +25,15 @@ public:
     Return,
   };
 
+  /** @brief Identifies whether a record came from trace input or lane reconstruction. */
+  enum class RecordOrigin {
+    Trace,
+    Synthetic,
+  };
+
   /** @brief Emits one exception-lane record. */
-  using RecordEmitter = std::function<void(std::uint32_t number, RecordAction action)>;
+  using RecordEmitter =
+      std::function<void(std::uint32_t number, RecordAction action, RecordOrigin origin)>;
 
   /** @brief Starts the initial thread-mode context. */
   void startThreadMode(const RecordEmitter& emit);
@@ -53,17 +60,17 @@ private:
   };
 
   /** @brief Switches the emitted active lane to one context with the requested activation action. */
-  void setActiveContext(std::uint32_t number, RecordAction action, const RecordEmitter& emit);
+  void setActiveContext(std::uint32_t number, RecordAction action, RecordOrigin origin, const RecordEmitter& emit);
   /** @brief Closes the currently emitted active lane. */
-  void closeActiveContext(const RecordEmitter& emit);
-  /** @brief Reconciles emitted lane state with the context stack. */
-  void updateActiveContext(RecordAction action, const RecordEmitter& emit);
+  void closeActiveContext(RecordOrigin origin, const RecordEmitter& emit);
+  /** @brief Activates the context selected by the stack after an enter or return. */
+  void updateActiveContext(RecordAction action, RecordOrigin origin, const RecordEmitter& emit);
   /** @brief Emits and records one lane transition. */
-  void emitRecord(std::uint32_t number, RecordAction action, const RecordEmitter& emit);
+  void emitRecord(std::uint32_t number, RecordAction action, RecordOrigin origin, const RecordEmitter& emit);
   /** @brief Pushes or reactivates an entered exception context. */
   void enterContext(std::uint32_t number);
-  /** @brief Removes an exited exception context. */
-  void exitContext(std::uint32_t number);
+  /** @brief Removes an exited running exception context. */
+  bool exitContext(std::uint32_t number);
   /** @brief Returns the stack to a previously active context. */
   void returnToContext(std::uint32_t number);
 

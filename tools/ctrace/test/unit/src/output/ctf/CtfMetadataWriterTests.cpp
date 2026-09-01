@@ -52,6 +52,7 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
   EXPECT_NE(metadata.find("\"Reserved 13\" = 13"), std::string::npos);
   EXPECT_NE(metadata.find("\"External IRQ 0\" = 16"), std::string::npos);
   EXPECT_NE(metadata.find("\"External IRQ 38\" = 54"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_exception_origin_t cmsis_exception_origin;"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfMetadataWriterRejectsMissingOutputDirectory)
@@ -91,6 +92,10 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
     EXPECT_NE(xml.find("eventName=\"" + std::string(CtfSchema::eventName(eventId)) + "\""), std::string::npos);
   }
   EXPECT_NE(xml.find("value=\"returned\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"cmsis_exception_origin\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"trace\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"EXCEPTION_RETURN\""), std::string::npos);
+  EXPECT_NE(xml.find("path=\"EXCEPTION_RETURN/*\" displayText=\"true\""), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfTextWritersReportDeviceWriteFailures)

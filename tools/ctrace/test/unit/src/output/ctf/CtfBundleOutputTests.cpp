@@ -108,7 +108,9 @@ static std::vector<std::string> readCtfExceptionRecords(const std::filesystem::p
     if (record.id == CtfSchema::value(CtfSchema::EventId::Exception)) {
       const auto number = readLe16(record.payload, 0U);
       const auto action = record.payload[2U];
-      records.push_back(std::to_string(number) + ":" + std::to_string(static_cast<unsigned>(action)));
+      const auto origin = record.payload[5U];
+      records.push_back(std::to_string(number) + ":" + std::to_string(static_cast<unsigned>(action)) + ":" +
+                        std::to_string(static_cast<unsigned>(origin)));
     }
   }
   return records;
@@ -148,6 +150,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputExceptionContext)
   output.writeEvent(exceptionPacket(54, ExceptionAction::Exited, 300));
   output.writeEvent(exceptionPacket(15, ExceptionAction::Returned, 400));
   output.writeEvent(exceptionPacket(15, ExceptionAction::Exited, 500));
+  output.writeEvent(exceptionPacket(0, ExceptionAction::Returned, 600));
   output.stop();
 
   const auto records = readCtfExceptionRecords(outputDir / "stream_0");
@@ -156,18 +159,19 @@ TEST(CtraceUnitTests, testCtfBundleOutputExceptionContext)
   ASSERT_TRUE(metadata.find("\"entered\" = 0") != std::string::npos) << "CTF exception entered label mismatch";
   ASSERT_TRUE(metadata.find("\"exited\" = 1") != std::string::npos) << "CTF exception exited label mismatch";
   ASSERT_TRUE(metadata.find("\"returned\" = 2") != std::string::npos) << "CTF exception returned label mismatch";
+  ASSERT_TRUE(metadata.find("\"trace\" = 0") != std::string::npos) << "CTF exception trace origin mismatch";
+  ASSERT_TRUE(metadata.find("\"synthetic\" = 1") != std::string::npos) << "CTF exception synthetic origin mismatch";
 
   ASSERT_TRUE(records == std::vector<std::string>({
-                             "0:0",
-                             "0:1",
-                             "15:0",
-                             "15:1",
-                             "54:0",
-                             "54:1",
-                             "15:0",
-                             "15:2",
-                             "15:1",
-                             "0:0",
+                             "0:0:1",
+                             "0:1:1",
+                             "15:0:0",
+                             "15:1:1",
+                             "54:0:0",
+                             "54:1:0",
+                             "15:2:0",
+                             "15:1:0",
+                             "0:2:0",
                          }))
       << "CtfBundleOutput exception active-context records mismatch";
 }
@@ -329,7 +333,7 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   context.writeEvent(exceptionPacket(54U, ExceptionAction::Entered, 20U));
   context.stop();
   ASSERT_TRUE(readCtfExceptionRecords(contextDir / "stream_0") ==
-              std::vector<std::string>({"0:0", "0:1", "15:0", "15:1", "54:0"}))
+              std::vector<std::string>({"0:0:1", "0:1:1", "15:0:0", "15:1:1", "54:0:0"}))
       << "a decoder warning must not reset the active CTF exception context";
 
   auto dataLossOptions = makeCtfBundleConfig(dataLossDir, 1000000U);
@@ -341,7 +345,7 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   dataLoss.writeEvent(exceptionPacket(15U, ExceptionAction::Returned, 20U));
   dataLoss.stop();
   ASSERT_TRUE(readCtfExceptionRecords(dataLossDir / "stream_0") ==
-              std::vector<std::string>({"0:0", "0:1", "15:0", "15:1", "15:2"}))
+              std::vector<std::string>({"0:0:1", "0:1:1", "15:0:0", "15:1:1", "15:2:0"}))
       << "filtered data-loss must still reset the CTF exception context";
 }
 
