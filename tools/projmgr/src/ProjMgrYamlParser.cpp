@@ -1159,7 +1159,7 @@ void ProjMgrYamlParser::ParseMlops(const YAML::Node& parent, const string& file,
     if (mlopsNode[YAML_NPU].IsDefined()) {
       const YAML::Node& npuNode = mlopsNode[YAML_NPU];
       ParseString(npuNode, YAML_TYPE, mlops.npu.type);
-      ParseNumber(npuNode, file, YAML_MACS, mlops.npu.macs);
+      ParseString(npuNode, YAML_MACS, mlops.npu.macs);
     }
     if (mlopsNode[YAML_VELA].IsDefined()) {
       const YAML::Node& velaNode = mlopsNode[YAML_VELA];
@@ -1172,6 +1172,12 @@ void ProjMgrYamlParser::ParseMlops(const YAML::Node& parent, const string& file,
       const YAML::Node& modelNode = mlopsNode[YAML_MODEL];
       ParsePortablePath(modelNode, file, YAML_CLAYER, mlops.model.clayer);
       ParseString(modelNode, YAML_NAME, mlops.model.name);
+      for (const auto& item : modelNode) {
+        const string key = item.first.as<string>();
+        if (key != YAML_CLAYER && key != YAML_NAME) {
+          mlops.model.additional[key] = item.second.as<string>();
+        }
+      }
     }
     if (mlopsNode[YAML_HARDWARE].IsDefined()) {
       const YAML::Node& hardwareNode = mlopsNode[YAML_HARDWARE];
