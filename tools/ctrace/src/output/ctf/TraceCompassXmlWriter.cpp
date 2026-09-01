@@ -248,21 +248,21 @@ static std::string viewsXml()
       << CtfSchema::eventName(CtfSchema::EventId::DwtValue) << R"(" /></head>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtValue)
-      << R"(/*"><display type="constant" value="data" /><name type="self" /></entry>
+      << '/' << R"(*"><display type="constant" value="data" /><name type="self" /></entry>
     </xyView>
     <xyView id="arm.cmsis.swo.xy.dwt_addr.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(" /></head>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress)
-      << R"(/*"><display type="constant" value="address" /><name type="self" /></entry>
+      << '/' << R"(*"><display type="constant" value="address" /><name type="self" /></entry>
     </xyView>
     <timeGraphView id="arm.cmsis.swo.tg.itm.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm) << R"(" /></head>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm)
-      << R"(/*" displayText="true"><display type="constant" value="value" /><name type="self" /></entry>
+      << '/' << R"(*" displayText="true"><display type="constant" value="value" /><name type="self" /></entry>
     </timeGraphView>
     <timeGraphView id="arm.cmsis.swo.tg.exception.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"
@@ -270,7 +270,8 @@ static std::string viewsXml()
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception)
       << R"(/Thread Mode" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
-        <entry path="EXCEPTION_RETURN/*" displayText="true"><display type="constant" value="action" /><name type="self" /></entry>
+        <entry path="EXCEPTION_RETURN)"
+      << '/' << R"(*" displayText="true"><display type="constant" value="action" /><name type="self" /></entry>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception)
       << R"(/(?!Thread Mode).+" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
@@ -280,7 +281,7 @@ static std::string viewsXml()
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus) << R"(" /></head>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus)
-      << R"(/*" displayText="true"><display type="self" /><name type="self" /></entry>
+      << '/' << R"(*" displayText="true"><display type="self" /><name type="self" /></entry>
     </timeGraphView>
 )";
   return xml.str();
