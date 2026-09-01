@@ -33,9 +33,10 @@ TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
       CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError),
       CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss),
   };
-  constexpr std::array<std::uint8_t, 2U> exceptionActions{
+  constexpr std::array<std::uint8_t, 3U> exceptionActions{
       CtfSchema::value(CtfSchema::ExceptionAction::Entered),
       CtfSchema::value(CtfSchema::ExceptionAction::Exited),
+      CtfSchema::value(CtfSchema::ExceptionAction::Returned),
   };
   constexpr std::array<std::uint8_t, 7U> valueTags{
       CtfSchema::value(CtfSchema::ValueTag::Signed8),  CtfSchema::value(CtfSchema::ValueTag::Unsigned8),
@@ -98,8 +99,10 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
   CtfExceptionLaneTracker tracker;
   std::vector<std::string> records;
   const auto emit = [&records](std::uint32_t number, CtfExceptionLaneTracker::RecordAction action) {
-    records.push_back(std::to_string(number) +
-                      (action == CtfExceptionLaneTracker::RecordAction::Enter ? ":enter" : ":exit"));
+    const auto suffix = action == CtfExceptionLaneTracker::RecordAction::Enter
+                            ? ":enter"
+                            : action == CtfExceptionLaneTracker::RecordAction::Exit ? ":exit" : ":return";
+    records.push_back(std::to_string(number) + suffix);
   };
 
   tracker.startThreadMode(emit);
@@ -124,6 +127,7 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
                              "54:enter",
                              "54:exit",
                              "3:enter",
+                             "3:return",
                              "3:exit",
                              "0:enter",
                          }))
@@ -152,14 +156,15 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
       << "CtfExceptionLaneTracker must not exit a preempted context before its return packet";
   resumedTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Returned}, emit);
   resumedTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Exited}, emit);
-  ASSERT_TRUE(records.size() == preemptedRecordCount + 2U && records[records.size() - 2U] == "3:exit" &&
+  ASSERT_TRUE(records.size() == preemptedRecordCount + 3U && records[records.size() - 3U] == "3:return" &&
+              records[records.size() - 2U] == "3:exit" &&
               records.back() == "0:enter")
-      << "CtfExceptionLaneTracker must exit a resumed context";
+      << "CtfExceptionLaneTracker must preserve return and exit the resumed context";
 
   CtfExceptionLaneTracker returnTracker;
   records.clear();
   returnTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Entered}, emit);
   returnTracker.consume(ExceptionTraceEvent{15, ExceptionAction::Entered}, emit);
   returnTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Returned}, emit);
-  EXPECT_EQ(records.back(), "3:enter");
+  EXPECT_EQ(records.back(), "3:return");
 }

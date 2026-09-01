@@ -18,10 +18,11 @@
 /** @brief Tracks active Cortex-M exception contexts for Trace Compass lanes. */
 class CtfExceptionLaneTracker {
 public:
-  /** @brief Selects whether an emitted lane record enters or exits a context. */
+  /** @brief Selects whether an emitted lane record enters, exits, or returns to a context. */
   enum class RecordAction {
     Enter,
     Exit,
+    Return,
   };
 
   /** @brief Emits one exception-lane record. */
@@ -51,12 +52,12 @@ private:
     ContextState state = ContextState::Running;
   };
 
-  /** @brief Switches the emitted active lane to one context. */
-  void setActiveContext(std::uint32_t number, const RecordEmitter& emit);
+  /** @brief Switches the emitted active lane to one context with the requested activation action. */
+  void setActiveContext(std::uint32_t number, RecordAction action, const RecordEmitter& emit);
   /** @brief Closes the currently emitted active lane. */
   void closeActiveContext(const RecordEmitter& emit);
   /** @brief Reconciles emitted lane state with the context stack. */
-  void updateActiveContext(const RecordEmitter& emit);
+  void updateActiveContext(RecordAction action, const RecordEmitter& emit);
   /** @brief Emits and records one lane transition. */
   void emitRecord(std::uint32_t number, RecordAction action, const RecordEmitter& emit);
   /** @brief Pushes or reactivates an entered exception context. */

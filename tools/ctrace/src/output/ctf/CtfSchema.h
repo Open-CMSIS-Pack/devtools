@@ -43,10 +43,11 @@ enum class DwtAccess : std::uint8_t {
   Write = 1U,
 };
 
-/** @brief Encodes exception entry and exit actions in CTF records. */
+/** @brief Encodes exception entry, exit, and return actions in CTF records. */
 enum class ExceptionAction : std::uint8_t {
   Entered = 0U,
   Exited = 1U,
+  Returned = 2U,
 };
 
 /** @brief Identifies the supported CTF sample value encodings. */

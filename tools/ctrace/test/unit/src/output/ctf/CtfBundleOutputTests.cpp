@@ -155,6 +155,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputExceptionContext)
 
   ASSERT_TRUE(metadata.find("\"entered\" = 0") != std::string::npos) << "CTF exception entered label mismatch";
   ASSERT_TRUE(metadata.find("\"exited\" = 1") != std::string::npos) << "CTF exception exited label mismatch";
+  ASSERT_TRUE(metadata.find("\"returned\" = 2") != std::string::npos) << "CTF exception returned label mismatch";
 
   ASSERT_TRUE(records == std::vector<std::string>({
                              "0:0",
@@ -164,6 +165,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputExceptionContext)
                              "54:0",
                              "54:1",
                              "15:0",
+                             "15:2",
                              "15:1",
                              "0:0",
                          }))
@@ -339,7 +341,7 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   dataLoss.writeEvent(exceptionPacket(15U, ExceptionAction::Returned, 20U));
   dataLoss.stop();
   ASSERT_TRUE(readCtfExceptionRecords(dataLossDir / "stream_0") ==
-              std::vector<std::string>({"0:0", "0:1", "15:0", "15:1", "15:0"}))
+              std::vector<std::string>({"0:0", "0:1", "15:0", "15:1", "15:2"}))
       << "filtered data-loss must still reset the CTF exception context";
 }
 

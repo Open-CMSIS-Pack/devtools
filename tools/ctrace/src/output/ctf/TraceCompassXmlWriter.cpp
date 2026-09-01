@@ -133,6 +133,21 @@ static std::string stateProviderXml()
                     <stateValue type="null" />
                 </then>
             </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_exception_action" />
+                        <stateValue type="string" value="returned" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value=")"
+      << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(" />
+                    <stateAttribute type="eventField" value="cmsis_exception_number" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="eventField" value="cmsis_exception_number_value" forcedType="long" />
+                </then>
+            </stateChange>
         </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus) << R"(">

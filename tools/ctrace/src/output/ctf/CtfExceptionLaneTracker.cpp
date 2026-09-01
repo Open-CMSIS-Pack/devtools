@@ -15,7 +15,7 @@
 
 void CtfExceptionLaneTracker::startThreadMode(const RecordEmitter& emit)
 {
-  setActiveContext(kThreadModeNumber, emit);
+  setActiveContext(kThreadModeNumber, RecordAction::Enter, emit);
 }
 
 void CtfExceptionLaneTracker::resetForDiscontinuity(const RecordEmitter& emit)
@@ -36,11 +36,12 @@ void CtfExceptionLaneTracker::consume(const ExceptionTraceEvent& event, const Re
     break;
   case ExceptionAction::Returned:
     returnToContext(number);
-    break;
+    updateActiveContext(RecordAction::Return, emit);
+    return;
   case ExceptionAction::Unknown:
     return;
   }
-  updateActiveContext(emit);
+  updateActiveContext(RecordAction::Enter, emit);
 }
 
 const std::vector<std::uint32_t>& CtfExceptionLaneTracker::observedExceptionNumbers() const
@@ -48,15 +49,18 @@ const std::vector<std::uint32_t>& CtfExceptionLaneTracker::observedExceptionNumb
   return m_observedExceptionNumbers;
 }
 
-void CtfExceptionLaneTracker::setActiveContext(std::uint32_t number, const RecordEmitter& emit)
+void CtfExceptionLaneTracker::setActiveContext(std::uint32_t number, RecordAction action, const RecordEmitter& emit)
 {
   if (m_activeContextNumber.has_value() && *m_activeContextNumber == number) {
+    if (action == RecordAction::Return) {
+      emitRecord(number, action, emit);
+    }
     return;
   }
   if (m_activeContextNumber.has_value()) {
     emitRecord(*m_activeContextNumber, RecordAction::Exit, emit);
   }
-  emitRecord(number, RecordAction::Enter, emit);
+  emitRecord(number, action, emit);
   m_activeContextNumber = number;
 }
 
@@ -69,9 +73,9 @@ void CtfExceptionLaneTracker::closeActiveContext(const RecordEmitter& emit)
   m_activeContextNumber.reset();
 }
 
-void CtfExceptionLaneTracker::updateActiveContext(const RecordEmitter& emit)
+void CtfExceptionLaneTracker::updateActiveContext(RecordAction action, const RecordEmitter& emit)
 {
-  setActiveContext(m_contextStack.empty() ? kThreadModeNumber : m_contextStack.back().number, emit);
+  setActiveContext(m_contextStack.empty() ? kThreadModeNumber : m_contextStack.back().number, action, emit);
 }
 
 void CtfExceptionLaneTracker::emitRecord(std::uint32_t number, RecordAction action, const RecordEmitter& emit)

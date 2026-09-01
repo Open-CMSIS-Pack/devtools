@@ -291,7 +291,9 @@ typealias enum : uint8_t {
     "entered" = )"
       << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Entered)) << R"(,
     "exited" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Exited)) << R"(
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Exited)) << R"(,
+    "returned" = )"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Returned)) << R"(
 } := cmsis_exception_action_t;
 typealias enum : uint8_t {
 )";

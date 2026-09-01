@@ -90,6 +90,7 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   for (const auto eventId : visualizedEvents) {
     EXPECT_NE(xml.find("eventName=\"" + std::string(CtfSchema::eventName(eventId)) + "\""), std::string::npos);
   }
+  EXPECT_NE(xml.find("value=\"returned\""), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfTextWritersReportDeviceWriteFailures)

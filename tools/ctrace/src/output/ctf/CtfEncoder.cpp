@@ -379,9 +379,13 @@ void CtfEncoder::writeExceptionEvent(std::uint8_t traceBusId, const ExceptionTra
 void CtfEncoder::emitExceptionRecord(std::uint8_t traceBusId, std::uint32_t number,
                                      CtfExceptionLaneTracker::RecordAction action)
 {
+  const auto semanticAction =
+      action == CtfExceptionLaneTracker::RecordAction::Enter
+          ? ExceptionAction::Entered
+          : action == CtfExceptionLaneTracker::RecordAction::Exit ? ExceptionAction::Exited : ExceptionAction::Returned;
   TraceEvent selectionEvent{ExceptionTraceEvent{
       number,
-      action == CtfExceptionLaneTracker::RecordAction::Enter ? ExceptionAction::Entered : ExceptionAction::Exited,
+      semanticAction,
   }};
   selectionEvent.traceBusId = traceBusId;
   if (!traceEventSelectedForOutput(selectionEvent, m_config.selection)) {
@@ -389,9 +393,11 @@ void CtfEncoder::emitExceptionRecord(std::uint8_t traceBusId, std::uint32_t numb
   }
   constexpr auto payloadSize = 2U + 1U + 2U;
   const auto eventTimestamp = allocateEventTimestamp(traceBusId);
-  const auto encodedAction =
-      CtfSchema::value(action == CtfExceptionLaneTracker::RecordAction::Enter ? CtfSchema::ExceptionAction::Entered
-                                                                              : CtfSchema::ExceptionAction::Exited);
+  const auto encodedAction = CtfSchema::value(
+      action == CtfExceptionLaneTracker::RecordAction::Enter
+          ? CtfSchema::ExceptionAction::Entered
+          : action == CtfExceptionLaneTracker::RecordAction::Exit ? CtfSchema::ExceptionAction::Exited
+                                                                  : CtfSchema::ExceptionAction::Returned);
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::Exception), eventTimestamp, traceBusId, payloadSize,
                        [&](CtfStreamWriter::Record& record) {
                          record.writeU16(static_cast<std::uint16_t>(number & 0xffffU));
