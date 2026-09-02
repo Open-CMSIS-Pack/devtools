@@ -28,6 +28,7 @@
 #include <vector>
 
 using CtfTestSupport::CtfRecord;
+using CtfTestSupport::TimestampedCtfExceptionRecord;
 using CtfTestSupport::kCtfEventOffset;
 using CtfTestSupport::kCtfPacketContextSize;
 using CtfTestSupport::kCtfPacketHeaderSize;
@@ -37,6 +38,7 @@ using CtfTestSupport::readLe16;
 using CtfTestSupport::readLe32;
 using CtfTestSupport::requireFirstCtfRecord;
 using CtfTestSupport::requireSingleItmEvent;
+using CtfTestSupport::timestampedCtfExceptionRecords;
 
 /** @brief Formats an encoded CTF UUID for comparison. */
 static std::string formatCtfUuid(const std::vector<unsigned char>& bytes, std::size_t offset)
@@ -321,26 +323,23 @@ TEST(CtraceUnitTests, testCtfEncoderStreamSelectionKeepsStartAndResyncContext)
 
   const auto records = readCtfRecords(temporaryPath.path() / "stream_0");
   std::vector<std::uint8_t> statusReasons;
-  std::vector<std::pair<std::uint64_t, std::string>> exceptionRecords;
   for (const auto& record : records) {
     EXPECT_EQ(record.traceBusId, 3U);
     if (record.id == CtfSchema::value(CtfSchema::EventId::TraceStatus)) {
       statusReasons.push_back(record.payload[0U]);
-    } else if (record.id == CtfSchema::value(CtfSchema::EventId::Exception)) {
-      exceptionRecords.emplace_back(record.timestamp, std::to_string(readLe16(record.payload, 0U)) + ":" +
-                                                          std::to_string(record.payload[2U]));
     }
   }
+  const auto exceptionRecords = timestampedCtfExceptionRecords(records);
   EXPECT_EQ(statusReasons, std::vector<std::uint8_t>({
                                CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart),
                                CtfSchema::value(CtfSchema::TraceStatusReason::Resync),
                            }));
-  EXPECT_EQ(exceptionRecords, (std::vector<std::pair<std::uint64_t, std::string>>({
-                                  {0U, "0:0"},
-                                  {10U, "0:1"},
-                                  {10U, "15:0"},
-                                  {20U, "15:1"},
-                                  {20U, "54:0"},
+  EXPECT_EQ(exceptionRecords, (std::vector<TimestampedCtfExceptionRecord>({
+                                  {0U, {0U, 0U, 1U}},
+                                  {10U, {0U, 1U, 1U}},
+                                  {10U, {15U, 0U, 0U}},
+                                  {20U, {15U, 1U, 1U}},
+                                  {20U, {54U, 0U, 0U}},
                               })));
 }
 

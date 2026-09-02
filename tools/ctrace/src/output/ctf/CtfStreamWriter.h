@@ -67,7 +67,7 @@ public:
   /** @brief Closes and removes an incomplete stream without throwing. */
   void abort() noexcept;
 
-  /** @brief Appends one timestamped CTF event record. */
+  /** @brief Appends one timestamped CTF event record; its size is needed up front for packet rollover and bounds. */
   void writeRecord(std::uint32_t eventId, std::uint64_t timestamp, std::uint8_t traceBusId, std::size_t payloadSize,
                    const RecordCallback& writePayload);
 

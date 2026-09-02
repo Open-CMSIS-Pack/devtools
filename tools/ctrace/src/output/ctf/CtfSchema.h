@@ -43,10 +43,17 @@ enum class DwtAccess : std::uint8_t {
   Write = 1U,
 };
 
-/** @brief Encodes exception entry and exit actions in CTF records. */
+/** @brief Encodes exception entry, exit, and return actions in CTF records. */
 enum class ExceptionAction : std::uint8_t {
   Entered = 0U,
   Exited = 1U,
+  Returned = 2U,
+};
+
+/** @brief Identifies whether an exception record came from trace input or lane reconstruction. */
+enum class ExceptionOrigin : std::uint8_t {
+  Trace = 0U,
+  Synthetic = 1U,
 };
 
 /** @brief Identifies the supported CTF sample value encodings. */
@@ -145,6 +152,12 @@ constexpr std::uint8_t value(DwtAccess access)
 constexpr std::uint8_t value(ExceptionAction action)
 {
   return static_cast<std::uint8_t>(action);
+}
+
+/** @brief Returns the integer representation of an exception record origin. */
+constexpr std::uint8_t value(ExceptionOrigin origin)
+{
+  return static_cast<std::uint8_t>(origin);
 }
 
 /** @brief Returns the stable schema name of a CTF event ID. */

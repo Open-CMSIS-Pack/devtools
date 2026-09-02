@@ -345,6 +345,18 @@ void CtfEncoder::writeGlobalTimestampEvent(const TraceEvent& event, const Global
 
 void CtfEncoder::writeTraceStatusEvent(std::uint8_t reason, std::uint8_t traceBusId, bool emitEvent)
 {
+  if (reason == CtfSchema::value(CtfSchema::TraceStatusReason::Overflow) ||
+      reason == CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss)) {
+    const auto lane = m_exceptionLanes.find(traceBusId);
+    if (lane != m_exceptionLanes.end()) {
+      lane->second.resetForDiscontinuity(
+          [this, traceBusId](ExceptionNumber number, CtfExceptionLaneTracker::RecordAction action,
+                             CtfExceptionLaneTracker::RecordOrigin origin) {
+            emitExceptionRecord(traceBusId, number, action, origin);
+          });
+    }
+  }
+
   if (emitEvent) {
     constexpr auto payloadSize = 1U + 4U;
     const auto eventTimestamp = allocateEventTimestamp(traceBusId);
@@ -354,48 +366,49 @@ void CtfEncoder::writeTraceStatusEvent(std::uint8_t reason, std::uint8_t traceBu
                            record.writeU32(ctfOverflowCount(m_streamStates[traceBusId].overflowCount));
                          });
   }
-
-  if (reason == CtfSchema::value(CtfSchema::TraceStatusReason::Overflow) ||
-      reason == CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss)) {
-    const auto lane = m_exceptionLanes.find(traceBusId);
-    if (lane != m_exceptionLanes.end()) {
-      lane->second.resetForDiscontinuity(
-          [this, traceBusId](std::uint32_t number, CtfExceptionLaneTracker::RecordAction action) {
-            emitExceptionRecord(traceBusId, number, action);
-          });
-    }
-  }
 }
 
 void CtfEncoder::writeExceptionEvent(std::uint8_t traceBusId, const ExceptionTraceEvent& exception)
 {
   exceptionLane(traceBusId)
-      .consume(exception, [this, traceBusId](std::uint32_t number, CtfExceptionLaneTracker::RecordAction action) {
-        emitExceptionRecord(traceBusId, number, action);
+      .consume(exception, [this, traceBusId](ExceptionNumber number, CtfExceptionLaneTracker::RecordAction action,
+                                             CtfExceptionLaneTracker::RecordOrigin origin) {
+        emitExceptionRecord(traceBusId, number, action, origin);
       });
 }
 
-void CtfEncoder::emitExceptionRecord(std::uint8_t traceBusId, std::uint32_t number,
-                                     CtfExceptionLaneTracker::RecordAction action)
+void CtfEncoder::emitExceptionRecord(std::uint8_t traceBusId, ExceptionNumber number,
+                                     CtfExceptionLaneTracker::RecordAction action,
+                                     CtfExceptionLaneTracker::RecordOrigin origin)
 {
+  const auto semanticAction =
+      action == CtfExceptionLaneTracker::RecordAction::Enter
+          ? ExceptionAction::Entered
+          : action == CtfExceptionLaneTracker::RecordAction::Exit ? ExceptionAction::Exited : ExceptionAction::Returned;
   TraceEvent selectionEvent{ExceptionTraceEvent{
       number,
-      action == CtfExceptionLaneTracker::RecordAction::Enter ? ExceptionAction::Entered : ExceptionAction::Exited,
+      semanticAction,
   }};
   selectionEvent.traceBusId = traceBusId;
   if (!traceEventSelectedForOutput(selectionEvent, m_config.selection)) {
     return;
   }
-  constexpr auto payloadSize = 2U + 1U + 2U;
+  constexpr auto payloadSize = 2U + 1U + 2U + 1U;
   const auto eventTimestamp = allocateEventTimestamp(traceBusId);
-  const auto encodedAction =
-      CtfSchema::value(action == CtfExceptionLaneTracker::RecordAction::Enter ? CtfSchema::ExceptionAction::Entered
-                                                                              : CtfSchema::ExceptionAction::Exited);
+  const auto encodedAction = CtfSchema::value(
+      action == CtfExceptionLaneTracker::RecordAction::Enter
+          ? CtfSchema::ExceptionAction::Entered
+          : action == CtfExceptionLaneTracker::RecordAction::Exit ? CtfSchema::ExceptionAction::Exited
+                                                                  : CtfSchema::ExceptionAction::Returned);
+  const auto encodedOrigin = CtfSchema::value(origin == CtfExceptionLaneTracker::RecordOrigin::Trace
+                                                  ? CtfSchema::ExceptionOrigin::Trace
+                                                  : CtfSchema::ExceptionOrigin::Synthetic);
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::Exception), eventTimestamp, traceBusId, payloadSize,
                        [&](CtfStreamWriter::Record& record) {
-                         record.writeU16(static_cast<std::uint16_t>(number & 0xffffU));
+                         record.writeU16(number);
                          record.writeU8(encodedAction);
-                         record.writeU16(static_cast<std::uint16_t>(number & 0xffffU));
+                         record.writeU16(number);
+                         record.writeU8(encodedOrigin);
                        });
 }
 
@@ -404,8 +417,9 @@ CtfExceptionLaneTracker& CtfEncoder::exceptionLane(std::uint8_t traceBusId)
   const auto [lane, inserted] = m_exceptionLanes.try_emplace(traceBusId);
   if (inserted) {
     lane->second.startThreadMode(
-        [this, traceBusId](std::uint32_t number, CtfExceptionLaneTracker::RecordAction action) {
-          emitExceptionRecord(traceBusId, number, action);
+        [this, traceBusId](ExceptionNumber number, CtfExceptionLaneTracker::RecordAction action,
+                           CtfExceptionLaneTracker::RecordOrigin origin) {
+          emitExceptionRecord(traceBusId, number, action, origin);
         });
   }
   return lane->second;
@@ -428,7 +442,7 @@ std::pair<std::uint8_t, std::uint32_t> CtfEncoder::computeSampleQuality(const Tr
 
 void CtfEncoder::writeMetadataFile()
 {
-  std::set<std::uint32_t> observedExceptionNumbers;
+  std::set<ExceptionNumber> observedExceptionNumbers;
   for (const auto& [traceBusId, lane] : m_exceptionLanes) {
     (void)traceBusId;
     observedExceptionNumbers.insert(lane.observedExceptionNumbers().begin(), lane.observedExceptionNumbers().end());

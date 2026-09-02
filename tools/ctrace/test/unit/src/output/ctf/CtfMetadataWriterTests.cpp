@@ -52,6 +52,8 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
   EXPECT_NE(metadata.find("\"Reserved 13\" = 13"), std::string::npos);
   EXPECT_NE(metadata.find("\"External IRQ 0\" = 16"), std::string::npos);
   EXPECT_NE(metadata.find("\"External IRQ 38\" = 54"), std::string::npos);
+  EXPECT_NE(metadata.find("\"Thread Mode\" = 0"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_exception_origin_t cmsis_exception_origin;"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfMetadataWriterRejectsMissingOutputDirectory)
@@ -90,6 +92,19 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   for (const auto eventId : visualizedEvents) {
     EXPECT_NE(xml.find("eventName=\"" + std::string(CtfSchema::eventName(eventId)) + "\""), std::string::npos);
   }
+  EXPECT_NE(xml.find("value=\"returned\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"cmsis_exception_origin\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"trace\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"EXCEPTION_RETURN\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"Exception Return\""), std::string::npos);
+  const auto threadModeEntry = xml.find("path=\"EXCEPTION/Thread Mode\"");
+  const auto returnEntry = xml.find("path=\"EXCEPTION_RETURN/*\" displayText=\"true\"");
+  const auto interruptEntries = xml.find("path=\"EXCEPTION/(?!Thread Mode).+\"");
+  ASSERT_NE(threadModeEntry, std::string::npos);
+  ASSERT_NE(returnEntry, std::string::npos);
+  ASSERT_NE(interruptEntries, std::string::npos);
+  EXPECT_LT(threadModeEntry, returnEntry);
+  EXPECT_LT(returnEntry, interruptEntries);
 }
 
 TEST(CtraceUnitTests, testCtfTextWritersReportDeviceWriteFailures)

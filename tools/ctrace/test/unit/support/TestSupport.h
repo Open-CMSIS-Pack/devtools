@@ -179,7 +179,7 @@ inline std::vector<unsigned char> readTestBinaryFile(const std::filesystem::path
 }
 
 /** @brief Creates a timestamped exception event for a test. */
-inline TraceEvent exceptionPacket(std::uint32_t number, ExceptionAction action, std::uint64_t tcyc = 0)
+inline TraceEvent exceptionPacket(ExceptionNumber number, ExceptionAction action, std::uint64_t tcyc = 0)
 {
   TraceEvent packet{ExceptionTraceEvent{number, action}};
   packet.tcyc = tcyc;

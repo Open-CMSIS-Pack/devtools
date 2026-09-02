@@ -88,10 +88,10 @@ static std::string mapValueOrEmpty(const std::map<std::uint32_t, std::string>& v
   return found == values.end() ? "" : found->second;
 }
 
-static std::vector<std::uint32_t>
-exceptionNumbersWithDefaults(const std::vector<std::uint32_t>& observedExceptionNumbers)
+static std::vector<ExceptionNumber>
+exceptionNumbersWithDefaults(const std::vector<ExceptionNumber>& observedExceptionNumbers)
 {
-  std::vector<std::uint32_t> exceptions = {0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 14, 15};
+  std::vector<ExceptionNumber> exceptions = {0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 14, 15};
   for (const auto number : observedExceptionNumbers) {
     if (std::find(exceptions.begin(), exceptions.end(), number) == exceptions.end()) {
       exceptions.push_back(number);
@@ -102,11 +102,11 @@ exceptionNumbersWithDefaults(const std::vector<std::uint32_t>& observedException
 }
 
 /** @brief Returns the architectural name for a known Cortex-M exception. */
-static std::string exceptionName(std::uint32_t number)
+static std::string exceptionName(ExceptionNumber number)
 {
   switch (number) {
   case 0:
-    return "ThreadMode";
+    return "Thread Mode";
   case 1:
     return "Reset";
   case 2:
@@ -256,7 +256,7 @@ clock {
 
 /** @brief Writes reusable TSDL type and enumeration declarations. */
 static void writeTypeDefinitions(std::ostream& out, const MetadataSymbols& symbols,
-                                 const std::vector<std::uint32_t>& observedExceptionNumbers)
+                                 const std::vector<ExceptionNumber>& observedExceptionNumbers)
 {
   out << R"(
 typealias integer { size = 8; align = 8; signed = false; } := uint8_t;
@@ -291,8 +291,16 @@ typealias enum : uint8_t {
     "entered" = )"
       << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Entered)) << R"(,
     "exited" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Exited)) << R"(
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Exited)) << R"(,
+    "returned" = )"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Returned)) << R"(
 } := cmsis_exception_action_t;
+typealias enum : uint8_t {
+    "trace" = )"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionOrigin::Trace)) << R"(,
+    "synthetic" = )"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionOrigin::Synthetic)) << R"(
+} := cmsis_exception_origin_t;
 typealias enum : uint8_t {
 )";
   std::set<std::string> itmLabels;
@@ -446,6 +454,7 @@ event {
         cmsis_exception_number_t cmsis_exception_number;
         cmsis_exception_action_t cmsis_exception_action;
         uint16_t cmsis_exception_number_value;
+        cmsis_exception_origin_t cmsis_exception_origin;
     };
 };
 
@@ -466,7 +475,7 @@ event {
 
 void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const std::string& uuidString,
                               std::uint64_t coreClockHz, const std::vector<ResolvedTraceSource>& sources,
-                              const std::vector<std::uint32_t>& observedExceptionNumbers)
+                              const std::vector<ExceptionNumber>& observedExceptionNumbers)
 {
   const auto metadataPath = outputDir / "metadata";
   std::ofstream out(metadataPath, std::ios::out | std::ios::trunc);
