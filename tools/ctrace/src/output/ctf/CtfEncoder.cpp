@@ -350,7 +350,7 @@ void CtfEncoder::writeTraceStatusEvent(std::uint8_t reason, std::uint8_t traceBu
     const auto lane = m_exceptionLanes.find(traceBusId);
     if (lane != m_exceptionLanes.end()) {
       lane->second.resetForDiscontinuity(
-          [this, traceBusId](std::uint32_t number, CtfExceptionLaneTracker::RecordAction action,
+          [this, traceBusId](ExceptionNumber number, CtfExceptionLaneTracker::RecordAction action,
                              CtfExceptionLaneTracker::RecordOrigin origin) {
             emitExceptionRecord(traceBusId, number, action, origin);
           });
@@ -371,13 +371,13 @@ void CtfEncoder::writeTraceStatusEvent(std::uint8_t reason, std::uint8_t traceBu
 void CtfEncoder::writeExceptionEvent(std::uint8_t traceBusId, const ExceptionTraceEvent& exception)
 {
   exceptionLane(traceBusId)
-      .consume(exception, [this, traceBusId](std::uint32_t number, CtfExceptionLaneTracker::RecordAction action,
+      .consume(exception, [this, traceBusId](ExceptionNumber number, CtfExceptionLaneTracker::RecordAction action,
                                              CtfExceptionLaneTracker::RecordOrigin origin) {
         emitExceptionRecord(traceBusId, number, action, origin);
       });
 }
 
-void CtfEncoder::emitExceptionRecord(std::uint8_t traceBusId, std::uint32_t number,
+void CtfEncoder::emitExceptionRecord(std::uint8_t traceBusId, ExceptionNumber number,
                                      CtfExceptionLaneTracker::RecordAction action,
                                      CtfExceptionLaneTracker::RecordOrigin origin)
 {
@@ -405,9 +405,9 @@ void CtfEncoder::emitExceptionRecord(std::uint8_t traceBusId, std::uint32_t numb
                                                   : CtfSchema::ExceptionOrigin::Synthetic);
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::Exception), eventTimestamp, traceBusId, payloadSize,
                        [&](CtfStreamWriter::Record& record) {
-                         record.writeU16(static_cast<std::uint16_t>(number & 0xffffU));
+                         record.writeU16(number);
                          record.writeU8(encodedAction);
-                         record.writeU16(static_cast<std::uint16_t>(number & 0xffffU));
+                         record.writeU16(number);
                          record.writeU8(encodedOrigin);
                        });
 }
@@ -417,7 +417,7 @@ CtfExceptionLaneTracker& CtfEncoder::exceptionLane(std::uint8_t traceBusId)
   const auto [lane, inserted] = m_exceptionLanes.try_emplace(traceBusId);
   if (inserted) {
     lane->second.startThreadMode(
-        [this, traceBusId](std::uint32_t number, CtfExceptionLaneTracker::RecordAction action,
+        [this, traceBusId](ExceptionNumber number, CtfExceptionLaneTracker::RecordAction action,
                            CtfExceptionLaneTracker::RecordOrigin origin) {
           emitExceptionRecord(traceBusId, number, action, origin);
         });
@@ -442,7 +442,7 @@ std::pair<std::uint8_t, std::uint32_t> CtfEncoder::computeSampleQuality(const Tr
 
 void CtfEncoder::writeMetadataFile()
 {
-  std::set<std::uint32_t> observedExceptionNumbers;
+  std::set<ExceptionNumber> observedExceptionNumbers;
   for (const auto& [traceBusId, lane] : m_exceptionLanes) {
     (void)traceBusId;
     observedExceptionNumbers.insert(lane.observedExceptionNumbers().begin(), lane.observedExceptionNumbers().end());

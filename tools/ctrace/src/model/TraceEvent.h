@@ -115,9 +115,12 @@ inline std::optional<std::uint32_t> dwtAddressOffset(const DwtAddressTraceEvent&
   return std::nullopt;
 }
 
+/** @brief Stores a decoded Cortex-M exception number (9 bits on the wire). */
+using ExceptionNumber = std::uint16_t;
+
 /** @brief Contains a decoded exception transition. */
 struct ExceptionTraceEvent {
-  std::uint32_t number = 0;
+  ExceptionNumber number = 0;
   ExceptionAction action = ExceptionAction::Unknown;
 };
 

@@ -98,7 +98,7 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   EXPECT_NE(xml.find("value=\"EXCEPTION_RETURN\""), std::string::npos);
   EXPECT_NE(xml.find("value=\"Exception Return\""), std::string::npos);
   const auto threadModeEntry = xml.find("path=\"EXCEPTION/Thread Mode\"");
-  const auto returnEntry = xml.find("path=\"EXCEPTION_RETURN/" "*\" displayText=\"true\"");
+  const auto returnEntry = xml.find("path=\"EXCEPTION_RETURN/*\" displayText=\"true\"");
   const auto interruptEntries = xml.find("path=\"EXCEPTION/(?!Thread Mode).+\"");
   ASSERT_NE(threadModeEntry, std::string::npos);
   ASSERT_NE(returnEntry, std::string::npos);

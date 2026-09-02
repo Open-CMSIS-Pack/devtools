@@ -26,7 +26,7 @@ void CtfExceptionLaneTracker::resetForDiscontinuity(const RecordEmitter& emit)
 
 void CtfExceptionLaneTracker::consume(const ExceptionTraceEvent& event, const RecordEmitter& emit)
 {
-  const auto number = event.number & 0x1ffU;
+  const auto number = event.number;
   switch (event.action) {
   case ExceptionAction::Entered:
     enterContext(number);
@@ -46,12 +46,12 @@ void CtfExceptionLaneTracker::consume(const ExceptionTraceEvent& event, const Re
   }
 }
 
-const std::vector<std::uint32_t>& CtfExceptionLaneTracker::observedExceptionNumbers() const
+const std::vector<ExceptionNumber>& CtfExceptionLaneTracker::observedExceptionNumbers() const
 {
   return m_observedExceptionNumbers;
 }
 
-void CtfExceptionLaneTracker::setActiveContext(std::uint32_t number, RecordAction action, RecordOrigin origin,
+void CtfExceptionLaneTracker::setActiveContext(ExceptionNumber number, RecordAction action, RecordOrigin origin,
                                                const RecordEmitter& emit)
 {
   if (m_activeContextNumber.has_value() && *m_activeContextNumber == number) {
@@ -81,7 +81,7 @@ void CtfExceptionLaneTracker::updateActiveContext(RecordAction action, RecordOri
   setActiveContext(m_contextStack.empty() ? kThreadModeNumber : m_contextStack.back().number, action, origin, emit);
 }
 
-void CtfExceptionLaneTracker::emitRecord(std::uint32_t number, RecordAction action, RecordOrigin origin,
+void CtfExceptionLaneTracker::emitRecord(ExceptionNumber number, RecordAction action, RecordOrigin origin,
                                          const RecordEmitter& emit)
 {
   if (std::find(m_observedExceptionNumbers.begin(), m_observedExceptionNumbers.end(), number) ==
@@ -91,7 +91,7 @@ void CtfExceptionLaneTracker::emitRecord(std::uint32_t number, RecordAction acti
   emit(number, action, origin);
 }
 
-void CtfExceptionLaneTracker::enterContext(std::uint32_t number)
+void CtfExceptionLaneTracker::enterContext(ExceptionNumber number)
 {
   if (!m_contextStack.empty() && m_contextStack.back().state == ContextState::Running) {
     m_contextStack.back().state = ContextState::Preempted;
@@ -99,7 +99,7 @@ void CtfExceptionLaneTracker::enterContext(std::uint32_t number)
   m_contextStack.push_back({number, ContextState::Running});
 }
 
-bool CtfExceptionLaneTracker::exitContext(std::uint32_t number)
+bool CtfExceptionLaneTracker::exitContext(ExceptionNumber number)
 {
   if (m_contextStack.empty() || m_contextStack.back().number != number ||
       m_contextStack.back().state != ContextState::Running) {
@@ -109,7 +109,7 @@ bool CtfExceptionLaneTracker::exitContext(std::uint32_t number)
   return true;
 }
 
-void CtfExceptionLaneTracker::returnToContext(std::uint32_t number)
+void CtfExceptionLaneTracker::returnToContext(ExceptionNumber number)
 {
   while (!m_contextStack.empty() && m_contextStack.back().number != number) {
     m_contextStack.pop_back();

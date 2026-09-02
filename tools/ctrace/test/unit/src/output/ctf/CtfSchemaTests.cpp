@@ -105,7 +105,7 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
 {
   CtfExceptionLaneTracker tracker;
   std::vector<std::string> records;
-  const auto emit = [&records](std::uint32_t number, CtfExceptionLaneTracker::RecordAction action,
+  const auto emit = [&records](ExceptionNumber number, CtfExceptionLaneTracker::RecordAction action,
                                CtfExceptionLaneTracker::RecordOrigin origin) {
     const auto suffix = action == CtfExceptionLaneTracker::RecordAction::Enter
                             ? ":enter"
@@ -139,7 +139,7 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
                              "0:return:trace",
                          }))
       << "CtfExceptionLaneTracker nested and tail-chain records mismatch";
-  ASSERT_TRUE(tracker.observedExceptionNumbers() == std::vector<std::uint32_t>({0U, 3U, 15U, 54U}))
+  ASSERT_TRUE(tracker.observedExceptionNumbers() == std::vector<ExceptionNumber>({0U, 3U, 15U, 54U}))
       << "CtfExceptionLaneTracker observed lanes mismatch";
 
   tracker.resetForDiscontinuity(emit);
@@ -151,7 +151,7 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
 
   CtfExceptionLaneTracker resumedTracker;
   resumedTracker.startThreadMode(emit);
-  ASSERT_TRUE(resumedTracker.observedExceptionNumbers() == std::vector<std::uint32_t>({0U}))
+  ASSERT_TRUE(resumedTracker.observedExceptionNumbers() == std::vector<ExceptionNumber>({0U}))
       << "a new CtfExceptionLaneTracker must start with an empty lane history";
 
   records.clear();
@@ -181,7 +181,7 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTrackerPreservesReturnForActiveContext
 {
   CtfExceptionLaneTracker tracker;
   std::vector<std::string> records;
-  const auto emit = [&records](std::uint32_t number, CtfExceptionLaneTracker::RecordAction action,
+  const auto emit = [&records](ExceptionNumber number, CtfExceptionLaneTracker::RecordAction action,
                                CtfExceptionLaneTracker::RecordOrigin origin) {
     const auto actionLabel = action == CtfExceptionLaneTracker::RecordAction::Return ? "return" : "unexpected";
     const auto originLabel = origin == CtfExceptionLaneTracker::RecordOrigin::Trace ? "trace" : "synthetic";

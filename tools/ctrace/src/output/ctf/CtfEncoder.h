@@ -80,7 +80,8 @@ private:
   /** @brief Applies one exception transition to its CTF lane state. */
   void writeExceptionEvent(std::uint8_t traceBusId, const ExceptionTraceEvent& exception);
   /** @brief Emits one concrete exception lane record. */
-  void emitExceptionRecord(std::uint8_t traceBusId, std::uint32_t number, CtfExceptionLaneTracker::RecordAction action,
+  void emitExceptionRecord(std::uint8_t traceBusId, ExceptionNumber number,
+                           CtfExceptionLaneTracker::RecordAction action,
                            CtfExceptionLaneTracker::RecordOrigin origin);
   /** @brief Returns the exception tracker for one stream. */
   CtfExceptionLaneTracker& exceptionLane(std::uint8_t traceBusId);

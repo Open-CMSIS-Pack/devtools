@@ -32,9 +32,10 @@
 #include <utility>
 #include <vector>
 
+using CtfTestSupport::CtfExceptionRecord;
 using CtfTestSupport::parseCtfRecords;
+using CtfTestSupport::readCtfExceptionRecords;
 using CtfTestSupport::readCtfRecords;
-using CtfTestSupport::readLe16;
 using CtfTestSupport::readLe64;
 using CtfTestSupport::requireFirstCtfRecord;
 using CtfTestSupport::requireSingleItmEvent;
@@ -100,22 +101,6 @@ static ResolvedTraceSource resolvedSource(const CtraceRunSourceMeta& source)
   };
 }
 
-/** @brief Reads compact exception records from a test CTF stream. */
-static std::vector<std::string> readCtfExceptionRecords(const std::filesystem::path& streamPath)
-{
-  std::vector<std::string> records;
-  for (const auto& record : readCtfRecords(streamPath)) {
-    if (record.id == CtfSchema::value(CtfSchema::EventId::Exception)) {
-      const auto number = readLe16(record.payload, 0U);
-      const auto action = record.payload[2U];
-      const auto origin = record.payload[5U];
-      records.push_back(std::to_string(number) + ":" + std::to_string(static_cast<unsigned>(action)) + ":" +
-                        std::to_string(static_cast<unsigned>(origin)));
-    }
-  }
-  return records;
-}
-
 /** @brief Reads trace-status reasons while requiring no other event types. */
 static std::vector<std::uint8_t> readOnlyCtfTraceStatusReasons(const std::filesystem::path& streamPath)
 {
@@ -162,16 +147,16 @@ TEST(CtraceUnitTests, testCtfBundleOutputExceptionContext)
   ASSERT_TRUE(metadata.find("\"trace\" = 0") != std::string::npos) << "CTF exception trace origin mismatch";
   ASSERT_TRUE(metadata.find("\"synthetic\" = 1") != std::string::npos) << "CTF exception synthetic origin mismatch";
 
-  ASSERT_TRUE(records == std::vector<std::string>({
-                             "0:0:1",
-                             "0:1:1",
-                             "15:0:0",
-                             "15:1:1",
-                             "54:0:0",
-                             "54:1:0",
-                             "15:2:0",
-                             "15:1:0",
-                             "0:2:0",
+  ASSERT_TRUE(records == std::vector<CtfExceptionRecord>({
+                             {0U, 0U, 1U},
+                             {0U, 1U, 1U},
+                             {15U, 0U, 0U},
+                             {15U, 1U, 1U},
+                             {54U, 0U, 0U},
+                             {54U, 1U, 0U},
+                             {15U, 2U, 0U},
+                             {15U, 1U, 0U},
+                             {0U, 2U, 0U},
                          }))
       << "CtfBundleOutput exception active-context records mismatch";
 }
@@ -189,7 +174,8 @@ TEST(CtraceUnitTests, testCtfBundleOutputOverflowClosesExceptionUntilReturn)
   output.stop();
 
   ASSERT_TRUE(readCtfExceptionRecords(outputDir / "stream_0") ==
-              std::vector<std::string>({"0:0:1", "0:1:1", "15:0:0", "15:1:1", "0:2:0"}))
+              std::vector<CtfExceptionRecord>({{0U, 0U, 1U}, {0U, 1U, 1U}, {15U, 0U, 0U}, {15U, 1U, 1U},
+                                               {0U, 2U, 0U}}))
       << "CTF overflow must close the active exception without inventing Thread Mode before its return";
 }
 
@@ -348,7 +334,8 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   context.writeEvent(exceptionPacket(54U, ExceptionAction::Entered, 20U));
   context.stop();
   ASSERT_TRUE(readCtfExceptionRecords(contextDir / "stream_0") ==
-              std::vector<std::string>({"0:0:1", "0:1:1", "15:0:0", "15:1:1", "54:0:0"}))
+              std::vector<CtfExceptionRecord>({{0U, 0U, 1U}, {0U, 1U, 1U}, {15U, 0U, 0U}, {15U, 1U, 1U},
+                                               {54U, 0U, 0U}}))
       << "a decoder warning must not reset the active CTF exception context";
 
   auto dataLossOptions = makeCtfBundleConfig(dataLossDir, 1000000U);
@@ -360,7 +347,8 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   dataLoss.writeEvent(exceptionPacket(15U, ExceptionAction::Returned, 20U));
   dataLoss.stop();
   ASSERT_TRUE(readCtfExceptionRecords(dataLossDir / "stream_0") ==
-              std::vector<std::string>({"0:0:1", "0:1:1", "15:0:0", "15:1:1", "15:2:0"}))
+              std::vector<CtfExceptionRecord>({{0U, 0U, 1U}, {0U, 1U, 1U}, {15U, 0U, 0U}, {15U, 1U, 1U},
+                                               {15U, 2U, 0U}}))
       << "filtered data-loss must still reset the CTF exception context";
 }
 
