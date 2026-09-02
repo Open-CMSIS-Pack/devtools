@@ -139,6 +139,28 @@ TEST_F(CtraceIntegTests, GeneratesAllOutputs)
   expectNonEmptyFile(workDirectory() / "Minimal.SWO.traceanalysis.xml");
 }
 
+TEST_F(CtraceIntegTests, IgnoresPmuPacketsUntilOutputSemanticsExist)
+{
+  writeFile(workDirectory() / "Pmu.ctrace-run.yml", R"yml(ctrace-run:
+  ctrace-setup:
+    - timestamps:
+        clock: 400000000
+  ctrace-refs: []
+)yml");
+
+  const std::string raw{"\0\0\0\0\0\x80\x1d\x81\x09\x41", 10U};
+  writeFile(workDirectory() / "Pmu.SWO.raw", raw);
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Pmu", "--all"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+            "0,,itm,1,0x41,,,\n",
+            readTextFile(workDirectory() / "Pmu.SWO.csv"));
+  expectNonEmptyFile(workDirectory() / "Pmu.ctf" / "metadata");
+  expectNonEmptyFile(workDirectory() / "Pmu.ctf" / "stream_0");
+  expectNonEmptyFile(workDirectory() / "Pmu.SWO.traceanalysis.xml");
+}
+
 TEST_F(CtraceIntegTests, RejectsInvalidOptionCombination)
 {
   const auto result = run({"ctrace", "--version", "--type", "DWT"});

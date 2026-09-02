@@ -22,7 +22,7 @@ enum class DwtPacketSource : std::uint8_t {
   EventCounter = 0U,
   ExceptionTrace = 1U,
   PeriodicPcSample = 2U,
-  PmuOverflow = 3U,
+  PmuTraceOnOverflow = 3U,
 };
 
 /** @brief Identifies address and value variants of DWT data-trace packets. */
@@ -50,6 +50,7 @@ constexpr std::uint8_t kDataTracePacketTypeShift = 3U;
 constexpr std::uint32_t kExceptionNumberMask = 0x1ffU;
 constexpr std::uint32_t kExceptionActionMask = 0x3U;
 constexpr std::uint32_t kExceptionActionShift = 12U;
+constexpr std::uint32_t kPmuOverflowMask = 0xffU;
 
 constexpr std::uint8_t kArmv7MFullPcBytes = 4U;
 constexpr std::uint8_t kArmv7MAddressOffsetBytes = 2U;
@@ -60,11 +61,20 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
   const auto discriminator = payload.discriminator;
 
   const auto source = static_cast<DwtPacketSource>(discriminator);
-  if (source == DwtPacketSource::EventCounter || source == DwtPacketSource::PmuOverflow) {
+  if (source == DwtPacketSource::EventCounter) {
     output = flush(payload.quality, payload.tcyc);
-    TraceEvent packet = source == DwtPacketSource::EventCounter
-                            ? TraceEvent(DwtEventTraceEvent{discriminator, payload.size, payload.value})
-                            : TraceEvent(PmuTraceEvent{discriminator, payload.size, payload.value});
+    TraceEvent packet{DwtEventTraceEvent{discriminator, payload.size, payload.value}};
+    packet.index = payload.index;
+    packet.traceBusId = payload.traceBusId;
+    packet.tcyc = payload.tcyc;
+    packet.quality = payload.quality;
+    output.push_back(std::move(packet));
+    return output;
+  }
+
+  if (source == DwtPacketSource::PmuTraceOnOverflow) {
+    output = flush(payload.quality, payload.tcyc);
+    TraceEvent packet{PmuTraceEvent{static_cast<std::uint8_t>(payload.value & kPmuOverflowMask)}};
     packet.index = payload.index;
     packet.traceBusId = payload.traceBusId;
     packet.tcyc = payload.tcyc;

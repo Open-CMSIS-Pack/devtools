@@ -132,11 +132,9 @@ struct DwtEventTraceEvent {
   std::uint32_t value = 0;
 };
 
-/** @brief Contains a decoded PMU overflow packet. */
+/** @brief Contains the OVn counter mask from a decoded PMU trace-on-overflow packet. */
 struct PmuTraceEvent {
-  std::uint32_t discriminator = 0;
-  std::uint8_t size = 0;
-  std::uint32_t value = 0;
+  std::uint8_t overflowMask = 0;
 };
 
 /** @brief Contains a periodic DWT PC sample or its processor-sleep indication. */
