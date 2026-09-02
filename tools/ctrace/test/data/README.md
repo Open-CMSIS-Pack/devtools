@@ -27,7 +27,7 @@ The approved Blinky fixture set is identified by these SHA-256 values:
 - SWO capture: `f2de14241242697fa0948f1878850cce81575c404233c5c135aa68fc582dc72c`
 - TB capture: `b0fccabe1a326ffe9fadf12d5c3a205d87628985e5e75a99da23c97d7f33d13b`
 - Derived CSV: `6138cc60deee8bc16a8a889a6d9156ed76f389c4831afafc5125e4a0d00074cc`
-- Trace-run YAML: `deef176a7a924a9c24a126ea460994e86afee3d216e6839da515296758797966`
+- Trace-run YAML: `c9816183dde98ded93e57afd44312fb3026e3efdd1681f745bc03f7426713563`
 
 The `Arm-reset` fixture is an approved excerpt of an Arm target capture. It
 starts at the hardware ITM sync immediately before an MCU-reset discontinuity
@@ -38,7 +38,7 @@ portable across CI platforms. The trace-run YAML retains only metadata needed
 by the test.
 
 - SWO capture: `8c7ba2b90e42188517c7b793e8b7dd4030fa5455b7a38a2de15d8ca2b47995c9`
-- Trace-run YAML: `455c28a490c771d8960b1c5f44785ff2deb05cd6e3a640251c0c7b78f09c5ed1`
+- Trace-run YAML: `372e3bf3986fd6860dee5046920cbe129db6fd298c3e22468b3e374c09b8cf52`
 
 `trace-run` contains only the small current-schema inputs needed by executable
 tests. Reader unit tests cover only the fields consumed by ctrace. A C++

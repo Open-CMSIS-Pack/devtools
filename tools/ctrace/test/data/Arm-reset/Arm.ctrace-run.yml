@@ -9,20 +9,28 @@ ctrace-run:
     - ctrace-ref: data#0
       type: dwt
       source: 0
-      symbol-address: 0x2404AEA4
+      address: 0x2404AEA4
+      size: 4
+      data-type: unsigned
       label: Sine
     - ctrace-ref: data#1
       type: dwt
       source: 1
-      symbol-address: 0x2404AEA0
+      address: 0x2404AEA0
+      size: 4
+      data-type: unsigned
       label: Rectangle
     - ctrace-ref: data#2
       type: dwt
       source: 2
-      symbol-address: 0x2404AE9C
+      address: 0x2404AE9C
+      size: 4
+      data-type: unsigned
       label: Random
     - ctrace-ref: data#3
       type: dwt
       source: 3
-      symbol-address: 0x24000E88
+      address: 0x24000E88
+      size: 4
+      data-type: unsigned
       label: Current

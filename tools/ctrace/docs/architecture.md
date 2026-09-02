@@ -1,9 +1,8 @@
 # ctrace Architecture
 
 This document describes the internal structure of `ctrace`, the runtime data flow, and the intended extension points.
-For command-line usage, build instructions, and release information, see the [project README](../README.md). The
-[verified constraints](constraints.md) record preserved contracts; the compact [TODO list](todo.md) tracks remaining
-work.
+For command-line usage and build instructions, see the [project README](../README.md). The [verified
+constraints](constraints.md) record preserved contracts; the compact [TODO list](todo.md) tracks remaining work.
 
 ![ctrace architecture](architecture.svg)
 
@@ -19,18 +18,13 @@ packets are retained internally but are not mapped to their selectors yet; perio
 Bus input is discovered so that a complete trace directory can be inspected, but `*.TB.raw` files are reported and
 skipped until a decoder is implemented.
 
-ITM stream decoding covers the architectural stimulus-port domain `0` through `31`. Public ITM payload output is
-restricted to ports `1` through `31`; port `0` is decoded for stream integrity but excluded from CSV and CTF event
-output. Trace Compass observes the same filtered CTF stream.
-
 The architecture separates protocol decoding, semantic interpretation, and output generation. This keeps output
 formats independent of OpenCSD and allows another raw trace channel to reuse the event model and output backends.
 
 ## How it works at a glance
 
-`ctrace` processes one solution set at a time. The common base name joins configuration and trace data; for example,
-`Board.ctrace-run.yml` describes the sources and timing metadata required to decode `Board.SWO.raw`. A matching
-`Board.TB.raw` is discovered as part of the same solution set but is skipped by the first release profile.
+`ctrace` processes one solution set at a time. The [README](../README.md#trace-directory) describes how configuration,
+raw input, and generated output files are grouped by their common base name.
 
 The main in-memory path is:
 
@@ -68,32 +62,6 @@ The `TraceEvent` boundary is the central design point. Before it, code handles b
 recovery, and Cortex-M state. After it, code sees backend-independent events in decode order and does not depend on
 OpenCSD types.
 
-| Stage | Owner | Transformation |
-| --- | --- | --- |
-| Discover | `TraceDirectoryJob` | Trace directory and target selection to solution-set configuration and raw inputs |
-| Prepare | `CtraceRunMeta`, `FileDecodeJob` | YAML representation to normalized runtime metadata and an output plan |
-| Decode protocol | `DecodePipeline`, `OpenCsdItmDecoder` | Raw byte chunks to recoverable OpenCSD trace elements |
-| Interpret | `CortexMStreamDecoder`, `CortexMPostDecoder` | Protocol elements to timestamped semantic events |
-| Consume | `DecodeConsumers` | One ordered event stream to diagnostics and every enabled output backend |
-| Complete | `TraceOutputLifecycle` | Complete active artifacts, or remove them after output or decoder failure |
-
-## Runtime flow
-
-1. `CtraceMain` parses and validates the command line.
-2. `TraceRunDiscovery` finds one or all `<solution-set>.ctrace-run.yml` files in the selected trace directory.
-3. `YmlTraceRunConfigReader` reads fields used by `ctrace`; unrelated and unknown YAML fields are ignored.
-4. `CtraceRunMeta` normalizes processor, timestamp, route, ITM, and DWT source metadata.
-5. `TraceDirectoryJob` associates the configuration with matching raw trace channels.
-6. `FileDecodeJob` creates the requested output plan and reads supported raw files in 64 KiB blocks.
-7. `DecodePipeline` receives non-owning `RawByteView` values while preserving decoder state across every file-read
-   boundary.
-8. The OpenCSD adapter decodes ITM protocol elements and preserves decoder warnings, errors, and recovery boundaries.
-9. The Cortex-M post-decoder converts protocol elements into semantic `TraceEvent` values.
-10. `DecodeConsumers` forwards every event to diagnostics and the selected output backends.
-11. Output lifecycle handling completes valid artifacts or removes incomplete artifacts after a failure.
-
-Without `--csv`, `--ctf`, or `--all`, the same pipeline runs in validation-only mode without creating output files.
-
 ## Processing state and ownership
 
 One `DecodePipeline` is created for each supported raw file. It owns the OpenCSD adapter and Cortex-M stream decoder,
@@ -105,12 +73,7 @@ buffer; each `RawByteView` borrows that buffer only for the synchronous `DecodeP
 into the same `TraceEventSink`, preserving input order while keeping stream-specific timestamp and DWT state apart.
 
 There is no application-wide event queue. `DecodeConsumers` forwards each event synchronously to the output
-lifecycle and issue reporter. Output backends own their files and are isolated from one another: failure of one
-backend aborts its incomplete artifact but does not directly stop another active backend. A non-recoverable decoder
-error aborts every still-active output for that raw file.
-
-The diagnostic sink lives for the complete command invocation. It therefore aggregates failures across solution sets
-and determines the final process status after processing has continued wherever possible.
+lifecycle and issue reporter.
 
 ## Recovery after damaged trace
 
@@ -124,8 +87,8 @@ the Cortex-M post-decoder flushes pending events, resets incomplete DWT correlat
 until the stream supplies enough timing information again. The issue remains part of the ordered `TraceEvent` stream,
 so diagnostics and enabled output backends observe the same recovery boundary.
 
-Failure to reset OpenCSD, repeated lack of decoder progress, or an unsuccessful wait/flush operation aborts only the
-current raw-file job. Other solution sets continue to be processed where possible.
+Failure to reset OpenCSD, repeated lack of decoder progress, or an unsuccessful wait/flush operation aborts the
+current raw-file job.
 
 ## Suggested code-reading path
 
@@ -165,9 +128,7 @@ must not depend on control jobs or command-line details.
 | --- | --- |
 | `src/tracerun` | File discovery, YAML parsing, schema subset validation, and normalized metadata |
 
-The YAML reader intentionally consumes only data required by `ctrace`. A malformed consumed field is an error, while
-an unknown field is ignored. This permits compatible trace-run format extensions without weakening validation of the
-data used for decoding or output generation.
+The YAML reader's validation and metadata rules are recorded in the [constraints](constraints.md#boundaries).
 
 `CtraceRunMeta` is the boundary between the YAML representation and runtime processing. Decode and output modules use
 normalized metadata instead of navigating YAML nodes.
@@ -211,27 +172,22 @@ Decoder issue packets remain part of the event stream. `DecodeConsumers` reports
 of output filters and forwards all events to the backends. The backends apply stream and type selection internally;
 selected issues become CSV error rows or CTF trace-status events. Repeated issues are not silently collapsed.
 
-Processing continues with other solution sets where possible. Errors are rendered as `error` even when their impact
-causes a non-zero exit status. Unhandled internal ctrace failures also terminate the command after an error diagnostic.
+An invocation-wide diagnostic sink aggregates failures while other solution sets continue where possible, then
+determines the final process status. Errors are rendered as `error` even when their impact causes a non-zero exit
+status. Unhandled internal ctrace failures also terminate the command after an error diagnostic.
 
 ## External dependencies
 
-| Dependency | Use |
-| --- | --- |
-| `cxxopts` | Command-line parsing |
-| `yaml-cpp` | Trace-run YAML parsing |
-| `OpenCSD` 1.8.3 | ITM protocol decoding; pinned as a repository submodule |
-| GoogleTest | Unit-test framework; not linked into the product executable |
+`cxxopts` provides command-line parsing, `yaml-cpp` is confined to the trace-run reader, OpenCSD is isolated behind
+the decode adapters, and GoogleTest is used only by test targets. Exact revisions, licenses, and dependency build
+configuration are documented in the [third-party notices](THIRD_PARTY_NOTICES.md).
 
-Dependencies are provided by the devtools repository. `tools/ctrace` does not maintain private library copies.
 The ITM adapter currently uses OpenCSD `common/` and `interfaces/` headers because the public OpenCSD 1.8.3 boundary
 does not provide equivalent access: its installed headers omit the ITM configuration and packet types required by the
 decoder callbacks, and its C API exposes only the last structured error rather than all errors from one data-path
 operation. Moving the adapter to the public API therefore also requires resolving these two gaps.
 
-The pinned OpenCSD source is built without a downstream source patch. A known unsafe empty-buffer access in an
-upstream diagnostic path, its reachability, and a proposed upstream fix are recorded in the
-[OpenCSD issue notes](opencsd-issues.md).
+A known decoder defect and its proposed upstream fix are recorded in the [OpenCSD issue notes](opencsd-issues.md).
 
 ## Extension points
 
@@ -256,27 +212,18 @@ Do not introduce backend-specific state into the decode pipeline or event model.
 Unit tests under `test/unit/src` mirror the production modules. Shared file, event, and diagnostic helpers live under
 `test/unit/support`. One CTest entry runs the complete GoogleTest executable and writes its XML report.
 
-The `CtraceIntegTests` GoogleTest target calls `CtraceMain` through the same `ctracelib` application object used by the
-executable. It verifies command-line behavior, diagnostics, output cleanup, and fixture conversion. A small set of
-`ctrace-` CTest smoke tests retains coverage of the platform executable and Windows manifest. Test data and expected
-artifacts live under `test/data`; generated files are written only below the CMake build directory.
+Executable-level coverage and fixture ownership are documented next to the
+[integration tests](../test/integration/README.md) and [test data](../test/data/README.md).
 
-CI runs the unit and integration suites on Windows AMD64 and Linux AMD64. ARM64 targets are compiled but not executed,
-matching the other devtools workflows.
-
-## Build and release structure
+## Build and CI structure
 
 The source tree has seven static library targets: `model`, `cli`, `trace-run`, `diagnostics`, `decode`, `output`, and
 `control`. The shared `ctracelib` object contains `CtraceMain`; the executable adds only the platform trampoline and
 manifest where required. Dependencies form a directed, cycle-free graph with `control` as the composition root.
 
 The tool-specific GitHub workflow is selected by a `tools/ctrace/<version>` release tag. It builds Windows AMD64 and
-Arm64, Linux AMD64 and Arm64, and macOS Arm64 binaries.
-The release archive contains the Apache-2.0 project license, application-dependency notices and license texts,
-retained OpenCSD copyright notices, and per-file SHA-256 checksums. The version compiled into the executable is derived
-from the same tag. The actual compiler and operating-system runtime content still requires inspection for each
-production release.
-
-The checked-in SWO and TB captures are approved ctrace test assets and may be redistributed with devtools. Together
-with the tool-specific build, test, packaging, versioning, and license integration, this forms the technical basis for
-the first open-source release.
+Arm64, Linux AMD64 and Arm64, and macOS Arm64 binaries. Unit and integration tests run on Windows AMD64 and Linux
+AMD64; the remaining targets are compile-only.
+The version compiled into the executable is derived from the same tag. Archive contents and license material are
+described in the [third-party notices](THIRD_PARTY_NOTICES.md); unfinished release work remains in the
+[TODO list](todo.md).
