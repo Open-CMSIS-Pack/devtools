@@ -40,6 +40,7 @@ enum class TraceIssueCode {
   DataLoss,
   InvalidExceptionAction,
   UnsupportedDwtAddressPayload,
+  UnsupportedDwtPcSamplePayload,
   OpenCsdDecodeError,
   OpenCsdBadPacketSequence,
   OpenCsdInvalidPacketHeader,
@@ -138,6 +139,12 @@ struct PmuTraceEvent {
   std::uint32_t value = 0;
 };
 
+/** @brief Contains a periodic DWT PC sample or its processor-sleep indication. */
+struct PcSampleTraceEvent {
+  std::uint32_t pc = 0;
+  bool sleeping = false;
+};
+
 /** @brief Marks a decoded local timestamp packet. */
 struct LocalTimestampTraceEvent {};
 
@@ -166,7 +173,7 @@ struct TraceIssueEvent {
 
 /** @brief Stores the semantic payload of a decoded trace event. */
 using TraceEventPayload = std::variant<SoftwareTraceEvent, DwtDataTraceEvent, DwtAddressTraceEvent, ExceptionTraceEvent,
-                                       DwtEventTraceEvent, PmuTraceEvent, LocalTimestampTraceEvent,
+                                       DwtEventTraceEvent, PmuTraceEvent, PcSampleTraceEvent, LocalTimestampTraceEvent,
                                        GlobalTimestampTraceEvent, OverflowTraceEvent, SyncTraceEvent, TraceIssueEvent>;
 
 /** @brief Describes timestamp and data-loss quality at an event. */

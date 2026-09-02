@@ -84,14 +84,25 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   const TemporaryTestPath path("ctrace-trace-compass-schema.xml");
   TraceCompassXmlWriter::writeFile(path.path());
   const auto xml = readTestTextFile(path.path());
-  constexpr std::array<CtfSchema::EventId, 5U> visualizedEvents{
+  constexpr std::array<CtfSchema::EventId, 6U> visualizedEvents{
       CtfSchema::EventId::Itm,       CtfSchema::EventId::DwtValue,    CtfSchema::EventId::DwtAddress,
-      CtfSchema::EventId::Exception, CtfSchema::EventId::TraceStatus,
+      CtfSchema::EventId::Exception, CtfSchema::EventId::TraceStatus, CtfSchema::EventId::PcSample,
   };
 
   for (const auto eventId : visualizedEvents) {
     EXPECT_NE(xml.find("eventName=\"" + std::string(CtfSchema::eventName(eventId)) + "\""), std::string::npos);
   }
+  EXPECT_NE(xml.find("value=\"cmsis_pc_sample_state\""), std::string::npos);
+  EXPECT_NE(xml.find("<stateAttribute type=\"constant\" value=\"Sleep\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<stateValue type=\"int\" value=\"0\" />"), std::string::npos);
+  EXPECT_EQ(xml.find("<stateValue type=\"string\" value=\"Sleep\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<label value=\"PC Sampling\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<definedValue name=\"Sleep\" value=\"0\""), std::string::npos);
+  EXPECT_EQ(xml.find("<definedValue name=\"Running\""), std::string::npos);
+  EXPECT_NE(xml.find("<entry path=\"PC_SAMPLE/" "*\" displayText=\"true\"><display type=\"self\" /></entry>"),
+            std::string::npos);
+  EXPECT_NE(xml.find("<stateValue type=\"string\" value=\"overflow\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<stateValue type=\"string\" value=\"data_loss\" />"), std::string::npos);
   EXPECT_NE(xml.find("value=\"returned\""), std::string::npos);
   EXPECT_NE(xml.find("value=\"cmsis_exception_origin\""), std::string::npos);
   EXPECT_NE(xml.find("value=\"trace\""), std::string::npos);

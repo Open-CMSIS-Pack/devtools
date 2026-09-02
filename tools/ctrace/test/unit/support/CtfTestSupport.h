@@ -138,6 +138,13 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
   if (eventId == CtfSchema::value(CtfSchema::EventId::GlobalTimestamp)) {
     return 9U;
   }
+  if (eventId == CtfSchema::value(CtfSchema::EventId::PcSample)) {
+    requirePayload(1U);
+    const auto state = bytes[payloadOffset];
+    require(state <= CtfSchema::value(CtfSchema::PcSampleState::Pc),
+            "CTF test parser encountered an invalid PC-sample state");
+    return 1U + (state == CtfSchema::value(CtfSchema::PcSampleState::Pc) ? 4U : 0U) + 5U;
+  }
   require(false, "CTF test parser encountered an unknown event ID");
   return 0U;
 }

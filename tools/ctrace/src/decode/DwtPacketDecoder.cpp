@@ -102,10 +102,32 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
   }
 
   if (source == DwtPacketSource::PeriodicPcSample) {
-    // PC samples need a dedicated output event. Until that event is
-    // defined, flush preceding data trace but do not expose the sample as
-    // an address event.
     output = flush(payload.quality, payload.tcyc);
+    const auto isPc = payload.size == 4U;
+    const auto isSleeping = payload.size == 1U && payload.value == 0U;
+    if (!isPc && !isSleeping) {
+      TraceEvent error{TraceIssueEvent{
+          TraceIssueCode::UnsupportedDwtPcSamplePayload,
+          TraceIssueSeverity::Error,
+          "unsupported DWT PC-sample payload: size " + std::to_string(payload.size) +
+              ", value " + std::to_string(payload.value) +
+              "; expected a 4-byte PC or a 1-byte zero sleep indication",
+          std::nullopt,
+          std::nullopt,
+      }};
+      error.index = payload.index;
+      error.traceBusId = payload.traceBusId;
+      error.tcyc = payload.tcyc;
+      error.quality = payload.quality;
+      output.push_back(std::move(error));
+      return output;
+    }
+    TraceEvent packet{PcSampleTraceEvent{payload.value, isSleeping}};
+    packet.index = payload.index;
+    packet.traceBusId = payload.traceBusId;
+    packet.tcyc = payload.tcyc;
+    packet.quality = payload.quality;
+    output.push_back(std::move(packet));
     return output;
   }
 

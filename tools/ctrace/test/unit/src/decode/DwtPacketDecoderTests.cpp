@@ -25,14 +25,57 @@ static DwtPayloadPacket dwtPayload(std::uint8_t discriminator, std::uint8_t size
   return {index, traceBusId, discriminator, size, value, tcyc, {}};
 }
 
-TEST(CtraceUnitTests, testDwtPcSampleIsSuppressedUntilDedicatedEventExists)
+TEST(CtraceUnitTests, testDwtPcSampleProducesDedicatedEvent)
 {
   DwtPacketDecoder decoder;
   auto payload = dwtPayload(2U, 4U, 0x08001234U, 19U, 3U, 949339000U);
   payload.quality.timestampReliable = true;
 
   const auto packets = decoder.decode(payload);
-  ASSERT_TRUE(packets.empty()) << "DWT PC samples must remain suppressed until their output event is defined";
+  ASSERT_EQ(packets.size(), 1U) << "DWT PC sample event count mismatch";
+  const auto* sample = traceEventPayload<PcSampleTraceEvent>(packets.front());
+  ASSERT_NE(sample, nullptr);
+  EXPECT_EQ(sample->pc, 0x08001234U) << "DWT PC sample payload mismatch";
+  EXPECT_FALSE(sample->sleeping) << "DWT PC sample payload mismatch";
+  EXPECT_EQ(packets.front().index, 19U) << "DWT PC sample identity mismatch";
+  EXPECT_EQ(packets.front().traceBusId, 3U) << "DWT PC sample identity mismatch";
+  EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(949339000U))
+      << "DWT PC sample identity mismatch";
+  ASSERT_TRUE(packets.front().quality.has_value()) << "DWT PC sample quality mismatch";
+  EXPECT_TRUE(packets.front().quality->timestampReliable) << "DWT PC sample quality mismatch";
+  EXPECT_EQ(traceEventType(packets.front()), TraceEventType::PcSample)
+      << "DWT PC sample selector mapping mismatch";
+}
+
+TEST(CtraceUnitTests, testDwtPcSamplePreservesProcessorSleep)
+{
+  DwtPacketDecoder decoder;
+  const auto packets = decoder.decode(dwtPayload(2U, 1U, 0U, 20U, 4U, 949339100U));
+  ASSERT_EQ(packets.size(), 1U) << "DWT PC sleep event count mismatch";
+  const auto* sample = traceEventPayload<PcSampleTraceEvent>(packets.front());
+  ASSERT_NE(sample, nullptr);
+  EXPECT_EQ(sample->pc, 0U) << "DWT PC sleep indication mismatch";
+  EXPECT_TRUE(sample->sleeping) << "DWT PC sleep indication mismatch";
+}
+
+TEST(CtraceUnitTests, testDwtPcSampleRejectsUnsupportedPayloads)
+{
+  const auto verify = [](const DwtPayloadPacket& payload, const char* expectedMessage) {
+    DwtPacketDecoder decoder;
+    const auto packets = decoder.decode(payload);
+    ASSERT_EQ(packets.size(), 1U) << "unsupported DWT PC sample must emit one error";
+    const auto* issue = traceEventPayload<TraceIssueEvent>(packets.front());
+    ASSERT_NE(issue, nullptr);
+    EXPECT_EQ(issue->code, TraceIssueCode::UnsupportedDwtPcSamplePayload)
+        << "unsupported DWT PC sample error mismatch";
+    EXPECT_EQ(issue->message, expectedMessage) << "unsupported DWT PC sample diagnostic mismatch";
+  };
+
+  verify(dwtPayload(2U, 1U, 1U),
+         "unsupported DWT PC-sample payload: size 1, value 1; expected a 4-byte PC or a 1-byte zero sleep indication");
+  verify(dwtPayload(2U, 2U, 0x1234U),
+         "unsupported DWT PC-sample payload: size 2, value 4660; expected a 4-byte PC or a 1-byte zero sleep "
+         "indication");
 }
 
 TEST(CtraceUnitTests, testDwtCounterPacketsArePreservedUntilOutputSemanticsExist)

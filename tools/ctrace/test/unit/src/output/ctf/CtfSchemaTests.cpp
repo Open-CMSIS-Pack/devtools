@@ -21,10 +21,11 @@
 
 TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
 {
-  constexpr std::array<std::uint32_t, 6U> eventIds{
+  constexpr std::array<std::uint32_t, 7U> eventIds{
       CtfSchema::value(CtfSchema::EventId::Itm),        CtfSchema::value(CtfSchema::EventId::DwtValue),
       CtfSchema::value(CtfSchema::EventId::DwtAddress), CtfSchema::value(CtfSchema::EventId::TraceStatus),
       CtfSchema::value(CtfSchema::EventId::Exception),  CtfSchema::value(CtfSchema::EventId::GlobalTimestamp),
+      CtfSchema::value(CtfSchema::EventId::PcSample),
   };
   constexpr std::array<std::uint8_t, 5U> statusReasons{
       CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart),
@@ -42,6 +43,10 @@ TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
       CtfSchema::value(CtfSchema::ExceptionOrigin::Trace),
       CtfSchema::value(CtfSchema::ExceptionOrigin::Synthetic),
   };
+  constexpr std::array<std::uint8_t, 2U> pcSampleStates{
+      CtfSchema::value(CtfSchema::PcSampleState::Sleep),
+      CtfSchema::value(CtfSchema::PcSampleState::Pc),
+  };
   constexpr std::array<std::uint8_t, 7U> valueTags{
       CtfSchema::value(CtfSchema::ValueTag::Signed8),  CtfSchema::value(CtfSchema::ValueTag::Unsigned8),
       CtfSchema::value(CtfSchema::ValueTag::Signed16), CtfSchema::value(CtfSchema::ValueTag::Unsigned16),
@@ -57,6 +62,9 @@ TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
   }
   for (std::size_t index = 0U; index < exceptionActions.size(); ++index) {
     EXPECT_EQ(exceptionActions[index], static_cast<std::uint8_t>(index));
+  }
+  for (std::size_t index = 0U; index < pcSampleStates.size(); ++index) {
+    EXPECT_EQ(pcSampleStates[index], static_cast<std::uint8_t>(index));
   }
   for (std::size_t index = 0U; index < exceptionOrigins.size(); ++index) {
     EXPECT_EQ(exceptionOrigins[index], static_cast<std::uint8_t>(index));

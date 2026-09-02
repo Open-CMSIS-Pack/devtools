@@ -426,6 +426,27 @@ event {
 )";
 }
 
+/** @brief Writes the periodic PC-sample event declaration. */
+static void writePcSampleEvent(std::ostream& out)
+{
+  out << R"(
+event {
+    id = )"
+      << CtfSchema::value(CtfSchema::EventId::PcSample) << R"(;
+    name = ")"
+      << CtfSchema::eventName(CtfSchema::EventId::PcSample) << R"(";
+    stream_id = )"
+      << CtfSchema::SwoStreamId << R"(;
+    fields := struct {
+        uint8_t cmsis_pc_sample_state;
+        uint32_t cmsis_pc[cmsis_pc_sample_state];
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+)";
+}
+
 /** @brief Writes status, exception, and global timestamp declarations. */
 static void writeStatusEvents(std::ostream& out)
 {
@@ -491,6 +512,7 @@ void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const std:
   writeDwtValueEvent(out);
   writeDwtAddressEvent(out);
   writeStatusEvents(out);
+  writePcSampleEvent(out);
   out.close();
   if (!out) {
     throw std::runtime_error("Failed to write CTF metadata " + metadataPath.string());

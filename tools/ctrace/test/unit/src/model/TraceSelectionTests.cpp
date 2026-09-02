@@ -70,4 +70,10 @@ TEST(CtraceUnitTests, testTraceSelection)
   TraceEvent exception{ExceptionTraceEvent{11U, ExceptionAction::Entered}};
   ASSERT_TRUE(traceEventSelectedForOutput(exception, TraceSelection{{"exception"}, {}}))
       << "TraceSelection exception type mismatch";
+
+  TraceEvent pcSample{PcSampleTraceEvent{0x08001234U, false}};
+  ASSERT_TRUE(traceEventSelectedForOutput(pcSample, TraceSelection{{"pcsample"}, {}}))
+      << "TraceSelection PC-sample type mismatch";
+  ASSERT_FALSE(traceEventSelectedForOutput(pcSample, TraceSelection{{"dwt"}, {}}))
+      << "TraceSelection must keep PC samples separate from DWT data trace";
 }

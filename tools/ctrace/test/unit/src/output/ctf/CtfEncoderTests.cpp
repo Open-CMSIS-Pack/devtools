@@ -100,6 +100,51 @@ TEST(CtraceUnitTests, testCtfEncoderWritesOnlyIntoProvidedDirectory)
       << "CtfEncoder abort must not delete a directory owned by its caller";
 }
 
+TEST(CtraceUnitTests, testCtfEncoderPcSampleEncoding)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-pc-sample-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+
+  CtfEncoder encoder(CtfEncoderConfig{
+      1000000U,
+      TraceSelection{{"pcsample"}, {}},
+      {},
+  });
+  encoder.start(outputDirectory);
+  auto pc = onStream(atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U, false}}, 10U), 3U);
+  pc.quality = TraceQuality{false, true, 0U};
+  encoder.writeEvent(pc);
+  auto sleep = onStream(atCycle(TraceEvent{PcSampleTraceEvent{0x12345678U, true}}, 11U), 3U);
+  sleep.quality = TraceQuality{true, false, 7U};
+  encoder.writeEvent(sleep);
+  encoder.stop();
+
+  const auto records = readCtfRecords(outputDirectory / "stream_0");
+  ASSERT_EQ(records.size(), 2U);
+  for (const auto& record : records) {
+    EXPECT_EQ(record.id, CtfSchema::value(CtfSchema::EventId::PcSample));
+    EXPECT_EQ(record.traceBusId, 3U);
+  }
+  ASSERT_EQ(records[0].payload.size(), 10U);
+  EXPECT_EQ(records[0].timestamp, 10U);
+  EXPECT_EQ(records[0].payload[0U], CtfSchema::value(CtfSchema::PcSampleState::Pc));
+  EXPECT_EQ(readLe32(records[0].payload, 1U), 0x08001234U);
+  EXPECT_EQ(records[0].payload[5U], CtfSchema::SampleFlagTimestampReliable);
+  EXPECT_EQ(readLe32(records[0].payload, 6U), 0U);
+
+  ASSERT_EQ(records[1].payload.size(), 6U);
+  EXPECT_EQ(records[1].timestamp, 11U);
+  EXPECT_EQ(records[1].payload[0U], CtfSchema::value(CtfSchema::PcSampleState::Sleep));
+  EXPECT_EQ(records[1].payload[1U], CtfSchema::SampleFlagOverflow);
+  EXPECT_EQ(readLe32(records[1].payload, 2U), 7U);
+
+  const auto metadata = readTestTextFile(outputDirectory / "metadata");
+  EXPECT_NE(metadata.find("name = \"PC_SAMPLE\""), std::string::npos);
+  EXPECT_NE(metadata.find("uint8_t cmsis_pc_sample_state"), std::string::npos);
+  EXPECT_EQ(metadata.find("cmsis_pc_sample_state_t"), std::string::npos);
+  EXPECT_NE(metadata.find("uint32_t cmsis_pc[cmsis_pc_sample_state]"), std::string::npos);
+}
+
 TEST(CtraceUnitTests, testCtfEncoderPacketBoundaryAndUuid)
 {
   const TemporaryTestPath temporaryPath("ctrace-ctf-encoder-packet-boundary-test");

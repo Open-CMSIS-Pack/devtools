@@ -42,6 +42,7 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
       {TraceEvent{ExceptionTraceEvent{}}, TraceEventType::Exception},
       {TraceEvent{DwtEventTraceEvent{}}, std::nullopt},
       {TraceEvent{PmuTraceEvent{}}, std::nullopt},
+      {TraceEvent{PcSampleTraceEvent{}}, TraceEventType::PcSample},
       {TraceEvent{LocalTimestampTraceEvent{}}, std::nullopt},
       {TraceEvent{GlobalTimestampTraceEvent{}}, TraceEventType::GlobalTimestamp},
       {TraceEvent{OverflowTraceEvent{}}, TraceEventType::Overflow},
@@ -64,6 +65,12 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
       << "CSV must render the raw hexadecimal DWT value with the two-byte SWO width";
   ASSERT_TRUE(CsvRowMapper::row(softwarePacket(1U)) == ",,itm,1,0x00,,,")
       << "CSV must leave the stream field empty for unformatted input";
+  ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U, false}}, 949339000U)) ==
+              "949339000,,pcsample,,,0x08001234,,")
+      << "CSV PC-sample row mismatch";
+  ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0U, true}}, 949339100U)) ==
+              "949339100,,pcsample,,,,,")
+      << "CSV PC-sample sleep row mismatch";
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperCoversAddressAndExceptionVariants)

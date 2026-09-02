@@ -133,15 +133,17 @@ TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
                             }},
                             949338400U));
   output.writeEvent(atCycle(TraceEvent{ExceptionTraceEvent{11U, ExceptionAction::Entered}}, 950364820U));
+  output.writeEvent(atCycle(TraceEvent{PcSampleTraceEvent{0x08000100U, false}}, 950364900U));
 
   output.stop();
 
   const auto lines = readTestLines(csvPath);
 
-  ASSERT_TRUE(lines.size() == 3U) << "CSV specification row count mismatch";
+  ASSERT_TRUE(lines.size() == 4U) << "CSV specification row count mismatch";
   ASSERT_TRUE(lines[0] == "cycles,stream,type,source,value,pc,offset,note") << "CSV specification header mismatch";
   ASSERT_TRUE(lines[1] == "949338400,,dwt,2,0xfffffdf9,0x08001234,0xfdf9,") << "CSV DWT row schema mismatch";
   ASSERT_TRUE(lines[2] == "950364820,,exception,11,0x1,,,") << "CSV exception state schema mismatch";
+  ASSERT_TRUE(lines[3] == "950364900,,pcsample,,,0x08000100,,") << "CSV PC-sample row schema mismatch";
 }
 
 TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
