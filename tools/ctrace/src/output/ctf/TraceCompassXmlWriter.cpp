@@ -249,7 +249,7 @@ static std::string viewsXml()
       << static_cast<unsigned>(CtfSchema::value(CtfSchema::PcSampleState::Sleep)) << R"(" color="#5B8FF9" />
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::PcSample)
-      << R"(/*" displayText="true"><display type="self" /></entry>
+      << '/' << R"(*" displayText="true"><display type="self" /></entry>
     </timeGraphView>
 )";
   return xml.str();

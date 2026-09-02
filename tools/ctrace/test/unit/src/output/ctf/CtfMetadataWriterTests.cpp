@@ -97,7 +97,7 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   EXPECT_NE(xml.find("<label value=\"PC Sampling\" />"), std::string::npos);
   EXPECT_NE(xml.find("<definedValue name=\"Sleep\" value=\"0\""), std::string::npos);
   EXPECT_EQ(xml.find("<definedValue name=\"Running\""), std::string::npos);
-  EXPECT_NE(xml.find("<entry path=\"PC_SAMPLE/*\" displayText=\"true\"><display type=\"self\" /></entry>"),
+  EXPECT_NE(xml.find("<entry path=\"PC_SAMPLE/" "*\" displayText=\"true\"><display type=\"self\" /></entry>"),
             std::string::npos);
   EXPECT_NE(xml.find("<stateValue type=\"string\" value=\"overflow\" />"), std::string::npos);
   EXPECT_NE(xml.find("<stateValue type=\"string\" value=\"data_loss\" />"), std::string::npos);
