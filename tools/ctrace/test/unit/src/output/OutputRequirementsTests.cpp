@@ -168,7 +168,10 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
   const auto invalidTypeAll = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, invalidTypeAllDiagnostics);
   ASSERT_TRUE(invalidTypeAll.csv.has_value() && !invalidTypeAll.ctf.has_value())
       << "an invalid explicit data-type must disable only CTF for --all";
-  invalidTypeAllDiagnostics.singleEvent();
+  EXPECT_EQ(invalidTypeAllDiagnostics.singleEvent().message,
+            "CTF output cannot use ctrace-run data-type 'double'; supported data-type values are 'unsigned', "
+            "'signed', and 'float'; size must be 1, 2, or 4, and float requires size 4");
+  EXPECT_TRUE(invalidTypeAllDiagnostics.containsContext("backend", "ctf"));
 
   config.references[0].dataType.reset();
   CollectingDiagnosticSink missingTypeDiagnostics;
