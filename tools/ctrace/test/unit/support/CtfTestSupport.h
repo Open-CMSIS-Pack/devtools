@@ -9,6 +9,7 @@
 #define CTRACE_TEST_UNIT_SUPPORT_CTFTESTSUPPORT_H
 
 #include "TestSupport.h"
+#include "TraceEvent.h"
 #include "ctf/CtfSchema.h"
 
 #include <algorithm>
@@ -35,6 +36,31 @@ struct CtfRecord {
   std::uint8_t traceBusId;
   std::vector<unsigned char> payload;
 };
+
+/** @brief Stores the decoded fields of one CTF exception event. */
+struct CtfExceptionRecord {
+  ExceptionNumber number;
+  std::uint8_t action;
+  std::uint8_t origin;
+};
+
+/** @brief Compares decoded CTF exception records. */
+inline bool operator==(const CtfExceptionRecord& lhs, const CtfExceptionRecord& rhs)
+{
+  return lhs.number == rhs.number && lhs.action == rhs.action && lhs.origin == rhs.origin;
+}
+
+/** @brief Stores one decoded CTF exception event with its event timestamp. */
+struct TimestampedCtfExceptionRecord {
+  std::uint64_t timestamp;
+  CtfExceptionRecord exception;
+};
+
+/** @brief Compares timestamped CTF exception records. */
+inline bool operator==(const TimestampedCtfExceptionRecord& lhs, const TimestampedCtfExceptionRecord& rhs)
+{
+  return lhs.timestamp == rhs.timestamp && lhs.exception == rhs.exception;
+}
 
 /** @brief Reads an unsigned little-endian integer from test stream bytes. */
 template <typename Integer> inline Integer readLittleEndian(const std::vector<unsigned char>& bytes, std::size_t offset)
@@ -100,9 +126,11 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
     size += 1U + (hasAddress != 0U ? 2U : 0U);
     return size + 5U;
   }
-  if (eventId == CtfSchema::value(CtfSchema::EventId::TraceStatus) ||
-      eventId == CtfSchema::value(CtfSchema::EventId::Exception)) {
+  if (eventId == CtfSchema::value(CtfSchema::EventId::TraceStatus)) {
     return 5U;
+  }
+  if (eventId == CtfSchema::value(CtfSchema::EventId::Exception)) {
+    return 6U;
   }
   if (eventId == CtfSchema::value(CtfSchema::EventId::DwtAddress)) {
     return 14U;
@@ -159,6 +187,47 @@ inline std::vector<CtfRecord> parseCtfRecords(const std::vector<unsigned char>& 
 inline std::vector<CtfRecord> readCtfRecords(const std::filesystem::path& streamPath)
 {
   return parseCtfRecords(readTestBinaryFile(streamPath));
+}
+
+/** @brief Decodes and validates one CTF exception record payload. */
+inline CtfExceptionRecord decodeCtfExceptionRecord(const CtfRecord& record)
+{
+  require(record.id == CtfSchema::value(CtfSchema::EventId::Exception), "expected a CTF exception record");
+  require(record.payload.size() == 6U, "CTF exception record has an invalid payload size");
+  const auto number = readLe16(record.payload, 0U);
+  require(number == readLe16(record.payload, 3U), "CTF exception record contains inconsistent exception numbers");
+  return {number, record.payload[2U], record.payload[5U]};
+}
+
+/** @brief Decodes all exception events in parsed CTF records. */
+inline std::vector<CtfExceptionRecord> ctfExceptionRecords(const std::vector<CtfRecord>& records)
+{
+  std::vector<CtfExceptionRecord> exceptions;
+  for (const auto& record : records) {
+    if (record.id == CtfSchema::value(CtfSchema::EventId::Exception)) {
+      exceptions.push_back(decodeCtfExceptionRecord(record));
+    }
+  }
+  return exceptions;
+}
+
+/** @brief Decodes all exception events and timestamps in parsed CTF records. */
+inline std::vector<TimestampedCtfExceptionRecord>
+timestampedCtfExceptionRecords(const std::vector<CtfRecord>& records)
+{
+  std::vector<TimestampedCtfExceptionRecord> exceptions;
+  for (const auto& record : records) {
+    if (record.id == CtfSchema::value(CtfSchema::EventId::Exception)) {
+      exceptions.push_back({record.timestamp, decodeCtfExceptionRecord(record)});
+    }
+  }
+  return exceptions;
+}
+
+/** @brief Reads and decodes all exception events from a test CTF stream file. */
+inline std::vector<CtfExceptionRecord> readCtfExceptionRecords(const std::filesystem::path& streamPath)
+{
+  return ctfExceptionRecords(readCtfRecords(streamPath));
 }
 
 /** @brief Returns the first record with a required CTF event ID. */

@@ -124,6 +124,20 @@ static std::string stateProviderXml()
                 <if>
                     <condition>
                         <stateValue type="eventField" value="cmsis_exception_action" />
+                        <stateValue type="string" value="entered" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
+                    <stateAttribute type="constant" value="Exception Return" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="null" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_exception_action" />
                         <stateValue type="string" value="exited" />
                     </condition>
                 </if>
@@ -131,6 +145,55 @@ static std::string stateProviderXml()
                     <stateAttribute type="constant" value=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(" />
                     <stateAttribute type="eventField" value="cmsis_exception_number" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="null" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <and>
+                        <condition>
+                            <stateValue type="eventField" value="cmsis_exception_action" />
+                            <stateValue type="string" value="exited" />
+                        </condition>
+                        <condition>
+                            <stateValue type="eventField" value="cmsis_exception_origin" />
+                            <stateValue type="string" value="trace" />
+                        </condition>
+                    </and>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
+                    <stateAttribute type="constant" value="Exception Return" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="eventField" value="cmsis_exception_number_value" forcedType="long" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_exception_action" />
+                        <stateValue type="string" value="returned" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value=")"
+      << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(" />
+                    <stateAttribute type="eventField" value="cmsis_exception_number" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="eventField" value="cmsis_exception_number_value" forcedType="long" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_exception_action" />
+                        <stateValue type="string" value="returned" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
+                    <stateAttribute type="constant" value="Exception Return" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="null" />
                 </then>
@@ -198,6 +261,34 @@ static std::string stateProviderXml()
                     <stateValue type="null" />
                 </then>
             </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_trace_status_reason" />
+                        <stateValue type="string" value="overflow" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
+                    <stateAttribute type="constant" value="Exception Return" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="null" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_trace_status_reason" />
+                        <stateValue type="string" value="data_loss" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
+                    <stateAttribute type="constant" value="Exception Return" />
+                    <stateAttribute type="constant" value="action" />
+                    <stateValue type="null" />
+                </then>
+            </stateChange>
         </eventHandler>
     </stateProvider>
 )";
@@ -213,35 +304,40 @@ static std::string viewsXml()
       << CtfSchema::eventName(CtfSchema::EventId::DwtValue) << R"(" /></head>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtValue)
-      << R"(/*"><display type="constant" value="data" /><name type="self" /></entry>
+      << '/' << R"(*"><display type="constant" value="data" /><name type="self" /></entry>
     </xyView>
     <xyView id="arm.cmsis.swo.xy.dwt_addr.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(" /></head>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress)
-      << R"(/*"><display type="constant" value="address" /><name type="self" /></entry>
+      << '/' << R"(*"><display type="constant" value="address" /><name type="self" /></entry>
     </xyView>
     <timeGraphView id="arm.cmsis.swo.tg.itm.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm) << R"(" /></head>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm)
-      << R"(/*" displayText="true"><display type="constant" value="value" /><name type="self" /></entry>
+      << '/' << R"(*" displayText="true"><display type="constant" value="value" /><name type="self" /></entry>
     </timeGraphView>
     <timeGraphView id="arm.cmsis.swo.tg.exception.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(" /></head>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception)
-      << R"(/*" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
+      << R"(/Thread Mode" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
+        <entry path="EXCEPTION_RETURN)"
+      << '/' << R"(*" displayText="true"><display type="constant" value="action" /><name type="self" /></entry>
+        <entry path=")"
+      << CtfSchema::eventName(CtfSchema::EventId::Exception)
+      << R"(/(?!Thread Mode).+" displayText="false"><display type="constant" value="action" /><name type="self" /></entry>
     </timeGraphView>
     <timeGraphView id="arm.cmsis.swo.tg.trace_status.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus) << R"(" /></head>
         <entry path=")"
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus)
-      << R"(/*" displayText="true"><display type="self" /><name type="self" /></entry>
+      << '/' << R"(*" displayText="true"><display type="self" /><name type="self" /></entry>
     </timeGraphView>
     <timeGraphView id="arm.cmsis.swo.tg.pc_sample.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value="PC Sampling" /></head>

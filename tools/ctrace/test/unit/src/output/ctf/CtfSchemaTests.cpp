@@ -34,9 +34,14 @@ TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
       CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError),
       CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss),
   };
-  constexpr std::array<std::uint8_t, 2U> exceptionActions{
+  constexpr std::array<std::uint8_t, 3U> exceptionActions{
       CtfSchema::value(CtfSchema::ExceptionAction::Entered),
       CtfSchema::value(CtfSchema::ExceptionAction::Exited),
+      CtfSchema::value(CtfSchema::ExceptionAction::Returned),
+  };
+  constexpr std::array<std::uint8_t, 2U> exceptionOrigins{
+      CtfSchema::value(CtfSchema::ExceptionOrigin::Trace),
+      CtfSchema::value(CtfSchema::ExceptionOrigin::Synthetic),
   };
   constexpr std::array<std::uint8_t, 2U> pcSampleStates{
       CtfSchema::value(CtfSchema::PcSampleState::Sleep),
@@ -60,6 +65,9 @@ TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
   }
   for (std::size_t index = 0U; index < pcSampleStates.size(); ++index) {
     EXPECT_EQ(pcSampleStates[index], static_cast<std::uint8_t>(index));
+  }
+  for (std::size_t index = 0U; index < exceptionOrigins.size(); ++index) {
+    EXPECT_EQ(exceptionOrigins[index], static_cast<std::uint8_t>(index));
   }
   for (std::size_t index = 0U; index < valueTags.size(); ++index) {
     EXPECT_EQ(valueTags[index], static_cast<std::uint8_t>(index));
@@ -105,9 +113,13 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
 {
   CtfExceptionLaneTracker tracker;
   std::vector<std::string> records;
-  const auto emit = [&records](std::uint32_t number, CtfExceptionLaneTracker::RecordAction action) {
-    records.push_back(std::to_string(number) +
-                      (action == CtfExceptionLaneTracker::RecordAction::Enter ? ":enter" : ":exit"));
+  const auto emit = [&records](ExceptionNumber number, CtfExceptionLaneTracker::RecordAction action,
+                               CtfExceptionLaneTracker::RecordOrigin origin) {
+    const auto suffix = action == CtfExceptionLaneTracker::RecordAction::Enter
+                            ? ":enter"
+                            : action == CtfExceptionLaneTracker::RecordAction::Exit ? ":exit" : ":return";
+    const auto originSuffix = origin == CtfExceptionLaneTracker::RecordOrigin::Trace ? ":trace" : ":synthetic";
+    records.push_back(std::to_string(number) + suffix + originSuffix);
   };
 
   tracker.startThreadMode(emit);
@@ -119,35 +131,35 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
   tracker.consume(ExceptionTraceEvent{3, ExceptionAction::Returned}, emit);
   tracker.consume(ExceptionTraceEvent{15, ExceptionAction::Exited}, emit);
   tracker.consume(ExceptionTraceEvent{3, ExceptionAction::Exited}, emit);
+  tracker.consume(ExceptionTraceEvent{0, ExceptionAction::Returned}, emit);
 
   ASSERT_TRUE(records == std::vector<std::string>({
-                             "0:enter",
-                             "0:exit",
-                             "3:enter",
-                             "3:exit",
-                             "15:enter",
-                             "15:exit",
-                             "3:enter",
-                             "3:exit",
-                             "54:enter",
-                             "54:exit",
-                             "3:enter",
-                             "3:exit",
-                             "0:enter",
+                             "0:enter:synthetic",
+                             "0:exit:synthetic",
+                             "3:enter:trace",
+                             "3:exit:synthetic",
+                             "15:enter:trace",
+                             "15:exit:trace",
+                             "54:enter:trace",
+                             "54:exit:trace",
+                             "3:return:trace",
+                             "3:exit:trace",
+                             "0:return:trace",
                          }))
       << "CtfExceptionLaneTracker nested and tail-chain records mismatch";
-  ASSERT_TRUE(tracker.observedExceptionNumbers() == std::vector<std::uint32_t>({0U, 3U, 15U, 54U}))
+  ASSERT_TRUE(tracker.observedExceptionNumbers() == std::vector<ExceptionNumber>({0U, 3U, 15U, 54U}))
       << "CtfExceptionLaneTracker observed lanes mismatch";
 
   tracker.resetForDiscontinuity(emit);
-  ASSERT_TRUE(records.back() == "0:exit") << "CtfExceptionLaneTracker discontinuity must close the active lane";
+  ASSERT_TRUE(records.back() == "0:exit:synthetic")
+      << "CtfExceptionLaneTracker discontinuity must close the active lane synthetically";
   const auto recordCount = records.size();
   tracker.consume(ExceptionTraceEvent{0, ExceptionAction::Unknown}, emit);
   ASSERT_TRUE(records.size() == recordCount) << "CtfExceptionLaneTracker must ignore unknown exception actions";
 
   CtfExceptionLaneTracker resumedTracker;
   resumedTracker.startThreadMode(emit);
-  ASSERT_TRUE(resumedTracker.observedExceptionNumbers() == std::vector<std::uint32_t>({0U}))
+  ASSERT_TRUE(resumedTracker.observedExceptionNumbers() == std::vector<ExceptionNumber>({0U}))
       << "a new CtfExceptionLaneTracker must start with an empty lane history";
 
   records.clear();
@@ -160,14 +172,33 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
       << "CtfExceptionLaneTracker must not exit a preempted context before its return packet";
   resumedTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Returned}, emit);
   resumedTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Exited}, emit);
-  ASSERT_TRUE(records.size() == preemptedRecordCount + 2U && records[records.size() - 2U] == "3:exit" &&
-              records.back() == "0:enter")
-      << "CtfExceptionLaneTracker must exit a resumed context";
+  resumedTracker.consume(ExceptionTraceEvent{0, ExceptionAction::Returned}, emit);
+  ASSERT_TRUE(records.size() == preemptedRecordCount + 3U && records[records.size() - 3U] == "3:return:trace" &&
+              records[records.size() - 2U] == "3:exit:trace" && records.back() == "0:return:trace")
+      << "CtfExceptionLaneTracker must preserve return and exit the resumed context";
 
   CtfExceptionLaneTracker returnTracker;
   records.clear();
   returnTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Entered}, emit);
   returnTracker.consume(ExceptionTraceEvent{15, ExceptionAction::Entered}, emit);
   returnTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Returned}, emit);
-  EXPECT_EQ(records.back(), "3:enter");
+  EXPECT_EQ(records.back(), "3:return:trace");
+}
+
+TEST(CtraceUnitTests, testCtfExceptionLaneTrackerPreservesReturnForActiveContext)
+{
+  CtfExceptionLaneTracker tracker;
+  std::vector<std::string> records;
+  const auto emit = [&records](ExceptionNumber number, CtfExceptionLaneTracker::RecordAction action,
+                               CtfExceptionLaneTracker::RecordOrigin origin) {
+    const auto actionLabel = action == CtfExceptionLaneTracker::RecordAction::Return ? "return" : "unexpected";
+    const auto originLabel = origin == CtfExceptionLaneTracker::RecordOrigin::Trace ? "trace" : "synthetic";
+    records.push_back(std::to_string(number) + ":" + actionLabel + ":" + originLabel);
+  };
+
+  tracker.startThreadMode(emit);
+  records.clear();
+  tracker.consume(ExceptionTraceEvent{0U, ExceptionAction::Returned}, emit);
+
+  EXPECT_EQ(records, std::vector<std::string>({"0:return:trace"}));
 }

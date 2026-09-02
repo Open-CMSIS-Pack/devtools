@@ -8,6 +8,7 @@
 #ifndef CTRACE_SRC_OUTPUT_CTF_CTFMETADATAWRITER_H
 #define CTRACE_SRC_OUTPUT_CTF_CTFMETADATAWRITER_H
 
+#include "TraceEvent.h"
 #include "TraceOutputConfig.h"
 
 #include <cstdint>
@@ -21,7 +22,7 @@ public:
   /** @brief Writes metadata for clock, event schemas, sources, and exception lanes. */
   static void write(const std::filesystem::path& outputDir, const std::string& uuidString, std::uint64_t coreClockHz,
                     const std::vector<ResolvedTraceSource>& sources,
-                    const std::vector<std::uint32_t>& observedExceptionNumbers);
+                    const std::vector<ExceptionNumber>& observedExceptionNumbers);
 
 private:
   /** @brief Prevents construction of this stateless metadata utility. */

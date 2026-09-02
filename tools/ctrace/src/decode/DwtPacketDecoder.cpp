@@ -75,7 +75,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
 
   if (source == DwtPacketSource::ExceptionTrace) {
     output = flush(payload.quality, payload.tcyc);
-    const auto exceptionNumber = payload.value & kExceptionNumberMask;
+    const auto exceptionNumber = static_cast<ExceptionNumber>(payload.value & kExceptionNumberMask);
     const auto action = exceptionAction((payload.value >> kExceptionActionShift) & kExceptionActionMask);
     if (action == ExceptionAction::Unknown) {
       TraceEvent error{TraceIssueEvent{
