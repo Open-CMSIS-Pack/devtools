@@ -95,11 +95,12 @@ TEST(CtraceUnitTests, testDwtCounterPacketsArePreservedUntilOutputSemanticsExist
     ASSERT_TRUE((discriminator == 0U && event != nullptr && pmu == nullptr) ||
                 (discriminator == 3U && event == nullptr && pmu != nullptr))
         << "DWT counter semantic event type mismatch";
-    const auto actualDiscriminator = event != nullptr ? event->discriminator : pmu->discriminator;
-    const auto actualSize = event != nullptr ? event->size : pmu->size;
-    const auto actualValue = event != nullptr ? event->value : pmu->value;
-    ASSERT_TRUE(actualDiscriminator == discriminator) << "DWT counter discriminator mismatch";
-    ASSERT_TRUE(actualSize == 1U && actualValue == 0x21U) << "DWT counter payload mismatch";
+    if (event != nullptr) {
+      ASSERT_TRUE(event->discriminator == discriminator && event->size == 1U && event->value == 0x21U)
+          << "DWT event-counter payload mismatch";
+    } else {
+      ASSERT_TRUE(pmu->overflowMask == 0x21U) << "PMU OVn counter mask mismatch";
+    }
     ASSERT_TRUE(packet.index == 23U && packet.traceBusId == 4U) << "DWT counter identity mismatch";
     ASSERT_TRUE(packet.tcyc == 949339100U) << "DWT counter timestamp mismatch";
     ASSERT_TRUE(packet.quality.has_value() && packet.quality->overflow) << "DWT counter overflow status mismatch";

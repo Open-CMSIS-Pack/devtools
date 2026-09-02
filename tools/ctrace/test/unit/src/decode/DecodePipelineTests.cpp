@@ -575,7 +575,7 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesDwtEventAndPmuPackets)
     const auto* pmu = traceEventPayload<PmuTraceEvent>(packet);
     foundEvent =
         foundEvent || (event != nullptr && event->discriminator == 0U && event->size == 1U && event->value == 0x21U);
-    foundPmu = foundPmu || (pmu != nullptr && pmu->discriminator == 3U && pmu->size == 1U && pmu->value == 0x81U);
+    foundPmu = foundPmu || (pmu != nullptr && pmu->overflowMask == 0x81U);
   }
   ASSERT_TRUE(foundEvent) << "OpenCSD DWT event-counter packet must survive post-decoding";
   ASSERT_TRUE(foundPmu) << "OpenCSD PMU-overflow packet must survive post-decoding";
