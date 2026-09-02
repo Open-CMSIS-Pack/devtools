@@ -27,7 +27,7 @@ inline constexpr std::array<std::uint32_t, 4> kTimestampPrescalers{{
     64U,
 }};
 inline constexpr std::uint32_t kDefaultTimestampPrescaler = 1U;
-inline constexpr std::string_view kDefaultDwtDataType = "unsigned int";
+inline constexpr std::string_view kDefaultDwtDataType = "unsigned";
 inline constexpr std::uint8_t kDefaultDwtDataSize = 4U;
 
 /** @brief Tests whether a fixed array contains a value. */
@@ -51,7 +51,7 @@ constexpr bool isTimestampPrescaler(std::uint32_t prescaler)
 /** @brief Tests whether a DWT data type is supported. */
 constexpr bool isDwtDataType(const std::string_view& type)
 {
-  return type == "unsigned int" || type == "signed int" || type == "float";
+  return type == "unsigned" || type == "signed" || type == "float";
 }
 
 /** @brief Tests whether a DWT data size is supported. */
@@ -105,7 +105,12 @@ struct TraceRunReference {
   std::optional<std::string> info;
   std::optional<std::string> warning;
   std::optional<std::string> error;
-  std::optional<std::uint64_t> symbolAddress;
+  std::optional<std::uint64_t> address;
+  std::optional<std::string> dataType;
+  std::optional<std::uint64_t> dataSize;
+  std::optional<std::string> addressError;
+  std::optional<std::string> dataTypeError;
+  std::optional<std::string> dataSizeError;
   std::optional<std::string> label;
   // The reader retains the complete YAML value. CtraceRunMeta validates and
   // narrows it to the CoreSight ATB trace-ID domain.
@@ -134,6 +139,12 @@ inline bool isItmChannelZero(const TraceRunReference& reference)
          reference.sources.front() == CoreSight::kExcludedItmStimulusPort;
 }
 
+/** @brief Tests whether a DWT reference describes a generated data route. */
+inline bool isDwtDataReference(const TraceRunReference& reference)
+{
+  return reference.type == "dwt" && reference.dataSetupIndex.has_value();
+}
+
 /** @brief Tests whether a reference has the fields needed for a decoded route. */
 inline bool hasConsumedRouteShape(const TraceRunReference& reference)
 {
@@ -143,7 +154,7 @@ inline bool hasConsumedRouteShape(const TraceRunReference& reference)
   if (reference.type == "itm") {
     return !isItmChannelZero(reference);
   }
-  return true;
+  return isDwtDataReference(reference);
 }
 
 /** @brief Tests whether a reference represents timestamp configuration. */
@@ -212,12 +223,10 @@ struct TraceRunTimestampSetup {
   std::size_t line = 0U;
 };
 
-/** @brief Stores data-type fields copied from one DWT data setup. */
+/** @brief Stores size metadata copied from one DWT data setup. */
 struct TraceRunDataSetup {
-  std::optional<std::string> symbolType = std::nullopt;
-  std::optional<std::uint64_t> symbolSize = std::nullopt;
-  std::optional<std::string> symbolTypeError = std::nullopt;
-  std::optional<std::string> symbolSizeError = std::nullopt;
+  std::optional<std::uint64_t> size = std::nullopt;
+  std::optional<std::string> sizeError = std::nullopt;
 };
 
 /** @brief Stores ITM stimulus-port configuration copied from one trace setup. */

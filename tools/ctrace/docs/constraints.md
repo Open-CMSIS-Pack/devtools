@@ -1,10 +1,10 @@
 # ctrace Constraints
 
-This document records contracts that implementation changes must preserve. It intentionally does not describe the
-runtime flow, module inventory, supported feature profile, build, or release process; those belong in the
-[architecture description](architecture.md), [README](../README.md), and [TODO list](todo.md). The CMSIS-Toolbox
-[trace specification](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/Experimental-Features.md#file-structure-of-ctrace-runyml)
-remains authoritative for the external `*.ctrace-run.yml` format.
+This document records contracts that implementation changes must preserve. Runtime design and the supported feature
+profile belong in the [architecture description](architecture.md), working instructions in the [README](../README.md),
+and unfinished work in the [TODO list](todo.md). The CMSIS-Toolbox
+[trace specification](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/) remains authoritative
+for the external `*.ctrace-run.yml` format.
 
 ## Boundaries
 
@@ -16,6 +16,9 @@ remains authoritative for the external `*.ctrace-run.yml` format.
 - YAML types remain inside the trace-run reader. The rest of ctrace consumes normalized configuration and metadata.
 - The YAML reader validates fields consumed by ctrace; unrelated fields are outside its validation scope. Malformed
   consumed fields remain errors. An ITM reference without `source` values is valid and contributes no source events.
+- DWT data metadata comes from reference-level `address`, `size`, and `data-type`. When reference `size` is absent,
+  the referenced `ctrace-setup.data.size` supplies it. DWT instruction-control references may bind a processor stream
+  but do not create decoded data-source routes.
 - Backend-specific requirements and failures remain independent; requesting CTF must not disable otherwise valid CSV
   output, or vice versa.
 

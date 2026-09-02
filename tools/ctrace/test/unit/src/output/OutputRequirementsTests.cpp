@@ -46,10 +46,11 @@ static TraceRunConfig backendRequirementsConfig()
   TraceRunConfig config;
   config.path = "BackendRequirements.ctrace-run.yml";
   auto setup = TraceRunTestSupport::makeTimestampSetup(std::nullopt, 400000000U, 1U);
-  setup.data.push_back(TraceRunDataSetup{"double", 4U});
+  setup.data.push_back(TraceRunDataSetup{4U});
   config.setups.push_back(setup);
   auto reference = TraceRunTestSupport::makeReference("dwt", std::nullopt, std::nullopt, {0U}, "opaque/dwt");
   reference.dataSetupIndex = 0U;
+  reference.dataType = "double";
   config.references.push_back(reference);
   return config;
 }
@@ -115,14 +116,17 @@ TEST(CtraceUnitTests, testDwtDataMetadataDefaultsAndValidation)
   auto setup = TraceRunTestSupport::makeTimestampSetup(std::nullopt, 100000000U, 1U);
   setup.data = {
       TraceRunDataSetup{},
-      TraceRunDataSetup{"unsigned int", 1U},
-      TraceRunDataSetup{"signed int", 2U},
+      TraceRunDataSetup{1U},
+      TraceRunDataSetup{2U},
   };
   config.setups.push_back(std::move(setup));
   for (std::uint32_t comparator = 0U; comparator < 3U; ++comparator) {
     auto reference = TraceRunTestSupport::makeReference("dwt", std::nullopt, std::nullopt, {comparator},
                                                         "opaque/dwt-" + std::to_string(comparator));
     reference.dataSetupIndex = comparator;
+    if (comparator == 2U) {
+      reference.dataType = "signed";
+    }
     config.references.push_back(std::move(reference));
   }
   const auto meta = CtraceRunMeta::fromConfig(config);
@@ -134,17 +138,17 @@ TEST(CtraceUnitTests, testDwtDataMetadataDefaultsAndValidation)
       << "valid or missing DWT metadata must not disable CSV or CTF";
   ASSERT_TRUE(configurationDiagnostics.events().empty())
       << "valid or missing DWT metadata must not produce diagnostics";
-  ASSERT_TRUE(outputPlan.ctf->sources.size() == 3U && outputPlan.ctf->sources[0].valueType == "unsigned int" &&
-              outputPlan.ctf->sources[0].valueSize == 4U && outputPlan.ctf->sources[1].valueType == "unsigned int" &&
-              outputPlan.ctf->sources[1].valueSize == 1U && outputPlan.ctf->sources[2].valueType == "signed int" &&
-              outputPlan.ctf->sources[2].valueSize == 2U)
-      << "CTF data.symbol-type/data.symbol-size defaults or explicit values mismatch";
+  ASSERT_TRUE(outputPlan.ctf->sources.size() == 3U && outputPlan.ctf->sources[0].dataType == "unsigned" &&
+              outputPlan.ctf->sources[0].dataSize == 4U && outputPlan.ctf->sources[1].dataType == "unsigned" &&
+              outputPlan.ctf->sources[1].dataSize == 1U && outputPlan.ctf->sources[2].dataType == "signed" &&
+              outputPlan.ctf->sources[2].dataSize == 2U)
+      << "CTF data-type/size defaults or explicit values mismatch";
 
-  config.setups[0].data[1].symbolSize = 0U;
+  config.setups[0].data[1].size = 0U;
   CollectingDiagnosticSink invalidSizeDiagnostics;
   const auto invalidSizePlan = planOutputs(allRequest, "DwtSize.SWO.raw", config, invalidSizeDiagnostics);
   ASSERT_TRUE(invalidSizePlan.csv.has_value() && !invalidSizePlan.ctf.has_value())
-      << "invalid data.symbol-size must disable only CTF";
+      << "invalid ctrace-setup data.size must disable only CTF";
   invalidSizeDiagnostics.singleEvent();
 }
 
@@ -156,45 +160,66 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
   CollectingDiagnosticSink invalidTypeCsvDiagnostics;
   const auto invalidTypeCsv = planOutputs(csvRequest, "BackendRequirements.SWO.raw", config, invalidTypeCsvDiagnostics);
   ASSERT_TRUE(invalidTypeCsv.csv.has_value() && !invalidTypeCsv.ctf.has_value())
-      << "an invalid explicit data.symbol-type must not disable CSV";
-  ASSERT_TRUE(invalidTypeCsvDiagnostics.events().empty()) << "CSV must not inspect CTF-only data.symbol-type metadata";
+      << "an invalid explicit data-type must not disable CSV";
+  ASSERT_TRUE(invalidTypeCsvDiagnostics.events().empty()) << "CSV must not inspect CTF-only data-type metadata";
 
   const auto allRequest = outputRequest(true, true);
   CollectingDiagnosticSink invalidTypeAllDiagnostics;
   const auto invalidTypeAll = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, invalidTypeAllDiagnostics);
   ASSERT_TRUE(invalidTypeAll.csv.has_value() && !invalidTypeAll.ctf.has_value())
-      << "an invalid explicit data.symbol-type must disable only CTF for --all";
-  invalidTypeAllDiagnostics.singleEvent();
+      << "an invalid explicit data-type must disable only CTF for --all";
+  EXPECT_EQ(invalidTypeAllDiagnostics.singleEvent().message,
+            "CTF output cannot use ctrace-run data-type 'double'; supported data-type values are 'unsigned', "
+            "'signed', and 'float'; size must be 1, 2, or 4, and float requires size 4");
+  EXPECT_TRUE(invalidTypeAllDiagnostics.containsContext("backend", "ctf"));
 
-  config.setups[0].data[0].symbolType.reset();
-  config.setups[0].data[0].symbolSize.reset();
+  config.references[0].dataType.reset();
   CollectingDiagnosticSink missingTypeDiagnostics;
   const auto missingType = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, missingTypeDiagnostics);
   ASSERT_TRUE(missingType.csv.has_value() && missingType.ctf.has_value())
-      << "missing data.symbol-type/data.symbol-size must use CTF defaults and leave CSV enabled";
+      << "missing data-type must use the CTF default and leave CSV enabled";
   ASSERT_TRUE(
       (missingType.csv->outputPath == std::filesystem::path("BackendRequirements.SWO.csv") &&
        missingType.ctf->outputDirectory == std::filesystem::path("BackendRequirements.ctf") &&
        missingType.ctf->traceCompassXmlPath == std::filesystem::path("BackendRequirements.SWO.traceanalysis.xml") &&
        missingType.ctf->coreClockHz == 400000000U && missingType.ctf->sources.size() == 1U &&
-       missingType.ctf->sources[0].valueType == "unsigned int" && missingType.ctf->sources[0].valueSize == 4U))
+       missingType.ctf->sources[0].dataType == "unsigned" && missingType.ctf->sources[0].dataSize == 4U))
       << "output preflight must resolve artifact paths, clock, routes, and defaults";
   ASSERT_TRUE(missingTypeDiagnostics.events().empty())
-      << "missing optional data.symbol-type/data.symbol-size must not produce diagnostics";
+      << "missing optional data-type must not produce diagnostics";
 
-  config.setups[0].data[0].symbolTypeError = "data.symbol-type must be scalar";
+  config.references[0].dataTypeError = "data-type must be scalar";
   CollectingDiagnosticSink malformedTypeDiagnostics;
   const auto malformedType = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, malformedTypeDiagnostics);
   ASSERT_TRUE(malformedType.csv.has_value() && !malformedType.ctf.has_value())
-      << "malformed data.symbol-type must disable only CTF";
+      << "malformed data-type must disable only CTF";
 
-  config.setups[0].data[0].symbolTypeError.reset();
-  config.setups[0].data[0].symbolSizeError = "data.symbol-size must be unsigned";
+  config.references[0].dataTypeError.reset();
+  config.references[0].dataSizeError = "size must be unsigned";
   CollectingDiagnosticSink malformedSizeDiagnostics;
   const auto malformedSize = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, malformedSizeDiagnostics);
   ASSERT_TRUE(malformedSize.csv.has_value() && !malformedSize.ctf.has_value())
-      << "malformed data.symbol-size must disable only CTF";
+      << "malformed size must disable only CTF";
   malformedSizeDiagnostics.singleEvent();
+
+  config.references[0].dataSizeError.reset();
+  config.references[0].dataType = "signed";
+  config.references[0].dataSize = 1U;
+  CollectingDiagnosticSink currentMetadataDiagnostics;
+  const auto currentMetadata = planOutputs(allRequest, "BackendRequirements.SWO.raw", config,
+                                           currentMetadataDiagnostics);
+  ASSERT_TRUE(currentMetadata.ctf.has_value() && currentMetadata.ctf->sources[0].dataType == "signed" &&
+              currentMetadata.ctf->sources[0].dataSize == 1U)
+      << "reference data-type/size must be retained for CTF";
+  ASSERT_TRUE(currentMetadataDiagnostics.events().empty());
+
+  config.references[0].addressError = "address must be unsigned";
+  CollectingDiagnosticSink malformedAddressDiagnostics;
+  const auto malformedAddress = planOutputs(allRequest, "BackendRequirements.SWO.raw", config,
+                                            malformedAddressDiagnostics);
+  ASSERT_TRUE(malformedAddress.csv.has_value() && !malformedAddress.ctf.has_value())
+      << "malformed address must disable only CTF";
+  malformedAddressDiagnostics.singleEvent();
 }
 
 TEST(CtraceUnitTests, testCtfOutputRequiresAValidClock)
@@ -244,7 +269,7 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   TraceRunConfig config;
   config.path = "AmbiguousRoutes.ctrace-run.yml";
   auto setup = TraceRunTestSupport::makeTimestampSetup(std::nullopt, 400000000U, 1U);
-  setup.data.push_back(TraceRunDataSetup{"unsigned int", 4U});
+  setup.data.push_back(TraceRunDataSetup{4U});
   config.setups.push_back(setup);
 
   auto first = TraceRunTestSupport::makeReference("dwt", std::nullopt, 1U, {0U}, "opaque/dwt-a");
@@ -297,15 +322,15 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   ASSERT_TRUE(selectedDiagnostics.events().empty())
       << "an unambiguous selected route must not produce preflight diagnostics";
 
-  config.setups[0].data.push_back(TraceRunDataSetup{"unsigned int", 2U});
+  config.setups[0].data.push_back(TraceRunDataSetup{2U});
   config.references[1].stream = 1U;
   config.references[1].ctraceRef = "opaque/dwt-b";
   config.references[1].dataSetupIndex = 1U;
   CollectingDiagnosticSink sizeDiagnostics;
   const auto csvPlan =
       planOutputs(outputRequest(true, false), "captures/AmbiguousRoutes.SWO.raw", config, sizeDiagnostics);
-  ASSERT_TRUE(csvPlan.csv.has_value()) << "CTF-only data.symbol-size metadata must not disable CSV";
-  ASSERT_TRUE(sizeDiagnostics.events().empty()) << "CSV must not inspect CTF-only data.symbol-size metadata";
+  ASSERT_TRUE(csvPlan.csv.has_value()) << "CTF-only data.size metadata must not disable CSV";
+  ASSERT_TRUE(sizeDiagnostics.events().empty()) << "CSV must not inspect CTF-only data.size metadata";
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsValidateDefaultClockWithoutRoutes)

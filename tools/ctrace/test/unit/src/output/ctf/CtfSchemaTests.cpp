@@ -76,9 +76,9 @@ TEST(CtraceUnitTests, testCtfValueTypes)
     std::uint8_t size;
   };
   const std::vector<SupportedType> supported{
-      {"unsigned int", CtfSchema::ValueTag::Unsigned8, 1U},  {"unsigned int", CtfSchema::ValueTag::Unsigned16, 2U},
-      {"unsigned int", CtfSchema::ValueTag::Unsigned32, 4U}, {"signed int", CtfSchema::ValueTag::Signed8, 1U},
-      {"signed int", CtfSchema::ValueTag::Signed16, 2U},     {"signed int", CtfSchema::ValueTag::Signed32, 4U},
+      {"unsigned", CtfSchema::ValueTag::Unsigned8, 1U},  {"unsigned", CtfSchema::ValueTag::Unsigned16, 2U},
+      {"unsigned", CtfSchema::ValueTag::Unsigned32, 4U}, {"signed", CtfSchema::ValueTag::Signed8, 1U},
+      {"signed", CtfSchema::ValueTag::Signed16, 2U},     {"signed", CtfSchema::ValueTag::Signed32, 4U},
       {"float", CtfSchema::ValueTag::Float32, 4U},
   };
   for (const auto& item : supported) {
@@ -97,7 +97,7 @@ TEST(CtraceUnitTests, testCtfValueTypes)
   ASSERT_TRUE(CtfSchema::valueVariantForTraceRunType("double", 4U) == nullptr) << "unsupported CTF type was accepted";
   ASSERT_TRUE(CtfSchema::valueVariantForTraceRunType("float", 2U) == nullptr)
       << "incompatible CTF float width was accepted";
-  ASSERT_TRUE(CtfSchema::valueVariantForTraceRunType("unsigned int", 8U) == nullptr)
+  ASSERT_TRUE(CtfSchema::valueVariantForTraceRunType("unsigned", 8U) == nullptr)
       << "invalid CTF data size was accepted";
 }
 

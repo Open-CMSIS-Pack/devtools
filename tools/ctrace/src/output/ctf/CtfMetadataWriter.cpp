@@ -194,15 +194,15 @@ static MetadataSymbols collectMetadataSymbols(const std::vector<ResolvedTraceSou
     if (source.type != "dwt") {
       continue;
     }
-    symbols.dwtValueTypes[id] = source.valueType;
+    symbols.dwtValueTypes[id] = source.dataType;
     if (source.label.has_value()) {
       symbols.dwtNames[id] = *source.label;
     }
-    if (source.symbolAddress.has_value()) {
-      symbols.dwtAddressStarts[id] = *source.symbolAddress;
-      const auto extent = static_cast<std::uint64_t>(source.valueSize - 1U);
-      if (*source.symbolAddress <= std::numeric_limits<std::uint64_t>::max() - extent) {
-        symbols.dwtAddressEnds[id] = *source.symbolAddress + extent;
+    if (source.address.has_value()) {
+      symbols.dwtAddressStarts[id] = *source.address;
+      const auto extent = static_cast<std::uint64_t>(source.dataSize - 1U);
+      if (*source.address <= std::numeric_limits<std::uint64_t>::max() - extent) {
+        symbols.dwtAddressEnds[id] = *source.address + extent;
       }
     }
   }

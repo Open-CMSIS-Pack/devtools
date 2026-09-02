@@ -22,8 +22,8 @@ TEST(CtraceUnitTests, testTraceSelection)
   EXPECT_TRUE(CoreSight::isItmStimulusPort(0U));
   EXPECT_TRUE(CoreSight::isItmStimulusPort(31U));
   EXPECT_FALSE(CoreSight::isItmStimulusPort(32U));
-  EXPECT_TRUE(TraceRunSchema::isDwtDataType("unsigned int"));
-  EXPECT_TRUE(TraceRunSchema::isDwtDataType("signed int"));
+  EXPECT_TRUE(TraceRunSchema::isDwtDataType("unsigned"));
+  EXPECT_TRUE(TraceRunSchema::isDwtDataType("signed"));
   EXPECT_TRUE(TraceRunSchema::isDwtDataType("float"));
   TraceRunReference timestampReference;
   timestampReference.ctraceRef = "timestamps";

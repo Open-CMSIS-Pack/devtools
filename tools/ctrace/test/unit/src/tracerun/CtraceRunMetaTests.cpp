@@ -57,7 +57,9 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidReferences)
     const char* message;
   };
   std::vector<Case> cases;
-  cases.push_back({makeReference("dwt", std::nullopt, 1U, {1U, 1U}), "duplicate value in source array"});
+  auto duplicateDwtSource = makeReference("dwt", std::nullopt, 1U, {1U, 1U});
+  duplicateDwtSource.dataSetupIndex = 0U;
+  cases.push_back({duplicateDwtSource, "duplicate value in source array"});
   cases.push_back(
       {makeReference("itm", std::nullopt, 0U, {1U}), "stream must be a CoreSight ATB trace ID between 1 and 111"});
   cases.push_back({makeReference("itm", std::nullopt, 1U, {32U}), "ITM source must be between 0 and 31"});
@@ -92,7 +94,9 @@ TEST(CtraceUnitTests, testCtraceRunMetaExpandsItmAndDwtSourceArrays)
 {
   TraceRunConfig config;
   config.references.push_back(makeReference("itm", std::nullopt, 1U, {1U, 2U}));
-  config.references.push_back(makeReference("dwt", std::nullopt, 1U, {3U, 4U}));
+  auto dwtReference = makeReference("dwt", std::nullopt, 1U, {3U, 4U});
+  dwtReference.dataSetupIndex = 0U;
+  config.references.push_back(dwtReference);
 
   const auto meta = CtraceRunMeta::fromConfig(config);
   ASSERT_EQ(meta.sources().size(), 4U);
@@ -184,7 +188,9 @@ TEST(CtraceUnitTests, testCtraceRunMetaWarnsForSingleSetupIdentityConflicts)
   TraceRunConfig referencesOnly;
   referencesOnly.path = "trace.yml";
   referencesOnly.references = unnamedSetup.references;
-  referencesOnly.references.push_back(makeReference("dwt", std::nullopt, 3U, {0U}));
+  auto unnamedDwtReference = makeReference("dwt", std::nullopt, 3U, {0U});
+  unnamedDwtReference.dataSetupIndex = 0U;
+  referencesOnly.references.push_back(unnamedDwtReference);
   EXPECT_TRUE(metaRejects(referencesOnly, "pname is required for every ctrace-ref"));
 
   referencesOnly.references.pop_back();
@@ -249,30 +255,30 @@ TEST(CtraceUnitTests, testCtraceRunMetaResolvesDwtDataAndDefaults)
   config.path = "trace.yml";
   auto setup = makeTimestampSetup("core");
   setup.data.resize(2U);
-  setup.data[0].symbolType = "signed int";
-  setup.data[0].symbolSize = 2U;
-  setup.data[0].symbolTypeError = "type warning";
-  setup.data[0].symbolSizeError = "size warning";
+  setup.data[0].size = 2U;
+  setup.data[0].sizeError = "size warning";
   config.setups.push_back(setup);
 
   auto configured = makeReference("dwt", "core", 1U, {0U}, "core/data#0");
   configured.dataSetupIndex = 0U;
-  configured.symbolAddress = 0x20000000U;
+  configured.address = 0x20000000U;
+  configured.dataType = "float";
+  configured.dataSize = 4U;
   auto missingIndex = makeReference("dwt", "core", 1U, {1U}, "core/data");
   auto outOfRange = makeReference("dwt", "core", 1U, {2U}, "core/data#9");
   outOfRange.dataSetupIndex = 9U;
   config.references = {configured, missingIndex, outOfRange};
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  ASSERT_EQ(meta.sources().size(), 3U);
+  ASSERT_EQ(meta.sources().size(), 2U);
   EXPECT_EQ(meta.configPath(), "trace.yml");
-  EXPECT_EQ(meta.sources()[0].valueType, "signed int");
-  EXPECT_EQ(meta.sources()[0].valueSize, 2U);
-  EXPECT_EQ(meta.sources()[0].symbolAddress, std::optional<std::uint64_t>(0x20000000U));
-  EXPECT_EQ(meta.sources()[0].symbolTypeError, std::optional<std::string>("type warning"));
-  EXPECT_EQ(meta.sources()[0].symbolSizeError, std::optional<std::string>("size warning"));
-  EXPECT_EQ(meta.sources()[1].valueType, std::string(TraceRunSchema::kDefaultDwtDataType));
-  EXPECT_EQ(meta.sources()[2].valueSize, TraceRunSchema::kDefaultDwtDataSize);
+  EXPECT_EQ(meta.sources()[0].dataType, "float");
+  EXPECT_EQ(meta.sources()[0].dataSize, 4U);
+  EXPECT_EQ(meta.sources()[0].address, std::optional<std::uint64_t>(0x20000000U));
+  EXPECT_FALSE(meta.sources()[0].dataTypeError.has_value());
+  EXPECT_FALSE(meta.sources()[0].dataSizeError.has_value());
+  EXPECT_EQ(meta.sources()[1].dataType, std::string(TraceRunSchema::kDefaultDwtDataType));
+  EXPECT_EQ(meta.sources()[1].dataSize, TraceRunSchema::kDefaultDwtDataSize);
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaIgnoresInactiveSetups)
@@ -287,5 +293,19 @@ TEST(CtraceUnitTests, testCtraceRunMetaIgnoresInactiveSetups)
 
   const auto meta = CtraceRunMeta::fromConfig(config);
   EXPECT_EQ(meta.processorCount(), 1U);
-  EXPECT_EQ(meta.sources().front().valueType, std::string(TraceRunSchema::kDefaultDwtDataType));
+  EXPECT_EQ(meta.sources().front().dataType, std::string(TraceRunSchema::kDefaultDwtDataType));
+}
+
+TEST(CtraceUnitTests, testCtraceRunMetaDoesNotExposeDwtControlReferencesAsDataSources)
+{
+  TraceRunConfig config;
+  auto data = makeReference("dwt", "core", 1U, {0U}, "core/data#0");
+  data.dataSetupIndex = 0U;
+  auto start = makeReference("dwt", "core", 1U, {1U}, "core/instructions/start");
+  config.references = {data, start};
+
+  const auto meta = CtraceRunMeta::fromConfig(config);
+  ASSERT_EQ(meta.sources().size(), 1U);
+  EXPECT_EQ(meta.sources().front().source, 0U);
+  EXPECT_EQ(meta.processorCount(), 1U);
 }

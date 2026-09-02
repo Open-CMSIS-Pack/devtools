@@ -30,9 +30,9 @@ struct ResolvedTraceSource {
   std::uint32_t source = 0;
   std::uint8_t traceBusId = 0U;
   std::optional<std::string> label;
-  std::optional<std::uint64_t> symbolAddress;
-  std::string valueType = "unsigned int";
-  std::uint8_t valueSize = 4U;
+  std::optional<std::uint64_t> address;
+  std::string dataType = "unsigned";
+  std::uint8_t dataSize = 4U;
 };
 
 /** @brief Configures one CSV output artifact. */

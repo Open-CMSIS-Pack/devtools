@@ -157,15 +157,40 @@ static std::optional<std::uint64_t> deferredUnsignedAttribute(const std::string&
   }
 }
 
-/** @brief Parses an optional unsigned value only when its setup is consumed. */
-static std::optional<std::uint64_t> bestEffortUnsignedAttribute(const std::string& path, const Node& element,
-                                                                const std::string_view& name, std::uint64_t maximum)
+/** @brief Parses an optional unsigned reference field and defers validation errors. */
+static std::optional<std::uint64_t> deferredReferenceUnsignedAttribute(
+    const std::string& path, const Node& element, const std::string_view& name, std::uint64_t maximum,
+    std::optional<std::string>& error)
 {
-  try {
-    return optionalUnsignedAttribute(path, element, name, maximum);
-  } catch (const std::runtime_error&) {
+  const auto node = childNode(element, name);
+  if (!node) {
     return std::nullopt;
   }
+  if (!node.IsScalar()) {
+    error = "'" + std::string(name) + "' must be a scalar unsigned integer";
+    return std::nullopt;
+  }
+  try {
+    return unsignedValue(path, node, name, node.Scalar(), maximum);
+  } catch (const std::runtime_error& ex) {
+    error = ex.what();
+    return std::nullopt;
+  }
+}
+
+/** @brief Parses an optional scalar reference field and defers shape errors. */
+static std::optional<std::string> deferredReferenceStringAttribute(const Node& element, const std::string_view& name,
+                                                                   std::optional<std::string>& error)
+{
+  const auto node = childNode(element, name);
+  if (!node) {
+    return std::nullopt;
+  }
+  if (!node.IsScalar()) {
+    error = "'" + std::string(name) + "' must be a scalar string";
+    return std::nullopt;
+  }
+  return node.Scalar();
 }
 
 // ctrace-ref identifies the originating ctrace.yml node. The data index links
@@ -332,8 +357,13 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
     reference.stream = parseStream();
     reference.sources = parseSources(path, element);
     if (reference.type == "dwt") {
-      reference.symbolAddress =
-          bestEffortUnsignedAttribute(path, element, "symbol-address", std::numeric_limits<std::uint64_t>::max());
+      reference.address = deferredReferenceUnsignedAttribute(path, element, "address",
+                                                             std::numeric_limits<std::uint64_t>::max(),
+                                                             reference.addressError);
+      reference.dataType = deferredReferenceStringAttribute(element, "data-type", reference.dataTypeError);
+      reference.dataSize = deferredReferenceUnsignedAttribute(path, element, "size",
+                                                              std::numeric_limits<std::uint64_t>::max(),
+                                                              reference.dataSizeError);
     }
     reference.label = optionalAttribute(element, "label");
   };
@@ -467,18 +497,12 @@ static std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::strin
       dataSetups.push_back(std::move(data));
       continue;
     }
-    const auto type = childNode(item, "symbol-type");
-    if (type && !type.IsScalar() && !type.IsNull()) {
-      data.symbolTypeError = "'data.symbol-type' must be a scalar string";
-    } else if (type && !type.IsNull()) {
-      data.symbolType = optionalAttribute(item, "symbol-type");
-    }
-    const auto size = childNode(item, "symbol-size");
+    const auto size = childNode(item, "size");
     if (size && !size.IsScalar() && !size.IsNull()) {
-      data.symbolSizeError = "'data.symbol-size' must be a scalar unsigned integer";
+      data.sizeError = "'data.size' must be a scalar unsigned integer";
     } else if (size && !size.IsNull()) {
-      data.symbolSize = deferredUnsignedAttribute(path, item, "symbol-size", std::numeric_limits<std::uint64_t>::max(),
-                                                  data.symbolSizeError);
+      data.size = deferredUnsignedAttribute(path, item, "size", std::numeric_limits<std::uint64_t>::max(),
+                                            data.sizeError);
     }
     dataSetups.push_back(std::move(data));
   }

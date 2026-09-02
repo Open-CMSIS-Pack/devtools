@@ -63,8 +63,8 @@ static ResolvedTraceSource resolvedDwtSource(std::uint32_t comparator, std::uint
   source.type = "dwt";
   source.source = comparator;
   source.traceBusId = traceBusId;
-  source.valueType = std::move(type);
-  source.valueSize = size;
+  source.dataType = std::move(type);
+  source.dataSize = size;
   return source;
 }
 
@@ -208,11 +208,11 @@ TEST(CtraceUnitTests, testCtfEncoderWritesAllDwtValueVariants)
   const TemporaryTestPath temporaryPath("ctrace-ctf-value-variants-test");
   temporaryPath.createDirectory();
   std::vector<ResolvedTraceSource> sources{
-      resolvedDwtSource(0U, 1U, "signed int", 2U), resolvedDwtSource(1U, 1U, "float", 4U),
-      resolvedDwtSource(2U, 1U, "signed int", 4U), resolvedDwtSource(3U, 7U, "unsigned int", 1U),
-      resolvedDwtSource(4U, 1U, "signed int", 1U), resolvedDwtSource(4U, 2U, "signed int", 1U),
+      resolvedDwtSource(0U, 1U, "signed", 2U), resolvedDwtSource(1U, 1U, "float", 4U),
+      resolvedDwtSource(2U, 1U, "signed", 4U), resolvedDwtSource(3U, 7U, "unsigned", 1U),
+      resolvedDwtSource(4U, 1U, "signed", 1U), resolvedDwtSource(4U, 2U, "signed", 1U),
   };
-  sources.push_back(resolvedDwtSource(99U, 7U, "unsigned int", 1U));
+  sources.push_back(resolvedDwtSource(99U, 7U, "unsigned", 1U));
 
   CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{{"dwt"}, {}}, sources});
   encoder.start(temporaryPath.path());
@@ -269,7 +269,7 @@ TEST(CtraceUnitTests, testCtfEncoderRejectsConflictingUnformattedDwtRoutes)
   const TemporaryTestPath temporaryPath("ctrace-ctf-conflicting-dwt-routes-test");
   temporaryPath.createDirectory();
   const std::vector<ResolvedTraceSource> sources{
-      resolvedDwtSource(0U, 1U, "signed int", 1U),
+      resolvedDwtSource(0U, 1U, "signed", 1U),
       resolvedDwtSource(0U, 2U, "float", 4U),
   };
   CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{{"dwt"}, {}}, sources});

@@ -7,11 +7,7 @@ ctrace-run:
     - location: Blinky_cm7|osRtxInfo.kernel.tick
       access: W
       output: PC+value
-      symbol-file: Blinky_cm7.axf
-      symbol: osRtxInfo.kernel.tick
-      address: 0x24000024
       size: 4
-      type: unsigned int
     synchronization:
       DWT: 16M
     timestamps:
@@ -26,7 +22,7 @@ ctrace-run:
       period: 16384
   ctrace-refs:
   - ctrace-ref: CM7/timestamps
-    type: dwt
+    type: itm
     pname: CM7
     regs:
     - name: ITM_TCR
@@ -36,7 +32,10 @@ ctrace-run:
     type: dwt
     pname: CM7
     symbol-file: Blinky_cm7.axf
-    symbol-address: 0x24000024
+    address: 0x24000024
+    size: 4
+    data-type: unsigned
+    source: 0
     regs:
     - name: DWT_COMP0
       value: 0x24000024

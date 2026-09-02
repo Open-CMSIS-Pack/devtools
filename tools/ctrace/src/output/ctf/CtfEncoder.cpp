@@ -36,10 +36,10 @@ static const CtfSchema::ValueVariant& dwtValueVariant(const ResolvedTraceSource*
 {
   static const ResolvedTraceSource defaults;
   const auto& resolved = source != nullptr ? *source : defaults;
-  const auto* variant = CtfSchema::valueVariantForTraceRunType(resolved.valueType, resolved.valueSize);
+  const auto* variant = CtfSchema::valueVariantForTraceRunType(resolved.dataType, resolved.dataSize);
   if (variant == nullptr) {
     throw std::runtime_error("CTF DWT value for comparator " + std::to_string(comparator) +
-                             " has invalid ctrace-run data.symbol-type/data.symbol-size metadata");
+                             " has invalid ctrace-run data-type/size metadata");
   }
   return *variant;
 }
@@ -49,8 +49,7 @@ static bool equivalentSourceMetadata(const ResolvedTraceSource& left, const Reso
 {
   // Trace Bus ID identifies the route, not the metadata attached to it.
   return left.type == right.type && left.source == right.source && left.label == right.label &&
-         left.symbolAddress == right.symbolAddress && left.valueType == right.valueType &&
-         left.valueSize == right.valueSize;
+         left.address == right.address && left.dataType == right.dataType && left.dataSize == right.dataSize;
 }
 
 /** @brief Finds an unambiguous configured source for one event route. */
@@ -241,7 +240,7 @@ std::uint64_t CtfEncoder::allocateEventTimestamp(std::uint8_t traceBusId)
 
 void CtfEncoder::writeSoftwareEvent(const TraceEvent& event, const SoftwareTraceEvent& software)
 {
-  const auto* variant = CtfSchema::valueVariantForTraceRunType("unsigned int", software.size);
+  const auto* variant = CtfSchema::valueVariantForTraceRunType("unsigned", software.size);
   if (variant == nullptr) {
     throw std::runtime_error("CTF ITM value has an invalid SWO payload size");
   }
@@ -292,7 +291,7 @@ void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceE
 void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data,
                                        const ResolvedTraceSource* source)
 {
-  const auto configuredSize = source != nullptr ? source->valueSize : ResolvedTraceSource{}.valueSize;
+  const auto configuredSize = source != nullptr ? source->dataSize : ResolvedTraceSource{}.dataSize;
   if (configuredSize == data.size || m_config.diagnostics == nullptr ||
       !m_reportedDwtSizeMismatches.insert({event.traceBusId, data.comparator}).second) {
     return;
@@ -307,7 +306,7 @@ void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTra
   context.emplace_back("stream", std::to_string(event.traceBusId));
   m_config.diagnostics->report({
       DiagnosticSink::Severity::Warning,
-      "configured ctrace-run data.symbol-size does not match the decoded SWO payload size",
+      "configured ctrace-run size does not match the decoded SWO payload size",
       std::move(context),
   });
 }
