@@ -60,7 +60,7 @@ TEST(CtraceUnitTests, testDwtPcSamplePreservesProcessorSleep)
 
 TEST(CtraceUnitTests, testDwtPcSampleRejectsUnsupportedPayloads)
 {
-  for (const auto payload : {dwtPayload(2U, 1U, 1U), dwtPayload(2U, 2U, 0x1234U)}) {
+  const auto verify = [](const DwtPayloadPacket& payload, const char* expectedMessage) {
     DwtPacketDecoder decoder;
     const auto packets = decoder.decode(payload);
     ASSERT_EQ(packets.size(), 1U) << "unsupported DWT PC sample must emit one error";
@@ -68,7 +68,14 @@ TEST(CtraceUnitTests, testDwtPcSampleRejectsUnsupportedPayloads)
     ASSERT_NE(issue, nullptr);
     EXPECT_EQ(issue->code, TraceIssueCode::UnsupportedDwtPcSamplePayload)
         << "unsupported DWT PC sample error mismatch";
-  }
+    EXPECT_EQ(issue->message, expectedMessage) << "unsupported DWT PC sample diagnostic mismatch";
+  };
+
+  verify(dwtPayload(2U, 1U, 1U),
+         "unsupported DWT PC-sample payload: size 1, value 1; expected a 4-byte PC or a 1-byte zero sleep indication");
+  verify(dwtPayload(2U, 2U, 0x1234U),
+         "unsupported DWT PC-sample payload: size 2, value 4660; expected a 4-byte PC or a 1-byte zero sleep "
+         "indication");
 }
 
 TEST(CtraceUnitTests, testDwtCounterPacketsArePreservedUntilOutputSemanticsExist)

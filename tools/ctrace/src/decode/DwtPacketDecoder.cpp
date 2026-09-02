@@ -109,8 +109,9 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
       TraceEvent error{TraceIssueEvent{
           TraceIssueCode::UnsupportedDwtPcSamplePayload,
           TraceIssueSeverity::Error,
-          "unsupported DWT PC-sample payload size " + std::to_string(payload.size) +
-              "; expected a 4-byte PC or 1-byte zero sleep indication",
+          "unsupported DWT PC-sample payload: size " + std::to_string(payload.size) +
+              ", value " + std::to_string(payload.value) +
+              "; expected a 4-byte PC or a 1-byte zero sleep indication",
           std::nullopt,
           std::nullopt,
       }};
