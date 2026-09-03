@@ -186,8 +186,44 @@ TEST_F(CtraceIntegTests, AppliesTraceRunConfiguration)
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
   expectContains(result.stderrText, "aligned DWT range");
   expectContains(result.stderrText, "configured DWT data trace");
+  expectContains(result.stderrText, "configured ITM channel");
   expectContains(result.stderrText, "applied ctrace-run meta");
-  expectNotContains(result.stderrText, "configured ITM channel");
+}
+
+TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
+{
+  writeFile(workDirectory() / "Diagnostics.ctrace-run.yml", R"yml(ctrace-run:
+  ctrace-setup:
+    - pname: core
+      timestamps:
+        clock: 400000000
+  ctrace-refs:
+    - ctrace-ref: core/itm
+      type: itm
+      pname: core
+      stream: 1
+      source: 0
+      info: configured ITM channel zero
+      warning: ITM channel zero uses fallback routing
+      error: target could not enable ITM channel zero
+    - ctrace-ref: core/exceptions
+      type: exception
+      error: ignored reference diagnostic
+)yml");
+  writeFile(workDirectory() / "Diagnostics.SWO.raw");
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Diagnostics", "--all"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  expectContains(result.stderrText, "[info] configured ITM channel zero:");
+  expectContains(result.stderrText, "[warning] ITM channel zero uses fallback routing:");
+  expectContains(result.stderrText, "[error] target could not enable ITM channel zero:");
+  expectContains(result.stderrText, "ctraceRef=core/itm, type=itm, pname=core");
+  expectNotContains(result.stderrText, "ignored reference diagnostic");
+
+  expectNonEmptyFile(workDirectory() / "Diagnostics.SWO.csv");
+  expectNonEmptyFile(workDirectory() / "Diagnostics.ctf" / "metadata");
+  expectNonEmptyFile(workDirectory() / "Diagnostics.ctf" / "stream_0");
+  expectNonEmptyFile(workDirectory() / "Diagnostics.SWO.traceanalysis.xml");
 }
 
 TEST_F(CtraceIntegTests, GeneratesRequestedOutputsAfterDecoderError)

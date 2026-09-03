@@ -41,13 +41,10 @@ static std::vector<std::pair<std::string, std::string>> referenceContext(const T
   return context;
 }
 
-/** @brief Reports informational, warning, and error annotations from trace-run references. */
-static void reportTraceRunDiagnostics(const TraceRunConfig& config, DiagnosticSink& diagnostics)
+/** @brief Reports annotations from every reference retained by the trace-run reader. */
+static void reportConsumedReferenceDiagnostics(const TraceRunConfig& config, DiagnosticSink& diagnostics)
 {
   for (const auto& reference : config.references) {
-    if (TraceRunSchema::isItmChannelZero(reference)) {
-      continue;
-    }
     const auto report = [&](DiagnosticSink::Severity severity, const std::optional<std::string>& message) {
       if (!message.has_value() || message->empty()) {
         return;
@@ -117,7 +114,7 @@ void TraceDirectoryJob::run()
               {"setups", std::to_string(config.setups.size())},
           },
       });
-      reportTraceRunDiagnostics(config, m_diagnostics);
+      reportConsumedReferenceDiagnostics(config, m_diagnostics);
       const auto ctraceRunMeta = CtraceRunMeta::fromConfig(config);
       reportTraceRunWarnings(ctraceRunMeta, m_diagnostics);
       const auto rawInputs = TraceRunDiscovery::rawInputs(configFile);

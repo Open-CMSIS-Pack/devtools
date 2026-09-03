@@ -319,8 +319,11 @@ TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
     - { type: dwt, ctrace-ref: core/notdata#2, error: unrouted }
     - { type: itm, ctrace-ref: core/itm0, source: 0, error: disabled }
     - { type: itm, ctrace-ref: core/itm1, source: 1, error: usable, label: null }
+    - { type: exception, ctrace-ref: core/exceptions, error: ignored }
+    - { type: global_ts, ctrace-ref: core/timesync, warning: ignored }
+    - { type: overflow, ctrace-ref: core/overflow, info: ignored }
 )yml");
-  ASSERT_EQ(config.references.size(), 8U);
+  ASSERT_EQ(config.references.size(), 8U) << "reader must ignore diagnostic annotations on unconsumed reference types";
   EXPECT_EQ(config.references[0].processorName, std::optional<std::string>("core0"));
   EXPECT_EQ(config.references[1].processorName, std::optional<std::string>("core1"));
   EXPECT_FALSE(config.references[2].processorName.has_value());
