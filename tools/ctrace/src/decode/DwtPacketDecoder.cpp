@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <iterator>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -55,6 +56,24 @@ constexpr std::uint32_t kPmuOverflowMask = 0xffU;
 constexpr std::uint8_t kArmv7MFullPcBytes = 4U;
 constexpr std::uint8_t kArmv7MAddressOffsetBytes = 2U;
 
+/** @brief Describes an invalid DWT event-counter payload. */
+static std::string invalidEventCounterMessage(const DwtPayloadPacket& payload)
+{
+  std::ostringstream message;
+  message << "unsupported DWT event-counter payload: size " << static_cast<unsigned>(payload.size) << ", value 0x"
+          << std::hex << payload.value << "; expected a non-zero 1-byte mask using bits 0..5 only";
+  return message.str();
+}
+
+/** @brief Describes an invalid PMU trace-on-overflow payload. */
+static std::string invalidPmuEventCounterMessage(const DwtPayloadPacket& payload)
+{
+  std::ostringstream message;
+  message << "unsupported PMU event-counter payload: size " << static_cast<unsigned>(payload.size) << ", value 0x"
+          << std::hex << payload.value << "; expected a non-zero 1-byte mask using bits 0..7";
+  return message.str();
+}
+
 std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload)
 {
   std::vector<TraceEvent> output;
@@ -63,7 +82,24 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
   const auto source = static_cast<DwtPacketSource>(discriminator);
   if (source == DwtPacketSource::EventCounter) {
     output = flush(payload.quality, payload.tcyc);
-    TraceEvent packet{DwtEventTraceEvent{discriminator, payload.size, payload.value}};
+    const auto validPayload = payload.size == 1U && payload.value != 0U &&
+                              (payload.value & ~static_cast<std::uint32_t>(kDwtEventCounterValidMask)) == 0U;
+    if (!validPayload) {
+      TraceEvent error{TraceIssueEvent{
+          TraceIssueCode::UnsupportedDwtEventCounterPayload,
+          TraceIssueSeverity::Error,
+          invalidEventCounterMessage(payload),
+          std::nullopt,
+          std::nullopt,
+      }};
+      error.index = payload.index;
+      error.traceBusId = payload.traceBusId;
+      error.tcyc = payload.tcyc;
+      error.quality = payload.quality;
+      output.push_back(std::move(error));
+      return output;
+    }
+    TraceEvent packet{DwtEventTraceEvent{static_cast<std::uint8_t>(payload.value)}};
     packet.index = payload.index;
     packet.traceBusId = payload.traceBusId;
     packet.tcyc = payload.tcyc;
@@ -74,7 +110,23 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
 
   if (source == DwtPacketSource::PmuTraceOnOverflow) {
     output = flush(payload.quality, payload.tcyc);
-    TraceEvent packet{PmuTraceEvent{static_cast<std::uint8_t>(payload.value & kPmuOverflowMask)}};
+    const auto validPayload = payload.size == 1U && payload.value != 0U && (payload.value & ~kPmuOverflowMask) == 0U;
+    if (!validPayload) {
+      TraceEvent error{TraceIssueEvent{
+          TraceIssueCode::UnsupportedPmuEventCounterPayload,
+          TraceIssueSeverity::Error,
+          invalidPmuEventCounterMessage(payload),
+          std::nullopt,
+          std::nullopt,
+      }};
+      error.index = payload.index;
+      error.traceBusId = payload.traceBusId;
+      error.tcyc = payload.tcyc;
+      error.quality = payload.quality;
+      output.push_back(std::move(error));
+      return output;
+    }
+    TraceEvent packet{PmuTraceEvent{static_cast<std::uint8_t>(payload.value)}};
     packet.index = payload.index;
     packet.traceBusId = payload.traceBusId;
     packet.tcyc = payload.tcyc;

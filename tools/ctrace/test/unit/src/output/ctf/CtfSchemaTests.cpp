@@ -21,11 +21,12 @@
 
 TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
 {
-  constexpr std::array<std::uint32_t, 7U> eventIds{
+  constexpr std::array<std::uint32_t, 9U> eventIds{
       CtfSchema::value(CtfSchema::EventId::Itm),        CtfSchema::value(CtfSchema::EventId::DwtValue),
       CtfSchema::value(CtfSchema::EventId::DwtAddress), CtfSchema::value(CtfSchema::EventId::TraceStatus),
       CtfSchema::value(CtfSchema::EventId::Exception),  CtfSchema::value(CtfSchema::EventId::GlobalTimestamp),
-      CtfSchema::value(CtfSchema::EventId::PcSample),
+      CtfSchema::value(CtfSchema::EventId::PcSample),   CtfSchema::value(CtfSchema::EventId::DwtEvent),
+      CtfSchema::value(CtfSchema::EventId::PmuEvent),
   };
   constexpr std::array<std::uint8_t, 5U> statusReasons{
       CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart),
@@ -53,6 +54,17 @@ TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
       CtfSchema::value(CtfSchema::ValueTag::Signed32), CtfSchema::value(CtfSchema::ValueTag::Unsigned32),
       CtfSchema::value(CtfSchema::ValueTag::Float32),
   };
+  constexpr std::array<std::uint8_t, 6U> eventCounters{
+      CtfSchema::value(DwtEventCounter::Cpi),       CtfSchema::value(DwtEventCounter::Exception),
+      CtfSchema::value(DwtEventCounter::Sleep),     CtfSchema::value(DwtEventCounter::LoadStore),
+      CtfSchema::value(DwtEventCounter::Fold),      CtfSchema::value(DwtEventCounter::Cycle),
+  };
+  constexpr std::array<std::uint8_t, 8U> pmuCounters{
+      CtfSchema::value(PmuEventCounter::Event0), CtfSchema::value(PmuEventCounter::Event1),
+      CtfSchema::value(PmuEventCounter::Event2), CtfSchema::value(PmuEventCounter::Event3),
+      CtfSchema::value(PmuEventCounter::Event4), CtfSchema::value(PmuEventCounter::Event5),
+      CtfSchema::value(PmuEventCounter::Event6), CtfSchema::value(PmuEventCounter::Event7),
+  };
 
   for (std::size_t index = 0U; index < eventIds.size(); ++index) {
     EXPECT_EQ(eventIds[index], static_cast<std::uint32_t>(index));
@@ -72,6 +84,18 @@ TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
   for (std::size_t index = 0U; index < valueTags.size(); ++index) {
     EXPECT_EQ(valueTags[index], static_cast<std::uint8_t>(index));
   }
+  EXPECT_EQ(eventCounters, (std::array<std::uint8_t, 6U>{{0U, 1U, 2U, 3U, 4U, 5U}}));
+  EXPECT_EQ(pmuCounters, (std::array<std::uint8_t, 8U>{{0U, 1U, 2U, 3U, 4U, 5U, 6U, 7U}}));
+  EXPECT_EQ(CtfSchema::dwtEventCounterName(DwtEventCounter::Cpi), "CPICNT");
+  EXPECT_EQ(CtfSchema::dwtEventCounterName(DwtEventCounter::Exception), "EXCCNT");
+  EXPECT_EQ(CtfSchema::dwtEventCounterName(DwtEventCounter::Sleep), "SLEEPCNT");
+  EXPECT_EQ(CtfSchema::dwtEventCounterName(DwtEventCounter::LoadStore), "LSUCNT");
+  EXPECT_EQ(CtfSchema::dwtEventCounterName(DwtEventCounter::Fold), "FOLDCNT");
+  EXPECT_EQ(CtfSchema::dwtEventCounterName(DwtEventCounter::Cycle), "CYCCNT");
+  EXPECT_EQ(CtfSchema::dwtEventCounterName(static_cast<DwtEventCounter>(6U)), "UNKNOWN");
+  EXPECT_EQ(CtfSchema::pmuEventCounterName(PmuEventCounter::Event0), "Event0");
+  EXPECT_EQ(CtfSchema::pmuEventCounterName(PmuEventCounter::Event7), "Event7");
+  EXPECT_EQ(CtfSchema::pmuEventCounterName(static_cast<PmuEventCounter>(8U)), "UNKNOWN");
 }
 
 TEST(CtraceUnitTests, testCtfValueTypes)

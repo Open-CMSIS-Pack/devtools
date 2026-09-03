@@ -8,6 +8,7 @@
 #ifndef CTRACE_SRC_MODEL_TRACEEVENT_H
 #define CTRACE_SRC_MODEL_TRACEEVENT_H
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -39,6 +40,8 @@ enum class TraceIssueCode {
   DecodeError,
   DataLoss,
   InvalidExceptionAction,
+  UnsupportedDwtEventCounterPayload,
+  UnsupportedPmuEventCounterPayload,
   UnsupportedDwtAddressPayload,
   UnsupportedDwtPcSamplePayload,
   OpenCsdDecodeError,
@@ -125,12 +128,69 @@ struct ExceptionTraceEvent {
   ExceptionAction action = ExceptionAction::Unknown;
 };
 
-/** @brief Contains a decoded DWT event-counter packet. */
-struct DwtEventTraceEvent {
-  std::uint32_t discriminator = 0;
-  std::uint8_t size = 0;
-  std::uint32_t value = 0;
+/** @brief Identifies one counter reported by a DWT event-counter packet. */
+enum class DwtEventCounter : std::uint8_t {
+  Cpi = 0U,
+  Exception = 1U,
+  Sleep = 2U,
+  LoadStore = 3U,
+  Fold = 4U,
+  Cycle = 5U,
 };
+
+inline constexpr std::array<DwtEventCounter, 6U> kDwtEventCounters{{
+    DwtEventCounter::Cpi,
+    DwtEventCounter::Exception,
+    DwtEventCounter::Sleep,
+    DwtEventCounter::LoadStore,
+    DwtEventCounter::Fold,
+    DwtEventCounter::Cycle,
+}};
+
+/** @brief Returns the wire bit represented by one DWT event counter. */
+constexpr std::uint8_t dwtEventCounterBit(DwtEventCounter counter)
+{
+  return static_cast<std::uint8_t>(1U << static_cast<std::uint8_t>(counter));
+}
+
+inline constexpr std::uint8_t kDwtEventCounterValidMask =
+    dwtEventCounterBit(DwtEventCounter::Cpi) | dwtEventCounterBit(DwtEventCounter::Exception) |
+    dwtEventCounterBit(DwtEventCounter::Sleep) | dwtEventCounterBit(DwtEventCounter::LoadStore) |
+    dwtEventCounterBit(DwtEventCounter::Fold) | dwtEventCounterBit(DwtEventCounter::Cycle);
+
+/** @brief Contains the counter-overflow mask from one decoded DWT event packet. */
+struct DwtEventTraceEvent {
+  std::uint8_t counterMask = 0;
+};
+
+/** @brief Identifies one programmable counter reported by a PMU trace packet. */
+enum class PmuEventCounter : std::uint8_t {
+  Event0 = 0U,
+  Event1 = 1U,
+  Event2 = 2U,
+  Event3 = 3U,
+  Event4 = 4U,
+  Event5 = 5U,
+  Event6 = 6U,
+  Event7 = 7U,
+};
+
+inline constexpr std::array<PmuEventCounter, 8U> kPmuEventCounters{{
+    PmuEventCounter::Event0,
+    PmuEventCounter::Event1,
+    PmuEventCounter::Event2,
+    PmuEventCounter::Event3,
+    PmuEventCounter::Event4,
+    PmuEventCounter::Event5,
+    PmuEventCounter::Event6,
+    PmuEventCounter::Event7,
+}};
+
+/** @brief Returns the wire bit represented by one programmable PMU event counter. */
+constexpr std::uint8_t pmuEventCounterBit(PmuEventCounter counter)
+{
+  return static_cast<std::uint8_t>(1U << static_cast<std::uint8_t>(counter));
+}
 
 /** @brief Contains the OVn counter mask from a decoded PMU trace-on-overflow packet. */
 struct PmuTraceEvent {

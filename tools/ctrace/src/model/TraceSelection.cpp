@@ -42,16 +42,16 @@ static std::optional<TraceEventType> typeFor(const ExceptionTraceEvent&)
   return TraceEventType::Exception;
 }
 
-/** @brief Keeps DWT counter payloads disabled until their output semantics are implemented. */
+/** @brief Exposes DWT event-counter payloads through their public output selector. */
 static std::optional<TraceEventType> typeFor(const DwtEventTraceEvent&)
 {
-  return std::nullopt;
+  return TraceEventType::Event;
 }
 
-/** @brief Keeps PMU payloads disabled until their output semantics are implemented. */
+/** @brief Exposes PMU trace-on-overflow payloads through their public output selector. */
 static std::optional<TraceEventType> typeFor(const PmuTraceEvent&)
 {
-  return std::nullopt;
+  return TraceEventType::Pmu;
 }
 
 /** @brief Exposes periodic DWT PC samples through their public output selector. */

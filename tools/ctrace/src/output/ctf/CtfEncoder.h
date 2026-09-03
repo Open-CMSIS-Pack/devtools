@@ -75,6 +75,10 @@ private:
   void reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data, const ResolvedTraceSource* source);
   /** @brief Encodes one DWT address event. */
   void writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTraceEvent& address);
+  /** @brief Expands one DWT event-counter mask into individual CTF records. */
+  void writeDwtEvent(const TraceEvent& event, const DwtEventTraceEvent& counters);
+  /** @brief Expands one PMU trace-on-overflow mask into individual CTF records. */
+  void writePmuEvent(const TraceEvent& event, const PmuTraceEvent& counters);
   /** @brief Encodes one periodic PC-sample or processor-sleep event. */
   void writePcSampleEvent(const TraceEvent& event, const PcSampleTraceEvent& sample);
   /** @brief Encodes one reconstructed global timestamp event. */

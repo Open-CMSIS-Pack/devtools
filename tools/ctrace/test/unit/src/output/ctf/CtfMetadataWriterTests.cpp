@@ -54,6 +54,12 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
   EXPECT_NE(metadata.find("\"External IRQ 38\" = 54"), std::string::npos);
   EXPECT_NE(metadata.find("\"Thread Mode\" = 0"), std::string::npos);
   EXPECT_NE(metadata.find("cmsis_exception_origin_t cmsis_exception_origin;"), std::string::npos);
+  EXPECT_NE(metadata.find("\"CPICNT\" = 0"), std::string::npos);
+  EXPECT_NE(metadata.find("\"CYCCNT\" = 5"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_dwt_event_counter_t cmsis_dwt_event_counter;"), std::string::npos);
+  EXPECT_NE(metadata.find("\"Event0\" = 0"), std::string::npos);
+  EXPECT_NE(metadata.find("\"Event7\" = 7"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_pmu_event_counter_t cmsis_pmu_event_counter;"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfMetadataWriterRejectsMissingOutputDirectory)
@@ -84,9 +90,10 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   const TemporaryTestPath path("ctrace-trace-compass-schema.xml");
   TraceCompassXmlWriter::writeFile(path.path());
   const auto xml = readTestTextFile(path.path());
-  constexpr std::array<CtfSchema::EventId, 6U> visualizedEvents{
+  constexpr std::array<CtfSchema::EventId, 8U> visualizedEvents{
       CtfSchema::EventId::Itm,       CtfSchema::EventId::DwtValue,    CtfSchema::EventId::DwtAddress,
       CtfSchema::EventId::Exception, CtfSchema::EventId::TraceStatus, CtfSchema::EventId::PcSample,
+      CtfSchema::EventId::DwtEvent,  CtfSchema::EventId::PmuEvent,
   };
 
   for (const auto eventId : visualizedEvents) {
@@ -108,6 +115,26 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   EXPECT_NE(xml.find("value=\"trace\""), std::string::npos);
   EXPECT_NE(xml.find("value=\"EXCEPTION_RETURN\""), std::string::npos);
   EXPECT_NE(xml.find("value=\"Exception Return\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"cmsis_dwt_event_counter\""), std::string::npos);
+  EXPECT_NE(xml.find("<stateValue type=\"string\" value=\"CPICNT\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<stateAttribute type=\"constant\" value=\"CYCCNT\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<stateValue type=\"int\" value=\"0\" stack=\"push\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<stateValue type=\"int\" value=\"5\" stack=\"push\" />"), std::string::npos);
+  EXPECT_NE(xml.find("type=\"null\" stack=\"pop\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"timestamp + 1000\" scriptEngine=\"rhino\""), std::string::npos);
+  EXPECT_NE(xml.find("<label value=\"DWT Event Counters\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<definedValue name=\"0\" value=\"0\""), std::string::npos);
+  EXPECT_NE(xml.find("<definedValue name=\"5\" value=\"5\""), std::string::npos);
+  EXPECT_NE(xml.find("<entry path=\"DWT_EVENT/" "*\" displayText=\"true\"><display type=\"constant\" value=\"1\" /></entry>"),
+            std::string::npos);
+  EXPECT_NE(xml.find("value=\"cmsis_pmu_event_counter\""), std::string::npos);
+  EXPECT_NE(xml.find("<stateValue type=\"string\" value=\"Event0\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<stateAttribute type=\"constant\" value=\"Event7\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<stateValue type=\"int\" value=\"7\" stack=\"push\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<label value=\"PMU Event Counters\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<definedValue name=\"7\" value=\"7\""), std::string::npos);
+  EXPECT_NE(xml.find("<entry path=\"PMU_EVENT/" "*\" displayText=\"true\"><display type=\"constant\" value=\"1\" /></entry>"),
+            std::string::npos);
   const auto threadModeEntry = xml.find("path=\"EXCEPTION/Thread Mode\"");
   const auto returnEntry = xml.find("path=\"EXCEPTION_RETURN/*\" displayText=\"true\"");
   const auto interruptEntries = xml.find("path=\"EXCEPTION/(?!Thread Mode).+\"");

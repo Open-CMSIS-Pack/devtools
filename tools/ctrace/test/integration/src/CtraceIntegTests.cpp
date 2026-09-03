@@ -6,8 +6,11 @@
  */
 
 #include "CtraceMain.h"
+#include "CtfTestSupport.h"
 
 #include <gtest/gtest.h>
+
+#include "ctf/CtfSchema.h"
 
 #include <algorithm>
 #include <array>
@@ -53,12 +56,14 @@ protected:
     return m_workDirectory;
   }
 
-  void copyFixtureFile(const std::filesystem::path& fixtureDirectory, const std::string& fileName) const
+  void copyFixtureFile(const std::filesystem::path& fixtureDirectory, const std::string& fileName,
+                       const std::string& destinationFileName = {}) const
   {
     const auto source = fixtureDirectory / fileName;
     ASSERT_TRUE(std::filesystem::is_regular_file(source)) << source;
+    const auto destination = destinationFileName.empty() ? fileName : destinationFileName;
     std::error_code error;
-    const auto copied = std::filesystem::copy_file(source, m_workDirectory / fileName,
+    const auto copied = std::filesystem::copy_file(source, m_workDirectory / destination,
                                                    std::filesystem::copy_options::overwrite_existing, error);
     ASSERT_TRUE(copied) << source << ": " << error.message();
   }
@@ -116,6 +121,16 @@ void expectNotContains(std::string_view text, std::string_view unexpected)
   EXPECT_EQ(std::string_view::npos, text.find(unexpected)) << unexpected << "\n" << text;
 }
 
+std::size_t countOccurrences(std::string_view text, std::string_view value)
+{
+  std::size_t count = 0U;
+  for (auto offset = text.find(value); offset != std::string_view::npos;
+       offset = text.find(value, offset + value.size())) {
+    ++count;
+  }
+  return count;
+}
+
 TEST_F(CtraceIntegTests, GeneratesAllOutputs)
 {
   writeFile(workDirectory() / "Minimal.ctrace-run.yml", R"yml(ctrace-run:
@@ -139,7 +154,104 @@ TEST_F(CtraceIntegTests, GeneratesAllOutputs)
   expectNonEmptyFile(workDirectory() / "Minimal.SWO.traceanalysis.xml");
 }
 
-TEST_F(CtraceIntegTests, IgnoresPmuPacketsUntilOutputSemanticsExist)
+TEST_F(CtraceIntegTests, ExpandsDwtEventCountersAcrossCsvAndCtf)
+{
+  writeFile(workDirectory() / "Events.ctrace-run.yml", R"yml(ctrace-run:
+  ctrace-setup:
+    - timestamps:
+        clock: 400000000
+  ctrace-refs: []
+)yml");
+
+  const std::string raw{"\0\0\0\0\0\x80\x05\x21\x09\x41", 10U};
+  writeFile(workDirectory() / "Events.SWO.raw", raw);
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Events", "--all"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+            "0,,event,0,0x21,,,\n"
+            "0,,itm,1,0x41,,,\n",
+            readTextFile(workDirectory() / "Events.SWO.csv"));
+  expectContains(readTextFile(workDirectory() / "Events.ctf" / "metadata"), "name = \"DWT_EVENT\"");
+  expectNonEmptyFile(workDirectory() / "Events.ctf" / "stream_0");
+  expectContains(readTextFile(workDirectory() / "Events.SWO.traceanalysis.xml"),
+                 "<label value=\"DWT Event Counters\" />");
+}
+
+TEST_F(CtraceIntegTests, ConvertsCapturedDwtEventCountersAcrossOverflow)
+{
+  const auto fixtureDirectory = testDataDirectory() / "trace-event";
+  copyFixtureFile(fixtureDirectory, "trace-event.raw", "trace-event.SWO.raw");
+  copyFixtureFile(fixtureDirectory, "trace-event.ctrace-run.yml");
+
+  const auto raw = readBinaryFile(workDirectory() / "trace-event.SWO.raw");
+  ASSERT_EQ(raw.size(), 19999U);
+  constexpr std::array<unsigned char, 6U> hardwareSync{0U, 0U, 0U, 0U, 0U, 0x80U};
+  ASSERT_GE(raw.size(), 10005U);
+  EXPECT_TRUE(std::equal(hardwareSync.begin(), hardwareSync.end(), raw.begin()));
+  EXPECT_EQ(raw[9998U], 0x70U);
+  EXPECT_TRUE(std::equal(hardwareSync.begin(), hardwareSync.end(), raw.begin() + 9999U));
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "trace-event", "--all"});
+  EXPECT_EQ(result.exitCode, 0) << result.stderrText;
+  expectContains(result.stderrText, "[warning] first overflow occurred at cycle timestamp 796135");
+  expectContains(result.stderrText, "[info] decoded 8599 events from 19999 bytes");
+
+  const auto csv = readTextFile(workDirectory() / "trace-event.SWO.csv");
+  EXPECT_EQ(countOccurrences(csv, ",,event,0,"), 5797U);
+  EXPECT_EQ(countOccurrences(csv, ",,event,0,0x04,,,"), 3073U);
+  EXPECT_EQ(countOccurrences(csv, ",,overflow,"), 1U);
+  EXPECT_EQ(countOccurrences(csv, ",,error,"), 0U);
+  const auto regularEvent = csv.find("62,,event,0,0x20,,,");
+  const auto overflow = csv.find("796135,,overflow,");
+  const auto sleepEvent = csv.find("796854,,event,0,0x04,,,");
+  ASSERT_NE(regularEvent, std::string::npos);
+  ASSERT_NE(overflow, std::string::npos);
+  ASSERT_NE(sleepEvent, std::string::npos);
+  EXPECT_LT(regularEvent, overflow);
+  EXPECT_LT(overflow, sleepEvent);
+
+  const auto ctfRecords = CtfTestSupport::readCtfRecords(workDirectory() / "trace-event.ctf" / "stream_0");
+  std::array<std::size_t, 6U> eventCounters{};
+  for (const auto& record : ctfRecords) {
+    if (record.id != CtfSchema::value(CtfSchema::EventId::DwtEvent)) {
+      continue;
+    }
+    ASSERT_EQ(record.payload.size(), 6U);
+    ASSERT_LT(record.payload.front(), eventCounters.size());
+    ++eventCounters[record.payload.front()];
+  }
+  constexpr std::array<std::size_t, 6U> expectedCounters{{1211U, 44U, 3092U, 1011U, 480U, 98U}};
+  EXPECT_EQ(eventCounters, expectedCounters);
+
+  expectContains(readTextFile(workDirectory() / "trace-event.ctf" / "metadata"), "name = \"DWT_EVENT\"");
+  expectContains(readTextFile(workDirectory() / "trace-event.SWO.traceanalysis.xml"),
+                 "<label value=\"DWT Event Counters\" />");
+}
+
+TEST_F(CtraceIntegTests, ReportsInvalidDwtEventCounterWithoutPartialDecode)
+{
+  writeFile(workDirectory() / "InvalidEvent.ctrace-run.yml", R"yml(ctrace-run:
+  ctrace-setup:
+    - timestamps:
+        clock: 400000000
+  ctrace-refs: []
+)yml");
+
+  const std::string raw{"\0\0\0\0\0\x80\x05\x41\x09\x41", 10U};
+  writeFile(workDirectory() / "InvalidEvent.SWO.raw", raw);
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "InvalidEvent", "--all"});
+  EXPECT_EQ(1, result.exitCode);
+  expectContains(result.stderrText, "trace decode error at raw offset 6");
+  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+            "0,,error,,,,,\"unsupported DWT event-counter payload: size 1, value 0x41; expected a non-zero 1-byte "
+            "mask using bits 0..5 only\"\n"
+            "0,,itm,1,0x41,,,\n",
+            readTextFile(workDirectory() / "InvalidEvent.SWO.csv"));
+}
+
+TEST_F(CtraceIntegTests, ExpandsPmuEventCountersAcrossCsvAndCtf)
 {
   writeFile(workDirectory() / "Pmu.ctrace-run.yml", R"yml(ctrace-run:
   ctrace-setup:
@@ -154,11 +266,35 @@ TEST_F(CtraceIntegTests, IgnoresPmuPacketsUntilOutputSemanticsExist)
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Pmu", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
   EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+            "0,,pmu,3,0x81,,,\n"
             "0,,itm,1,0x41,,,\n",
             readTextFile(workDirectory() / "Pmu.SWO.csv"));
-  expectNonEmptyFile(workDirectory() / "Pmu.ctf" / "metadata");
+  expectContains(readTextFile(workDirectory() / "Pmu.ctf" / "metadata"), "name = \"PMU_EVENT\"");
   expectNonEmptyFile(workDirectory() / "Pmu.ctf" / "stream_0");
-  expectNonEmptyFile(workDirectory() / "Pmu.SWO.traceanalysis.xml");
+  expectContains(readTextFile(workDirectory() / "Pmu.SWO.traceanalysis.xml"),
+                 "<label value=\"PMU Event Counters\" />");
+}
+
+TEST_F(CtraceIntegTests, ReportsInvalidPmuEventCounterWithoutPartialDecode)
+{
+  writeFile(workDirectory() / "InvalidPmu.ctrace-run.yml", R"yml(ctrace-run:
+  ctrace-setup:
+    - timestamps:
+        clock: 400000000
+  ctrace-refs: []
+)yml");
+
+  const std::string raw{"\0\0\0\0\0\x80\x1d\x00\x09\x41", 10U};
+  writeFile(workDirectory() / "InvalidPmu.SWO.raw", raw);
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "InvalidPmu", "--all"});
+  EXPECT_EQ(1, result.exitCode);
+  expectContains(result.stderrText, "trace decode error at raw offset 6");
+  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+            "0,,error,,,,,\"unsupported PMU event-counter payload: size 1, value 0x0; expected a non-zero 1-byte "
+            "mask using bits 0..7\"\n"
+            "0,,itm,1,0x41,,,\n",
+            readTextFile(workDirectory() / "InvalidPmu.SWO.csv"));
 }
 
 TEST_F(CtraceIntegTests, RejectsInvalidOptionCombination)

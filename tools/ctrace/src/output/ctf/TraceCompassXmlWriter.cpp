@@ -9,6 +9,8 @@
 
 #include "CtfSchema.h"
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -16,8 +18,11 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 constexpr const char* kTraceCompassAnalysisVersionPlaceholder = "__SWO_ANALYSIS_VERSION__";
+// Stack depth keeps overlapping visual pulses active until their last scheduled pop.
+constexpr std::uint64_t kEventPulseNanoseconds = 1000U;
 
 /** @brief Reads the analysis version encoded in generated Trace Compass XML. */
 static std::uint32_t traceCompassAnalysisVersion(const std::string& xml)
@@ -76,6 +81,58 @@ static std::string valueHandlers(CtfSchema::EventId eventId, const char* prefix,
   return handlers.str();
 }
 
+/** @brief Generates visible pulses for one family of event counters. */
+template <typename Counter, std::size_t Size, typename CounterName>
+static std::string eventCounterHandlers(CtfSchema::EventId eventId, std::string_view field,
+                                        const std::array<Counter, Size>& counters, CounterName counterName)
+{
+  std::ostringstream handlers;
+  for (const auto counter : counters) {
+    const auto name = counterName(counter);
+    const auto value = static_cast<unsigned>(CtfSchema::value(counter));
+    handlers << R"(            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value=")"
+             << field << R"(" />
+                        <stateValue type="string" value=")"
+             << name << R"(" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value=")"
+             << CtfSchema::eventName(eventId) << R"(" />
+                    <stateAttribute type="constant" value=")"
+             << name << R"(" />
+                    <stateValue type="int" value=")" << value << R"(" stack="push" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value=")"
+             << field << R"(" />
+                        <stateValue type="string" value=")"
+             << name << R"(" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value=")"
+             << CtfSchema::eventName(eventId) << R"(" />
+                    <stateAttribute type="constant" value=")"
+             << name << R"(" />
+                    <stateValue type="null" stack="pop" />
+                    <futureTime type="script" value="timestamp + )"
+             << kEventPulseNanoseconds << R"(" scriptEngine="rhino">
+                        <stateValue id="timestamp" type="eventField" value="timestamp" />
+                    </futureTime>
+                </then>
+            </stateChange>
+)";
+  }
+  return handlers.str();
+}
+
 /** @brief Generates the Trace Compass state-provider definition. */
 static std::string stateProviderXml()
 {
@@ -102,6 +159,16 @@ static std::string stateProviderXml()
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm) << R"(">
 )" << valueHandlers(CtfSchema::EventId::Itm, "itm", "cmsis_itm_channel", "value")
+      << R"(        </eventHandler>
+        <eventHandler eventName=")"
+      << CtfSchema::eventName(CtfSchema::EventId::DwtEvent) << R"(">
+)" << eventCounterHandlers(CtfSchema::EventId::DwtEvent, "cmsis_dwt_event_counter", kDwtEventCounters,
+                            CtfSchema::dwtEventCounterName)
+      << R"(        </eventHandler>
+        <eventHandler eventName=")"
+      << CtfSchema::eventName(CtfSchema::EventId::PmuEvent) << R"(">
+)" << eventCounterHandlers(CtfSchema::EventId::PmuEvent, "cmsis_pmu_event_counter", kPmuEventCounters,
+                            CtfSchema::pmuEventCounterName)
       << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(">
@@ -313,6 +380,30 @@ static std::string viewsXml()
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress)
       << '/' << R"(*"><display type="constant" value="address" /><name type="self" /></entry>
     </xyView>
+    <timeGraphView id="arm.cmsis.swo.tg.dwt_event.v1">
+        <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value="DWT Event Counters" /></head>
+)";
+  for (const auto counter : kDwtEventCounters) {
+    const auto value = static_cast<unsigned>(CtfSchema::value(counter));
+    xml << R"(        <definedValue name=")" << value << R"(" value=")" << value << R"(" color="#F6BD16" />
+)";
+  }
+  xml << R"(        <entry path=")"
+      << CtfSchema::eventName(CtfSchema::EventId::DwtEvent)
+      << '/' << R"(*" displayText="true"><display type="constant" value="1" /></entry>
+    </timeGraphView>
+    <timeGraphView id="arm.cmsis.swo.tg.pmu_event.v1">
+        <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value="PMU Event Counters" /></head>
+)";
+  for (const auto counter : kPmuEventCounters) {
+    const auto value = static_cast<unsigned>(CtfSchema::value(counter));
+    xml << R"(        <definedValue name=")" << value << R"(" value=")" << value << R"(" color="#F6BD16" />
+)";
+  }
+  xml << R"(        <entry path=")"
+      << CtfSchema::eventName(CtfSchema::EventId::PmuEvent)
+      << '/' << R"(*" displayText="true"><display type="constant" value="1" /></entry>
+    </timeGraphView>
     <timeGraphView id="arm.cmsis.swo.tg.itm.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value=")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm) << R"(" /></head>

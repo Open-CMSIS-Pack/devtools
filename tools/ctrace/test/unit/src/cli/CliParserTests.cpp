@@ -63,9 +63,9 @@ TEST(CtraceUnitTests, testCliParserOutputOptions)
   ASSERT_TRUE(all.selection.types == std::vector<std::string>({"dwt", "itm"})) << "CliParser type filter mismatch";
   ASSERT_TRUE(all.selection.streams == std::vector<std::uint8_t>({1U, 2U})) << "CliParser stream filter mismatch";
 
-  const auto futureTypes = parseAndValidate({"ctrace", ".trace", "--type", "event", "pmu", "pcsample"});
-  ASSERT_TRUE(futureTypes.selection.types == std::vector<std::string>({"event", "pmu", "pcsample"}))
-      << "CliParser must accept specified packet types before their output semantics are implemented";
+  const auto knownTypes = parseAndValidate({"ctrace", ".trace", "--type", "event", "pmu", "pcsample"});
+  ASSERT_TRUE(knownTypes.selection.types == std::vector<std::string>({"event", "pmu", "pcsample"}))
+      << "CliParser known packet-type filter mismatch";
 
   expectOutputFormat({"ctrace", ".trace"}, OutputFormat::None);
   expectOutputFormat({"ctrace", ".trace", "--csv"}, OutputFormat::Csv);
