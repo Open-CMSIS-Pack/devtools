@@ -83,6 +83,15 @@ static void writeTraceInputs(const std::filesystem::path& traceDirectory,
   }
 }
 
+/** @brief Finds one diagnostic with an exact message. */
+static const DiagnosticSink::Event* findDiagnostic(const CollectingDiagnosticSink& diagnostics,
+                                                   const std::string_view message)
+{
+  const auto found = std::find_if(diagnostics.events().begin(), diagnostics.events().end(),
+                                  [&](const auto& event) { return event.message == message; });
+  return found == diagnostics.events().end() ? nullptr : &*found;
+}
+
 TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
 {
   const TemporaryTestPath temporaryPath("ctrace-trace-directory-job-test");
@@ -170,7 +179,7 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   emptyError.warning = "";
   emptyError.error = "";
   auto channelZero = TraceRunTestSupport::makeReference("itm", std::nullopt, std::nullopt, {0U}, "core/itm");
-  channelZero.error = "ignored channel zero";
+  channelZero.error = "channel zero diagnostic";
   TraceRunReference noStream = reported;
   noStream.ctraceRef = "core/no-stream";
   noStream.stream.reset();
@@ -189,9 +198,56 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   EXPECT_TRUE(diagnostics.containsMessage("producer note"));
   EXPECT_TRUE(diagnostics.containsMessage("producer warning"));
   EXPECT_TRUE(diagnostics.containsMessage("producer error"));
+  EXPECT_TRUE(diagnostics.containsMessage("channel zero diagnostic"));
+  EXPECT_TRUE(diagnostics.containsMessage("trace generation setup failed without a diagnostic message"));
   EXPECT_TRUE(diagnostics.containsMessage("does not match ctrace-setup pname"));
   EXPECT_TRUE(diagnostics.containsMessage("skipping raw trace channel"));
   EXPECT_TRUE(diagnostics.containsMessage("no supported <solution-set>.SWO.raw input found"));
+
+  const auto* info = findDiagnostic(diagnostics, "producer note");
+  const auto* warning = findDiagnostic(diagnostics, "producer warning");
+  const auto* error = findDiagnostic(diagnostics, "producer error");
+  const auto* channelZeroError = findDiagnostic(diagnostics, "channel zero diagnostic");
+  ASSERT_NE(info, nullptr);
+  ASSERT_NE(warning, nullptr);
+  ASSERT_NE(error, nullptr);
+  ASSERT_NE(channelZeroError, nullptr);
+  EXPECT_EQ(info->severity, DiagnosticSink::Severity::Info);
+  EXPECT_EQ(warning->severity, DiagnosticSink::Severity::Warning);
+  EXPECT_EQ(error->severity, DiagnosticSink::Severity::Error);
+  EXPECT_EQ(channelZeroError->severity, DiagnosticSink::Severity::Error);
+  EXPECT_EQ(error->impact, DiagnosticSink::Impact::NonFailing);
+  EXPECT_EQ(channelZeroError->impact, DiagnosticSink::Impact::NonFailing);
+}
+
+TEST(CtraceUnitTests, testTraceDirectoryChecksOutputRequirementsAfterReferenceError)
+{
+  const TemporaryTestPath temporaryPath("ctrace-trace-directory-reference-error-test");
+  const auto traceDir = temporaryPath.path() / ".trace";
+  writeTraceInputs(traceDir, {"MissingClock"});
+
+  TraceRunConfig config;
+  auto reference = TraceRunTestSupport::makeReference("event", "core", 3U, {}, "core/event");
+  reference.error = "producer could not configure event trace";
+  config.references.push_back(std::move(reference));
+
+  CliOptions options;
+  options.traceDir = traceDir.string();
+  options.targetName = "MissingClock";
+  options.outputFormat = OutputFormat::All;
+
+  CollectingDiagnosticSink diagnostics;
+  TestTraceRunConfigReader reader(config);
+  TraceDirectoryJob(options, diagnostics, reader).run();
+
+  const auto* referenceError = findDiagnostic(diagnostics, "producer could not configure event trace");
+  ASSERT_NE(referenceError, nullptr);
+  EXPECT_EQ(referenceError->severity, DiagnosticSink::Severity::Error);
+  EXPECT_EQ(referenceError->impact, DiagnosticSink::Impact::NonFailing);
+  EXPECT_TRUE(diagnostics.containsMessage("CTF output requires timestamps.clock"));
+  EXPECT_GT(diagnostics.failureCount(), 0U);
+  EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "MissingClock.SWO.csv"));
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "MissingClock.ctf"));
 }
 
 TEST(CtraceUnitTests, testTraceDirectoryReportsConfigFailureAndRequiresDirectory)
