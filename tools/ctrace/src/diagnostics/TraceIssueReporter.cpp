@@ -44,6 +44,8 @@ static std::string displayErrorMessage(const TraceEvent& event, const TraceIssue
     return "OpenCSD initialization failed";
   case TraceIssueCode::DecodeError:
   case TraceIssueCode::InvalidExceptionAction:
+  case TraceIssueCode::UnsupportedDwtEventCounterPayload:
+  case TraceIssueCode::UnsupportedPmuEventCounterPayload:
   case TraceIssueCode::UnsupportedDwtAddressPayload:
   case TraceIssueCode::UnsupportedDwtPcSamplePayload:
   case TraceIssueCode::OpenCsdDecodeError:

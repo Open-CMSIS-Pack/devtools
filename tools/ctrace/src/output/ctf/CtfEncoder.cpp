@@ -200,6 +200,14 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
     if (selected) {
       writeDwtAddrEvent(event, *address);
     }
+  } else if (const auto* counters = traceEventPayload<DwtEventTraceEvent>(event)) {
+    if (selected) {
+      writeDwtEvent(event, *counters);
+    }
+  } else if (const auto* counters = traceEventPayload<PmuTraceEvent>(event)) {
+    if (selected) {
+      writePmuEvent(event, *counters);
+    }
   } else if (const auto* sample = traceEventPayload<PcSampleTraceEvent>(event)) {
     if (selected) {
       writePcSampleEvent(event, *sample);
@@ -353,6 +361,43 @@ void CtfEncoder::writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTrac
                          record.writeU8(quality.first);
                          record.writeU32(quality.second);
                        });
+}
+
+void CtfEncoder::writeDwtEvent(const TraceEvent& event, const DwtEventTraceEvent& counters)
+{
+  constexpr auto payloadSize = 1U + 1U + 4U;
+  const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
+  const auto quality = computeSampleQuality(event);
+  for (const auto counter : kDwtEventCounters) {
+    const auto counterBit = dwtEventCounterBit(counter);
+    if ((counters.counterMask & counterBit) == 0U) {
+      continue;
+    }
+    m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtEvent), eventTimestamp, event.traceBusId, payloadSize,
+                         [&](CtfStreamWriter::Record& record) {
+                           record.writeU8(CtfSchema::value(counter));
+                           record.writeU8(quality.first);
+                           record.writeU32(quality.second);
+                         });
+  }
+}
+
+void CtfEncoder::writePmuEvent(const TraceEvent& event, const PmuTraceEvent& counters)
+{
+  constexpr auto payloadSize = 1U + 1U + 4U;
+  const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
+  const auto quality = computeSampleQuality(event);
+  for (const auto counter : kPmuEventCounters) {
+    if ((counters.overflowMask & pmuEventCounterBit(counter)) == 0U) {
+      continue;
+    }
+    m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::PmuEvent), eventTimestamp, event.traceBusId, payloadSize,
+                         [&](CtfStreamWriter::Record& record) {
+                           record.writeU8(CtfSchema::value(counter));
+                           record.writeU8(quality.first);
+                           record.writeU32(quality.second);
+                         });
+  }
 }
 
 void CtfEncoder::writeGlobalTimestampEvent(const TraceEvent& event, const GlobalTimestampTraceEvent& timestamp)

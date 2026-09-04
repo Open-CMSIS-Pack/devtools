@@ -40,6 +40,15 @@ by the test.
 - SWO capture: `8c7ba2b90e42188517c7b793e8b7dd4030fa5455b7a38a2de15d8ca2b47995c9`
 - Trace-run YAML: `372e3bf3986fd6860dee5046920cbe129db6fd298c3e22468b3e374c09b8cf52`
 
+The `trace-event` fixture combines two packet-aligned excerpts from an Arm
+Cortex-M7 SWO capture. The first excerpt contains mixed architectural DWT
+event counters. An explicit overflow and hardware sync separate it from a
+second excerpt dominated by `SLEEPCNT`. The integration test verifies CSV
+packet preservation and bitwise CTF expansion across the boundary.
+
+- Raw capture excerpt: `97807dad2f69b1274df8960d3459426d1da4a6892d05e7623f3e16f06c5d85c8`
+- Trace-run YAML: `a7b924d89854ac85e2751d1297ec78783fa12cb3fa54f5638691dd48d546a34e`
+
 `trace-run` contains only the small current-schema inputs needed by executable
 tests. Reader unit tests cover only the fields consumed by ctrace. A C++
 entry-point test creates a reviewable eight-byte ITM stream below the build tree

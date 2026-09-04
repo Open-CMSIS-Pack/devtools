@@ -18,6 +18,7 @@
 #include "TraceSelection.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -143,6 +144,76 @@ TEST(CtraceUnitTests, testCtfEncoderPcSampleEncoding)
   EXPECT_NE(metadata.find("uint8_t cmsis_pc_sample_state"), std::string::npos);
   EXPECT_EQ(metadata.find("cmsis_pc_sample_state_t"), std::string::npos);
   EXPECT_NE(metadata.find("uint32_t cmsis_pc[cmsis_pc_sample_state]"), std::string::npos);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderExpandsDwtEventCounterMask)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-dwt-event-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+
+  CtfEncoder encoder(CtfEncoderConfig{
+      1000000U,
+      TraceSelection{{"event"}, {}},
+      {},
+  });
+  encoder.start(outputDirectory);
+  auto event = onStream(atCycle(TraceEvent{DwtEventTraceEvent{0x3fU}}, 123U), 3U);
+  event.quality = TraceQuality{true, false, 7U};
+  encoder.writeEvent(event);
+  encoder.stop();
+
+  const auto records = readCtfRecords(outputDirectory / "stream_0");
+  ASSERT_EQ(records.size(), 6U);
+  constexpr std::array<std::uint8_t, 6U> expectedCounters{{0U, 1U, 2U, 3U, 4U, 5U}};
+  for (std::size_t index = 0U; index < records.size(); ++index) {
+    const auto& record = records[index];
+    EXPECT_EQ(record.id, CtfSchema::value(CtfSchema::EventId::DwtEvent));
+    EXPECT_EQ(record.timestamp, 123U);
+    EXPECT_EQ(record.traceBusId, 3U);
+    ASSERT_EQ(record.payload.size(), 6U);
+    EXPECT_EQ(record.payload[0U], expectedCounters[index]);
+    EXPECT_EQ(record.payload[1U], CtfSchema::SampleFlagOverflow | CtfSchema::SampleFlagBeforeFirstTimestamp);
+    EXPECT_EQ(readLe32(record.payload, 2U), 7U);
+  }
+
+  const auto metadata = readTestTextFile(outputDirectory / "metadata");
+  EXPECT_NE(metadata.find("name = \"DWT_EVENT\""), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_dwt_event_counter_t cmsis_dwt_event_counter;"), std::string::npos);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderExpandsPmuEventCounterMask)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-pmu-event-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+
+  CtfEncoder encoder(CtfEncoderConfig{
+      1000000U,
+      TraceSelection{{"pmu"}, {}},
+      {},
+  });
+  encoder.start(outputDirectory);
+  auto event = onStream(atCycle(TraceEvent{PmuTraceEvent{0x81U}}, 124U), 5U);
+  event.quality = TraceQuality{false, true, 9U};
+  encoder.writeEvent(event);
+  encoder.stop();
+
+  const auto records = readCtfRecords(outputDirectory / "stream_0");
+  ASSERT_EQ(records.size(), 2U);
+  constexpr std::array<std::uint8_t, 2U> expectedCounters{{0U, 7U}};
+  for (std::size_t index = 0U; index < records.size(); ++index) {
+    const auto& record = records[index];
+    EXPECT_EQ(record.id, CtfSchema::value(CtfSchema::EventId::PmuEvent));
+    EXPECT_EQ(record.timestamp, 124U);
+    EXPECT_EQ(record.traceBusId, 5U);
+    ASSERT_EQ(record.payload.size(), 6U);
+    EXPECT_EQ(record.payload[0U], expectedCounters[index]);
+    EXPECT_EQ(record.payload[1U], CtfSchema::SampleFlagTimestampReliable);
+    EXPECT_EQ(readLe32(record.payload, 2U), 9U);
+  }
+
+  const auto metadata = readTestTextFile(outputDirectory / "metadata");
+  EXPECT_NE(metadata.find("name = \"PMU_EVENT\""), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_pmu_event_counter_t cmsis_pmu_event_counter;"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfEncoderPacketBoundaryAndUuid)

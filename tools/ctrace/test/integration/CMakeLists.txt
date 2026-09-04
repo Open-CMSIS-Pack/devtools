@@ -22,6 +22,10 @@ target_link_libraries(CtraceIntegTests PRIVATE
   gtest_main
 )
 
+target_include_directories(CtraceIntegTests PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/../unit/support"
+)
+
 # The executable-level smoke tests below exercise the platform trampoline.
 add_dependencies(CtraceIntegTests ctrace)
 

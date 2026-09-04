@@ -122,6 +122,20 @@ static std::string_view exceptionActionCsvValue(ExceptionAction action)
   return "0x0";
 }
 
+/** @brief Writes one DWT event-counter packet to the CSV event columns. */
+static void writeDwtEvent(CsvRow& row, const DwtEventTraceEvent& event)
+{
+  row[column(CsvColumn::Source)] = "0";
+  row[column(CsvColumn::Value)] = hexValue(event.counterMask, 1U);
+}
+
+/** @brief Writes one PMU trace-on-overflow packet to the CSV event columns. */
+static void writePmuEvent(CsvRow& row, const PmuTraceEvent& event)
+{
+  row[column(CsvColumn::Source)] = "3";
+  row[column(CsvColumn::Value)] = hexValue(event.overflowMask, 1U);
+}
+
 /** @brief Maps one semantic trace event to all CSV columns. */
 static CsvRow eventToCsvRow(const TraceEvent& event)
 {
@@ -159,6 +173,10 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
   } else if (const auto* exception = traceEventPayload<ExceptionTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(exception->number);
     row[column(CsvColumn::Value)] = exceptionActionCsvValue(exception->action);
+  } else if (const auto* counter = traceEventPayload<DwtEventTraceEvent>(event)) {
+    writeDwtEvent(row, *counter);
+  } else if (const auto* counter = traceEventPayload<PmuTraceEvent>(event)) {
+    writePmuEvent(row, *counter);
   } else if (const auto* sample = traceEventPayload<PcSampleTraceEvent>(event)) {
     if (!sample->sleeping) {
       row[column(CsvColumn::Pc)] = hexValue(sample->pc, 4);

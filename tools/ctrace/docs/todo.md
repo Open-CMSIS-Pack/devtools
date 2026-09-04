@@ -10,8 +10,7 @@
 - [ ] Preserve DWT reference, group, and setup-binding identities when expanding source arrays.
 - [ ] Complete Armv7-M linked-comparator, range, and value-match decoding.
 - [ ] Add Armv8-M and Armv8.1-M DWT decoding.
-- [ ] Add `event` output in its own PR.
-- [ ] Add `pmu` output in its own PR.
+- [ ] Resolve programmable PMU event-counter names from trace-run configuration.
 
 ## Multiple streams
 

@@ -303,6 +303,20 @@ typealias enum : uint8_t {
 } := cmsis_exception_origin_t;
 typealias enum : uint8_t {
 )";
+  for (const auto counter : kDwtEventCounters) {
+    out << "    \"" << CtfSchema::dwtEventCounterName(counter) << "\" = "
+        << static_cast<unsigned>(CtfSchema::value(counter)) << ",\n";
+  }
+  out << R"(} := cmsis_dwt_event_counter_t;
+typealias enum : uint8_t {
+)";
+  for (const auto counter : kPmuEventCounters) {
+    out << "    \"" << CtfSchema::pmuEventCounterName(counter) << "\" = "
+        << static_cast<unsigned>(CtfSchema::value(counter)) << ",\n";
+  }
+  out << R"(} := cmsis_pmu_event_counter_t;
+typealias enum : uint8_t {
+)";
   std::set<std::string> itmLabels;
   for (std::uint32_t channel = 1U; channel < 32U; ++channel) {
     const auto fallback = "ITM" + std::to_string(channel);
@@ -426,6 +440,46 @@ event {
 )";
 }
 
+/** @brief Writes the DWT event-counter declaration. */
+static void writeDwtEvent(std::ostream& out)
+{
+  out << R"(
+event {
+    id = )"
+      << CtfSchema::value(CtfSchema::EventId::DwtEvent) << R"(;
+    name = ")"
+      << CtfSchema::eventName(CtfSchema::EventId::DwtEvent) << R"(";
+    stream_id = )"
+      << CtfSchema::SwoStreamId << R"(;
+    fields := struct {
+        cmsis_dwt_event_counter_t cmsis_dwt_event_counter;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+)";
+}
+
+/** @brief Writes the programmable PMU event-counter declaration. */
+static void writePmuEvent(std::ostream& out)
+{
+  out << R"(
+event {
+    id = )"
+      << CtfSchema::value(CtfSchema::EventId::PmuEvent) << R"(;
+    name = ")"
+      << CtfSchema::eventName(CtfSchema::EventId::PmuEvent) << R"(";
+    stream_id = )"
+      << CtfSchema::SwoStreamId << R"(;
+    fields := struct {
+        cmsis_pmu_event_counter_t cmsis_pmu_event_counter;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+)";
+}
+
 /** @brief Writes the periodic PC-sample event declaration. */
 static void writePcSampleEvent(std::ostream& out)
 {
@@ -511,6 +565,8 @@ void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const std:
   writeItmEvent(out);
   writeDwtValueEvent(out);
   writeDwtAddressEvent(out);
+  writeDwtEvent(out);
+  writePmuEvent(out);
   writeStatusEvents(out);
   writePcSampleEvent(out);
   out.close();

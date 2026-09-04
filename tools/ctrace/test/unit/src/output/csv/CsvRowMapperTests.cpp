@@ -40,8 +40,8 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
       {TraceEvent{DwtDataTraceEvent{}}, TraceEventType::Dwt},
       {TraceEvent{DwtAddressTraceEvent{0U, DwtPcTraceLocation{0U}}}, TraceEventType::Dwt},
       {TraceEvent{ExceptionTraceEvent{}}, TraceEventType::Exception},
-      {TraceEvent{DwtEventTraceEvent{}}, std::nullopt},
-      {TraceEvent{PmuTraceEvent{}}, std::nullopt},
+      {TraceEvent{DwtEventTraceEvent{}}, TraceEventType::Event},
+      {TraceEvent{PmuTraceEvent{}}, TraceEventType::Pmu},
       {TraceEvent{PcSampleTraceEvent{}}, TraceEventType::PcSample},
       {TraceEvent{LocalTimestampTraceEvent{}}, std::nullopt},
       {TraceEvent{GlobalTimestampTraceEvent{}}, TraceEventType::GlobalTimestamp},
@@ -96,7 +96,8 @@ TEST(CtraceUnitTests, testCsvRowMapperEscapesDiagnosticText)
 
 TEST(CtraceUnitTests, testCsvRowMapperHandlesInternalAndCustomOverflowEvents)
 {
-  EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtEventTraceEvent{0U, 1U, 1U}}), ",,,,,,,");
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtEventTraceEvent{0x21U}}), ",,event,0,0x21,,,");
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{PmuTraceEvent{0x81U}}), ",,pmu,3,0x81,,,");
   TraceEvent overflow{OverflowTraceEvent{"custom overflow"}};
   EXPECT_EQ(CsvRowMapper::row(overflow), ",,overflow,,,,,custom overflow");
 }

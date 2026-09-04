@@ -8,6 +8,8 @@
 #ifndef CTRACE_SRC_OUTPUT_CTF_CTFSCHEMA_H
 #define CTRACE_SRC_OUTPUT_CTF_CTFSCHEMA_H
 
+#include "TraceEvent.h"
+
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -27,6 +29,8 @@ enum class EventId : std::uint32_t {
   Exception = 4U,
   GlobalTimestamp = 5U,
   PcSample = 6U,
+  DwtEvent = 7U,
+  PmuEvent = 8U,
 };
 
 /** @brief Classifies CTF trace-status records. */
@@ -173,6 +177,62 @@ constexpr std::uint8_t value(ExceptionOrigin origin)
   return static_cast<std::uint8_t>(origin);
 }
 
+/** @brief Returns the CTF enumeration value for one DWT event counter. */
+constexpr std::uint8_t value(DwtEventCounter counter)
+{
+  return static_cast<std::uint8_t>(counter);
+}
+
+/** @brief Returns the public counter name used by CTF metadata and Trace Compass. */
+constexpr std::string_view dwtEventCounterName(DwtEventCounter counter)
+{
+  switch (counter) {
+  case DwtEventCounter::Cpi:
+    return "CPICNT";
+  case DwtEventCounter::Exception:
+    return "EXCCNT";
+  case DwtEventCounter::Sleep:
+    return "SLEEPCNT";
+  case DwtEventCounter::LoadStore:
+    return "LSUCNT";
+  case DwtEventCounter::Fold:
+    return "FOLDCNT";
+  case DwtEventCounter::Cycle:
+    return "CYCCNT";
+  }
+  return "UNKNOWN";
+}
+
+/** @brief Returns the CTF enumeration value for one programmable PMU event counter. */
+constexpr std::uint8_t value(PmuEventCounter counter)
+{
+  return static_cast<std::uint8_t>(counter);
+}
+
+/** @brief Returns the provisional PMU counter name used until trace-run configuration can resolve it. */
+constexpr std::string_view pmuEventCounterName(PmuEventCounter counter)
+{
+  switch (counter) {
+  case PmuEventCounter::Event0:
+    return "Event0";
+  case PmuEventCounter::Event1:
+    return "Event1";
+  case PmuEventCounter::Event2:
+    return "Event2";
+  case PmuEventCounter::Event3:
+    return "Event3";
+  case PmuEventCounter::Event4:
+    return "Event4";
+  case PmuEventCounter::Event5:
+    return "Event5";
+  case PmuEventCounter::Event6:
+    return "Event6";
+  case PmuEventCounter::Event7:
+    return "Event7";
+  }
+  return "UNKNOWN";
+}
+
 /** @brief Returns the stable schema name of a CTF event ID. */
 constexpr std::string_view eventName(EventId id)
 {
@@ -191,6 +251,10 @@ constexpr std::string_view eventName(EventId id)
     return "GLOBAL_TIMESTAMP";
   case EventId::PcSample:
     return "PC_SAMPLE";
+  case EventId::DwtEvent:
+    return "DWT_EVENT";
+  case EventId::PmuEvent:
+    return "PMU_EVENT";
   }
   return "UNKNOWN";
 }
