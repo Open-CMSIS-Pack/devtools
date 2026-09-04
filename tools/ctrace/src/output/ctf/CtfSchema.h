@@ -79,6 +79,28 @@ enum class ValueTag : std::uint8_t {
   Float32 = 6U,
 };
 
+/** @brief Identifies the width of a raw DWT address offset in CTF. */
+enum class DwtOffsetTag : std::uint8_t {
+  None = 0U,
+  U8 = 1U,
+  U16 = 2U,
+  U32 = 4U,
+};
+
+/** @brief Describes one CTF DWT address-offset representation. */
+struct DwtOffsetVariant {
+  DwtOffsetTag tag;
+  std::string_view name;
+  std::uint8_t byteSize;
+};
+
+inline constexpr std::array<DwtOffsetVariant, 4U> DwtOffsetVariants{{
+    {DwtOffsetTag::None, "none", 1U},
+    {DwtOffsetTag::U8, "u8", 1U},
+    {DwtOffsetTag::U16, "u16", 2U},
+    {DwtOffsetTag::U32, "u32", 4U},
+}};
+
 /** @brief Describes one supported CTF sample value encoding. */
 struct ValueVariant {
   ValueTag tag;
@@ -107,6 +129,17 @@ inline constexpr std::string_view ValueTypeRequirements =
 constexpr const ValueVariant& valueVariant(ValueTag tag)
 {
   return ValueVariants[static_cast<std::size_t>(tag)];
+}
+
+/** @brief Resolves a DWT address-offset payload width to its CTF representation. */
+constexpr const DwtOffsetVariant* dwtOffsetVariantForSize(std::uint8_t byteSize)
+{
+  for (const auto& variant : DwtOffsetVariants) {
+    if (variant.tag != DwtOffsetTag::None && variant.byteSize == byteSize) {
+      return &variant;
+    }
+  }
+  return nullptr;
 }
 
 /** @brief Resolves trace-run type metadata to a supported CTF value encoding. */
@@ -150,6 +183,12 @@ constexpr std::uint8_t value(TraceStatusReason reason)
 
 /** @brief Returns the integer representation of a value tag. */
 constexpr std::uint8_t value(ValueTag tag)
+{
+  return static_cast<std::uint8_t>(tag);
+}
+
+/** @brief Returns the integer representation of a DWT offset tag. */
+constexpr std::uint8_t value(DwtOffsetTag tag)
 {
   return static_cast<std::uint8_t>(tag);
 }

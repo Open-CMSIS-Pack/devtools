@@ -45,12 +45,12 @@ private:
     std::uint64_t index = 0;
     std::uint8_t traceBusId = 0U;
     std::uint32_t pc = 0;
-    std::uint32_t addressLo16 = 0;
+    DwtAddressOffset offset;
     std::uint32_t value = 0;
     std::uint8_t size = 4;
     bool isRead = false;
     bool hasPc = false;
-    bool hasAddressLo16 = false;
+    bool hasOffset = false;
     bool hasValue = false;
     TraceQuality quality;
   };

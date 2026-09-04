@@ -159,8 +159,8 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
     if (data->pc.has_value()) {
       row[column(CsvColumn::Pc)] = hexValue(*data->pc, 4);
     }
-    if (data->addressLo16.has_value()) {
-      row[column(CsvColumn::Offset)] = hexValue(*data->addressLo16, 2);
+    if (data->offset.has_value()) {
+      row[column(CsvColumn::Offset)] = hexValue(data->offset->value, data->offset->size);
     }
   } else if (const auto* address = traceEventPayload<DwtAddressTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(address->comparator);
@@ -168,7 +168,7 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
       row[column(CsvColumn::Pc)] = hexValue(*pc, 4);
     }
     if (const auto offset = dwtAddressOffset(*address)) {
-      row[column(CsvColumn::Offset)] = hexValue(*offset, 2);
+      row[column(CsvColumn::Offset)] = hexValue(offset->value, offset->size);
     }
   } else if (const auto* match = traceEventPayload<DwtMatchTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(match->comparator);

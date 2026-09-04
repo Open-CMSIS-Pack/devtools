@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <limits>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -105,6 +106,34 @@ static void writeVariantValue(CtfStreamWriter::Record& record, std::uint32_t dat
   if (info.byteSize == 1U) {
     record.writeU8(static_cast<std::uint8_t>(value & 0xffU));
   } else if (info.byteSize == 2U) {
+    record.writeU16(static_cast<std::uint16_t>(value & 0xffffU));
+  } else {
+    record.writeU32(value);
+  }
+}
+
+/** @brief Resolves the CTF representation of an optional raw DWT address offset. */
+static const CtfSchema::DwtOffsetVariant& dwtOffsetVariant(const std::optional<DwtAddressOffset>& offset)
+{
+  if (!offset.has_value()) {
+    return CtfSchema::DwtOffsetVariants.front();
+  }
+  const auto* variant = CtfSchema::dwtOffsetVariantForSize(offset->size);
+  if (variant == nullptr) {
+    throw std::runtime_error("CTF DWT address offset has an invalid SWO payload size");
+  }
+  return *variant;
+}
+
+/** @brief Writes an optional raw DWT address offset using its exact SWO width. */
+static void writeDwtOffset(CtfStreamWriter::Record& record, const std::optional<DwtAddressOffset>& offset,
+                           const CtfSchema::DwtOffsetVariant& variant)
+{
+  record.writeU8(CtfSchema::value(variant.tag));
+  const auto value = offset.has_value() ? offset->value : 0U;
+  if (variant.byteSize == 1U) {
+    record.writeU8(static_cast<std::uint8_t>(value & 0xffU));
+  } else if (variant.byteSize == 2U) {
     record.writeU16(static_cast<std::uint16_t>(value & 0xffffU));
   } else {
     record.writeU32(value);
@@ -298,8 +327,9 @@ void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceE
   reportDwtSizeMismatch(event, data, source);
   const auto& variant = dwtValueVariant(source, data.comparator);
   const auto hasPc = data.pc.has_value() ? 1U : 0U;
-  const auto hasAddress = data.addressLo16.has_value() ? 1U : 0U;
-  const auto payloadSize = 1U + 1U + 1U + variant.byteSize + 1U + hasPc * 4U + 1U + hasAddress * 2U + 1U + 4U;
+  const auto& offsetVariant = dwtOffsetVariant(data.offset);
+  const auto payloadSize =
+      1U + 1U + 1U + variant.byteSize + 1U + hasPc * 4U + 1U + offsetVariant.byteSize + 1U + 4U;
   const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
   const auto quality = computeSampleQuality(event);
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtValue), eventTimestamp, event.traceBusId, payloadSize,
@@ -314,10 +344,7 @@ void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceE
                          if (hasPc != 0U) {
                            record.writeU32(*data.pc);
                          }
-                         record.writeU8(static_cast<std::uint8_t>(hasAddress));
-                         if (hasAddress != 0U) {
-                           record.writeU16(static_cast<std::uint16_t>(*data.addressLo16 & 0xffffU));
-                         }
+                         writeDwtOffset(record, data.offset, offsetVariant);
                          record.writeU8(quality.first);
                          record.writeU32(quality.second);
                        });
@@ -348,20 +375,21 @@ void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTra
 
 void CtfEncoder::writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTraceEvent& address)
 {
-  constexpr auto payloadSize = 1U + 1U + 1U + 4U + 2U + 1U + 4U;
   const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
   const auto quality = computeSampleQuality(event);
   const auto pc = dwtAddressPc(address);
-  const auto addressOffset = dwtAddressOffset(address);
+  const auto offset = dwtAddressOffset(address);
+  const auto& offsetVariant = dwtOffsetVariant(offset);
   const auto hasPc = pc.has_value() ? 1U : 0U;
-  const auto hasAddress = addressOffset.has_value() ? 1U : 0U;
+  const auto payloadSize = 1U + 1U + hasPc * 4U + 1U + offsetVariant.byteSize + 1U + 4U;
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtAddress), eventTimestamp, event.traceBusId, payloadSize,
                        [&](CtfStreamWriter::Record& record) {
                          record.writeU8(static_cast<std::uint8_t>(address.comparator & 0xffU));
                          record.writeU8(static_cast<std::uint8_t>(hasPc));
-                         record.writeU8(static_cast<std::uint8_t>(hasAddress));
-                         record.writeU32(pc.value_or(0U));
-                         record.writeU16(static_cast<std::uint16_t>(addressOffset.value_or(0U) & 0xffffU));
+                         if (hasPc != 0U) {
+                           record.writeU32(*pc);
+                         }
+                         writeDwtOffset(record, offset, offsetVariant);
                          record.writeU8(quality.first);
                          record.writeU32(quality.second);
                        });

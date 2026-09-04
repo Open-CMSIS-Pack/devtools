@@ -157,6 +157,36 @@ static std::string dwtMatchHandler()
   return handler.str();
 }
 
+/** @brief Generates one DWT address handler for each encoded offset width. */
+static std::string dwtAddressHandlers()
+{
+  std::ostringstream handlers;
+  for (const auto& variant : CtfSchema::DwtOffsetVariants) {
+    if (variant.tag == CtfSchema::DwtOffsetTag::None) {
+      continue;
+    }
+    handlers << R"(            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_dwt_offset_type" />
+                        <stateValue type="string" value=")"
+             << variant.name << R"(" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value=")"
+             << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(" />
+                    <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
+                    <stateAttribute type="constant" value="address" />
+                    <stateValue type="eventField" value="cmsis_dwt_offset.)"
+             << variant.name << R"(" forcedType="long" />
+                </then>
+            </stateChange>
+)";
+  }
+  return handlers.str();
+}
+
 /** @brief Generates the Trace Compass state-provider definition. */
 static std::string stateProviderXml()
 {
@@ -172,14 +202,8 @@ static std::string stateProviderXml()
   xml << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(">
-            <stateChange>
-                <stateAttribute type="constant" value=")"
-      << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(" />
-                <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
-                <stateAttribute type="constant" value="address" />
-                <stateValue type="eventField" value="cmsis_address_lo16" forcedType="long" />
-            </stateChange>
-        </eventHandler>
+)" << dwtAddressHandlers()
+      << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm) << R"(">
 )" << valueHandlers(CtfSchema::EventId::Itm, "itm", "cmsis_itm_channel", "value")
