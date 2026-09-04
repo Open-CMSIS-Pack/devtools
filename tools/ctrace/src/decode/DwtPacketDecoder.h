@@ -27,9 +27,17 @@ struct DwtPayloadPacket {
   TraceQuality quality;
 };
 
+/** @brief Number of comparators encodable in a DWT data-trace source ID. */
+inline constexpr std::size_t kDwtDataTraceComparatorCount = 4U;
+
+/** @brief Stores configured DWT comparator values used for packet decompression. */
+using DwtComparatorValues = std::array<std::optional<std::uint32_t>, kDwtDataTraceComparatorCount>;
+
 /** @brief Reconstructs semantic DWT events from hardware payload packets. */
 class DwtPacketDecoder {
 public:
+  /** @brief Creates a decoder with the comparator values active for this stream. */
+  explicit DwtPacketDecoder(DwtComparatorValues comparatorValues = {});
   /** @brief Decodes one hardware payload and returns completed semantic events. */
   std::vector<TraceEvent> decode(const DwtPayloadPacket& payload);
   /** @brief Flushes incomplete data-trace fragments at a boundary. */
@@ -38,8 +46,6 @@ public:
   void reset();
 
 private:
-  static constexpr std::size_t kDataTraceComparatorCount = 4U;
-
   /** @brief Accumulates the fragments of one pending DWT data-trace event. */
   struct PendingDataTrace {
     std::uint64_t index = 0;
@@ -68,7 +74,8 @@ private:
 
   /** @brief Maps an encoded DWT exception action to the semantic action. */
   static ExceptionAction exceptionAction(std::uint32_t value);
-  std::array<std::optional<PendingDataTrace>, kDataTraceComparatorCount> m_pendingDataTrace;
+  DwtComparatorValues m_comparatorValues;
+  std::array<std::optional<PendingDataTrace>, kDwtDataTraceComparatorCount> m_pendingDataTrace;
 };
 
-#endif  // CTRACE_SRC_DECODE_DWTPACKETDECODER_H
+#endif // CTRACE_SRC_DECODE_DWTPACKETDECODER_H

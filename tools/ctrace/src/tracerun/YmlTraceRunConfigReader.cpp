@@ -286,6 +286,46 @@ static std::vector<std::uint32_t> parseSources(const std::string& path, const No
   return sources;
 }
 
+/** @brief Parses register writes needed to reconstruct compressed DWT packets. */
+static std::vector<TraceRunRegisterWrite> parseRegisters(const std::string& path, const Node& reference)
+{
+  const auto registersNode = childNode(reference, "regs");
+  if (!registersNode) {
+    return {};
+  }
+  requireSequence(path, registersNode, "regs");
+
+  std::vector<TraceRunRegisterWrite> registers;
+  for (const auto& item : registersNode) {
+    if (!item.IsMap()) {
+      fail(path, item, "each 'regs' entry must be a map");
+    }
+    const auto nameNode = childNode(item, "name");
+    if (!nameNode || !nameNode.IsScalar() || nameNode.Scalar().empty()) {
+      fail(path, nameNode ? nameNode : item, "each 'regs' entry requires a non-empty scalar 'name'");
+    }
+    const auto valueNode = childNode(item, "value");
+    if (!valueNode || !valueNode.IsScalar() || valueNode.Scalar().empty()) {
+      fail(path, valueNode ? valueNode : item, "each 'regs' entry requires a scalar unsigned 'value'");
+    }
+
+    TraceRunRegisterWrite reg;
+    reg.name = nameNode.Scalar();
+    reg.value = static_cast<std::uint32_t>(
+        unsignedValue(path, valueNode, "value", valueNode.Scalar(), std::numeric_limits<std::uint32_t>::max()));
+    const auto maskNode = childNode(item, "mask");
+    if (maskNode) {
+      if (!maskNode.IsScalar() || maskNode.Scalar().empty()) {
+        fail(path, maskNode, "'regs.mask' must be a scalar unsigned integer");
+      }
+      reg.mask = static_cast<std::uint32_t>(
+          unsignedValue(path, maskNode, "mask", maskNode.Scalar(), std::numeric_limits<std::uint32_t>::max()));
+    }
+    registers.push_back(std::move(reg));
+  }
+  return registers;
+}
+
 /** @brief Stores diagnostics copied from one parsed trace reference. */
 struct ReferenceDiagnostics {
   std::optional<std::string> info;
@@ -357,6 +397,7 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
     reference.stream = parseStream();
     reference.sources = parseSources(path, element);
     if (reference.type == "dwt") {
+      reference.registers = parseRegisters(path, element);
       reference.address = deferredReferenceUnsignedAttribute(path, element, "address",
                                                              std::numeric_limits<std::uint64_t>::max(),
                                                              reference.addressError);

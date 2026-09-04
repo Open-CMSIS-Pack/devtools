@@ -1,0 +1,33 @@
+ctrace-run:
+  generated-by: synthetic Armv8-M compressed DWT fixture
+  ctrace-setup:
+    - timestamps:
+        clock: 1000000
+      data:
+        - location: 0x20007856
+          size: 4
+          output: offset
+      instructions:
+        start:
+          - location: 0x08001200
+            size: 0x1ee00
+  ctrace-refs:
+    - ctrace-ref: instructions:start#0
+      type: dwt
+      source: [0, 1]
+      regs:
+        - name: DWT_COMP0
+          value: 0x08001200
+        - name: DWT_COMP1
+          value: 0x0801ffff
+    - ctrace-ref: data#0
+      type: dwt
+      address: 0x20007856
+      size: 4
+      data-type: unsigned
+      source: [2, 3]
+      regs:
+        - name: DWT_COMP2
+          value: 0x20007856
+        - name: DWT_COMP3
+          value: 0x20007859

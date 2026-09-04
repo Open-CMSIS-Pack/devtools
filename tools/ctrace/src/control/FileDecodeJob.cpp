@@ -110,6 +110,21 @@ static ItmTimestampPrescalers timestampPrescalers(const CtraceRunMeta& ctraceRun
   return {fallback, ctraceRunMeta.timestampPrescalersByTraceBusId()};
 }
 
+/** @brief Converts normalized DWT comparator metadata into decoder configuration. */
+static DwtComparatorValuesByTraceBusId dwtComparatorValues(const CtraceRunMeta& ctraceRunMeta)
+{
+  DwtComparatorValuesByTraceBusId result;
+  for (const auto& [traceBusId, configured] : ctraceRunMeta.dwtComparatorValuesByTraceBusId()) {
+    auto& values = result[traceBusId];
+    for (const auto& [comparator, value] : configured) {
+      if (comparator < values.size()) {
+        values[comparator] = value;
+      }
+    }
+  }
+  return result;
+}
+
 /** @brief Converts command-line output selection into an output request. */
 static TraceOutputRequest outputRequest(const CliOptions& options)
 {
@@ -161,6 +176,7 @@ FileDecodeJob::FileDecodeJob(CliOptions options, std::filesystem::path rawInputP
 void FileDecodeJob::run()
 {
   const auto prescalers = timestampPrescalers(m_ctraceRunMeta);
+  const auto comparatorValues = dwtComparatorValues(m_ctraceRunMeta);
   auto outputPlan = planTraceOutputs(outputRequest(m_options), m_rawInputPath, m_ctraceRunMeta, m_diagnostics);
   if (outputPlan.hasRequestedOutputs() && !outputPlan.hasEnabledOutputs()) {
     return;
@@ -198,9 +214,9 @@ void FileDecodeJob::run()
     RawFileReader input(m_rawInputPath);
     std::unique_ptr<DecodePipeline> pipeline;
     if (m_sessionFactory) {
-      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers, m_sessionFactory);
+      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers, m_sessionFactory, comparatorValues);
     } else {
-      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers);
+      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers, comparatorValues);
     }
     while (true) {
       const auto read = input.read();

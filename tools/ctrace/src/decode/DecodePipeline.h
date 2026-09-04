@@ -41,7 +41,8 @@ public:
    * @param timestampPrescalers Default and per-stream timestamp prescalers.
    * @param eventSink Sink receiving decoded events synchronously.
    */
-  DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink);
+  DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
+                 DwtComparatorValuesByTraceBusId comparatorValues = {});
   /**
    * @brief Creates a pipeline with an injected OpenCSD session factory.
    * @param timestampPrescalers Default and per-stream timestamp prescalers.
@@ -49,7 +50,7 @@ public:
    * @param sessionFactory Factory used to create the OpenCSD session.
    */
   DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
-                 const OpenCsdItmSessionFactory& sessionFactory);
+                 const OpenCsdItmSessionFactory& sessionFactory, DwtComparatorValuesByTraceBusId comparatorValues = {});
 
   /**
    * @brief Pushes the next contiguous chunk of raw trace bytes.
@@ -69,4 +70,4 @@ private:
   OpenCsdItmDecoder m_decoder;
 };
 
-#endif  // CTRACE_SRC_DECODE_DECODEPIPELINE_H
+#endif // CTRACE_SRC_DECODE_DECODEPIPELINE_H

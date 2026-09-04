@@ -319,6 +319,96 @@ TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingComparatorBeforeMatch)
   EXPECT_TRUE(decoder.flush({}, 101U).empty());
 }
 
+TEST(CtraceUnitTests, testDwtPacketDecoderReconstructsCompressedPcValues)
+{
+  DwtComparatorValues comparatorValues{};
+  comparatorValues[0U] = 0x08001200U;
+  comparatorValues[1U] = 0x08010000U;
+
+  DwtPacketDecoder decoder(comparatorValues);
+  EXPECT_TRUE(decoder.decode(dwtPayload(8U, 1U, 0x34U, 10U)).empty());
+  auto packets = decoder.flush({}, 100U);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto* shortPc = traceEventPayload<DwtAddressTraceEvent>(packets.front());
+  ASSERT_NE(shortPc, nullptr);
+  EXPECT_EQ(dwtAddressPc(*shortPc), std::optional<std::uint32_t>(0x08001234U));
+
+  EXPECT_TRUE(decoder.decode(dwtPayload(10U, 2U, 0x5678U, 11U)).empty());
+  packets = decoder.flush({}, 101U);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto* mediumPc = traceEventPayload<DwtAddressTraceEvent>(packets.front());
+  ASSERT_NE(mediumPc, nullptr);
+  EXPECT_EQ(dwtAddressPc(*mediumPc), std::optional<std::uint32_t>(0x08015678U));
+
+  EXPECT_TRUE(decoder.decode(dwtPayload(12U, 4U, 0x08123456U, 12U)).empty());
+  packets = decoder.flush({}, 102U);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto* longPc = traceEventPayload<DwtAddressTraceEvent>(packets.front());
+  ASSERT_NE(longPc, nullptr);
+  EXPECT_EQ(dwtAddressPc(*longPc), std::optional<std::uint32_t>(0x08123456U));
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderReconstructsCompressedDataAddresses)
+{
+  DwtComparatorValues comparatorValues{};
+  comparatorValues[0U] = 0x20001200U;
+  DwtPacketDecoder decoder(comparatorValues);
+
+  EXPECT_TRUE(decoder.decode(dwtPayload(9U, 1U, 0x56U, 10U)).empty());
+  auto packets = decoder.flush({}, 100U);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto* shortAddress = traceEventPayload<DwtAddressTraceEvent>(packets.front());
+  ASSERT_NE(shortAddress, nullptr);
+  EXPECT_EQ(dwtAddressOffset(*shortAddress), std::optional<std::uint32_t>(0x1256U));
+
+  EXPECT_TRUE(decoder.decode(dwtPayload(11U, 2U, 0x789aU, 11U)).empty());
+  packets = decoder.flush({}, 101U);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto* mediumAddress = traceEventPayload<DwtAddressTraceEvent>(packets.front());
+  ASSERT_NE(mediumAddress, nullptr);
+  EXPECT_EQ(dwtAddressOffset(*mediumAddress), std::optional<std::uint32_t>(0x789aU));
+
+  EXPECT_TRUE(decoder.decode(dwtPayload(13U, 4U, 0x2000abcdU, 12U)).empty());
+  packets = decoder.flush({}, 102U);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto* longAddress = traceEventPayload<DwtAddressTraceEvent>(packets.front());
+  ASSERT_NE(longAddress, nullptr);
+  EXPECT_EQ(dwtAddressOffset(*longAddress), std::optional<std::uint32_t>(0xabcdU));
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderRejectsCompressedValuesWithoutComparatorMetadata)
+{
+  const auto verify = [](std::uint8_t discriminator, std::uint8_t size, std::uint32_t value,
+                         std::string_view expected) {
+    DwtPacketDecoder decoder;
+    const auto packets = decoder.decode(dwtPayload(discriminator, size, value, 17U, 3U, 99U));
+    ASSERT_EQ(packets.size(), 1U);
+    const auto* issue = traceEventPayload<TraceIssueEvent>(packets.front());
+    ASSERT_NE(issue, nullptr);
+    EXPECT_EQ(issue->code, TraceIssueCode::UnsupportedDwtAddressPayload);
+    EXPECT_NE(issue->message.find(expected), std::string::npos);
+  };
+
+  verify(8U, 1U, 0x34U, "DWT_COMP0");
+  verify(10U, 2U, 0x5678U, "DWT_COMP1");
+  verify(9U, 1U, 0x56U, "DWT_COMP0");
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderRejectsPcValuesWithMatchBitSet)
+{
+  DwtComparatorValues comparatorValues{};
+  comparatorValues.fill(0x08000000U);
+  for (const auto payload :
+       {dwtPayload(8U, 1U, 0x03U), dwtPayload(10U, 2U, 0x1235U), dwtPayload(12U, 4U, 0x08001235U)}) {
+    DwtPacketDecoder decoder(comparatorValues);
+    const auto packets = decoder.decode(payload);
+    ASSERT_EQ(packets.size(), 1U);
+    const auto* issue = traceEventPayload<TraceIssueEvent>(packets.front());
+    ASSERT_NE(issue, nullptr);
+    EXPECT_NE(issue->message.find("bit 0 is reserved for the match-packet discriminator"), std::string::npos);
+  }
+}
+
 TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
 {
   const auto verify = [](std::uint8_t discriminator, std::uint8_t size) {
@@ -337,8 +427,8 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
         << "unsupported DWT address width diagnostic lost packet identity";
   };
 
-  verify(8U, 1U);
-  verify(9U, 4U);
+  verify(8U, 3U);
+  verify(9U, 3U);
 }
 
 TEST(CtraceUnitTests, testDwtPacketDecoderMapsAllExceptionActions)

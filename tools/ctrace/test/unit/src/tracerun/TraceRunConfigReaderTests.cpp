@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -102,6 +103,12 @@ TEST(CtraceUnitTests, TraceRunReaderParsesConsumedFields)
       data-type: signed
       size: 1
       label: Current
+      regs:
+        - name: DWT_COMP0
+          value: 0x20000100
+        - name: DWT_FUNCTION0
+          value: 0x0000000f
+          mask: 0x0000000f
 )yml");
   ASSERT_EQ(config.references.size(), 2U);
   ASSERT_EQ(config.setups.size(), 1U);
@@ -127,6 +134,11 @@ TEST(CtraceUnitTests, TraceRunReaderParsesConsumedFields)
   EXPECT_EQ(dwt.dataSize, 1U);
   EXPECT_EQ(dwt.address, std::optional<std::uint64_t>(0x20000100U));
   EXPECT_EQ(dwt.label, std::optional<std::string>("Current"));
+  ASSERT_EQ(config.references[1].registers.size(), 2U);
+  EXPECT_EQ(config.references[1].registers[0].name, "DWT_COMP0");
+  EXPECT_EQ(config.references[1].registers[0].value, 0x20000100U);
+  EXPECT_EQ(config.references[1].registers[0].mask, std::numeric_limits<std::uint32_t>::max());
+  EXPECT_EQ(config.references[1].registers[1].mask, 0x0000000fU);
 }
 
 TEST(CtraceUnitTests, TraceRunReaderAcceptsScalarAndArraySourceNotation)
@@ -304,6 +316,44 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceRoutes)
                       testCase.fields + "\n";
     expectReadError(file, yaml, testCase.error);
   }
+}
+
+TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedDwtRegisters)
+{
+  TraceRunFixture file("ctrace-run-reader-register-errors-test");
+  /** @brief Describes malformed register fields and their expected errors. */
+  struct Case {
+    const char* registers;
+    const char* error;
+  };
+  constexpr Case cases[] = {
+      {"{}", "'regs' must be an array"},
+      {"[invalid]", "each 'regs' entry must be a map"},
+      {"[{ value: 1 }]", "requires a non-empty scalar 'name'"},
+      {"[{ name: [], value: 1 }]", "requires a non-empty scalar 'name'"},
+      {"[{ name: DWT_COMP0 }]", "requires a scalar unsigned 'value'"},
+      {"[{ name: DWT_COMP0, value: [] }]", "requires a scalar unsigned 'value'"},
+      {"[{ name: DWT_COMP0, value: invalid }]", "'value' must be an unsigned integer"},
+      {"[{ name: DWT_COMP0, value: 1, mask: [] }]", "'regs.mask' must be a scalar unsigned integer"},
+      {"[{ name: DWT_COMP0, value: 1, mask: -1 }]", "'mask' must be an unsigned integer in range"},
+  };
+  for (const auto& testCase : cases) {
+    const auto yaml = std::string("ctrace-run:\n  ctrace-refs:\n    - type: dwt\n      ctrace-ref: data#0\n") +
+                      "      source: 0\n      regs: " + testCase.registers + "\n";
+    expectReadError(file, yaml, testCase.error);
+  }
+
+  const auto diagnosed = file.read(R"yml(ctrace-run:
+  ctrace-refs:
+    - type: dwt
+      ctrace-ref: data#0
+      source: 0
+      regs: invalid
+      error: producer rejected this route
+)yml");
+  ASSERT_EQ(diagnosed.references.size(), 1U);
+  EXPECT_TRUE(diagnosed.references.front().registers.empty());
+  EXPECT_EQ(diagnosed.references.front().error, std::optional<std::string>("producer rejected this route"));
 }
 
 TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)

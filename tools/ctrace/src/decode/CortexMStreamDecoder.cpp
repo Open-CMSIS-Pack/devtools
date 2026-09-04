@@ -18,8 +18,10 @@
 #include <string>
 #include <utility>
 
-CortexMStreamDecoder::CortexMStreamDecoder(ItmTimestampPrescalers prescalers, TraceEventSink& eventSink)
+CortexMStreamDecoder::CortexMStreamDecoder(ItmTimestampPrescalers prescalers, TraceEventSink& eventSink,
+                                           DwtComparatorValuesByTraceBusId comparatorValues)
   : m_prescalers(std::move(prescalers)),
+    m_comparatorValues(std::move(comparatorValues)),
     m_eventSink(eventSink)
 {
 }
@@ -73,7 +75,9 @@ CortexMPostDecoder& CortexMStreamDecoder::decoder(std::uint8_t traceBusId)
 {
   auto& result = m_decoders[traceBusId];
   if (!result) {
-    result = std::make_unique<CortexMPostDecoder>(m_eventSink);
+    const auto values = m_comparatorValues.find(traceBusId);
+    result = std::make_unique<CortexMPostDecoder>(
+        m_eventSink, values != m_comparatorValues.end() ? values->second : DwtComparatorValues{});
   }
   return *result;
 }

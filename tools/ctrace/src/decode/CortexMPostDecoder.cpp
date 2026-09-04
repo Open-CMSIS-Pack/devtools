@@ -19,8 +19,9 @@
 #include <utility>
 #include <vector>
 
-CortexMPostDecoder::CortexMPostDecoder(TraceEventSink& eventSink)
-  : m_eventSink(eventSink)
+CortexMPostDecoder::CortexMPostDecoder(TraceEventSink& eventSink, DwtComparatorValues comparatorValues)
+  : m_eventSink(eventSink),
+    m_dwtDecoder(std::move(comparatorValues))
 {
 }
 

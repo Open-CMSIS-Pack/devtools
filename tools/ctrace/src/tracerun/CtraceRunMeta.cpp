@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <optional>
 #include <set>
@@ -303,6 +304,50 @@ static CtraceRunSourceMeta sourceMeta(const TraceRunConfig& config, const TraceR
   return meta;
 }
 
+/** @brief Resolves a fully specified DWT comparator value from one reference. */
+static std::optional<std::uint32_t> dwtComparatorValue(const TraceRunReference& reference, std::uint32_t comparator)
+{
+  const auto registerName = "DWT_COMP" + std::to_string(comparator);
+  std::uint32_t value = 0U;
+  std::uint32_t knownMask = 0U;
+  for (const auto& reg : reference.registers) {
+    if (reg.name != registerName) {
+      continue;
+    }
+    value = (value & ~reg.mask) | (reg.value & reg.mask);
+    knownMask |= reg.mask;
+  }
+  if (knownMask != std::numeric_limits<std::uint32_t>::max()) {
+    return std::nullopt;
+  }
+  return value;
+}
+
+/** @brief Adds comparator values used by compressed DWT data-trace packets. */
+static void addDwtComparatorValues(std::map<std::uint8_t, std::map<std::uint32_t, std::uint32_t>>& valuesByTraceBusId,
+                                   const TraceRunConfig& config, const TraceRunReference& reference)
+{
+  if (reference.type != "dwt") {
+    return;
+  }
+  const auto traceBusId = static_cast<std::uint8_t>(reference.stream.value_or(0U));
+  for (const auto comparator : reference.sources) {
+    const auto value = dwtComparatorValue(reference, comparator);
+    if (!value.has_value()) {
+      continue;
+    }
+    auto& values = valuesByTraceBusId[traceBusId];
+    const auto existing = values.find(comparator);
+    if (existing != values.end() && existing->second != *value) {
+      throw std::runtime_error(configError(config, reference.line,
+                                           "DWT comparator " + std::to_string(comparator) +
+                                               " has conflicting values for Trace Bus ID " +
+                                               std::to_string(traceBusId)));
+    }
+    values[comparator] = *value;
+  }
+}
+
 /** @brief Returns or creates accumulated metadata for one processor. */
 static ProcessorMeta& processorMeta(std::vector<ProcessorMeta>& processors, const std::optional<std::string>& name)
 {
@@ -552,7 +597,18 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
     if (isUsableStreamBinding(reference) && identity.accepts(reference)) {
       (void)processorMeta(processors, identity.canonicalName(reference.processorName));
     }
-    if (!TraceRunSchema::isUsableReference(reference) || !identity.accepts(reference)) {
+    if (!identity.accepts(reference)) {
+      continue;
+    }
+    // Armv8-M can compress a DWT PC-value packet relative to either
+    // comparator of an instruction-address range. Such references do not
+    // describe a data output route, but their DWT_COMP values are still
+    // required to reconstruct the packet.
+    if (reference.type == "dwt" && !reference.sources.empty() &&
+        TraceRunSchema::referenceProblem(reference) == ReferenceProblem::None) {
+      addDwtComparatorValues(ctraceRunMeta.m_dwtComparatorValuesByTraceBusId, config, reference);
+    }
+    if (!TraceRunSchema::isUsableReference(reference)) {
       continue;
     }
     for (const auto source : reference.sources) {
@@ -608,6 +664,12 @@ const std::optional<std::uint32_t>& CtraceRunMeta::itmEnableMask() const
 const std::map<std::uint8_t, std::uint32_t>& CtraceRunMeta::itmEnableMasksByTraceBusId() const
 {
   return m_itmEnableMasksByTraceBusId;
+}
+
+const std::map<std::uint8_t, std::map<std::uint32_t, std::uint32_t>>&
+CtraceRunMeta::dwtComparatorValuesByTraceBusId() const
+{
+  return m_dwtComparatorValuesByTraceBusId;
 }
 
 const std::vector<std::string>& CtraceRunMeta::timestampClockErrors() const

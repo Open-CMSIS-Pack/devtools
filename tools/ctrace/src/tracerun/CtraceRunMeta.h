@@ -73,6 +73,8 @@ public:
   const std::optional<std::uint32_t>& itmEnableMask() const;
   /** @brief Returns ITM stimulus enable masks indexed by Trace Bus ID. */
   const std::map<std::uint8_t, std::uint32_t>& itmEnableMasksByTraceBusId() const;
+  /** @brief Returns complete DWT comparator values indexed by Trace Bus ID and comparator. */
+  const std::map<std::uint8_t, std::map<std::uint32_t, std::uint32_t>>& dwtComparatorValuesByTraceBusId() const;
   /** @brief Returns clock validation errors retained for output planning. */
   const std::vector<std::string>& timestampClockErrors() const;
   /** @brief Reports whether processor-specific timestamp prescalers differ. */
@@ -92,6 +94,7 @@ private:
   std::map<std::uint8_t, std::uint32_t> m_timestampPrescalersByTraceBusId;
   std::optional<std::uint32_t> m_itmEnableMask;
   std::map<std::uint8_t, std::uint32_t> m_itmEnableMasksByTraceBusId;
+  std::map<std::uint8_t, std::map<std::uint32_t, std::uint32_t>> m_dwtComparatorValuesByTraceBusId;
   std::vector<std::string> m_timestampClockErrors;
   std::size_t m_processorCount = 0;
   bool m_distinctProcessorPrescalers = false;
@@ -99,4 +102,4 @@ private:
   std::vector<CtraceRunWarning> m_warnings;
 };
 
-#endif  // CTRACE_SRC_TRACERUN_CTRACERUNMETA_H
+#endif // CTRACE_SRC_TRACERUN_CTRACERUNMETA_H

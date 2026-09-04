@@ -224,6 +224,53 @@ TEST_F(CtraceIntegTests, ConvertsDwtMatchAcrossCsvAndCtf)
   expectContains(xml, "<definedValue name=\"Something happened\" value=\"1\"");
 }
 
+TEST_F(CtraceIntegTests, ReconstructsCompressedDwtPacketsAcrossCsvAndCtf)
+{
+  const auto fixtureDirectory = testDataDirectory() / "trace-compressed-dwt";
+  copyFixtureFile(fixtureDirectory, "trace-compressed-dwt.raw", "trace-compressed-dwt.SWO.raw");
+  copyFixtureFile(fixtureDirectory, "trace-compressed-dwt.ctrace-run.yml");
+
+  // This Armv8-M stream is completely synthetic. It contains one hardware
+  // sync followed by short/medium PC-value packets from an instruction-address
+  // range and short/medium data-address packets from a data-address range; no
+  // real target capture was used to generate it.
+  constexpr std::array<unsigned char, 20U> expectedRaw{{
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x45U, 0x34U, 0x10U, 0x56U,
+      0x78U, 0x56U, 0x20U, 0x6dU, 0x56U, 0x30U, 0x7eU, 0x58U, 0x78U, 0x40U,
+  }};
+  EXPECT_EQ(readBinaryFile(workDirectory() / "trace-compressed-dwt.SWO.raw"),
+            std::vector<unsigned char>(expectedRaw.begin(), expectedRaw.end()));
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "trace-compressed-dwt", "--all"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+            "1,,dwt,0,,0x08001234,,\n"
+            "3,,dwt,1,,0x08015678,,\n"
+            "6,,dwt,2,,,0x7856,\n"
+            "10,,dwt,3,,,0x7858,\n",
+            readTextFile(workDirectory() / "trace-compressed-dwt.SWO.csv"));
+
+  const auto records = CtfTestSupport::readCtfRecords(workDirectory() / "trace-compressed-dwt.ctf" / "stream_0");
+  std::vector<CtfTestSupport::CtfRecord> addresses;
+  std::copy_if(records.begin(), records.end(), std::back_inserter(addresses),
+               [](const auto& record) { return record.id == CtfSchema::value(CtfSchema::EventId::DwtAddress); });
+  ASSERT_EQ(addresses.size(), 4U);
+  EXPECT_EQ(addresses[0U].timestamp, 1U);
+  EXPECT_EQ(addresses[0U].payload[0U], 0U);
+  EXPECT_EQ(addresses[0U].payload[1U], 1U);
+  EXPECT_EQ(CtfTestSupport::readLe32(addresses[0U].payload, 3U), 0x08001234U);
+  EXPECT_EQ(addresses[1U].timestamp, 3U);
+  EXPECT_EQ(addresses[1U].payload[0U], 1U);
+  EXPECT_EQ(CtfTestSupport::readLe32(addresses[1U].payload, 3U), 0x08015678U);
+  EXPECT_EQ(addresses[2U].timestamp, 6U);
+  EXPECT_EQ(addresses[2U].payload[0U], 2U);
+  EXPECT_EQ(addresses[2U].payload[2U], 1U);
+  EXPECT_EQ(CtfTestSupport::readLe16(addresses[2U].payload, 7U), 0x7856U);
+  EXPECT_EQ(addresses[3U].timestamp, 10U);
+  EXPECT_EQ(addresses[3U].payload[0U], 3U);
+  EXPECT_EQ(CtfTestSupport::readLe16(addresses[3U].payload, 7U), 0x7858U);
+}
+
 TEST_F(CtraceIntegTests, ConvertsCapturedDwtEventCountersAcrossOverflow)
 {
   const auto fixtureDirectory = testDataDirectory() / "trace-event";
