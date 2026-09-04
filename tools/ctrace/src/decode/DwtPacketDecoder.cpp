@@ -53,10 +53,16 @@ constexpr std::uint32_t kExceptionActionMask = 0x3U;
 constexpr std::uint32_t kExceptionActionShift = 12U;
 constexpr std::uint32_t kPmuOverflowMask = 0xffU;
 
-constexpr std::uint8_t kArmv7MFullPcBytes = 4U;
-constexpr std::uint8_t kArmv7MAddressOffsetBytes = 2U;
+constexpr std::uint8_t kDwtShortPayloadBytes = 1U;
+constexpr std::uint8_t kDwtMediumPayloadBytes = 2U;
+constexpr std::uint8_t kDwtLongPayloadBytes = 4U;
 constexpr std::uint8_t kArmv8MMatchBytes = 1U;
 constexpr std::uint32_t kArmv8MMatchValue = 1U;
+
+DwtPacketDecoder::DwtPacketDecoder(DwtComparatorValues comparatorValues)
+  : m_comparatorValues(std::move(comparatorValues))
+{
+}
 
 /** @brief Describes an invalid DWT event-counter payload. */
 static std::string invalidEventCounterMessage(const DwtPayloadPacket& payload)
@@ -260,17 +266,14 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
       output.push_back(std::move(match));
       return;
     }
-    const auto expectedSize = secondarySubtype ? kArmv7MAddressOffsetBytes : kArmv7MFullPcBytes;
-    if (payload.size != expectedSize) {
+
+    const auto reject = [&](const std::string& reason) {
       auto flushed = flush(payload.quality, payload.tcyc);
       output.insert(output.end(), std::make_move_iterator(flushed.begin()), std::make_move_iterator(flushed.end()));
       TraceEvent error{TraceIssueEvent{
           TraceIssueCode::UnsupportedDwtAddressPayload,
           TraceIssueSeverity::Error,
-          "unsupported DWT " + std::string(secondarySubtype ? "address" : "PC or match") + " payload size " +
-              std::to_string(payload.size) +
-              "; the current ctrace-run format does not provide the "
-              "architecture and reconstruction data needed to decode it safely",
+          reason,
           std::nullopt,
           std::nullopt,
       }};
@@ -279,13 +282,50 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
       error.tcyc = payload.tcyc;
       error.quality = payload.quality;
       output.push_back(std::move(error));
-      return;
-    }
+    };
+
     if (secondarySubtype) {
-      event.addressLo16 = payload.value;
+      if (payload.size == kDwtShortPayloadBytes) {
+        const auto& comparatorValue = m_comparatorValues[comparator];
+        if (!comparatorValue.has_value()) {
+          reject("cannot reconstruct short DWT data-address payload for comparator " + std::to_string(comparator) +
+                 "; ctrace-run does not provide a complete DWT_COMP" + std::to_string(comparator) + " register value");
+          return;
+        }
+        event.addressLo16 = (*comparatorValue & 0xff00U) | (payload.value & 0xffU);
+      } else if (payload.size == kDwtMediumPayloadBytes || payload.size == kDwtLongPayloadBytes) {
+        // The existing semantic event carries the architecturally relevant low 16 bits.
+        // A medium payload supplies them completely; a long payload is truncated here.
+        event.addressLo16 = payload.value & 0xffffU;
+      } else {
+        reject("unsupported DWT data-address payload size " + std::to_string(payload.size) +
+               "; expected 1, 2, or 4 bytes");
+        return;
+      }
       event.hasAddressLo16 = true;
     } else {
-      event.pc = payload.value;
+      if (payload.size != kDwtShortPayloadBytes && payload.size != kDwtMediumPayloadBytes &&
+          payload.size != kDwtLongPayloadBytes) {
+        reject("unsupported DWT PC-value payload size " + std::to_string(payload.size) + "; expected 1, 2, or 4 bytes");
+        return;
+      }
+      if ((payload.value & 1U) != 0U) {
+        reject("invalid DWT PC-value payload for comparator " + std::to_string(comparator) +
+               ": bit 0 is reserved for the match-packet discriminator");
+        return;
+      }
+      if (payload.size == kDwtLongPayloadBytes) {
+        event.pc = payload.value;
+      } else {
+        const auto& comparatorValue = m_comparatorValues[comparator];
+        if (!comparatorValue.has_value()) {
+          reject("cannot reconstruct compressed DWT PC-value payload for comparator " + std::to_string(comparator) +
+                 "; ctrace-run does not provide a complete DWT_COMP" + std::to_string(comparator) + " register value");
+          return;
+        }
+        const auto payloadMask = payload.size == kDwtShortPayloadBytes ? 0xffU : 0xffffU;
+        event.pc = (*comparatorValue & ~payloadMask) | (payload.value & payloadMask);
+      }
       event.hasPc = true;
     }
     sendDataTraceEvent(comparator, event, payload.quality, payload.tcyc, output);

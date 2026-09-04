@@ -21,7 +21,7 @@
 class CortexMPostDecoder final : public OpenCsdTraceElementSink {
 public:
   /** @brief Creates a post-decoder that emits to the supplied event sink. */
-  explicit CortexMPostDecoder(TraceEventSink& eventSink);
+  explicit CortexMPostDecoder(TraceEventSink& eventSink, DwtComparatorValues comparatorValues = {});
 
   /** @brief Appends one OpenCSD trace element. */
   void append(OpenCsdTraceElement element) override;

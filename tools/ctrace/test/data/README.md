@@ -59,6 +59,17 @@ timeline configuration.
 - Generated raw trace: `5cffb5803675dc02ecd5ed4939a42c660ad7cabd3542b8ca1506230e20d14a50`
 - Generated trace-run YAML: `b40c10634b8ba335b14b75f0026758ad84dd68aaf68f0a1bbfd2a5745756c5e8`
 
+The `trace-compressed-dwt` fixture is completely synthetic and was not
+captured from real hardware. It contains a hardware synchronization packet,
+short and medium Armv8-M Data Trace PC Value packets generated for an
+instruction-address range, and short and medium Data Trace Data Address packets
+generated for a data-address range. The integration test uses the corresponding
+`DWT_COMP<n>` values from the trace-run file to verify reconstruction in both
+CSV and CTF output.
+
+- Generated raw trace: `acd1bac0bf0c248e8a2d432ccc1ac3c030787c7f16cfeb7354b08881f4cf48f8`
+- Generated trace-run YAML: `0894cdf20bd8f8fca87eb4f76cea01c00b29c2e76b82fd6266fe4ade9613dc9e`
+
 `trace-run` contains only the small current-schema inputs needed by executable
 tests. Reader unit tests cover only the fields consumed by ctrace. A C++
 entry-point test creates a reviewable eight-byte ITM stream below the build tree

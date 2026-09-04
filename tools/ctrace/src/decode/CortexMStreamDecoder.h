@@ -9,6 +9,7 @@
 #define CTRACE_SRC_DECODE_CORTEXMSTREAMDECODER_H
 
 #include "OpenCsdTraceElement.h"
+#include "DwtPacketDecoder.h"
 #include "TraceEvent.h"
 
 #include <cstdint>
@@ -24,11 +25,15 @@ struct ItmTimestampPrescalers {
   std::map<std::uint8_t, std::uint32_t> byTraceBusId;
 };
 
+/** @brief Stores DWT comparator values indexed by CoreSight Trace Bus ID. */
+using DwtComparatorValuesByTraceBusId = std::map<std::uint8_t, DwtComparatorValues>;
+
 /** @brief Routes OpenCSD elements to per-stream Cortex-M post-decoders. */
 class CortexMStreamDecoder final : public OpenCsdTraceElementSink {
 public:
   /** @brief Creates a stream router with timestamp scaling configuration. */
-  CortexMStreamDecoder(ItmTimestampPrescalers prescalers, TraceEventSink& eventSink);
+  CortexMStreamDecoder(ItmTimestampPrescalers prescalers, TraceEventSink& eventSink,
+                       DwtComparatorValuesByTraceBusId comparatorValues = {});
   /** @brief Destroys all per-stream post-decoders. */
   ~CortexMStreamDecoder();
 
@@ -51,8 +56,9 @@ private:
   CortexMPostDecoder& decoder(std::uint8_t traceBusId);
 
   ItmTimestampPrescalers m_prescalers;
+  DwtComparatorValuesByTraceBusId m_comparatorValues;
   TraceEventSink& m_eventSink;
   std::map<std::uint8_t, std::unique_ptr<CortexMPostDecoder>> m_decoders;
 };
 
-#endif  // CTRACE_SRC_DECODE_CORTEXMSTREAMDECODER_H
+#endif // CTRACE_SRC_DECODE_CORTEXMSTREAMDECODER_H

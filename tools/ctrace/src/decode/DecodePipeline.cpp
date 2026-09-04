@@ -16,15 +16,17 @@
 #include <stdexcept>
 #include <utility>
 
-DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink)
-  : m_streamDecoder(std::move(timestampPrescalers), eventSink),
+DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
+                               DwtComparatorValuesByTraceBusId comparatorValues)
+  : m_streamDecoder(std::move(timestampPrescalers), eventSink, std::move(comparatorValues)),
     m_decoder(m_streamDecoder)
 {
 }
 
 DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
-                               const OpenCsdItmSessionFactory& sessionFactory)
-  : m_streamDecoder(std::move(timestampPrescalers), eventSink),
+                               const OpenCsdItmSessionFactory& sessionFactory,
+                               DwtComparatorValuesByTraceBusId comparatorValues)
+  : m_streamDecoder(std::move(timestampPrescalers), eventSink, std::move(comparatorValues)),
     m_decoder(m_streamDecoder, sessionFactory)
 {
 }

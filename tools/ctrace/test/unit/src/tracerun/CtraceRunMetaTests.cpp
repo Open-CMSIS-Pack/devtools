@@ -110,6 +110,54 @@ TEST(CtraceUnitTests, testCtraceRunMetaExpandsItmAndDwtSourceArrays)
   EXPECT_EQ(meta.sources()[3].source, 4U);
 }
 
+TEST(CtraceUnitTests, testCtraceRunMetaResolvesDwtComparatorRegistersPerStream)
+{
+  TraceRunConfig config;
+  auto instructionRange = makeReference("dwt", std::nullopt, 1U, {0U, 1U}, "instructions:start#0");
+  instructionRange.registers = {
+      {"DWT_COMP0", 0x08001234U},
+      {"DWT_COMP1", 0x00005678U, 0x0000ffffU},
+      {"DWT_COMP1", 0x08010000U, 0xffff0000U},
+      {"DWT_FUNCTION0", 0x0000000fU},
+  };
+  auto second = makeReference("dwt", std::nullopt, 2U, {2U}, "data#1");
+  second.dataSetupIndex = 1U;
+  second.registers = {{"DWT_COMP2", 0x20001200U}};
+  auto incomplete = makeReference("dwt", std::nullopt, 2U, {3U}, "data#2");
+  incomplete.dataSetupIndex = 2U;
+  incomplete.registers = {{"DWT_COMP3", 0x00003400U, 0x0000ff00U}};
+  config.references = {instructionRange, second, incomplete};
+
+  const auto meta = CtraceRunMeta::fromConfig(config);
+  ASSERT_EQ(meta.sources().size(), 2U);
+  EXPECT_EQ(meta.sources()[0].source, 2U);
+  EXPECT_EQ(meta.sources()[1].source, 3U);
+  ASSERT_EQ(meta.dwtComparatorValuesByTraceBusId().size(), 2U);
+  const auto& streamOne = meta.dwtComparatorValuesByTraceBusId().at(1U);
+  EXPECT_EQ(streamOne.at(0U), 0x08001234U);
+  EXPECT_EQ(streamOne.at(1U), 0x08015678U);
+  const auto& streamTwo = meta.dwtComparatorValuesByTraceBusId().at(2U);
+  EXPECT_EQ(streamTwo.at(2U), 0x20001200U);
+  EXPECT_EQ(streamTwo.count(3U), 0U) << "a partially specified comparator must not be used for reconstruction";
+}
+
+TEST(CtraceUnitTests, testCtraceRunMetaRejectsConflictingDwtComparatorRegisters)
+{
+  TraceRunConfig config;
+  config.path = "trace.yml";
+  auto first = makeReference("dwt", std::nullopt, 1U, {0U}, "data#0");
+  first.dataSetupIndex = 0U;
+  first.registers = {{"DWT_COMP0", 0x08001200U}};
+  auto second = first;
+  second.ctraceRef = "data#1";
+  second.dataSetupIndex = 1U;
+  second.line = 17U;
+  second.registers = {{"DWT_COMP0", 0x20001200U}};
+  config.references = {first, second};
+
+  EXPECT_TRUE(metaRejects(config, "trace.yml(17): DWT comparator 0 has conflicting values for Trace Bus ID 1"));
+}
+
 TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidPrescalers)
 {
   TraceRunConfig config;

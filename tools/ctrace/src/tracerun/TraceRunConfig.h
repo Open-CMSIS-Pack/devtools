@@ -13,6 +13,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -97,6 +98,13 @@ inline bool processorNamesMayBind(const std::optional<std::string>& left, const 
 
 } // namespace TraceRunSchema
 
+/** @brief Stores one register write emitted for a trace reference. */
+struct TraceRunRegisterWrite {
+  std::string name;
+  std::uint32_t value = 0U;
+  std::uint32_t mask = std::numeric_limits<std::uint32_t>::max();
+};
+
 /** @brief Stores one parsed ctrace reference and its resolved routing metadata. */
 struct TraceRunReference {
   std::string ctraceRef;
@@ -116,6 +124,7 @@ struct TraceRunReference {
   // narrows it to the CoreSight ATB trace-ID domain.
   std::optional<std::uint32_t> stream;
   std::vector<std::uint32_t> sources;
+  std::vector<TraceRunRegisterWrite> registers;
   // Index of the referenced ctrace-setup.data entry, derived from the
   // specified ctrace-ref path form [<pname>/]data#<index>.
   std::optional<std::size_t> dataSetupIndex;
