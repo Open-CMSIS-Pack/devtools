@@ -181,6 +181,38 @@ TEST(CtraceUnitTests, testCtfEncoderExpandsDwtEventCounterMask)
   EXPECT_NE(metadata.find("cmsis_dwt_event_counter_t cmsis_dwt_event_counter;"), std::string::npos);
 }
 
+TEST(CtraceUnitTests, testCtfEncoderWritesDwtMatch)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-dwt-match-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+
+  CtfEncoder encoder(CtfEncoderConfig{
+      1000000U,
+      TraceSelection{{"dwt"}, {}},
+      {},
+  });
+  encoder.start(outputDirectory);
+  auto match = onStream(atCycle(TraceEvent{DwtMatchTraceEvent{2U}}, 123U), 3U);
+  match.quality = TraceQuality{true, false, 7U};
+  encoder.writeEvent(match);
+  encoder.stop();
+
+  const auto records = readCtfRecords(outputDirectory / "stream_0");
+  ASSERT_EQ(records.size(), 1U);
+  const auto& record = records.front();
+  EXPECT_EQ(record.id, CtfSchema::value(CtfSchema::EventId::DwtMatch));
+  EXPECT_EQ(record.timestamp, 123U);
+  EXPECT_EQ(record.traceBusId, 3U);
+  ASSERT_EQ(record.payload.size(), 6U);
+  EXPECT_EQ(record.payload[0U], 2U);
+  EXPECT_EQ(record.payload[1U], CtfSchema::SampleFlagOverflow | CtfSchema::SampleFlagBeforeFirstTimestamp);
+  EXPECT_EQ(readLe32(record.payload, 2U), 7U);
+
+  const auto metadata = readTestTextFile(outputDirectory / "metadata");
+  EXPECT_NE(metadata.find("name = \"DWT_MATCH\""), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_dwt_comparator_t cmsis_dwt_comparator;"), std::string::npos);
+}
+
 TEST(CtraceUnitTests, testCtfEncoderExpandsPmuEventCounterMask)
 {
   const TemporaryTestPath temporaryPath("ctrace-ctf-pmu-event-test");

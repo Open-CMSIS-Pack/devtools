@@ -75,6 +75,8 @@ private:
   void reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data, const ResolvedTraceSource* source);
   /** @brief Encodes one DWT address event. */
   void writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTraceEvent& address);
+  /** @brief Encodes one comparator-only DWT match event. */
+  void writeDwtMatchEvent(const TraceEvent& event, const DwtMatchTraceEvent& match);
   /** @brief Expands one DWT event-counter mask into individual CTF records. */
   void writeDwtEvent(const TraceEvent& event, const DwtEventTraceEvent& counters);
   /** @brief Expands one PMU trace-on-overflow mask into individual CTF records. */

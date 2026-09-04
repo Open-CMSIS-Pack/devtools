@@ -151,6 +151,9 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
   if (eventId == CtfSchema::value(CtfSchema::EventId::PmuEvent)) {
     return 6U;
   }
+  if (eventId == CtfSchema::value(CtfSchema::EventId::DwtMatch)) {
+    return 6U;
+  }
   require(false, "CTF test parser encountered an unknown event ID");
   return 0U;
 }

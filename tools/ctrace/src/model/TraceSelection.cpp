@@ -36,6 +36,12 @@ static std::optional<TraceEventType> typeFor(const DwtAddressTraceEvent&)
   return TraceEventType::Dwt;
 }
 
+/** @brief Maps a comparator-only DWT match payload to data trace output. */
+static std::optional<TraceEventType> typeFor(const DwtMatchTraceEvent&)
+{
+  return TraceEventType::Dwt;
+}
+
 /** @brief Maps an exception payload to its selectable event type. */
 static std::optional<TraceEventType> typeFor(const ExceptionTraceEvent&)
 {

@@ -55,6 +55,8 @@ constexpr std::uint32_t kPmuOverflowMask = 0xffU;
 
 constexpr std::uint8_t kArmv7MFullPcBytes = 4U;
 constexpr std::uint8_t kArmv7MAddressOffsetBytes = 2U;
+constexpr std::uint8_t kArmv8MMatchBytes = 1U;
+constexpr std::uint32_t kArmv8MMatchValue = 1U;
 
 /** @brief Describes an invalid DWT event-counter payload. */
 static std::string invalidEventCounterMessage(const DwtPayloadPacket& payload)
@@ -244,6 +246,20 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
   event.quality = payload.quality;
 
   if (packetType == DwtDataPacketType::Address) {
+    const auto isMatch = !secondarySubtype && payload.size == kArmv8MMatchBytes && payload.value == kArmv8MMatchValue;
+    if (isMatch) {
+      auto& pending = m_pendingDataTrace[comparator];
+      if (pending.has_value()) {
+        flushPending(comparator, qualityForPendingFlush(*pending, payload.quality), payload.tcyc, output);
+      }
+      TraceEvent match{DwtMatchTraceEvent{comparator}};
+      match.index = payload.index;
+      match.traceBusId = payload.traceBusId;
+      match.tcyc = payload.tcyc;
+      match.quality = payload.quality;
+      output.push_back(std::move(match));
+      return;
+    }
     const auto expectedSize = secondarySubtype ? kArmv7MAddressOffsetBytes : kArmv7MFullPcBytes;
     if (payload.size != expectedSize) {
       auto flushed = flush(payload.quality, payload.tcyc);

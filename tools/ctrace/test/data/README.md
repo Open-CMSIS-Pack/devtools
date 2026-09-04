@@ -49,6 +49,16 @@ packet preservation and bitwise CTF expansion across the boundary.
 - Raw capture excerpt: `97807dad2f69b1274df8960d3459426d1da4a6892d05e7623f3e16f06c5d85c8`
 - Trace-run YAML: `a7b924d89854ac85e2751d1297ec78783fa12cb3fa54f5638691dd48d546a34e`
 
+The `trace-match` fixture is completely synthetic. It was generated from the
+Armv8-M ITM and DWT packet definitions and was not captured from real hardware.
+It contains a hardware synchronization packet followed by one Data Trace Match
+packet for each comparator 0 through 3 and local timestamps. The integration
+test verifies the generated CSV rows, CTF records, labels, and Trace Compass
+timeline configuration.
+
+- Generated raw trace: `5cffb5803675dc02ecd5ed4939a42c660ad7cabd3542b8ca1506230e20d14a50`
+- Generated trace-run YAML: `b40c10634b8ba335b14b75f0026758ad84dd68aaf68f0a1bbfd2a5745756c5e8`
+
 `trace-run` contains only the small current-schema inputs needed by executable
 tests. Reader unit tests cover only the fields consumed by ctrace. A C++
 entry-point test creates a reviewable eight-byte ITM stream below the build tree

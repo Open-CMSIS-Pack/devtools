@@ -440,6 +440,26 @@ event {
 )";
 }
 
+/** @brief Writes the comparator-only DWT match event declaration. */
+static void writeDwtMatchEvent(std::ostream& out)
+{
+  out << R"(
+event {
+    id = )"
+      << CtfSchema::value(CtfSchema::EventId::DwtMatch) << R"(;
+    name = ")"
+      << CtfSchema::eventName(CtfSchema::EventId::DwtMatch) << R"(";
+    stream_id = )"
+      << CtfSchema::SwoStreamId << R"(;
+    fields := struct {
+        cmsis_dwt_comparator_t cmsis_dwt_comparator;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+)";
+}
+
 /** @brief Writes the DWT event-counter declaration. */
 static void writeDwtEvent(std::ostream& out)
 {
@@ -565,6 +585,7 @@ void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const std:
   writeItmEvent(out);
   writeDwtValueEvent(out);
   writeDwtAddressEvent(out);
+  writeDwtMatchEvent(out);
   writeDwtEvent(out);
   writePmuEvent(out);
   writeStatusEvents(out);

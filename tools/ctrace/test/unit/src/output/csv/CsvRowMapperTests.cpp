@@ -39,6 +39,7 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
       {TraceEvent{SoftwareTraceEvent{}}, TraceEventType::Itm},
       {TraceEvent{DwtDataTraceEvent{}}, TraceEventType::Dwt},
       {TraceEvent{DwtAddressTraceEvent{0U, DwtPcTraceLocation{0U}}}, TraceEventType::Dwt},
+      {TraceEvent{DwtMatchTraceEvent{}}, TraceEventType::Dwt},
       {TraceEvent{ExceptionTraceEvent{}}, TraceEventType::Exception},
       {TraceEvent{DwtEventTraceEvent{}}, TraceEventType::Event},
       {TraceEvent{PmuTraceEvent{}}, TraceEventType::Pmu},
@@ -65,6 +66,8 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
       << "CSV must render the raw hexadecimal DWT value with the two-byte SWO width";
   ASSERT_TRUE(CsvRowMapper::row(softwarePacket(1U)) == ",,itm,1,0x00,,,")
       << "CSV must leave the stream field empty for unformatted input";
+  ASSERT_TRUE(CsvRowMapper::row(TraceEvent{DwtMatchTraceEvent{2U}}) == ",,dwt,2,,,,")
+      << "CSV must expose a match only through its DWT comparator source";
   ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U, false}}, 949339000U)) ==
               "949339000,,pcsample,,,0x08001234,,")
       << "CSV PC-sample row mismatch";

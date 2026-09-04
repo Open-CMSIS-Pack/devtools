@@ -200,6 +200,10 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
     if (selected) {
       writeDwtAddrEvent(event, *address);
     }
+  } else if (const auto* match = traceEventPayload<DwtMatchTraceEvent>(event)) {
+    if (selected) {
+      writeDwtMatchEvent(event, *match);
+    }
   } else if (const auto* counters = traceEventPayload<DwtEventTraceEvent>(event)) {
     if (selected) {
       writeDwtEvent(event, *counters);
@@ -358,6 +362,19 @@ void CtfEncoder::writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTrac
                          record.writeU8(static_cast<std::uint8_t>(hasAddress));
                          record.writeU32(pc.value_or(0U));
                          record.writeU16(static_cast<std::uint16_t>(addressOffset.value_or(0U) & 0xffffU));
+                         record.writeU8(quality.first);
+                         record.writeU32(quality.second);
+                       });
+}
+
+void CtfEncoder::writeDwtMatchEvent(const TraceEvent& event, const DwtMatchTraceEvent& match)
+{
+  constexpr auto payloadSize = 1U + 1U + 4U;
+  const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
+  const auto quality = computeSampleQuality(event);
+  m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtMatch), eventTimestamp, event.traceBusId, payloadSize,
+                       [&](CtfStreamWriter::Record& record) {
+                         record.writeU8(static_cast<std::uint8_t>(match.comparator & 0xffU));
                          record.writeU8(quality.first);
                          record.writeU32(quality.second);
                        });

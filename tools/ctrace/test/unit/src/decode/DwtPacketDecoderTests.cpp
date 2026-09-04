@@ -277,6 +277,48 @@ TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRepeatedAddressFragments)
   verify(9U, 0x1000U, 0x2000U);
 }
 
+TEST(CtraceUnitTests, testDwtPacketDecoderEmitsComparatorOnlyMatch)
+{
+  DwtPacketDecoder decoder;
+  auto payload = dwtPayload(12U, 1U, 1U, 17U, 3U, 99U);
+  payload.quality = TraceQuality{true, false, 7U};
+
+  const auto packets = decoder.decode(payload);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto* match = traceEventPayload<DwtMatchTraceEvent>(packets.front());
+  ASSERT_NE(match, nullptr);
+  EXPECT_EQ(match->comparator, 2U);
+  EXPECT_EQ(packets.front().index, 17U);
+  EXPECT_EQ(packets.front().traceBusId, 3U);
+  EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(99U));
+  ASSERT_TRUE(packets.front().quality.has_value());
+  EXPECT_TRUE(packets.front().quality->overflow);
+  EXPECT_FALSE(packets.front().quality->timestampReliable);
+  EXPECT_EQ(packets.front().quality->overflowCount, 7U);
+  EXPECT_EQ(traceEventType(packets.front()), TraceEventType::Dwt);
+  EXPECT_EQ(CsvRowMapper::row(packets.front()), "99,3,dwt,2,,,,");
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingComparatorBeforeMatch)
+{
+  DwtPacketDecoder decoder;
+  auto pc = dwtPayload(8U, 4U, 0x08001234U, 10U, 3U, 90U);
+  pc.quality.timestampReliable = true;
+  EXPECT_TRUE(decoder.decode(pc).empty());
+
+  auto match = dwtPayload(8U, 1U, 1U, 11U, 3U, 100U);
+  match.quality.timestampReliable = true;
+  const auto packets = decoder.decode(match);
+  ASSERT_EQ(packets.size(), 2U);
+  ASSERT_NE(traceEventPayload<DwtAddressTraceEvent>(packets[0]), nullptr);
+  EXPECT_EQ(dwtAddressPc(*traceEventPayload<DwtAddressTraceEvent>(packets[0])),
+            std::optional<std::uint32_t>(0x08001234U));
+  EXPECT_NE(traceEventPayload<DwtMatchTraceEvent>(packets[1]), nullptr);
+  EXPECT_EQ(packets[0].tcyc, std::optional<std::uint64_t>(100U));
+  EXPECT_EQ(packets[1].tcyc, std::optional<std::uint64_t>(100U));
+  EXPECT_TRUE(decoder.flush({}, 101U).empty());
+}
+
 TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
 {
   const auto verify = [](std::uint8_t discriminator, std::uint8_t size) {

@@ -133,6 +133,30 @@ static std::string eventCounterHandlers(CtfSchema::EventId eventId, std::string_
   return handlers.str();
 }
 
+/** @brief Generates one visible pulse for every comparator-only DWT match. */
+static std::string dwtMatchHandler()
+{
+  std::ostringstream handler;
+  handler << R"(            <stateChange>
+                <stateAttribute type="constant" value=")"
+          << CtfSchema::eventName(CtfSchema::EventId::DwtMatch) << R"(" />
+                <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
+                <stateValue type="int" value="1" stack="push" />
+            </stateChange>
+            <stateChange>
+                <stateAttribute type="constant" value=")"
+          << CtfSchema::eventName(CtfSchema::EventId::DwtMatch) << R"(" />
+                <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
+                <stateValue type="null" stack="pop" />
+                <futureTime type="script" value="timestamp + )"
+          << kEventPulseNanoseconds << R"(" scriptEngine="rhino">
+                    <stateValue id="timestamp" type="eventField" value="timestamp" />
+                </futureTime>
+            </stateChange>
+)";
+  return handler.str();
+}
+
 /** @brief Generates the Trace Compass state-provider definition. */
 static std::string stateProviderXml()
 {
@@ -159,6 +183,10 @@ static std::string stateProviderXml()
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm) << R"(">
 )" << valueHandlers(CtfSchema::EventId::Itm, "itm", "cmsis_itm_channel", "value")
+      << R"(        </eventHandler>
+        <eventHandler eventName=")"
+      << CtfSchema::eventName(CtfSchema::EventId::DwtMatch) << R"(">
+)" << dwtMatchHandler()
       << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtEvent) << R"(">
@@ -380,6 +408,13 @@ static std::string viewsXml()
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress)
       << '/' << R"(*"><display type="constant" value="address" /><name type="self" /></entry>
     </xyView>
+    <timeGraphView id="arm.cmsis.swo.tg.dwt_match.v1">
+        <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value="DWT Match" /></head>
+        <definedValue name="Something happened" value="1" color="#F6BD16" />
+        <entry path=")"
+      << CtfSchema::eventName(CtfSchema::EventId::DwtMatch)
+      << '/' << R"(*" displayText="true"><display type="constant" value="1" /><name type="self" /></entry>
+    </timeGraphView>
     <timeGraphView id="arm.cmsis.swo.tg.dwt_event.v1">
         <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value="DWT Event Counters" /></head>
 )";
