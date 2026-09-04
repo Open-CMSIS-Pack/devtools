@@ -60,6 +60,9 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
   EXPECT_NE(metadata.find("\"Event0\" = 0"), std::string::npos);
   EXPECT_NE(metadata.find("\"Event7\" = 7"), std::string::npos);
   EXPECT_NE(metadata.find("cmsis_pmu_event_counter_t cmsis_pmu_event_counter;"), std::string::npos);
+  EXPECT_NE(metadata.find("none = 0, u8 = 1, u16 = 2, u32 = 4"), std::string::npos);
+  EXPECT_NE(metadata.find("variant <cmsis_dwt_offset_type>"), std::string::npos);
+  EXPECT_NE(metadata.find("uint32_t u32;"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfMetadataWriterRejectsMissingOutputDirectory)
@@ -150,6 +153,10 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   const auto matchPulseEnd = xml.find("value=\"timestamp + 1000\"", matchHandler);
   ASSERT_NE(matchPulseEnd, std::string::npos);
   EXPECT_LT(matchPulseEnd, matchHandlerEnd);
+  EXPECT_NE(xml.find("value=\"cmsis_dwt_offset_type\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"cmsis_dwt_offset.u8\" forcedType=\"long\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"cmsis_dwt_offset.u16\" forcedType=\"long\""), std::string::npos);
+  EXPECT_NE(xml.find("value=\"cmsis_dwt_offset.u32\" forcedType=\"long\""), std::string::npos);
   const auto threadModeEntry = xml.find("path=\"EXCEPTION/Thread Mode\"");
   const auto returnEntry = xml.find("path=\"EXCEPTION_RETURN/*\" displayText=\"true\"");
   const auto interruptEntries = xml.find("path=\"EXCEPTION/(?!Thread Mode).+\"");
