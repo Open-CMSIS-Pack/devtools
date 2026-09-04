@@ -90,10 +90,10 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   const TemporaryTestPath path("ctrace-trace-compass-schema.xml");
   TraceCompassXmlWriter::writeFile(path.path());
   const auto xml = readTestTextFile(path.path());
-  constexpr std::array<CtfSchema::EventId, 8U> visualizedEvents{
+  constexpr std::array<CtfSchema::EventId, 9U> visualizedEvents{
       CtfSchema::EventId::Itm,       CtfSchema::EventId::DwtValue,    CtfSchema::EventId::DwtAddress,
       CtfSchema::EventId::Exception, CtfSchema::EventId::TraceStatus, CtfSchema::EventId::PcSample,
-      CtfSchema::EventId::DwtEvent,  CtfSchema::EventId::PmuEvent,
+      CtfSchema::EventId::DwtEvent,  CtfSchema::EventId::PmuEvent,    CtfSchema::EventId::DwtMatch,
   };
 
   for (const auto eventId : visualizedEvents) {
@@ -135,6 +135,21 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   EXPECT_NE(xml.find("<definedValue name=\"7\" value=\"7\""), std::string::npos);
   EXPECT_NE(xml.find("<entry path=\"PMU_EVENT/" "*\" displayText=\"true\"><display type=\"constant\" value=\"1\" /></entry>"),
             std::string::npos);
+  EXPECT_NE(xml.find("<stateAttribute type=\"constant\" value=\"DWT_MATCH\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<stateAttribute type=\"eventField\" value=\"cmsis_dwt_comparator\" />"),
+            std::string::npos);
+  EXPECT_NE(xml.find("<label value=\"DWT Match\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<definedValue name=\"Something happened\" value=\"1\""), std::string::npos);
+  EXPECT_NE(xml.find("<entry path=\"DWT_MATCH/" "*\" displayText=\"true\"><display type=\"constant\" value=\"1\" />"
+                     "<name type=\"self\" /></entry>"),
+            std::string::npos);
+  const auto matchHandler = xml.find("<eventHandler eventName=\"DWT_MATCH\">");
+  const auto matchHandlerEnd = xml.find("</eventHandler>", matchHandler);
+  ASSERT_NE(matchHandler, std::string::npos);
+  ASSERT_NE(matchHandlerEnd, std::string::npos);
+  const auto matchPulseEnd = xml.find("value=\"timestamp + 1000\"", matchHandler);
+  ASSERT_NE(matchPulseEnd, std::string::npos);
+  EXPECT_LT(matchPulseEnd, matchHandlerEnd);
   const auto threadModeEntry = xml.find("path=\"EXCEPTION/Thread Mode\"");
   const auto returnEntry = xml.find("path=\"EXCEPTION_RETURN/*\" displayText=\"true\"");
   const auto interruptEntries = xml.find("path=\"EXCEPTION/(?!Thread Mode).+\"");

@@ -95,6 +95,11 @@ struct DwtAddressTraceEvent {
   DwtAddressTraceLocation location;
 };
 
+/** @brief Reports that one DWT comparator generated a match without additional trace data. */
+struct DwtMatchTraceEvent {
+  std::uint32_t comparator = 0;
+};
+
 /** @brief Returns the program counter carried by a DWT address event, if present. */
 inline std::optional<std::uint32_t> dwtAddressPc(const DwtAddressTraceEvent& event)
 {
@@ -230,9 +235,10 @@ struct TraceIssueEvent {
 };
 
 /** @brief Stores the semantic payload of a decoded trace event. */
-using TraceEventPayload = std::variant<SoftwareTraceEvent, DwtDataTraceEvent, DwtAddressTraceEvent, ExceptionTraceEvent,
-                                       DwtEventTraceEvent, PmuTraceEvent, PcSampleTraceEvent, LocalTimestampTraceEvent,
-                                       GlobalTimestampTraceEvent, OverflowTraceEvent, SyncTraceEvent, TraceIssueEvent>;
+using TraceEventPayload =
+    std::variant<SoftwareTraceEvent, DwtDataTraceEvent, DwtAddressTraceEvent, DwtMatchTraceEvent, ExceptionTraceEvent,
+                 DwtEventTraceEvent, PmuTraceEvent, PcSampleTraceEvent, LocalTimestampTraceEvent,
+                 GlobalTimestampTraceEvent, OverflowTraceEvent, SyncTraceEvent, TraceIssueEvent>;
 
 /** @brief Describes timestamp and data-loss quality at an event. */
 struct TraceQuality {

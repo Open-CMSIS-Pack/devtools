@@ -170,6 +170,8 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
     if (const auto offset = dwtAddressOffset(*address)) {
       row[column(CsvColumn::Offset)] = hexValue(*offset, 2);
     }
+  } else if (const auto* match = traceEventPayload<DwtMatchTraceEvent>(event)) {
+    row[column(CsvColumn::Source)] = std::to_string(match->comparator);
   } else if (const auto* exception = traceEventPayload<ExceptionTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(exception->number);
     row[column(CsvColumn::Value)] = exceptionActionCsvValue(exception->action);

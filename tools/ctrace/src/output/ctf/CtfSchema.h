@@ -31,6 +31,7 @@ enum class EventId : std::uint32_t {
   PcSample = 6U,
   DwtEvent = 7U,
   PmuEvent = 8U,
+  DwtMatch = 9U,
 };
 
 /** @brief Classifies CTF trace-status records. */
@@ -255,6 +256,8 @@ constexpr std::string_view eventName(EventId id)
     return "DWT_EVENT";
   case EventId::PmuEvent:
     return "PMU_EVENT";
+  case EventId::DwtMatch:
+    return "DWT_MATCH";
   }
   return "UNKNOWN";
 }

@@ -67,6 +67,10 @@ TEST(CtraceUnitTests, testTraceSelection)
   ASSERT_TRUE(traceEventSelectedForOutput(dwt, TraceSelection{{"itm", "dwt"}, {}}))
       << "TraceSelection type OR mismatch";
 
+  TraceEvent dwtMatch{DwtMatchTraceEvent{2U}};
+  ASSERT_TRUE(traceEventSelectedForOutput(dwtMatch, TraceSelection{{"dwt"}, {}}))
+      << "TraceSelection DWT match type mismatch";
+
   TraceEvent exception{ExceptionTraceEvent{11U, ExceptionAction::Entered}};
   ASSERT_TRUE(traceEventSelectedForOutput(exception, TraceSelection{{"exception"}, {}}))
       << "TraceSelection exception type mismatch";

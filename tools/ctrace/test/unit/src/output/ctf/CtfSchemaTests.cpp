@@ -21,12 +21,13 @@
 
 TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
 {
-  constexpr std::array<std::uint32_t, 9U> eventIds{
+  constexpr std::array<std::uint32_t, 10U> eventIds{
       CtfSchema::value(CtfSchema::EventId::Itm),        CtfSchema::value(CtfSchema::EventId::DwtValue),
       CtfSchema::value(CtfSchema::EventId::DwtAddress), CtfSchema::value(CtfSchema::EventId::TraceStatus),
       CtfSchema::value(CtfSchema::EventId::Exception),  CtfSchema::value(CtfSchema::EventId::GlobalTimestamp),
       CtfSchema::value(CtfSchema::EventId::PcSample),   CtfSchema::value(CtfSchema::EventId::DwtEvent),
       CtfSchema::value(CtfSchema::EventId::PmuEvent),
+      CtfSchema::value(CtfSchema::EventId::DwtMatch),
   };
   constexpr std::array<std::uint8_t, 5U> statusReasons{
       CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart),

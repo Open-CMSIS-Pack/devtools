@@ -178,6 +178,52 @@ TEST_F(CtraceIntegTests, ExpandsDwtEventCountersAcrossCsvAndCtf)
                  "<label value=\"DWT Event Counters\" />");
 }
 
+TEST_F(CtraceIntegTests, ConvertsDwtMatchAcrossCsvAndCtf)
+{
+  const auto fixtureDirectory = testDataDirectory() / "trace-match";
+  copyFixtureFile(fixtureDirectory, "trace-match.raw", "trace-match.SWO.raw");
+  copyFixtureFile(fixtureDirectory, "trace-match.ctrace-run.yml");
+
+  // This Armv8-M packet stream is completely synthetic and was generated from
+  // the architecture specification without a capture from real hardware.
+  constexpr std::array<unsigned char, 18U> expectedRaw{{
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x45U, 0x01U, 0x10U,
+      0x55U, 0x01U, 0x20U, 0x65U, 0x01U, 0x30U, 0x75U, 0x01U, 0x40U,
+  }};
+  EXPECT_EQ(readBinaryFile(workDirectory() / "trace-match.SWO.raw"),
+            std::vector<unsigned char>(expectedRaw.begin(), expectedRaw.end()));
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "trace-match", "--all"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+            "1,,dwt,0,,,,\n"
+            "3,,dwt,1,,,,\n"
+            "6,,dwt,2,,,,\n"
+            "10,,dwt,3,,,,\n",
+            readTextFile(workDirectory() / "trace-match.SWO.csv"));
+
+  const auto records = CtfTestSupport::readCtfRecords(workDirectory() / "trace-match.ctf" / "stream_0");
+  std::vector<std::uint64_t> matchTimestamps;
+  std::vector<std::uint8_t> matchComparators;
+  for (const auto& record : records) {
+    if (record.id != CtfSchema::value(CtfSchema::EventId::DwtMatch)) {
+      continue;
+    }
+    ASSERT_EQ(record.payload.size(), 6U);
+    matchTimestamps.push_back(record.timestamp);
+    matchComparators.push_back(record.payload[0U]);
+  }
+  EXPECT_EQ(matchTimestamps, (std::vector<std::uint64_t>{1U, 3U, 6U, 10U}));
+  EXPECT_EQ(matchComparators, (std::vector<std::uint8_t>{0U, 1U, 2U, 3U}));
+
+  const auto metadata = readTextFile(workDirectory() / "trace-match.ctf" / "metadata");
+  expectContains(metadata, "name = \"DWT_MATCH\"");
+  expectContains(metadata, "\"Match Comparator 3\" = 3");
+  const auto xml = readTextFile(workDirectory() / "trace-match.SWO.traceanalysis.xml");
+  expectContains(xml, "<label value=\"DWT Match\" />");
+  expectContains(xml, "<definedValue name=\"Something happened\" value=\"1\"");
+}
+
 TEST_F(CtraceIntegTests, ConvertsCapturedDwtEventCountersAcrossOverflow)
 {
   const auto fixtureDirectory = testDataDirectory() / "trace-event";
