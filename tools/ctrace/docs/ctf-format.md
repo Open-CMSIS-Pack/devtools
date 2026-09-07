@@ -6,13 +6,13 @@ authoritative for trace input and `*.ctrace-run.yml` configuration.
 
 ## Event navigation
 
-- Instrumentation: [`ITM`](#event-itm)
-- DWT data trace: [`DWT_VALUE`](#event-dwt-value), [`DWT_ADDR`](#event-dwt-addr), and
-  [`DWT_MATCH`](#event-dwt-match)
-- Trace integrity: [`TRACE_STATUS`](#event-trace-status)
-- Execution state: [`EXCEPTION`](#event-exception) and [`PC_SAMPLE`](#event-pc-sample)
-- Time correlation: [`GLOBAL_TIMESTAMP`](#event-global-timestamp)
-- Profiling: [`DWT_EVENT`](#event-dwt-event) and [`PMU_EVENT`](#event-pmu-event)
+- Instrumentation: [`ITM`](#itm-event-id-0)
+- DWT data trace: [`DWT_VALUE`](#dwt_value-event-id-1), [`DWT_ADDR`](#dwt_addr-event-id-2), and
+  [`DWT_MATCH`](#dwt_match-event-id-9)
+- Trace integrity: [`TRACE_STATUS`](#trace_status-event-id-3)
+- Execution state: [`EXCEPTION`](#exception-event-id-4) and [`PC_SAMPLE`](#pc_sample-event-id-6)
+- Time correlation: [`GLOBAL_TIMESTAMP`](#global_timestamp-event-id-5)
+- Profiling: [`DWT_EVENT`](#dwt_event-event-id-7) and [`PMU_EVENT`](#pmu_event-event-id-8)
 
 The profile uses CTF 1.8, little-endian byte order, and the environment identifiers:
 
@@ -100,9 +100,7 @@ bytes.
 
 ## Instrumentation events
 
-<a id="event-itm"></a>
-
-### `ITM` — event ID 0
+### ITM (event ID 0)
 
 ```text
 cmsis_itm_channel_t cmsis_itm_channel
@@ -119,9 +117,7 @@ Trace Compass exposes the values by ITM channel in an event table and a time gra
 
 ## DWT data-trace events
 
-<a id="event-dwt-value"></a>
-
-### `DWT_VALUE` — event ID 1
+### DWT_VALUE (event ID 1)
 
 ```text
 cmsis_dwt_comparator_t cmsis_dwt_comparator
@@ -142,9 +138,7 @@ address bits optional. DWT comparator labels and data types are resolved from `c
 The configured value size controls the CTF scalar type. If it differs from the SWO payload size, `ctrace` emits a
 warning for that route. Trace Compass provides a value table and an XY view per comparator.
 
-<a id="event-dwt-addr"></a>
-
-### `DWT_ADDR` — event ID 2
+### DWT_ADDR (event ID 2)
 
 ```text
 cmsis_dwt_comparator_t cmsis_dwt_comparator
@@ -163,9 +157,7 @@ comparator.
 This describes the current profile. Any change that preserves 1-, 2-, or 4-byte address fragments instead of the
 fixed lower-16-bit representation must update this section and review the profile version in the same change.
 
-<a id="event-dwt-match"></a>
-
-### `DWT_MATCH` — event ID 9
+### DWT_MATCH (event ID 9)
 
 ```text
 cmsis_dwt_comparator_t cmsis_dwt_comparator
@@ -179,9 +171,7 @@ the comparator lane for one microsecond; this artificial width is visualization 
 
 ## Trace-integrity events
 
-<a id="event-trace-status"></a>
-
-### `TRACE_STATUS` — event ID 3
+### TRACE_STATUS (event ID 3)
 
 ```text
 cmsis_trace_status_reason_t cmsis_trace_status_reason
@@ -204,9 +194,7 @@ for each status reason.
 
 ## Execution-state events
 
-<a id="event-exception"></a>
-
-### `EXCEPTION` — event ID 4
+### EXCEPTION (event ID 4)
 
 ```text
 cmsis_exception_number_t cmsis_exception_number
@@ -226,9 +214,7 @@ The Trace Compass time graph orders Thread Mode first, Exception Return second, 
 them. Overflow and data loss close the active context and leave a gap until a later trace transition establishes the
 state again.
 
-<a id="event-pc-sample"></a>
-
-### `PC_SAMPLE` — event ID 6
+### PC_SAMPLE (event ID 6)
 
 ```text
 uint8_t  cmsis_pc_sample_state
@@ -246,9 +232,7 @@ loss closes it.
 
 ## Time-correlation events
 
-<a id="event-global-timestamp"></a>
-
-### `GLOBAL_TIMESTAMP` — event ID 5
+### GLOBAL_TIMESTAMP (event ID 5)
 
 ```text
 uint64_t cmsis_global_timestamp
@@ -261,9 +245,7 @@ clock domains or make an unreliable local timestamp reliable.
 
 ## Profiling events
 
-<a id="event-dwt-event"></a>
-
-### `DWT_EVENT` — event ID 7
+### DWT_EVENT (event ID 7)
 
 ```text
 cmsis_dwt_event_counter_t cmsis_dwt_event_counter
@@ -282,9 +264,7 @@ One hardware mask is expanded into one CTF record per set bit, all with the same
 | 4 | `FOLDCNT` |
 | 5 | `CYCCNT` |
 
-<a id="event-pmu-event"></a>
-
-### `PMU_EVENT` — event ID 8
+### PMU_EVENT (event ID 8)
 
 ```text
 cmsis_pmu_event_counter_t cmsis_pmu_event_counter
