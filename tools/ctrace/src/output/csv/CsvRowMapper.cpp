@@ -27,7 +27,7 @@ enum class CsvColumn : std::size_t {
   Source,
   Value,
   Pc,
-  Offset,
+  Address,
   Note,
   Count,
 };
@@ -39,7 +39,7 @@ constexpr std::array<std::string_view, static_cast<std::size_t>(CsvColumn::Count
     "source",
     "value",
     "pc",
-    "offset",
+    "address",
     "note",
 }};
 
@@ -167,11 +167,11 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
     row[column(CsvColumn::Source)] = std::to_string(data->comparator);
     row[column(CsvColumn::Value)] = hexValue(data->value, data->size);
     writeDwtAddressFragment(row, CsvColumn::Pc, data->pc);
-    writeDwtAddressFragment(row, CsvColumn::Offset, data->offset);
+    writeDwtAddressFragment(row, CsvColumn::Address, data->offset);
   } else if (const auto* address = traceEventPayload<DwtAddressTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(address->comparator);
     writeDwtAddressFragment(row, CsvColumn::Pc, dwtAddressPc(*address));
-    writeDwtAddressFragment(row, CsvColumn::Offset, dwtAddressOffset(*address));
+    writeDwtAddressFragment(row, CsvColumn::Address, dwtAddressOffset(*address));
   } else if (const auto* match = traceEventPayload<DwtMatchTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(match->comparator);
   } else if (const auto* exception = traceEventPayload<ExceptionTraceEvent>(event)) {

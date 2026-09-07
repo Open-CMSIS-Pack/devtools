@@ -103,7 +103,7 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
   output.stop();
 
   ASSERT_TRUE(
-      (readTestTextFile(outputPath.path()) == "cycles,stream,type,source,value,pc,offset,note\n,2,itm,1,0x41,,,\n"))
+      (readTestTextFile(outputPath.path()) == "cycles,stream,type,source,value,pc,address,note\n,2,itm,1,0x41,,,\n"))
       << "CsvFileOutput criteria mismatch";
 
   const TemporaryTestPath errorOutputPath("ctrace-filtered-errors.csv");
@@ -140,7 +140,7 @@ TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
   const auto lines = readTestLines(csvPath);
 
   ASSERT_TRUE(lines.size() == 4U) << "CSV specification row count mismatch";
-  ASSERT_TRUE(lines[0] == "cycles,stream,type,source,value,pc,offset,note") << "CSV specification header mismatch";
+  ASSERT_TRUE(lines[0] == "cycles,stream,type,source,value,pc,address,note") << "CSV specification header mismatch";
   ASSERT_TRUE(lines[1] == "949338400,,dwt,2,0xfffffdf9,0x08001234,0xfdf9,") << "CSV DWT row schema mismatch";
   ASSERT_TRUE(lines[2] == "950364820,,exception,11,0x1,,,") << "CSV exception state schema mismatch";
   ASSERT_TRUE(lines[3] == "950364900,,pcsample,,,0x08000100,,") << "CSV PC-sample row schema mismatch";
@@ -161,7 +161,7 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
   const auto lines = readTestLines(csvPath);
 
   ASSERT_TRUE(lines.size() == 3U) << "CSV issue row count mismatch";
-  ASSERT_TRUE(lines[0] == "cycles,stream,type,source,value,pc,offset,note") << "CSV issue header mismatch";
+  ASSERT_TRUE(lines[0] == "cycles,stream,type,source,value,pc,address,note") << "CSV issue header mismatch";
   ASSERT_TRUE(
       (lines[1] == "1234,,overflow,,,,,overflow: new timestamp segment; time across boundary may be unreliable"))
       << "CSV overflow issue row mismatch";

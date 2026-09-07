@@ -54,7 +54,7 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
     ASSERT_TRUE(traceEventType(event) == expectedType) << "semantic TraceEvent type mapping mismatch";
   }
 
-  ASSERT_TRUE(CsvRowMapper::header() == "cycles,stream,type,source,value,pc,offset,note")
+  ASSERT_TRUE(CsvRowMapper::header() == "cycles,stream,type,source,value,pc,address,note")
       << "CSV schema header integration mismatch";
   ASSERT_TRUE(
       (CsvRowMapper::row(TraceEvent{ExceptionTraceEvent{11U, ExceptionAction::Entered}}) == ",,exception,11,0x1,,,"))

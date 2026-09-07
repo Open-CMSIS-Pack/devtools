@@ -161,10 +161,9 @@ static std::string dwtMatchHandler()
 static std::string dwtAddressHandlers()
 {
   std::ostringstream handlers;
-  for (const auto& variant : CtfSchema::DwtAddressVariants) {
-    if (variant.tag == CtfSchema::DwtAddressTag::None) {
-      continue;
-    }
+  static_assert(CtfSchema::DwtAddressVariants.front().tag == CtfSchema::DwtAddressTag::None);
+  for (std::size_t index = 1U; index < CtfSchema::DwtAddressVariants.size(); ++index) {
+    const auto& variant = CtfSchema::DwtAddressVariants[index];
     handlers << R"(            <stateChange>
                 <if>
                     <condition>
