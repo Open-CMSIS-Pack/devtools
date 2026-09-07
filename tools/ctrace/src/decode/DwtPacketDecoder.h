@@ -44,8 +44,8 @@ private:
   struct PendingDataTrace {
     std::uint64_t index = 0;
     std::uint8_t traceBusId = 0U;
-    std::uint32_t pc = 0;
-    DwtAddressOffset offset;
+    DwtAddressFragment pc;
+    DwtAddressFragment offset;
     std::uint32_t value = 0;
     std::uint8_t size = 4;
     bool isRead = false;

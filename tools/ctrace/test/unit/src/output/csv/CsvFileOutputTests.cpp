@@ -128,8 +128,8 @@ TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
                                 4U,
                                 0xfffffdf9U,
                                 AccessType::Read,
-                                DwtAddressOffset{2U, 0xfdf9U},
-                                0x08001234U,
+                                DwtAddressFragment{2U, 0xfdf9U},
+                                DwtAddressFragment{4U, 0x08001234U},
                             }},
                             949338400U));
   output.writeEvent(atCycle(TraceEvent{ExceptionTraceEvent{11U, ExceptionAction::Entered}}, 950364820U));

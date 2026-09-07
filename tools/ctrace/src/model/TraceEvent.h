@@ -61,12 +61,12 @@ struct SoftwareTraceEvent {
 };
 
 /** @brief Stores the raw address fragment and width carried by a DWT packet. */
-struct DwtAddressOffset {
+struct DwtAddressFragment {
   std::uint8_t size = 0;
   std::uint32_t value = 0;
 };
 
-constexpr bool operator==(const DwtAddressOffset& left, const DwtAddressOffset& right)
+constexpr bool operator==(const DwtAddressFragment& left, const DwtAddressFragment& right)
 {
   return left.size == right.size && left.value == right.value;
 }
@@ -77,24 +77,24 @@ struct DwtDataTraceEvent {
   std::uint8_t size = 0;
   std::uint32_t value = 0;
   AccessType access = AccessType::Read;
-  std::optional<DwtAddressOffset> offset = std::nullopt;
-  std::optional<std::uint32_t> pc = std::nullopt;
+  std::optional<DwtAddressFragment> offset = std::nullopt;
+  std::optional<DwtAddressFragment> pc = std::nullopt;
 };
 
 /** @brief Identifies a DWT address event by program counter. */
 struct DwtPcTraceLocation {
-  std::uint32_t pc;
+  DwtAddressFragment pc;
 };
 
 /** @brief Identifies a DWT address event by its raw address fragment. */
 struct DwtOffsetTraceLocation {
-  DwtAddressOffset offset;
+  DwtAddressFragment offset;
 };
 
 /** @brief Identifies a DWT address event by program counter and address offset. */
 struct DwtPcAndOffsetTraceLocation {
-  std::uint32_t pc;
-  DwtAddressOffset offset;
+  DwtAddressFragment pc;
+  DwtAddressFragment offset;
 };
 
 /** @brief Stores one of the supported DWT address location representations. */
@@ -112,7 +112,7 @@ struct DwtMatchTraceEvent {
 };
 
 /** @brief Returns the program counter carried by a DWT address event, if present. */
-inline std::optional<std::uint32_t> dwtAddressPc(const DwtAddressTraceEvent& event)
+inline std::optional<DwtAddressFragment> dwtAddressPc(const DwtAddressTraceEvent& event)
 {
   if (const auto* pc = std::get_if<DwtPcTraceLocation>(&event.location)) {
     return pc->pc;
@@ -124,7 +124,7 @@ inline std::optional<std::uint32_t> dwtAddressPc(const DwtAddressTraceEvent& eve
 }
 
 /** @brief Returns the raw address fragment carried by a DWT address event, if present. */
-inline std::optional<DwtAddressOffset> dwtAddressOffset(const DwtAddressTraceEvent& event)
+inline std::optional<DwtAddressFragment> dwtAddressOffset(const DwtAddressTraceEvent& event)
 {
   if (const auto* offset = std::get_if<DwtOffsetTraceLocation>(&event.location)) {
     return offset->offset;

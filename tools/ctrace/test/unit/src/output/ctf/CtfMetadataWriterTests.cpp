@@ -61,6 +61,7 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
   EXPECT_NE(metadata.find("\"Event7\" = 7"), std::string::npos);
   EXPECT_NE(metadata.find("cmsis_pmu_event_counter_t cmsis_pmu_event_counter;"), std::string::npos);
   EXPECT_NE(metadata.find("none = 0, u8 = 1, u16 = 2, u32 = 4"), std::string::npos);
+  EXPECT_NE(metadata.find("variant <cmsis_dwt_pc_type>"), std::string::npos);
   EXPECT_NE(metadata.find("variant <cmsis_dwt_offset_type>"), std::string::npos);
   EXPECT_NE(metadata.find("uint32_t u32;"), std::string::npos);
 }

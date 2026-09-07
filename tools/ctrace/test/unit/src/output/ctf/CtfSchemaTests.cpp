@@ -133,10 +133,10 @@ TEST(CtraceUnitTests, testCtfValueTypes)
   ASSERT_TRUE(CtfSchema::valueVariantForTraceRunType("unsigned", 8U) == nullptr)
       << "invalid CTF data size was accepted";
 
-  EXPECT_EQ(CtfSchema::dwtOffsetVariantForSize(1U)->tag, CtfSchema::DwtOffsetTag::U8);
-  EXPECT_EQ(CtfSchema::dwtOffsetVariantForSize(2U)->tag, CtfSchema::DwtOffsetTag::U16);
-  EXPECT_EQ(CtfSchema::dwtOffsetVariantForSize(4U)->tag, CtfSchema::DwtOffsetTag::U32);
-  EXPECT_EQ(CtfSchema::dwtOffsetVariantForSize(3U), nullptr);
+  EXPECT_EQ(CtfSchema::dwtAddressVariantForSize(1U)->tag, CtfSchema::DwtAddressTag::U8);
+  EXPECT_EQ(CtfSchema::dwtAddressVariantForSize(2U)->tag, CtfSchema::DwtAddressTag::U16);
+  EXPECT_EQ(CtfSchema::dwtAddressVariantForSize(4U)->tag, CtfSchema::DwtAddressTag::U32);
+  EXPECT_EQ(CtfSchema::dwtAddressVariantForSize(3U), nullptr);
 }
 
 TEST(CtraceUnitTests, testCtfExceptionLaneTracker)

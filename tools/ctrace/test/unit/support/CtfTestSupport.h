@@ -100,20 +100,20 @@ inline std::size_t ctfValueSize(std::uint8_t tag)
   return sizes[tag];
 }
 
-/** @brief Returns the encoded payload size of a width-tagged DWT offset. */
-inline std::size_t ctfDwtOffsetSize(std::uint8_t tag)
+/** @brief Returns the encoded payload size of a width-tagged DWT address fragment. */
+inline std::size_t ctfDwtAddressSize(std::uint8_t tag)
 {
-  if (tag == CtfSchema::value(CtfSchema::DwtOffsetTag::None) ||
-      tag == CtfSchema::value(CtfSchema::DwtOffsetTag::U8)) {
+  if (tag == CtfSchema::value(CtfSchema::DwtAddressTag::None) ||
+      tag == CtfSchema::value(CtfSchema::DwtAddressTag::U8)) {
     return 1U;
   }
-  if (tag == CtfSchema::value(CtfSchema::DwtOffsetTag::U16)) {
+  if (tag == CtfSchema::value(CtfSchema::DwtAddressTag::U16)) {
     return 2U;
   }
-  if (tag == CtfSchema::value(CtfSchema::DwtOffsetTag::U32)) {
+  if (tag == CtfSchema::value(CtfSchema::DwtAddressTag::U32)) {
     return 4U;
   }
-  require(false, "CTF test parser encountered an invalid DWT offset tag");
+  require(false, "CTF test parser encountered an invalid DWT address tag");
   return 0U;
 }
 
@@ -134,11 +134,9 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
     requirePayload(3U);
     auto size = 3U + ctfValueSize(bytes[payloadOffset + 2U]);
     requirePayload(size + 1U);
-    const auto hasPc = bytes[payloadOffset + size];
-    require(hasPc <= 1U, "CTF test parser encountered an invalid DWT PC presence flag");
-    size += 1U + (hasPc != 0U ? 4U : 0U);
+    size += 1U + ctfDwtAddressSize(bytes[payloadOffset + size]);
     requirePayload(size + 1U);
-    size += 1U + ctfDwtOffsetSize(bytes[payloadOffset + size]);
+    size += 1U + ctfDwtAddressSize(bytes[payloadOffset + size]);
     return size + 5U;
   }
   if (eventId == CtfSchema::value(CtfSchema::EventId::TraceStatus)) {
@@ -149,11 +147,9 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
   }
   if (eventId == CtfSchema::value(CtfSchema::EventId::DwtAddress)) {
     requirePayload(2U);
-    const auto hasPc = bytes[payloadOffset + 1U];
-    require(hasPc <= 1U, "CTF test parser encountered an invalid DWT PC presence flag");
-    const auto offsetTagPosition = 2U + (hasPc != 0U ? 4U : 0U);
+    const auto offsetTagPosition = 2U + ctfDwtAddressSize(bytes[payloadOffset + 1U]);
     requirePayload(offsetTagPosition + 1U);
-    return offsetTagPosition + 1U + ctfDwtOffsetSize(bytes[payloadOffset + offsetTagPosition]) + 5U;
+    return offsetTagPosition + 1U + ctfDwtAddressSize(bytes[payloadOffset + offsetTagPosition]) + 5U;
   }
   if (eventId == CtfSchema::value(CtfSchema::EventId::GlobalTimestamp)) {
     return 9U;

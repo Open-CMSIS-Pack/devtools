@@ -53,12 +53,11 @@ constexpr std::uint32_t kExceptionActionMask = 0x3U;
 constexpr std::uint32_t kExceptionActionShift = 12U;
 constexpr std::uint32_t kPmuOverflowMask = 0xffU;
 
-constexpr std::uint8_t kArmv7MFullPcBytes = 4U;
 constexpr std::uint8_t kArmv8MMatchBytes = 1U;
 constexpr std::uint32_t kArmv8MMatchValue = 1U;
 
 /** @brief Returns whether a raw DWT address fragment width can be preserved. */
-static bool isSupportedAddressOffsetSize(std::uint8_t size)
+static bool isSupportedAddressFragmentSize(std::uint8_t size)
 {
   return size == 1U || size == 2U || size == 4U;
 }
@@ -265,8 +264,7 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
       output.push_back(std::move(match));
       return;
     }
-    const auto supportedSize =
-        secondarySubtype ? isSupportedAddressOffsetSize(payload.size) : payload.size == kArmv7MFullPcBytes;
+    const auto supportedSize = isSupportedAddressFragmentSize(payload.size);
     if (!supportedSize) {
       auto flushed = flush(payload.quality, payload.tcyc);
       output.insert(output.end(), std::make_move_iterator(flushed.begin()), std::make_move_iterator(flushed.end()));
@@ -275,7 +273,7 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
           TraceIssueSeverity::Error,
           "unsupported DWT " + std::string(secondarySubtype ? "address offset" : "PC or match") +
               " payload size " + std::to_string(payload.size) +
-              (secondarySubtype ? "; expected 1, 2, or 4 bytes" : "; expected a 4-byte PC or 1-byte match"),
+              "; expected 1, 2, or 4 bytes",
           std::nullopt,
           std::nullopt,
       }};
@@ -286,11 +284,12 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
       output.push_back(std::move(error));
       return;
     }
+    const DwtAddressFragment fragment{payload.size, payload.value};
     if (secondarySubtype) {
-      event.offset = DwtAddressOffset{payload.size, payload.value};
+      event.offset = fragment;
       event.hasOffset = true;
     } else {
-      event.pc = payload.value;
+      event.pc = fragment;
       event.hasPc = true;
     }
     sendDataTraceEvent(comparator, event, payload.quality, payload.tcyc, output);
@@ -356,8 +355,8 @@ void DwtPacketDecoder::flushPending(std::uint32_t comparator, const TraceQuality
           pending->size,
           pending->value,
           pending->isRead ? AccessType::Read : AccessType::Write,
-          pending->hasOffset ? std::optional<DwtAddressOffset>(pending->offset) : std::nullopt,
-          pending->hasPc ? std::optional<std::uint32_t>(pending->pc) : std::nullopt,
+          pending->hasOffset ? std::optional<DwtAddressFragment>(pending->offset) : std::nullopt,
+          pending->hasPc ? std::optional<DwtAddressFragment>(pending->pc) : std::nullopt,
       });
     }
 

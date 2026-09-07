@@ -14,6 +14,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -106,6 +107,15 @@ static std::string hexValue(std::uint64_t value, std::uint32_t widthBytes)
   return "0x" + out;
 }
 
+/** @brief Writes one optional raw DWT address fragment using its original width. */
+static void writeDwtAddressFragment(CsvRow& row, CsvColumn target,
+                                    const std::optional<DwtAddressFragment>& fragment)
+{
+  if (fragment.has_value()) {
+    row[column(target)] = hexValue(fragment->value, fragment->size);
+  }
+}
+
 /** @brief Maps a semantic exception action to its CSV value. */
 static std::string_view exceptionActionCsvValue(ExceptionAction action)
 {
@@ -156,20 +166,12 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
   } else if (const auto* data = traceEventPayload<DwtDataTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(data->comparator);
     row[column(CsvColumn::Value)] = hexValue(data->value, data->size);
-    if (data->pc.has_value()) {
-      row[column(CsvColumn::Pc)] = hexValue(*data->pc, 4);
-    }
-    if (data->offset.has_value()) {
-      row[column(CsvColumn::Offset)] = hexValue(data->offset->value, data->offset->size);
-    }
+    writeDwtAddressFragment(row, CsvColumn::Pc, data->pc);
+    writeDwtAddressFragment(row, CsvColumn::Offset, data->offset);
   } else if (const auto* address = traceEventPayload<DwtAddressTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(address->comparator);
-    if (const auto pc = dwtAddressPc(*address)) {
-      row[column(CsvColumn::Pc)] = hexValue(*pc, 4);
-    }
-    if (const auto offset = dwtAddressOffset(*address)) {
-      row[column(CsvColumn::Offset)] = hexValue(offset->value, offset->size);
-    }
+    writeDwtAddressFragment(row, CsvColumn::Pc, dwtAddressPc(*address));
+    writeDwtAddressFragment(row, CsvColumn::Offset, dwtAddressOffset(*address));
   } else if (const auto* match = traceEventPayload<DwtMatchTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(match->comparator);
   } else if (const auto* exception = traceEventPayload<ExceptionTraceEvent>(event)) {

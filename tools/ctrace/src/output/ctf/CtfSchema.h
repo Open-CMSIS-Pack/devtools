@@ -79,26 +79,26 @@ enum class ValueTag : std::uint8_t {
   Float32 = 6U,
 };
 
-/** @brief Identifies the width of a raw DWT address offset in CTF. */
-enum class DwtOffsetTag : std::uint8_t {
+/** @brief Identifies the width of a raw DWT address fragment in CTF. */
+enum class DwtAddressTag : std::uint8_t {
   None = 0U,
   U8 = 1U,
   U16 = 2U,
   U32 = 4U,
 };
 
-/** @brief Describes one CTF DWT address-offset representation. */
-struct DwtOffsetVariant {
-  DwtOffsetTag tag;
+/** @brief Describes one CTF DWT address-fragment representation. */
+struct DwtAddressVariant {
+  DwtAddressTag tag;
   std::string_view name;
   std::uint8_t byteSize;
 };
 
-inline constexpr std::array<DwtOffsetVariant, 4U> DwtOffsetVariants{{
-    {DwtOffsetTag::None, "none", 1U},
-    {DwtOffsetTag::U8, "u8", 1U},
-    {DwtOffsetTag::U16, "u16", 2U},
-    {DwtOffsetTag::U32, "u32", 4U},
+inline constexpr std::array<DwtAddressVariant, 4U> DwtAddressVariants{{
+    {DwtAddressTag::None, "none", 1U},
+    {DwtAddressTag::U8, "u8", 1U},
+    {DwtAddressTag::U16, "u16", 2U},
+    {DwtAddressTag::U32, "u32", 4U},
 }};
 
 /** @brief Describes one supported CTF sample value encoding. */
@@ -131,11 +131,11 @@ constexpr const ValueVariant& valueVariant(ValueTag tag)
   return ValueVariants[static_cast<std::size_t>(tag)];
 }
 
-/** @brief Resolves a DWT address-offset payload width to its CTF representation. */
-constexpr const DwtOffsetVariant* dwtOffsetVariantForSize(std::uint8_t byteSize)
+/** @brief Resolves a DWT address-fragment width to its CTF representation. */
+constexpr const DwtAddressVariant* dwtAddressVariantForSize(std::uint8_t byteSize)
 {
-  for (const auto& variant : DwtOffsetVariants) {
-    if (variant.tag != DwtOffsetTag::None && variant.byteSize == byteSize) {
+  for (const auto& variant : DwtAddressVariants) {
+    if (variant.tag != DwtAddressTag::None && variant.byteSize == byteSize) {
       return &variant;
     }
   }
@@ -187,8 +187,8 @@ constexpr std::uint8_t value(ValueTag tag)
   return static_cast<std::uint8_t>(tag);
 }
 
-/** @brief Returns the integer representation of a DWT offset tag. */
-constexpr std::uint8_t value(DwtOffsetTag tag)
+/** @brief Returns the integer representation of a DWT address tag. */
+constexpr std::uint8_t value(DwtAddressTag tag)
 {
   return static_cast<std::uint8_t>(tag);
 }

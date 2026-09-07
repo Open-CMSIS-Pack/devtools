@@ -38,7 +38,7 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
   const std::vector<std::pair<TraceEvent, std::optional<TraceEventType>>> semanticTypes{
       {TraceEvent{SoftwareTraceEvent{}}, TraceEventType::Itm},
       {TraceEvent{DwtDataTraceEvent{}}, TraceEventType::Dwt},
-      {TraceEvent{DwtAddressTraceEvent{0U, DwtPcTraceLocation{0U}}}, TraceEventType::Dwt},
+      {TraceEvent{DwtAddressTraceEvent{0U, DwtPcTraceLocation{{4U, 0U}}}}, TraceEventType::Dwt},
       {TraceEvent{DwtMatchTraceEvent{}}, TraceEventType::Dwt},
       {TraceEvent{ExceptionTraceEvent{}}, TraceEventType::Exception},
       {TraceEvent{DwtEventTraceEvent{}}, TraceEventType::Event},
@@ -81,8 +81,8 @@ TEST(CtraceUnitTests, testCsvRowMapperCoversAddressAndExceptionVariants)
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtAddressTraceEvent{2U, DwtOffsetTraceLocation{{2U, 0xabcdU}}}}),
             ",,dwt,2,,,0xabcd,");
   EXPECT_EQ(
-      CsvRowMapper::row(TraceEvent{DwtAddressTraceEvent{3U, DwtPcAndOffsetTraceLocation{0x1234U, {1U, 0x56U}}}}),
-      ",,dwt,3,,0x00001234,0x56,");
+      CsvRowMapper::row(TraceEvent{DwtAddressTraceEvent{3U, DwtPcAndOffsetTraceLocation{{2U, 0x1234U}, {1U, 0x56U}}}}),
+      ",,dwt,3,,0x1234,0x56,");
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtAddressTraceEvent{1U, DwtOffsetTraceLocation{{4U, 0x20007858U}}}}),
             ",,dwt,1,,,0x20007858,");
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{ExceptionTraceEvent{1U, ExceptionAction::Exited}}), ",,exception,1,0x2,,,");
