@@ -157,7 +157,7 @@ static std::string dwtMatchHandler()
   return handler.str();
 }
 
-/** @brief Generates one DWT address handler for each encoded offset width. */
+/** @brief Generates one DWT address handler for each encoded data-address width. */
 static std::string dwtAddressHandlers()
 {
   std::ostringstream handlers;
@@ -167,7 +167,7 @@ static std::string dwtAddressHandlers()
     handlers << R"(            <stateChange>
                 <if>
                     <condition>
-                        <stateValue type="eventField" value="cmsis_dwt_offset_type" />
+                        <stateValue type="eventField" value="cmsis_dwt_address_type" />
                         <stateValue type="string" value=")"
              << variant.name << R"(" />
                     </condition>
@@ -177,7 +177,7 @@ static std::string dwtAddressHandlers()
              << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(" />
                     <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
                     <stateAttribute type="constant" value="address" />
-                    <stateValue type="eventField" value="cmsis_dwt_offset.)"
+                    <stateValue type="eventField" value="cmsis_dwt_address.)"
              << variant.name << R"(" forcedType="long" />
                 </then>
             </stateChange>

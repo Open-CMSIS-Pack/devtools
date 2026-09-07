@@ -426,7 +426,7 @@ event {
     fields := struct {
         cmsis_dwt_comparator_t cmsis_dwt_comparator;
         cmsis_dwt_access_t cmsis_dwt_access;
-)" << ctfValueFields("dwt") << ctfDwtAddressFields("pc") << ctfDwtAddressFields("offset")
+)" << ctfValueFields("dwt") << ctfDwtAddressFields("pc") << ctfDwtAddressFields("address")
       << R"(        uint8_t cmsis_sample_flags;
         uint32_t cmsis_overflow_count;
     };
@@ -447,7 +447,7 @@ event {
       << CtfSchema::SwoStreamId << R"(;
     fields := struct {
         cmsis_dwt_comparator_t cmsis_dwt_comparator;
-)" << ctfDwtAddressFields("pc") << ctfDwtAddressFields("offset")
+)" << ctfDwtAddressFields("pc") << ctfDwtAddressFields("address")
       << R"(        uint8_t cmsis_sample_flags;
         uint32_t cmsis_overflow_count;
     };

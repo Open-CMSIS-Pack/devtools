@@ -327,9 +327,9 @@ void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceE
   reportDwtSizeMismatch(event, data, source);
   const auto& variant = dwtValueVariant(source, data.comparator);
   const auto& pcVariant = dwtAddressVariant(data.pc);
-  const auto& offsetVariant = dwtAddressVariant(data.offset);
+  const auto& addressVariant = dwtAddressVariant(data.address);
   const auto payloadSize =
-      1U + 1U + 1U + variant.byteSize + 1U + pcVariant.byteSize + 1U + offsetVariant.byteSize + 1U + 4U;
+      1U + 1U + 1U + variant.byteSize + 1U + pcVariant.byteSize + 1U + addressVariant.byteSize + 1U + 4U;
   const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
   const auto quality = computeSampleQuality(event);
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtValue), eventTimestamp, event.traceBusId, payloadSize,
@@ -341,7 +341,7 @@ void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceE
                          record.writeU8(CtfSchema::value(variant.tag));
                          writeVariantValue(record, data.value, data.size, variant);
                          writeDwtAddress(record, data.pc, pcVariant);
-                         writeDwtAddress(record, data.offset, offsetVariant);
+                         writeDwtAddress(record, data.address, addressVariant);
                          record.writeU8(quality.first);
                          record.writeU32(quality.second);
                        });
@@ -370,20 +370,20 @@ void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTra
   });
 }
 
-void CtfEncoder::writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTraceEvent& address)
+void CtfEncoder::writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTraceEvent& data)
 {
   const auto eventTimestamp = allocateEventTimestamp(event.traceBusId);
   const auto quality = computeSampleQuality(event);
-  const auto pc = dwtAddressPc(address);
-  const auto offset = dwtAddressOffset(address);
+  const auto pc = dwtAddressPc(data);
+  const auto address = dwtDataAddress(data);
   const auto& pcVariant = dwtAddressVariant(pc);
-  const auto& offsetVariant = dwtAddressVariant(offset);
-  const auto payloadSize = 1U + 1U + pcVariant.byteSize + 1U + offsetVariant.byteSize + 1U + 4U;
+  const auto& addressVariant = dwtAddressVariant(address);
+  const auto payloadSize = 1U + 1U + pcVariant.byteSize + 1U + addressVariant.byteSize + 1U + 4U;
   m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtAddress), eventTimestamp, event.traceBusId, payloadSize,
                        [&](CtfStreamWriter::Record& record) {
-                         record.writeU8(static_cast<std::uint8_t>(address.comparator & 0xffU));
+                         record.writeU8(static_cast<std::uint8_t>(data.comparator & 0xffU));
                          writeDwtAddress(record, pc, pcVariant);
-                         writeDwtAddress(record, offset, offsetVariant);
+                         writeDwtAddress(record, address, addressVariant);
                          record.writeU8(quality.first);
                          record.writeU32(quality.second);
                        });

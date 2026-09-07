@@ -167,11 +167,11 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
     row[column(CsvColumn::Source)] = std::to_string(data->comparator);
     row[column(CsvColumn::Value)] = hexValue(data->value, data->size);
     writeDwtAddressFragment(row, CsvColumn::Pc, data->pc);
-    writeDwtAddressFragment(row, CsvColumn::Address, data->offset);
+    writeDwtAddressFragment(row, CsvColumn::Address, data->address);
   } else if (const auto* address = traceEventPayload<DwtAddressTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(address->comparator);
     writeDwtAddressFragment(row, CsvColumn::Pc, dwtAddressPc(*address));
-    writeDwtAddressFragment(row, CsvColumn::Address, dwtAddressOffset(*address));
+    writeDwtAddressFragment(row, CsvColumn::Address, dwtDataAddress(*address));
   } else if (const auto* match = traceEventPayload<DwtMatchTraceEvent>(event)) {
     row[column(CsvColumn::Source)] = std::to_string(match->comparator);
   } else if (const auto* exception = traceEventPayload<ExceptionTraceEvent>(event)) {

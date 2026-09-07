@@ -271,7 +271,7 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
       TraceEvent error{TraceIssueEvent{
           TraceIssueCode::UnsupportedDwtAddressPayload,
           TraceIssueSeverity::Error,
-          "unsupported DWT " + std::string(secondarySubtype ? "address offset" : "PC or match") +
+          "unsupported DWT " + std::string(secondarySubtype ? "data address" : "PC or match") +
               " payload size " + std::to_string(payload.size) +
               "; expected 1, 2, or 4 bytes",
           std::nullopt,
@@ -286,8 +286,8 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
     }
     const DwtAddressFragment fragment{payload.size, payload.value};
     if (secondarySubtype) {
-      event.offset = fragment;
-      event.hasOffset = true;
+      event.address = fragment;
+      event.hasAddress = true;
     } else {
       event.pc = fragment;
       event.hasPc = true;
@@ -317,18 +317,18 @@ void DwtPacketDecoder::sendDataTraceEvent(std::uint32_t comparator, const Pendin
   // The individual short-circuit permutations are an implementation detail;
   // repeated and complementary fragments are covered as complete behaviors.
   const auto repeatsFragmentKind = (pending->hasPc && event.hasPc) ||
-                                   (pending->hasOffset && event.hasOffset) ||
+                                   (pending->hasAddress && event.hasAddress) ||
                                    (pending->hasValue && event.hasValue);
   if (!repeatsFragmentKind) {
     pending->index = event.index;
     pending->traceBusId = event.traceBusId;
     pending->pc = event.hasPc ? event.pc : pending->pc;
-    pending->offset = event.hasOffset ? event.offset : pending->offset;
+    pending->address = event.hasAddress ? event.address : pending->address;
     pending->value = event.hasValue ? event.value : pending->value;
     pending->size = event.hasValue ? event.size : pending->size;
     pending->isRead = event.hasValue ? event.isRead : pending->isRead;
     pending->hasPc = pending->hasPc || event.hasPc;
-    pending->hasOffset = pending->hasOffset || event.hasOffset;
+    pending->hasAddress = pending->hasAddress || event.hasAddress;
     pending->hasValue = pending->hasValue || event.hasValue;
     pending->quality.overflow = pending->quality.overflow || event.quality.overflow;
     pending->quality.timestampReliable = pending->quality.timestampReliable && event.quality.timestampReliable;
@@ -355,14 +355,14 @@ void DwtPacketDecoder::flushPending(std::uint32_t comparator, const TraceQuality
           pending->size,
           pending->value,
           pending->isRead ? AccessType::Read : AccessType::Write,
-          pending->hasOffset ? std::optional<DwtAddressFragment>(pending->offset) : std::nullopt,
+          pending->hasAddress ? std::optional<DwtAddressFragment>(pending->address) : std::nullopt,
           pending->hasPc ? std::optional<DwtAddressFragment>(pending->pc) : std::nullopt,
       });
     }
 
-    DwtAddressTraceLocation location = DwtOffsetTraceLocation{pending->offset};
-    if (pending->hasPc && pending->hasOffset) {
-      location = DwtPcAndOffsetTraceLocation{pending->pc, pending->offset};
+    DwtAddressTraceLocation location = DwtDataAddressTraceLocation{pending->address};
+    if (pending->hasPc && pending->hasAddress) {
+      location = DwtPcAndDataAddressTraceLocation{pending->pc, pending->address};
     } else if (pending->hasPc) {
       location = DwtPcTraceLocation{pending->pc};
     }

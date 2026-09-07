@@ -310,13 +310,13 @@ TEST(CtraceUnitTests, testCtfEncoderDwtAddressEncoding)
   encoder.start(outputDirectory);
   encoder.writeEvent(atCycle(TraceEvent{DwtAddressTraceEvent{
                                  3U,
-                                 DwtPcAndOffsetTraceLocation{{4U, 0x12345678U}, {2U, 0x0000abcdU}},
+                                 DwtPcAndDataAddressTraceLocation{{4U, 0x12345678U}, {2U, 0x0000abcdU}},
                              }},
                              99U));
   encoder.writeEvent(
-      atCycle(TraceEvent{DwtAddressTraceEvent{1U, DwtOffsetTraceLocation{{1U, 0x58U}}}}, 100U));
+      atCycle(TraceEvent{DwtAddressTraceEvent{1U, DwtDataAddressTraceLocation{{1U, 0x58U}}}}, 100U));
   encoder.writeEvent(
-      atCycle(TraceEvent{DwtAddressTraceEvent{2U, DwtOffsetTraceLocation{{4U, 0x20007858U}}}}, 101U));
+      atCycle(TraceEvent{DwtAddressTraceEvent{2U, DwtDataAddressTraceLocation{{4U, 0x20007858U}}}}, 101U));
   encoder.writeEvent(atCycle(TraceEvent{DwtAddressTraceEvent{0U, DwtPcTraceLocation{{4U, 0x08001234U}}}}, 102U));
   encoder.writeEvent(atCycle(TraceEvent{DwtAddressTraceEvent{1U, DwtPcTraceLocation{{1U, 0x58U}}}}, 103U));
   encoder.writeEvent(atCycle(TraceEvent{DwtAddressTraceEvent{2U, DwtPcTraceLocation{{2U, 0x7858U}}}}, 104U));
@@ -331,7 +331,7 @@ TEST(CtraceUnitTests, testCtfEncoderDwtAddressEncoding)
   ASSERT_TRUE(record.payload[0U] == 3U &&
               record.payload[1U] == CtfSchema::value(CtfSchema::DwtAddressTag::U32) &&
               record.payload[6U] == CtfSchema::value(CtfSchema::DwtAddressTag::U16))
-      << "CTF DWT address comparator, PC tag, or offset tag mismatch";
+      << "CTF DWT address comparator, PC tag, or data-address tag mismatch";
   ASSERT_TRUE(readLe32(record.payload, 2U) == 0x12345678U && readLe16(record.payload, 7U) == 0xabcdU)
       << "CTF DWT PC/address payload mismatch";
 
@@ -375,7 +375,8 @@ TEST(CtraceUnitTests, testCtfEncoderRejectsInvalidClockAndPayloadMetadata)
   invalidDwt.start(temporaryPath.path());
   EXPECT_THROW(invalidDwt.writeEvent(onStream(TraceEvent{DwtDataTraceEvent{0U, 1U, 0U, AccessType::Read}}, 1U)),
                std::runtime_error);
-  EXPECT_THROW(invalidDwt.writeEvent(TraceEvent{DwtAddressTraceEvent{0U, DwtOffsetTraceLocation{{3U, 0U}}}}),
+  EXPECT_THROW(
+      invalidDwt.writeEvent(TraceEvent{DwtAddressTraceEvent{0U, DwtDataAddressTraceLocation{{3U, 0U}}}}),
                std::runtime_error);
   invalidDwt.abort();
 }

@@ -71,13 +71,13 @@ constexpr bool operator==(const DwtAddressFragment& left, const DwtAddressFragme
   return left.size == right.size && left.value == right.value;
 }
 
-/** @brief Contains a reconstructed DWT data access event. */
+/** @brief Contains an assembled DWT data access event. */
 struct DwtDataTraceEvent {
   std::uint32_t comparator = 0;
   std::uint8_t size = 0;
   std::uint32_t value = 0;
   AccessType access = AccessType::Read;
-  std::optional<DwtAddressFragment> offset = std::nullopt;
+  std::optional<DwtAddressFragment> address = std::nullopt;
   std::optional<DwtAddressFragment> pc = std::nullopt;
 };
 
@@ -87,20 +87,21 @@ struct DwtPcTraceLocation {
 };
 
 /** @brief Identifies a DWT address event by its raw address fragment. */
-struct DwtOffsetTraceLocation {
-  DwtAddressFragment offset;
+struct DwtDataAddressTraceLocation {
+  DwtAddressFragment address;
 };
 
-/** @brief Identifies a DWT address event by program counter and address offset. */
-struct DwtPcAndOffsetTraceLocation {
+/** @brief Identifies a DWT address event by program counter and data address. */
+struct DwtPcAndDataAddressTraceLocation {
   DwtAddressFragment pc;
-  DwtAddressFragment offset;
+  DwtAddressFragment address;
 };
 
 /** @brief Stores one of the supported DWT address location representations. */
-using DwtAddressTraceLocation = std::variant<DwtPcTraceLocation, DwtOffsetTraceLocation, DwtPcAndOffsetTraceLocation>;
+using DwtAddressTraceLocation =
+    std::variant<DwtPcTraceLocation, DwtDataAddressTraceLocation, DwtPcAndDataAddressTraceLocation>;
 
-/** @brief Contains a reconstructed DWT address event. */
+/** @brief Contains an assembled DWT address event. */
 struct DwtAddressTraceEvent {
   std::uint32_t comparator;
   DwtAddressTraceLocation location;
@@ -117,20 +118,20 @@ inline std::optional<DwtAddressFragment> dwtAddressPc(const DwtAddressTraceEvent
   if (const auto* pc = std::get_if<DwtPcTraceLocation>(&event.location)) {
     return pc->pc;
   }
-  if (const auto* combined = std::get_if<DwtPcAndOffsetTraceLocation>(&event.location)) {
+  if (const auto* combined = std::get_if<DwtPcAndDataAddressTraceLocation>(&event.location)) {
     return combined->pc;
   }
   return std::nullopt;
 }
 
 /** @brief Returns the raw address fragment carried by a DWT address event, if present. */
-inline std::optional<DwtAddressFragment> dwtAddressOffset(const DwtAddressTraceEvent& event)
+inline std::optional<DwtAddressFragment> dwtDataAddress(const DwtAddressTraceEvent& event)
 {
-  if (const auto* offset = std::get_if<DwtOffsetTraceLocation>(&event.location)) {
-    return offset->offset;
+  if (const auto* address = std::get_if<DwtDataAddressTraceLocation>(&event.location)) {
+    return address->address;
   }
-  if (const auto* combined = std::get_if<DwtPcAndOffsetTraceLocation>(&event.location)) {
-    return combined->offset;
+  if (const auto* combined = std::get_if<DwtPcAndDataAddressTraceLocation>(&event.location)) {
+    return combined->address;
   }
   return std::nullopt;
 }

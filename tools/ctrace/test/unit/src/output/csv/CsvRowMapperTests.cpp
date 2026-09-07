@@ -78,12 +78,13 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
 
 TEST(CtraceUnitTests, testCsvRowMapperCoversAddressAndExceptionVariants)
 {
-  EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtAddressTraceEvent{2U, DwtOffsetTraceLocation{{2U, 0xabcdU}}}}),
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtAddressTraceEvent{2U, DwtDataAddressTraceLocation{{2U, 0xabcdU}}}}),
             ",,dwt,2,,,0xabcd,");
   EXPECT_EQ(
-      CsvRowMapper::row(TraceEvent{DwtAddressTraceEvent{3U, DwtPcAndOffsetTraceLocation{{2U, 0x1234U}, {1U, 0x56U}}}}),
+      CsvRowMapper::row(
+          TraceEvent{DwtAddressTraceEvent{3U, DwtPcAndDataAddressTraceLocation{{2U, 0x1234U}, {1U, 0x56U}}}}),
       ",,dwt,3,,0x1234,0x56,");
-  EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtAddressTraceEvent{1U, DwtOffsetTraceLocation{{4U, 0x20007858U}}}}),
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtAddressTraceEvent{1U, DwtDataAddressTraceLocation{{4U, 0x20007858U}}}}),
             ",,dwt,1,,,0x20007858,");
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{ExceptionTraceEvent{1U, ExceptionAction::Exited}}), ",,exception,1,0x2,,,");
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{ExceptionTraceEvent{1U, ExceptionAction::Returned}}), ",,exception,1,0x3,,,");

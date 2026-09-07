@@ -147,9 +147,9 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
   }
   if (eventId == CtfSchema::value(CtfSchema::EventId::DwtAddress)) {
     requirePayload(2U);
-    const auto offsetTagPosition = 2U + ctfDwtAddressSize(bytes[payloadOffset + 1U]);
-    requirePayload(offsetTagPosition + 1U);
-    return offsetTagPosition + 1U + ctfDwtAddressSize(bytes[payloadOffset + offsetTagPosition]) + 5U;
+    const auto addressTagPosition = 2U + ctfDwtAddressSize(bytes[payloadOffset + 1U]);
+    requirePayload(addressTagPosition + 1U);
+    return addressTagPosition + 1U + ctfDwtAddressSize(bytes[payloadOffset + addressTagPosition]) + 5U;
   }
   if (eventId == CtfSchema::value(CtfSchema::EventId::GlobalTimestamp)) {
     return 9U;
