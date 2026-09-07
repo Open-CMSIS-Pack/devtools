@@ -201,8 +201,9 @@ static std::string stateProviderXml()
   xml << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(">
-)" << dwtAddressHandlers()
-      << R"(        </eventHandler>
+)";
+  xml << dwtAddressHandlers();
+  xml << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm) << R"(">
 )" << valueHandlers(CtfSchema::EventId::Itm, "itm", "cmsis_itm_channel", "value")
