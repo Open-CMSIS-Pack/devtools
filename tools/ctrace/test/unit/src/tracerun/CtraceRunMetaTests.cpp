@@ -76,14 +76,14 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidReferences)
 
   TraceRunConfig diagnosed;
   diagnosed.references.push_back(makeReference("itm", std::nullopt, 0U, {99U}));
-  diagnosed.references.front().error = "producer rejected this route";
+  diagnosed.references.front().error = {"producer rejected this route"};
   EXPECT_NO_THROW((void)CtraceRunMeta::fromConfig(diagnosed));
 
   TraceRunConfig diagnosedBinding;
   diagnosedBinding.path = "trace.yml";
   diagnosedBinding.setups.push_back(makeTimestampSetup("core"));
   diagnosedBinding.references.push_back(makeReference("itm", "unusable", 0U, {99U}));
-  diagnosedBinding.references.front().error = "producer rejected this route";
+  diagnosedBinding.references.front().error = {"producer rejected this route"};
   const auto meta = CtraceRunMeta::fromConfig(diagnosedBinding);
   EXPECT_EQ(meta.processorCount(), 1U);
   EXPECT_TRUE(meta.sources().empty());
@@ -145,7 +145,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaWarnsForCrossRootProcessorIdentityConflic
   multiUnnamed.references.push_back(makeReference("itm", std::nullopt, 1U, {1U}));
   multiUnnamed.references.front().line = 17U;
   auto diagnosedReference = makeReference("itm", "a", 0U, {99U});
-  diagnosedReference.error = "producer rejected this route";
+  diagnosedReference.error = {"producer rejected this route"};
   multiUnnamed.references.push_back(diagnosedReference);
   const auto unnamedMeta = CtraceRunMeta::fromConfig(multiUnnamed);
   EXPECT_EQ(unnamedMeta.processorCount(), 2U);
