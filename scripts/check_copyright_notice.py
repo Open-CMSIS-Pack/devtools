@@ -27,7 +27,7 @@ def extract_header(source: str, is_shell: bool) -> str:
         stripped = line.strip()
 
         if in_block_comment:
-            header.append(line)
+            header.append(line if "*/" not in line else line[:line.index("*/") + 2])
             if "*/" in stripped:
                 in_block_comment = False
                 if stripped.split("*/", 1)[1].strip():
@@ -61,7 +61,7 @@ def extract_header(source: str, is_shell: bool) -> str:
                 continue
 
         if not is_shell and stripped.startswith("/*"):
-            header.append(line)
+            header.append(line if "*/" not in line else line[:line.index("*/") + 2])
             if "*/" not in stripped[2:]:
                 in_block_comment = True
             elif stripped.split("*/", 1)[1].strip():
