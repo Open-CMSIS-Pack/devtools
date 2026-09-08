@@ -288,25 +288,41 @@ static std::vector<std::uint32_t> parseSources(const std::string& path, const No
 
 /** @brief Stores diagnostics copied from one parsed trace reference. */
 struct ReferenceDiagnostics {
-  std::optional<std::string> info;
-  std::optional<std::string> warning;
-  std::optional<std::string> error;
+  std::vector<std::string> info;
+  std::vector<std::string> warning;
+  std::vector<std::string> error;
 };
 
 /** @brief Parses optional informational diagnostics attached to a reference. */
 static ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, const Node& element)
 {
-  const auto message = [&](const std::string_view& name) {
-    const auto value = optionalAttribute(element, name);
-    if (childContainer(element, name)) {
-      fail(path, element, "'" + std::string(name) + "' must be a scalar message");
+  const auto messages = [&](const std::string_view& name) {
+    const auto node = childNode(element, name);
+    if (!node) {
+      return std::vector<std::string>{};
     }
-    return value;
+    if (node.IsNull()) {
+      return std::vector<std::string>{std::string{}};
+    }
+    if (node.IsScalar()) {
+      return std::vector<std::string>{node.Scalar()};
+    }
+    if (!node.IsSequence()) {
+      fail(path, node, "'" + std::string(name) + "' must be a string or list of strings");
+    }
+    std::vector<std::string> result;
+    for (const auto& item : node) {
+      if (!item.IsScalar()) {
+        fail(path, item, "each '" + std::string(name) + "' entry must be a string");
+      }
+      result.push_back(item.Scalar());
+    }
+    return result;
   };
   return {
-      message("info"),
-      message("warning"),
-      message("error"),
+      messages("info"),
+      messages("warning"),
+      messages("error"),
   };
 }
 
@@ -376,7 +392,7 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
     return reference;
   }
 
-  if (diagnostics.error.has_value()) {
+  if (!diagnostics.error.empty()) {
     auto diagnosticReference = reference;
     diagnosticReference.processorName = bestEffortProcessorName(element);
     try {

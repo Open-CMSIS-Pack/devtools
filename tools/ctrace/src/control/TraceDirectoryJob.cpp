@@ -45,24 +45,25 @@ static std::vector<std::pair<std::string, std::string>> referenceContext(const T
 static void reportConsumedReferenceDiagnostics(const TraceRunConfig& config, DiagnosticSink& diagnostics)
 {
   for (const auto& reference : config.references) {
-    const auto report = [&](DiagnosticSink::Severity severity, const std::optional<std::string>& message) {
-      if (!message.has_value() || message->empty()) {
-        return;
+    const auto report = [&](DiagnosticSink::Severity severity, const std::vector<std::string>& messages) {
+      for (const auto& message : messages) {
+        if (message.empty()) {
+          continue;
+        }
+        diagnostics.report({
+            severity,
+            message,
+            referenceContext(config, reference),
+        });
       }
-      diagnostics.report({
-          severity,
-          *message,
-          referenceContext(config, reference),
-      });
     };
     report(DiagnosticSink::Severity::Info, reference.info);
     report(DiagnosticSink::Severity::Warning, reference.warning);
-    if (reference.error.has_value()) {
-      auto context = referenceContext(config, reference);
+    for (const auto& error : reference.error) {
       diagnostics.report({
           DiagnosticSink::Severity::Error,
-          reference.error->empty() ? "trace generation setup failed without a diagnostic message" : *reference.error,
-          std::move(context),
+          error.empty() ? "trace generation setup failed without a diagnostic message" : error,
+          referenceContext(config, reference),
           DiagnosticSink::Impact::NonFailing,
       });
     }

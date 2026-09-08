@@ -295,9 +295,9 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceRoutes)
       {"source: [1, {}]", "each 'source' entry must be an unsigned integer"},
       {"source: [1, '']", "each 'source' entry must be an unsigned integer"},
       {"source: 1\n      source: 2", "map keys must be unique"},
-      {"source: 1\n      info: []", "'info' must be a scalar message"},
-      {"source: 1\n      warning: {}", "'warning' must be a scalar message"},
-      {"source: 1\n      error: []", "'error' must be a scalar message"},
+      {"source: 1\n      info: {}", "'info' must be a string or list of strings"},
+      {"source: 1\n      warning: [valid, {}]", "each 'warning' entry must be a string"},
+      {"source: 1\n      error: [valid, []]", "each 'error' entry must be a string"},
   };
   for (const auto& testCase : cases) {
     const auto yaml = std::string("ctrace-run:\n  ctrace-refs:\n    - type: itm\n      ctrace-ref: core/itm\n      ") +
@@ -311,12 +311,12 @@ TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
   TraceRunFixture file("ctrace-run-reader-diagnostic-references-test");
   const auto config = file.read(R"yml(ctrace-run:
   ctrace-refs:
-    - { type: event, ctrace-ref: core/event, pname: core0, info: note }
-    - { type: pmu, ctrace-ref: core/pmu, pname: core1, warning: warning }
+    - { type: event, ctrace-ref: core/event, pname: core0, info: [note, detail], warning: [] }
+    - { type: pmu, ctrace-ref: core/pmu, pname: core1, warning: [warning] }
     - { type: pcsample, ctrace-ref: core/pc, pname: null, error: unavailable }
-    - { type: dwt, ctrace-ref: core/data#, source: 0, address: invalid, error: diagnostic }
+    - { type: dwt, ctrace-ref: core/data#, source: 0, address: invalid, error: [diagnostic, detail] }
     - { type: dwt, ctrace-ref: core/data#x, stream: [], source: 0, error: malformed }
-    - { type: dwt, ctrace-ref: core/notdata#2, error: unrouted }
+    - { type: dwt, ctrace-ref: core/notdata#2, error: null }
     - { type: itm, ctrace-ref: core/itm0, source: 0, error: disabled }
     - { type: itm, ctrace-ref: core/itm1, source: 1, error: usable, label: null }
     - { type: exception, ctrace-ref: core/exceptions, error: ignored }
@@ -325,12 +325,18 @@ TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
 )yml");
   ASSERT_EQ(config.references.size(), 8U) << "reader must ignore diagnostic annotations on unconsumed reference types";
   EXPECT_EQ(config.references[0].processorName, std::optional<std::string>("core0"));
+  EXPECT_EQ(config.references[0].info, (std::vector<std::string>{"note", "detail"}));
+  EXPECT_TRUE(config.references[0].warning.empty());
   EXPECT_EQ(config.references[1].processorName, std::optional<std::string>("core1"));
+  EXPECT_EQ(config.references[1].warning, (std::vector<std::string>{"warning"}));
   EXPECT_FALSE(config.references[2].processorName.has_value());
+  EXPECT_EQ(config.references[2].error, (std::vector<std::string>{"unavailable"}));
+  EXPECT_EQ(config.references[3].error, (std::vector<std::string>{"diagnostic", "detail"}));
   EXPECT_FALSE(config.references[3].address.has_value());
   EXPECT_FALSE(config.references[3].dataSetupIndex.has_value());
   EXPECT_FALSE(config.references[4].stream.has_value());
   EXPECT_FALSE(config.references[4].dataSetupIndex.has_value());
+  EXPECT_EQ(config.references[5].error, (std::vector<std::string>{""}));
   EXPECT_TRUE(config.references[6].sources == std::vector<std::uint32_t>{0U});
   EXPECT_EQ(config.references[7].label, std::optional<std::string>(""));
 }

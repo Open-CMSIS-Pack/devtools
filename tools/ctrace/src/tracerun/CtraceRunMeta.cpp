@@ -508,7 +508,7 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
       continue;
     }
     const auto problem = TraceRunSchema::referenceProblem(reference);
-    if (problem != ReferenceProblem::None && !reference.error.has_value()) {
+    if (problem != ReferenceProblem::None && reference.error.empty()) {
       throw std::runtime_error(referenceProblemMessage(config, reference, problem));
     }
   }
