@@ -169,22 +169,22 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
 
   TraceRunConfig config;
   auto reported = TraceRunTestSupport::makeReference("event", "core", 3U, {}, "core/event");
-  reported.info = "producer note";
-  reported.warning = "producer warning";
-  reported.error = "producer error";
+  reported.info = {"producer note", "second producer note"};
+  reported.warning = {"producer warning", "second producer warning"};
+  reported.error = {"producer error", "second producer error"};
   TraceRunReference emptyError = reported;
   emptyError.ctraceRef = "core/pmu";
   emptyError.type = "pmu";
-  emptyError.info.reset();
-  emptyError.warning = "";
-  emptyError.error = "";
+  emptyError.info.clear();
+  emptyError.warning = {""};
+  emptyError.error = {""};
   auto channelZero = TraceRunTestSupport::makeReference("itm", std::nullopt, std::nullopt, {0U}, "core/itm");
-  channelZero.error = "channel zero diagnostic";
+  channelZero.error = {"channel zero diagnostic"};
   TraceRunReference noStream = reported;
   noStream.ctraceRef = "core/no-stream";
   noStream.stream.reset();
-  noStream.warning.reset();
-  noStream.error.reset();
+  noStream.warning.clear();
+  noStream.error.clear();
   auto inconsistent = TraceRunTestSupport::makeReference("itm", "other", 3U, {1U}, "other/itm");
   config.setups.push_back(TraceRunTestSupport::makeTimestampSetup("core"));
   config.references = {reported, emptyError, channelZero, noStream, inconsistent};
@@ -196,8 +196,11 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   TraceDirectoryJob(options, diagnostics, reader).run();
 
   EXPECT_TRUE(diagnostics.containsMessage("producer note"));
+  EXPECT_TRUE(diagnostics.containsMessage("second producer note"));
   EXPECT_TRUE(diagnostics.containsMessage("producer warning"));
+  EXPECT_TRUE(diagnostics.containsMessage("second producer warning"));
   EXPECT_TRUE(diagnostics.containsMessage("producer error"));
+  EXPECT_TRUE(diagnostics.containsMessage("second producer error"));
   EXPECT_TRUE(diagnostics.containsMessage("channel zero diagnostic"));
   EXPECT_TRUE(diagnostics.containsMessage("trace generation setup failed without a diagnostic message"));
   EXPECT_TRUE(diagnostics.containsMessage("does not match ctrace-setup pname"));
@@ -228,7 +231,7 @@ TEST(CtraceUnitTests, testTraceDirectoryChecksOutputRequirementsAfterReferenceEr
 
   TraceRunConfig config;
   auto reference = TraceRunTestSupport::makeReference("event", "core", 3U, {}, "core/event");
-  reference.error = "producer could not configure event trace";
+  reference.error = {"producer could not configure event trace"};
   config.references.push_back(std::move(reference));
 
   CliOptions options;

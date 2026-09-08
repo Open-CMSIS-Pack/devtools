@@ -4503,6 +4503,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
+  argv[2] = (char*)"targets";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+
+  argv[1] = (char*)"list";
   argv[2] = (char*)"target-sets";
   argv[3] = (char*)"-h";
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
@@ -7434,7 +7439,7 @@ TEST_F(ProjMgrUnitTests, ListTargetSets) {
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestTargetSet/solution.csolution.yml";
   argv[1] = (char*)"list";
-  argv[2] = (char*)"target-sets";
+  argv[2] = (char*)"targets";
   argv[3] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
@@ -7442,6 +7447,14 @@ TEST_F(ProjMgrUnitTests, ListTargetSets) {
   EXPECT_STREQ(outStr.c_str(), "Type1\nType1@Custom2\nType1@Custom3\nType2@Default2\n");
 
   streamRedirect.ClearStringStreams();
+  argv[2] = (char*)"target-sets";
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+
+  outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "Type1\nType1@Custom2\nType1@Custom3\nType2@Default2\n");
+
+  streamRedirect.ClearStringStreams();
+  argv[2] = (char*)"targets";
   argv[4] = (char*)"--filter";
   argv[5] = (char*)"TYPE2";
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));

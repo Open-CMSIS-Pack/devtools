@@ -102,9 +102,9 @@ struct TraceRunReference {
   std::string ctraceRef;
   std::string type;
   std::optional<std::string> processorName;
-  std::optional<std::string> info;
-  std::optional<std::string> warning;
-  std::optional<std::string> error;
+  std::vector<std::string> info;
+  std::vector<std::string> warning;
+  std::vector<std::string> error;
   std::optional<std::uint64_t> address;
   std::optional<std::string> dataType;
   std::optional<std::uint64_t> dataSize;
