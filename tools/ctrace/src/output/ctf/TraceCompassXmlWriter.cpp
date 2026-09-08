@@ -157,6 +157,35 @@ static std::string dwtMatchHandler()
   return handler.str();
 }
 
+/** @brief Generates one DWT address handler for each encoded data-address width. */
+static std::string dwtAddressHandlers()
+{
+  std::ostringstream handlers;
+  static_assert(CtfSchema::DwtAddressVariants.front().tag == CtfSchema::DwtAddressTag::None);
+  for (std::size_t index = 1U; index < CtfSchema::DwtAddressVariants.size(); ++index) {
+    const auto& variant = CtfSchema::DwtAddressVariants[index];
+    handlers << R"(            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="cmsis_dwt_address_type" />
+                        <stateValue type="string" value=")"
+             << variant.name << R"(" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value=")"
+             << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(" />
+                    <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
+                    <stateAttribute type="constant" value="address" />
+                    <stateValue type="eventField" value="cmsis_dwt_address.)"
+             << variant.name << R"(" forcedType="long" />
+                </then>
+            </stateChange>
+)";
+  }
+  return handlers.str();
+}
+
 /** @brief Generates the Trace Compass state-provider definition. */
 static std::string stateProviderXml()
 {
@@ -172,32 +201,31 @@ static std::string stateProviderXml()
   xml << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(">
-            <stateChange>
-                <stateAttribute type="constant" value=")"
-      << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(" />
-                <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
-                <stateAttribute type="constant" value="address" />
-                <stateValue type="eventField" value="cmsis_address_lo16" forcedType="long" />
-            </stateChange>
-        </eventHandler>
+)";
+  xml << dwtAddressHandlers();
+  xml << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm) << R"(">
-)" << valueHandlers(CtfSchema::EventId::Itm, "itm", "cmsis_itm_channel", "value")
-      << R"(        </eventHandler>
+)";
+  xml << valueHandlers(CtfSchema::EventId::Itm, "itm", "cmsis_itm_channel", "value");
+  xml << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtMatch) << R"(">
-)" << dwtMatchHandler()
-      << R"(        </eventHandler>
+)";
+  xml << dwtMatchHandler();
+  xml << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtEvent) << R"(">
-)" << eventCounterHandlers(CtfSchema::EventId::DwtEvent, "cmsis_dwt_event_counter", kDwtEventCounters,
-                            CtfSchema::dwtEventCounterName)
-      << R"(        </eventHandler>
+)";
+  xml << eventCounterHandlers(CtfSchema::EventId::DwtEvent, "cmsis_dwt_event_counter", kDwtEventCounters,
+                              CtfSchema::dwtEventCounterName);
+  xml << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::PmuEvent) << R"(">
-)" << eventCounterHandlers(CtfSchema::EventId::PmuEvent, "cmsis_pmu_event_counter", kPmuEventCounters,
-                            CtfSchema::pmuEventCounterName)
-      << R"(        </eventHandler>
+)";
+  xml << eventCounterHandlers(CtfSchema::EventId::PmuEvent, "cmsis_pmu_event_counter", kPmuEventCounters,
+                              CtfSchema::pmuEventCounterName);
+  xml << R"(        </eventHandler>
         <eventHandler eventName=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(">
             <stateChange>

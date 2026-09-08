@@ -310,21 +310,46 @@ TEST(CtraceUnitTests, testCtfEncoderDwtAddressEncoding)
   encoder.start(outputDirectory);
   encoder.writeEvent(atCycle(TraceEvent{DwtAddressTraceEvent{
                                  3U,
-                                 DwtPcAndOffsetTraceLocation{0x12345678U, 0x0000abcdU},
+                                 DwtPcAndDataAddressTraceLocation{{4U, 0x12345678U}, {2U, 0x0000abcdU}},
                              }},
                              99U));
+  encoder.writeEvent(
+      atCycle(TraceEvent{DwtAddressTraceEvent{1U, DwtDataAddressTraceLocation{{1U, 0x58U}}}}, 100U));
+  encoder.writeEvent(
+      atCycle(TraceEvent{DwtAddressTraceEvent{2U, DwtDataAddressTraceLocation{{4U, 0x20007858U}}}}, 101U));
+  encoder.writeEvent(atCycle(TraceEvent{DwtAddressTraceEvent{0U, DwtPcTraceLocation{{4U, 0x08001234U}}}}, 102U));
+  encoder.writeEvent(atCycle(TraceEvent{DwtAddressTraceEvent{1U, DwtPcTraceLocation{{1U, 0x58U}}}}, 103U));
+  encoder.writeEvent(atCycle(TraceEvent{DwtAddressTraceEvent{2U, DwtPcTraceLocation{{2U, 0x7858U}}}}, 104U));
   encoder.stop();
 
   const auto records = readCtfRecords(outputDirectory / "stream_0");
-  ASSERT_EQ(records.size(), 1U);
+  ASSERT_EQ(records.size(), 6U);
   const auto& record = records.front();
   ASSERT_TRUE(record.id == CtfSchema::value(CtfSchema::EventId::DwtAddress)) << "CTF DWT address event ID mismatch";
   ASSERT_TRUE(record.timestamp == 99U) << "CTF DWT address timestamp mismatch";
   ASSERT_TRUE(record.payload.size() == 14U) << "CTF DWT address event payload size mismatch";
-  ASSERT_TRUE(record.payload[0U] == 3U && record.payload[1U] == 1U && record.payload[2U] == 1U)
-      << "CTF DWT address comparator or presence flags mismatch";
-  ASSERT_TRUE(readLe32(record.payload, 3U) == 0x12345678U && readLe16(record.payload, 7U) == 0xabcdU)
+  ASSERT_TRUE(record.payload[0U] == 3U &&
+              record.payload[1U] == CtfSchema::value(CtfSchema::DwtAddressTag::U32) &&
+              record.payload[6U] == CtfSchema::value(CtfSchema::DwtAddressTag::U16))
+      << "CTF DWT address comparator, PC tag, or data-address tag mismatch";
+  ASSERT_TRUE(readLe32(record.payload, 2U) == 0x12345678U && readLe16(record.payload, 7U) == 0xabcdU)
       << "CTF DWT PC/address payload mismatch";
+
+  EXPECT_EQ(records[1].payload.size(), 10U);
+  EXPECT_EQ(records[1].payload[3U], CtfSchema::value(CtfSchema::DwtAddressTag::U8));
+  EXPECT_EQ(records[1].payload[4U], 0x58U);
+  EXPECT_EQ(records[2].payload.size(), 13U);
+  EXPECT_EQ(records[2].payload[3U], CtfSchema::value(CtfSchema::DwtAddressTag::U32));
+  EXPECT_EQ(readLe32(records[2].payload, 4U), 0x20007858U);
+  EXPECT_EQ(records[3].payload.size(), 13U);
+  EXPECT_EQ(records[3].payload[6U], CtfSchema::value(CtfSchema::DwtAddressTag::None));
+  EXPECT_EQ(records[3].payload[7U], 0U);
+  EXPECT_EQ(records[4].payload.size(), 10U);
+  EXPECT_EQ(records[4].payload[1U], CtfSchema::value(CtfSchema::DwtAddressTag::U8));
+  EXPECT_EQ(records[4].payload[2U], 0x58U);
+  EXPECT_EQ(records[5].payload.size(), 11U);
+  EXPECT_EQ(records[5].payload[1U], CtfSchema::value(CtfSchema::DwtAddressTag::U16));
+  EXPECT_EQ(readLe16(records[5].payload, 2U), 0x7858U);
 
   encoder.abort();
 }
@@ -350,6 +375,9 @@ TEST(CtraceUnitTests, testCtfEncoderRejectsInvalidClockAndPayloadMetadata)
   invalidDwt.start(temporaryPath.path());
   EXPECT_THROW(invalidDwt.writeEvent(onStream(TraceEvent{DwtDataTraceEvent{0U, 1U, 0U, AccessType::Read}}, 1U)),
                std::runtime_error);
+  EXPECT_THROW(
+      invalidDwt.writeEvent(TraceEvent{DwtAddressTraceEvent{0U, DwtDataAddressTraceLocation{{3U, 0U}}}}),
+               std::runtime_error);
   invalidDwt.abort();
 }
 
@@ -368,7 +396,15 @@ TEST(CtraceUnitTests, testCtfEncoderWritesAllDwtValueVariants)
   encoder.start(temporaryPath.path());
 
   auto signed16 = atCycle(
-      onStream(TraceEvent{DwtDataTraceEvent{0U, 2U, 0xff80U, AccessType::Write, 0x1234U, 0x08000000U}}, 1U), 10U);
+      onStream(TraceEvent{DwtDataTraceEvent{
+                   0U,
+                   2U,
+                   0xff80U,
+                   AccessType::Write,
+                   DwtAddressFragment{2U, 0x1234U},
+                   DwtAddressFragment{2U, 0x5678U}}},
+               1U),
+      10U);
   signed16.quality = TraceQuality{false, true, 0U};
   encoder.writeEvent(signed16);
 
@@ -390,10 +426,10 @@ TEST(CtraceUnitTests, testCtfEncoderWritesAllDwtValueVariants)
   EXPECT_EQ(records[0].payload[1U], CtfSchema::value(CtfSchema::DwtAccess::Write));
   EXPECT_EQ(records[0].payload[2U], CtfSchema::value(CtfSchema::ValueTag::Signed16));
   EXPECT_EQ(readLe16(records[0].payload, 3U), 0xff80U);
-  EXPECT_EQ(records[0].payload[5U], 1U);
-  EXPECT_EQ(readLe32(records[0].payload, 6U), 0x08000000U);
-  EXPECT_EQ(records[0].payload[10U], 1U);
-  EXPECT_EQ(readLe16(records[0].payload, 11U), 0x1234U);
+  EXPECT_EQ(records[0].payload[5U], CtfSchema::value(CtfSchema::DwtAddressTag::U16));
+  EXPECT_EQ(readLe16(records[0].payload, 6U), 0x5678U);
+  EXPECT_EQ(records[0].payload[8U], CtfSchema::value(CtfSchema::DwtAddressTag::U16));
+  EXPECT_EQ(readLe16(records[0].payload, 9U), 0x1234U);
 
   EXPECT_EQ(records[1].timestamp, 11U);
   EXPECT_EQ(records[1].payload[2U], CtfSchema::value(CtfSchema::ValueTag::Float32));

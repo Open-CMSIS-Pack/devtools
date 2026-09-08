@@ -100,6 +100,23 @@ inline std::size_t ctfValueSize(std::uint8_t tag)
   return sizes[tag];
 }
 
+/** @brief Returns the encoded payload size of a width-tagged DWT address fragment. */
+inline std::size_t ctfDwtAddressSize(std::uint8_t tag)
+{
+  if (tag == CtfSchema::value(CtfSchema::DwtAddressTag::None) ||
+      tag == CtfSchema::value(CtfSchema::DwtAddressTag::U8)) {
+    return 1U;
+  }
+  if (tag == CtfSchema::value(CtfSchema::DwtAddressTag::U16)) {
+    return 2U;
+  }
+  if (tag == CtfSchema::value(CtfSchema::DwtAddressTag::U32)) {
+    return 4U;
+  }
+  require(false, "CTF test parser encountered an invalid DWT address tag");
+  return 0U;
+}
+
 /** @brief Determines one encoded CTF event payload size. */
 inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::size_t payloadOffset,
                                   std::size_t contentEnd, std::uint32_t eventId)
@@ -117,13 +134,9 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
     requirePayload(3U);
     auto size = 3U + ctfValueSize(bytes[payloadOffset + 2U]);
     requirePayload(size + 1U);
-    const auto hasPc = bytes[payloadOffset + size];
-    require(hasPc <= 1U, "CTF test parser encountered an invalid DWT PC presence flag");
-    size += 1U + (hasPc != 0U ? 4U : 0U);
+    size += 1U + ctfDwtAddressSize(bytes[payloadOffset + size]);
     requirePayload(size + 1U);
-    const auto hasAddress = bytes[payloadOffset + size];
-    require(hasAddress <= 1U, "CTF test parser encountered an invalid DWT address presence flag");
-    size += 1U + (hasAddress != 0U ? 2U : 0U);
+    size += 1U + ctfDwtAddressSize(bytes[payloadOffset + size]);
     return size + 5U;
   }
   if (eventId == CtfSchema::value(CtfSchema::EventId::TraceStatus)) {
@@ -133,7 +146,10 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
     return 6U;
   }
   if (eventId == CtfSchema::value(CtfSchema::EventId::DwtAddress)) {
-    return 14U;
+    requirePayload(2U);
+    const auto addressTagPosition = 2U + ctfDwtAddressSize(bytes[payloadOffset + 1U]);
+    requirePayload(addressTagPosition + 1U);
+    return addressTagPosition + 1U + ctfDwtAddressSize(bytes[payloadOffset + addressTagPosition]) + 5U;
   }
   if (eventId == CtfSchema::value(CtfSchema::EventId::GlobalTimestamp)) {
     return 9U;
