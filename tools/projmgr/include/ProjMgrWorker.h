@@ -961,6 +961,12 @@ public:
   std::vector<std::string> GetSelectedContexts() const;
 
   /**
+   * @brief get the active target in the format <target-type>[@<target-set>]
+   * @return active target
+  */
+  std::string GetActiveTarget() const;
+
+  /**
    * @brief check if context is selected
    * @param context name
    * @return true if it is selected
