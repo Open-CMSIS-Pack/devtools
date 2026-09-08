@@ -7630,11 +7630,15 @@ TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   argv[3] = (char*)"--active";
   argv[4] = (char*)"Type1@Custom2";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuildIdx1 = YAML::LoadFile(testinput_folder + "/TestTargetSet/solution.cbuild-idx.yml");
+  EXPECT_EQ("Type1@Custom2", cbuildIdx1["build-idx"]["target"].as<string>());
   const YAML::Node& cbuildRun1 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type1.cbuild-run.yml");
   EXPECT_EQ("Custom2", cbuildRun1["cbuild-run"]["target-set"].as<string>());
 
   argv[4] = (char*)"Type1";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuildIdx2 = YAML::LoadFile(testinput_folder + "/TestTargetSet/solution.cbuild-idx.yml");
+  EXPECT_EQ("Type1", cbuildIdx2["build-idx"]["target"].as<string>());
   const YAML::Node& cbuildRun2 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type1.cbuild-run.yml");
   EXPECT_EQ("<default>", cbuildRun2["cbuild-run"]["target-set"].as<string>());
 
