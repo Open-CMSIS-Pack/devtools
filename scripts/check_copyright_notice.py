@@ -13,11 +13,64 @@ import argparse
 import os
 import sys
 import re
-import magic
-from comment_parser import comment_parser
 
 COPYRIGHT_TEXT = "Copyright (c) <ValidYear>"
 LICENSE_TEXT = "SPDX-License-Identifier: Apache-2.0"
+
+def extract_header(source: str, is_shell: bool) -> str:
+    """Return leading blank and comment lines, stopping at the first code line."""
+    header = []
+    in_block_comment = False
+    include_guard = None
+
+    for line in source.splitlines(keepends=True):
+        stripped = line.strip()
+
+        if in_block_comment:
+            header.append(line)
+            if "*/" in stripped:
+                in_block_comment = False
+                if stripped.split("*/", 1)[1].strip():
+                    break
+            continue
+
+        if not stripped:
+            header.append(line)
+            continue
+
+        if is_shell and stripped.startswith("#"):
+            header.append(line)
+            continue
+
+        if not is_shell and stripped.startswith("//"):
+            header.append(line)
+            continue
+
+        if not is_shell and include_guard is None:
+            guard_match = re.fullmatch(r"#ifndef\s+([A-Za-z_]\w*)", stripped)
+            if guard_match:
+                include_guard = guard_match.group(1)
+                header.append(line)
+                continue
+
+        if not is_shell and include_guard:
+            define_match = re.fullmatch(r"#define\s+([A-Za-z_]\w*)", stripped)
+            if define_match and define_match.group(1) == include_guard:
+                include_guard = ""
+                header.append(line)
+                continue
+
+        if not is_shell and stripped.startswith("/*"):
+            header.append(line)
+            if "*/" not in stripped[2:]:
+                in_block_comment = True
+            elif stripped.split("*/", 1)[1].strip():
+                break
+            continue
+
+        break
+
+    return "".join(header)
 
 def check_file(filename: str, copyright_reg_exp: re.Pattern) -> int:
     """
@@ -31,16 +84,12 @@ def check_file(filename: str, copyright_reg_exp: re.Pattern) -> int:
     if os.path.getsize(filename) == 0:
         return 0
 
-    mime_type = magic.from_file(filename, mime=True)
-    if mime_type == "text/plain":
-        mime_type = "text/x-c++"
-
     copyrightfound=False
     licensefound=False
-    comments = ""
-    for comment in comment_parser.extract_comments(filename,
-                                                   mime=mime_type):
-        comments += comment.text() + '\n'
+    with open(filename, encoding="utf-8-sig", errors="replace") as source_file:
+        source = source_file.read()
+    is_shell = source.startswith("#!") or filename.endswith((".sh", ".bash"))
+    comments = extract_header(source, is_shell)
 
     if copyright_reg_exp.search(comments):
         copyrightfound=True
