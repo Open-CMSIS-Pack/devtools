@@ -385,9 +385,13 @@ TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
       pname: core
       stream: 1
       source: 0
-      info: configured ITM channel zero
+      info:
+        - configured ITM channel zero
+        - retained secondary setup information
       warning: ITM channel zero uses fallback routing
-      error: target could not enable ITM channel zero
+      error:
+        - target could not enable ITM channel zero
+        - target rejected the fallback configuration
     - ctrace-ref: core/exceptions
       type: exception
       error: ignored reference diagnostic
@@ -397,8 +401,10 @@ TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Diagnostics", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
   expectContains(result.stderrText, "[info] configured ITM channel zero:");
+  expectContains(result.stderrText, "[info] retained secondary setup information:");
   expectContains(result.stderrText, "[warning] ITM channel zero uses fallback routing:");
   expectContains(result.stderrText, "[error] target could not enable ITM channel zero:");
+  expectContains(result.stderrText, "[error] target rejected the fallback configuration:");
   expectContains(result.stderrText, "ctraceRef=core/itm, type=itm, pname=core");
   expectNotContains(result.stderrText, "ignored reference diagnostic");
 
