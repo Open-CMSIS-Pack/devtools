@@ -46,6 +46,42 @@ struct CtraceRunWarning {
   std::vector<std::pair<std::string, std::string>> context;
 };
 
+/** @brief Identifies a protocol carried by one normalized trace route. */
+enum class CtraceRunProtocol {
+  Itm,
+};
+
+/** @brief Retains one producer diagnostic attached to a ctrace reference. */
+struct CtraceRunReferenceDiagnostic {
+  enum class Severity {
+    Info,
+    Warning,
+    Error,
+  };
+
+  Severity severity = Severity::Info;
+  std::string message;
+  std::string ctraceRef;
+  std::optional<std::string> processorName;
+  std::optional<std::uint32_t> stream;
+  std::size_t line = 0U;
+};
+
+/** @brief Describes one normalized protocol route and its processor metadata. */
+struct CtraceRunRoute {
+  CtraceRunProtocol protocol = CtraceRunProtocol::Itm;
+  std::optional<std::uint8_t> traceBusId;
+  std::optional<std::string> processorName;
+  bool timestampsConfigured = false;
+  std::optional<std::uint64_t> timestampClockHz;
+  std::optional<std::string> timestampClockError;
+  std::uint32_t timestampPrescaler = 1U;
+  std::optional<std::uint32_t> itmEnableMask;
+  std::optional<std::string> itmEnableError;
+  std::vector<CtraceRunSourceMeta> sources;
+  std::vector<CtraceRunReferenceDiagnostic> referenceDiagnostics;
+};
+
 /** @brief Provides validated trace-run metadata consumed by decoding and output. */
 class CtraceRunMeta {
 public:
@@ -81,6 +117,10 @@ public:
   std::size_t processorCount() const;
   /** @brief Returns all normalized source routes. */
   const std::vector<CtraceRunSourceMeta>& sources() const;
+  /** @brief Returns the normalized protocol-route catalogue. */
+  const std::vector<CtraceRunRoute>& routes() const;
+  /** @brief Returns all producer diagnostics retained from consumed references. */
+  const std::vector<CtraceRunReferenceDiagnostic>& referenceDiagnostics() const;
   /** @brief Returns non-fatal inconsistencies ignored during normalization. */
   const std::vector<CtraceRunWarning>& warnings() const;
 
@@ -96,7 +136,9 @@ private:
   std::size_t m_processorCount = 0;
   bool m_distinctProcessorPrescalers = false;
   std::vector<CtraceRunSourceMeta> m_sources;
+  std::vector<CtraceRunRoute> m_routes;
+  std::vector<CtraceRunReferenceDiagnostic> m_referenceDiagnostics;
   std::vector<CtraceRunWarning> m_warnings;
 };
 
-#endif  // CTRACE_SRC_TRACERUN_CTRACERUNMETA_H
+#endif // CTRACE_SRC_TRACERUN_CTRACERUNMETA_H

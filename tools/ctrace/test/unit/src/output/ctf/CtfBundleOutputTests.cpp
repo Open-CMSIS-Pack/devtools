@@ -174,8 +174,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputOverflowClosesExceptionUntilReturn)
   output.stop();
 
   ASSERT_TRUE(readCtfExceptionRecords(outputDir / "stream_0") ==
-              std::vector<CtfExceptionRecord>({{0U, 0U, 1U}, {0U, 1U, 1U}, {15U, 0U, 0U}, {15U, 1U, 1U},
-                                               {0U, 2U, 0U}}))
+              std::vector<CtfExceptionRecord>({{0U, 0U, 1U}, {0U, 1U, 1U}, {15U, 0U, 0U}, {15U, 1U, 1U}, {0U, 2U, 0U}}))
       << "CTF overflow must close the active exception without inventing Thread Mode before its return";
 }
 
@@ -186,21 +185,24 @@ TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
 
   TraceRunConfig traceRun;
   traceRun.path = "Board.ctrace-run.yml";
-  auto signedByteReference = TraceRunTestSupport::makeReference("dwt", std::nullopt, 7U, {0U}, "opaque/signed-byte");
+  traceRun.traceFormat = TraceRunFormat::Formatted;
+  auto signedByteReference = TraceRunTestSupport::makeReference("dwt", "core", 7U, {0U}, "core/data#0");
   signedByteReference.dataSetupIndex = 0U;
   signedByteReference.label = "Sine";
   signedByteReference.dataType = "signed";
   signedByteReference.dataSize = 1U;
   traceRun.references.push_back(signedByteReference);
 
-  auto reference = TraceRunTestSupport::makeReference("dwt", std::nullopt, std::nullopt, {2U}, "opaque/current");
+  auto reference = TraceRunTestSupport::makeReference("dwt", "core", std::nullopt, {2U}, "core/data#2");
   reference.dataSetupIndex = 2U;
   reference.label = "Current\n\t\"\\\x01";
   reference.address = 0x24000e88U;
   reference.dataType = "signed";
   reference.dataSize = 4U;
   traceRun.references.push_back(reference);
+  traceRun.references.push_back(TraceRunTestSupport::makeReference("itm", "core", 7U, {}, "core/itm"));
   TraceRunSetup setup;
+  setup.processorName = "core";
   setup.timestamps = TraceRunTimestampSetup{280000000U, 1U};
   traceRun.setups.push_back(std::move(setup));
 
@@ -293,15 +295,23 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
 
   TraceRunConfig traceRun;
   traceRun.path = "ambiguous-streams.ctrace-run.yml";
-  auto first = TraceRunTestSupport::makeReference("dwt", std::nullopt, 1U, {0U}, "opaque/dwt-route");
+  traceRun.traceFormat = TraceRunFormat::Formatted;
+  auto first = TraceRunTestSupport::makeReference("dwt", "core-one", 1U, {0U}, "core-one/data#0");
   first.dataSetupIndex = 0U;
   first.label = "core-one";
   first.dataType = "signed";
   first.dataSize = 4U;
   TraceRunReference second = first;
+  second.processorName = "core-two";
+  second.ctraceRef = "core-two/data#0";
   second.stream = 2U;
   second.label = "core-two";
-  traceRun.references = {first, second};
+  traceRun.references = {
+      first,
+      second,
+      TraceRunTestSupport::makeReference("itm", "core-one", 1U, {}, "core-one/itm"),
+      TraceRunTestSupport::makeReference("itm", "core-two", 2U, {}, "core-two/itm"),
+  };
   const auto meta = CtraceRunMeta::fromConfig(traceRun);
   ASSERT_TRUE(meta.sources().size() == 2U && meta.sources().front().traceBusId == 1U &&
               meta.sources().front().label == std::optional<std::string>("core-one"))
@@ -333,9 +343,9 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   context.writeEvent(warning);
   context.writeEvent(exceptionPacket(54U, ExceptionAction::Entered, 20U));
   context.stop();
-  ASSERT_TRUE(readCtfExceptionRecords(contextDir / "stream_0") ==
-              std::vector<CtfExceptionRecord>({{0U, 0U, 1U}, {0U, 1U, 1U}, {15U, 0U, 0U}, {15U, 1U, 1U},
-                                               {54U, 0U, 0U}}))
+  ASSERT_TRUE(
+      readCtfExceptionRecords(contextDir / "stream_0") ==
+      std::vector<CtfExceptionRecord>({{0U, 0U, 1U}, {0U, 1U, 1U}, {15U, 0U, 0U}, {15U, 1U, 1U}, {54U, 0U, 0U}}))
       << "a decoder warning must not reset the active CTF exception context";
 
   auto dataLossOptions = makeCtfBundleConfig(dataLossDir, 1000000U);
@@ -346,9 +356,9 @@ TEST(CtraceUnitTests, testCtfWarningsRemainVisibleWithoutResettingContext)
   dataLoss.writeEvent(issuePacket(TraceIssueCode::DataLoss, "decoder data loss"));
   dataLoss.writeEvent(exceptionPacket(15U, ExceptionAction::Returned, 20U));
   dataLoss.stop();
-  ASSERT_TRUE(readCtfExceptionRecords(dataLossDir / "stream_0") ==
-              std::vector<CtfExceptionRecord>({{0U, 0U, 1U}, {0U, 1U, 1U}, {15U, 0U, 0U}, {15U, 1U, 1U},
-                                               {15U, 2U, 0U}}))
+  ASSERT_TRUE(
+      readCtfExceptionRecords(dataLossDir / "stream_0") ==
+      std::vector<CtfExceptionRecord>({{0U, 0U, 1U}, {0U, 1U, 1U}, {15U, 0U, 0U}, {15U, 1U, 1U}, {15U, 2U, 0U}}))
       << "filtered data-loss must still reset the CTF exception context";
 }
 

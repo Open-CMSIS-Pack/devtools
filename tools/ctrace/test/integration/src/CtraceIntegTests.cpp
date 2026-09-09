@@ -523,7 +523,8 @@ TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
   expectContains(result.stderrText, "[error] target could not enable ITM channel zero:");
   expectContains(result.stderrText, "[error] target rejected the fallback configuration:");
   expectContains(result.stderrText, "ctraceRef=core/itm, type=itm, pname=core");
-  expectNotContains(result.stderrText, "ignored reference diagnostic");
+  expectContains(result.stderrText, "[error] ignored reference diagnostic:");
+  expectContains(result.stderrText, "ctraceRef=core/exceptions, type=exception");
 
   expectNonEmptyFile(workDirectory() / "Diagnostics.SWO.csv");
   expectNonEmptyFile(workDirectory() / "Diagnostics.ctf" / "metadata");

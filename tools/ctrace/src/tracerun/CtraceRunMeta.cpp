@@ -17,6 +17,8 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 /** @brief Accumulates normalized metadata for one processor. */
@@ -26,8 +28,48 @@ struct ProcessorMeta {
   std::optional<std::uint64_t> timestampClockHz;
   std::optional<std::string> timestampClockError;
   std::optional<std::uint32_t> timestampPrescaler;
+  bool itmEnableConflict = false;
   std::optional<std::uint32_t> itmEnableMask;
+  std::optional<std::string> itmEnableError;
 };
+
+/** @brief Derives a processor name from a one-segment `[pname/]feature` reference path. */
+static std::optional<std::string> referencePathProcessorName(const TraceRunReference& reference)
+{
+  const auto separator = reference.ctraceRef.find('/');
+  if (separator == 0U || separator == std::string::npos || separator != reference.ctraceRef.rfind('/')) {
+    return std::nullopt;
+  }
+
+  const auto leaf = std::string_view(reference.ctraceRef).substr(separator + 1U);
+  const auto indexedLeaf = [&](const std::string_view prefix) {
+    return leaf.size() > prefix.size() && leaf.substr(0U, prefix.size()) == prefix &&
+           std::all_of(leaf.begin() + static_cast<std::ptrdiff_t>(prefix.size()), leaf.end(),
+                       [](const char character) { return character >= '0' && character <= '9'; });
+  };
+  const auto processorScoped =
+      (reference.type == "itm" && (leaf == "itm" || leaf == "timestamps")) ||
+      (reference.type == "dwt" && (leaf == "timestamps" || leaf == "synchronization" || indexedLeaf("data#"))) ||
+      (reference.type == "exception" && leaf == "exceptions") ||
+      ((reference.type == "event" || reference.type == "pmu") && indexedLeaf("events#")) ||
+      (reference.type == "pcsample" && leaf == "pcsampling") || (reference.type == "overflow" && leaf == "overflow") ||
+      (reference.type == "global_ts" && leaf == "timesync");
+  if (!processorScoped) {
+    return std::nullopt;
+  }
+  return reference.ctraceRef.substr(0U, separator);
+}
+
+/** @brief Resolves processor evidence without repeating a previously performed consistency check. */
+static std::optional<std::string> uncheckedReferenceProcessorName(const TraceRunReference& reference)
+{
+  const auto explicitName = TraceRunSchema::normalizedProcessorName(reference.processorName);
+  return explicitName.has_value() ? explicitName : referencePathProcessorName(reference);
+}
+
+/** @brief Resolves and cross-checks explicit and path-derived processor evidence. */
+static std::optional<std::string> checkedReferenceProcessorName(const TraceRunConfig& config,
+                                                                const TraceRunReference& reference);
 
 /** @brief Identifies one processor and its optional Trace Bus ID. */
 struct ProcessorIdentity {
@@ -35,6 +77,7 @@ struct ProcessorIdentity {
   std::optional<std::string> singleProcessorName;
   bool constrainedBySetups = false;
   std::set<std::string> setupNames;
+  std::set<std::uint32_t> singleProcessorStreams;
 
   /** @brief Tests whether a reference is consistent with the active setups. */
   bool accepts(const TraceRunReference& reference) const
@@ -42,11 +85,27 @@ struct ProcessorIdentity {
     if (!constrainedBySetups || setupNames.empty()) {
       return true;
     }
-    const auto name = TraceRunSchema::normalizedProcessorName(reference.processorName);
+    const auto name = uncheckedReferenceProcessorName(reference);
+    if (!multipleProcessors && singleProcessorName.has_value() && setupNames.size() > 1U) {
+      if (name.has_value()) {
+        return name == singleProcessorName;
+      }
+      return reference.stream.has_value() &&
+             singleProcessorStreams.find(*reference.stream) != singleProcessorStreams.end();
+    }
     if (!name.has_value()) {
       return setupNames.size() == 1U;
     }
     return setupNames.find(*name) != setupNames.end();
+  }
+
+  /** @brief Tests whether one active setup belongs to the selected SINGLE processor. */
+  bool acceptsSetup(const TraceRunSetup& setup) const
+  {
+    if (!constrainedBySetups || multipleProcessors || !singleProcessorName.has_value() || setupNames.size() <= 1U) {
+      return true;
+    }
+    return TraceRunSchema::normalizedProcessorName(setup.processorName) == singleProcessorName;
   }
 
   /** @brief Resolves an optional processor name to its canonical binding name. */
@@ -57,9 +116,22 @@ struct ProcessorIdentity {
     }
     return TraceRunSchema::normalizedProcessorName(name);
   }
+
+  /** @brief Resolves a reference's canonical processor binding. */
+  std::optional<std::string> canonicalReferenceName(const TraceRunReference& reference) const
+  {
+    return multipleProcessors ? uncheckedReferenceProcessorName(reference) : singleProcessorName;
+  }
 };
 
 using ReferenceProblem = TraceRunSchema::ReferenceProblem;
+
+/** @brief Tests whether producer diagnostics permit discarding only invalid source metadata. */
+static bool isDiscardableSourceProblem(const TraceRunReference& reference, ReferenceProblem problem)
+{
+  return (!reference.stream.has_value() || CoreSight::isAtbTraceId(*reference.stream)) && !reference.error.empty() &&
+         (problem == ReferenceProblem::DuplicateSource || problem == ReferenceProblem::InvalidItmSource);
+}
 
 /** @brief Formats a trace-run validation error with source location. */
 static std::string configError(const TraceRunConfig& config, std::size_t line, const std::string& message)
@@ -69,6 +141,32 @@ static std::string configError(const TraceRunConfig& config, std::size_t line, c
     location += "(" + std::to_string(line) + ")";
   }
   return location + ": " + message;
+}
+
+/** @brief Merges one optional clock fragment without treating an absent scalar as a conflict. */
+static void mergeTimestampClock(std::optional<std::uint64_t>& clockHz, std::optional<std::string>& clockError,
+                                const std::optional<std::uint64_t>& candidateClock,
+                                const std::optional<std::string>& candidateError,
+                                const std::string_view conflictMessage)
+{
+  if (candidateError.has_value()) {
+    if (clockError.has_value() && clockError != candidateError) {
+      clockError = conflictMessage;
+    } else if (!clockError.has_value()) {
+      clockError = candidateError;
+    }
+    clockHz.reset();
+    return;
+  }
+  if (clockError.has_value() || !candidateClock.has_value()) {
+    return;
+  }
+  if (clockHz.has_value() && clockHz != candidateClock) {
+    clockHz.reset();
+    clockError = conflictMessage;
+  } else {
+    clockHz = candidateClock;
+  }
 }
 
 /** @brief Builds warning context for one trace-run reference. */
@@ -115,30 +213,44 @@ static std::string referenceProblemMessage(const TraceRunConfig& config, const T
                                          : "ITM source must be between 0 and 31");
 }
 
+static bool setupContainsReference(const TraceRunSetup& setup, const TraceRunReference& reference);
+
 /** @brief Tests whether a setup contributes metadata to any consumed route. */
 static bool consumesSetup(const TraceRunConfig& config, const TraceRunSetup& setup)
 {
+  if (setup.disabled) {
+    return false;
+  }
   if (setup.timestamps.has_value() || setup.itm.has_value()) {
     return true;
   }
   for (const auto& reference : config.references) {
-    if (!TraceRunSchema::isUsableReference(reference) || reference.type != "dwt" ||
-        !TraceRunSchema::processorNamesMayBind(setup.processorName, reference.processorName)) {
+    if (!TraceRunSchema::consumesReferenceMetadata(reference.type)) {
       continue;
     }
-    const auto index = reference.dataSetupIndex;
-    if (index.has_value() && *index < setup.data.size()) {
+    if (!setup.featurePaths.empty() && setupContainsReference(setup, reference)) {
       return true;
+    }
+    if (reference.type == "dwt" && TraceRunSchema::isUsableReference(reference) &&
+        TraceRunSchema::processorNamesMayBind(setup.processorName, uncheckedReferenceProcessorName(reference))) {
+      const auto index = reference.dataSetupIndex;
+      if (setup.dataError.has_value() ||
+          (index.has_value() && *index < setup.data.size() && setup.data[*index].present)) {
+        return true;
+      }
     }
   }
   return false;
 }
 
-/** @brief Tests whether a reference can bind a processor to one stream. */
-static bool isUsableStreamBinding(const TraceRunReference& reference)
+/** @brief Tests whether retained reference metadata can identify one processor. */
+static bool isUsableProcessorBinding(const TraceRunReference& reference)
 {
-  return TraceRunSchema::contributesStreamBinding(reference) &&
-         TraceRunSchema::referenceProblem(reference) == ReferenceProblem::None;
+  const auto problem = TraceRunSchema::referenceProblem(reference);
+  const auto structurallyUsable = problem == ReferenceProblem::None || isDiscardableSourceProblem(reference, problem);
+  return structurallyUsable && TraceRunSchema::consumesReferenceMetadata(reference.type) &&
+         (uncheckedReferenceProcessorName(reference).has_value() || reference.stream.has_value() ||
+          TraceRunSchema::contributesStreamBinding(reference));
 }
 
 /** @brief Resolves the unambiguous processor identity of a trace-run file. */
@@ -146,38 +258,29 @@ static ProcessorIdentity processorIdentity(const TraceRunConfig& config, std::ve
 {
   // Active setups define the authoritative processor set when present.
   std::set<std::string> setupNames;
-  std::set<std::optional<std::string>> uniqueSetupNames;
   bool unnamedSetup = false;
   std::size_t setupCount = 0U;
-  const TraceRunSetup* singleActiveSetup = nullptr;
   for (const auto& setup : config.setups) {
     if (!consumesSetup(config, setup)) {
       continue;
     }
-    ++setupCount;
-    singleActiveSetup = &setup;
     const auto name = TraceRunSchema::normalizedProcessorName(setup.processorName);
-    if (!uniqueSetupNames.insert(name).second) {
-      throw std::runtime_error(configError(config, setup.line,
-                                           (setup.line > 0U ? "duplicate active 'ctrace-setup' for pname '"
-                                                            : "duplicate active ctrace-setup for pname '") +
-                                               name.value_or("<unnamed>") + "'"));
-    }
     if (name.has_value()) {
       setupNames.insert(*name);
     } else {
       unnamedSetup = true;
     }
   }
+  setupCount = !setupNames.empty() ? setupNames.size() : (unnamedSetup ? 1U : 0U);
 
   // Only usable stream bindings may contribute fallback processor identities.
   std::set<std::string> referenceNames;
   bool unnamedReference = false;
   for (const auto& reference : config.references) {
-    if (!isUsableStreamBinding(reference)) {
+    if (!isUsableProcessorBinding(reference)) {
       continue;
     }
-    const auto name = TraceRunSchema::normalizedProcessorName(reference.processorName);
+    const auto name = checkedReferenceProcessorName(config, reference);
     if (name.has_value()) {
       referenceNames.insert(*name);
     } else {
@@ -191,18 +294,45 @@ static ProcessorIdentity processorIdentity(const TraceRunConfig& config, std::ve
       throw std::runtime_error(config.path +
                                ": pname is required for every ctrace-setup in a multi-processor configuration");
     }
+    std::set<std::string> matchingReferenceNames;
     for (const auto& reference : config.references) {
-      if (!isUsableStreamBinding(reference)) {
+      if (!isUsableProcessorBinding(reference)) {
         continue;
       }
-      const auto name = TraceRunSchema::normalizedProcessorName(reference.processorName);
-      if (!name.has_value()) {
+      const auto name = checkedReferenceProcessorName(config, reference);
+      if (name.has_value() && setupNames.find(*name) == setupNames.end()) {
+        addRootInconsistency(warnings,
+                             "ignoring ctrace-ref pname '" + *name + "' because it has no matching ctrace-setup",
+                             warningContext(reference));
+      } else if (name.has_value()) {
+        matchingReferenceNames.insert(*name);
+      }
+    }
+    if (matchingReferenceNames.size() == 1U) {
+      const auto selectedName = *matchingReferenceNames.begin();
+      std::set<std::uint32_t> selectedStreams;
+      for (const auto& reference : config.references) {
+        if (!isUsableProcessorBinding(reference) || checkedReferenceProcessorName(config, reference) != selectedName ||
+            !reference.stream.has_value()) {
+          continue;
+        }
+        selectedStreams.insert(*reference.stream);
+      }
+      for (const auto& reference : config.references) {
+        if (!isUsableProcessorBinding(reference) || checkedReferenceProcessorName(config, reference).has_value()) {
+          continue;
+        }
+        if (!reference.stream.has_value() || selectedStreams.find(*reference.stream) == selectedStreams.end()) {
+          addRootInconsistency(warnings, "ignoring ctrace-ref without pname because its processor binding is ambiguous",
+                               warningContext(reference));
+        }
+      }
+      return {false, selectedName, true, setupNames, selectedStreams};
+    }
+    for (const auto& reference : config.references) {
+      if (isUsableProcessorBinding(reference) && !checkedReferenceProcessorName(config, reference).has_value()) {
         addRootInconsistency(warnings,
                              "ignoring ctrace-ref without pname because multiple ctrace-setup processors are active",
-                             warningContext(reference));
-      } else if (setupNames.find(*name) == setupNames.end()) {
-        addRootInconsistency(warnings, "ignoring ctrace-ref pname '" + *name +
-                                           "' because it has no matching ctrace-setup",
                              warningContext(reference));
       }
     }
@@ -210,25 +340,25 @@ static ProcessorIdentity processorIdentity(const TraceRunConfig& config, std::ve
   }
 
   if (setupCount == 1U) {
-    const auto setupName = TraceRunSchema::normalizedProcessorName(singleActiveSetup->processorName);
+    const auto setupName = setupNames.empty() ? std::nullopt : std::optional<std::string>(*setupNames.begin());
     if (setupName.has_value()) {
       for (const auto& reference : config.references) {
-        if (!isUsableStreamBinding(reference)) {
+        if (!isUsableProcessorBinding(reference)) {
           continue;
         }
-        const auto name = TraceRunSchema::normalizedProcessorName(reference.processorName);
+        const auto name = checkedReferenceProcessorName(config, reference);
         if (name.has_value() && *name != *setupName) {
-          addRootInconsistency(warnings, "ignoring ctrace-ref pname '" + *name +
-                                             "' because it does not match ctrace-setup pname '" + *setupName + "'",
+          addRootInconsistency(warnings,
+                               "ignoring ctrace-ref pname '" + *name +
+                                   "' because it does not match ctrace-setup pname '" + *setupName + "'",
                                warningContext(reference));
         }
       }
       return {false, setupName, true, setupNames};
     }
     if (referenceNames.size() > 1U) {
-      addRootInconsistency(warnings,
-                           "ignoring conflicting ctrace-ref pnames because the single ctrace-setup has no pname",
-                           {{"ctraceRefPnames", std::to_string(referenceNames.size())}});
+      throw std::runtime_error(config.path +
+                               ": unformatted SINGLE trace requires one unambiguous processor metadata binding");
     }
     return {
         false,
@@ -253,31 +383,64 @@ static ProcessorIdentity processorIdentity(const TraceRunConfig& config, std::ve
   };
 }
 
-/** @brief Resolves the required data setup index of one prevalidated DWT route. */
-static const TraceRunDataSetup* referencedDataSetup(const TraceRunConfig& config, const TraceRunReference& reference,
-                                                    std::size_t index)
+/** @brief Resolves compatible data metadata from every matching active setup fragment. */
+static std::optional<TraceRunDataSetup> referencedDataSetup(const TraceRunConfig& config,
+                                                            const TraceRunReference& reference, std::size_t index)
 {
+  std::optional<TraceRunDataSetup> resolved;
+  std::optional<std::uint64_t> effectiveSize;
+  bool conflict = false;
   for (const auto& setup : config.setups) {
-    if (!TraceRunSchema::processorNamesMayBind(setup.processorName, reference.processorName)) {
+    if (setup.disabled ||
+        !TraceRunSchema::processorNamesMayBind(setup.processorName, uncheckedReferenceProcessorName(reference))) {
       continue;
     }
-    const auto* candidate = index < setup.data.size() ? &setup.data[index] : nullptr;
-    if (candidate != nullptr) {
-      return candidate;
+    TraceRunDataSetup malformedContainer;
+    malformedContainer.sizeError = setup.dataError;
+    const auto* candidate =
+        setup.dataError.has_value() ? &malformedContainer : (index < setup.data.size() ? &setup.data[index] : nullptr);
+    if (candidate == nullptr || !candidate->present) {
+      continue;
+    }
+    if (!resolved.has_value()) {
+      resolved = *candidate;
+      effectiveSize = candidate->size.value_or(TraceRunSchema::kDefaultDwtDataSize);
+    } else {
+      const auto candidateSize = candidate->size.value_or(TraceRunSchema::kDefaultDwtDataSize);
+      if (*effectiveSize != candidateSize) {
+        conflict = true;
+      }
+    }
+    if (candidate->sizeError.has_value()) {
+      if (resolved->sizeError.has_value() && resolved->sizeError != candidate->sizeError) {
+        conflict = true;
+      } else if (!resolved->sizeError.has_value()) {
+        resolved->sizeError = candidate->sizeError;
+      }
     }
   }
-  return nullptr;
+  if (resolved.has_value()) {
+    resolved->size = effectiveSize;
+  }
+  if (conflict) {
+    resolved->size.reset();
+    resolved->sizeError = "conflicting active ctrace-setup data.size values";
+  }
+  return resolved;
 }
 
 /** @brief Converts one validated reference into normalized source metadata. */
 static CtraceRunSourceMeta sourceMeta(const TraceRunConfig& config, const TraceRunReference& reference,
                                       std::uint32_t source, const ProcessorIdentity& processorIdentity)
 {
-  const auto* dataSetup =
-      reference.type == "dwt" ? referencedDataSetup(config, reference, *reference.dataSetupIndex) : nullptr;
   CtraceRunSourceMeta meta;
   meta.type = reference.type;
-  meta.processorName = processorIdentity.canonicalName(reference.processorName);
+  meta.processorName = processorIdentity.canonicalReferenceName(reference);
+  auto boundReference = reference;
+  boundReference.processorName = meta.processorName;
+  const auto dataSetup = reference.type == "dwt"
+                             ? referencedDataSetup(config, boundReference, *reference.dataSetupIndex)
+                             : std::optional<TraceRunDataSetup>{};
   meta.traceBusId = static_cast<std::uint8_t>(reference.stream.value_or(0U));
   meta.source = source;
   meta.label = reference.label;
@@ -294,7 +457,7 @@ static CtraceRunSourceMeta sourceMeta(const TraceRunConfig& config, const TraceR
   if (reference.dataSize.has_value() || reference.dataSizeError.has_value()) {
     meta.dataSize = reference.dataSize.value_or(TraceRunSchema::kDefaultDwtDataSize);
     meta.dataSizeError = reference.dataSizeError;
-  } else if (dataSetup != nullptr) {
+  } else if (dataSetup.has_value()) {
     meta.dataSize = dataSetup->size.value_or(TraceRunSchema::kDefaultDwtDataSize);
     meta.dataSizeError = dataSetup->sizeError;
   }
@@ -314,20 +477,28 @@ static ProcessorMeta& processorMeta(std::vector<ProcessorMeta>& processors, cons
   return processors.back();
 }
 
-template <typename Value>
-/** @brief Returns a setting only when all relevant processors agree. */
-static std::optional<Value> commonProcessorSetting(const std::vector<ProcessorMeta>& processors,
-                                                   const std::optional<Value> ProcessorMeta::* member)
+/** @brief Returns a timestamp clock only when every processor candidate supplies the same value. */
+static std::optional<std::uint64_t> commonTimestampClock(const std::vector<ProcessorMeta>& processors)
 {
-  std::optional<Value> common;
+  std::optional<std::uint64_t> common;
   for (const auto& processor : processors) {
-    if (!processor.timestampsEnabled) {
-      continue;
-    }
-    const auto& candidate = processor.*member;
-    if (!candidate.has_value()) {
+    const auto candidate = processor.timestampsEnabled ? processor.timestampClockHz : std::nullopt;
+    if (!candidate.has_value() || (common.has_value() && common != candidate)) {
       return std::nullopt;
     }
+    common = candidate;
+  }
+  return common;
+}
+
+/** @brief Returns a prescaler only when every processor candidate agrees after applying the default. */
+static std::optional<std::uint32_t> commonTimestampPrescaler(const std::vector<ProcessorMeta>& processors)
+{
+  std::optional<std::uint32_t> common;
+  for (const auto& processor : processors) {
+    const auto candidate = processor.timestampsEnabled
+                               ? processor.timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler)
+                               : TraceRunSchema::kDefaultTimestampPrescaler;
     if (common.has_value() && common != candidate) {
       return std::nullopt;
     }
@@ -336,119 +507,12 @@ static std::optional<Value> commonProcessorSetting(const std::vector<ProcessorMe
   return common;
 }
 
-/** @brief Finds accumulated metadata for an optional processor identity. */
-static const ProcessorMeta* findProcessor(const std::vector<ProcessorMeta>& processors,
-                                          const std::optional<std::string>& name)
-{
-  const auto found = std::find_if(processors.begin(), processors.end(),
-                                  [&](const ProcessorMeta& processor) { return processor.name == name; });
-  return found != processors.end() ? &*found : nullptr;
-}
-
-/** @brief Stores the result of binding one processor to a trace stream. */
-struct ResolvedStreamBinding {
-  std::size_t line = 0U;
-  std::uint8_t traceBusId = 0U;
-  std::optional<std::string> processorName;
-  std::string ctraceRef;
-  const ProcessorMeta* processor = nullptr;
-};
-
-/** @brief Builds warning context for one resolved stream binding. */
-static std::vector<std::pair<std::string, std::string>> warningContext(const ResolvedStreamBinding& binding)
-{
-  std::vector<std::pair<std::string, std::string>> context{
-      {"ctraceRef", binding.ctraceRef},
-      {"stream", std::to_string(binding.traceBusId)},
-  };
-  if (binding.line > 0U) {
-    context.emplace_back("line", std::to_string(binding.line));
-  }
-  if (binding.processorName.has_value()) {
-    context.emplace_back("pname", *binding.processorName);
-  }
-  return context;
-}
-
-/** @brief Resolves validated processor-to-stream bindings for all references. */
-static std::vector<ResolvedStreamBinding> resolveStreamBindings(const TraceRunConfig& config,
-                                                                const ProcessorIdentity& processorIdentity,
-                                                                const std::vector<ProcessorMeta>& processors)
-{
-  std::vector<ResolvedStreamBinding> bindings;
-  for (const auto& reference : config.references) {
-    if (!isUsableStreamBinding(reference) || !processorIdentity.accepts(reference)) {
-      continue;
-    }
-    const auto processorName = processorIdentity.canonicalName(reference.processorName);
-    const auto traceBusId = static_cast<std::uint8_t>(reference.stream.value_or(0U));
-    bindings.push_back({
-        reference.line,
-        traceBusId,
-        processorName,
-        reference.ctraceRef,
-        findProcessor(processors, processorName),
-    });
-  }
-  return bindings;
-}
-
-static std::map<std::uint8_t, CtraceRunTimestampMeta>
-buildTimestampsByTraceBusId(const std::vector<ResolvedStreamBinding>& bindings,
-                            std::vector<CtraceRunWarning>& warnings)
-{
-  std::map<std::uint8_t, CtraceRunTimestampMeta> result;
-  for (const auto& binding : bindings) {
-    CtraceRunTimestampMeta candidate;
-    candidate.processorName = binding.processorName;
-    if (binding.processor != nullptr && binding.processor->timestampsEnabled) {
-      candidate.clockHz = binding.processor->timestampClockHz;
-      candidate.clockError = binding.processor->timestampClockError;
-    }
-
-    const auto [found, inserted] = result.emplace(binding.traceBusId, candidate);
-    if (inserted || (found->second.processorName == candidate.processorName &&
-                     found->second.clockHz == candidate.clockHz && found->second.clockError == candidate.clockError)) {
-      continue;
-    }
-    addRootInconsistency(warnings,
-                         "ignoring conflicting ctrace-setup timestamps.clock assignment for CoreSight Trace Bus ID " +
-                             std::to_string(binding.traceBusId),
-                         warningContext(binding));
-  }
-  return result;
-}
-
-static std::map<std::uint8_t, std::uint32_t>
-buildTimestampPrescalersByTraceBusId(const std::vector<ResolvedStreamBinding>& bindings,
-                                     std::vector<CtraceRunWarning>& warnings)
-{
-  std::map<std::uint8_t, std::uint32_t> result;
-  for (const auto& binding : bindings) {
-    const auto prescaler = binding.processor != nullptr && binding.processor->timestampPrescaler.has_value()
-                               ? *binding.processor->timestampPrescaler
-                               : TraceRunSchema::kDefaultTimestampPrescaler;
-    const auto [found, inserted] = result.emplace(binding.traceBusId, prescaler);
-    if (!inserted && found->second != prescaler) {
-      addRootInconsistency(
-          warnings,
-          "ignoring conflicting ctrace-setup timestamps.itm-prescaler assignment for CoreSight Trace Bus ID " +
-              std::to_string(binding.traceBusId),
-          warningContext(binding));
-    }
-  }
-  return result;
-}
-
-/** @brief Returns the common ITM enable mask across relevant processors. */
+/** @brief Returns the ITM enable mask only when all processor candidates agree. */
 static std::optional<std::uint32_t> commonItmEnableMask(const std::vector<ProcessorMeta>& processors)
 {
   std::optional<std::uint32_t> common;
   for (const auto& processor : processors) {
-    if (!processor.itmEnableMask.has_value()) {
-      return std::nullopt;
-    }
-    if (common.has_value() && common != processor.itmEnableMask) {
+    if (!processor.itmEnableMask.has_value() || (common.has_value() && common != processor.itmEnableMask)) {
       return std::nullopt;
     }
     common = processor.itmEnableMask;
@@ -456,63 +520,659 @@ static std::optional<std::uint32_t> commonItmEnableMask(const std::vector<Proces
   return common;
 }
 
-static std::map<std::uint8_t, std::uint32_t>
-buildItmEnableMasksByTraceBusId(const std::vector<ResolvedStreamBinding>& bindings,
-                               std::vector<CtraceRunWarning>& warnings)
+/** @brief Retains a common clock error or describes ambiguous SINGLE clock candidates. */
+static std::optional<std::string> commonTimestampClockError(const std::vector<ProcessorMeta>& processors)
 {
-  std::map<std::uint8_t, std::optional<std::uint32_t>> candidates;
-  for (const auto& binding : bindings) {
-    const auto enableMask = binding.processor != nullptr ? binding.processor->itmEnableMask : std::nullopt;
-    const auto [found, inserted] = candidates.emplace(binding.traceBusId, enableMask);
-    if (!inserted && found->second != enableMask) {
-      addRootInconsistency(warnings,
-                           "ignoring conflicting ctrace-setup itm.enable assignment for CoreSight Trace Bus ID " +
-                               std::to_string(binding.traceBusId),
-                           warningContext(binding));
+  bool found = false;
+  std::optional<std::uint64_t> clockHz;
+  std::optional<std::string> clockError;
+  for (const auto& processor : processors) {
+    const auto candidateClock = processor.timestampsEnabled ? processor.timestampClockHz : std::nullopt;
+    const auto candidateError = processor.timestampsEnabled ? processor.timestampClockError : std::nullopt;
+    if (found && (clockHz != candidateClock || clockError != candidateError)) {
+      return "unformatted SINGLE trace has ambiguous timestamps.clock values across processor candidates";
     }
+    found = true;
+    clockHz = candidateClock;
+    clockError = candidateError;
   }
-
-  std::map<std::uint8_t, std::uint32_t> result;
-  for (const auto& [traceBusId, enableMask] : candidates) {
-    if (enableMask.has_value()) {
-      result.emplace(traceBusId, *enableMask);
-    }
-  }
-  return result;
+  return clockError;
 }
 
-/** @brief Tests whether processors require different timestamp prescalers. */
-static bool containsDistinctProcessorPrescalers(const std::vector<ProcessorMeta>& processors)
+/** @brief Returns the feature leaf selected by one ctrace reference path. */
+static std::string_view referenceLeaf(const std::string_view& path)
 {
-  std::optional<std::uint32_t> first;
-  for (const auto& processor : processors) {
-    if (!processor.timestampsEnabled || !processor.timestampPrescaler.has_value()) {
+  const auto separator = path.rfind('/');
+  return separator == std::string_view::npos ? path : path.substr(separator + 1U);
+}
+
+/** @brief Tests whether a ctrace reference uses the specified `[pname/]feature` path form. */
+static bool hasFeaturePath(const TraceRunReference& reference, const std::string_view& leaf)
+{
+  const auto separator = reference.ctraceRef.find('/');
+  if (separator == std::string::npos) {
+    return reference.ctraceRef == leaf;
+  }
+  return separator > 0U && separator == reference.ctraceRef.rfind('/') &&
+         std::string_view(reference.ctraceRef).substr(separator + 1U) == leaf;
+}
+
+/** @brief Tests whether a feature leaf contains one non-empty decimal index. */
+static bool isIndexedFeature(const std::string_view& leaf, const std::string_view& prefix)
+{
+  if (leaf.size() <= prefix.size() || leaf.substr(0U, prefix.size()) != prefix) {
+    return false;
+  }
+  return std::all_of(leaf.begin() + static_cast<std::ptrdiff_t>(prefix.size()), leaf.end(),
+                     [](const char character) { return character >= '0' && character <= '9'; });
+}
+
+/** @brief Tests whether a reference path denotes the authoritative processor ITM anchor. */
+static bool hasProcessorItmPath(const TraceRunReference& reference)
+{
+  return hasFeaturePath(reference, "itm");
+}
+
+/** @brief Tests whether one reference is an authoritative processor ITM anchor. */
+static bool isProcessorItmAnchor(const TraceRunReference& reference)
+{
+  return hasProcessorItmPath(reference) && reference.type == "itm";
+}
+
+/** @brief Tests whether one reference is permitted to establish a formatted ITM route without an anchor. */
+static bool isFormattedRouteFallback(const TraceRunReference& reference)
+{
+  const auto leaf = referenceLeaf(reference.ctraceRef);
+  const auto validPath = hasFeaturePath(reference, leaf);
+  return validPath &&
+         ((reference.type == "dwt" && isIndexedFeature(leaf, "data#") && reference.dataSetupIndex.has_value()) ||
+          ((reference.type == "itm" || reference.type == "dwt") && leaf == "timestamps") ||
+          (reference.type == "exception" && leaf == "exceptions") ||
+          ((reference.type == "event" || reference.type == "pmu") && isIndexedFeature(leaf, "events#")) ||
+          (reference.type == "pcsample" && leaf == "pcsampling") ||
+          (reference.type == "dwt" && leaf == "synchronization"));
+}
+
+/** @brief Tests whether one reference may describe an already established ITM route. */
+static bool describesFormattedRoute(const TraceRunReference& reference)
+{
+  return isProcessorItmAnchor(reference) || isFormattedRouteFallback(reference) ||
+         (reference.type == "overflow" && hasFeaturePath(reference, "overflow")) ||
+         (reference.type == "global_ts" && hasFeaturePath(reference, "timesync"));
+}
+
+/** @brief Retains all producer diagnostics independently from normalized route validity. */
+static void appendReferenceDiagnostics(const TraceRunReference& reference,
+                                       std::vector<CtraceRunReferenceDiagnostic>& diagnostics)
+{
+  const auto append = [&](CtraceRunReferenceDiagnostic::Severity severity, const std::vector<std::string>& messages) {
+    for (const auto& message : messages) {
+      diagnostics.push_back({
+          severity,
+          message,
+          reference.ctraceRef,
+          TraceRunSchema::normalizedProcessorName(reference.processorName),
+          reference.stream,
+          reference.line,
+      });
+    }
+  };
+  append(CtraceRunReferenceDiagnostic::Severity::Info, reference.info);
+  append(CtraceRunReferenceDiagnostic::Severity::Warning, reference.warning);
+  append(CtraceRunReferenceDiagnostic::Severity::Error, reference.error);
+}
+
+/** @brief Retains all producer diagnostics independently from normalized route validity. */
+static std::vector<CtraceRunReferenceDiagnostic> collectReferenceDiagnostics(const TraceRunConfig& config)
+{
+  std::vector<CtraceRunReferenceDiagnostic> diagnostics;
+  for (const auto& reference : config.references) {
+    appendReferenceDiagnostics(reference, diagnostics);
+  }
+  return diagnostics;
+}
+
+/** @brief Indexes active setup fragments by their optional processor identity. */
+struct ActiveSetupIndex {
+  std::vector<const TraceRunSetup*> fragments;
+  std::set<std::string> namedProcessors;
+  bool hasUnnamedProcessor = false;
+
+  std::size_t processorGroupCount() const
+  {
+    return !namedProcessors.empty() ? namedProcessors.size() : (hasUnnamedProcessor ? 1U : 0U);
+  }
+};
+
+/** @brief Collects active setup fragments without treating repeated processor fragments as duplicates. */
+static ActiveSetupIndex activeSetupIndex(const TraceRunConfig& config)
+{
+  ActiveSetupIndex index;
+  for (const auto& setup : config.setups) {
+    if (!consumesSetup(config, setup)) {
       continue;
     }
-    if (first.has_value() && first != processor.timestampPrescaler) {
-      return true;
+    index.fragments.push_back(&setup);
+    const auto name = TraceRunSchema::normalizedProcessorName(setup.processorName);
+    if (name.has_value()) {
+      index.namedProcessors.insert(*name);
+    } else {
+      index.hasUnnamedProcessor = true;
     }
-    first = processor.timestampPrescaler;
   }
-  return false;
+  return index;
+}
+
+/** @brief Resolves and cross-checks processor evidence carried by one formatted reference. */
+static std::optional<std::string> checkedReferenceProcessorName(const TraceRunConfig& config,
+                                                                const TraceRunReference& reference)
+{
+  const auto explicitName = TraceRunSchema::normalizedProcessorName(reference.processorName);
+  const auto pathName = referencePathProcessorName(reference);
+  if (explicitName.has_value() && pathName.has_value() && explicitName != pathName) {
+    throw std::runtime_error(
+        configError(config, reference.line, "ctrace-ref path processor conflicts with pname '" + *explicitName + "'"));
+  }
+  return explicitName.has_value() ? explicitName : pathName;
+}
+
+/** @brief Resolves a formatted reference to an explicit or uniquely inferred processor identity. */
+static std::optional<std::string> formattedProcessorName(const TraceRunConfig& config, const ActiveSetupIndex& setups,
+                                                         const TraceRunReference& reference)
+{
+  const auto referenceName = checkedReferenceProcessorName(config, reference);
+  if (referenceName.has_value()) {
+    if (setups.fragments.empty() || setups.namedProcessors.find(*referenceName) != setups.namedProcessors.end() ||
+        (setups.namedProcessors.empty() && setups.hasUnnamedProcessor)) {
+      return referenceName;
+    }
+    throw std::runtime_error(
+        configError(config, reference.line,
+                    "ctrace-ref pname '" + *referenceName + "' has no matching active ctrace-setup processor"));
+  }
+  if (setups.processorGroupCount() == 1U) {
+    return setups.namedProcessors.empty() ? std::nullopt : std::optional<std::string>(*setups.namedProcessors.begin());
+  }
+  if (setups.processorGroupCount() == 0U) {
+    return std::nullopt;
+  }
+  throw std::runtime_error(configError(
+      config, reference.line,
+      "pname is required for a formatted ctrace-ref when multiple active ctrace-setup processors are available"));
+}
+
+/** @brief Tests whether a setup feature path resolves one reference within the same fragment. */
+static bool setupContainsReference(const TraceRunSetup& setup, const TraceRunReference& reference)
+{
+  const auto referenceName = uncheckedReferenceProcessorName(reference);
+  const auto setupName = TraceRunSchema::normalizedProcessorName(setup.processorName);
+  if (referenceName.has_value() && setupName.has_value() && referenceName != setupName) {
+    return false;
+  }
+  auto referencePath = reference.ctraceRef;
+  if (referencePath.find('/') == std::string::npos && referenceName.has_value()) {
+    referencePath = *referenceName + "/" + referencePath;
+  }
+  const auto matchesFeaturePath = [](const std::string_view setupPath, const std::string_view referencePath) {
+    return setupPath == referencePath ||
+           (referencePath.size() > setupPath.size() && referencePath.substr(0U, setupPath.size()) == setupPath &&
+            (referencePath[setupPath.size()] == '/' || referencePath[setupPath.size()] == '#'));
+  };
+  if (std::any_of(setup.featurePaths.begin(), setup.featurePaths.end(),
+                  [&](const std::string& featurePath) { return matchesFeaturePath(featurePath, referencePath); })) {
+    return true;
+  }
+  if (!setupName.has_value()) {
+    auto relativePath = std::string_view(referencePath);
+    auto separator = relativePath.find('/');
+    if (referenceName.has_value()) {
+      const auto expectedPrefix = *referenceName + "/";
+      separator = relativePath.substr(0U, expectedPrefix.size()) == expectedPrefix ? expectedPrefix.size() - 1U
+                                                                                   : std::string_view::npos;
+    }
+    if (separator != std::string_view::npos) {
+      relativePath.remove_prefix(separator + 1U);
+      if (std::any_of(setup.featurePaths.begin(), setup.featurePaths.end(),
+                      [&](const std::string& featurePath) { return matchesFeaturePath(featurePath, relativePath); })) {
+        return true;
+      }
+    }
+  }
+  const auto mayBindUnnamedPath =
+      !setupName.has_value() || (!referenceName.has_value() && reference.ctraceRef.find('/') == std::string::npos);
+  return mayBindUnnamedPath &&
+         std::any_of(setup.featurePaths.begin(), setup.featurePaths.end(), [&](const std::string& featurePath) {
+           return referenceLeaf(featurePath) == referenceLeaf(reference.ctraceRef);
+         });
+}
+
+/** @brief Rejects a generated reference that resolves exclusively to disabled setup fragments. */
+static void validateDisabledReferences(const TraceRunConfig& config)
+{
+  for (const auto& reference : config.references) {
+    const TraceRunSetup* disabledMatch = nullptr;
+    bool activeMatch = false;
+    for (const auto& setup : config.setups) {
+      if (!setupContainsReference(setup, reference)) {
+        continue;
+      }
+      if (setup.disabled) {
+        disabledMatch = &setup;
+      } else {
+        activeMatch = true;
+      }
+    }
+    if (disabledMatch != nullptr && !activeMatch) {
+      throw std::runtime_error(configError(config, reference.line,
+                                           "ctrace-ref '" + reference.ctraceRef +
+                                               "' resolves only to disabled ctrace-setup fragment " +
+                                               std::to_string(disabledMatch->ordinal)));
+    }
+  }
+}
+
+/** @brief Validates all routing-relevant fields retained from one formatted reference. */
+static void validateFormattedReference(const TraceRunConfig& config, const TraceRunReference& reference)
+{
+  if (referenceLeaf(reference.ctraceRef) == "itm" && !hasProcessorItmPath(reference)) {
+    throw std::runtime_error(
+        configError(config, reference.line, "processor ITM route anchor path must use '[pname/]itm'"));
+  }
+  if (hasProcessorItmPath(reference) && reference.type != "itm") {
+    throw std::runtime_error(
+        configError(config, reference.line, "processor ITM route anchor must use reference type 'itm'"));
+  }
+  if (hasFeaturePath(reference, "timestamps") && reference.type != "itm" && reference.type != "dwt") {
+    throw std::runtime_error(
+        configError(config, reference.line, "timestamps reference must use type 'itm' or transitional type 'dwt'"));
+  }
+  const auto pathSeparator = reference.ctraceRef.find('/');
+  const auto processorName = TraceRunSchema::normalizedProcessorName(reference.processorName);
+  if (processorName.has_value() && pathSeparator != std::string::npos &&
+      pathSeparator == reference.ctraceRef.rfind('/') &&
+      std::string_view(reference.ctraceRef).substr(0U, pathSeparator) != *processorName &&
+      describesFormattedRoute(reference)) {
+    throw std::runtime_error(
+        configError(config, reference.line, "ctrace-ref path processor conflicts with pname '" + *processorName + "'"));
+  }
+  const auto problem = TraceRunSchema::referenceProblem(reference);
+  if (problem != ReferenceProblem::None && !isDiscardableSourceProblem(reference, problem)) {
+    throw std::runtime_error(referenceProblemMessage(config, reference, problem));
+  }
+  if (isProcessorItmAnchor(reference) && !reference.stream.has_value()) {
+    throw std::runtime_error(
+        configError(config, reference.line, "processor ITM route anchor requires a CoreSight Trace Bus ID"));
+  }
+}
+
+/** @brief Stores one formatted route while its binding evidence is accumulated. */
+struct FormattedRouteState {
+  CtraceRunRoute route;
+};
+
+/** @brief Registers a bound processor route and rejects one processor mapped to two ITM IDs. */
+static void registerBoundRoute(const TraceRunConfig& config, const TraceRunReference& reference,
+                               const CtraceRunRoute& route, std::map<std::string, std::uint8_t>& boundRoutes)
+{
+  if (!route.processorName.has_value()) {
+    return;
+  }
+  const auto [found, inserted] = boundRoutes.emplace(*route.processorName, *route.traceBusId);
+  if (!inserted && found->second != *route.traceBusId) {
+    throw std::runtime_error(configError(config, reference.line,
+                                         "processor '" + *route.processorName +
+                                             "' has ITM routes bound to multiple CoreSight Trace Bus IDs"));
+  }
+}
+
+/** @brief Adds compatible evidence to one formatted route or rejects an ID-to-processor conflict. */
+static FormattedRouteState& mergeFormattedRoute(const TraceRunConfig& config, const TraceRunReference& reference,
+                                                const std::optional<std::string>& processorName,
+                                                std::map<std::uint8_t, FormattedRouteState>& routes,
+                                                std::map<std::string, std::uint8_t>& boundRoutes)
+{
+  const auto traceBusId = static_cast<std::uint8_t>(*reference.stream);
+  auto [found, inserted] = routes.emplace(traceBusId, FormattedRouteState{});
+  auto& state = found->second;
+  if (inserted) {
+    state.route.traceBusId = traceBusId;
+    state.route.processorName = processorName;
+  } else if (state.route.processorName.has_value() && processorName.has_value() &&
+             state.route.processorName != processorName) {
+    throw std::runtime_error(configError(config, reference.line,
+                                         "CoreSight Trace Bus ID " + std::to_string(traceBusId) +
+                                             " has conflicting ITM processor bindings"));
+  } else if (!state.route.processorName.has_value() && processorName.has_value()) {
+    state.route.processorName = processorName;
+  }
+  registerBoundRoute(config, reference, state.route, boundRoutes);
+  return state;
+}
+
+/** @brief Returns setup fragments that unambiguously supply metadata for one route. */
+static std::vector<const TraceRunSetup*> routeSetupFragments(const ActiveSetupIndex& setups,
+                                                             const CtraceRunRoute& route)
+{
+  std::vector<const TraceRunSetup*> matches;
+  if (route.processorName.has_value()) {
+    for (const auto* setup : setups.fragments) {
+      if (TraceRunSchema::normalizedProcessorName(setup->processorName) == route.processorName) {
+        matches.push_back(setup);
+      }
+    }
+    const auto unnamedCanBind = setups.hasUnnamedProcessor && setups.namedProcessors.size() <= 1U &&
+                                (setups.namedProcessors.empty() ||
+                                 setups.namedProcessors.find(*route.processorName) != setups.namedProcessors.end());
+    if (!unnamedCanBind) {
+      return matches;
+    }
+  } else if (setups.processorGroupCount() != 1U || !setups.hasUnnamedProcessor) {
+    return matches;
+  }
+
+  for (const auto* setup : setups.fragments) {
+    if (!TraceRunSchema::normalizedProcessorName(setup->processorName).has_value()) {
+      matches.push_back(setup);
+    }
+  }
+  return matches;
+}
+
+/** @brief Applies compatible active setup fragments to one normalized route. */
+static void applyRouteSetupMetadata(const TraceRunConfig& config, CtraceRunRoute& route,
+                                    const std::vector<const TraceRunSetup*>& setups,
+                                    std::vector<CtraceRunWarning>& warnings)
+{
+  bool timestampSeen = false;
+  bool enableMaskConflict = false;
+  std::optional<std::uint64_t> clockHz;
+  std::optional<std::string> clockError;
+  std::optional<std::uint32_t> prescaler;
+  std::optional<std::uint32_t> enableMask;
+  std::optional<std::string> enableError;
+
+  for (const auto* setup : setups) {
+    if (setup->timestamps.has_value()) {
+      const auto& timestamps = *setup->timestamps;
+      const auto candidatePrescaler =
+          timestamps.timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
+      if (!TraceRunSchema::isTimestampPrescaler(candidatePrescaler)) {
+        throw std::runtime_error(
+            configError(config, timestamps.line,
+                        timestamps.line > 0U ? "'timestamps.itm-prescaler' must be one of 1, 4, 16, or 64"
+                                             : "ctrace-setup timestamps.itm-prescaler must be one of 1, 4, 16, or 64"));
+      }
+      if (prescaler.has_value() && *prescaler != candidatePrescaler) {
+        throw std::runtime_error(
+            configError(config, timestamps.line,
+                        "conflicting timestamps.itm-prescaler values for one formatted processor ITM route"));
+      }
+      prescaler = candidatePrescaler;
+
+      mergeTimestampClock(clockHz, clockError, timestamps.clockHz, timestamps.clockError,
+                          "conflicting active ctrace-setup timestamps.clock values");
+      timestampSeen = true;
+    }
+    if (setup->itm.has_value()) {
+      if (setup->itm->enableError.has_value()) {
+        if (enableError.has_value() && enableError != setup->itm->enableError) {
+          enableMaskConflict = true;
+        } else {
+          enableError = setup->itm->enableError;
+        }
+        continue;
+      }
+      const auto candidateMask = setup->itm->enableMask;
+      if (!candidateMask.has_value()) {
+        continue;
+      }
+      if (enableMask.has_value() && *enableMask != *candidateMask) {
+        if (!enableMaskConflict) {
+          addRootInconsistency(
+              warnings, "ignoring conflicting ctrace-setup itm.enable assignment for one formatted ITM route",
+              {{"pname", route.processorName.value_or("<unnamed>")}, {"line", std::to_string(setup->line)}});
+        }
+        enableMaskConflict = true;
+        continue;
+      }
+      enableMask = *candidateMask;
+    }
+  }
+
+  route.timestampsConfigured = timestampSeen;
+  route.timestampPrescaler = prescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
+  if (enableMaskConflict) {
+    route.itmEnableError = "conflicting active ctrace-setup itm.enable values";
+  } else if (enableError.has_value()) {
+    route.itmEnableError = enableError;
+  } else {
+    route.itmEnableMask = enableMask;
+  }
+  route.timestampClockHz = clockHz;
+  route.timestampClockError = clockError;
+}
+
+/** @brief Converts one validated formatted source reference into route-local source metadata. */
+static CtraceRunSourceMeta formattedSourceMeta(const TraceRunConfig& config, const TraceRunReference& reference,
+                                               std::uint32_t source, const CtraceRunRoute& route)
+{
+  ProcessorIdentity identity;
+  identity.multipleProcessors = true;
+  auto boundReference = reference;
+  boundReference.processorName = route.processorName;
+  auto meta = sourceMeta(config, boundReference, source, identity);
+  meta.processorName = route.processorName;
+  meta.traceBusId = *route.traceBusId;
+  return meta;
+}
+
+/** @brief Finds the established route described by a streamless compatible reference. */
+static std::optional<std::uint8_t> streamlessRouteId(const TraceRunConfig& config, const ActiveSetupIndex& setups,
+                                                     const TraceRunReference& reference,
+                                                     const std::map<std::uint8_t, FormattedRouteState>& states,
+                                                     const std::map<std::string, std::uint8_t>& boundRoutes)
+{
+  const auto processorName = formattedProcessorName(config, setups, reference);
+  if (processorName.has_value()) {
+    const auto bound = boundRoutes.find(*processorName);
+    if (bound != boundRoutes.end()) {
+      return bound->second;
+    }
+    if (states.size() != 1U || states.begin()->second.route.processorName.has_value()) {
+      return std::nullopt;
+    }
+  }
+  return states.size() == 1U ? std::optional<std::uint8_t>(states.begin()->first) : std::nullopt;
+}
+
+/** @brief Applies processor evidence from a streamless reference to its unique formatted route. */
+static void bindStreamlessRoute(const TraceRunConfig& config, const TraceRunReference& reference,
+                                std::uint8_t traceBusId, const std::optional<std::string>& processorName,
+                                std::map<std::uint8_t, FormattedRouteState>& states,
+                                std::map<std::string, std::uint8_t>& boundRoutes)
+{
+  auto& route = states.at(traceBusId).route;
+  if (!route.processorName.has_value() && processorName.has_value()) {
+    route.processorName = processorName;
+  }
+  registerBoundRoute(config, reference, route, boundRoutes);
+}
+
+/** @brief Builds the strict formatted route catalogue without constructing decoder objects. */
+static std::vector<CtraceRunRoute> formattedRoutes(const TraceRunConfig& config,
+                                                   std::vector<CtraceRunWarning>& warnings)
+{
+  const auto setups = activeSetupIndex(config);
+  if (setups.namedProcessors.size() > 1U && setups.hasUnnamedProcessor) {
+    throw std::runtime_error(
+        config.path + ": pname is required for active ctrace-setup fragments in a multi-processor configuration");
+  }
+  if (setups.namedProcessors.empty() && setups.hasUnnamedProcessor) {
+    std::set<std::string> referenceNames;
+    for (const auto& reference : config.references) {
+      if (!describesFormattedRoute(reference)) {
+        continue;
+      }
+      const auto name = checkedReferenceProcessorName(config, reference);
+      if (name.has_value()) {
+        referenceNames.insert(*name);
+      }
+    }
+    if (referenceNames.size() > 1U) {
+      throw std::runtime_error(config.path +
+                               ": one unnamed ctrace-setup processor cannot bind multiple formatted pnames");
+    }
+  }
+  std::map<std::uint8_t, FormattedRouteState> states;
+  std::map<std::string, std::uint8_t> boundRoutes;
+
+  for (const auto& reference : config.references) {
+    validateFormattedReference(config, reference);
+  }
+
+  // Anchors are authoritative, so validate and register all of them before considering compatibility fallbacks.
+  for (const auto& reference : config.references) {
+    if (isProcessorItmAnchor(reference)) {
+      mergeFormattedRoute(config, reference, formattedProcessorName(config, setups, reference), states, boundRoutes);
+    }
+  }
+  for (const auto& reference : config.references) {
+    if (isFormattedRouteFallback(reference) && reference.stream.has_value()) {
+      mergeFormattedRoute(config, reference, formattedProcessorName(config, setups, reference), states, boundRoutes);
+    }
+  }
+
+  if (setups.namedProcessors.empty() && setups.hasUnnamedProcessor && states.size() > 1U) {
+    throw std::runtime_error(config.path +
+                             ": one unnamed ctrace-setup processor cannot bind multiple formatted ITM routes");
+  }
+
+  if (states.empty()) {
+    throw std::runtime_error(config.path +
+                             ": formatted trace input requires an ITM route anchor or supported feature fallback");
+  }
+
+  // Every compatible description must resolve to an established route and agree with its processor binding.
+  for (const auto& reference : config.references) {
+    if (reference.stream.has_value()) {
+      const auto traceBusId = static_cast<std::uint8_t>(*reference.stream);
+      if (states.find(traceBusId) == states.end()) {
+        throw std::runtime_error(configError(config, reference.line,
+                                             "ctrace-ref describes CoreSight Trace Bus ID " +
+                                                 std::to_string(traceBusId) +
+                                                 " without an ITM route anchor or supported feature fallback"));
+      }
+      mergeFormattedRoute(config, reference, formattedProcessorName(config, setups, reference), states, boundRoutes);
+    } else if (describesFormattedRoute(reference)) {
+      const auto processorName = formattedProcessorName(config, setups, reference);
+      const auto routeId = streamlessRouteId(config, setups, reference, states, boundRoutes);
+      if (!routeId.has_value()) {
+        throw std::runtime_error(configError(
+            config, reference.line, "streamless ctrace-ref cannot be associated with one formatted ITM route"));
+      }
+      bindStreamlessRoute(config, reference, *routeId, processorName, states, boundRoutes);
+    }
+  }
+
+  std::vector<CtraceRunRoute> routes;
+  routes.reserve(states.size());
+  for (auto& [traceBusId, state] : states) {
+    auto& route = state.route;
+    applyRouteSetupMetadata(config, route, routeSetupFragments(setups, route), warnings);
+
+    for (const auto& reference : config.references) {
+      const auto matchesStream = reference.stream.has_value() && *reference.stream == traceBusId;
+      const auto streamlessRoute = !reference.stream.has_value() && describesFormattedRoute(reference)
+                                       ? streamlessRouteId(config, setups, reference, states, boundRoutes)
+                                       : std::nullopt;
+      const auto describesRoute = matchesStream || (streamlessRoute.has_value() && *streamlessRoute == traceBusId);
+      if (describesRoute && TraceRunSchema::isUsableReference(reference)) {
+        for (const auto source : reference.sources) {
+          route.sources.push_back(formattedSourceMeta(config, reference, source, route));
+        }
+      }
+      const auto hasDiagnostics = !reference.info.empty() || !reference.warning.empty() || !reference.error.empty();
+      if (hasDiagnostics && describesRoute) {
+        appendReferenceDiagnostics(reference, route.referenceDiagnostics);
+      }
+    }
+    routes.push_back(std::move(route));
+  }
+  return routes;
 }
 
 CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
 {
   CtraceRunMeta ctraceRunMeta;
   ctraceRunMeta.m_configPath = config.path;
+  ctraceRunMeta.m_referenceDiagnostics = collectReferenceDiagnostics(config);
+  validateDisabledReferences(config);
+
+  if (TraceRunSchema::effectiveTraceFormat(config.traceFormat) == TraceRunFormat::Formatted) {
+    ctraceRunMeta.m_routes = formattedRoutes(config, ctraceRunMeta.m_warnings);
+
+    bool commonClockValid = true;
+    bool commonPrescalerValid = true;
+    bool commonEnableMaskValid = true;
+    std::optional<std::uint64_t> commonClock;
+    std::optional<std::uint32_t> commonPrescaler;
+    std::optional<std::uint32_t> commonEnableMask;
+    for (const auto& route : ctraceRunMeta.m_routes) {
+      const auto traceBusId = *route.traceBusId;
+      ctraceRunMeta.m_timestampsByTraceBusId.emplace(
+          traceBusId, CtraceRunTimestampMeta{route.processorName, route.timestampClockHz, route.timestampClockError});
+      ctraceRunMeta.m_timestampPrescalersByTraceBusId.emplace(traceBusId, route.timestampPrescaler);
+      if (route.itmEnableMask.has_value()) {
+        ctraceRunMeta.m_itmEnableMasksByTraceBusId.emplace(traceBusId, *route.itmEnableMask);
+      }
+      ctraceRunMeta.m_sources.insert(ctraceRunMeta.m_sources.end(), route.sources.begin(), route.sources.end());
+      if (route.timestampClockError.has_value()) {
+        ctraceRunMeta.m_timestampClockErrors.push_back(*route.timestampClockError);
+      }
+
+      if (route.timestampClockError.has_value() || !route.timestampClockHz.has_value()) {
+        commonClockValid = false;
+      } else if (commonClock.has_value() && commonClock != route.timestampClockHz) {
+        commonClockValid = false;
+      } else {
+        commonClock = route.timestampClockHz;
+      }
+      if (commonPrescaler.has_value() && *commonPrescaler != route.timestampPrescaler) {
+        commonPrescalerValid = false;
+      } else {
+        commonPrescaler = route.timestampPrescaler;
+      }
+      if (!route.itmEnableMask.has_value()) {
+        commonEnableMaskValid = false;
+      } else if (commonEnableMask.has_value() && commonEnableMask != route.itmEnableMask) {
+        commonEnableMaskValid = false;
+      } else {
+        commonEnableMask = route.itmEnableMask;
+      }
+    }
+    ctraceRunMeta.m_timestampClockHz = commonClockValid ? commonClock : std::nullopt;
+    ctraceRunMeta.m_timestampPrescaler = commonPrescalerValid ? commonPrescaler : std::nullopt;
+    ctraceRunMeta.m_itmEnableMask = commonEnableMaskValid ? commonEnableMask : std::nullopt;
+    ctraceRunMeta.m_processorCount = ctraceRunMeta.m_routes.size();
+    ctraceRunMeta.m_distinctProcessorPrescalers = !commonPrescalerValid;
+    return ctraceRunMeta;
+  }
 
   for (const auto& reference : config.references) {
+    const auto problem = TraceRunSchema::referenceProblem(reference);
+    if (problem == ReferenceProblem::InvalidStream) {
+      throw std::runtime_error(referenceProblemMessage(config, reference, problem));
+    }
     if (!TraceRunSchema::hasConsumedRouteShape(reference) && !TraceRunSchema::contributesStreamBinding(reference)) {
       continue;
     }
-    const auto problem = TraceRunSchema::referenceProblem(reference);
-    if (problem != ReferenceProblem::None && reference.error.empty()) {
+    if (problem != ReferenceProblem::None && !isDiscardableSourceProblem(reference, problem)) {
       throw std::runtime_error(referenceProblemMessage(config, reference, problem));
     }
   }
+  const auto identity = processorIdentity(config, ctraceRunMeta.m_warnings);
   for (const auto& setup : config.setups) {
-    if (!consumesSetup(config, setup) || !setup.timestamps.has_value() ||
+    if (!identity.acceptsSetup(setup) || !consumesSetup(config, setup) || !setup.timestamps.has_value() ||
         !setup.timestamps->timestampPrescaler.has_value() ||
         TraceRunSchema::isTimestampPrescaler(*setup.timestamps->timestampPrescaler)) {
       continue;
@@ -523,33 +1183,58 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
                                              : "ctrace-setup timestamps.itm-prescaler must be one of 1, 4, 16, or 64"));
   }
 
-  const auto identity = processorIdentity(config, ctraceRunMeta.m_warnings);
   std::vector<ProcessorMeta> processors;
 
   for (const auto& setup : config.setups) {
-    if (!consumesSetup(config, setup)) {
+    if (!identity.acceptsSetup(setup) || !consumesSetup(config, setup)) {
       continue;
     }
     const auto processorName = identity.canonicalName(setup.processorName);
     auto& processor = processorMeta(processors, processorName);
     if (setup.timestamps.has_value()) {
+      const auto prescaler = setup.timestamps->timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
+      if (processor.timestampsEnabled && processor.timestampPrescaler != prescaler) {
+        throw std::runtime_error(
+            configError(config, setup.timestamps->line,
+                        "unformatted SINGLE trace has conflicting timestamps.itm-prescaler values for one processor"));
+      }
+      mergeTimestampClock(processor.timestampClockHz, processor.timestampClockError, setup.timestamps->clockHz,
+                          setup.timestamps->clockError, "conflicting active ctrace-setup timestamps.clock values");
       processor.timestampsEnabled = true;
-      processor.timestampClockHz = setup.timestamps->clockHz;
-      processor.timestampClockError = setup.timestamps->clockError;
-      processor.timestampPrescaler =
-          setup.timestamps->timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
+      processor.timestampPrescaler = prescaler;
       if (setup.timestamps->clockError.has_value()) {
         ctraceRunMeta.m_timestampClockErrors.push_back(*setup.timestamps->clockError);
       }
     }
     if (setup.itm.has_value()) {
-      processor.itmEnableMask = setup.itm->enableMask;
+      if (setup.itm->enableError.has_value()) {
+        if (processor.itmEnableError.has_value() && processor.itmEnableError != setup.itm->enableError) {
+          processor.itmEnableConflict = true;
+          processor.itmEnableError.reset();
+        } else if (!processor.itmEnableConflict) {
+          processor.itmEnableError = setup.itm->enableError;
+        }
+        processor.itmEnableMask.reset();
+        continue;
+      }
+      if (!setup.itm->enableMask.has_value() || processor.itmEnableError.has_value() || processor.itmEnableConflict) {
+        continue;
+      }
+      if (processor.itmEnableMask.has_value() && processor.itmEnableMask != setup.itm->enableMask) {
+        processor.itmEnableConflict = true;
+        processor.itmEnableMask.reset();
+        addRootInconsistency(ctraceRunMeta.m_warnings,
+                             "ignoring conflicting ctrace-setup itm.enable values for unformatted SINGLE trace",
+                             {{"pname", processorName.value_or("<unnamed>")}});
+      } else {
+        processor.itmEnableMask = setup.itm->enableMask;
+      }
     }
   }
 
   for (const auto& reference : config.references) {
-    if (isUsableStreamBinding(reference) && identity.accepts(reference)) {
-      (void)processorMeta(processors, identity.canonicalName(reference.processorName));
+    if (isUsableProcessorBinding(reference) && identity.accepts(reference)) {
+      (void)processorMeta(processors, identity.canonicalReferenceName(reference));
     }
     if (!TraceRunSchema::isUsableReference(reference) || !identity.accepts(reference)) {
       continue;
@@ -558,18 +1243,62 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
       ctraceRunMeta.m_sources.push_back(sourceMeta(config, reference, source, identity));
     }
   }
-  const auto streamBindings = resolveStreamBindings(config, identity, processors);
-  ctraceRunMeta.m_timestampClockHz = commonProcessorSetting(processors, &ProcessorMeta::timestampClockHz);
-  ctraceRunMeta.m_timestampsByTraceBusId =
-      buildTimestampsByTraceBusId(streamBindings, ctraceRunMeta.m_warnings);
-  ctraceRunMeta.m_timestampPrescaler = commonProcessorSetting(processors, &ProcessorMeta::timestampPrescaler);
-  ctraceRunMeta.m_timestampPrescalersByTraceBusId =
-      buildTimestampPrescalersByTraceBusId(streamBindings, ctraceRunMeta.m_warnings);
+  const auto timestampPrescaler = commonTimestampPrescaler(processors);
+  ctraceRunMeta.m_distinctProcessorPrescalers = !processors.empty() && !timestampPrescaler.has_value();
+  if (ctraceRunMeta.m_distinctProcessorPrescalers) {
+    throw std::runtime_error(
+        config.path + ": unformatted SINGLE trace cannot choose between different timestamps.itm-prescaler values");
+  }
+  for (auto& source : ctraceRunMeta.m_sources) {
+    source.traceBusId = 0U;
+  }
+  ctraceRunMeta.m_timestampClockHz = commonTimestampClock(processors);
+  ctraceRunMeta.m_timestampPrescaler = timestampPrescaler;
   ctraceRunMeta.m_itmEnableMask = commonItmEnableMask(processors);
-  ctraceRunMeta.m_itmEnableMasksByTraceBusId =
-      buildItmEnableMasksByTraceBusId(streamBindings, ctraceRunMeta.m_warnings);
   ctraceRunMeta.m_processorCount = processors.size();
-  ctraceRunMeta.m_distinctProcessorPrescalers = containsDistinctProcessorPrescalers(processors);
+  const auto clockError = commonTimestampClockError(processors);
+  if (clockError.has_value() &&
+      std::find(ctraceRunMeta.m_timestampClockErrors.begin(), ctraceRunMeta.m_timestampClockErrors.end(),
+                *clockError) == ctraceRunMeta.m_timestampClockErrors.end()) {
+    ctraceRunMeta.m_timestampClockErrors.push_back(*clockError);
+  }
+  if (!processors.empty() && std::any_of(processors.begin(), processors.end(),
+                                         [](const ProcessorMeta& processor) { return processor.timestampsEnabled; })) {
+    const auto processorName = processors.size() == 1U ? processors.front().name : std::nullopt;
+    ctraceRunMeta.m_timestampsByTraceBusId.emplace(
+        0U, CtraceRunTimestampMeta{processorName, ctraceRunMeta.m_timestampClockHz, clockError});
+    ctraceRunMeta.m_timestampPrescalersByTraceBusId.emplace(
+        0U, ctraceRunMeta.m_timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler));
+  }
+  if (ctraceRunMeta.m_itmEnableMask.has_value()) {
+    ctraceRunMeta.m_itmEnableMasksByTraceBusId.emplace(0U, *ctraceRunMeta.m_itmEnableMask);
+  }
+
+  CtraceRunRoute syntheticRoute;
+  syntheticRoute.sources = ctraceRunMeta.m_sources;
+  syntheticRoute.referenceDiagnostics = ctraceRunMeta.m_referenceDiagnostics;
+  syntheticRoute.timestampsConfigured = std::any_of(
+      processors.begin(), processors.end(), [](const ProcessorMeta& processor) { return processor.timestampsEnabled; });
+  syntheticRoute.timestampClockHz = ctraceRunMeta.m_timestampClockHz;
+  syntheticRoute.timestampPrescaler =
+      ctraceRunMeta.m_timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
+  syntheticRoute.itmEnableMask = ctraceRunMeta.m_itmEnableMask;
+  syntheticRoute.timestampClockError = clockError;
+  if (processors.size() == 1U) {
+    syntheticRoute.processorName = processors.front().name;
+    syntheticRoute.timestampsConfigured = processors.front().timestampsEnabled;
+    syntheticRoute.timestampClockHz = processors.front().timestampClockHz;
+    syntheticRoute.timestampClockError = processors.front().timestampClockError;
+    syntheticRoute.timestampPrescaler =
+        processors.front().timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
+    syntheticRoute.itmEnableMask = processors.front().itmEnableMask;
+    if (processors.front().itmEnableConflict) {
+      syntheticRoute.itmEnableError = "conflicting active ctrace-setup itm.enable values";
+    } else {
+      syntheticRoute.itmEnableError = processors.front().itmEnableError;
+    }
+  }
+  ctraceRunMeta.m_routes.push_back(std::move(syntheticRoute));
 
   return ctraceRunMeta;
 }
@@ -627,6 +1356,16 @@ std::size_t CtraceRunMeta::processorCount() const
 const std::vector<CtraceRunSourceMeta>& CtraceRunMeta::sources() const
 {
   return m_sources;
+}
+
+const std::vector<CtraceRunRoute>& CtraceRunMeta::routes() const
+{
+  return m_routes;
+}
+
+const std::vector<CtraceRunReferenceDiagnostic>& CtraceRunMeta::referenceDiagnostics() const
+{
+  return m_referenceDiagnostics;
 }
 
 const std::vector<CtraceRunWarning>& CtraceRunMeta::warnings() const

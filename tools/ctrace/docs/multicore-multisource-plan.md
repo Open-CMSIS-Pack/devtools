@@ -536,8 +536,8 @@ Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4
 | Phase | Deliverable | Status |
 | :--- | :--- | :--- |
 | 0 | Baseline, fixtures, goldens, coverage gate | Complete |
-| 1 | Trace-run declaration and route normalization | Next |
-| 2 | Raw-input discovery and preflight | Pending |
+| 1 | Trace-run declaration and route normalization | Complete |
+| 2 | Raw-input discovery and preflight | Next |
 | 3 | Route-aware semantic state, diagnostics, and CSV | Pending |
 | 4 | CTF descriptors and metadata model | Pending |
 | 5 | Multi-stream CTF bundle and Trace Compass policy | Pending |

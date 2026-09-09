@@ -59,12 +59,13 @@ TEST(CtraceUnitTests, testBackendRequirementsUsePerStreamMetadata)
 {
   TraceRunConfig multicore;
   multicore.path = "Multicore.ctrace-run.yml";
+  multicore.traceFormat = TraceRunFormat::Formatted;
   auto core0 = TraceRunTestSupport::makeTimestampSetup("core0", 400000000U, 1U);
   auto core1 = TraceRunTestSupport::makeTimestampSetup("core1", 400000000U, 4U);
   multicore.setups = {core0, core1};
 
-  const auto core0Itm = TraceRunTestSupport::makeReference("itm", "core0", 1U, {1U}, "opaque/core0-route");
-  const auto core1Itm = TraceRunTestSupport::makeReference("itm", "core1", 2U, {1U}, "opaque/core1-route");
+  const auto core0Itm = TraceRunTestSupport::makeReference("itm", "core0", 1U, {1U}, "core0/itm");
+  const auto core1Itm = TraceRunTestSupport::makeReference("itm", "core1", 2U, {1U}, "core1/itm");
   multicore.references = {core0Itm, core1Itm};
 
   core1.timestamps = TraceRunTimestampSetup{400000000U, std::nullopt};
@@ -185,8 +186,7 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
        missingType.ctf->coreClockHz == 400000000U && missingType.ctf->sources.size() == 1U &&
        missingType.ctf->sources[0].dataType == "unsigned" && missingType.ctf->sources[0].dataSize == 4U))
       << "output preflight must resolve artifact paths, clock, routes, and defaults";
-  ASSERT_TRUE(missingTypeDiagnostics.events().empty())
-      << "missing optional data-type must not produce diagnostics";
+  ASSERT_TRUE(missingTypeDiagnostics.events().empty()) << "missing optional data-type must not produce diagnostics";
 
   config.references[0].dataTypeError = "data-type must be scalar";
   CollectingDiagnosticSink malformedTypeDiagnostics;
@@ -206,8 +206,8 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
   config.references[0].dataType = "signed";
   config.references[0].dataSize = 1U;
   CollectingDiagnosticSink currentMetadataDiagnostics;
-  const auto currentMetadata = planOutputs(allRequest, "BackendRequirements.SWO.raw", config,
-                                           currentMetadataDiagnostics);
+  const auto currentMetadata =
+      planOutputs(allRequest, "BackendRequirements.SWO.raw", config, currentMetadataDiagnostics);
   ASSERT_TRUE(currentMetadata.ctf.has_value() && currentMetadata.ctf->sources[0].dataType == "signed" &&
               currentMetadata.ctf->sources[0].dataSize == 1U)
       << "reference data-type/size must be retained for CTF";
@@ -215,8 +215,8 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
 
   config.references[0].addressError = "address must be unsigned";
   CollectingDiagnosticSink malformedAddressDiagnostics;
-  const auto malformedAddress = planOutputs(allRequest, "BackendRequirements.SWO.raw", config,
-                                            malformedAddressDiagnostics);
+  const auto malformedAddress =
+      planOutputs(allRequest, "BackendRequirements.SWO.raw", config, malformedAddressDiagnostics);
   ASSERT_TRUE(malformedAddress.csv.has_value() && !malformedAddress.ctf.has_value())
       << "malformed address must disable only CTF";
   malformedAddressDiagnostics.singleEvent();
@@ -268,16 +268,23 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
 {
   TraceRunConfig config;
   config.path = "AmbiguousRoutes.ctrace-run.yml";
+  config.traceFormat = TraceRunFormat::Formatted;
   auto setup = TraceRunTestSupport::makeTimestampSetup(std::nullopt, 400000000U, 1U);
   setup.data.push_back(TraceRunDataSetup{4U});
-  config.setups.push_back(setup);
+  auto routeOneSetup = setup;
+  routeOneSetup.processorName = "core0";
+  auto routeTwoSetup = setup;
+  routeTwoSetup.processorName = "core1";
+  config.setups = {routeOneSetup, routeTwoSetup};
 
-  auto first = TraceRunTestSupport::makeReference("dwt", std::nullopt, 1U, {0U}, "opaque/dwt-a");
+  auto first = TraceRunTestSupport::makeReference("dwt", "core0", 1U, {0U}, "core0/data#0");
   first.dataSetupIndex = 0U;
   first.label = "core-one";
   TraceRunReference second = first;
   second.label = "core-two";
-  config.references = {first, second};
+  const auto firstAnchor = TraceRunTestSupport::makeReference("itm", "core0", 1U, {}, "core0/itm");
+  const auto secondAnchor = TraceRunTestSupport::makeReference("itm", "core1", 2U, {}, "core1/itm");
+  config.references = {first, second, firstAnchor, secondAnchor};
 
   auto allRequest = outputRequest(true, true);
   CollectingDiagnosticSink diagnostics;
@@ -287,6 +294,8 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   diagnostics.singleEvent();
 
   config.references[1].stream = 2U;
+  config.references[1].processorName = "core1";
+  config.references[1].ctraceRef = "core1/data#0";
   config.references[1].label = "core-one";
   CollectingDiagnosticSink routeDiagnostics;
   const auto routePlan = planOutputs(allRequest, "captures/AmbiguousRoutes.SWO.raw", config, routeDiagnostics);
@@ -297,16 +306,16 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
 
   TraceRunConfig processorConfig;
   processorConfig.path = "AmbiguousProcessors.ctrace-run.yml";
-  auto core0Setup = setup;
-  core0Setup.processorName = "core0";
-  auto core1Setup = setup;
-  core1Setup.processorName = "core1";
-  processorConfig.setups = {core0Setup, core1Setup};
+  processorConfig.traceFormat = TraceRunFormat::Formatted;
+  processorConfig.setups = config.setups;
   auto core0Reference = first;
   core0Reference.processorName = "core0";
+  core0Reference.ctraceRef = "core0/data#0";
   auto core1Reference = first;
   core1Reference.processorName = "core1";
-  processorConfig.references = {core0Reference, core1Reference};
+  core1Reference.ctraceRef = "core1/data#0";
+  core1Reference.stream = 2U;
+  processorConfig.references = {core0Reference, core1Reference, firstAnchor, secondAnchor};
   CollectingDiagnosticSink processorDiagnostics;
   const auto processorPlan = planOutputs(outputRequest(true, false), "captures/AmbiguousProcessors.SWO.raw",
                                          processorConfig, processorDiagnostics);
@@ -324,7 +333,8 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
 
   config.setups[0].data.push_back(TraceRunDataSetup{2U});
   config.references[1].stream = 1U;
-  config.references[1].ctraceRef = "opaque/dwt-b";
+  config.references[1].processorName = "core0";
+  config.references[1].ctraceRef = "core0/data#1";
   config.references[1].dataSetupIndex = 1U;
   CollectingDiagnosticSink sizeDiagnostics;
   const auto csvPlan =
@@ -361,10 +371,61 @@ TEST(CtraceUnitTests, testOutputRequirementsValidateDefaultClockWithoutRoutes)
   zeroDiagnostics.singleEvent();
 }
 
+TEST(CtraceUnitTests, testOutputRequirementsDeferUnformattedSingleClockAmbiguityToCtf)
+{
+  TraceRunConfig config;
+  config.path = "SingleCandidates.ctrace-run.yml";
+  config.setups = {
+      TraceRunTestSupport::makeTimestampSetup("first", 100U, 4U),
+      TraceRunTestSupport::makeTimestampSetup("second", 200U, 4U),
+  };
+  config.references = {
+      TraceRunTestSupport::makeReference("itm", "first", 1U, {1U}),
+      TraceRunTestSupport::makeReference("itm", "second", 1U, {2U}),
+  };
+
+  CollectingDiagnosticSink checkDiagnostics;
+  const auto checkPlan = planOutputs(outputRequest(false, false), "captures/Single.SWO.raw", config, checkDiagnostics);
+  EXPECT_FALSE(checkPlan.hasRequestedOutputs());
+  EXPECT_TRUE(checkDiagnostics.events().empty());
+
+  CollectingDiagnosticSink csvDiagnostics;
+  const auto csvPlan = planOutputs(outputRequest(true, false), "captures/Single.SWO.raw", config, csvDiagnostics);
+  EXPECT_TRUE(csvPlan.csv.has_value());
+  EXPECT_TRUE(csvDiagnostics.events().empty());
+
+  CollectingDiagnosticSink allDiagnostics;
+  const auto allPlan = planOutputs(outputRequest(true, true), "captures/Single.SWO.raw", config, allDiagnostics);
+  EXPECT_TRUE(allPlan.csv.has_value());
+  EXPECT_FALSE(allPlan.ctf.has_value());
+  EXPECT_EQ(allDiagnostics.singleEvent().message, "CTF output cannot use the configured timestamps.clock");
+
+  config.setups[1].timestamps->clockHz = 100U;
+  CollectingDiagnosticSink equivalentDiagnostics;
+  const auto equivalent =
+      planOutputs(outputRequest(true, true), "captures/Single.SWO.raw", config, equivalentDiagnostics);
+  EXPECT_TRUE(equivalent.csv.has_value());
+  EXPECT_TRUE(equivalent.ctf.has_value());
+  EXPECT_TRUE(equivalentDiagnostics.events().empty());
+
+  TraceRunSetup noTimestamps;
+  noTimestamps.processorName = "second";
+  noTimestamps.itm = TraceRunItmSetup{1U};
+  config.setups[0].timestamps->timestampPrescaler = 1U;
+  config.setups[1] = noTimestamps;
+  CollectingDiagnosticSink missingCandidateDiagnostics;
+  const auto missingCandidate =
+      planOutputs(outputRequest(true, true), "captures/Single.SWO.raw", config, missingCandidateDiagnostics);
+  EXPECT_TRUE(missingCandidate.csv.has_value());
+  EXPECT_FALSE(missingCandidate.ctf.has_value());
+  EXPECT_EQ(missingCandidateDiagnostics.singleEvent().message, "CTF output cannot use the configured timestamps.clock");
+}
+
 TEST(CtraceUnitTests, testOutputRequirementsRejectUnknownStreamWithMultipleClocks)
 {
   TraceRunConfig config;
   config.path = "Multicore.ctrace-run.yml";
+  config.traceFormat = TraceRunFormat::Formatted;
   config.setups = {
       TraceRunTestSupport::makeTimestampSetup("first", 100U, 1U),
       TraceRunTestSupport::makeTimestampSetup("second", 200U, 1U),
@@ -380,6 +441,29 @@ TEST(CtraceUnitTests, testOutputRequirementsRejectUnknownStreamWithMultipleClock
   const auto plan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, diagnostics);
   ASSERT_FALSE(plan.ctf.has_value());
   diagnostics.singleEvent();
+
+  config.setups[1].timestamps->clockHz = 100U;
+  CollectingDiagnosticSink commonDiagnostics;
+  const auto commonPlan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, commonDiagnostics);
+  ASSERT_TRUE(commonPlan.ctf.has_value());
+  EXPECT_EQ(commonPlan.ctf->coreClockHz, 100U);
+  EXPECT_TRUE(commonDiagnostics.events().empty());
+
+  config.setups[0].timestamps->clockHz.reset();
+  config.setups[0].timestamps->clockError = "invalid processor clock";
+  CollectingDiagnosticSink malformedDiagnostics;
+  const auto malformedPlan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, malformedDiagnostics);
+  ASSERT_FALSE(malformedPlan.ctf.has_value());
+  EXPECT_EQ(malformedDiagnostics.singleEvent().message, "CTF output cannot use the configured timestamps.clock");
+
+  for (auto& setup : config.setups) {
+    setup.timestamps->clockError.reset();
+    setup.timestamps->clockHz = 0U;
+  }
+  CollectingDiagnosticSink zeroDiagnostics;
+  const auto zeroPlan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, zeroDiagnostics);
+  ASSERT_FALSE(zeroPlan.ctf.has_value());
+  EXPECT_EQ(zeroDiagnostics.singleEvent().message, "CTF output requires timestamps.clock to be greater than zero");
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsRejectsInputWithoutArtifactName)

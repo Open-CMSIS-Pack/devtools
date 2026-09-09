@@ -160,6 +160,34 @@ TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
       << "check-only trace directory should fail on decoder error packets";
 }
 
+TEST(CtraceUnitTests, testTraceDirectoryRejectsFormattedInputBeforeRawFrontendAndOutput)
+{
+  const TemporaryTestPath temporaryPath("ctrace-trace-directory-formatted-guard-test");
+  const auto traceDir = temporaryPath.path() / ".trace";
+  writeTraceInputs(traceDir, {"Formatted"});
+  writeTestFile(traceDir / "Formatted.TB.raw");
+
+  TraceRunConfig config;
+  config.traceFormat = TraceRunFormat::Formatted;
+  config.references.push_back(TraceRunTestSupport::makeReference("itm", "core", 1U, {}, "core/itm"));
+
+  CliOptions options;
+  options.traceDir = traceDir.string();
+  options.targetName = "Formatted";
+  options.outputFormat = OutputFormat::All;
+
+  CollectingDiagnosticSink diagnostics;
+  TestTraceRunConfigReader reader(config);
+  TraceDirectoryJob(options, diagnostics, reader).run();
+
+  EXPECT_TRUE(diagnostics.containsMessage("formatted trace input is not enabled yet"));
+  EXPECT_FALSE(diagnostics.containsMessage("CTF output requires timestamps.clock"));
+  EXPECT_FALSE(diagnostics.containsMessage("skipping raw trace channel"));
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.SWO.csv"));
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.ctf"));
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.SWO.traceanalysis.xml"));
+}
+
 TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSwo)
 {
   const TemporaryTestPath temporaryPath("ctrace-trace-directory-diagnostics-test");
@@ -292,6 +320,7 @@ TEST(CtraceUnitTests, testFileDecodeJobReportsPerStreamPrescalers)
   writeTestFile(rawPath);
 
   TraceRunConfig config;
+  config.traceFormat = TraceRunFormat::Formatted;
   config.setups = {
       TraceRunTestSupport::makeTimestampSetup("first", 100U, 4U),
       TraceRunTestSupport::makeTimestampSetup("second", 100U, 16U),

@@ -14,6 +14,8 @@
 #include "yaml-cpp/node/type.h"
 #include "yaml-cpp/yaml.h" // IWYU pragma: keep
 
+#include <algorithm>
+#include <array>
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
@@ -155,9 +157,10 @@ static std::optional<std::uint64_t> deferredUnsignedAttribute(const std::string&
 }
 
 /** @brief Parses an optional unsigned reference field and defers validation errors. */
-static std::optional<std::uint64_t> deferredReferenceUnsignedAttribute(
-    const std::string& path, const Node& element, const std::string_view& name, std::uint64_t maximum,
-    std::optional<std::string>& error)
+static std::optional<std::uint64_t> deferredReferenceUnsignedAttribute(const std::string& path, const Node& element,
+                                                                       const std::string_view& name,
+                                                                       std::uint64_t maximum,
+                                                                       std::optional<std::string>& error)
 {
   const auto node = childNode(element, name);
   if (!node || node.IsNull()) {
@@ -212,6 +215,20 @@ static std::optional<std::size_t> dwtDataIndex(const std::string_view& ctraceRef
   return index;
 }
 
+/** @brief Resolves the processor named explicitly or by `[pname/]data#<index>`. */
+static std::optional<std::string> dataReferenceProcessorName(const TraceRunReference& reference)
+{
+  const auto explicitName = TraceRunSchema::normalizedProcessorName(reference.processorName);
+  if (explicitName.has_value() || !reference.dataSetupIndex.has_value()) {
+    return explicitName;
+  }
+  const auto separator = reference.ctraceRef.find('/');
+  if (separator == 0U || separator == std::string::npos || separator != reference.ctraceRef.rfind('/')) {
+    return std::nullopt;
+  }
+  return reference.ctraceRef.substr(0U, separator);
+}
+
 /** @brief Collects data setup indices consumed by matching references. */
 static std::set<std::size_t> referencedDataSetupIndices(const std::vector<TraceRunReference>& references,
                                                         const std::optional<std::string>& setupProcessorName)
@@ -221,7 +238,7 @@ static std::set<std::size_t> referencedDataSetupIndices(const std::vector<TraceR
     if (reference.type != "dwt" || !TraceRunSchema::isUsableReference(reference)) {
       continue;
     }
-    if (!TraceRunSchema::processorNamesMayBind(setupProcessorName, reference.processorName)) {
+    if (!TraceRunSchema::processorNamesMayBind(setupProcessorName, dataReferenceProcessorName(reference))) {
       continue;
     }
     const auto index = reference.dataSetupIndex;
@@ -255,6 +272,25 @@ static Node traceRunRoot(const std::string& path, const Node& document)
     fail(path, root, "top-level 'ctrace-run' node must be a map");
   }
   return root;
+}
+
+/** @brief Parses the optional trace byte-format declaration. */
+static std::optional<TraceRunFormat> parseTraceFormat(const std::string& path, const Node& root)
+{
+  const auto node = childNode(root, "trace-format");
+  if (!node || node.IsNull()) {
+    return std::nullopt;
+  }
+  if (!node.IsScalar()) {
+    fail(path, node, "'trace-format' must be a scalar value");
+  }
+  if (node.Scalar() == "unformatted") {
+    return TraceRunFormat::Unformatted;
+  }
+  if (node.Scalar() == "formatted") {
+    return TraceRunFormat::Formatted;
+  }
+  fail(path, node, "'trace-format' must be 'unformatted' or 'formatted'");
 }
 
 /** @brief Parses scalar or sequence source identifiers from one reference. */
@@ -370,45 +406,25 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
     return static_cast<std::uint32_t>(*stream);
   };
 
-  const auto parseRoute = [&]() {
-    reference.processorName = processorNameAttribute(path, element);
-    reference.stream = parseStream();
-    reference.sources = parseSources(path, element);
-    if (reference.type == "dwt") {
-      reference.address = deferredReferenceUnsignedAttribute(path, element, "address",
-                                                             std::numeric_limits<std::uint64_t>::max(),
-                                                             reference.addressError);
-      reference.dataType = deferredReferenceStringAttribute(element, "data-type", reference.dataTypeError);
-      reference.dataSize = deferredReferenceUnsignedAttribute(path, element, "size",
-                                                              std::numeric_limits<std::uint64_t>::max(),
-                                                              reference.dataSizeError);
-    }
-    reference.label = optionalAttribute(element, "label");
-  };
-
-  if (!TraceRunSchema::supportsSource(reference.type)) {
-    // These source types currently contribute diagnostics only. Preserve
-    // a valid processor name for log context, but do not validate fields
-    // that no ctrace decoder or output consumes.
-    reference.processorName = bestEffortProcessorName(element);
-    return reference;
-  }
-
-  if (!diagnostics.error.empty()) {
-    auto diagnosticReference = reference;
-    diagnosticReference.processorName = bestEffortProcessorName(element);
+  reference.processorName = processorNameAttribute(path, element);
+  reference.stream = parseStream();
+  if (TraceRunSchema::supportsSource(reference.type)) {
     try {
-      parseRoute();
-      if (TraceRunSchema::isUsableReference(reference) || TraceRunSchema::isItmChannelZero(reference)) {
-        return reference;
-      }
-      return diagnosticReference;
+      reference.sources = parseSources(path, element);
     } catch (const std::runtime_error&) {
-      return diagnosticReference;
+      if (diagnostics.error.empty()) {
+        throw;
+      }
     }
   }
-
-  parseRoute();
+  if (reference.type == "dwt") {
+    reference.address = deferredReferenceUnsignedAttribute(
+        path, element, "address", std::numeric_limits<std::uint64_t>::max(), reference.addressError);
+    reference.dataType = deferredReferenceStringAttribute(element, "data-type", reference.dataTypeError);
+    reference.dataSize = deferredReferenceUnsignedAttribute(
+        path, element, "size", std::numeric_limits<std::uint64_t>::max(), reference.dataSizeError);
+  }
+  reference.label = optionalAttribute(element, "label");
   return reference;
 }
 
@@ -481,26 +497,40 @@ static std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, co
     return std::nullopt;
   }
   if (!itmNode.IsMap()) {
-    fail(path, itmNode, "'itm' must be a map containing 'enable'");
+    TraceRunItmSetup setup;
+    setup.enableError = "'itm' must be a map containing 'enable'";
+    return setup;
   }
   const auto enableNode = childNode(itmNode, "enable");
   if (!enableNode || enableNode.IsNull()) {
     return std::nullopt;
   }
   if (!enableNode.IsScalar() || enableNode.Scalar().empty()) {
-    fail(path, enableNode, "'itm.enable' must be a scalar unsigned integer");
+    TraceRunItmSetup setup;
+    setup.enableError = "'itm.enable' must be a scalar unsigned integer";
+    return setup;
   }
-  return TraceRunItmSetup{static_cast<std::uint32_t>(
-      unsignedValue(path, enableNode, "itm.enable", enableNode.Scalar(), std::numeric_limits<std::uint32_t>::max()))};
+  TraceRunItmSetup setup;
+  try {
+    setup.enableMask = static_cast<std::uint32_t>(
+        unsignedValue(path, enableNode, "itm.enable", enableNode.Scalar(), std::numeric_limits<std::uint32_t>::max()));
+  } catch (const std::runtime_error& error) {
+    setup.enableError = error.what();
+  }
+  return setup;
 }
 
 /** @brief Parses only DWT data setups referenced by consumed routes. */
 static std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::string& path, const Node& element,
-                                                                const std::set<std::size_t>& referencedIndices)
+                                                                const std::set<std::size_t>& referencedIndices,
+                                                                std::optional<std::string>& dataError)
 {
-  const auto dataNode =
-      referencedIndices.empty() ? Node(YAML::NodeType::Undefined) : childNode(element, "data");
-  if (!dataNode || !dataNode.IsSequence()) {
+  const auto dataNode = referencedIndices.empty() ? Node(YAML::NodeType::Undefined) : childNode(element, "data");
+  if (!dataNode || dataNode.IsNull()) {
+    return {};
+  }
+  if (!dataNode.IsSequence()) {
+    dataError = "'data' must be an array";
     return {};
   }
 
@@ -509,12 +539,20 @@ static std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::strin
   bool foundReferencedEntry = false;
   for (const auto& item : dataNode) {
     if (referencedIndices.find(index++) == referencedIndices.end()) {
-      dataSetups.emplace_back();
+      TraceRunDataSetup data;
+      data.present = false;
+      dataSetups.push_back(std::move(data));
+      continue;
+    }
+    TraceRunDataSetup data;
+    if (item.IsNull()) {
+      data.present = false;
+      dataSetups.push_back(std::move(data));
       continue;
     }
     foundReferencedEntry = true;
-    TraceRunDataSetup data;
     if (!item.IsMap()) {
+      data.sizeError = "each 'data' entry must be a map";
       dataSetups.push_back(std::move(data));
       continue;
     }
@@ -522,25 +560,97 @@ static std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::strin
     if (size && !size.IsScalar() && !size.IsNull()) {
       data.sizeError = "'data.size' must be a scalar unsigned integer";
     } else if (size && !size.IsNull()) {
-      data.size = deferredUnsignedAttribute(path, item, "size", std::numeric_limits<std::uint64_t>::max(),
-                                            data.sizeError);
+      data.size =
+          deferredUnsignedAttribute(path, item, "size", std::numeric_limits<std::uint64_t>::max(), data.sizeError);
     }
     dataSetups.push_back(std::move(data));
   }
   return foundReferencedEntry ? dataSetups : std::vector<TraceRunDataSetup>{};
 }
 
+/** @brief Returns the generated reference paths represented by one setup fragment. */
+static std::vector<std::string> setupFeaturePaths(const Node& element, const std::optional<std::string>& processorName)
+{
+  struct Feature {
+    std::string_view name;
+    bool repeated;
+  };
+  constexpr std::array<Feature, 10U> features{{
+      {"timestamps", false},
+      {"timesync", false},
+      {"data", true},
+      {"exceptions", false},
+      {"events", true},
+      {"itm", false},
+      {"pcsampling", false},
+      {"synchronization", false},
+      {"instructions", false},
+      {"tracehalt", false},
+  }};
+
+  const auto prefix = processorName.has_value() ? *processorName + "/" : std::string{};
+  std::vector<std::string> paths;
+  for (const auto& feature : features) {
+    const auto node = childNode(element, feature.name);
+    if (!node || ((feature.name == "data" || feature.name == "itm") && node.IsNull())) {
+      continue;
+    }
+    if (feature.repeated && node.IsSequence()) {
+      for (std::size_t index = 0U; index < node.size(); ++index) {
+        if (node[index].IsNull()) {
+          continue;
+        }
+        paths.push_back(prefix + std::string(feature.name) + "#" + std::to_string(index));
+      }
+      continue;
+    }
+    paths.push_back(prefix + std::string(feature.name));
+  }
+  return paths;
+}
+
+/** @brief Tests whether an active setup contains metadata or a feature reference consumed by ctrace. */
+static bool hasRelevantSetupContent(const Node& element, const std::vector<TraceRunReference>& references)
+{
+  if (childNode(element, "timestamps")) {
+    return true;
+  }
+  const auto itm = childNode(element, "itm");
+  const auto itmEnable = itm && itm.IsMap() ? childNode(itm, "enable") : Node(YAML::NodeType::Undefined);
+  if (itm && !itm.IsNull() && (!itm.IsMap() || (itmEnable && !itmEnable.IsNull()))) {
+    return true;
+  }
+
+  const auto featurePaths = setupFeaturePaths(element, std::nullopt);
+  const auto matches = [](const std::string_view featurePath, std::string_view referencePath) {
+    const auto processorSeparator = referencePath.find('/');
+    if (processorSeparator != std::string_view::npos) {
+      referencePath.remove_prefix(processorSeparator + 1U);
+    }
+    return referencePath == featurePath ||
+           (referencePath.size() > featurePath.size() && referencePath.substr(0U, featurePath.size()) == featurePath &&
+            (referencePath[featurePath.size()] == '/' || referencePath[featurePath.size()] == '#'));
+  };
+  return std::any_of(featurePaths.begin(), featurePaths.end(), [&](const std::string& featurePath) {
+    return std::any_of(references.begin(), references.end(), [&](const TraceRunReference& reference) {
+      return TraceRunSchema::consumesReferenceMetadata(reference.type) && matches(featurePath, reference.ctraceRef);
+    });
+  });
+}
+
 /** @brief Parses one trace setup and its consumed metadata groups. */
 static TraceRunSetup parseSetup(const std::string& path, const Node& element,
-                                const std::vector<TraceRunReference>& references)
+                                const std::vector<TraceRunReference>& references, std::size_t ordinal)
 {
   TraceRunSetup setup;
   setup.line = lineNumber(element);
+  setup.ordinal = ordinal;
   setup.processorName = processorNameAttribute(path, element);
+  setup.featurePaths = setupFeaturePaths(element, setup.processorName);
   const auto referencedDataIndices = referencedDataSetupIndices(references, setup.processorName);
   setup.timestamps = parseTimestampSetup(path, element);
   setup.itm = parseItmSetup(path, element);
-  setup.data = parseReferencedDataSetups(path, element, referencedDataIndices);
+  setup.data = parseReferencedDataSetups(path, element, referencedDataIndices, setup.dataError);
   return setup;
 }
 
@@ -555,7 +665,9 @@ static std::vector<TraceRunSetup> parseSetups(const std::string& path, const Nod
   requireSequence(path, setupNode, "ctrace-setup");
 
   std::vector<TraceRunSetup> setups;
+  std::size_t ordinal = 0U;
   for (const auto& item : setupNode) {
+    const auto currentOrdinal = ordinal++;
     if (item.IsNull()) {
       continue;
     }
@@ -567,12 +679,19 @@ static std::vector<TraceRunSetup> parseSetups(const std::string& path, const Nod
     // Its value therefore has no schema that ctrace needs to validate.
     const auto disable = childNode(item, "disable");
     if (disable) {
+      TraceRunSetup setup;
+      setup.line = lineNumber(item);
+      setup.disabled = true;
+      setup.ordinal = currentOrdinal;
+      setup.processorName = bestEffortProcessorName(item);
+      setup.featurePaths = setupFeaturePaths(item, setup.processorName);
+      setups.push_back(std::move(setup));
       continue;
     }
-    auto setup = parseSetup(path, item, references);
-    if (!setup.timestamps.has_value() && !setup.itm.has_value() && setup.data.empty()) {
+    if (!hasRelevantSetupContent(item, references)) {
       continue;
     }
+    auto setup = parseSetup(path, item, references, currentOrdinal);
     setups.push_back(std::move(setup));
   }
   return setups;
@@ -609,6 +728,7 @@ TraceRunConfig YmlTraceRunConfigReader::read(const std::string& path) const
 
   TraceRunConfig config;
   config.path = path;
+  config.traceFormat = parseTraceFormat(path, root);
   config.references = parseReferences(path, root);
   config.setups = parseSetups(path, root, config.references);
   return config;

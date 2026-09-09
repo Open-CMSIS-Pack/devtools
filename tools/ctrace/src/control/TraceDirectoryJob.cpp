@@ -118,6 +118,9 @@ void TraceDirectoryJob::run()
       reportConsumedReferenceDiagnostics(config, m_diagnostics);
       const auto ctraceRunMeta = CtraceRunMeta::fromConfig(config);
       reportTraceRunWarnings(ctraceRunMeta, m_diagnostics);
+      if (config.traceFormat == TraceRunFormat::Formatted) {
+        throw std::runtime_error("formatted trace input is not enabled yet");
+      }
       const auto rawInputs = TraceRunDiscovery::rawInputs(configFile);
       bool processedSolutionSet = false;
       for (const auto& rawInput : rawInputs) {
