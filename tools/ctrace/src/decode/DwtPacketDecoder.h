@@ -34,7 +34,7 @@ public:
   std::vector<TraceEvent> decode(const DwtPayloadPacket& payload);
   /** @brief Flushes incomplete data-trace fragments at a boundary. */
   std::vector<TraceEvent> flush(const TraceQuality& quality, std::uint64_t tcyc);
-  /** @brief Discards all pending data-trace reconstruction state. */
+  /** @brief Discards all pending data-trace assembly state. */
   void reset();
 
 private:
@@ -44,13 +44,13 @@ private:
   struct PendingDataTrace {
     std::uint64_t index = 0;
     std::uint8_t traceBusId = 0U;
-    std::uint32_t pc = 0;
-    std::uint32_t addressLo16 = 0;
+    DwtAddressFragment pc;
+    DwtAddressFragment address;
     std::uint32_t value = 0;
     std::uint8_t size = 4;
     bool isRead = false;
     bool hasPc = false;
-    bool hasAddressLo16 = false;
+    bool hasAddress = false;
     bool hasValue = false;
     TraceQuality quality;
   };

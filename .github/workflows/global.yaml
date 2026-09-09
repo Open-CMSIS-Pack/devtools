@@ -23,7 +23,5 @@ jobs:
       - name: Check copyright notice
         run: |
           pip install \
-            pre-commit==4.5.1 \
-            python-magic==0.4.24 \
-            comment-parser==1.2.4
+            pre-commit==4.5.1
           pre-commit run --all-files

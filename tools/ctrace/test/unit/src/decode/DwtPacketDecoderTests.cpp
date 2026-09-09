@@ -254,7 +254,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRepeatedAddressFragments)
     ASSERT_TRUE(firstAddress != nullptr && packets.front().index == 10U && packets.front().traceBusId == 3U)
         << "the first repeated DWT address fragment lost its identity";
     const auto firstPc = dwtAddressPc(*firstAddress);
-    const auto firstOffset = dwtAddressOffset(*firstAddress);
+    const auto firstDataAddress = dwtDataAddress(*firstAddress);
 
     packets = decoder.flush({}, 300U);
     ASSERT_TRUE(packets.size() == 1U) << "the second DWT address fragment must remain available";
@@ -263,13 +263,15 @@ TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRepeatedAddressFragments)
         << "the second repeated DWT address fragment lost its identity";
 
     if (discriminator == 8U) {
-      ASSERT_TRUE(firstPc == std::optional<std::uint32_t>(firstValue) &&
-                  dwtAddressPc(*secondAddress) == std::optional<std::uint32_t>(secondValue))
+      ASSERT_TRUE(firstPc == std::optional<DwtAddressFragment>(DwtAddressFragment{size, firstValue}) &&
+                  dwtAddressPc(*secondAddress) ==
+                      std::optional<DwtAddressFragment>(DwtAddressFragment{size, secondValue}))
           << "repeated DWT PC fragments were overwritten";
     } else {
-      ASSERT_TRUE(firstOffset == std::optional<std::uint32_t>(firstValue) &&
-                  dwtAddressOffset(*secondAddress) == std::optional<std::uint32_t>(secondValue))
-          << "repeated DWT offset fragments were overwritten";
+      ASSERT_TRUE(firstDataAddress == std::optional<DwtAddressFragment>(DwtAddressFragment{size, firstValue}) &&
+                  dwtDataAddress(*secondAddress) ==
+                      std::optional<DwtAddressFragment>(DwtAddressFragment{size, secondValue}))
+          << "repeated DWT data-address fragments were overwritten";
     }
   };
 
@@ -312,7 +314,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingComparatorBeforeMatch)
   ASSERT_EQ(packets.size(), 2U);
   ASSERT_NE(traceEventPayload<DwtAddressTraceEvent>(packets[0]), nullptr);
   EXPECT_EQ(dwtAddressPc(*traceEventPayload<DwtAddressTraceEvent>(packets[0])),
-            std::optional<std::uint32_t>(0x08001234U));
+            std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001234U}));
   EXPECT_NE(traceEventPayload<DwtMatchTraceEvent>(packets[1]), nullptr);
   EXPECT_EQ(packets[0].tcyc, std::optional<std::uint64_t>(100U));
   EXPECT_EQ(packets[1].tcyc, std::optional<std::uint64_t>(100U));
@@ -337,8 +339,45 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
         << "unsupported DWT address width diagnostic lost packet identity";
   };
 
-  verify(8U, 1U);
-  verify(9U, 4U);
+  verify(9U, 3U);
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRawDataAddressWidths)
+{
+  const auto verify = [](std::uint8_t size, std::uint32_t value, const char* expectedCsv) {
+    DwtPacketDecoder decoder;
+    EXPECT_TRUE(decoder.decode(dwtPayload(9U, size, value, 17U, 3U, 99U)).empty());
+
+    const auto packets = decoder.flush({}, 100U);
+    ASSERT_EQ(packets.size(), 1U);
+    const auto* address = traceEventPayload<DwtAddressTraceEvent>(packets.front());
+    ASSERT_NE(address, nullptr);
+    EXPECT_EQ(dwtDataAddress(*address), std::optional<DwtAddressFragment>(DwtAddressFragment{size, value}));
+    EXPECT_EQ(CsvRowMapper::row(packets.front()), expectedCsv);
+  };
+
+  verify(1U, 0x58U, "100,3,dwt,0,,,0x58,");
+  verify(2U, 0x7858U, "100,3,dwt,0,,,0x7858,");
+  verify(4U, 0x20007858U, "100,3,dwt,0,,,0x20007858,");
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRawPcWidths)
+{
+  const auto verify = [](std::uint8_t size, std::uint32_t value, const char* expectedCsv) {
+    DwtPacketDecoder decoder;
+    EXPECT_TRUE(decoder.decode(dwtPayload(8U, size, value, 17U, 3U, 99U)).empty());
+
+    const auto packets = decoder.flush({}, 100U);
+    ASSERT_EQ(packets.size(), 1U);
+    const auto* address = traceEventPayload<DwtAddressTraceEvent>(packets.front());
+    ASSERT_NE(address, nullptr);
+    EXPECT_EQ(dwtAddressPc(*address), std::optional<DwtAddressFragment>(DwtAddressFragment{size, value}));
+    EXPECT_EQ(CsvRowMapper::row(packets.front()), expectedCsv);
+  };
+
+  verify(1U, 0x58U, "100,3,dwt,0,,0x58,,");
+  verify(2U, 0x7858U, "100,3,dwt,0,,0x7858,,");
+  verify(4U, 0x08007858U, "100,3,dwt,0,,0x08007858,,");
 }
 
 TEST(CtraceUnitTests, testDwtPacketDecoderMapsAllExceptionActions)
@@ -380,7 +419,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingTraceForUnknownSource)
   EXPECT_TRUE(decoder.decode(unknown).empty());
 }
 
-TEST(CtraceUnitTests, testDwtPacketDecoderCombinesPcOffsetAndValue)
+TEST(CtraceUnitTests, testDwtPacketDecoderCombinesPcAddressAndValue)
 {
   DwtPacketDecoder decoder;
 
@@ -388,12 +427,12 @@ TEST(CtraceUnitTests, testDwtPacketDecoderCombinesPcOffsetAndValue)
   pc.quality.timestampReliable = true;
   EXPECT_TRUE(decoder.decode(pc).empty());
 
-  auto offset = pc;
-  offset.index = 11U;
-  offset.discriminator = 9U;
-  offset.size = 2U;
-  offset.value = 0x20U;
-  EXPECT_TRUE(decoder.decode(offset).empty());
+  auto dataAddress = pc;
+  dataAddress.index = 11U;
+  dataAddress.discriminator = 9U;
+  dataAddress.size = 2U;
+  dataAddress.value = 0x20U;
+  EXPECT_TRUE(decoder.decode(dataAddress).empty());
 
   auto value = pc;
   value.index = 12U;
@@ -405,16 +444,16 @@ TEST(CtraceUnitTests, testDwtPacketDecoderCombinesPcOffsetAndValue)
   const auto* data = traceEventPayload<DwtDataTraceEvent>(packets.front());
   ASSERT_NE(data, nullptr);
   EXPECT_EQ(data->access, AccessType::Read);
-  EXPECT_EQ(data->pc, std::optional<std::uint32_t>(0x08001234U));
-  EXPECT_EQ(data->addressLo16, std::optional<std::uint32_t>(0x20U));
+  EXPECT_EQ(data->pc, std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001234U}));
+  EXPECT_EQ(data->address, std::optional<DwtAddressFragment>(DwtAddressFragment{2U, 0x20U}));
 
   DwtPacketDecoder addressDecoder;
   EXPECT_TRUE(addressDecoder.decode(pc).empty());
-  EXPECT_TRUE(addressDecoder.decode(offset).empty());
+  EXPECT_TRUE(addressDecoder.decode(dataAddress).empty());
   const auto addresses = addressDecoder.flush({}, 100U);
   ASSERT_EQ(addresses.size(), 1U);
   const auto* address = traceEventPayload<DwtAddressTraceEvent>(addresses.front());
   ASSERT_NE(address, nullptr);
-  EXPECT_EQ(dwtAddressPc(*address), std::optional<std::uint32_t>(0x08001234U));
-  EXPECT_EQ(dwtAddressOffset(*address), std::optional<std::uint32_t>(0x20U));
+  EXPECT_EQ(dwtAddressPc(*address), std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001234U}));
+  EXPECT_EQ(dwtDataAddress(*address), std::optional<DwtAddressFragment>(DwtAddressFragment{2U, 0x20U}));
 }

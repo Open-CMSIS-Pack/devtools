@@ -1305,6 +1305,7 @@
       "properties": {
         "description":  { "type": "string" },
         "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file." },
+        "target": { "type": "string", "description": "Selected target in the format <target-type>[@<target-set>]." },
         "cdefault": { "type": "string", "description": "Path to cdefault.yml file." },
         "csolution": { "type": "string", "description": "Path to csolution.yml file." },
         "cbuild-run": { "type": "string", "description": "Path to cbuild-run.yml file." },
@@ -2746,7 +2747,7 @@
       "type": "object",
       "description": "Target selection for hardware or simulator.",
       "properties": {
-        "target": { "type": "string", "description": "Explicit <target-type>[@<set>] selection." }
+        "target": { "type": "string", "description": "Explicit <target-type>[@<target-set>] selection." }
       },
       "additionalProperties": false
     },
@@ -2851,7 +2852,7 @@
       "type": "object",
       "description": "Run configuration.",
       "properties": {
-        "active":       { "type": "string", "description": "Active target-set in the form <target-type>[@<set>]." },
+        "active":       { "type": "string", "description": "Active target in the form <target-type>[@<target-set>]." },
         "cbuild-run":   { "type": "string", "description": "Path to the *.cbuild-run.yml file." },
         "output":       { "type": "array", "description": "List of output image files.", "items": { "$ref": "#/definitions/MlopsOutputType" } },
         "model":        { "type": "string", "description": "Simulator model executable (e.g. FVP_Corstone_SSE-320)." },

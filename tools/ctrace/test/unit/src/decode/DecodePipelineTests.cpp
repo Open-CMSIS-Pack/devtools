@@ -296,7 +296,9 @@ TEST(CtraceUnitTests, testCortexMPostDecoderOverflowFlushesDwtSegments)
       << "overflow segment first packet should be timestamp";
   const auto* address = traceEventPayload<DwtAddressTraceEvent>(packets[1]);
   ASSERT_TRUE(address != nullptr) << "overflow should flush pending DWT fragment as an address event";
-  ASSERT_TRUE(dwtAddressPc(*address) == std::optional<std::uint32_t>(0x08001234U)) << "flushed DWT PC mismatch";
+  ASSERT_TRUE(dwtAddressPc(*address) ==
+              std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001234U}))
+      << "flushed DWT PC mismatch";
   ASSERT_TRUE(packets[1].tcyc.has_value() && packets[1].tcyc.value() == 100) << "flushed DWT PC timestamp mismatch";
   ASSERT_TRUE(packets[1].quality.has_value() && packets[1].quality->overflow)
       << "flushed DWT PC should carry overflow status";
@@ -600,6 +602,30 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesPeriodicPcSamples)
   EXPECT_FALSE(samples[0].sleeping) << "OpenCSD periodic PC sample payload mismatch";
   EXPECT_EQ(samples[1].pc, 0U) << "OpenCSD periodic PC sleep indication mismatch";
   EXPECT_TRUE(samples[1].sleeping) << "OpenCSD periodic PC sleep indication mismatch";
+}
+
+TEST(CtraceUnitTests, testDecodePipelinePreservesCompressedDataTracePcValues)
+{
+  const std::uint8_t trace[] = {
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U,
+      0x45U, 0x58U,
+      0x46U, 0x58U, 0x78U,
+      0x47U, 0x58U, 0x78U, 0x00U, 0x08U,
+  };
+  const auto decoded = decodeTrace({rawBytes(trace)});
+
+  std::vector<DwtAddressFragment> pcs;
+  for (const auto& event : decoded.events) {
+    if (const auto* address = traceEventPayload<DwtAddressTraceEvent>(event)) {
+      if (const auto pc = dwtAddressPc(*address)) {
+        pcs.push_back(*pc);
+      }
+    }
+  }
+  ASSERT_EQ(pcs.size(), 3U);
+  EXPECT_EQ(pcs[0], (DwtAddressFragment{1U, 0x58U}));
+  EXPECT_EQ(pcs[1], (DwtAddressFragment{2U, 0x7858U}));
+  EXPECT_EQ(pcs[2], (DwtAddressFragment{4U, 0x08007858U}));
 }
 
 TEST(CtraceUnitTests, testDecodePipelineDoesNotInjectSync)

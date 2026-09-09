@@ -4503,6 +4503,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
+  argv[2] = (char*)"targets";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+
+  argv[1] = (char*)"list";
   argv[2] = (char*)"target-sets";
   argv[3] = (char*)"-h";
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
@@ -7434,7 +7439,7 @@ TEST_F(ProjMgrUnitTests, ListTargetSets) {
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestTargetSet/solution.csolution.yml";
   argv[1] = (char*)"list";
-  argv[2] = (char*)"target-sets";
+  argv[2] = (char*)"targets";
   argv[3] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
@@ -7442,6 +7447,14 @@ TEST_F(ProjMgrUnitTests, ListTargetSets) {
   EXPECT_STREQ(outStr.c_str(), "Type1\nType1@Custom2\nType1@Custom3\nType2@Default2\n");
 
   streamRedirect.ClearStringStreams();
+  argv[2] = (char*)"target-sets";
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+
+  outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "Type1\nType1@Custom2\nType1@Custom3\nType2@Default2\n");
+
+  streamRedirect.ClearStringStreams();
+  argv[2] = (char*)"targets";
   argv[4] = (char*)"--filter";
   argv[5] = (char*)"TYPE2";
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
@@ -7617,11 +7630,15 @@ TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   argv[3] = (char*)"--active";
   argv[4] = (char*)"Type1@Custom2";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuildIdx1 = YAML::LoadFile(testinput_folder + "/TestTargetSet/solution.cbuild-idx.yml");
+  EXPECT_EQ("Type1@Custom2", cbuildIdx1["build-idx"]["target"].as<string>());
   const YAML::Node& cbuildRun1 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type1.cbuild-run.yml");
   EXPECT_EQ("Custom2", cbuildRun1["cbuild-run"]["target-set"].as<string>());
 
   argv[4] = (char*)"Type1";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuildIdx2 = YAML::LoadFile(testinput_folder + "/TestTargetSet/solution.cbuild-idx.yml");
+  EXPECT_EQ("Type1", cbuildIdx2["build-idx"]["target"].as<string>());
   const YAML::Node& cbuildRun2 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type1.cbuild-run.yml");
   EXPECT_EQ("<default>", cbuildRun2["cbuild-run"]["target-set"].as<string>());
 

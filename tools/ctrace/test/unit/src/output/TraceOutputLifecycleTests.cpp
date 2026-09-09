@@ -53,7 +53,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesIndependentOutputs)
   ASSERT_TRUE(diagnostics.failureCount() == 2U) << "output lifecycle should report start and finalization failures";
 
   const auto contents = readTestTextFile(path);
-  ASSERT_TRUE(contents.find("cycles,stream,type,source,value,pc,offset,note\n") == 0U &&
+  ASSERT_TRUE(contents.find("cycles,stream,type,source,value,pc,address,note\n") == 0U &&
               contents.find(",,itm,1,0x41,,,\n") != std::string::npos)
       << "output lifecycle should complete successful outputs despite another output failure";
 }

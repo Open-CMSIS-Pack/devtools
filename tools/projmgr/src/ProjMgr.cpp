@@ -38,13 +38,13 @@ Commands:\n\
   list layers                   Print list of available, referenced and compatible layers\n\
   list npus                     Print list of available NPUs\n\
   list packs                    Print list of used packs from the pack repository\n\
-  list target-sets              Print list of target-sets in a <name>.csolution.yml\n\
+  list targets                  Print list of targets (<target-type>[@<target-set>]) in a <name>.csolution.yml\n\
   list toolchains               Print list of supported toolchains\n\
   run                           Run code generator\n\
   rpc                           Run remote procedure call server\n\
   update-rte                    Create/update configuration files and validate solution\n\n\
 Options:\n\
-  -a, --active arg              Select active target-set: <target-type>[@<set>]\n\
+  -a, --active arg              Select active target: <target-type>[@<target-set>]\n\
   -c, --context arg [...]       Input context names [<project-name>][.<build-type>][+<target-type>]\n\
   -d, --debug                   Enable debug messages\n\
   -D, --dry-run                 Enable dry-run\n\
@@ -172,7 +172,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   cxxopts::Option quiet("q,quiet", "Run silently, printing only error messages", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option cbuildgen("cbuildgen", "Generate legacy *.cprj files", cxxopts::value<bool>()->default_value("false"));
   cxxopts::Option contentLength("content-length", "Prepend 'Content-Length' header to JSON RPC requests and responses", cxxopts::value<bool>()->default_value("false"));
-  cxxopts::Option activeTargetSet("a,active", "Select active target-set: <target-type>[@<set>]", cxxopts::value<string>());
+  cxxopts::Option activeTargetSet("a,active", "Select active target: <target-type>[@<target-set>]", cxxopts::value<string>());
   cxxopts::Option locked("locked", "Print available update version for locked packs", cxxopts::value<bool>()->default_value("false"));
 
   // command options dictionary
@@ -192,6 +192,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
     {"list examples",      { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list templates",     { false, {context, contextSet, activeTargetSet, debug, filter, load, quiet, schemaCheck, toolchain, verbose}}},
     {"list contexts",      { false, {debug, filter, quiet, schemaCheck, verbose, ymlOrder}}},
+    {"list targets",       { false, {debug, filter, quiet, schemaCheck, verbose}}},
     {"list target-sets",   { false, {debug, filter, quiet, schemaCheck, verbose}}},
     {"list debuggers",     { false, {debug, filter, quiet, schemaCheck, verbose}}},
     {"list generators",    { false, {context, contextSet, activeTargetSet, debug, load, quiet, schemaCheck, toolchain, verbose}}},
@@ -427,6 +428,7 @@ int ProjMgr::ProcessListCommand() {
     { "examples",     [this]() { return RunListExamples(); } },
     { "templates",    [this]() { return RunListTemplates(); } },
     { "contexts",     [this]() { return RunListContexts(); } },
+    { "targets",      [this]() { return RunListTargetSets(); } },
     { "target-sets",  [this]() { return RunListTargetSets(); } },
     { "debuggers",    [this]() { return RunListDebuggers(); } },
     { "generators",   [this]() { return RunListGenerators(); } },

@@ -145,7 +145,7 @@ TEST_F(CtraceIntegTests, GeneratesAllOutputs)
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Minimal", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
-  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
             "0,,pcsample,,,0x08001234,,\n"
             "0,,itm,1,0x41,,,\n",
             readTextFile(workDirectory() / "Minimal.SWO.csv"));
@@ -168,7 +168,7 @@ TEST_F(CtraceIntegTests, ExpandsDwtEventCountersAcrossCsvAndCtf)
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Events", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
-  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
             "0,,event,0,0x21,,,\n"
             "0,,itm,1,0x41,,,\n",
             readTextFile(workDirectory() / "Events.SWO.csv"));
@@ -195,7 +195,7 @@ TEST_F(CtraceIntegTests, ConvertsDwtMatchAcrossCsvAndCtf)
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "trace-match", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
-  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
             "1,,dwt,0,,,,\n"
             "3,,dwt,1,,,,\n"
             "6,,dwt,2,,,,\n"
@@ -290,7 +290,7 @@ TEST_F(CtraceIntegTests, ReportsInvalidDwtEventCounterWithoutPartialDecode)
   const auto result = run({"ctrace", workDirectory().string(), "--target", "InvalidEvent", "--all"});
   EXPECT_EQ(1, result.exitCode);
   expectContains(result.stderrText, "trace decode error at raw offset 6");
-  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
             "0,,error,,,,,\"unsupported DWT event-counter payload: size 1, value 0x41; expected a non-zero 1-byte "
             "mask using bits 0..5 only\"\n"
             "0,,itm,1,0x41,,,\n",
@@ -311,7 +311,7 @@ TEST_F(CtraceIntegTests, ExpandsPmuEventCountersAcrossCsvAndCtf)
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Pmu", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
-  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
             "0,,pmu,3,0x81,,,\n"
             "0,,itm,1,0x41,,,\n",
             readTextFile(workDirectory() / "Pmu.SWO.csv"));
@@ -336,7 +336,7 @@ TEST_F(CtraceIntegTests, ReportsInvalidPmuEventCounterWithoutPartialDecode)
   const auto result = run({"ctrace", workDirectory().string(), "--target", "InvalidPmu", "--all"});
   EXPECT_EQ(1, result.exitCode);
   expectContains(result.stderrText, "trace decode error at raw offset 6");
-  EXPECT_EQ("cycles,stream,type,source,value,pc,offset,note\n"
+  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
             "0,,error,,,,,\"unsupported PMU event-counter payload: size 1, value 0x0; expected a non-zero 1-byte "
             "mask using bits 0..7\"\n"
             "0,,itm,1,0x41,,,\n",
@@ -385,9 +385,13 @@ TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
       pname: core
       stream: 1
       source: 0
-      info: configured ITM channel zero
+      info:
+        - configured ITM channel zero
+        - retained secondary setup information
       warning: ITM channel zero uses fallback routing
-      error: target could not enable ITM channel zero
+      error:
+        - target could not enable ITM channel zero
+        - target rejected the fallback configuration
     - ctrace-ref: core/exceptions
       type: exception
       error: ignored reference diagnostic
@@ -397,8 +401,10 @@ TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Diagnostics", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
   expectContains(result.stderrText, "[info] configured ITM channel zero:");
+  expectContains(result.stderrText, "[info] retained secondary setup information:");
   expectContains(result.stderrText, "[warning] ITM channel zero uses fallback routing:");
   expectContains(result.stderrText, "[error] target could not enable ITM channel zero:");
+  expectContains(result.stderrText, "[error] target rejected the fallback configuration:");
   expectContains(result.stderrText, "ctraceRef=core/itm, type=itm, pname=core");
   expectNotContains(result.stderrText, "ignored reference diagnostic");
 

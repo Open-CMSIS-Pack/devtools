@@ -170,6 +170,28 @@ static std::string ctfValueFields(const std::string_view& prefix)
   return out.str();
 }
 
+/** @brief Generates a width-tagged TSDL field for a raw DWT address fragment. */
+static std::string ctfDwtAddressFields(const std::string_view& field)
+{
+  std::ostringstream out;
+  out << "        enum : uint8_t { ";
+  for (std::size_t index = 0; index < CtfSchema::DwtAddressVariants.size(); ++index) {
+    const auto& variant = CtfSchema::DwtAddressVariants[index];
+    if (index > 0U) {
+      out << ", ";
+    }
+    out << variant.name << " = " << static_cast<unsigned>(CtfSchema::value(variant.tag));
+  }
+  out << " } cmsis_dwt_" << field << "_type;\n"
+      << "        variant <cmsis_dwt_" << field << "_type> {\n";
+  for (const auto& variant : CtfSchema::DwtAddressVariants) {
+    const auto type = variant.byteSize == 1U ? "uint8_t" : variant.byteSize == 2U ? "uint16_t" : "uint32_t";
+    out << "            " << type << " " << variant.name << ";\n";
+  }
+  out << "        } cmsis_dwt_" << field << ";\n";
+  return out.str();
+}
+
 /** @brief Stores source labels and exception lanes emitted into CTF metadata. */
 struct MetadataSymbols {
   std::map<std::uint32_t, std::string> dwtValueTypes;
@@ -404,12 +426,8 @@ event {
     fields := struct {
         cmsis_dwt_comparator_t cmsis_dwt_comparator;
         cmsis_dwt_access_t cmsis_dwt_access;
-)" << ctfValueFields("dwt")
-      << R"(        uint8_t cmsis_has_pc;
-        uint32_t cmsis_pc[cmsis_has_pc];
-        uint8_t cmsis_has_address_lo16;
-        uint16_t cmsis_address_lo16[cmsis_has_address_lo16];
-        uint8_t cmsis_sample_flags;
+)" << ctfValueFields("dwt") << ctfDwtAddressFields("pc") << ctfDwtAddressFields("address")
+      << R"(        uint8_t cmsis_sample_flags;
         uint32_t cmsis_overflow_count;
     };
 };
@@ -429,11 +447,8 @@ event {
       << CtfSchema::SwoStreamId << R"(;
     fields := struct {
         cmsis_dwt_comparator_t cmsis_dwt_comparator;
-        uint8_t cmsis_has_pc;
-        uint8_t cmsis_has_address_lo16;
-        uint32_t cmsis_pc;
-        uint16_t cmsis_address_lo16;
-        uint8_t cmsis_sample_flags;
+)" << ctfDwtAddressFields("pc") << ctfDwtAddressFields("address")
+      << R"(        uint8_t cmsis_sample_flags;
         uint32_t cmsis_overflow_count;
     };
 };
