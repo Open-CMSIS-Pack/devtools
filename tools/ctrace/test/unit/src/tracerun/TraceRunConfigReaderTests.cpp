@@ -259,6 +259,7 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceContainers)
 {
   TraceRunFixture file("ctrace-run-reader-reference-container-errors-test");
   expectReadError(file, "ctrace-run: {}\n", "missing required 'ctrace-refs' array");
+  expectReadError(file, "ctrace-run:\n  ctrace-refs: null\n", "'ctrace-refs' must be an array");
   expectReadError(file, "ctrace-run:\n  ctrace-refs: {}\n", "'ctrace-refs' must be an array");
   expectReadError(file, "ctrace-run:\n  ctrace-refs: []\n  ctrace-refs: []\n", "map keys must be unique");
   expectReadError(file, "ctrace-run:\n  ctrace-refs: [invalid]\n", "each 'ctrace-refs' entry must be a map");
@@ -266,11 +267,15 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceContainers)
                   "missing required 'type' scalar");
   expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: [], ctrace-ref: core/itm, source: 1 }\n",
                   "missing required 'type' scalar");
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: null, ctrace-ref: core/itm, source: 1 }\n",
+                  "missing required 'type' scalar");
   expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: '', ctrace-ref: core/itm, source: 1 }\n",
                   "missing required 'type' scalar");
   expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - type: itm\n      source: 1\n",
                   "missing required 'ctrace-ref' scalar");
   expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: itm, ctrace-ref: [], source: 1 }\n",
+                  "missing required 'ctrace-ref' scalar");
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: itm, ctrace-ref: null, source: 1 }\n",
                   "missing required 'ctrace-ref' scalar");
   expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: itm, ctrace-ref: '', source: 1 }\n",
                   "missing required 'ctrace-ref' scalar");
@@ -288,7 +293,6 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceRoutes)
       {"pname: []\n      source: 1", "'pname' must be a scalar string"},
       {"stream: []\n      source: 1", "'stream' must be a scalar unsigned integer"},
       {"source: {}", "'source' must be an array"},
-      {"source: null", "'source' must be an unsigned integer"},
       {"source: 0x", "'source' must be an unsigned integer"},
       {"source: -1", "'source' must be an unsigned integer in range"},
       {"source: 4294967296", "'source' must be an unsigned integer in range"},
@@ -304,6 +308,56 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceRoutes)
                       testCase.fields + "\n";
     expectReadError(file, yaml, testCase.error);
   }
+}
+
+TEST(CtraceUnitTests, TraceRunReaderIgnoresNullOptionalReferenceValues)
+{
+  TraceRunFixture file("ctrace-run-reader-null-optional-reference-test");
+  const auto config = file.read(R"yml(ctrace-run:
+  ctrace-setup: null
+  ctrace-refs:
+    - null
+    - type: dwt
+      ctrace-ref: data#0
+      pname: null
+      stream: null
+      source: null
+      address: null
+      data-type: null
+      size: null
+      label: null
+      info: null
+      warning: null
+      error: null
+    - type: itm
+      ctrace-ref: itm
+      source: [1, null]
+      info: [note, null]
+      warning: [null]
+      error: [null]
+)yml");
+
+  EXPECT_TRUE(config.setups.empty());
+  ASSERT_EQ(config.references.size(), 2U);
+  const auto& emptyRoute = config.references[0];
+  EXPECT_FALSE(emptyRoute.processorName.has_value());
+  EXPECT_FALSE(emptyRoute.stream.has_value());
+  EXPECT_TRUE(emptyRoute.sources.empty());
+  EXPECT_FALSE(emptyRoute.address.has_value());
+  EXPECT_FALSE(emptyRoute.addressError.has_value());
+  EXPECT_FALSE(emptyRoute.dataType.has_value());
+  EXPECT_FALSE(emptyRoute.dataTypeError.has_value());
+  EXPECT_FALSE(emptyRoute.dataSize.has_value());
+  EXPECT_FALSE(emptyRoute.dataSizeError.has_value());
+  EXPECT_FALSE(emptyRoute.label.has_value());
+  EXPECT_TRUE(emptyRoute.info.empty());
+  EXPECT_TRUE(emptyRoute.warning.empty());
+  EXPECT_TRUE(emptyRoute.error.empty());
+
+  EXPECT_EQ(config.references[1].sources, (std::vector<std::uint32_t>{1U}));
+  EXPECT_EQ(config.references[1].info, (std::vector<std::string>{"note"}));
+  EXPECT_TRUE(config.references[1].warning.empty());
+  EXPECT_TRUE(config.references[1].error.empty());
 }
 
 TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
@@ -336,9 +390,9 @@ TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
   EXPECT_FALSE(config.references[3].dataSetupIndex.has_value());
   EXPECT_FALSE(config.references[4].stream.has_value());
   EXPECT_FALSE(config.references[4].dataSetupIndex.has_value());
-  EXPECT_EQ(config.references[5].error, (std::vector<std::string>{""}));
+  EXPECT_TRUE(config.references[5].error.empty());
   EXPECT_TRUE(config.references[6].sources == std::vector<std::uint32_t>{0U});
-  EXPECT_EQ(config.references[7].label, std::optional<std::string>(""));
+  EXPECT_FALSE(config.references[7].label.has_value());
 }
 
 TEST(CtraceUnitTests, TraceRunReaderParsesTimestampSetupVariants)
@@ -362,7 +416,8 @@ TEST(CtraceUnitTests, TraceRunReaderParsesTimestampSetupVariants)
   EXPECT_EQ(config.setups[3].timestamps->clockError,
             std::optional<std::string>("'timestamps.clock' must be a scalar unsigned integer"));
   EXPECT_TRUE(config.setups[4].timestamps->clockError.has_value());
-  EXPECT_TRUE(config.setups[5].timestamps->clockError.has_value());
+  EXPECT_FALSE(config.setups[5].timestamps->clockHz.has_value());
+  EXPECT_FALSE(config.setups[5].timestamps->clockError.has_value());
   EXPECT_EQ(config.setups[6].timestamps->clockHz, std::optional<std::uint64_t>(16U));
   EXPECT_EQ(config.setups[6].timestamps->timestampPrescaler, std::optional<std::uint32_t>(4U));
 
@@ -370,6 +425,49 @@ TEST(CtraceUnitTests, TraceRunReaderParsesTimestampSetupVariants)
                   "map keys must be unique");
   expectReadError(file, "ctrace-run:\n  ctrace-setup:\n    - timestamps: {}\n      timestamps: {}\n",
                   "map keys must be unique");
+}
+
+TEST(CtraceUnitTests, TraceRunReaderTreatsNullOptionalSetupValuesAsAbsent)
+{
+  TraceRunFixture file("ctrace-run-reader-null-optional-setup-test");
+  const auto config = file.read(R"yml(ctrace-run:
+  ctrace-setup:
+    - timestamps:
+        clock: null
+        itm-prescaler: null
+      itm: null
+  ctrace-refs: []
+)yml");
+
+  ASSERT_EQ(config.setups.size(), 1U);
+  ASSERT_TRUE(config.setups[0].timestamps.has_value());
+  EXPECT_FALSE(config.setups[0].timestamps->clockHz.has_value());
+  EXPECT_FALSE(config.setups[0].timestamps->timestampPrescaler.has_value());
+  EXPECT_FALSE(config.setups[0].timestamps->clockError.has_value());
+  EXPECT_FALSE(config.setups[0].itm.has_value());
+
+  const auto meta = CtraceRunMeta::fromConfig(config);
+  EXPECT_FALSE(meta.timestampClockHz().has_value());
+  EXPECT_EQ(meta.timestampPrescaler(),
+            std::optional<std::uint32_t>(TraceRunSchema::kDefaultTimestampPrescaler));
+
+  const auto generatedSetup = file.read(R"yml(ctrace-run:
+  ctrace-setup:
+    - null
+    - pname: null-enable
+      timestamps: null
+      itm:
+        enable: null
+        atbid: 1
+    - pname: absent-enable
+      timestamps: null
+      itm:
+        atbid: 2
+  ctrace-refs: []
+)yml");
+  ASSERT_EQ(generatedSetup.setups.size(), 2U);
+  EXPECT_FALSE(generatedSetup.setups[0].itm.has_value());
+  EXPECT_FALSE(generatedSetup.setups[1].itm.has_value());
 }
 
 TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedConsumedSetups)
@@ -385,9 +483,8 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedConsumedSetups)
       {"timestamps: { itm-prescaler: [] }", "'timestamps.itm-prescaler' must be a scalar unsigned integer"},
       {"timestamps: { itm-prescaler: invalid }", "'itm-prescaler' must be an unsigned integer in range"},
       {"itm: []", "'itm' must be a map containing 'enable'"},
-      {"itm: {}", "'itm.enable' is required"},
-      {"itm: { enable: [] }", "'itm.enable' is required"},
-      {"itm: { enable: '' }", "'itm.enable' is required"},
+      {"itm: { enable: [] }", "'itm.enable' must be a scalar unsigned integer"},
+      {"itm: { enable: '' }", "'itm.enable' must be a scalar unsigned integer"},
       {"itm: { enable: invalid }", "'itm.enable' must be an unsigned integer in range"},
       {"itm: { enable: 1, enable: 2 }", "map keys must be unique"},
   };
