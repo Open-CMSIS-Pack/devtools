@@ -253,18 +253,15 @@ static ProcessorIdentity processorIdentity(const TraceRunConfig& config, std::ve
   };
 }
 
-/** @brief Resolves the data setup referenced by one DWT route. */
-static const TraceRunDataSetup* referencedDataSetup(const TraceRunConfig& config, const TraceRunReference& reference)
+/** @brief Resolves the required data setup index of one prevalidated DWT route. */
+static const TraceRunDataSetup* referencedDataSetup(const TraceRunConfig& config, const TraceRunReference& reference,
+                                                    std::size_t index)
 {
-  const auto index = reference.dataSetupIndex;
-  if (!index.has_value()) {
-    return nullptr;
-  }
   for (const auto& setup : config.setups) {
     if (!TraceRunSchema::processorNamesMayBind(setup.processorName, reference.processorName)) {
       continue;
     }
-    const auto* candidate = *index < setup.data.size() ? &setup.data[*index] : nullptr;
+    const auto* candidate = index < setup.data.size() ? &setup.data[index] : nullptr;
     if (candidate != nullptr) {
       return candidate;
     }
@@ -276,7 +273,8 @@ static const TraceRunDataSetup* referencedDataSetup(const TraceRunConfig& config
 static CtraceRunSourceMeta sourceMeta(const TraceRunConfig& config, const TraceRunReference& reference,
                                       std::uint32_t source, const ProcessorIdentity& processorIdentity)
 {
-  const auto* dataSetup = reference.type == "dwt" ? referencedDataSetup(config, reference) : nullptr;
+  const auto* dataSetup =
+      reference.type == "dwt" ? referencedDataSetup(config, reference, *reference.dataSetupIndex) : nullptr;
   CtraceRunSourceMeta meta;
   meta.type = reference.type;
   meta.processorName = processorIdentity.canonicalName(reference.processorName);
@@ -383,9 +381,10 @@ static std::vector<ResolvedStreamBinding> resolveStreamBindings(const TraceRunCo
       continue;
     }
     const auto processorName = processorIdentity.canonicalName(reference.processorName);
+    const auto traceBusId = static_cast<std::uint8_t>(reference.stream.value_or(0U));
     bindings.push_back({
         reference.line,
-        static_cast<std::uint8_t>(reference.stream.value_or(0U)),
+        traceBusId,
         processorName,
         reference.ctraceRef,
         findProcessor(processors, processorName),

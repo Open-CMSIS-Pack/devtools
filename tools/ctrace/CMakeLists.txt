@@ -39,6 +39,26 @@ target_link_libraries(ctrace PRIVATE
   ctracelib
 )
 
+# GCC/gcov attributes optional NRVO exception-cleanup blocks to otherwise
+# covered closing source lines. Disable that elision only for ctrace coverage
+# objects; normal builds, tests, and external dependencies remain unchanged.
+if(COVERAGE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set(CTRACE_COVERAGE_TARGETS
+    ctrace-model
+    ctrace-cli
+    ctrace-trace-run
+    ctrace-diagnostics
+    ctrace-decode
+    ctrace-output
+    ctrace-control
+    ctracelib
+    ctrace
+  )
+  foreach(target IN LISTS CTRACE_COVERAGE_TARGETS)
+    target_compile_options(${target} PRIVATE -fno-elide-constructors)
+  endforeach()
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
    (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
     CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))

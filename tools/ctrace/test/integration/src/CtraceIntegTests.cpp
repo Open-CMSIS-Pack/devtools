@@ -131,6 +131,123 @@ std::size_t countOccurrences(std::string_view text, std::string_view value)
   return count;
 }
 
+std::string normalizeGeneratedTextLineEndings(std::string text, std::string_view artifact)
+{
+  std::string normalized;
+  normalized.reserve(text.size());
+  for (std::size_t offset = 0U; offset < text.size(); ++offset) {
+    if (text[offset] != '\r') {
+      normalized.push_back(text[offset]);
+      continue;
+    }
+    if (offset + 1U >= text.size() || text[offset + 1U] != '\n') {
+      throw std::runtime_error(std::string(artifact) + " contains a bare carriage return");
+    }
+  }
+  return normalized;
+}
+
+unsigned uuidHexValue(char value)
+{
+  if (value >= '0' && value <= '9') {
+    return static_cast<unsigned>(value - '0');
+  }
+  if (value >= 'a' && value <= 'f') {
+    return static_cast<unsigned>(value - 'a') + 10U;
+  }
+  if (value >= 'A' && value <= 'F') {
+    return static_cast<unsigned>(value - 'A') + 10U;
+  }
+  throw std::runtime_error("CTF metadata trace UUID is not hexadecimal");
+}
+
+std::array<unsigned char, 16U> normalizeCtfMetadataTraceUuid(std::string& metadata)
+{
+  constexpr std::string_view traceMarker{"trace {"};
+  constexpr std::string_view uuidMarker{"    uuid = \""};
+  constexpr std::string_view normalizedUuid{"00000000-0000-0000-0000-000000000000"};
+  const auto traceStart = metadata.find(traceMarker);
+  const auto traceEnd = metadata.find("\n};", traceStart);
+  const auto uuidMarkerPosition = metadata.find(uuidMarker, traceStart);
+  if (traceStart == std::string::npos || traceEnd == std::string::npos || uuidMarkerPosition == std::string::npos ||
+      uuidMarkerPosition >= traceEnd) {
+    throw std::runtime_error("CTF metadata trace declaration has no UUID");
+  }
+
+  const auto uuidStart = uuidMarkerPosition + uuidMarker.size();
+  if (uuidStart + normalizedUuid.size() + 2U > metadata.size() ||
+      metadata.compare(uuidStart + normalizedUuid.size(), 2U, "\";") != 0) {
+    throw std::runtime_error("CTF metadata trace UUID is not in canonical form");
+  }
+
+  std::array<unsigned char, 16U> uuid{};
+  std::size_t textOffset = 0U;
+  for (std::size_t byte = 0U; byte < uuid.size(); ++byte) {
+    if (byte == 4U || byte == 6U || byte == 8U || byte == 10U) {
+      if (metadata[uuidStart + textOffset] != '-') {
+        throw std::runtime_error("CTF metadata trace UUID is not in canonical form");
+      }
+      ++textOffset;
+    }
+    const auto high = uuidHexValue(metadata[uuidStart + textOffset++]);
+    const auto low = uuidHexValue(metadata[uuidStart + textOffset++]);
+    uuid[byte] = static_cast<unsigned char>((high << 4U) | low);
+  }
+  if ((uuid[6U] & 0xf0U) != 0x40U || (uuid[8U] & 0xc0U) != 0x80U) {
+    throw std::runtime_error("CTF metadata trace UUID is not an RFC 4122 version-4 UUID");
+  }
+
+  metadata.replace(uuidStart, normalizedUuid.size(), normalizedUuid.data(), normalizedUuid.size());
+  return uuid;
+}
+
+void normalizeCtfStreamTraceUuid(std::vector<unsigned char>& stream, const std::array<unsigned char, 16U>& uuid)
+{
+  constexpr std::size_t uuidOffset = sizeof(std::uint32_t);
+  if (stream.empty()) {
+    throw std::runtime_error("CTF stream is empty");
+  }
+
+  std::size_t packetStart = 0U;
+  while (packetStart < stream.size()) {
+    if (CtfTestSupport::kCtfEventOffset > stream.size() - packetStart ||
+        CtfTestSupport::readLe32(stream, packetStart) != CtfSchema::Magic) {
+      throw std::runtime_error("CTF stream has an invalid packet header");
+    }
+
+    const auto streamUuid = stream.begin() + static_cast<std::ptrdiff_t>(packetStart + uuidOffset);
+    if (!std::equal(uuid.begin(), uuid.end(), streamUuid)) {
+      throw std::runtime_error("CTF packet UUID does not match its metadata trace UUID");
+    }
+    std::fill(streamUuid, streamUuid + static_cast<std::ptrdiff_t>(uuid.size()), 0U);
+
+    const auto packetBits = CtfTestSupport::readLe32(stream, packetStart + CtfTestSupport::kCtfPacketHeaderSize);
+    if (packetBits % 8U != 0U) {
+      throw std::runtime_error("CTF packet size is not byte-aligned");
+    }
+    const auto packetBytes = static_cast<std::size_t>(packetBits / 8U);
+    if (packetBytes < CtfTestSupport::kCtfEventOffset || packetBytes > stream.size() - packetStart) {
+      throw std::runtime_error("CTF packet size exceeds the stream");
+    }
+    packetStart += packetBytes;
+  }
+}
+
+template <typename Container>
+void expectMatchesGolden(const Container& expected, const Container& actual, std::string_view artifact)
+{
+  ASSERT_EQ(expected.size(), actual.size()) << artifact << " size differs from golden file";
+  const auto mismatch = std::mismatch(expected.begin(), expected.end(), actual.begin());
+  if (mismatch.first == expected.end()) {
+    return;
+  }
+  const auto offset = static_cast<std::size_t>(std::distance(expected.begin(), mismatch.first));
+  const auto expectedByte = static_cast<unsigned>(static_cast<unsigned char>(*mismatch.first));
+  const auto actualByte = static_cast<unsigned>(static_cast<unsigned char>(*mismatch.second));
+  ADD_FAILURE() << artifact << " differs from golden file at byte " << offset << ": expected 0x" << std::hex
+                << expectedByte << ", actual 0x" << actualByte;
+}
+
 TEST_F(CtraceIntegTests, GeneratesAllOutputs)
 {
   writeFile(workDirectory() / "Minimal.ctrace-run.yml", R"yml(ctrace-run:
@@ -432,19 +549,45 @@ TEST_F(CtraceIntegTests, GeneratesRequestedOutputsAfterDecoderError)
   expectNonEmptyFile(workDirectory() / "Minimal.SWO.traceanalysis.xml");
 }
 
-TEST_F(CtraceIntegTests, ConvertsBlinkyFixtureAndSkipsUnsupportedTraceBusInput)
+TEST_F(CtraceIntegTests, ConvertsBlinkyFixtureToGoldenOutputsAndSkipsUnsupportedTraceBusInput)
 {
   const auto fixtureDirectory = testDataDirectory() / "Blinky+Arm";
   copyFixtureFile(fixtureDirectory, "Blinky+Arm.SWO.raw");
   copyFixtureFile(fixtureDirectory, "Blinky+Arm.TB.raw");
-  copyFixtureFile(fixtureDirectory, "Blinky+Arm.ctrace-run.yml");
 
-  const auto result = run({"ctrace", workDirectory().string(), "--target", "Blinky+Arm", "--csv"});
+  // The legacy pyTS configuration predates timestamps.clock. CTF requires it, and the captured CM7 ran at 480 MHz.
+  auto traceRun = readTextFile(fixtureDirectory / "Blinky+Arm.ctrace-run.yml");
+  constexpr std::string_view legacyTimestampBlock{
+      "    timestamps:\n      itm-prescaler: 1\n  - pname: CM4"};
+  constexpr std::string_view ctfTimestampBlock{
+      "    timestamps:\n      clock: 480000000\n      itm-prescaler: 1\n  - pname: CM4"};
+  const auto timestampPosition = traceRun.find(legacyTimestampBlock);
+  ASSERT_NE(std::string::npos, timestampPosition);
+  ASSERT_EQ(std::string::npos, traceRun.find(legacyTimestampBlock, timestampPosition + 1U));
+  traceRun.replace(timestampPosition, legacyTimestampBlock.size(), ctfTimestampBlock.data(), ctfTimestampBlock.size());
+  writeFile(workDirectory() / "Blinky+Arm.ctrace-run.yml", traceRun);
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Blinky+Arm", "--all"});
   EXPECT_EQ(1, result.exitCode) << result.stderrText;
   expectContains(result.stderrText, "skipping raw trace channel that is not implemented yet:");
   expectContains(result.stderrText, "channel=TB");
   EXPECT_EQ(readTextFile(fixtureDirectory / "Blinky+Arm.SWO.csv"),
             readTextFile(workDirectory() / "Blinky+Arm.SWO.csv"));
+
+  const auto goldenDirectory = fixtureDirectory / "expected";
+  auto metadata =
+      normalizeGeneratedTextLineEndings(readTextFile(workDirectory() / "Blinky+Arm.ctf" / "metadata"), "CTF metadata");
+  const auto traceUuid = normalizeCtfMetadataTraceUuid(metadata);
+  auto stream = readBinaryFile(workDirectory() / "Blinky+Arm.ctf" / "stream_0");
+  normalizeCtfStreamTraceUuid(stream, traceUuid);
+  expectMatchesGolden(readTextFile(goldenDirectory / "Blinky+Arm.ctf" / "metadata"), metadata, "CTF metadata");
+  expectMatchesGolden(readBinaryFile(goldenDirectory / "Blinky+Arm.ctf" / "stream_0"), stream,
+                      "CTF binary stream");
+  expectMatchesGolden(readTextFile(goldenDirectory / "Blinky+Arm.SWO.traceanalysis.xml"),
+                      normalizeGeneratedTextLineEndings(
+                          readTextFile(workDirectory() / "Blinky+Arm.SWO.traceanalysis.xml"), "Trace Compass XML"),
+                      "Trace Compass XML");
+
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.TB.csv"));
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.TB.traceanalysis.xml"));
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.TB.ctf"));

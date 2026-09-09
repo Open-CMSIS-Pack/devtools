@@ -23,6 +23,13 @@
 
 static_assert(sizeof(ocsd_trc_index_t) == sizeof(std::uint64_t), "ctrace requires 64-bit OpenCSD trace indices");
 
+/** @brief Creates the production OpenCSD ITM session. */
+static std::unique_ptr<OpenCsdItmSessionInterface>
+createDefaultOpenCsdItmSession(OpenCsdPacketCollector& collector, OpenCsdErrorController& errorController)
+{
+  return std::make_unique<OpenCsdItmSession>(collector, errorController);
+}
+
 /** @brief Implements OpenCSD feeding, bounded retry, and hardware-sync recovery. */
 class OpenCsdItmDecoderImpl {
 public:
@@ -318,9 +325,7 @@ private:
 };
 
 OpenCsdItmDecoder::OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink)
-  : OpenCsdItmDecoder(elementSink, [](OpenCsdPacketCollector& collector, OpenCsdErrorController& errorController) {
-      return std::make_unique<OpenCsdItmSession>(collector, errorController);
-    })
+  : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(elementSink, createDefaultOpenCsdItmSession))
 {
 }
 

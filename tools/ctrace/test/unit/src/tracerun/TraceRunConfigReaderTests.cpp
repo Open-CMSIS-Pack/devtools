@@ -310,7 +310,7 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceRoutes)
   }
 }
 
-TEST(CtraceUnitTests, TraceRunReaderIgnoresNullOptionalReferenceValues)
+TEST(CtraceUnitTests, TraceRunReaderIgnoresNullAndNonScalarOptionalReferenceValues)
 {
   TraceRunFixture file("ctrace-run-reader-null-optional-reference-test");
   const auto config = file.read(R"yml(ctrace-run:
@@ -325,13 +325,14 @@ TEST(CtraceUnitTests, TraceRunReaderIgnoresNullOptionalReferenceValues)
       address: null
       data-type: null
       size: null
-      label: null
+      label: []
       info: null
       warning: null
       error: null
     - type: itm
       ctrace-ref: itm
       source: [1, null]
+      label: null
       info: [note, null]
       warning: [null]
       error: [null]
@@ -355,6 +356,7 @@ TEST(CtraceUnitTests, TraceRunReaderIgnoresNullOptionalReferenceValues)
   EXPECT_TRUE(emptyRoute.error.empty());
 
   EXPECT_EQ(config.references[1].sources, (std::vector<std::uint32_t>{1U}));
+  EXPECT_FALSE(config.references[1].label.has_value());
   EXPECT_EQ(config.references[1].info, (std::vector<std::string>{"note"}));
   EXPECT_TRUE(config.references[1].warning.empty());
   EXPECT_TRUE(config.references[1].error.empty());

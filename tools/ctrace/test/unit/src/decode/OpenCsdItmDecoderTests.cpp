@@ -27,6 +27,15 @@
 using OpenCsdSessionTestSupport::ScriptedDecoderHarness;
 using OpenCsdTestSupport::CollectingOpenCsdElementSink;
 
+TEST(CtraceUnitTests, testOpenCsdItmDecoderConstructsDefaultSession)
+{
+  CollectingOpenCsdElementSink sink;
+  OpenCsdItmDecoder decoder(sink);
+
+  EXPECT_EQ(decoder.finish().bytesIn, 0U);
+  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdInitializationError));
+}
+
 TEST(CtraceUnitTests, testOpenCsdItmDecoderChunksAndFinishesOnce)
 {
   ScriptedDecoderHarness harness;

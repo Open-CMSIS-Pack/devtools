@@ -199,6 +199,37 @@ TEST(CtraceUnitTests, testCtraceRunMetaWarnsForSingleSetupIdentityConflicts)
   EXPECT_FALSE(meta.timestampClockHz().has_value());
 }
 
+TEST(CtraceUnitTests, testCtraceRunMetaBindsOneNamedReferenceToUnnamedSetup)
+{
+  TraceRunConfig config;
+  config.setups.push_back(makeTimestampSetup(std::nullopt, 100U));
+  config.references.push_back(makeReference("itm", "core", 1U, {1U}));
+
+  const auto meta = CtraceRunMeta::fromConfig(config);
+
+  ASSERT_EQ(meta.sources().size(), 1U);
+  EXPECT_EQ(meta.sources().front().processorName, std::optional<std::string>("core"));
+  ASSERT_EQ(meta.timestampsByTraceBusId().size(), 1U);
+  EXPECT_EQ(meta.timestampsByTraceBusId().at(1U).processorName, std::optional<std::string>("core"));
+  EXPECT_EQ(meta.timestampsByTraceBusId().at(1U).clockHz, std::optional<std::uint64_t>(100U));
+}
+
+TEST(CtraceUnitTests, testCtraceRunMetaBindsStreamlessTimestampToInternalRoute)
+{
+  TraceRunConfig config;
+  config.setups.push_back(makeTimestampSetup("core", 100U));
+  config.references.push_back(makeReference("itm", "core", std::nullopt, {}, "core/timestamps"));
+
+  const auto meta = CtraceRunMeta::fromConfig(config);
+
+  EXPECT_TRUE(meta.sources().empty());
+  ASSERT_EQ(meta.timestampsByTraceBusId().size(), 1U);
+  EXPECT_EQ(meta.timestampsByTraceBusId().at(0U).processorName, std::optional<std::string>("core"));
+  EXPECT_EQ(meta.timestampsByTraceBusId().at(0U).clockHz, std::optional<std::uint64_t>(100U));
+  ASSERT_EQ(meta.timestampPrescalersByTraceBusId().size(), 1U);
+  EXPECT_EQ(meta.timestampPrescalersByTraceBusId().at(0U), 1U);
+}
+
 TEST(CtraceUnitTests, testCtraceRunMetaMapsDistinctProcessorSettings)
 {
   TraceRunConfig config;
