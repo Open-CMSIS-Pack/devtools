@@ -22,4 +22,6 @@
 /build*/
 **/cmake-*
 /.cache
-/external/*
+external/*
+.cmsis-dev/*
+.codex/*
