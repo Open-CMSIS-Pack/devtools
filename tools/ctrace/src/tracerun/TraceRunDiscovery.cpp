@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
+#include <fstream>
 #include <iterator>
 #include <optional>
 #include <stdexcept>
@@ -20,16 +21,91 @@
 
 constexpr std::string_view ConfigSuffix = ".ctrace-run.yml";
 
+TraceRunInputDescriptor::TraceRunInputDescriptor(std::filesystem::path path, std::string channel, TraceRunFormat format,
+                                                 bool formatDeclared, TraceRunInputFraming framing,
+                                                 CtraceRunMeta metadata, std::ifstream stream)
+  : m_path(std::move(path)),
+    m_channel(std::move(channel)),
+    m_format(format),
+    m_formatDeclared(formatDeclared),
+    m_framing(framing),
+    m_metadata(std::move(metadata)),
+    m_stream(std::move(stream))
+{
+}
+
+const std::filesystem::path& TraceRunInputDescriptor::path() const noexcept
+{
+  return m_path;
+}
+
+const std::string& TraceRunInputDescriptor::channel() const noexcept
+{
+  return m_channel;
+}
+
+TraceRunFormat TraceRunInputDescriptor::format() const noexcept
+{
+  return m_format;
+}
+
+bool TraceRunInputDescriptor::formatDeclared() const noexcept
+{
+  return m_formatDeclared;
+}
+
+TraceRunInputFraming TraceRunInputDescriptor::framing() const noexcept
+{
+  return m_framing;
+}
+
+const CtraceRunMeta& TraceRunInputDescriptor::metadata() const noexcept
+{
+  return m_metadata;
+}
+
+std::istream& TraceRunInputDescriptor::stream() noexcept
+{
+  return m_stream;
+}
+
 /** @brief Tests whether a string ends in the supplied suffix. */
 static bool endsWith(const std::string_view& value, const std::string_view& suffix)
 {
   return value.size() >= suffix.size() && value.substr(value.size() - suffix.size()) == suffix;
 }
 
-/** @brief Tests whether a file extension names a supported trace channel. */
+/** @brief Tests whether a byte belongs to the CMSIS RestrictedString character set. */
+static bool isRestrictedStringCharacter(const char character)
+{
+  return (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z') ||
+         (character >= '0' && character <= '9') || character == '_' || character == '-';
+}
+
+/** @brief Tests whether a channel names one specification-defined Trace Buffer. */
+static bool isTraceBufferChannel(const std::string_view& value)
+{
+  constexpr std::string_view namedPrefix = "TB_";
+  if (value == "TB") {
+    return true;
+  }
+  if (value.size() <= namedPrefix.size() || value.substr(0U, namedPrefix.size()) != namedPrefix) {
+    return false;
+  }
+  const auto name = value.substr(namedPrefix.size());
+  return std::all_of(name.begin(), name.end(), isRestrictedStringCharacter);
+}
+
+/** @brief Tests whether a file extension names a recognized trace channel. */
 static bool isTraceChannel(const std::string_view& value)
 {
-  return value == "SWO" || value == "TB" || value == "ER";
+  return value == "SWO" || value == "ER" || isTraceBufferChannel(value);
+}
+
+/** @brief Resolves input eligibility from declaration state without guessing from the channel. */
+static bool isEligibleTraceChannel(const std::string_view& value, bool formatDeclared)
+{
+  return value == "SWO" || (formatDeclared && isTraceBufferChannel(value));
 }
 
 /** @brief Tests whether a solution-set name is reserved by Windows. */
@@ -126,9 +202,6 @@ std::vector<TraceRunRawInput> TraceRunDiscovery::rawInputs(const std::filesystem
 
   std::vector<TraceRunRawInput> inputs;
   for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-    if (!entry.is_regular_file()) {
-      continue;
-    }
     const auto filename = entry.path().filename().string();
     if (filename.rfind(prefix, 0) != 0 || !endsWith(filename, suffix)) {
       continue;
@@ -146,4 +219,60 @@ std::vector<TraceRunRawInput> TraceRunDiscovery::rawInputs(const std::filesystem
   std::sort(inputs.begin(), inputs.end(),
             [](const TraceRunRawInput& left, const TraceRunRawInput& right) { return left.path < right.path; });
   return inputs;
+}
+
+TraceRunInputDescriptor TraceRunDiscovery::resolveInput(CtraceRunMeta metadata,
+                                                        const SkippedTraceRunInputSink& skippedInputSink)
+{
+  if (metadata.configPath().empty()) {
+    throw std::runtime_error("normalized trace-run metadata has no configuration path");
+  }
+  const std::filesystem::path configFile(metadata.configPath());
+  const auto rawInputs = TraceRunDiscovery::rawInputs(configFile);
+  const auto& traceFormat = metadata.traceFormat();
+  std::vector<const TraceRunRawInput*> eligible;
+  for (const auto& rawInput : rawInputs) {
+    if (isEligibleTraceChannel(rawInput.channel, traceFormat.has_value())) {
+      eligible.push_back(&rawInput);
+    } else if (skippedInputSink) {
+      skippedInputSink(rawInput);
+    }
+  }
+
+  const auto solutionSet = solutionSetName(configFile);
+  if (eligible.empty()) {
+    throw std::runtime_error("no eligible raw trace input found for solution-set " + solutionSet);
+  }
+  if (eligible.size() > 1U) {
+    std::string message = "multiple eligible raw trace inputs found for solution-set " + solutionSet + ":";
+    for (const auto* rawInput : eligible) {
+      message += " " + rawInput->path.string();
+    }
+    throw std::runtime_error(message);
+  }
+
+  const auto& selected = *eligible.front();
+  if (!std::filesystem::is_regular_file(selected.path)) {
+    throw std::runtime_error("raw trace input is not a regular file: " + selected.path.string());
+  }
+  std::ifstream readable(selected.path, std::ios::binary | std::ios::ate);
+  if (!readable.is_open()) {
+    throw std::runtime_error("raw trace input is not readable: " + selected.path.string());
+  }
+
+  const auto format = TraceRunSchema::effectiveTraceFormat(traceFormat);
+  readable.exceptions(std::ios::badbit | std::ios::failbit);
+  const auto endPosition = readable.tellg();
+  const auto fileSize = static_cast<std::uintmax_t>(static_cast<std::streamoff>(endPosition));
+  if (format == TraceRunFormat::Formatted && fileSize % TraceRunInputContract::kMemoryAlignedFrameSize != 0U) {
+    throw std::runtime_error("formatted raw trace input size must be a multiple of " +
+                             std::to_string(TraceRunInputContract::kMemoryAlignedFrameSize) +
+                             " bytes: " + selected.path.string() + " (size=" + std::to_string(fileSize) + ")");
+  }
+
+  readable.seekg(0U, std::ios::beg);
+  readable.exceptions(std::ios::goodbit);
+
+  return TraceRunInputDescriptor(selected.path, selected.channel, format, traceFormat.has_value(),
+                                 TraceRunInputFraming::MemoryAligned, std::move(metadata), std::move(readable));
 }

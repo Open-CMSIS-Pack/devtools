@@ -1105,6 +1105,7 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
 {
   CtraceRunMeta ctraceRunMeta;
   ctraceRunMeta.m_configPath = config.path;
+  ctraceRunMeta.m_traceFormat = config.traceFormat;
   ctraceRunMeta.m_referenceDiagnostics = collectReferenceDiagnostics(config);
   validateDisabledReferences(config);
 
@@ -1306,6 +1307,11 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
 const std::string& CtraceRunMeta::configPath() const
 {
   return m_configPath;
+}
+
+const std::optional<TraceRunFormat>& CtraceRunMeta::traceFormat() const
+{
+  return m_traceFormat;
 }
 
 const std::optional<std::uint64_t>& CtraceRunMeta::timestampClockHz() const

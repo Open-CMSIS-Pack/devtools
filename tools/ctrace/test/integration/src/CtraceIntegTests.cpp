@@ -271,6 +271,53 @@ TEST_F(CtraceIntegTests, GeneratesAllOutputs)
   expectNonEmptyFile(workDirectory() / "Minimal.SWO.traceanalysis.xml");
 }
 
+TEST_F(CtraceIntegTests, DecodesExplicitUnformattedNamedTraceBuffer)
+{
+  writeFile(workDirectory() / "Named.ctrace-run.yml", R"yml(ctrace-run:
+  trace-format: unformatted
+  ctrace-setup:
+    - timestamps:
+        clock: 400000000
+  ctrace-refs: []
+)yml");
+
+  const std::string raw{"\0\0\0\0\0\x80\x17\x34\x12\x00\x08\x09\x41", 13U};
+  writeFile(workDirectory() / "Named.TB_MTB.raw", raw);
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Named", "--all"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+            "0,,pcsample,,,0x08001234,,\n"
+            "0,,itm,1,0x41,,,\n",
+            readTextFile(workDirectory() / "Named.TB_MTB.csv"));
+  expectNonEmptyFile(workDirectory() / "Named.ctf" / "metadata");
+  expectNonEmptyFile(workDirectory() / "Named.ctf" / "stream_0");
+  expectNonEmptyFile(workDirectory() / "Named.TB_MTB.traceanalysis.xml");
+}
+
+TEST_F(CtraceIntegTests, RejectsPartialFormattedFrameBeforeCreatingArtifacts)
+{
+  writeFile(workDirectory() / "Partial.ctrace-run.yml", R"yml(ctrace-run:
+  trace-format: formatted
+  ctrace-setup:
+    - pname: core
+  ctrace-refs:
+    - ctrace-ref: core/itm
+      type: itm
+      pname: core
+      stream: 1
+)yml");
+  writeFile(workDirectory() / "Partial.TB.raw", std::string(15U, 'f'));
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Partial", "--all"});
+  EXPECT_EQ(1, result.exitCode);
+  expectContains(result.stderrText, "formatted raw trace input size must be a multiple of 16 bytes");
+  expectNotContains(result.stderrText, "formatted trace input is not enabled yet");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Partial.TB.csv"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Partial.ctf"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Partial.TB.traceanalysis.xml"));
+}
+
 TEST_F(CtraceIntegTests, ExpandsDwtEventCountersAcrossCsvAndCtf)
 {
   writeFile(workDirectory() / "Events.ctrace-run.yml", R"yml(ctrace-run:

@@ -17,6 +17,7 @@
 #include <vector>
 
 struct TraceRunConfig;
+enum class TraceRunFormat;
 
 /** @brief Stores normalized metadata for one trace source route. */
 struct CtraceRunSourceMeta {
@@ -85,6 +86,15 @@ struct CtraceRunRoute {
 /** @brief Provides validated trace-run metadata consumed by decoding and output. */
 class CtraceRunMeta {
 public:
+  /** @brief Copies normalized trace-run metadata. */
+  CtraceRunMeta(const CtraceRunMeta&) = default;
+  /** @brief Moves normalized trace-run metadata. */
+  CtraceRunMeta(CtraceRunMeta&&) = default;
+  /** @brief Copies normalized trace-run metadata. */
+  CtraceRunMeta& operator=(const CtraceRunMeta&) = default;
+  /** @brief Moves normalized trace-run metadata. */
+  CtraceRunMeta& operator=(CtraceRunMeta&&) = default;
+
   /**
    * @brief Normalizes a parsed trace-run configuration.
    * @param config Parsed trace-run configuration.
@@ -97,6 +107,8 @@ public:
 
   /** @brief Returns the source trace-run configuration path. */
   const std::string& configPath() const;
+  /** @brief Returns the optional global byte-format declaration used during normalization. */
+  const std::optional<TraceRunFormat>& traceFormat() const;
   /** @brief Returns the unambiguous timestamp clock, if available. */
   const std::optional<std::uint64_t>& timestampClockHz() const;
   /** @brief Returns timestamp metadata indexed by Trace Bus ID. */
@@ -125,7 +137,11 @@ public:
   const std::vector<CtraceRunWarning>& warnings() const;
 
 private:
+  /** @brief Restricts construction to normalized instances returned by fromConfig(). */
+  CtraceRunMeta() = default;
+
   std::string m_configPath;
+  std::optional<TraceRunFormat> m_traceFormat;
   std::optional<std::uint64_t> m_timestampClockHz;
   std::map<std::uint8_t, CtraceRunTimestampMeta> m_timestampsByTraceBusId;
   std::optional<std::uint32_t> m_timestampPrescaler;
