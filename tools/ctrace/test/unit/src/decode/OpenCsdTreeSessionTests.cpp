@@ -11,16 +11,20 @@
 #include <gtest/gtest.h>
 
 #include "OpenCsdErrorController.h"
+#include "OpenCsdItmSession.h"
 #include "OpenCsdPacketCollector.h"
 #include "OpenCsdTreeSession.h"
 #include "common/ocsd_dcd_tree.h"
 #include "common/ocsd_dcd_tree_elem.h"
 #include "common/trc_component.h"
+#include "interfaces/trc_pkt_raw_in_i.h"
 #include "opencsd/itm/trc_cmp_cfg_itm.h"
+#include "opencsd/itm/trc_pkt_types_itm.h"
 #include "opencsd/ocsd_if_types.h"
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 using OpenCsdTestSupport::CollectingOpenCsdElementSink;
 
@@ -56,6 +60,65 @@ struct TreeTestContext {
   CollectingOpenCsdElementSink sink;
   OpenCsdPacketCollector collector{TraceRouteIdentity{}, sink};
   OpenCsdErrorController errors;
+};
+
+/** @brief Records reset notifications from one ITM packet processor. */
+class ResetRecordingPacketMonitor final : public IPktRawDataMon<ItmTrcPacket> {
+public:
+  /** @brief Records route-local reset operations and their recovery indices. */
+  void RawPacketDataMon(ocsd_datapath_op_t operation, ocsd_trc_index_t index, const ItmTrcPacket*, std::uint32_t,
+                        const std::uint8_t*) override
+  {
+    if (operation == OCSD_OP_RESET) {
+      m_resetIndices.push_back(index);
+    }
+  }
+
+  /** @brief Returns the recovery indices observed for reset operations. */
+  const std::vector<ocsd_trc_index_t>& resetIndices() const
+  {
+    return m_resetIndices;
+  }
+
+private:
+  std::vector<ocsd_trc_index_t> m_resetIndices;
+};
+
+/** @brief Models the explicit one-route reset behavior of a SINGLE session. */
+class SingleFallbackSession final : public OpenCsdItmSessionInterface {
+public:
+  /** @brief Accepts unused test input. */
+  ocsd_datapath_resp_t pushData(ocsd_trc_index_t, std::uint32_t, const std::uint8_t*, std::uint32_t&) override
+  {
+    return OCSD_RESP_CONT;
+  }
+
+  /** @brief Accepts an unused flush. */
+  ocsd_datapath_resp_t flush() override
+  {
+    return OCSD_RESP_CONT;
+  }
+
+  /** @brief Records the complete reset used for a SINGLE route. */
+  ocsd_datapath_resp_t reset() override
+  {
+    ++resetCalls;
+    return OCSD_RESP_WARN_CONT;
+  }
+
+  /** @brief Maps the synthetic SINGLE route to the complete one-decoder reset. */
+  ocsd_datapath_resp_t resetRoute(std::uint8_t, ocsd_trc_index_t) override
+  {
+    return reset();
+  }
+
+  /** @brief Accepts an unused end-of-trace operation. */
+  ocsd_datapath_resp_t endOfTrace() override
+  {
+    return OCSD_RESP_CONT;
+  }
+
+  std::uint32_t resetCalls = 0U;
 };
 
 } // namespace
@@ -201,4 +264,55 @@ TEST(CtraceUnitTests, testOpenCsdTreeSessionCleansUpPartialDecoderSetupFailure)
 
   EXPECT_NO_THROW((void)OpenCsdTreeSession(OCSD_TRC_SRC_SINGLE, 0U, context.errors, context.collector));
   EXPECT_EQ(DecodeTree::getCurrentErrorLogI(), &foreignLogger);
+}
+
+TEST(CtraceUnitTests, testOpenCsdTreeSessionResetsOnlyResolvedDecoder)
+{
+  constexpr std::uint32_t flags = OCSD_DFRMTR_FRAME_MEM_ALIGN | OCSD_DFRMTR_UNPACKED_RAW_OUT;
+  TreeTestContext context;
+  OpenCsdTreeSession session(OCSD_TRC_SRC_FRAME_FORMATTED, flags, context.errors, context.collector);
+  ITMConfig config;
+  ResetRecordingPacketMonitor firstMonitor;
+  ResetRecordingPacketMonitor secondMonitor;
+
+  config.setTraceID(1U);
+  session.createDecoder(OCSD_BUILTIN_DCD_ITM, OCSD_CREATE_FLG_FULL_DECODER, config);
+  session.attachDecoderCallbacks(1U, firstMonitor);
+  config.setTraceID(111U);
+  session.createDecoder(OCSD_BUILTIN_DCD_ITM, OCSD_CREATE_FLG_FULL_DECODER, config);
+  session.attachDecoderCallbacks(111U, secondMonitor);
+
+  EXPECT_EQ(session.resetDecoder(1U, 37U), OCSD_RESP_CONT);
+  ASSERT_EQ(firstMonitor.resetIndices().size(), 1U);
+  EXPECT_EQ(firstMonitor.resetIndices().front(), 37U);
+  EXPECT_TRUE(secondMonitor.resetIndices().empty());
+
+  EXPECT_THROW(session.resetDecoder(0U, 40U), OpenCsdTreeSessionError);
+  EXPECT_THROW(session.resetDecoder(42U, 41U), OpenCsdTreeSessionError);
+  EXPECT_THROW(session.resetDecoder(112U, 42U), OpenCsdTreeSessionError);
+}
+
+TEST(CtraceUnitTests, testOpenCsdTreeSessionResolvesSingleDecoderAtChannelZero)
+{
+  TreeTestContext context;
+  OpenCsdTreeSession session(OCSD_TRC_SRC_SINGLE, 0U, context.errors, context.collector);
+  ITMConfig config;
+  ResetRecordingPacketMonitor monitor;
+
+  config.setTraceID(0U);
+  session.createDecoder(OCSD_BUILTIN_DCD_ITM, OCSD_CREATE_FLG_FULL_DECODER, config);
+  session.attachDecoderCallbacks(0U, monitor);
+
+  EXPECT_EQ(session.resetDecoder(0U, 73U), OCSD_RESP_CONT);
+  ASSERT_EQ(monitor.resetIndices().size(), 1U);
+  EXPECT_EQ(monitor.resetIndices().front(), 73U);
+  EXPECT_THROW(session.resetDecoder(1U, 74U), OpenCsdTreeSessionError);
+}
+
+TEST(CtraceUnitTests, testOpenCsdSessionRouteResetFallsBackForSingleInput)
+{
+  SingleFallbackSession session;
+
+  EXPECT_EQ(session.resetRoute(0U, 37U), OCSD_RESP_WARN_CONT);
+  EXPECT_EQ(session.resetCalls, 1U);
 }

@@ -371,7 +371,7 @@ TEST_F(CtraceIntegTests, SkipsUnsupportedFormattedSourceOnceAndKeepsConfiguredRo
   expectNonEmptyFile(workDirectory() / "Mixed.TB.traceanalysis.xml");
 }
 
-TEST_F(CtraceIntegTests, AbortsAllOutputsOnFormattedProtocolError)
+TEST_F(CtraceIntegTests, PublishesOutputsWithUnresolvedFormattedRouteRecovery)
 {
   writeFile(workDirectory() / "Invalid.ctrace-run.yml", R"yml(ctrace-run:
   trace-format: formatted
@@ -410,9 +410,62 @@ TEST_F(CtraceIntegTests, AbortsAllOutputsOnFormattedProtocolError)
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Invalid", "--all"});
   EXPECT_EQ(1, result.exitCode);
   expectContains(result.stderrText, "invalid ITM packet header at raw offset 6");
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Invalid.TB.csv"));
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Invalid.ctf"));
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Invalid.TB.traceanalysis.xml"));
+  expectContains(result.stderrText, "could not be decoded before the next hardware ITM sync");
+  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+            "0,1,error,,,,,OpenCSD detected an invalid ITM packet header at raw offset 6.\n"
+            "0,1,error,,,,,OpenCSD discarded 10 raw bytes for this ITM route; no later hardware sync before end of "
+            "input; timestamp 0 .. unknown.\n",
+            readTextFile(workDirectory() / "Invalid.TB.csv"));
+  expectNonEmptyFile(workDirectory() / "Invalid.ctf" / "metadata");
+  expectNonEmptyFile(workDirectory() / "Invalid.ctf" / "stream_1");
+  expectNonEmptyFile(workDirectory() / "Invalid.TB.traceanalysis.xml");
+}
+
+TEST_F(CtraceIntegTests, RecoversOneFormattedRouteWithoutLosingInterleavedOutput)
+{
+  writeFile(workDirectory() / "Recovery.ctrace-run.yml", R"yml(ctrace-run:
+  trace-format: formatted
+  ctrace-setup:
+    - pname: first
+      timestamps:
+        clock: 400000000
+    - pname: second
+      timestamps:
+        clock: 400000000
+  ctrace-refs:
+    - ctrace-ref: first/itm
+      type: itm
+      pname: first
+      stream: 1
+    - ctrace-ref: second/itm
+      type: itm
+      pname: second
+      stream: 2
+)yml");
+  // Route 2 has a reserved ITM header in frame 2. Frame 3 starts with
+  // continuation data for the same formatter ID; a tree reset would lose it.
+  constexpr std::array<unsigned char, 48U> raw{{
+      0x03U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x09U, 0x05U, 0x41U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x10U,
+      0x80U, 0x04U, 0x00U, 0x58U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x10U, 0x43U, 0x18U, 0x44U, 0x20U, 0xe2U,
+      0x44U, 0x29U, 0x03U, 0x46U, 0x10U, 0x42U, 0x01U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x07U,
+  }};
+  writeFile(workDirectory() / "Recovery.TB.raw",
+            {reinterpret_cast<const char*>(raw.data()), static_cast<std::size_t>(raw.size())});
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Recovery", "--all"});
+  EXPECT_EQ(1, result.exitCode);
+  expectContains(result.stderrText, "invalid ITM packet header at raw offset 17");
+  const auto csv = readTextFile(workDirectory() / "Recovery.TB.csv");
+  for (const auto expected : {",1,itm,1,0x41", ",1,itm,2,0x42", ",2,itm,2,0x43", ",2,itm,3,0x44", ",2,itm,4,0x45",
+                              ",2,itm,5,0x46", ",2,error"}) {
+    expectContains(csv, expected);
+  }
+  expectNotContains(csv, ",2,itm,0,0x58");
+  expectNotContains(csv, ",1,error");
+  expectNonEmptyFile(workDirectory() / "Recovery.ctf" / "metadata");
+  expectNonEmptyFile(workDirectory() / "Recovery.ctf" / "stream_1");
+  expectNonEmptyFile(workDirectory() / "Recovery.ctf" / "stream_2");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Recovery.TB.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, AbortsAllOutputsOnFormattedDataBeforeFirstSourceId)

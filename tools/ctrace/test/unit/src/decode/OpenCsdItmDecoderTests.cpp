@@ -20,8 +20,9 @@
 #include "TraceEvent.h"
 #include "opencsd/ocsd_if_types.h"
 
-#include <cstdint>
+#include <algorithm>
 #include <array>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -30,8 +31,12 @@
 #include <vector>
 
 using FormattedTraceTestSupport::itmHardwareSync;
+using FormattedTraceTestSupport::itmSoftwarePacket;
 using FormattedTraceTestSupport::memoryAlignedFrames;
+using OpenCsdSessionTestSupport::errorObservation;
 using OpenCsdSessionTestSupport::ScriptedDecoderHarness;
+using OpenCsdSessionTestSupport::softwareCallback;
+using OpenCsdSessionTestSupport::syncCallback;
 using OpenCsdTestSupport::CollectingOpenCsdElementSink;
 
 namespace {
@@ -74,6 +79,13 @@ public:
 
   /** @brief Records an unexpected recovery reset. */
   ocsd_datapath_resp_t reset() override
+  {
+    ++m_state->resetCalls;
+    return OCSD_RESP_CONT;
+  }
+
+  /** @brief Records an unexpected route-local recovery reset. */
+  ocsd_datapath_resp_t resetRoute(std::uint8_t, ocsd_trc_index_t) override
   {
     ++m_state->resetCalls;
     return OCSD_RESP_CONT;
@@ -126,7 +138,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderValidatesInputRouteCountAndDataPointe
   EXPECT_THROW(decoder.push(nullptr, 1U), std::invalid_argument);
 }
 
-TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderTreatsProtocolRecoveryAsInputFatal)
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRecoversRoutedProtocolFailure)
 {
   const auto route = TraceRouteIdentity{TraceRouteId{0U}, 1U};
   CollectingOpenCsdElementSink sink;
@@ -138,9 +150,513 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderTreatsProtocolRecoveryAsInpu
                             OpenCsdSessionTestSupport::scriptedFactory(script));
   const std::array<std::uint8_t, 16U> frame{};
 
-  EXPECT_THROW(decoder.push(frame.data(), frame.size()), OpenCsdFatalError);
+  EXPECT_NO_THROW(decoder.push(frame.data(), frame.size()));
+  EXPECT_EQ(decoder.finish().bytesIn, frame.size());
   EXPECT_EQ(script->resetCalls, 0U);
+  EXPECT_EQ(script->routeResetCalls[1U], 1U);
+  EXPECT_EQ(script->flushCalls, 1U);
   EXPECT_TRUE(sink.hasIssue(TraceIssueCode::OpenCsdInvalidPacketHeader));
+  EXPECT_TRUE(sink.hasIssue(TraceIssueCode::DataLoss));
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderPreservesOtherRoutesAndDrainsAfterLocalReset)
+{
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  CollectingOpenCsdElementSink sink;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes.emplace_back(OCSD_RESP_FATAL_INVALID_DATA, 16U,
+                              std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+                                  softwareCallback(route1, 3U, 0U, 'A'), softwareCallback(route2, 4U, 0U, 'X'),
+                                  errorObservation(OCSD_ERR_INVALID_PCKT_HDR, 5U, 2U, "reserved header"),
+                                  softwareCallback(route1, 7U, 1U, 'B')});
+  script->flushes.emplace_back(
+      OCSD_RESP_WAIT, std::nullopt,
+      std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{softwareCallback(route1, 8U, 2U, 'C')});
+  script->flushes.emplace_back(OCSD_RESP_CONT, std::nullopt,
+                               std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+                                   syncCallback(route2, 9U), softwareCallback(route2, 10U, 3U, 'D')});
+  OpenCsdItmDecoder decoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                            OpenCsdSessionTestSupport::scriptedFactory(script));
+  const std::array<std::uint8_t, 16U> frame{};
+
+  EXPECT_NO_THROW(decoder.push(frame.data(), frame.size()));
+  EXPECT_EQ(decoder.finish().bytesIn, frame.size());
+  EXPECT_EQ(script->resetCalls, 0U);
+  EXPECT_EQ(script->routeResetCalls[1U], 0U);
+  EXPECT_EQ(script->routeResetCalls[2U], 1U);
+  EXPECT_EQ(script->routeResetOrder, std::vector<std::uint8_t>{2U});
+  EXPECT_EQ(script->routeResetIndexes, std::vector<ocsd_trc_index_t>{5U});
+  EXPECT_EQ(script->flushCalls, 2U);
+
+  std::vector<std::pair<TraceRouteIdentity, std::uint32_t>> software;
+  std::vector<const OpenCsdTraceElement*> losses;
+  for (const auto& element : sink.elements()) {
+    if (element.kind == OpenCsdTraceElement::Kind::Software) {
+      software.emplace_back(element.route, element.value);
+    }
+    if (element.issueCode == TraceIssueCode::DataLoss) {
+      losses.push_back(&element);
+    }
+  }
+  EXPECT_EQ(software, (std::vector<std::pair<TraceRouteIdentity, std::uint32_t>>{
+                          {route1, 'A'}, {route2, 'X'}, {route1, 'B'}, {route1, 'C'}, {route2, 'D'}}));
+  ASSERT_EQ(losses.size(), 1U);
+  EXPECT_EQ(losses.front()->route, route2);
+  EXPECT_EQ(losses.front()->sourceIndex, 5U);
+  EXPECT_EQ(losses.front()->rawBytesConsumed, 4U);
+
+  ASSERT_EQ(sink.elements().size(), 8U);
+  EXPECT_EQ(sink.elements()[0].value, 'A');
+  EXPECT_EQ(sink.elements()[1].value, 'X');
+  EXPECT_EQ(sink.elements()[2].issueCode, TraceIssueCode::OpenCsdInvalidPacketHeader);
+  EXPECT_EQ(sink.elements()[2].route, route2);
+  EXPECT_EQ(sink.elements()[3].value, 'B');
+  EXPECT_EQ(sink.elements()[4].value, 'C');
+  EXPECT_EQ(sink.elements()[5].issueCode, TraceIssueCode::DataLoss);
+  EXPECT_EQ(sink.elements()[6].kind, OpenCsdTraceElement::Kind::Sync);
+  EXPECT_EQ(sink.elements()[7].value, 'D');
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderMakesUnassignableFailureInputFatal)
+{
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  CollectingOpenCsdElementSink sink;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes.emplace_back(OCSD_RESP_ERR_CONT, 16U,
+                              std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+                                  softwareCallback(route1, 3U, 0U, 'A'),
+                                  errorObservation(OCSD_ERR_INVALID_PCKT_HDR, 5U, 2U, "routed error"),
+                                  softwareCallback(route1, 7U, 1U, 'B'),
+                                  errorObservation(OCSD_ERR_MEM, 8U, std::nullopt, "input-wide failure")});
+  OpenCsdItmDecoder decoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                            OpenCsdSessionTestSupport::scriptedFactory(script));
+  const std::array<std::uint8_t, 16U> frame{};
+
+  EXPECT_THROW(decoder.push(frame.data(), frame.size()), OpenCsdFatalError);
+  EXPECT_TRUE(script->routeResetCalls.empty());
+  EXPECT_EQ(script->resetCalls, 0U);
+  EXPECT_EQ(script->flushCalls, 0U);
+  EXPECT_TRUE(std::none_of(sink.elements().begin(), sink.elements().end(), [](const auto& element) {
+    return element.kind == OpenCsdTraceElement::Kind::Software;
+  })) << "input-wide fatal failure must roll back the complete callback batch";
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderMakesDeformatterErrorInputFatal)
+{
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  CollectingOpenCsdElementSink sink;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes.emplace_back(OCSD_RESP_ERR_CONT, 16U,
+                              std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+                                  softwareCallback(route1, 2U, 0U, 'A'),
+                                  errorObservation(OCSD_ERR_DFMTR_BAD_FHSYNC, 5U, std::nullopt, "bad formatter sync"),
+                                  softwareCallback(route2, 7U, 1U, 'B')});
+  OpenCsdItmDecoder decoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                            OpenCsdSessionTestSupport::scriptedFactory(script));
+  const std::array<std::uint8_t, 16U> frame{};
+
+  EXPECT_THROW(decoder.push(frame.data(), frame.size()), OpenCsdFatalError);
+  EXPECT_TRUE(script->routeResetCalls.empty());
+  EXPECT_EQ(script->resetCalls, 0U);
+  EXPECT_EQ(script->flushCalls, 0U);
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().kind, OpenCsdTraceElement::Kind::Error);
+  EXPECT_EQ(sink.elements().front().issueCode, TraceIssueCode::OpenCsdDecodeError);
+  EXPECT_EQ(sink.elements().front().sourceIndex, 5U);
+  EXPECT_TRUE(sink.elements().front().discontinuity);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderPreservesContinuousFormatterStateAcrossRouteRecovery)
+{
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  auto route1Prefix = itmHardwareSync();
+  const auto append = [](std::vector<std::uint8_t>& target, const std::vector<std::uint8_t>& bytes) {
+    target.insert(target.end(), bytes.begin(), bytes.end());
+  };
+  append(route1Prefix, itmSoftwarePacket(1U, 'A'));
+
+  auto route2Payload = itmHardwareSync();
+  route2Payload.push_back(0x04U);
+  append(route2Payload, itmSoftwarePacket(0U, 'X'));
+  append(route2Payload, itmHardwareSync());
+  for (const auto& item : std::array<std::pair<std::uint8_t, std::uint8_t>, 4U>{
+           std::pair<std::uint8_t, std::uint8_t>{2U, 'C'}, {3U, 'D'}, {4U, 'E'}, {5U, 'F'}}) {
+    append(route2Payload, itmSoftwarePacket(item.first, item.second));
+  }
+  const auto capture = memoryAlignedFrames(
+      {{1U, route1Prefix}, {2U, route2Payload}, {1U, itmSoftwarePacket(2U, static_cast<std::uint8_t>('B'))}});
+  ASSERT_EQ(capture.size(), 48U) << "fixture must cross a frame without repeating the active formatter ID";
+
+  CollectingOpenCsdElementSink sink;
+  OpenCsdItmDecoder decoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, sink);
+  EXPECT_NO_THROW(decoder.push(capture.data(), static_cast<std::uint32_t>(capture.size())));
+  EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+
+  std::vector<std::pair<TraceRouteIdentity, std::uint32_t>> software;
+  std::vector<const OpenCsdTraceElement*> protocolErrors;
+  std::vector<const OpenCsdTraceElement*> losses;
+  for (const auto& element : sink.elements()) {
+    if (element.kind == OpenCsdTraceElement::Kind::Software) {
+      software.emplace_back(element.route, element.value);
+    }
+    if (element.issueCode == TraceIssueCode::OpenCsdInvalidPacketHeader) {
+      protocolErrors.push_back(&element);
+    }
+    if (element.issueCode == TraceIssueCode::DataLoss) {
+      losses.push_back(&element);
+    }
+  }
+  EXPECT_EQ(software, (std::vector<std::pair<TraceRouteIdentity, std::uint32_t>>{
+                          {route1, 'A'}, {route2, 'C'}, {route2, 'D'}, {route2, 'E'}, {route2, 'F'}, {route1, 'B'}}));
+  ASSERT_EQ(protocolErrors.size(), 1U);
+  EXPECT_EQ(protocolErrors.front()->route, route2);
+  EXPECT_EQ(protocolErrors.front()->sourceIndex, 17U);
+  ASSERT_EQ(losses.size(), 1U);
+  EXPECT_EQ(losses.front()->route, route2);
+  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdFormattedInputError));
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRecoversSeveralRoutesOnceAtTheirEarliestFailure)
+{
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  CollectingOpenCsdElementSink sink;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes.emplace_back(
+      OCSD_RESP_ERR_CONT, 16U,
+      std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+          softwareCallback(route2, 3U, 0U, 'A'), softwareCallback(route1, 4U, 0U, 'B'),
+          errorObservation(OCSD_ERR_INVALID_PCKT_HDR, 5U, 2U), softwareCallback(route1, 6U, 1U, 'C'),
+          softwareCallback(route2, 7U, 1U, 'D'), errorObservation(OCSD_ERR_BAD_PACKET_SEQ, 8U, 1U),
+          errorObservation(OCSD_ERR_BAD_PACKET_SEQ, 9U, 2U), softwareCallback(route1, 10U, 2U, 'E')});
+  OpenCsdItmDecoder decoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                            OpenCsdSessionTestSupport::scriptedFactory(script));
+  const std::array<std::uint8_t, 16U> frame{};
+
+  EXPECT_NO_THROW(decoder.push(frame.data(), frame.size()));
+  EXPECT_EQ(decoder.finish().bytesIn, frame.size());
+  EXPECT_EQ(script->routeResetOrder, (std::vector<std::uint8_t>{1U, 2U}));
+  EXPECT_EQ(script->routeResetIndexes, (std::vector<ocsd_trc_index_t>{8U, 5U}));
+  EXPECT_EQ(script->routeResetCalls[1U], 1U);
+  EXPECT_EQ(script->routeResetCalls[2U], 1U);
+  EXPECT_EQ(script->flushCalls, 1U);
+
+  std::vector<std::uint32_t> software;
+  for (const auto& element : sink.elements()) {
+    if (element.kind == OpenCsdTraceElement::Kind::Software) {
+      software.push_back(element.value);
+    }
+  }
+  EXPECT_EQ(software, (std::vector<std::uint32_t>{'A', 'B', 'C'}));
+  EXPECT_EQ(static_cast<std::size_t>(
+                std::count_if(sink.elements().begin(), sink.elements().end(),
+                              [](const auto& item) { return item.issueCode == TraceIssueCode::DataLoss; })),
+            2U);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderAbortsFailedLocalResetWithoutDraining)
+{
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  CollectingOpenCsdElementSink sink;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes = {
+      {OCSD_RESP_ERR_CONT, 16U, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 5U, "bad route", 2U}}}};
+  script->routeResets[2U] = {{OCSD_RESP_WAIT}};
+  OpenCsdItmDecoder decoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                            OpenCsdSessionTestSupport::scriptedFactory(script));
+  const std::array<std::uint8_t, 16U> frame{};
+
+  try {
+    decoder.push(frame.data(), frame.size());
+    FAIL() << "failed route-local reset did not abort formatted input";
+  } catch (const OpenCsdFatalError& error) {
+    EXPECT_EQ(error.bytesProcessed(), frame.size());
+  }
+  EXPECT_EQ(script->routeResetCalls[2U], 1U);
+  EXPECT_EQ(script->routeResetCalls[1U], 0U);
+  EXPECT_EQ(script->resetCalls, 0U);
+  EXPECT_EQ(script->flushCalls, 0U);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderBoundsPendingFrameDrain)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 2U};
+  CollectingOpenCsdElementSink sink;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes = {
+      {OCSD_RESP_ERR_CONT, 16U, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 5U, "bad route", 2U}}}};
+  script->defaultFlushResponse = OCSD_RESP_WAIT;
+  OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                            OpenCsdSessionTestSupport::scriptedFactory(script));
+  const std::array<std::uint8_t, 16U> frame{};
+
+  try {
+    decoder.push(frame.data(), frame.size());
+    FAIL() << "unbounded formatted drain did not abort";
+  } catch (const OpenCsdFatalError& error) {
+    EXPECT_EQ(error.bytesProcessed(), frame.size());
+  }
+  EXPECT_EQ(script->routeResetCalls[2U], 1U);
+  EXPECT_EQ(script->flushCalls, 1024U);
+  EXPECT_TRUE(sink.hasIssue(TraceIssueCode::OpenCsdWaitTimeout));
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderClosesUnresolvedRouteLossAtEndOfTrace)
+{
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  CollectingOpenCsdElementSink sink;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes.emplace_back(
+      OCSD_RESP_ERR_CONT, 16U,
+      std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{errorObservation(OCSD_ERR_INVALID_PCKT_HDR, 5U, 2U),
+                                                                  softwareCallback(route1, 9U, 0U, 'A')});
+  OpenCsdItmDecoder decoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                            OpenCsdSessionTestSupport::scriptedFactory(script));
+  const std::array<std::uint8_t, 16U> frame{};
+
+  decoder.push(frame.data(), frame.size());
+  EXPECT_EQ(decoder.finish().bytesIn, frame.size());
+  EXPECT_EQ(script->routeResetCalls[2U], 1U);
+  EXPECT_EQ(script->flushCalls, 1U);
+
+  std::vector<const OpenCsdTraceElement*> losses;
+  for (const auto& element : sink.elements()) {
+    if (element.issueCode == TraceIssueCode::DataLoss) {
+      losses.push_back(&element);
+    }
+  }
+  ASSERT_EQ(losses.size(), 1U);
+  EXPECT_EQ(losses.front()->route, route2);
+  EXPECT_EQ(losses.front()->sourceIndex, 5U);
+  EXPECT_EQ(losses.front()->rawBytesConsumed, 11U);
+  EXPECT_NE(losses.front()->errorMessage.find("no later hardware sync"), std::string::npos);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRejectsFatalResponseAndInvalidRootProgress)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  const std::array<std::uint8_t, 16U> frame{};
+  for (const auto& step : std::array<OpenCsdSessionTestSupport::SessionStep, 3U>{
+           OpenCsdSessionTestSupport::SessionStep{OCSD_RESP_FATAL_SYS_ERR, 16U},
+           OpenCsdSessionTestSupport::SessionStep{OCSD_RESP_CONT, 17U},
+           OpenCsdSessionTestSupport::SessionStep{OCSD_RESP_CONT, 8U}}) {
+    CollectingOpenCsdElementSink sink;
+    const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+    script->pushes = {step};
+    OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                              OpenCsdSessionTestSupport::scriptedFactory(script));
+
+    EXPECT_THROW(decoder.push(frame.data(), frame.size()), OpenCsdFatalError);
+    EXPECT_TRUE(script->routeResetCalls.empty());
+    EXPECT_EQ(script->flushCalls, 0U);
+    EXPECT_TRUE(sink.hasIssue(step.response == OCSD_RESP_FATAL_SYS_ERR ? TraceIssueCode::OpenCsdDecodeError
+                                                                       : TraceIssueCode::OpenCsdNoProgress));
+  }
+
+  CollectingOpenCsdElementSink mixedSink;
+  const auto mixedScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  mixedScript->pushes.emplace_back(OCSD_RESP_FATAL_SYS_ERR, 16U,
+                                   std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+                                       softwareCallback(route, 2U, 0U, 'A'),
+                                       errorObservation(OCSD_ERR_INVALID_PCKT_HDR, 3U, 1U, "subordinate routed error"),
+                                       softwareCallback(route, 4U, 1U, 'B')});
+  OpenCsdItmDecoder mixedDecoder({route}, OpenCsdItmInputMode::CoreSightFormatted, mixedSink,
+                                 OpenCsdSessionTestSupport::scriptedFactory(mixedScript));
+  try {
+    mixedDecoder.push(frame.data(), frame.size());
+    FAIL() << "fatal response was hidden by its routed recoverable logger error";
+  } catch (const OpenCsdFatalError& error) {
+    EXPECT_NE(std::string(error.what()).find("system error"), std::string::npos);
+    EXPECT_EQ(std::string(error.what()).find("invalid ITM packet header"), std::string::npos);
+  }
+  ASSERT_EQ(mixedSink.elements().size(), 1U);
+  EXPECT_NE(mixedSink.elements().front().errorMessage.find("system error"), std::string::npos);
+  EXPECT_TRUE(mixedScript->routeResetCalls.empty());
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderReportsWarningsAndImplicitResponseErrors)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  const std::array<std::uint8_t, 16U> frame{};
+  CollectingOpenCsdElementSink warningSink;
+  const auto warningScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  warningScript->pushes.emplace_back(OCSD_RESP_CONT, 16U,
+                                     std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+                                         errorObservation(OCSD_ERR_FAIL, 3U, 1U, "info", OCSD_ERR_SEV_INFO),
+                                         errorObservation(OCSD_ERR_FAIL, 4U, 1U, "warning", OCSD_ERR_SEV_WARN)});
+  OpenCsdItmDecoder warningDecoder({route}, OpenCsdItmInputMode::CoreSightFormatted, warningSink,
+                                   OpenCsdSessionTestSupport::scriptedFactory(warningScript));
+  warningDecoder.push(frame.data(), frame.size());
+  warningDecoder.finish();
+  ASSERT_EQ(warningSink.elements().size(), 1U);
+  EXPECT_EQ(warningSink.elements().front().route, route);
+  EXPECT_EQ(warningSink.elements().front().issueSeverity, TraceIssueSeverity::Warning);
+
+  CollectingOpenCsdElementSink implicitSink;
+  const auto implicitScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  implicitScript->pushes = {{OCSD_RESP_ERR_CONT, 16U}};
+  OpenCsdItmDecoder implicitDecoder({route}, OpenCsdItmInputMode::CoreSightFormatted, implicitSink,
+                                    OpenCsdSessionTestSupport::scriptedFactory(implicitScript));
+  EXPECT_THROW(implicitDecoder.push(frame.data(), frame.size()), OpenCsdFatalError);
+  EXPECT_TRUE(implicitSink.hasIssue(TraceIssueCode::OpenCsdDecodeError));
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderHandlesWaitAndBoundsZeroProgressRetry)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  const std::array<std::uint8_t, 16U> frame{};
+  CollectingOpenCsdElementSink waitSink;
+  const auto waitScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  waitScript->pushes = {{OCSD_RESP_WAIT, 16U}};
+  waitScript->flushes = {{OCSD_RESP_CONT}};
+  OpenCsdItmDecoder waitDecoder({route}, OpenCsdItmInputMode::CoreSightFormatted, waitSink,
+                                OpenCsdSessionTestSupport::scriptedFactory(waitScript));
+  EXPECT_NO_THROW(waitDecoder.push(frame.data(), frame.size()));
+  EXPECT_EQ(waitScript->flushCalls, 1U);
+
+  CollectingOpenCsdElementSink stalledSink;
+  const auto stalledScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  stalledScript->pushes = {{OCSD_RESP_WAIT, 0U}, {OCSD_RESP_WAIT, 0U}};
+  stalledScript->flushes = {{OCSD_RESP_CONT}, {OCSD_RESP_CONT}};
+  OpenCsdItmDecoder stalledDecoder({route}, OpenCsdItmInputMode::CoreSightFormatted, stalledSink,
+                                   OpenCsdSessionTestSupport::scriptedFactory(stalledScript));
+  EXPECT_THROW(stalledDecoder.push(frame.data(), frame.size()), OpenCsdFatalError);
+  EXPECT_EQ(stalledScript->pushCalls, 2U);
+  EXPECT_EQ(stalledScript->flushCalls, 2U);
+  EXPECT_TRUE(stalledSink.hasIssue(TraceIssueCode::OpenCsdNoProgress));
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderHandlesRecoveryAndFatalErrorDuringDrain)
+{
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  const std::array<std::uint8_t, 16U> frame{};
+  CollectingOpenCsdElementSink recoverySink;
+  const auto recoveryScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  recoveryScript->pushes = {
+      {OCSD_RESP_ERR_CONT, 16U, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 5U, "route 2", 2U}}}};
+  recoveryScript->flushes = {
+      {OCSD_RESP_ERR_CONT, std::nullopt, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_BAD_PACKET_SEQ, 7U, "route 1", 1U}}},
+      {OCSD_RESP_CONT}};
+  OpenCsdItmDecoder recoveryDecoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, recoverySink,
+                                    OpenCsdSessionTestSupport::scriptedFactory(recoveryScript));
+  EXPECT_NO_THROW(recoveryDecoder.push(frame.data(), frame.size()));
+  EXPECT_EQ(recoveryScript->routeResetOrder, (std::vector<std::uint8_t>{2U, 1U}));
+  EXPECT_EQ(recoveryScript->flushCalls, 2U);
+
+  CollectingOpenCsdElementSink fatalSink;
+  const auto fatalScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  fatalScript->pushes = {
+      {OCSD_RESP_ERR_CONT, 16U, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 5U, "route 2", 2U}}}};
+  fatalScript->flushes = {{OCSD_RESP_FATAL_SYS_ERR}};
+  OpenCsdItmDecoder fatalDecoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, fatalSink,
+                                 OpenCsdSessionTestSupport::scriptedFactory(fatalScript));
+  EXPECT_THROW(fatalDecoder.push(frame.data(), frame.size()), OpenCsdFatalError);
+  EXPECT_EQ(fatalScript->routeResetCalls[2U], 1U);
+  EXPECT_EQ(fatalScript->flushCalls, 1U);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderHandlesResetCallbacksAndReportedResetError)
+{
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  const std::array<std::uint8_t, 16U> frame{};
+  CollectingOpenCsdElementSink callbackSink;
+  const auto callbackScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  callbackScript->pushes = {
+      {OCSD_RESP_ERR_CONT, 16U, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 5U, "route 2", 2U}}}};
+  callbackScript->routeResets[2U].emplace_back(
+      OCSD_RESP_CONT, std::nullopt,
+      std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{softwareCallback(route1, 7U, 1U, 'A')});
+  OpenCsdItmDecoder callbackDecoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, callbackSink,
+                                    OpenCsdSessionTestSupport::scriptedFactory(callbackScript));
+  EXPECT_NO_THROW(callbackDecoder.push(frame.data(), frame.size()));
+  EXPECT_TRUE(std::any_of(callbackSink.elements().begin(), callbackSink.elements().end(), [](const auto& element) {
+    return element.kind == OpenCsdTraceElement::Kind::Software && element.value == 'A';
+  }));
+
+  CollectingOpenCsdElementSink errorSink;
+  const auto errorScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  errorScript->pushes = {
+      {OCSD_RESP_ERR_CONT, 16U, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 5U, "route 2", 2U}}}};
+  errorScript->routeResets[2U] = {{OCSD_RESP_ERR_CONT,
+                                   std::nullopt,
+                                   false,
+                                   {{OCSD_ERR_SEV_ERROR, OCSD_ERR_BAD_PACKET_SEQ, 5U, "reset error", 2U}}}};
+  OpenCsdItmDecoder errorDecoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, errorSink,
+                                 OpenCsdSessionTestSupport::scriptedFactory(errorScript));
+  EXPECT_THROW(errorDecoder.push(frame.data(), frame.size()), OpenCsdFatalError);
+  EXPECT_EQ(errorScript->routeResetCalls[2U], 1U);
+  EXPECT_EQ(errorScript->flushCalls, 0U);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderClosesRecoveryRepeatedBeforeAndDuringEndOfTrace)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 2U};
+  const std::array<std::uint8_t, 32U> frames{};
+  CollectingOpenCsdElementSink repeatedSink;
+  const auto repeatedScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  repeatedScript->pushes.emplace_back(
+      OCSD_RESP_ERR_CONT, 16U,
+      std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{errorObservation(OCSD_ERR_INVALID_PCKT_HDR, 5U, 2U)});
+  repeatedScript->pushes.emplace_back(
+      OCSD_RESP_ERR_CONT, 16U,
+      std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{syncCallback(route, 18U),
+                                                                  errorObservation(OCSD_ERR_BAD_PACKET_SEQ, 20U, 2U)});
+  OpenCsdItmDecoder repeatedDecoder({route}, OpenCsdItmInputMode::CoreSightFormatted, repeatedSink,
+                                    OpenCsdSessionTestSupport::scriptedFactory(repeatedScript));
+  repeatedDecoder.push(frames.data(), frames.size());
+  repeatedDecoder.finish();
+  EXPECT_EQ(repeatedScript->routeResetCalls[2U], 2U);
+  EXPECT_EQ(static_cast<std::size_t>(
+                std::count_if(repeatedSink.elements().begin(), repeatedSink.elements().end(),
+                              [](const auto& element) { return element.issueCode == TraceIssueCode::DataLoss; })),
+            2U);
+
+  CollectingOpenCsdElementSink endRecoverySink;
+  const auto endRecoveryScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  endRecoveryScript->ends = {{OCSD_RESP_ERR_CONT,
+                              std::nullopt,
+                              false,
+                              {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 3U, "end error", 2U}}}};
+  OpenCsdItmDecoder endRecoveryDecoder({route}, OpenCsdItmInputMode::CoreSightFormatted, endRecoverySink,
+                                       OpenCsdSessionTestSupport::scriptedFactory(endRecoveryScript));
+  EXPECT_NO_THROW((void)endRecoveryDecoder.finish());
+  EXPECT_EQ(endRecoveryScript->routeResetCalls[2U], 0U);
+  EXPECT_TRUE(endRecoverySink.hasIssue(TraceIssueCode::DataLoss));
+
+  CollectingOpenCsdElementSink endWaitSink;
+  const auto endWaitScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  endWaitScript->ends = {{OCSD_RESP_WAIT}};
+  endWaitScript->flushes = {{OCSD_RESP_CONT}};
+  OpenCsdItmDecoder endWaitDecoder({route}, OpenCsdItmInputMode::CoreSightFormatted, endWaitSink,
+                                   OpenCsdSessionTestSupport::scriptedFactory(endWaitScript));
+  EXPECT_NO_THROW((void)endWaitDecoder.finish());
+  EXPECT_EQ(endWaitScript->flushCalls, 1U);
+
+  CollectingOpenCsdElementSink endRecoveryWaitSink;
+  const auto endRecoveryWaitScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  endRecoveryWaitScript->ends.emplace_back(OCSD_RESP_ERR_WAIT, std::nullopt,
+                                           std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+                                               errorObservation(OCSD_ERR_INVALID_PCKT_HDR, 3U, 2U, "end error")});
+  endRecoveryWaitScript->flushes.emplace_back(OCSD_RESP_CONT, std::nullopt,
+                                              std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+                                                  syncCallback(route, 5U), softwareCallback(route, 6U, 0U, 'A')});
+  OpenCsdItmDecoder endRecoveryWaitDecoder({route}, OpenCsdItmInputMode::CoreSightFormatted, endRecoveryWaitSink,
+                                           OpenCsdSessionTestSupport::scriptedFactory(endRecoveryWaitScript));
+  EXPECT_NO_THROW((void)endRecoveryWaitDecoder.finish());
+  EXPECT_EQ(endRecoveryWaitScript->routeResetCalls[2U], 1U);
+  EXPECT_EQ(endRecoveryWaitScript->flushCalls, 1U);
+  EXPECT_TRUE(endRecoveryWaitSink.hasIssue(TraceIssueCode::DataLoss));
+  EXPECT_TRUE(std::any_of(
+      endRecoveryWaitSink.elements().begin(), endRecoveryWaitSink.elements().end(),
+      [](const auto& element) { return element.kind == OpenCsdTraceElement::Kind::Software && element.value == 'A'; }));
 }
 
 TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderDoesNotInferDataLossFromSilentFrames)
@@ -551,6 +1067,7 @@ TEST(CtraceUnitTests, testOpenCsdItmSessionAcceptsEmptyDataPathOperations)
   OpenCsdItmSession session(collector, errors);
 
   EXPECT_NE(errors.decide(session.reset()).action, OpenCsdErrorController::Action::Abort);
+  EXPECT_NE(errors.decide(session.resetRoute(0U, 0U)).action, OpenCsdErrorController::Action::Abort);
   EXPECT_NE(errors.decide(session.flush()).action, OpenCsdErrorController::Action::Abort);
   EXPECT_NE(errors.decide(session.endOfTrace()).action, OpenCsdErrorController::Action::Abort);
 }

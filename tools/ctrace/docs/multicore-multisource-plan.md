@@ -543,8 +543,8 @@ Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4
 | 5 | Multi-stream CTF bundle and Trace Compass policy | Complete |
 | 6 | DecodeTree `SINGLE` migration | Complete |
 | 7 | Clean formatted decoding and TB integration | Complete |
-| 8 | Route-local recovery and error isolation | Next |
-| 9 | Consumer validation, documentation, and final hardening | Pending |
+| 8 | Route-local recovery and error isolation | Complete |
+| 9 | Consumer validation, documentation, and final hardening | Next |
 
 Update this table only after the corresponding exit criterion and common gate pass.
 

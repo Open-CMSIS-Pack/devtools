@@ -15,6 +15,7 @@
 #include "common/trc_component.h"
 #include "common/trc_frame_deformatter.h"
 #include "interfaces/trc_abs_typed_base_i.h"
+#include "interfaces/trc_data_raw_in_i.h"
 #include "interfaces/trc_data_rawframe_in_i.h"
 #include "interfaces/trc_error_log_i.h"
 #include "interfaces/trc_gen_elem_in_i.h"
@@ -163,6 +164,22 @@ void OpenCsdTreeSession::attachRawFrameMonitor(ITrcRawFrameIn& frameMonitor)
   OpenCsdSessionValidation::requireObject(attachPoint, "OpenCSD raw-frame attach point is not initialized");
   OpenCsdSessionValidation::requireSuccess(attachPoint->attach(&frameMonitor),
                                            "failed to attach OpenCSD raw frame monitor");
+}
+
+ocsd_datapath_resp_t OpenCsdTreeSession::resetDecoder(std::uint8_t channel, ocsd_trc_index_t index)
+{
+  validateChannel(channel);
+  auto* element = m_tree->getDecoderElement(channel);
+  OpenCsdSessionValidation::requireObject(element, "OpenCSD decoder element is not initialized");
+  auto* manager = element->getDecoderMngr();
+  OpenCsdSessionValidation::requireObject(manager, "OpenCSD decoder manager is not initialized");
+  auto* component = element->getDecoderHandle();
+  OpenCsdSessionValidation::requireObject(component, "OpenCSD decoder component is not initialized");
+  ITrcDataIn* packetProcessor = nullptr;
+  OpenCsdSessionValidation::requireSuccess(manager->getDataInputI(component, &packetProcessor),
+                                           "failed to resolve OpenCSD decoder input");
+  OpenCsdSessionValidation::requireObject(packetProcessor, "OpenCSD decoder input is not initialized");
+  return packetProcessor->TraceDataIn(OCSD_OP_RESET, index, 0U, nullptr, nullptr);
 }
 
 void OpenCsdTreeSession::validateChannel(std::uint8_t channel) const

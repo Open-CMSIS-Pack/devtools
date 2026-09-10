@@ -208,6 +208,7 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerTracksLoggerState)
   ASSERT_TRUE(firstDecision.error.has_value());
   EXPECT_FALSE(firstDecision.error->hasIndex);
   EXPECT_EQ(firstDecision.error->index, 0U);
+  EXPECT_FALSE(firstDecision.error->channel.has_value());
   EXPECT_EQ(firstDecision.error->message, "allocation failed");
 
   const ocsdError traceError(OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 73U, 3U, "bad header");
@@ -215,6 +216,36 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerTracksLoggerState)
   ASSERT_NE(controller.GetLastIDError(3U), nullptr);
   EXPECT_EQ(controller.GetLastIDError(3U)->getErrorIndex(), 73U);
   EXPECT_EQ(controller.GetLastIDError(4U), nullptr);
+}
+
+TEST(CtraceUnitTests, testOpenCsdErrorControllerNormalizesOptionalChannels)
+{
+  OpenCsdErrorController controller;
+  const auto source = controller.RegisterErrorSource("ITM packet processor");
+
+  controller.beginDataPathCall();
+  const ocsdError singleError(OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 10U, 0U, "single channel");
+  controller.LogError(source, &singleError);
+  const auto singleDecision = controller.decide(OCSD_RESP_FATAL_INVALID_DATA);
+  ASSERT_EQ(singleDecision.errors.size(), 1U);
+  ASSERT_TRUE(singleDecision.errors.front().channel.has_value());
+  EXPECT_EQ(*singleDecision.errors.front().channel, 0U);
+
+  controller.beginDataPathCall();
+  const ocsdError formattedError(OCSD_ERR_SEV_ERROR, OCSD_ERR_BAD_PACKET_SEQ, 20U, 111U, "formatted channel");
+  controller.LogError(source, &formattedError);
+  const auto formattedDecision = controller.decide(OCSD_RESP_FATAL_INVALID_DATA);
+  ASSERT_EQ(formattedDecision.errors.size(), 1U);
+  ASSERT_TRUE(formattedDecision.errors.front().channel.has_value());
+  EXPECT_EQ(*formattedDecision.errors.front().channel, 111U);
+
+  controller.beginDataPathCall();
+  const ocsdError channelLessError(OCSD_ERR_SEV_ERROR, OCSD_ERR_DFMTR_BAD_FHSYNC, 30U, OCSD_BAD_CS_SRC_ID,
+                                   "deformatter error");
+  controller.LogError(source, &channelLessError);
+  const auto channelLessDecision = controller.decide(OCSD_RESP_FATAL_INVALID_DATA);
+  ASSERT_EQ(channelLessDecision.errors.size(), 1U);
+  EXPECT_FALSE(channelLessDecision.errors.front().channel.has_value());
 }
 
 TEST(CtraceUnitTests, testOpenCsdErrorControllerForwardsLoggerMessages)

@@ -114,6 +114,14 @@ public:
    * @throws OpenCsdTreeSessionError If this is not a formatted tree or attachment fails.
    */
   void attachRawFrameMonitor(ITrcRawFrameIn& frameMonitor);
+  /**
+   * @brief Resets one decoder pair without resetting the DecodeTree frontend.
+   * @param channel OpenCSD transport channel used to resolve the decoder element.
+   * @param index Raw input offset associated with the recovery boundary.
+   * @return Data-path response from the route's packet processor.
+   * @throws OpenCsdTreeSessionError If the route cannot be resolved or reset.
+   */
+  ocsd_datapath_resp_t resetDecoder(std::uint8_t channel, ocsd_trc_index_t index);
   /** @brief Routes one data-path operation through the DecodeTree root. */
   ocsd_datapath_resp_t traceDataIn(ocsd_datapath_op_t operation, ocsd_trc_index_t index, std::uint32_t size,
                                    const std::uint8_t* data, std::uint32_t* processed);

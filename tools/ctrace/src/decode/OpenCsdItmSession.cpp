@@ -49,6 +49,13 @@ ocsd_datapath_resp_t OpenCsdItmSession::reset()
   return m_treeSession.traceDataIn(OCSD_OP_RESET, 0, 0, nullptr, nullptr);
 }
 
+ocsd_datapath_resp_t OpenCsdItmSession::resetRoute(std::uint8_t channel, ocsd_trc_index_t index)
+{
+  static_cast<void>(channel);
+  static_cast<void>(index);
+  return reset();
+}
+
 ocsd_datapath_resp_t OpenCsdItmSession::endOfTrace()
 {
   return m_treeSession.traceDataIn(OCSD_OP_EOT, 0, 0, nullptr, nullptr);

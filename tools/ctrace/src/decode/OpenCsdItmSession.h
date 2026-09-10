@@ -37,6 +37,13 @@ public:
   virtual ocsd_datapath_resp_t flush() = 0;
   /** @brief Resets OpenCSD decoder state for stream recovery. */
   virtual ocsd_datapath_resp_t reset() = 0;
+  /**
+   * @brief Resets one transport route while preserving the formatted root frontend.
+   *
+   * Every session must state this behavior explicitly so a formatted implementation
+   * cannot silently fall back to resetting the complete tree.
+   */
+  virtual ocsd_datapath_resp_t resetRoute(std::uint8_t channel, ocsd_trc_index_t index) = 0;
   /** @brief Signals the end of the current trace stream. */
   virtual ocsd_datapath_resp_t endOfTrace() = 0;
 };
@@ -74,6 +81,8 @@ public:
   ocsd_datapath_resp_t flush() override;
   /** @brief Resets the external decoder. */
   ocsd_datapath_resp_t reset() override;
+  /** @brief Maps the synthetic SINGLE route to its complete one-decoder reset. */
+  ocsd_datapath_resp_t resetRoute(std::uint8_t channel, ocsd_trc_index_t index) override;
   /** @brief Signals end of trace to the external decoder. */
   ocsd_datapath_resp_t endOfTrace() override;
 

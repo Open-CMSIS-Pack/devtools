@@ -104,6 +104,8 @@ public:
   ocsd_datapath_resp_t flush() override;
   /** @brief Resets the complete formatted tree. */
   ocsd_datapath_resp_t reset() override;
+  /** @brief Resets one ITM decoder pair while preserving deformatter state. */
+  ocsd_datapath_resp_t resetRoute(std::uint8_t channel, ocsd_trc_index_t index) override;
   /** @brief Signals end of trace to every configured decoder. */
   ocsd_datapath_resp_t endOfTrace() override;
 

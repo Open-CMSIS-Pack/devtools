@@ -85,12 +85,20 @@ public:
     ocsd_itm_pkt_type type = ITM_PKT_NOTSYNC;
   };
 
+  /** @brief Stores one route-local packet-processor reset notification. */
+  struct ResetObservation {
+    TraceRouteIdentity route;
+    ocsd_trc_index_t index = 0U;
+  };
+
   /** @brief Copies packet identity while ignoring callback-only control operations. */
-  void rawPacketForRoute(const TraceRouteIdentity& route, ocsd_datapath_op_t, ocsd_trc_index_t,
+  void rawPacketForRoute(const TraceRouteIdentity& route, ocsd_datapath_op_t operation, ocsd_trc_index_t index,
                          const ItmTrcPacket* packet, std::uint32_t, const std::uint8_t*) override
   {
     if (packet != nullptr) {
       m_packets.push_back({route, packet->getPktType()});
+    } else if (operation == OCSD_OP_RESET) {
+      m_resets.push_back({route, index});
     }
   }
 
@@ -108,8 +116,15 @@ public:
     return m_packets;
   }
 
+  /** @brief Returns every route-local reset notification in callback order. */
+  const std::vector<ResetObservation>& resets() const
+  {
+    return m_resets;
+  }
+
 private:
   std::vector<PacketObservation> m_packets;
+  std::vector<ResetObservation> m_resets;
 };
 
 /** @brief Throws only when a real software element crosses the callback boundary. */
@@ -491,4 +506,25 @@ TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionAcceptsEmptyInput)
   EXPECT_FALSE(observedTraceId(elements, 0U));
   EXPECT_TRUE(packets.packets().empty());
   EXPECT_TRUE(unsupported.empty());
+}
+
+/** @brief Verifies route-local reset without notifying another formatted decoder. */
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionResetsOnlySelectedRoute)
+{
+  const TraceRouteIdentity first{TraceRouteId{10U}, 1U};
+  const TraceRouteIdentity last{TraceRouteId{20U}, 111U};
+  RecordingElementOutput elements;
+  RecordingPacketSink packets;
+  OpenCsdErrorController errors;
+  OpenCsdFormattedItmSession session({first, last}, elements, errors, packets);
+
+  EXPECT_EQ(session.resetRoute(1U, 37U), OCSD_RESP_CONT);
+  ASSERT_EQ(packets.resets().size(), 1U);
+  EXPECT_EQ(packets.resets().front().route, first);
+  EXPECT_EQ(packets.resets().front().index, 37U);
+
+  EXPECT_THROW(session.resetRoute(0U, 40U), OpenCsdTreeSessionError);
+  EXPECT_THROW(session.resetRoute(42U, 41U), OpenCsdTreeSessionError);
+  EXPECT_THROW(session.resetRoute(112U, 42U), OpenCsdTreeSessionError);
+  EXPECT_EQ(packets.resets().size(), 1U);
 }
