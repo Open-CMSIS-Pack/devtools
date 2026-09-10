@@ -255,6 +255,30 @@ TEST(CtraceUnitTests, testOpenCsdItmSessionAcceptsEmptyDataPathOperations)
   EXPECT_NE(errors.decide(session.endOfTrace()).action, OpenCsdErrorController::Action::Abort);
 }
 
+TEST(CtraceUnitTests, testOpenCsdItmSessionUsesSingleChannelAndAssociatedErrorLogger)
+{
+  CollectingOpenCsdElementSink sink;
+  OpenCsdItmDecoder decoder({}, sink);
+  const std::uint8_t trace[]{
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('A'), 0x04U,
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('B'),
+  };
+
+  decoder.push(trace, sizeof(trace));
+  EXPECT_EQ(decoder.finish().bytesIn, sizeof(trace));
+  EXPECT_TRUE(sink.hasIssue(TraceIssueCode::OpenCsdInvalidPacketHeader));
+
+  bool foundSoftware = false;
+  for (const auto& element : sink.elements()) {
+    if (element.kind == OpenCsdTraceElement::Kind::Software) {
+      foundSoftware = true;
+      EXPECT_EQ(element.route, TraceRouteIdentity{})
+          << "OpenCSD SINGLE channel 0 must retain the synthetic ctrace route";
+    }
+  }
+  EXPECT_TRUE(foundSoftware);
+}
+
 TEST(CtraceUnitTests, testOpenCsdSessionValidationRejectsInvalidApiResults)
 {
   const std::uint32_t object = 1U;
@@ -267,15 +291,4 @@ TEST(CtraceUnitTests, testOpenCsdSessionValidationRejectsInvalidApiResults)
   ASSERT_TRUE(message.has_value());
   EXPECT_NE(message->find("OCSD_ERR_MEM"), std::string::npos);
   EXPECT_NE(message->find("decoder setup failed"), std::string::npos);
-}
-
-TEST(CtraceUnitTests, testOpenCsdItmSessionRejectsMissingDecoderRegistry)
-{
-  CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector({}, sink);
-  OpenCsdErrorController errors;
-  const auto missingRegistry = []() -> OcsdLibDcdRegister* { return nullptr; };
-
-  EXPECT_THROW((void)OpenCsdItmSession(collector, errors, nullptr), OpenCsdItmSessionError);
-  EXPECT_THROW((void)OpenCsdItmSession(collector, errors, missingRegistry), OpenCsdItmSessionError);
 }

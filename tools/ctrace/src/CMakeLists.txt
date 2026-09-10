@@ -33,6 +33,7 @@ set(CTRACE_DECODE_HEADER_FILES
   decode/OpenCsdItmSession.h
   decode/OpenCsdPacketCollector.h
   decode/OpenCsdTraceElement.h
+  decode/OpenCsdTreeSession.h
   decode/SaturatingArithmetic.h
 )
 set(CTRACE_OUTPUT_HEADER_FILES
@@ -133,6 +134,7 @@ add_library(ctrace-decode STATIC
   decode/OpenCsdItmDecoder.cpp
   decode/OpenCsdItmSession.cpp
   decode/OpenCsdPacketCollector.cpp
+  decode/OpenCsdTreeSession.cpp
   ${CTRACE_DECODE_HEADER_FILES}
 )
 add_library(ctrace::decode ALIAS ctrace-decode)

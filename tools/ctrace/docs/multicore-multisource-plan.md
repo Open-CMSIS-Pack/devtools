@@ -541,8 +541,8 @@ Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4
 | 3 | Route-aware semantic state, diagnostics, and CSV | Complete |
 | 4 | CTF descriptors and metadata model | Complete |
 | 5 | Multi-stream CTF bundle and Trace Compass policy | Complete |
-| 6 | DecodeTree `SINGLE` migration | Next |
-| 7 | Clean formatted decoding and TB integration | Pending |
+| 6 | DecodeTree `SINGLE` migration | Complete |
+| 7 | Clean formatted decoding and TB integration | Next |
 | 8 | Route-local recovery and error isolation | Pending |
 | 9 | Consumer validation, documentation, and final hardening | Pending |
 
