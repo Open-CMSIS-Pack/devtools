@@ -16,6 +16,7 @@
 #include "ctf/CtfBundleOutput.h"
 #include "ctf/CtfMetadataWriter.h"
 #include "ctf/CtfSchema.h"
+#include "ctf/TraceCompassXmlWriter.h"
 #include "CtraceRunMeta.h"
 #include "OutputRequirements.h"
 #include "TestPath.h"
@@ -64,6 +65,18 @@ static CtfOutputConfig makeCtfBundleConfig(const std::filesystem::path& outputDi
                                            const std::filesystem::path& traceCompassXmlPath, std::uint64_t coreClockHz)
 {
   return CtfOutputConfig(outputDirectory, traceCompassXmlPath, {}, CtfTestSupport::legacyTopology(coreClockHz));
+}
+
+/** @brief Creates a formatted CTF bundle configuration from an explicit topology. */
+static CtfOutputConfig makeFormattedCtfBundleConfig(const std::filesystem::path& outputDirectory,
+                                                    CtfMetadataTopology topology, TraceSelection selection = {})
+{
+  std::vector<TraceRouteIdentity> routes;
+  for (const auto& stream : topology.streams) {
+    routes.push_back(stream.route);
+  }
+  return CtfOutputConfig(outputDirectory, testTraceCompassXmlPath(outputDirectory), std::move(selection),
+                         std::move(topology), std::move(routes), true);
 }
 
 /** @brief Requires all files of a completed CTF bundle. */
@@ -129,6 +142,43 @@ static std::uint8_t readFirstCtfDwtValueTag(const std::filesystem::path& streamP
   const auto records = readCtfRecords(streamPath);
   const auto& record = requireFirstCtfRecord(records, CtfSchema::EventId::DwtValue, "expected CTF DWT event missing");
   return record.payload[2U];
+}
+
+/** @brief Requires every generated state change to begin its output path with the normalized route. */
+static void requireRoutePrefixedStateChanges(const std::string& xml)
+{
+  const std::string stateChange = "<stateChange>";
+  const std::string stateChangeEnd = "</stateChange>";
+  const std::string stateAttribute = "<stateAttribute";
+  const std::string routeAttribute = "<stateAttribute type=\"eventField\" value=\"cmsis_trace_bus_id\" />";
+  std::size_t offset = 0U;
+  std::size_t stateChangeCount = 0U;
+  while ((offset = xml.find(stateChange, offset)) != std::string::npos) {
+    const auto end = xml.find(stateChangeEnd, offset);
+    const auto firstAttribute = xml.find(stateAttribute, offset + stateChange.size());
+    ASSERT_NE(end, std::string::npos);
+    ASSERT_NE(firstAttribute, std::string::npos);
+    ASSERT_LT(firstAttribute, end);
+    EXPECT_EQ(xml.compare(firstAttribute, routeAttribute.size(), routeAttribute), 0);
+    ++stateChangeCount;
+    offset = end + stateChangeEnd.size();
+  }
+  EXPECT_GT(stateChangeCount, 0U);
+}
+
+/** @brief Requires every generated view entry to select all normalized trace routes. */
+static void requireRoutePrefixedViewEntries(const std::string& xml)
+{
+  const std::string entryPath = "<entry path=\"";
+  std::size_t offset = 0U;
+  std::size_t entryCount = 0U;
+  while ((offset = xml.find(entryPath, offset)) != std::string::npos) {
+    const auto path = offset + entryPath.size();
+    EXPECT_EQ(xml.compare(path, 2U, "*/"), 0);
+    ++entryCount;
+    offset = path + 2U;
+  }
+  EXPECT_GT(entryCount, 0U);
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputExceptionContext)
@@ -559,14 +609,205 @@ TEST(CtraceUnitTests, testCtfBundleOutputAbortRemovesPartialBundle)
   CtfBundleOutput output(std::move(options));
   output.start();
   ASSERT_TRUE(!std::filesystem::exists(outputDir / "old-marker") &&
-              std::filesystem::is_regular_file(outputDir / "stream_0") && readTestTextFile(xmlPath) != "old-xml")
-      << "CTF start must remove both previous targets and write directly to their final paths";
+              std::filesystem::is_regular_file(outputDir / "stream_0") && !std::filesystem::exists(xmlPath))
+      << "CTF start must remove both previous targets while deferring companion XML";
 
   TraceEvent software = softwarePacket(1U, 1U, 'A');
   output.writeEvent(software);
   output.abort();
   ASSERT_TRUE(!std::filesystem::exists(outputDir) && !std::filesystem::exists(xmlPath))
       << "CTF abort must remove the incomplete direct output";
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputPreservesLegacyTraceCompassXmlAfterCompletion)
+{
+  const TemporaryTestPath root("ctrace-ctf-legacy-xml-completion-test");
+  const auto outputDirectory = root.path() / "output.ctf";
+  const auto xmlPath = testTraceCompassXmlPath(outputDirectory);
+  const auto expectedXmlPath = root.path() / "expected.xml";
+  TraceCompassXmlWriter::writeFile(expectedXmlPath);
+
+  CtfBundleOutput output(makeCtfBundleConfig(outputDirectory, 1000000U));
+  output.start();
+  EXPECT_FALSE(std::filesystem::exists(xmlPath));
+  output.writeEvent(atCycle(softwarePacket(1U, 1U, 'A'), 10U));
+  output.stop();
+
+  ASSERT_TRUE(std::filesystem::is_regular_file(xmlPath));
+  EXPECT_EQ(readTestTextFile(xmlPath), readTestTextFile(expectedXmlPath));
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputGeneratesRoutePrefixedXmlForSharedClockStreams)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-shared-clock-xml-test");
+  const auto& outputDirectory = temporaryOutput.outputDirectory();
+  const TraceRouteIdentity first{TraceRouteId{10U}, 1U};
+  const TraceRouteIdentity last{TraceRouteId{20U}, 111U};
+  CtfMetadataTopology topology{
+      {{CtfClockDomainId{7U}, "shared_clock", CtfTestSupport::testUuid(7U), 1000000U, false}},
+      {
+          {CtfStreamClassId{1U}, first, CtfSourceKind::Itm, "core-one", CtfClockDomainId{7U}},
+          {CtfStreamClassId{111U}, last, CtfSourceKind::Itm, "core-last", CtfClockDomainId{7U}},
+      },
+      {},
+  };
+  CollectingDiagnosticSink diagnostics;
+  CtfBundleOutput output(makeFormattedCtfBundleConfig(outputDirectory, std::move(topology)), &diagnostics);
+
+  output.start();
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_1"));
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_111"));
+  output.writeEvent(onRoute(atCycle(softwarePacket(1U, 1U, 'A'), 10U), last));
+  output.writeEvent(onRoute(atCycle(softwarePacket(2U, 1U, 'B'), 20U), first));
+  output.stop();
+
+  ASSERT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_1"));
+  ASSERT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_111"));
+  const auto xml = readTestTextFile(testTraceCompassXmlPath(outputDirectory));
+  EXPECT_NE(xml.find("<stateAttribute type=\"eventField\" value=\"cmsis_trace_bus_id\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<entry path=\"*/ITM/*\""), std::string::npos);
+  requireRoutePrefixedStateChanges(xml);
+  requireRoutePrefixedViewEntries(xml);
+  EXPECT_TRUE(diagnostics.events().empty());
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputKeepsIndependentClockCtfAndOmitsStaleXml)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-independent-clock-xml-test");
+  const auto& outputDirectory = temporaryOutput.outputDirectory();
+  const auto xmlPath = testTraceCompassXmlPath(outputDirectory);
+  const TraceRouteIdentity first{TraceRouteId{10U}, 1U};
+  const TraceRouteIdentity second{TraceRouteId{20U}, 2U};
+  CtfMetadataTopology topology{
+      {
+          {CtfClockDomainId{1U}, "first_clock", CtfTestSupport::testUuid(1U), 1000000U, false},
+          {CtfClockDomainId{2U}, "second_clock", CtfTestSupport::testUuid(2U), 1000000U, false},
+      },
+      {
+          {CtfStreamClassId{1U}, first, CtfSourceKind::Itm, "core-one", CtfClockDomainId{1U}},
+          {CtfStreamClassId{2U}, second, CtfSourceKind::Itm, "core-two", CtfClockDomainId{2U}},
+      },
+      {},
+  };
+  writeTestFile(xmlPath, "stale-xml");
+  CollectingDiagnosticSink diagnostics;
+  CtfBundleOutput output(makeFormattedCtfBundleConfig(outputDirectory, std::move(topology)), &diagnostics);
+
+  output.start();
+  EXPECT_FALSE(std::filesystem::exists(xmlPath));
+  output.writeEvent(onRoute(softwarePacket(1U, 1U, 'A'), first));
+  output.writeEvent(onRoute(softwarePacket(2U, 1U, 'B'), second));
+  output.stop();
+  output.stop();
+
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "metadata"));
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_1"));
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_2"));
+  EXPECT_FALSE(std::filesystem::exists(xmlPath));
+  ASSERT_EQ(diagnostics.events().size(), 1U);
+  EXPECT_EQ(diagnostics.events().front().severity, DiagnosticSink::Severity::Warning);
+  EXPECT_EQ(diagnostics.failureCount(), 0U);
+  EXPECT_TRUE(diagnostics.containsContext("clockDomains", "2"));
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputBasesXmlAndMetadataOnEmittedStreams)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-emitted-clock-xml-test");
+  const auto& outputDirectory = temporaryOutput.outputDirectory();
+  const TraceRouteIdentity first{TraceRouteId{10U}, 1U};
+  const TraceRouteIdentity last{TraceRouteId{20U}, 111U};
+  CtfMetadataTopology topology{
+      {
+          {CtfClockDomainId{1U}, "emitted_clock", CtfTestSupport::testUuid(1U), 1000000U, false},
+          {CtfClockDomainId{2U}, "silent_clock", CtfTestSupport::testUuid(2U), 2000000U, false},
+      },
+      {
+          {CtfStreamClassId{1U}, first, CtfSourceKind::Itm, "core-one", CtfClockDomainId{1U}},
+          {CtfStreamClassId{111U}, last, CtfSourceKind::Itm, "core-last", CtfClockDomainId{2U}},
+      },
+      {},
+  };
+  CollectingDiagnosticSink diagnostics;
+  CtfBundleOutput output(makeFormattedCtfBundleConfig(outputDirectory, std::move(topology)), &diagnostics);
+
+  output.start();
+  output.writeEvent(onRoute(softwarePacket(1U, 1U, 'A'), first));
+  output.stop();
+
+  const auto metadata = readTestTextFile(outputDirectory / "metadata");
+  EXPECT_NE(metadata.find("name = emitted_clock;"), std::string::npos);
+  EXPECT_EQ(metadata.find("name = silent_clock;"), std::string::npos);
+  EXPECT_NE(metadata.find("stream {\n    id = 1;"), std::string::npos);
+  EXPECT_EQ(metadata.find("stream {\n    id = 111;"), std::string::npos);
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_1"));
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_111"));
+  EXPECT_TRUE(std::filesystem::is_regular_file(testTraceCompassXmlPath(outputDirectory)));
+  EXPECT_TRUE(diagnostics.events().empty());
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputWritesMetadataOnlyForEmptyFormattedTrace)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-empty-formatted-test");
+  const auto& outputDirectory = temporaryOutput.outputDirectory();
+  const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+  CtfMetadataTopology topology{
+      {{CtfClockDomainId{1U}, "configured_clock", CtfTestSupport::testUuid(1U), 1000000U, false}},
+      {{CtfStreamClassId{1U}, route, CtfSourceKind::Itm, "core-one", CtfClockDomainId{1U}}},
+      {},
+  };
+  CollectingDiagnosticSink diagnostics;
+  CtfBundleOutput output(makeFormattedCtfBundleConfig(outputDirectory, std::move(topology)), &diagnostics);
+
+  output.start();
+  output.stop();
+
+  const auto metadata = readTestTextFile(outputDirectory / "metadata");
+  EXPECT_EQ(metadata.find("\nclock {"), std::string::npos);
+  EXPECT_EQ(metadata.find("\nstream {"), std::string::npos);
+  EXPECT_EQ(metadata.find("\nevent {"), std::string::npos);
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_1"));
+  EXPECT_FALSE(std::filesystem::exists(testTraceCompassXmlPath(outputDirectory)));
+  EXPECT_TRUE(diagnostics.events().empty());
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputCleansUpDirectWriteFailures)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-direct-write-failure-test");
+  const auto& outputDirectory = temporaryOutput.outputDirectory();
+  const auto xmlPath = testTraceCompassXmlPath(outputDirectory);
+  const TraceRouteIdentity first{TraceRouteId{10U}, 1U};
+  const TraceRouteIdentity last{TraceRouteId{20U}, 111U};
+  CtfMetadataTopology topology{
+      {{CtfClockDomainId{1U}, "formatted_clock", CtfTestSupport::testUuid(1U), 1000000U, false}},
+      {
+          {CtfStreamClassId{1U}, first, CtfSourceKind::Itm, "core-one", CtfClockDomainId{1U}},
+          {CtfStreamClassId{111U}, last, CtfSourceKind::Itm, "core-last", CtfClockDomainId{1U}},
+      },
+      {},
+  };
+  CtfBundleOutput output(makeFormattedCtfBundleConfig(outputDirectory, std::move(topology)));
+
+  output.start();
+  output.writeEvent(onRoute(softwarePacket(1U), first));
+  ASSERT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_1"));
+  std::filesystem::create_directory(outputDirectory / "stream_111");
+  writeTestFile(xmlPath, "partial-xml");
+  EXPECT_THROW(output.writeEvent(onRoute(softwarePacket(2U), last)), std::runtime_error);
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory));
+  EXPECT_FALSE(std::filesystem::exists(xmlPath));
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputCleansUpAfterEncoderStartFailure)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-encoder-start-failure-test");
+  const auto& outputDirectory = temporaryOutput.outputDirectory();
+  const auto xmlPath = testTraceCompassXmlPath(outputDirectory);
+  writeTestFile(xmlPath, "stale-xml");
+  CtfBundleOutput output(CtfOutputConfig(outputDirectory, xmlPath, {}, CtfMetadataTopology{}));
+
+  EXPECT_THROW(output.start(), std::runtime_error);
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory));
+  EXPECT_FALSE(std::filesystem::exists(xmlPath));
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputReplacesExistingBundleAtStart)
@@ -580,10 +821,9 @@ TEST(CtraceUnitTests, testCtfBundleOutputReplacesExistingBundleAtStart)
   auto options = makeCtfBundleConfig(outputDir, 1000000U);
   CtfBundleOutput output(std::move(options));
   output.start();
-  const auto xml = readTestTextFile(xmlPath);
   ASSERT_TRUE(!std::filesystem::exists(outputDir / "old-marker") &&
               std::filesystem::is_regular_file(outputDir / "stream_0") &&
-              !std::filesystem::exists(outputDir / "metadata") && xml != "old-xml" && !xml.empty())
+              !std::filesystem::exists(outputDir / "metadata") && !std::filesystem::exists(xmlPath))
       << "CTF start must replace existing output before decoding begins";
 
   output.writeEvent(atCycle(softwarePacket(1U, 1U, 'A'), 10U));
@@ -649,7 +889,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputOwnsDirectLifecycle)
   writeTestFile(xmlPath, "stale-xml");
   output.start();
   ASSERT_TRUE(!std::filesystem::exists(ctfDirectory / "stale-marker") &&
-              !std::filesystem::exists(ctfDirectory / "metadata") && readTestTextFile(xmlPath) != "stale-xml")
+              !std::filesystem::exists(ctfDirectory / "metadata") && !std::filesystem::exists(xmlPath))
       << "restarting CTF output must delete the previous bundle before writing";
   output.writeEvent(software);
   output.stop();
@@ -736,7 +976,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputCleansUpAfterTraceCompassStartFailure)
   EXPECT_FALSE(std::filesystem::exists(outputDirectory));
 }
 
-TEST(CtraceUnitTests, testCtfBundleOutputReportsPseudoFilesystemStartFailure)
+TEST(CtraceUnitTests, testCtfBundleOutputReportsPseudoFilesystemFinishFailure)
 {
   if (!TestPlatform::supports(TestPlatformCapability::LinuxSpecialFiles)) {
     GTEST_SKIP();
@@ -745,7 +985,8 @@ TEST(CtraceUnitTests, testCtfBundleOutputReportsPseudoFilesystemStartFailure)
   const auto outputDirectory = temporaryPath.path() / "output.ctf";
   CtfBundleOutput output(
       makeCtfBundleConfig(outputDirectory, TestPlatform::creationFailurePath("ctrace-coverage-output.xml"), 1000000U));
-  EXPECT_THROW(output.start(), std::runtime_error);
+  output.start();
+  EXPECT_THROW(output.stop(), std::runtime_error);
   EXPECT_FALSE(std::filesystem::exists(outputDirectory));
 }
 
@@ -766,7 +1007,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputReportsPermissionFailures)
   }
   std::filesystem::permissions(root, std::filesystem::perms::owner_all);
   EXPECT_TRUE(std::filesystem::exists(destructorCtf));
-  EXPECT_TRUE(std::filesystem::exists(destructorXml));
+  EXPECT_FALSE(std::filesystem::exists(destructorXml));
   std::filesystem::remove_all(destructorCtf);
   std::filesystem::remove(destructorXml);
 
@@ -792,10 +1033,39 @@ TEST(CtraceUnitTests, testCtfBundleOutputReportsPermissionFailures)
 
   const auto cleanupCtf = writableParent / "cleanup.ctf";
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
-  CtfBundleOutput startCleanupFailure(makeCtfBundleConfig(cleanupCtf, blockedParent / "new.xml", 1000000U));
-  EXPECT_THROW(startCleanupFailure.start(), std::runtime_error);
+  CtfBundleOutput finishCleanupFailure(makeCtfBundleConfig(cleanupCtf, blockedParent / "new.xml", 1000000U));
+  finishCleanupFailure.start();
+  EXPECT_THROW(finishCleanupFailure.stop(), std::runtime_error);
   EXPECT_FALSE(std::filesystem::exists(cleanupCtf));
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_all);
+
+  const auto blockedCleanupParent = root / "blocked-cleanup";
+  std::filesystem::create_directories(blockedCleanupParent);
+  const auto blockedCleanupCtf = blockedCleanupParent / "output.ctf";
+  const auto blockedCleanupXml = blockedCleanupParent / "output.xml";
+  CtfBundleOutput blockedCleanup(makeCtfBundleConfig(blockedCleanupCtf, blockedCleanupXml, 1000000U));
+  blockedCleanup.start();
+  writeTestFile(blockedCleanupXml, "partial-xml");
+  std::filesystem::permissions(blockedCleanupParent,
+                               std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+  std::string cleanupError;
+  const auto abortBlockedOutputs = [&] {
+    try {
+      blockedCleanup.abort();
+    } catch (const std::runtime_error& error) {
+      cleanupError = error.what();
+      throw;
+    }
+  };
+  EXPECT_THROW(abortBlockedOutputs(), std::runtime_error);
+  std::filesystem::permissions(blockedCleanupParent, std::filesystem::perms::owner_all);
+  EXPECT_NE(cleanupError.find("CTF directory"), std::string::npos);
+  EXPECT_NE(cleanupError.find("Trace Compass XML"), std::string::npos);
+  EXPECT_TRUE(std::filesystem::exists(blockedCleanupCtf));
+  EXPECT_TRUE(std::filesystem::exists(blockedCleanupXml));
+  EXPECT_NO_THROW(blockedCleanup.abort());
+  EXPECT_FALSE(std::filesystem::exists(blockedCleanupCtf));
+  EXPECT_FALSE(std::filesystem::exists(blockedCleanupXml));
 
   const auto blockedCtf = blockedParent / "new.ctf";
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);

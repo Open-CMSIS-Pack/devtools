@@ -13,8 +13,14 @@
 /** @brief Writes the Trace Compass analysis definition accompanying CTF output. */
 class TraceCompassXmlWriter final {
 public:
+  /** @brief Selects the state-system hierarchy generated for one trace. */
+  enum class PathLayout {
+    Legacy,
+    RoutePrefixed,
+  };
+
   /** @brief Writes the complete analysis definition to a file. */
-  static void writeFile(const std::filesystem::path& path);
+  static void writeFile(const std::filesystem::path& path, PathLayout layout = PathLayout::Legacy);
 
 private:
   /** @brief Prevents construction of this stateless XML utility. */

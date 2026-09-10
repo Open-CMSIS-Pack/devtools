@@ -28,17 +28,19 @@
 #include <utility>
 #include <vector>
 
+using CtfTestSupport::CtfExceptionRecord;
 using CtfTestSupport::CtfRecord;
-using CtfTestSupport::TimestampedCtfExceptionRecord;
 using CtfTestSupport::kCtfEventOffset;
 using CtfTestSupport::kCtfPacketContextSize;
 using CtfTestSupport::kCtfPacketHeaderSize;
 using CtfTestSupport::kCtfPacketSize;
+using CtfTestSupport::readCtfExceptionRecords;
 using CtfTestSupport::readCtfRecords;
 using CtfTestSupport::readLe16;
 using CtfTestSupport::readLe32;
 using CtfTestSupport::requireFirstCtfRecord;
 using CtfTestSupport::requireSingleItmEvent;
+using CtfTestSupport::TimestampedCtfExceptionRecord;
 using CtfTestSupport::timestampedCtfExceptionRecords;
 
 /** @brief Formats an encoded CTF UUID for comparison. */
@@ -85,6 +87,46 @@ static CtfEncoderConfig legacyEncoderConfig(std::uint64_t clockHz, TraceSelectio
       diagnostics,
       std::move(routes),
       legacyRouteFallback,
+  };
+}
+
+/** @brief Creates a two-route formatted topology with boundary stream IDs. */
+static CtfMetadataTopology formattedEncoderTopology(bool sharedClock = false)
+{
+  const TraceRouteIdentity first{TraceRouteId{4U}, 1U};
+  const TraceRouteIdentity second{TraceRouteId{90U}, 111U};
+  CtfMetadataTopology topology{
+      {
+          {CtfClockDomainId{3U}, "first_clock", CtfTestSupport::testUuid(3U), 240000000U, false},
+          {CtfClockDomainId{9U}, "second_clock", CtfTestSupport::testUuid(9U), 480000000U, false},
+      },
+      {
+          {CtfStreamClassId{1U}, first, CtfSourceKind::Itm, std::string("first"), CtfClockDomainId{3U}},
+          {CtfStreamClassId{111U}, second, CtfSourceKind::Itm, std::string("second"),
+           sharedClock ? CtfClockDomainId{3U} : CtfClockDomainId{9U}},
+      },
+      {
+          {"dwt", 0U, first, std::string("First DWT"), 0x1000U, "unsigned", 4U},
+          {"dwt", 0U, second, std::string("Second DWT"), 0x2000U, "signed", 2U},
+          {"itm", 1U, first, std::string("First console"), std::nullopt, "unsigned", 4U},
+          {"itm", 1U, second, std::string("Second console"), std::nullopt, "unsigned", 4U},
+      },
+  };
+  if (sharedClock) {
+    topology.clockDomains.pop_back();
+  }
+  return topology;
+}
+
+/** @brief Creates an encoder configuration for the formatted test topology. */
+static CtfEncoderConfig formattedEncoderConfig(TraceSelection selection = {}, bool sharedClock = false)
+{
+  return {
+      formattedEncoderTopology(sharedClock),
+      std::move(selection),
+      nullptr,
+      {{TraceRouteId{4U}, 1U}, {TraceRouteId{90U}, 111U}},
+      false,
   };
 }
 
@@ -362,6 +404,9 @@ TEST(CtraceUnitTests, testCtfEncoderRejectsInvalidClockAndPayloadMetadata)
   CtfEncoder missingTopology(CtfEncoderConfig{});
   EXPECT_THROW(startEncoder(missingTopology, temporaryPath.path()), std::runtime_error);
 
+  CtfEncoder fallbackWithoutTopology(CtfEncoderConfig{{}, {}, nullptr, {{TraceRouteId{4U}, 1U}}, true});
+  EXPECT_THROW(startEncoder(fallbackWithoutTopology, temporaryPath.path()), std::runtime_error);
+
   CtfEncoder zeroClock(legacyEncoderConfig(0U));
   EXPECT_THROW(startEncoder(zeroClock, temporaryPath.path()), std::invalid_argument);
 
@@ -383,47 +428,315 @@ TEST(CtraceUnitTests, testCtfEncoderRejectsInvalidClockAndPayloadMetadata)
   invalidAddress.abort();
 }
 
-TEST(CtraceUnitTests, testCtfEncoderRejectsFormattedTopologiesBeforeOpeningAStream)
+TEST(CtraceUnitTests, testCtfEncoderKeepsFormattedStreamsLazyAndProjectsCompletedMetadata)
 {
-  const TemporaryTestPath temporaryPath("ctrace-ctf-formatted-runtime-boundary-test");
-  temporaryPath.createDirectory();
-  const auto singleDirectory = temporaryPath.path() / "single";
-  const auto multipleDirectory = temporaryPath.path() / "multiple";
-  std::filesystem::create_directories(singleDirectory);
-  std::filesystem::create_directories(multipleDirectory);
-  const auto hardStop = "CTF binary output currently requires exactly one legacy SINGLE stream topology";
+  const TemporaryTestPath temporaryPath("ctrace-ctf-formatted-lazy-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+  CtfEncoder encoder(formattedEncoderConfig());
+  startEncoder(encoder, outputDirectory);
 
-  CtfMetadataTopology singleTopology{
-      {{CtfClockDomainId{1U}, "formatted_clock", CtfTestSupport::testUuid(1U), 1000000U, false}},
-      {{CtfStreamClassId{1U}, {TraceRouteId{7U}, 1U}, CtfSourceKind::Itm, std::string("core"), CtfClockDomainId{1U}}},
-      {},
-  };
-  CtfEncoder single(CtfEncoderConfig{std::move(singleTopology), {}, nullptr, {}, false});
-  EXPECT_TRUE(throwsWithMessage([&] { startEncoder(single, singleDirectory); }, hardStop));
-  EXPECT_FALSE(std::filesystem::exists(singleDirectory / "stream_0"));
+  EXPECT_EQ(encoder.completedMetadata(), nullptr);
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_1"));
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_111"));
+  const TraceRouteIdentity firstRoute{TraceRouteId{4U}, 1U};
+  encoder.writeEvent(atCycle(onRoute(TraceEvent{LocalTimestampTraceEvent{}}, firstRoute), 30U));
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_1"))
+      << "a control packet without CTF output must not create a formatted stream";
 
-  CtfMetadataTopology multipleTopology{
-      {
-          {CtfClockDomainId{3U}, "first_clock", CtfTestSupport::testUuid(3U), 1000000U, false},
-          {CtfClockDomainId{9U}, "second_clock", CtfTestSupport::testUuid(9U), 2000000U, false},
-      },
-      {
-          {CtfStreamClassId{1U},
-           {TraceRouteId{4U}, 1U},
-           CtfSourceKind::Itm,
-           std::string("first"),
-           CtfClockDomainId{3U}},
-          {CtfStreamClassId{111U},
-           {TraceRouteId{90U}, 111U},
-           CtfSourceKind::Itm,
-           std::string("second"),
-           CtfClockDomainId{9U}},
-      },
-      {},
-  };
-  CtfEncoder multiple(CtfEncoderConfig{std::move(multipleTopology), {}, nullptr, {}, false});
-  EXPECT_TRUE(throwsWithMessage([&] { startEncoder(multiple, multipleDirectory); }, hardStop));
-  EXPECT_FALSE(std::filesystem::exists(multipleDirectory / "stream_0"));
+  encoder.writeEvent(atCycle(onRoute(softwarePacket(1U, 1U, 'A'), firstRoute), 40U));
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_1"));
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_111"));
+  encoder.stop();
+
+  const auto records = readCtfRecords(outputDirectory / "stream_1");
+  ASSERT_EQ(records.size(), 3U);
+  EXPECT_EQ(records[0].id, CtfSchema::value(CtfSchema::EventId::TraceStatus));
+  EXPECT_EQ(records[0].payload[0U], CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart));
+  EXPECT_EQ(records[0].timestamp, 30U);
+  EXPECT_EQ(records[1].id, CtfSchema::value(CtfSchema::EventId::Exception));
+  EXPECT_EQ(records[2].id, CtfSchema::value(CtfSchema::EventId::Itm));
+  EXPECT_EQ(records[2].timestamp, 40U);
+  for (const auto& record : records) {
+    EXPECT_EQ(record.traceBusId, 1U);
+  }
+
+  const auto* completed = encoder.completedMetadata();
+  ASSERT_NE(completed, nullptr);
+  ASSERT_EQ(completed->topology().streams.size(), 1U);
+  ASSERT_EQ(completed->topology().clockDomains.size(), 1U);
+  ASSERT_EQ(completed->topology().sources.size(), 2U);
+  EXPECT_EQ(completed->topology().streams.front().streamClassId, CtfStreamClassId{1U});
+  EXPECT_EQ(completed->topology().clockDomains.front().id, CtfClockDomainId{3U});
+  for (const auto& source : completed->topology().sources) {
+    EXPECT_EQ(source.route.traceBusId, 1U);
+  }
+  const auto metadata = readTestTextFile(outputDirectory / "metadata");
+  EXPECT_NE(metadata.find("stream {\n    id = 1;"), std::string::npos);
+  EXPECT_NE(metadata.find("name = first_clock;"), std::string::npos);
+  EXPECT_EQ(metadata.find("stream {\n    id = 111;"), std::string::npos);
+  EXPECT_EQ(metadata.find("name = second_clock;"), std::string::npos);
+  EXPECT_EQ(metadata.find("Second DWT"), std::string::npos);
+
+  encoder.abort();
+  EXPECT_EQ(encoder.completedMetadata(), nullptr);
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "metadata"))
+      << "the non-owning encoder must not delete its caller's completed output";
+}
+
+TEST(CtraceUnitTests, testCtfEncoderWritesInterleavedNonContiguousStreamsWithIndependentState)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-formatted-multistream-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+  CtfEncoder encoder(formattedEncoderConfig());
+  startEncoder(encoder, outputDirectory);
+
+  const TraceRouteIdentity firstRoute{TraceRouteId{4U}, 1U};
+  const TraceRouteIdentity secondRoute{TraceRouteId{90U}, 111U};
+  encoder.writeEvent(atCycle(onRoute(softwarePacket(1U, 1U, 'A'), firstRoute), 100U));
+  encoder.writeEvent(atCycle(onRoute(softwarePacket(1U, 1U, 'B'), secondRoute), 10U));
+  encoder.writeEvent(atCycle(onRoute(softwarePacket(1U, 1U, 'C'), firstRoute), 50U));
+  encoder.writeEvent(atCycle(onRoute(softwarePacket(1U, 1U, 'D'), secondRoute), 20U));
+  encoder.stop();
+
+  const auto firstRecords = readCtfRecords(outputDirectory / "stream_1");
+  const auto secondRecords = readCtfRecords(outputDirectory / "stream_111");
+  ASSERT_EQ(firstRecords.size(), 4U);
+  ASSERT_EQ(secondRecords.size(), 4U);
+  EXPECT_EQ(firstRecords[0].id, CtfSchema::value(CtfSchema::EventId::TraceStatus));
+  EXPECT_EQ(secondRecords[0].id, CtfSchema::value(CtfSchema::EventId::TraceStatus));
+  EXPECT_EQ(firstRecords[1].id, CtfSchema::value(CtfSchema::EventId::Exception));
+  EXPECT_EQ(secondRecords[1].id, CtfSchema::value(CtfSchema::EventId::Exception));
+  EXPECT_EQ(firstRecords[2].timestamp, 100U);
+  EXPECT_EQ(firstRecords[3].timestamp, 100U);
+  EXPECT_EQ(secondRecords[2].timestamp, 10U);
+  EXPECT_EQ(secondRecords[3].timestamp, 20U);
+  for (const auto& record : firstRecords) {
+    EXPECT_EQ(record.traceBusId, 1U);
+  }
+  for (const auto& record : secondRecords) {
+    EXPECT_EQ(record.traceBusId, 111U);
+  }
+
+  const auto firstBytes = readTestBinaryFile(outputDirectory / "stream_1");
+  const auto secondBytes = readTestBinaryFile(outputDirectory / "stream_111");
+  EXPECT_EQ(readLe32(firstBytes, 20U), 1U);
+  EXPECT_EQ(readLe32(secondBytes, 20U), 111U);
+  EXPECT_EQ(formatCtfUuid(firstBytes, 4U), CtfTestSupport::testUuid().toString());
+  EXPECT_EQ(formatCtfUuid(secondBytes, 4U), CtfTestSupport::testUuid().toString());
+  EXPECT_EQ(readLe32(firstBytes, kCtfPacketHeaderSize + 28U), 0U);
+  EXPECT_EQ(readLe32(secondBytes, kCtfPacketHeaderSize + 28U), 0U);
+
+  const auto* completed = encoder.completedMetadata();
+  ASSERT_NE(completed, nullptr);
+  EXPECT_EQ(completed->topology().streams.size(), 2U);
+  EXPECT_EQ(completed->topology().clockDomains.size(), 2U);
+  EXPECT_EQ(completed->topology().sources.size(), 4U);
+  const auto metadata = readTestTextFile(outputDirectory / "metadata");
+  EXPECT_NE(metadata.find("stream {\n    id = 1;"), std::string::npos);
+  EXPECT_NE(metadata.find("stream {\n    id = 111;"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_stream_1_dwt0_value_type = \"unsigned\";"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_stream_111_dwt0_value_type = \"signed\";"), std::string::npos);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderAppliesFormattedStreamFilterBeforeLazyCreation)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-formatted-stream-filter-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+  CtfEncoder encoder(formattedEncoderConfig(TraceSelection{{}, {111U}}));
+  startEncoder(encoder, outputDirectory);
+  const TraceRouteIdentity firstRoute{TraceRouteId{4U}, 1U};
+  const TraceRouteIdentity secondRoute{TraceRouteId{90U}, 111U};
+
+  encoder.writeEvent(onRoute(softwarePacket(1U, 1U, 'A'), firstRoute));
+  encoder.writeEvent(onRoute(TraceEvent{OverflowTraceEvent{}}, firstRoute));
+  encoder.writeEvent(onRoute(TraceEvent{SyncTraceEvent{}}, firstRoute));
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_1"));
+
+  encoder.writeEvent(onRoute(softwarePacket(1U, 1U, 'B'), secondRoute));
+  encoder.stop();
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_1"));
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_111"));
+  ASSERT_NE(encoder.completedMetadata(), nullptr);
+  ASSERT_EQ(encoder.completedMetadata()->topology().streams.size(), 1U);
+  EXPECT_EQ(encoder.completedMetadata()->topology().streams.front().streamClassId, CtfStreamClassId{111U});
+  ASSERT_EQ(encoder.completedMetadata()->topology().clockDomains.size(), 1U);
+  EXPECT_EQ(encoder.completedMetadata()->topology().clockDomains.front().id, CtfClockDomainId{9U});
+}
+
+TEST(CtraceUnitTests, testCtfEncoderKeepsOverflowQualityIndependentAcrossFormattedRoutes)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-formatted-overflow-isolation-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+  CtfEncoder encoder(formattedEncoderConfig());
+  startEncoder(encoder, outputDirectory);
+  const TraceRouteIdentity firstRoute{TraceRouteId{4U}, 1U};
+  const TraceRouteIdentity secondRoute{TraceRouteId{90U}, 111U};
+
+  auto firstOverflow = onRoute(TraceEvent{OverflowTraceEvent{}}, firstRoute);
+  firstOverflow.quality = TraceQuality{true, false, 7U};
+  encoder.writeEvent(firstOverflow);
+  auto secondSample = onRoute(softwarePacket(1U, 1U, 'B'), secondRoute);
+  secondSample.quality = TraceQuality{false, true, 0U};
+  encoder.writeEvent(secondSample);
+  encoder.writeEvent(onRoute(softwarePacket(1U, 1U, 'A'), firstRoute));
+  encoder.stop();
+
+  const auto firstRecords = readCtfRecords(outputDirectory / "stream_1");
+  const auto secondRecords = readCtfRecords(outputDirectory / "stream_111");
+  const auto& firstSample =
+      requireFirstCtfRecord(firstRecords, CtfSchema::EventId::Itm, "first route's CTF ITM sample is missing");
+  const auto& secondRouteSample =
+      requireFirstCtfRecord(secondRecords, CtfSchema::EventId::Itm, "second route's CTF ITM sample is missing");
+  EXPECT_EQ(readLe32(firstSample.payload, 4U), 7U);
+  EXPECT_EQ(readLe32(secondRouteSample.payload, 4U), 0U);
+  EXPECT_EQ(secondRouteSample.payload[3U] & CtfSchema::SampleFlagOverflow, 0U);
+  const auto firstOverflowStatus = std::find_if(firstRecords.begin(), firstRecords.end(), [](const CtfRecord& record) {
+    return record.id == CtfSchema::value(CtfSchema::EventId::TraceStatus) &&
+           record.payload[0U] == CtfSchema::value(CtfSchema::TraceStatusReason::Overflow);
+  });
+  ASSERT_NE(firstOverflowStatus, firstRecords.end());
+  EXPECT_EQ(readLe32(firstOverflowStatus->payload, 1U), 7U);
+  EXPECT_EQ(std::count_if(secondRecords.begin(), secondRecords.end(),
+                          [](const CtfRecord& record) {
+                            return record.id == CtfSchema::value(CtfSchema::EventId::TraceStatus) &&
+                                   record.payload[0U] == CtfSchema::value(CtfSchema::TraceStatusReason::Overflow);
+                          }),
+            0);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderKeepsExceptionLanesIndependentAcrossFormattedRoutes)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-formatted-exception-isolation-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+  CtfEncoder encoder(formattedEncoderConfig());
+  startEncoder(encoder, outputDirectory);
+  const TraceRouteIdentity firstRoute{TraceRouteId{4U}, 1U};
+  const TraceRouteIdentity secondRoute{TraceRouteId{90U}, 111U};
+
+  encoder.writeEvent(onRoute(exceptionPacket(15U, ExceptionAction::Entered, 10U), firstRoute));
+  encoder.writeEvent(onRoute(exceptionPacket(54U, ExceptionAction::Entered, 20U), secondRoute));
+  encoder.writeEvent(onRoute(exceptionPacket(16U, ExceptionAction::Entered, 30U), firstRoute));
+  encoder.writeEvent(onRoute(exceptionPacket(0U, ExceptionAction::Returned, 40U), secondRoute));
+  encoder.stop();
+
+  EXPECT_EQ(readCtfExceptionRecords(outputDirectory / "stream_1"), (std::vector<CtfExceptionRecord>({
+                                                                       {0U, 0U, 1U},
+                                                                       {0U, 1U, 1U},
+                                                                       {15U, 0U, 0U},
+                                                                       {15U, 1U, 1U},
+                                                                       {16U, 0U, 0U},
+                                                                   })));
+  EXPECT_EQ(readCtfExceptionRecords(outputDirectory / "stream_111"), (std::vector<CtfExceptionRecord>({
+                                                                         {0U, 0U, 1U},
+                                                                         {0U, 1U, 1U},
+                                                                         {54U, 0U, 0U},
+                                                                         {54U, 1U, 1U},
+                                                                         {0U, 2U, 0U},
+                                                                     })));
+  ASSERT_NE(encoder.completedMetadata(), nullptr);
+  EXPECT_EQ(encoder.completedMetadata()->observedExceptions(CtfStreamClassId{1U}),
+            (std::vector<ExceptionNumber>{0U, 15U, 16U}));
+  EXPECT_EQ(encoder.completedMetadata()->observedExceptions(CtfStreamClassId{111U}),
+            (std::vector<ExceptionNumber>{0U, 54U}));
+}
+
+TEST(CtraceUnitTests, testCtfEncoderWritesMetadataOnlyForEmptyFormattedTopology)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-formatted-empty-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+  CtfEncoder encoder(CtfEncoderConfig{{}, {}, nullptr, {}, false});
+  startEncoder(encoder, outputDirectory);
+  encoder.stop();
+
+  ASSERT_NE(encoder.completedMetadata(), nullptr);
+  EXPECT_TRUE(encoder.completedMetadata()->topology().streams.empty());
+  EXPECT_TRUE(encoder.completedMetadata()->topology().clockDomains.empty());
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "metadata"));
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_0"));
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_1"));
+}
+
+TEST(CtraceUnitTests, testCtfEncoderDoesNotCreateFormattedArtifactsForEventsWithoutSelectedRecords)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-formatted-filter-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+  CtfEncoder encoder(formattedEncoderConfig(TraceSelection{{"itm"}, {}}));
+  startEncoder(encoder, outputDirectory);
+  const TraceRouteIdentity firstRoute{TraceRouteId{4U}, 1U};
+  const TraceRouteIdentity secondRoute{TraceRouteId{90U}, 111U};
+
+  encoder.writeEvent(onRoute(exceptionPacket(15U, ExceptionAction::Entered, 1U), firstRoute));
+  encoder.writeEvent(onRoute(exceptionPacket(15U, ExceptionAction::Unknown, 2U), firstRoute));
+  encoder.writeEvent(onRoute(TraceEvent{OverflowTraceEvent{}}, firstRoute));
+  encoder.writeEvent(onRoute(TraceEvent{SyncTraceEvent{}}, firstRoute));
+  encoder.writeEvent(onRoute(TraceEvent{DwtDataTraceEvent{0U, 1U, 1U, AccessType::Read}}, firstRoute));
+  encoder.writeEvent(onRoute(TraceEvent{DwtEventTraceEvent{0U}}, firstRoute));
+  encoder.writeEvent(onRoute(TraceEvent{PmuTraceEvent{0U}}, firstRoute));
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_1"));
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_111"));
+
+  encoder.writeEvent(onRoute(exceptionPacket(75U, ExceptionAction::Entered, 3U), secondRoute));
+  encoder.writeEvent(onRoute(softwarePacket(1U, 1U, 'A'), secondRoute));
+  encoder.stop();
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_1"));
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_111"));
+  ASSERT_NE(encoder.completedMetadata(), nullptr);
+  ASSERT_EQ(encoder.completedMetadata()->topology().streams.size(), 1U);
+  EXPECT_EQ(encoder.completedMetadata()->topology().streams.front().streamClassId, CtfStreamClassId{111U});
+  EXPECT_EQ(encoder.completedMetadata()->topology().clockDomains.front().id, CtfClockDomainId{9U});
+  EXPECT_TRUE(encoder.completedMetadata()->observedExceptions(CtfStreamClassId{111U}).empty());
+  EXPECT_EQ(readTestTextFile(outputDirectory / "metadata").find("\"External IRQ 59\" = 75"), std::string::npos)
+      << "a filtered exception must not leak into metadata when another event later emits the stream";
+
+  const auto zeroCounterDirectory = outputDirectory / "zero-counters";
+  std::filesystem::create_directory(zeroCounterDirectory);
+  CtfEncoder zeroCounters(formattedEncoderConfig());
+  startEncoder(zeroCounters, zeroCounterDirectory);
+  zeroCounters.writeEvent(onRoute(TraceEvent{DwtEventTraceEvent{0U}}, firstRoute));
+  zeroCounters.writeEvent(onRoute(TraceEvent{PmuTraceEvent{0U}}, firstRoute));
+  zeroCounters.stop();
+  EXPECT_FALSE(std::filesystem::exists(zeroCounterDirectory / "stream_1"));
+  ASSERT_NE(zeroCounters.completedMetadata(), nullptr);
+  EXPECT_TRUE(zeroCounters.completedMetadata()->topology().streams.empty());
+}
+
+TEST(CtraceUnitTests, testCtfEncoderCreatesFormattedWritersForStatusOnlyOutput)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-formatted-status-only-test");
+  const auto& root = temporaryPath.createDirectory();
+  const TraceRouteIdentity route{TraceRouteId{4U}, 1U};
+
+  const auto syncDirectory = root / "sync";
+  std::filesystem::create_directory(syncDirectory);
+  CtfEncoder syncEncoder(formattedEncoderConfig());
+  startEncoder(syncEncoder, syncDirectory);
+  syncEncoder.writeEvent(onRoute(TraceEvent{SyncTraceEvent{}}, route));
+  syncEncoder.stop();
+  const auto syncRecords = readCtfRecords(syncDirectory / "stream_1");
+  ASSERT_EQ(syncRecords.size(), 3U);
+  EXPECT_EQ(syncRecords[0].payload[0U], CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart));
+  EXPECT_EQ(syncRecords[1].id, CtfSchema::value(CtfSchema::EventId::Exception));
+  EXPECT_EQ(syncRecords[2].payload[0U], CtfSchema::value(CtfSchema::TraceStatusReason::Resync));
+
+  const auto overflowDirectory = root / "overflow";
+  std::filesystem::create_directory(overflowDirectory);
+  CtfEncoder overflowEncoder(formattedEncoderConfig(TraceSelection{{"overflow"}, {}}));
+  startEncoder(overflowEncoder, overflowDirectory);
+  overflowEncoder.writeEvent(onRoute(TraceEvent{OverflowTraceEvent{}}, route));
+  overflowEncoder.stop();
+  const auto overflowRecords = readCtfRecords(overflowDirectory / "stream_1");
+  ASSERT_EQ(overflowRecords.size(), 1U);
+  EXPECT_EQ(overflowRecords.front().payload[0U], CtfSchema::value(CtfSchema::TraceStatusReason::Overflow));
+
+  const auto issueDirectory = root / "issue";
+  std::filesystem::create_directory(issueDirectory);
+  CtfEncoder issueEncoder(formattedEncoderConfig(TraceSelection{{"error"}, {}}));
+  startEncoder(issueEncoder, issueDirectory);
+  issueEncoder.writeEvent(onRoute(issuePacket(TraceIssueCode::OpenCsdDecodeError), route));
+  issueEncoder.stop();
+  const auto issueRecords = readCtfRecords(issueDirectory / "stream_1");
+  ASSERT_EQ(issueRecords.size(), 1U);
+  EXPECT_EQ(issueRecords.front().payload[0U], CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError));
 }
 
 TEST(CtraceUnitTests, testCtfEncoderWritesConfiguredDwtValueVariantsAndDefault)

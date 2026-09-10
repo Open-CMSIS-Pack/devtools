@@ -37,7 +37,7 @@ struct CtfEncoderConfig {
   bool legacyRouteFallback = true;
 };
 
-/** @brief Encodes semantic trace events into one CTF stream and metadata set. */
+/** @brief Encodes semantic trace events into lazy route-specific CTF streams and one metadata set. */
 class CtfEncoder final {
 public:
   /** @brief Creates an encoder from validated CTF configuration. */
@@ -58,6 +58,8 @@ public:
   void abort() noexcept;
   /** @brief Encodes one selected semantic event. */
   void writeEvent(const TraceEvent& event);
+  /** @brief Returns completed emitted metadata after a successful stop. */
+  const CtfMetadataModel* completedMetadata() const noexcept;
 
 private:
   /** @brief Tracks timestamp and trace-quality state for one output stream. */
@@ -71,6 +73,14 @@ private:
   std::uint64_t allocateEventTimestamp(const TraceRouteIdentity& route);
   /** @brief Returns route-local CTF state while rejecting identity mismatches. */
   StreamState& streamState(const TraceRouteIdentity& route);
+  /** @brief Returns the exact configured stream descriptor for one normalized route. */
+  const CtfStreamDescriptor& streamDescriptor(const TraceRouteIdentity& route) const;
+  /** @brief Creates or returns the lazy binary writer for one configured stream. */
+  CtfStreamWriter& ensureStreamWriter(const CtfStreamDescriptor& stream);
+  /** @brief Returns the already-created binary writer for one normalized route. */
+  CtfStreamWriter& streamWriter(const TraceRouteIdentity& route);
+  /** @brief Tests whether one event can create selected CTF output. */
+  bool activatesStream(const TraceEvent& event, bool selected) const;
   /** @brief Emits the legacy stream-local bootstrap exactly once. */
   void bootstrapRoute(const TraceRouteIdentity& route);
   /** @brief Writes metadata that matches the completed binary stream. */
@@ -108,10 +118,12 @@ private:
   CtfEncoderConfig m_config;
   std::filesystem::path m_outputDirectory;
   std::optional<CtfMetadataModel> m_metadata;
-  CtfStreamWriter m_stream;
+  std::optional<CtfMetadataModel> m_completedMetadata;
+  std::map<CtfStreamClassId, CtfStreamWriter> m_streams;
   bool m_recording = false;
   std::set<TraceRouteId> m_bootstrappedRoutes;
   std::map<TraceRouteId, StreamState> m_streamStates;
+  std::map<TraceRouteId, std::set<ExceptionNumber>> m_emittedExceptionNumbers;
   std::set<std::pair<TraceRouteId, std::uint32_t>> m_reportedDwtSizeMismatches;
   std::map<TraceRouteId, CtfExceptionLaneTracker> m_exceptionLanes;
 };

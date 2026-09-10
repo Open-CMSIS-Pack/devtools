@@ -540,8 +540,8 @@ Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4
 | 2 | Raw-input discovery and preflight | Complete |
 | 3 | Route-aware semantic state, diagnostics, and CSV | Complete |
 | 4 | CTF descriptors and metadata model | Complete |
-| 5 | Multi-stream CTF bundle and Trace Compass policy | Next |
-| 6 | DecodeTree `SINGLE` migration | Pending |
+| 5 | Multi-stream CTF bundle and Trace Compass policy | Complete |
+| 6 | DecodeTree `SINGLE` migration | Next |
 | 7 | Clean formatted decoding and TB integration | Pending |
 | 8 | Route-local recovery and error isolation | Pending |
 | 9 | Consumer validation, documentation, and final hardening | Pending |
@@ -1009,7 +1009,9 @@ an Error and does not start. Processor labels are omitted or use the existing ge
    exactly once and before the event that caused creation. A first overflow, synchronization, or issue-only event
    follows the same rule; a route whose events are all filtered remains artifact-free.
    Apply the same `traceEventSelectedForOutput` predicate as CSV before lazy creation; do not duplicate or weaken the
-   type/stream filter in CTF-specific code.
+   type/stream filter in CTF-specific code. Synchronization is the narrow compatibility exception: it has no public
+   CSV row or `--type` value, but an otherwise unfiltered CTF selection may encode it as `trace_start`/`resync`
+   control context and therefore activate the route. Any explicit type filter keeps a sync-only route artifact-free.
 5. Allocate the trace UUID once at bundle level and pass the same UUID to every writer and to the metadata model.
    Every packet header UUID must equal this metadata trace UUID. `CtfStreamWriter::open` must no longer generate an
    independent UUID for each file. Clock UUIDs identify time domains and are never reused as the trace UUID.

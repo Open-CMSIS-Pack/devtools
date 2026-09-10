@@ -18,6 +18,7 @@
 #include "TraceSelection.h"
 
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <filesystem>
 #include <limits>
@@ -143,16 +144,16 @@ void CtfEncoder::start(const std::filesystem::path& outputDirectory, const CtfUu
   m_outputDirectory = outputDirectory;
   try {
     m_metadata.emplace(traceUuid, m_config.metadata);
-    if (!m_metadata->isLegacySingleStreamLayout()) {
-      throw std::runtime_error("CTF binary output currently requires exactly one legacy SINGLE stream topology");
+    if (m_metadata->topology().streams.empty() && m_config.legacyRouteFallback) {
+      throw std::runtime_error("CTF encoder requires an explicit metadata topology or normalized route catalogue");
     }
+    m_completedMetadata.reset();
+    m_streams.clear();
     m_bootstrappedRoutes.clear();
     m_streamStates.clear();
+    m_emittedExceptionNumbers.clear();
     m_reportedDwtSizeMismatches.clear();
     m_exceptionLanes.clear();
-    const auto& runtimeStream = m_metadata->topology().streams.front();
-    m_stream.open(m_outputDirectory / "stream_0", runtimeStream.streamClassId, traceUuid);
-    m_recording = true;
     std::map<TraceRouteId, TraceRouteIdentity> initialRoutes;
     const auto addInitialRoute = [&](const TraceRouteIdentity& route) {
       const auto [found, inserted] = initialRoutes.emplace(route.id, route);
@@ -175,7 +176,10 @@ void CtfEncoder::start(const std::filesystem::path& outputDirectory, const CtfUu
         addInitialRoute(source.route);
       }
     }
-    for (const auto& stream : m_metadata->topology().streams) {
+    m_recording = true;
+    if (m_metadata->isLegacySingleStreamLayout()) {
+      const auto& stream = m_metadata->topology().streams.front();
+      (void)ensureStreamWriter(stream);
       if (m_config.selection.includesRoute(stream.route)) {
         bootstrapRoute(stream.route);
       }
@@ -192,15 +196,28 @@ void CtfEncoder::stop()
     return;
   }
   m_recording = false;
-  m_stream.close();
+  for (auto& [streamClassId, stream] : m_streams) {
+    (void)streamClassId;
+    stream.close();
+  }
   writeMetadataFile();
 }
 
 void CtfEncoder::abort() noexcept
 {
   m_recording = false;
-  m_stream.abort();
+  for (auto& [streamClassId, stream] : m_streams) {
+    (void)streamClassId;
+    stream.abort();
+  }
+  m_streams.clear();
   m_metadata.reset();
+  m_completedMetadata.reset();
+  m_bootstrappedRoutes.clear();
+  m_streamStates.clear();
+  m_emittedExceptionNumbers.clear();
+  m_reportedDwtSizeMismatches.clear();
+  m_exceptionLanes.clear();
   m_outputDirectory.clear();
 }
 
@@ -214,11 +231,15 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
   }
   validateConfiguredRoute(m_config, event.route);
   const auto* stream = m_metadata->streamForRoute(event.route);
-  if (stream == nullptr || stream->streamClassId != m_metadata->topology().streams.front().streamClassId) {
+  if (stream == nullptr) {
     throw std::runtime_error(
         "CTF binary output cannot encode an event route without an exact runtime stream descriptor");
   }
-  bootstrapRoute(event.route);
+  const auto selected = traceEventSelectedForOutput(event, m_config.selection);
+  if (activatesStream(event, selected)) {
+    (void)ensureStreamWriter(*stream);
+    bootstrapRoute(event.route);
+  }
   if (!isTraceEvent<GlobalTimestampTraceEvent>(event) && event.tcyc.has_value()) {
     auto& eventTimestamp = streamState(event.route).eventTimestamp;
     eventTimestamp = std::max(eventTimestamp, *event.tcyc);
@@ -227,7 +248,6 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
     }
   }
 
-  const auto selected = traceEventSelectedForOutput(event, m_config.selection);
   if (const auto* software = traceEventPayload<SoftwareTraceEvent>(event)) {
     if (selected) {
       writeSoftwareEvent(event, *software);
@@ -291,6 +311,11 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
   }
 }
 
+const CtfMetadataModel* CtfEncoder::completedMetadata() const noexcept
+{
+  return m_completedMetadata ? &*m_completedMetadata : nullptr;
+}
+
 void CtfEncoder::writePcSampleEvent(const TraceEvent& event, const PcSampleTraceEvent& sample)
 {
   const auto pcSize = sample.sleeping ? 0U : 4U;
@@ -300,21 +325,21 @@ void CtfEncoder::writePcSampleEvent(const TraceEvent& event, const PcSampleTrace
   const auto quality = computeSampleQuality(event);
   const auto state = CtfSchema::value(sample.sleeping ? CtfSchema::PcSampleState::Sleep
                                                        : CtfSchema::PcSampleState::Pc);
-  m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::PcSample), eventTimestamp, traceBusId, payloadSize,
-                       [&](CtfStreamWriter::Record& record) {
-                         record.writeU8(state);
-                         if (!sample.sleeping) {
-                           record.writeU32(sample.pc);
-                         }
-                         record.writeU8(quality.first);
-                         record.writeU32(quality.second);
-                       });
+  streamWriter(event.route)
+      .writeRecord(CtfSchema::value(CtfSchema::EventId::PcSample), eventTimestamp, traceBusId, payloadSize,
+                   [&](CtfStreamWriter::Record& record) {
+                     record.writeU8(state);
+                     if (!sample.sleeping) {
+                       record.writeU32(sample.pc);
+                     }
+                     record.writeU8(quality.first);
+                     record.writeU32(quality.second);
+                   });
 }
 
 std::uint64_t CtfEncoder::allocateEventTimestamp(const TraceRouteIdentity& route)
 {
-  // CtfStreamWriter applies the final monotonic clamp across the multiplexed
-  // CTF stream. This value remains local to the normalized route.
+  // Each route-specific CtfStreamWriter applies its final monotonic clamp.
   return streamState(route).eventTimestamp;
 }
 
@@ -323,8 +348,56 @@ CtfEncoder::StreamState& CtfEncoder::streamState(const TraceRouteIdentity& route
   return m_streamStates[route.id];
 }
 
+const CtfStreamDescriptor& CtfEncoder::streamDescriptor(const TraceRouteIdentity& route) const
+{
+  const auto* stream = m_metadata->streamForRoute(route);
+  // Public event handling validates the route before any private emission path reaches this lookup.
+  assert(stream != nullptr);
+  return *stream;
+}
+
+CtfStreamWriter& CtfEncoder::ensureStreamWriter(const CtfStreamDescriptor& stream)
+{
+  const auto [writer, inserted] = m_streams.try_emplace(stream.streamClassId);
+  if (inserted) {
+    try {
+      writer->second.open(m_outputDirectory / ("stream_" + std::to_string(stream.streamClassId.value())),
+                          stream.streamClassId, m_metadata->traceUuid());
+    } catch (...) {
+      m_streams.erase(writer);
+      throw;
+    }
+  }
+  return writer->second;
+}
+
+CtfStreamWriter& CtfEncoder::streamWriter(const TraceRouteIdentity& route)
+{
+  const auto& stream = streamDescriptor(route);
+  return m_streams.at(stream.streamClassId);
+}
+
+bool CtfEncoder::activatesStream(const TraceEvent& event, bool selected) const
+{
+  if (const auto* exception = traceEventPayload<ExceptionTraceEvent>(event)) {
+    return selected && exception->action != ExceptionAction::Unknown;
+  }
+  if (const auto* counters = traceEventPayload<DwtEventTraceEvent>(event)) {
+    return selected && std::any_of(kDwtEventCounters.begin(), kDwtEventCounters.end(), [&](const auto counter) {
+             return (counters->counterMask & dwtEventCounterBit(counter)) != 0U;
+           });
+  }
+  if (const auto* counters = traceEventPayload<PmuTraceEvent>(event)) {
+    return selected && std::any_of(kPmuEventCounters.begin(), kPmuEventCounters.end(), [&](const auto counter) {
+             return (counters->overflowMask & pmuEventCounterBit(counter)) != 0U;
+           });
+  }
+  return selected || (isTraceEvent<SyncTraceEvent>(event) && m_config.selection.types.empty());
+}
+
 void CtfEncoder::bootstrapRoute(const TraceRouteIdentity& route)
 {
+  (void)ensureStreamWriter(streamDescriptor(route));
   (void)streamState(route);
   if (!m_bootstrappedRoutes.insert(route.id).second) {
     return;
@@ -344,14 +417,15 @@ void CtfEncoder::writeSoftwareEvent(const TraceEvent& event, const SoftwareTrace
   const auto eventTimestamp = allocateEventTimestamp(event.route);
   const auto traceBusId = legacyCtfTraceBusId(event.route);
   const auto payloadSize = 1U + 1U + variant->byteSize + 1U + 4U;
-  m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::Itm), eventTimestamp, traceBusId, payloadSize,
-                       [&](CtfStreamWriter::Record& record) {
-                         record.writeU8(static_cast<std::uint8_t>(software.channel & 0xffU));
-                         record.writeU8(CtfSchema::value(variant->tag));
-                         writeVariantValue(record, software.value, software.size, *variant);
-                         record.writeU8(quality.first);
-                         record.writeU32(quality.second);
-                       });
+  streamWriter(event.route)
+      .writeRecord(CtfSchema::value(CtfSchema::EventId::Itm), eventTimestamp, traceBusId, payloadSize,
+                   [&](CtfStreamWriter::Record& record) {
+                     record.writeU8(static_cast<std::uint8_t>(software.channel & 0xffU));
+                     record.writeU8(CtfSchema::value(variant->tag));
+                     writeVariantValue(record, software.value, software.size, *variant);
+                     record.writeU8(quality.first);
+                     record.writeU32(quality.second);
+                   });
 }
 
 void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceEvent& data)
@@ -366,19 +440,19 @@ void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceE
   const auto eventTimestamp = allocateEventTimestamp(event.route);
   const auto traceBusId = legacyCtfTraceBusId(event.route);
   const auto quality = computeSampleQuality(event);
-  m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtValue), eventTimestamp, traceBusId, payloadSize,
-                       [&](CtfStreamWriter::Record& record) {
-                         record.writeU8(static_cast<std::uint8_t>(data.comparator & 0xffU));
-                         record.writeU8(CtfSchema::value(data.access == AccessType::Read
-                                                             ? CtfSchema::DwtAccess::Read
-                                                             : CtfSchema::DwtAccess::Write));
-                         record.writeU8(CtfSchema::value(variant.tag));
-                         writeVariantValue(record, data.value, data.size, variant);
-                         writeDwtAddress(record, data.pc, pcVariant);
-                         writeDwtAddress(record, data.address, addressVariant);
-                         record.writeU8(quality.first);
-                         record.writeU32(quality.second);
-                       });
+  streamWriter(event.route)
+      .writeRecord(CtfSchema::value(CtfSchema::EventId::DwtValue), eventTimestamp, traceBusId, payloadSize,
+                   [&](CtfStreamWriter::Record& record) {
+                     record.writeU8(static_cast<std::uint8_t>(data.comparator & 0xffU));
+                     record.writeU8(CtfSchema::value(data.access == AccessType::Read ? CtfSchema::DwtAccess::Read
+                                                                                     : CtfSchema::DwtAccess::Write));
+                     record.writeU8(CtfSchema::value(variant.tag));
+                     writeVariantValue(record, data.value, data.size, variant);
+                     writeDwtAddress(record, data.pc, pcVariant);
+                     writeDwtAddress(record, data.address, addressVariant);
+                     record.writeU8(quality.first);
+                     record.writeU32(quality.second);
+                   });
 }
 
 void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data,
@@ -413,14 +487,15 @@ void CtfEncoder::writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTrac
   const auto& pcVariant = dwtAddressVariant(pc);
   const auto& addressVariant = dwtAddressVariant(address);
   const auto payloadSize = 1U + 1U + pcVariant.byteSize + 1U + addressVariant.byteSize + 1U + 4U;
-  m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtAddress), eventTimestamp, traceBusId, payloadSize,
-                       [&](CtfStreamWriter::Record& record) {
-                         record.writeU8(static_cast<std::uint8_t>(data.comparator & 0xffU));
-                         writeDwtAddress(record, pc, pcVariant);
-                         writeDwtAddress(record, address, addressVariant);
-                         record.writeU8(quality.first);
-                         record.writeU32(quality.second);
-                       });
+  streamWriter(event.route)
+      .writeRecord(CtfSchema::value(CtfSchema::EventId::DwtAddress), eventTimestamp, traceBusId, payloadSize,
+                   [&](CtfStreamWriter::Record& record) {
+                     record.writeU8(static_cast<std::uint8_t>(data.comparator & 0xffU));
+                     writeDwtAddress(record, pc, pcVariant);
+                     writeDwtAddress(record, address, addressVariant);
+                     record.writeU8(quality.first);
+                     record.writeU32(quality.second);
+                   });
 }
 
 void CtfEncoder::writeDwtMatchEvent(const TraceEvent& event, const DwtMatchTraceEvent& match)
@@ -429,12 +504,13 @@ void CtfEncoder::writeDwtMatchEvent(const TraceEvent& event, const DwtMatchTrace
   const auto eventTimestamp = allocateEventTimestamp(event.route);
   const auto traceBusId = legacyCtfTraceBusId(event.route);
   const auto quality = computeSampleQuality(event);
-  m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtMatch), eventTimestamp, traceBusId, payloadSize,
-                       [&](CtfStreamWriter::Record& record) {
-                         record.writeU8(static_cast<std::uint8_t>(match.comparator & 0xffU));
-                         record.writeU8(quality.first);
-                         record.writeU32(quality.second);
-                       });
+  streamWriter(event.route)
+      .writeRecord(CtfSchema::value(CtfSchema::EventId::DwtMatch), eventTimestamp, traceBusId, payloadSize,
+                   [&](CtfStreamWriter::Record& record) {
+                     record.writeU8(static_cast<std::uint8_t>(match.comparator & 0xffU));
+                     record.writeU8(quality.first);
+                     record.writeU32(quality.second);
+                   });
 }
 
 void CtfEncoder::writeDwtEvent(const TraceEvent& event, const DwtEventTraceEvent& counters)
@@ -448,12 +524,13 @@ void CtfEncoder::writeDwtEvent(const TraceEvent& event, const DwtEventTraceEvent
     if ((counters.counterMask & counterBit) == 0U) {
       continue;
     }
-    m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::DwtEvent), eventTimestamp, traceBusId, payloadSize,
-                         [&](CtfStreamWriter::Record& record) {
-                           record.writeU8(CtfSchema::value(counter));
-                           record.writeU8(quality.first);
-                           record.writeU32(quality.second);
-                         });
+    streamWriter(event.route)
+        .writeRecord(CtfSchema::value(CtfSchema::EventId::DwtEvent), eventTimestamp, traceBusId, payloadSize,
+                     [&](CtfStreamWriter::Record& record) {
+                       record.writeU8(CtfSchema::value(counter));
+                       record.writeU8(quality.first);
+                       record.writeU32(quality.second);
+                     });
   }
 }
 
@@ -467,12 +544,13 @@ void CtfEncoder::writePmuEvent(const TraceEvent& event, const PmuTraceEvent& cou
     if ((counters.overflowMask & pmuEventCounterBit(counter)) == 0U) {
       continue;
     }
-    m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::PmuEvent), eventTimestamp, traceBusId, payloadSize,
-                         [&](CtfStreamWriter::Record& record) {
-                           record.writeU8(CtfSchema::value(counter));
-                           record.writeU8(quality.first);
-                           record.writeU32(quality.second);
-                         });
+    streamWriter(event.route)
+        .writeRecord(CtfSchema::value(CtfSchema::EventId::PmuEvent), eventTimestamp, traceBusId, payloadSize,
+                     [&](CtfStreamWriter::Record& record) {
+                       record.writeU8(CtfSchema::value(counter));
+                       record.writeU8(quality.first);
+                       record.writeU32(quality.second);
+                     });
   }
 }
 
@@ -481,11 +559,12 @@ void CtfEncoder::writeGlobalTimestampEvent(const TraceEvent& event, const Global
   constexpr auto payloadSize = 8U + 1U;
   const auto eventTimestamp = allocateEventTimestamp(event.route);
   const auto traceBusId = legacyCtfTraceBusId(event.route);
-  m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::GlobalTimestamp), eventTimestamp, traceBusId, payloadSize,
-                       [&](CtfStreamWriter::Record& record) {
-                         record.writeU64(timestamp.value);
-                         record.writeU8(timestamp.clockChange ? 1U : 0U);
-                       });
+  streamWriter(event.route)
+      .writeRecord(CtfSchema::value(CtfSchema::EventId::GlobalTimestamp), eventTimestamp, traceBusId, payloadSize,
+                   [&](CtfStreamWriter::Record& record) {
+                     record.writeU64(timestamp.value);
+                     record.writeU8(timestamp.clockChange ? 1U : 0U);
+                   });
 }
 
 void CtfEncoder::writeTraceStatusEvent(std::uint8_t reason, const TraceRouteIdentity& route, bool emitEvent)
@@ -506,11 +585,11 @@ void CtfEncoder::writeTraceStatusEvent(std::uint8_t reason, const TraceRouteIden
     constexpr auto payloadSize = 1U + 4U;
     const auto eventTimestamp = allocateEventTimestamp(route);
     const auto traceBusId = legacyCtfTraceBusId(route);
-    m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::TraceStatus), eventTimestamp, traceBusId, payloadSize,
-                         [&](CtfStreamWriter::Record& record) {
-                           record.writeU8(reason);
-                           record.writeU32(ctfOverflowCount(streamState(route).overflowCount));
-                         });
+    streamWriter(route).writeRecord(CtfSchema::value(CtfSchema::EventId::TraceStatus), eventTimestamp, traceBusId,
+                                    payloadSize, [&](CtfStreamWriter::Record& record) {
+                                      record.writeU8(reason);
+                                      record.writeU32(ctfOverflowCount(streamState(route).overflowCount));
+                                    });
   }
 }
 
@@ -550,13 +629,14 @@ void CtfEncoder::emitExceptionRecord(const TraceRouteIdentity& route, ExceptionN
   const auto encodedOrigin = CtfSchema::value(origin == CtfExceptionLaneTracker::RecordOrigin::Trace
                                                   ? CtfSchema::ExceptionOrigin::Trace
                                                   : CtfSchema::ExceptionOrigin::Synthetic);
-  m_stream.writeRecord(CtfSchema::value(CtfSchema::EventId::Exception), eventTimestamp, traceBusId, payloadSize,
-                       [&](CtfStreamWriter::Record& record) {
-                         record.writeU16(number);
-                         record.writeU8(encodedAction);
-                         record.writeU16(number);
-                         record.writeU8(encodedOrigin);
-                       });
+  streamWriter(route).writeRecord(CtfSchema::value(CtfSchema::EventId::Exception), eventTimestamp, traceBusId,
+                                  payloadSize, [&](CtfStreamWriter::Record& record) {
+                                    record.writeU16(number);
+                                    record.writeU8(encodedAction);
+                                    record.writeU16(number);
+                                    record.writeU8(encodedOrigin);
+                                  });
+  m_emittedExceptionNumbers[route.id].insert(number);
 }
 
 CtfExceptionLaneTracker& CtfEncoder::exceptionLane(const TraceRouteIdentity& route)
@@ -589,12 +669,38 @@ std::pair<std::uint8_t, std::uint32_t> CtfEncoder::computeSampleQuality(const Tr
 
 void CtfEncoder::writeMetadataFile()
 {
-  const auto streamClassId = m_metadata->topology().streams.front().streamClassId;
-  for (const auto& [routeId, lane] : m_exceptionLanes) {
-    (void)routeId;
-    for (const auto number : lane.observedExceptionNumbers()) {
-      m_metadata->observeException(streamClassId, number);
+  CtfMetadataTopology emittedTopology;
+  std::set<CtfClockDomainId> emittedClockDomains;
+  std::set<TraceRouteId> emittedRoutes;
+  for (const auto& stream : m_metadata->topology().streams) {
+    if (m_streams.find(stream.streamClassId) == m_streams.end()) {
+      continue;
+    }
+    emittedTopology.streams.push_back(stream);
+    emittedClockDomains.insert(stream.clockDomainId);
+    emittedRoutes.insert(stream.route.id);
+  }
+  for (const auto& clock : m_metadata->topology().clockDomains) {
+    if (emittedClockDomains.find(clock.id) != emittedClockDomains.end()) {
+      emittedTopology.clockDomains.push_back(clock);
     }
   }
-  CtfMetadataWriter::write(m_outputDirectory, *m_metadata);
+  for (const auto& source : m_metadata->topology().sources) {
+    if (emittedRoutes.find(source.route.id) != emittedRoutes.end()) {
+      emittedTopology.sources.push_back(source);
+    }
+  }
+
+  CtfMetadataModel completed(m_metadata->traceUuid(), std::move(emittedTopology));
+  for (const auto& stream : completed.topology().streams) {
+    const auto numbers = m_emittedExceptionNumbers.find(stream.route.id);
+    if (numbers == m_emittedExceptionNumbers.end()) {
+      continue;
+    }
+    for (const auto number : numbers->second) {
+      completed.observeException(stream.streamClassId, number);
+    }
+  }
+  CtfMetadataWriter::write(m_outputDirectory, completed);
+  m_completedMetadata.emplace(std::move(completed));
 }

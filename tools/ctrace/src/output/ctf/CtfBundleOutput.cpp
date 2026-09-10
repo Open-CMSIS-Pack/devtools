@@ -9,12 +9,15 @@
 
 #include "CtfEncoder.h"
 #include "CtfUuid.h"
+#include "DiagnosticSink.h"
 #include "TraceCompassXmlWriter.h"
 #include "TraceEvent.h"
 #include "TraceOutputConfig.h"
 
 #include <algorithm>
+#include <cassert>
 #include <filesystem>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -174,7 +177,8 @@ CtfBundleOutput::CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnos
         diagnostics,
         std::move(config.routes),
         !config.routeCatalogueConfigured,
-    })
+    }),
+    m_diagnostics(diagnostics)
 {
   validateOutputTargets(m_ctfOutputDirectory, m_traceCompassXmlPath);
 }
@@ -209,7 +213,6 @@ void CtfBundleOutput::start()
   try {
     m_traceUuid = CtfUuid::randomV4();
     m_encoder.start(m_ctfOutputDirectory, m_traceUuid);
-    TraceCompassXmlWriter::writeFile(m_traceCompassXmlPath);
   } catch (...) {
     abort();
     throw;
@@ -223,6 +226,37 @@ void CtfBundleOutput::stop()
   }
   try {
     m_encoder.stop();
+    const auto* metadata = m_encoder.completedMetadata();
+    // A successful encoder stop always publishes its completed metadata model.
+    assert(metadata != nullptr);
+
+    const auto& streams = metadata->topology().streams;
+    if (streams.empty()) {
+      removeOutputFile(m_traceCompassXmlPath);
+    } else {
+      std::set<CtfClockDomainId> clocks;
+      for (const auto& stream : streams) {
+        clocks.insert(stream.clockDomainId);
+      }
+      if (clocks.size() == 1U) {
+        const auto layout = metadata->isLegacySingleStreamLayout() ? TraceCompassXmlWriter::PathLayout::Legacy
+                                                                   : TraceCompassXmlWriter::PathLayout::RoutePrefixed;
+        TraceCompassXmlWriter::writeFile(m_traceCompassXmlPath, layout);
+      } else {
+        removeOutputFile(m_traceCompassXmlPath);
+        if (m_diagnostics != nullptr) {
+          m_diagnostics->report({
+              DiagnosticSink::Severity::Warning,
+              "Trace Compass XML was not generated because emitted CTF streams use multiple clock domains",
+              {
+                  {"backend", "ctf"},
+                  {"path", m_traceCompassXmlPath.string()},
+                  {"clockDomains", std::to_string(clocks.size())},
+              },
+          });
+        }
+      }
+    }
     m_active = false;
   } catch (...) {
     abort();
@@ -241,5 +275,10 @@ void CtfBundleOutput::abort()
 
 void CtfBundleOutput::writeEvent(const TraceEvent& event)
 {
-  m_encoder.writeEvent(event);
+  try {
+    m_encoder.writeEvent(event);
+  } catch (...) {
+    abort();
+    throw;
+  }
 }

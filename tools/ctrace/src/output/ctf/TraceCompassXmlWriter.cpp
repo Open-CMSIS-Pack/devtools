@@ -10,6 +10,7 @@
 #include "CtfSchema.h"
 
 #include <array>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -19,6 +20,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 
 constexpr const char* kTraceCompassAnalysisVersionPlaceholder = "__SWO_ANALYSIS_VERSION__";
 // Stack depth keeps overlapping visual pulses active until their last scheduled pop.
@@ -47,6 +49,39 @@ static std::string withTraceCompassAnalysisVersion(std::string xml)
   const auto placeholder = std::string(kTraceCompassAnalysisVersionPlaceholder);
   const auto position = xml.find(placeholder);
   xml.replace(position, placeholder.size(), version);
+  return xml;
+}
+
+/** @brief Prefixes every state-system path and matching view entry by the event's normalized route. */
+static std::string withRoutePrefixedPaths(std::string xml)
+{
+  constexpr std::string_view stateChange = "<stateChange>";
+  constexpr std::string_view stateChangeEnd = "</stateChange>";
+  constexpr std::string_view stateAttribute = "<stateAttribute";
+  constexpr std::string_view routeAttribute = "<stateAttribute type=\"eventField\" value=\"cmsis_trace_bus_id\" />\n";
+
+  std::size_t searchOffset = 0U;
+  while ((searchOffset = xml.find(stateChange, searchOffset)) != std::string::npos) {
+    const auto changeEnd = xml.find(stateChangeEnd, searchOffset);
+    const auto attribute = xml.find(stateAttribute, searchOffset + stateChange.size());
+    // All state changes come from the templates below and contain an output path.
+    assert(changeEnd != std::string::npos && attribute != std::string::npos && attribute < changeEnd);
+    const auto lineStart = xml.rfind('\n', attribute);
+    assert(lineStart != std::string::npos);
+    const auto indentationStart = lineStart + 1U;
+    const auto indentation = xml.substr(indentationStart, attribute - indentationStart);
+    const auto prefix = indentation + std::string(routeAttribute);
+    xml.insert(indentationStart, prefix);
+    searchOffset = changeEnd + prefix.size() + stateChangeEnd.size();
+  }
+
+  constexpr std::string_view entryPath = "<entry path=\"";
+  searchOffset = 0U;
+  while ((searchOffset = xml.find(entryPath, searchOffset)) != std::string::npos) {
+    const auto pathStart = searchOffset + entryPath.size();
+    xml.insert(pathStart, "*/");
+    searchOffset = pathStart + 2U;
+  }
   return xml;
 }
 
@@ -506,7 +541,7 @@ static std::string viewsXml()
 }
 
 /** @brief Assembles the complete versioned Trace Compass analysis XML. */
-static std::string traceCompassXml()
+static std::string traceCompassXml(TraceCompassXmlWriter::PathLayout layout)
 {
   std::ostringstream xml;
   xml << R"(<?xml version="1.0" encoding="UTF-8"?>
@@ -517,10 +552,14 @@ static std::string traceCompassXml()
   xml << viewsXml();
   xml << R"(</tmfxml>
 )";
-  return withTraceCompassAnalysisVersion(xml.str());
+  auto result = xml.str();
+  if (layout == TraceCompassXmlWriter::PathLayout::RoutePrefixed) {
+    result = withRoutePrefixedPaths(std::move(result));
+  }
+  return withTraceCompassAnalysisVersion(std::move(result));
 }
 
-void TraceCompassXmlWriter::writeFile(const std::filesystem::path& filePath)
+void TraceCompassXmlWriter::writeFile(const std::filesystem::path& filePath, PathLayout layout)
 {
   if (!filePath.parent_path().empty()) {
     std::filesystem::create_directories(filePath.parent_path());
@@ -529,7 +568,7 @@ void TraceCompassXmlWriter::writeFile(const std::filesystem::path& filePath)
   if (!out) {
     throw std::runtime_error("Failed to write Trace Compass XML " + filePath.string());
   }
-  out << traceCompassXml();
+  out << traceCompassXml(layout);
   out.close();
   if (!out) {
     throw std::runtime_error("Failed to write Trace Compass XML " + filePath.string());

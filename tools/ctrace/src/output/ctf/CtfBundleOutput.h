@@ -30,9 +30,9 @@ public:
   /** @brief Aborts an active bundle before destruction. */
   ~CtfBundleOutput() override;
 
-  /** @brief Prepares empty CTF and XML targets. */
+  /** @brief Prepares an empty CTF target and removes stale companion XML. */
   void start() override;
-  /** @brief Completes metadata, stream, and XML output. */
+  /** @brief Completes metadata and streams, then writes XML when their clocks permit it. */
   void stop() override;
   /** @brief Removes incomplete CTF and XML targets. */
   void abort() override;
@@ -50,6 +50,7 @@ private:
   std::filesystem::path m_ctfOutputDirectory;
   std::filesystem::path m_traceCompassXmlPath;
   CtfEncoder m_encoder;
+  DiagnosticSink* m_diagnostics = nullptr;
   CtfUuid m_traceUuid;
   bool m_active = false;
 };
