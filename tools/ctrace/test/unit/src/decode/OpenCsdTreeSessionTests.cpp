@@ -11,7 +11,6 @@
 #include <gtest/gtest.h>
 
 #include "OpenCsdErrorController.h"
-#include "OpenCsdItmSession.h"
 #include "OpenCsdPacketCollector.h"
 #include "OpenCsdTreeSession.h"
 #include "common/ocsd_dcd_tree.h"
@@ -82,43 +81,6 @@ public:
 
 private:
   std::vector<ocsd_trc_index_t> m_resetIndices;
-};
-
-/** @brief Models the explicit one-route reset behavior of a SINGLE session. */
-class SingleFallbackSession final : public OpenCsdItmSessionInterface {
-public:
-  /** @brief Accepts unused test input. */
-  ocsd_datapath_resp_t pushData(ocsd_trc_index_t, std::uint32_t, const std::uint8_t*, std::uint32_t&) override
-  {
-    return OCSD_RESP_CONT;
-  }
-
-  /** @brief Accepts an unused flush. */
-  ocsd_datapath_resp_t flush() override
-  {
-    return OCSD_RESP_CONT;
-  }
-
-  /** @brief Records the complete reset used for a SINGLE route. */
-  ocsd_datapath_resp_t reset() override
-  {
-    ++resetCalls;
-    return OCSD_RESP_WARN_CONT;
-  }
-
-  /** @brief Maps the synthetic SINGLE route to the complete one-decoder reset. */
-  ocsd_datapath_resp_t resetRoute(std::uint8_t, ocsd_trc_index_t) override
-  {
-    return reset();
-  }
-
-  /** @brief Accepts an unused end-of-trace operation. */
-  ocsd_datapath_resp_t endOfTrace() override
-  {
-    return OCSD_RESP_CONT;
-  }
-
-  std::uint32_t resetCalls = 0U;
 };
 
 } // namespace
@@ -307,12 +269,4 @@ TEST(CtraceUnitTests, testOpenCsdTreeSessionResolvesSingleDecoderAtChannelZero)
   ASSERT_EQ(monitor.resetIndices().size(), 1U);
   EXPECT_EQ(monitor.resetIndices().front(), 73U);
   EXPECT_THROW(session.resetDecoder(1U, 74U), OpenCsdTreeSessionError);
-}
-
-TEST(CtraceUnitTests, testOpenCsdSessionRouteResetFallsBackForSingleInput)
-{
-  SingleFallbackSession session;
-
-  EXPECT_EQ(session.resetRoute(0U, 37U), OCSD_RESP_WARN_CONT);
-  EXPECT_EQ(session.resetCalls, 1U);
 }

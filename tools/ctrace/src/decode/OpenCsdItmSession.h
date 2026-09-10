@@ -79,9 +79,9 @@ public:
                                 std::uint32_t& processed) override;
   /** @brief Flushes the external decoder. */
   ocsd_datapath_resp_t flush() override;
-  /** @brief Resets the external decoder. */
+  /** @brief Resets the SINGLE decoder on channel 0 without resetting the tree root. */
   ocsd_datapath_resp_t reset() override;
-  /** @brief Maps the synthetic SINGLE route to its complete one-decoder reset. */
+  /** @brief Resets the synthetic SINGLE route without resetting the tree root. */
   ocsd_datapath_resp_t resetRoute(std::uint8_t channel, ocsd_trc_index_t index) override;
   /** @brief Signals end of trace to the external decoder. */
   ocsd_datapath_resp_t endOfTrace() override;

@@ -715,7 +715,7 @@ private:
         m_dataLossActive = true;
         m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
         m_consumedDataLossBoundaryMarked = true;
-        resetDecoder();
+        resetDecoder(static_cast<ocsd_trc_index_t>(sourceOffset));
         continue;
       }
       if (decision.action == OpenCsdErrorController::Action::Wait) {
@@ -741,7 +741,7 @@ private:
         m_dataLossActive = true;
         m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
         m_consumedDataLossBoundaryMarked = true;
-        resetDecoder();
+        resetDecoder(m_traceIndex);
         continue;
       }
       if (m_collector.transactionElementCount() == 0U) {
@@ -781,7 +781,7 @@ private:
         const auto sourceOffset = OpenCsdErrorController::errorOffset(decision, m_traceIndex);
         m_collector.commitTransactionBefore(sourceOffset);
         appendReportedErrors(decision, m_traceIndex, true);
-        resetDecoder();
+        resetDecoder(static_cast<ocsd_trc_index_t>(sourceOffset));
         return;
       }
       if (m_collector.transactionElementCount() == 0U) {
@@ -802,10 +802,11 @@ private:
                             static_cast<std::uint64_t>(m_traceIndex));
   }
 
-  void resetDecoder()
+  /** @brief Resets the channel-zero SINGLE decoder at the reported recovery boundary. */
+  void resetDecoder(ocsd_trc_index_t index)
   {
     m_errorController.beginDataPathCall();
-    const auto response = m_session->reset();
+    const auto response = m_session->resetRoute(0U, index);
     m_collector.rethrowOutputError();
     const auto decision = m_errorController.decide(response);
     if (decision.action != OpenCsdErrorController::Action::Continue) {
@@ -822,6 +823,8 @@ private:
     throw OpenCsdFatalError(message, static_cast<std::uint64_t>(m_traceIndex));
   }
 
+  // Declaration order is intentional: the external session is destroyed
+  // before the callback targets whose addresses may still be installed in it.
   OpenCsdItmInputMode m_inputMode = OpenCsdItmInputMode::Single;
   OpenCsdPacketCollector m_collector;
   OpenCsdErrorController m_errorController;

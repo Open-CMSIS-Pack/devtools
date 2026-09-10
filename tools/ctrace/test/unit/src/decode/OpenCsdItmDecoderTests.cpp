@@ -46,6 +46,77 @@ struct ThrowingSessionState {
   std::uint32_t resetCalls = 0U;
 };
 
+/** @brief Records callback-target availability during session destruction. */
+struct SessionLifetimeState {
+  bool sessionDestroyed = false;
+  bool collectorAvailable = false;
+  bool errorControllerAvailable = false;
+};
+
+/** @brief Probes the callback targets while the owning decoder destroys its session. */
+class SessionLifetimeProbe final : public OpenCsdItmSessionInterface {
+public:
+  /** @brief Retains the callback targets installed in a production session. */
+  SessionLifetimeProbe(std::shared_ptr<SessionLifetimeState> state, OpenCsdPacketCollector& collector,
+                       OpenCsdErrorController& errorController)
+    : m_state(std::move(state)),
+      m_collector(collector),
+      m_errorController(errorController)
+  {
+  }
+
+  /** @brief Verifies that both callback targets outlive the external session. */
+  ~SessionLifetimeProbe() noexcept override
+  {
+    try {
+      m_errorController.beginDataPathCall();
+      m_state->errorControllerAvailable =
+          m_errorController.decide(OCSD_RESP_CONT).action == OpenCsdErrorController::Action::Continue;
+      m_collector.appendDecodeError(0U, "session destruction lifetime probe", TraceIssueCode::DecodeError, false,
+                                    TraceIssueSeverity::Warning);
+      m_state->collectorAvailable = true;
+    } catch (...) {
+      // A failed probe is reported through the state without throwing from a destructor.
+    }
+    m_state->sessionDestroyed = true;
+  }
+
+  /** @brief Accepts unused input. */
+  ocsd_datapath_resp_t pushData(ocsd_trc_index_t, std::uint32_t, const std::uint8_t*, std::uint32_t&) override
+  {
+    return OCSD_RESP_CONT;
+  }
+
+  /** @brief Accepts an unused flush. */
+  ocsd_datapath_resp_t flush() override
+  {
+    return OCSD_RESP_CONT;
+  }
+
+  /** @brief Accepts an unused complete reset. */
+  ocsd_datapath_resp_t reset() override
+  {
+    return OCSD_RESP_CONT;
+  }
+
+  /** @brief Accepts an unused route reset. */
+  ocsd_datapath_resp_t resetRoute(std::uint8_t, ocsd_trc_index_t) override
+  {
+    return OCSD_RESP_CONT;
+  }
+
+  /** @brief Accepts an unused end-of-trace operation. */
+  ocsd_datapath_resp_t endOfTrace() override
+  {
+    return OCSD_RESP_CONT;
+  }
+
+private:
+  std::shared_ptr<SessionLifetimeState> m_state;
+  OpenCsdPacketCollector& m_collector;
+  OpenCsdErrorController& m_errorController;
+};
+
 /** @brief Emits transactional output and then simulates a post-root session failure. */
 class ThrowingFormattedSession final : public OpenCsdItmSessionInterface {
 public:
@@ -125,6 +196,25 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderConstructsDefaultSession)
   const TraceRouteIdentity formattedRoute{TraceRouteId{0U}, 1U};
   OpenCsdItmDecoder formatted({formattedRoute}, OpenCsdItmInputMode::CoreSightFormatted, sink);
   EXPECT_EQ(formatted.finish().bytesIn, 0U);
+}
+
+TEST(CtraceUnitTests, testOpenCsdItmDecoderDestroysSessionBeforeItsCallbackTargets)
+{
+  CollectingOpenCsdElementSink sink;
+  const auto state = std::make_shared<SessionLifetimeState>();
+  const OpenCsdItmSessionFactory factory = [state](OpenCsdPacketCollector& collector,
+                                                   OpenCsdErrorController& errorController) {
+    return std::make_unique<SessionLifetimeProbe>(state, collector, errorController);
+  };
+
+  {
+    OpenCsdItmDecoder decoder(TraceRouteIdentity{}, sink, factory);
+  }
+
+  EXPECT_TRUE(state->sessionDestroyed);
+  EXPECT_TRUE(state->collectorAvailable);
+  EXPECT_TRUE(state->errorControllerAvailable);
+  EXPECT_TRUE(sink.hasIssue(TraceIssueCode::DecodeError));
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderValidatesInputRouteCountAndDataPointer)
@@ -874,7 +964,9 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderRecoversAndMarksConsumedDataLoss)
   };
   harness.push(6U);
   EXPECT_EQ(harness.decoder().finish().bytesIn, 6U);
-  EXPECT_EQ(harness.script().resetCalls, 1U);
+  EXPECT_EQ(harness.script().resetCalls, 0U);
+  EXPECT_EQ(harness.script().routeResetCalls[0U], 1U);
+  EXPECT_EQ(harness.script().routeResetIndexes, (std::vector<ocsd_trc_index_t>{1U}));
   EXPECT_TRUE(harness.sink().hasIssue(TraceIssueCode::OpenCsdInvalidPacketHeader));
   EXPECT_TRUE(harness.sink().hasIssue(TraceIssueCode::DataLoss));
 }
@@ -966,7 +1058,9 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderBoundsZeroProgressRecoveryAndWaitRetr
   };
   EXPECT_THROW(recovery.push(1U), OpenCsdFatalError);
   EXPECT_EQ(recovery.script().pushCalls, 2U);
-  EXPECT_EQ(recovery.script().resetCalls, 1U);
+  EXPECT_EQ(recovery.script().resetCalls, 0U);
+  EXPECT_EQ(recovery.script().routeResetCalls[0U], 1U);
+  EXPECT_EQ(recovery.script().routeResetIndexes, (std::vector<ocsd_trc_index_t>{0U}));
   EXPECT_TRUE(recovery.sink().hasIssue(TraceIssueCode::OpenCsdNoProgress));
 
   ScriptedDecoderHarness wait;
@@ -1003,7 +1097,9 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderAllowsZeroProgressRetriesToResume)
   EXPECT_NO_THROW(recovery.push(1U));
   EXPECT_EQ(recovery.decoder().finish().bytesIn, 1U);
   EXPECT_EQ(recovery.script().pushCalls, 2U);
-  EXPECT_EQ(recovery.script().resetCalls, 1U);
+  EXPECT_EQ(recovery.script().resetCalls, 0U);
+  EXPECT_EQ(recovery.script().routeResetCalls[0U], 1U);
+  EXPECT_EQ(recovery.script().routeResetIndexes, (std::vector<ocsd_trc_index_t>{0U}));
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderHandlesFlushRecoveryAndTimeout)
@@ -1013,7 +1109,9 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderHandlesFlushRecoveryAndTimeout)
   recovery.script().flushes = {
       {OCSD_RESP_ERR_CONT, std::nullopt, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 0U, "bad flush"}}}};
   EXPECT_NO_THROW(recovery.decoder().finish());
-  EXPECT_EQ(recovery.script().resetCalls, 1U);
+  EXPECT_EQ(recovery.script().resetCalls, 0U);
+  EXPECT_EQ(recovery.script().routeResetCalls[0U], 1U);
+  EXPECT_EQ(recovery.script().routeResetIndexes, (std::vector<ocsd_trc_index_t>{0U}));
 
   ScriptedDecoderHarness committed;
   committed.script().ends = {{OCSD_RESP_WAIT}};
@@ -1039,7 +1137,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsResetAndInitializationFailures
   ScriptedDecoderHarness reset;
   reset.script().pushes = {
       {OCSD_RESP_ERR_CONT, 1U, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 0U, "bad packet"}}}};
-  reset.script().resets = {{OCSD_RESP_WAIT}};
+  reset.script().routeResets[0U] = {{OCSD_RESP_WAIT}};
   EXPECT_THROW(reset.push(1U), OpenCsdFatalError);
 
   CollectingOpenCsdElementSink nullSink;
@@ -1059,7 +1157,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsResetAndInitializationFailures
   EXPECT_TRUE(errorSink.hasIssue(TraceIssueCode::OpenCsdInitializationError));
 }
 
-TEST(CtraceUnitTests, testOpenCsdItmSessionAcceptsEmptyDataPathOperations)
+TEST(CtraceUnitTests, testOpenCsdItmSessionUsesDecoderLocalResetForSingleInput)
 {
   CollectingOpenCsdElementSink sink;
   OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
@@ -1067,7 +1165,8 @@ TEST(CtraceUnitTests, testOpenCsdItmSessionAcceptsEmptyDataPathOperations)
   OpenCsdItmSession session(collector, errors);
 
   EXPECT_NE(errors.decide(session.reset()).action, OpenCsdErrorController::Action::Abort);
-  EXPECT_NE(errors.decide(session.resetRoute(0U, 0U)).action, OpenCsdErrorController::Action::Abort);
+  EXPECT_NE(errors.decide(session.resetRoute(0U, 37U)).action, OpenCsdErrorController::Action::Abort);
+  EXPECT_THROW(session.resetRoute(1U, 38U), OpenCsdItmSessionError);
   EXPECT_NE(errors.decide(session.flush()).action, OpenCsdErrorController::Action::Abort);
   EXPECT_NE(errors.decide(session.endOfTrace()).action, OpenCsdErrorController::Action::Abort);
 }
