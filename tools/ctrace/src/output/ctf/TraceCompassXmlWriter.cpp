@@ -52,13 +52,15 @@ static std::string withTraceCompassAnalysisVersion(std::string xml)
   return xml;
 }
 
-/** @brief Prefixes every state-system path and matching view entry by the event's normalized route. */
+/** @brief Prefixes state paths with the route label and its collision-free architectural ID. */
 static std::string withRoutePrefixedPaths(std::string xml)
 {
   constexpr std::string_view stateChange = "<stateChange>";
   constexpr std::string_view stateChangeEnd = "</stateChange>";
   constexpr std::string_view stateAttribute = "<stateAttribute";
-  constexpr std::string_view routeAttribute = "<stateAttribute type=\"eventField\" value=\"cmsis_trace_bus_id\" />\n";
+  constexpr std::string_view routeAttribute = "<stateAttribute type=\"eventField\" value=\"context.ctrace_route\" />\n";
+  constexpr std::string_view routeIdAttribute =
+      "<stateAttribute type=\"eventField\" value=\"context.cmsis_trace_bus_id\" />\n";
 
   std::size_t searchOffset = 0U;
   while ((searchOffset = xml.find(stateChange, searchOffset)) != std::string::npos) {
@@ -70,7 +72,7 @@ static std::string withRoutePrefixedPaths(std::string xml)
     assert(lineStart != std::string::npos);
     const auto indentationStart = lineStart + 1U;
     const auto indentation = xml.substr(indentationStart, attribute - indentationStart);
-    const auto prefix = indentation + std::string(routeAttribute);
+    const auto prefix = indentation + std::string(routeAttribute) + indentation + std::string(routeIdAttribute);
     xml.insert(indentationStart, prefix);
     searchOffset = changeEnd + prefix.size() + stateChangeEnd.size();
   }
@@ -79,8 +81,8 @@ static std::string withRoutePrefixedPaths(std::string xml)
   searchOffset = 0U;
   while ((searchOffset = xml.find(entryPath, searchOffset)) != std::string::npos) {
     const auto pathStart = searchOffset + entryPath.size();
-    xml.insert(pathStart, "*/");
-    searchOffset = pathStart + 2U;
+    xml.insert(pathStart, "*/*/");
+    searchOffset = pathStart + 4U;
   }
   return xml;
 }

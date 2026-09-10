@@ -127,13 +127,47 @@ endforeach()
 
 run_babeltrace("${test_work_directory}/isolated-stream-1" stream_1_output)
 require_variable_contains(stream_1_output
-  "[0.000107204] PC_SAMPLE: { cmsis_trace_bus_id = 1 }, { cmsis_pc_sample_state = 1, cmsis_pc = [ [0] = 135269288 ]"
+  "[0.000107204] PC_SAMPLE: { cmsis_trace_bus_id = 1, ctrace_route = ( \"CM4\" : container = 1 ) }, { cmsis_pc_sample_state = 1, cmsis_pc = [ [0] = 135269288 ]"
   "the 25729-tick PC sample scaled by the 240 MHz stream-1 clock")
 
 run_babeltrace("${test_work_directory}/isolated-stream-2" stream_2_output)
 require_variable_contains(stream_2_output
-  "[0.000015839] PC_SAMPLE: { cmsis_trace_bus_id = 2 }, { cmsis_pc_sample_state = 1, cmsis_pc = [ [0] = 134261608 ]"
+  "[0.000015839] PC_SAMPLE: { cmsis_trace_bus_id = 2, ctrace_route = ( \"CM7\" : container = 2 ) }, { cmsis_pc_sample_state = 1, cmsis_pc = [ [0] = 134261608 ]"
   "the 7603-tick PC sample scaled by the 480 MHz stream-2 clock")
+
+set(unbound_work_directory "${test_work_directory}/unbound-route")
+file(MAKE_DIRECTORY "${unbound_work_directory}")
+file(COPY "${raw_trace_file}" DESTINATION "${unbound_work_directory}")
+file(RENAME
+  "${unbound_work_directory}/Blinky+Arm.TB.raw"
+  "${unbound_work_directory}/Unbound.TB.raw")
+file(WRITE "${unbound_work_directory}/Unbound.ctrace-run.yml" [=[ctrace-run:
+  trace-format: formatted
+  ctrace-setup:
+    - timestamps:
+        clock: 240000000
+        itm-prescaler: 1
+  ctrace-refs:
+    - ctrace-ref: itm
+      type: itm
+      stream: 1
+]=])
+execute_process(
+  COMMAND "${CTRACE_EXECUTABLE}" "${unbound_work_directory}" --target Unbound --ctf
+  WORKING_DIRECTORY "${unbound_work_directory}"
+  RESULT_VARIABLE unbound_ctrace_result
+  OUTPUT_VARIABLE unbound_ctrace_stdout
+  ERROR_VARIABLE unbound_ctrace_stderr
+)
+if(NOT "${unbound_ctrace_result}" STREQUAL "0")
+  message(FATAL_ERROR
+    "ctrace failed to generate the unbound-route consumer fixture (${unbound_ctrace_result}):\n"
+    "${unbound_ctrace_stdout}${unbound_ctrace_stderr}")
+endif()
+run_babeltrace("${unbound_work_directory}/Unbound.ctf" unbound_output)
+require_variable_contains(unbound_output
+  "[0.000107204] PC_SAMPLE: { cmsis_trace_bus_id = 1, ctrace_route = ( \"1\" : container = 1 ) }, { cmsis_pc_sample_state = 1, cmsis_pc = [ [0] = 135269288 ]"
+  "the numeric CTF stream-class fallback label for an unbound route")
 
 execute_process(
   COMMAND "${BABELTRACE2_EXECUTABLE}"

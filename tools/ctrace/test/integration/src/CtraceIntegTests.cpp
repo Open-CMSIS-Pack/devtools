@@ -227,7 +227,7 @@ void expectSyntheticCsvRoute(std::string_view csv, std::uint8_t stream, std::uin
 void expectSyntheticCtfRoute(const std::filesystem::path& streamPath, std::uint8_t traceBusId,
                              std::uint64_t payloadTimestamp)
 {
-  const auto records = CtfTestSupport::readCtfRecords(streamPath);
+  const auto records = CtfTestSupport::readCtfRecords(streamPath, CtfStreamWriter::EventContextLayout::RouteLabeled);
   ASSERT_FALSE(records.empty());
 
   std::array<bool, 10U> eventIds{};
@@ -283,7 +283,7 @@ void expectCompleteSyntheticCsv(const std::filesystem::path& csvPath)
 void expectOnlyCtfEventIds(const std::filesystem::path& streamPath,
                            std::initializer_list<CtfSchema::EventId> expectedIds)
 {
-  const auto records = CtfTestSupport::readCtfRecords(streamPath);
+  const auto records = CtfTestSupport::readCtfRecords(streamPath, CtfStreamWriter::EventContextLayout::RouteLabeled);
   ASSERT_FALSE(records.empty());
   for (const auto& record : records) {
     EXPECT_TRUE(std::any_of(expectedIds.begin(), expectedIds.end(), [&](const auto id) {
@@ -1041,8 +1041,10 @@ TEST_F(CtraceIntegTests, ConvertsReconstructedFormattedTraceBusFixture)
   EXPECT_EQ(countCsvStreamRows(csv, "0"), 0U);
 
   const auto ctfDirectory = workDirectory() / "Blinky+Arm.ctf";
-  const auto stream1 = CtfTestSupport::readCtfRecords(ctfDirectory / "stream_1");
-  const auto stream2 = CtfTestSupport::readCtfRecords(ctfDirectory / "stream_2");
+  const auto stream1 =
+      CtfTestSupport::readCtfRecords(ctfDirectory / "stream_1", CtfStreamWriter::EventContextLayout::RouteLabeled);
+  const auto stream2 =
+      CtfTestSupport::readCtfRecords(ctfDirectory / "stream_2", CtfStreamWriter::EventContextLayout::RouteLabeled);
   ASSERT_FALSE(stream1.empty());
   ASSERT_FALSE(stream2.empty());
   EXPECT_TRUE(std::all_of(stream1.begin(), stream1.end(), [](const auto& record) { return record.traceBusId == 1U; }));

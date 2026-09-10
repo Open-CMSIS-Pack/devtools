@@ -362,9 +362,9 @@ typealias enum : uint16_t {
 )";
 }
 
-/** @brief Writes the packet and event context definition for the SWO stream. */
+/** @brief Writes packet and event context definitions for one CTF stream. */
 static void writeStreamDefinition(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId,
-                                  std::string_view timestampType = "swo_clock_t")
+                                  std::string_view timestampType = "swo_clock_t", std::string_view routeType = {})
 {
   out << R"(
 stream {
@@ -377,7 +377,11 @@ stream {
     };
     event.context := struct {
         uint8_t cmsis_trace_bus_id;
-    };
+)";
+  if (!routeType.empty()) {
+    out << "        " << routeType << " ctrace_route;\n";
+  }
+  out << R"(    };
     packet.context := struct {
         uint32_t packet_size;
         uint32_t content_size;
@@ -613,6 +617,15 @@ static std::string streamSymbolPrefix(const CtfStreamDescriptor& stream)
   return "cmsis_stream_" + std::to_string(stream.streamClassId.value());
 }
 
+/** @brief Returns the Trace Compass route label carried by one stream context. */
+static std::string streamRouteLabel(const CtfStreamDescriptor& stream)
+{
+  if (stream.processorName.has_value() && !stream.processorName->empty()) {
+    return *stream.processorName;
+  }
+  return std::to_string(stream.streamClassId.value());
+}
+
 /** @brief Writes common trace, environment, and clock declarations for a generalized topology. */
 static void writeGeneralTraceEnvironment(std::ostream& out, const CtfMetadataModel& model)
 {
@@ -637,6 +650,9 @@ env {
   for (const auto& stream : model.topology().streams) {
     const auto prefix = streamSymbolPrefix(stream);
     const auto symbols = collectMetadataSymbols(sourcesForStream(model, stream));
+    if (stream.processorName.has_value() && !stream.processorName->empty()) {
+      out << "    " << prefix << "_processor_name = " << tsdlString(*stream.processorName) << ";\n";
+    }
     for (const auto& entry : symbols.dwtValueTypes) {
       out << "    " << prefix << "_dwt" << entry.first << "_value_type = " << tsdlString(entry.second) << ";\n";
     }
@@ -736,7 +752,11 @@ static void writeGeneralStreamTypes(std::ostream& out, const CtfMetadataModel& m
                                     const MetadataSymbols& symbols)
 {
   const auto prefix = streamSymbolPrefix(stream);
-  out << "typealias enum : uint8_t {\n";
+  const auto traceBusId = static_cast<unsigned>(stream.route.traceBusId.value_or(0U));
+  out << "typealias enum : uint8_t {\n"
+      << "    " << tsdlString(streamRouteLabel(stream)) << " = " << traceBusId << ",\n"
+      << "} := " << prefix << "_route_t;\n"
+      << "typealias enum : uint8_t {\n";
   std::set<std::string> itmLabels;
   for (std::uint32_t channel = 1U; channel < 32U; ++channel) {
     const auto fallback = "ITM" + std::to_string(channel);
@@ -768,7 +788,7 @@ static void writeGeneralStreamSchemas(std::ostream& out, const CtfMetadataModel&
     const auto streamClassId = stream.streamClassId.value();
     const auto symbols = collectMetadataSymbols(sourcesForStream(model, stream));
     writeGeneralStreamTypes(out, model, stream, symbols);
-    writeStreamDefinition(out, streamClassId, clock->name + "_t");
+    writeStreamDefinition(out, streamClassId, clock->name + "_t", prefix + "_route_t");
     writeItmEvent(out, streamClassId, prefix + "_itm_channel_t");
     writeDwtValueEvent(out, streamClassId, prefix + "_dwt_comparator_t");
     writeDwtAddressEvent(out, streamClassId, prefix + "_dwt_comparator_t");

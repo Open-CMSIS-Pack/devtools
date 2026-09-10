@@ -144,13 +144,14 @@ static std::uint8_t readFirstCtfDwtValueTag(const std::filesystem::path& streamP
   return record.payload[2U];
 }
 
-/** @brief Requires every generated state change to begin its output path with the normalized route. */
+/** @brief Requires every generated state change to begin with a unique labeled route identity. */
 static void requireRoutePrefixedStateChanges(const std::string& xml)
 {
   const std::string stateChange = "<stateChange>";
   const std::string stateChangeEnd = "</stateChange>";
   const std::string stateAttribute = "<stateAttribute";
-  const std::string routeAttribute = "<stateAttribute type=\"eventField\" value=\"cmsis_trace_bus_id\" />";
+  const std::string routeAttribute = "<stateAttribute type=\"eventField\" value=\"context.ctrace_route\" />";
+  const std::string routeIdAttribute = "<stateAttribute type=\"eventField\" value=\"context.cmsis_trace_bus_id\" />";
   std::size_t offset = 0U;
   std::size_t stateChangeCount = 0U;
   while ((offset = xml.find(stateChange, offset)) != std::string::npos) {
@@ -158,15 +159,19 @@ static void requireRoutePrefixedStateChanges(const std::string& xml)
     const auto firstAttribute = xml.find(stateAttribute, offset + stateChange.size());
     ASSERT_NE(end, std::string::npos);
     ASSERT_NE(firstAttribute, std::string::npos);
+    const auto secondAttribute = xml.find(stateAttribute, firstAttribute + stateAttribute.size());
+    ASSERT_NE(secondAttribute, std::string::npos);
     ASSERT_LT(firstAttribute, end);
+    ASSERT_LT(secondAttribute, end);
     EXPECT_EQ(xml.compare(firstAttribute, routeAttribute.size(), routeAttribute), 0);
+    EXPECT_EQ(xml.compare(secondAttribute, routeIdAttribute.size(), routeIdAttribute), 0);
     ++stateChangeCount;
     offset = end + stateChangeEnd.size();
   }
   EXPECT_GT(stateChangeCount, 0U);
 }
 
-/** @brief Requires every generated view entry to select all normalized trace routes. */
+/** @brief Requires every generated view entry to select every route label and architectural ID. */
 static void requireRoutePrefixedViewEntries(const std::string& xml)
 {
   const std::string entryPath = "<entry path=\"";
@@ -174,9 +179,9 @@ static void requireRoutePrefixedViewEntries(const std::string& xml)
   std::size_t entryCount = 0U;
   while ((offset = xml.find(entryPath, offset)) != std::string::npos) {
     const auto path = offset + entryPath.size();
-    EXPECT_EQ(xml.compare(path, 2U, "*/"), 0);
+    EXPECT_EQ(xml.compare(path, 4U, "*/*/"), 0);
     ++entryCount;
-    offset = path + 2U;
+    offset = path + 4U;
   }
   EXPECT_GT(entryCount, 0U);
 }
@@ -634,6 +639,10 @@ TEST(CtraceUnitTests, testCtfBundleOutputPreservesLegacyTraceCompassXmlAfterComp
   output.stop();
 
   ASSERT_TRUE(std::filesystem::is_regular_file(xmlPath));
+  const auto records = readCtfRecords(outputDirectory / "stream_0");
+  ASSERT_FALSE(records.empty());
+  EXPECT_FALSE(records.front().routeLabelId.has_value());
+  EXPECT_EQ(readTestTextFile(outputDirectory / "metadata").find("ctrace_route"), std::string::npos);
   EXPECT_EQ(readTestTextFile(xmlPath), readTestTextFile(expectedXmlPath));
 }
 
@@ -646,8 +655,9 @@ TEST(CtraceUnitTests, testCtfBundleOutputGeneratesRoutePrefixedXmlForSharedClock
   CtfMetadataTopology topology{
       {{CtfClockDomainId{7U}, "shared_clock", CtfTestSupport::testUuid(7U), 1000000U, false}},
       {
-          {CtfStreamClassId{1U}, first, CtfSourceKind::Itm, "core-one", CtfClockDomainId{7U}},
-          {CtfStreamClassId{111U}, last, CtfSourceKind::Itm, "core-last", CtfClockDomainId{7U}},
+          // Deliberately collides with the unbound stream's fallback label.
+          {CtfStreamClassId{1U}, first, CtfSourceKind::Itm, "111", CtfClockDomainId{7U}},
+          {CtfStreamClassId{111U}, last, CtfSourceKind::Itm, std::nullopt, CtfClockDomainId{7U}},
       },
       {},
   };
@@ -663,9 +673,24 @@ TEST(CtraceUnitTests, testCtfBundleOutputGeneratesRoutePrefixedXmlForSharedClock
 
   ASSERT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_1"));
   ASSERT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_111"));
+  const auto firstRecords =
+      readCtfRecords(outputDirectory / "stream_1", CtfStreamWriter::EventContextLayout::RouteLabeled);
+  const auto lastRecords =
+      readCtfRecords(outputDirectory / "stream_111", CtfStreamWriter::EventContextLayout::RouteLabeled);
+  ASSERT_FALSE(firstRecords.empty());
+  ASSERT_FALSE(lastRecords.empty());
+  EXPECT_EQ(firstRecords.front().traceBusId, 1U);
+  EXPECT_EQ(firstRecords.front().routeLabelId, std::optional<std::uint8_t>{1U});
+  EXPECT_EQ(lastRecords.front().traceBusId, 111U);
+  EXPECT_EQ(lastRecords.front().routeLabelId, std::optional<std::uint8_t>{111U});
+  const auto metadata = readTestTextFile(outputDirectory / "metadata");
+  EXPECT_NE(metadata.find("cmsis_stream_1_processor_name = \"111\";"), std::string::npos);
+  EXPECT_NE(metadata.find("\"111\" = 1,\n} := cmsis_stream_1_route_t;"), std::string::npos);
+  EXPECT_NE(metadata.find("\"111\" = 111,\n} := cmsis_stream_111_route_t;"), std::string::npos);
+  EXPECT_EQ(metadata.find("cmsis_stream_111_processor_name"), std::string::npos);
   const auto xml = readTestTextFile(testTraceCompassXmlPath(outputDirectory));
-  EXPECT_NE(xml.find("<stateAttribute type=\"eventField\" value=\"cmsis_trace_bus_id\" />"), std::string::npos);
-  EXPECT_NE(xml.find("<entry path=\"*/ITM/*\""), std::string::npos);
+  EXPECT_NE(xml.find("<stateAttribute type=\"eventField\" value=\"context.ctrace_route\" />"), std::string::npos);
+  EXPECT_NE(xml.find("<entry path=\"*/*/ITM/*\""), std::string::npos);
   requireRoutePrefixedStateChanges(xml);
   requireRoutePrefixedViewEntries(xml);
   EXPECT_TRUE(diagnostics.events().empty());

@@ -117,6 +117,14 @@ TEST(CtraceUnitTests, testCtfMetadataWriterSerializesRouteScopedMultiStreamTopol
   EXPECT_NE(metadata.find("stream {\n    id = 111;"), std::string::npos);
   EXPECT_NE(metadata.find("stream_id = 1;"), std::string::npos);
   EXPECT_NE(metadata.find("stream_id = 111;"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_stream_1_processor_name = \"first\";"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_stream_111_processor_name = \"second\";"), std::string::npos);
+  EXPECT_NE(metadata.find("\"first\" = 1,\n} := cmsis_stream_1_route_t;"), std::string::npos);
+  EXPECT_NE(metadata.find("\"second\" = 111,\n} := cmsis_stream_111_route_t;"), std::string::npos);
+  EXPECT_NE(metadata.find("uint8_t cmsis_trace_bus_id;\n        cmsis_stream_1_route_t ctrace_route;"),
+            std::string::npos);
+  EXPECT_NE(metadata.find("uint8_t cmsis_trace_bus_id;\n        cmsis_stream_111_route_t ctrace_route;"),
+            std::string::npos);
   EXPECT_NE(metadata.find("cmsis_stream_1_dwt0_value_type = \"unsigned\";"), std::string::npos);
   EXPECT_NE(metadata.find("cmsis_stream_111_dwt0_value_type = \"signed\";"), std::string::npos);
   EXPECT_NE(metadata.find("cmsis_stream_1_dwt0_address_start = \"0x1000\";"), std::string::npos);
@@ -131,6 +139,25 @@ TEST(CtraceUnitTests, testCtfMetadataWriterSerializesRouteScopedMultiStreamTopol
   EXPECT_EQ(metadata.find("name = swo_clock;"), std::string::npos);
   EXPECT_EQ(metadata.find("stream_id = 0;"), std::string::npos);
   EXPECT_FALSE(std::filesystem::exists(path.path() / "stream_0"));
+}
+
+TEST(CtraceUnitTests, testCtfMetadataWriterUsesStreamClassIdLabelForUnboundRoute)
+{
+  const TemporaryTestPath path("ctrace-unbound-route-metadata-writer");
+  path.createDirectory();
+  const TraceRouteIdentity route{TraceRouteId{8U}, 7U};
+  CtfMetadataTopology topology{
+      {{CtfClockDomainId{3U}, "clock_three", CtfTestSupport::testUuid(3U), 240000000U, false}},
+      {{CtfStreamClassId{7U}, route, CtfSourceKind::Itm, std::nullopt, CtfClockDomainId{3U}}},
+      {},
+  };
+  CtfMetadataWriter::write(path.path(), CtfMetadataModel(CtfTestSupport::testUuid(), std::move(topology)));
+
+  const auto metadata = readTestTextFile(path.path() / "metadata");
+  EXPECT_NE(metadata.find("\"7\" = 7,\n} := cmsis_stream_7_route_t;"), std::string::npos);
+  EXPECT_NE(metadata.find("uint8_t cmsis_trace_bus_id;\n        cmsis_stream_7_route_t ctrace_route;"),
+            std::string::npos);
+  EXPECT_EQ(metadata.find("cmsis_stream_7_processor_name"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testTraceCompassXmlWriterRejectsDirectoryTarget)

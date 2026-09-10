@@ -22,6 +22,12 @@
 /** @brief Writes packetized binary CTF stream records. */
 class CtfStreamWriter final {
 public:
+  /** @brief Selects the event-context schema encoded by one stream. */
+  enum class EventContextLayout {
+    Legacy,
+    RouteLabeled,
+  };
+
   /** @brief Provides bounded little-endian writes into one reserved record payload. */
   class Record final {
   public:
@@ -62,7 +68,8 @@ public:
   CtfStreamWriter& operator=(const CtfStreamWriter&) = delete;
 
   /** @brief Opens a new CTF stream file with explicit stream and trace identity. */
-  void open(const std::filesystem::path& filePath, CtfStreamClassId streamClassId, const CtfUuid& traceUuid);
+  void open(const std::filesystem::path& filePath, CtfStreamClassId streamClassId, const CtfUuid& traceUuid,
+            EventContextLayout eventContextLayout = EventContextLayout::Legacy);
   /** @brief Flushes the final packet and closes the stream. */
   void close();
   /** @brief Closes and removes an incomplete stream without throwing. */
@@ -91,6 +98,7 @@ private:
   std::uint32_t m_streamId = 0;
   std::uint32_t m_packetSequence = 0;
   CtfUuid m_traceUuid;
+  EventContextLayout m_eventContextLayout = EventContextLayout::Legacy;
   bool m_open = false;
 };
 

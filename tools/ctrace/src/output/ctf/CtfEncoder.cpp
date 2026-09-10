@@ -362,7 +362,9 @@ CtfStreamWriter& CtfEncoder::ensureStreamWriter(const CtfStreamDescriptor& strea
   if (inserted) {
     try {
       writer->second.open(m_outputDirectory / ("stream_" + std::to_string(stream.streamClassId.value())),
-                          stream.streamClassId, m_metadata->traceUuid());
+                          stream.streamClassId, m_metadata->traceUuid(),
+                          m_metadata->isLegacySingleStreamLayout() ? CtfStreamWriter::EventContextLayout::Legacy
+                                                                   : CtfStreamWriter::EventContextLayout::RouteLabeled);
     } catch (...) {
       m_streams.erase(writer);
       throw;

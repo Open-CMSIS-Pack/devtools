@@ -24,6 +24,7 @@ constexpr std::size_t kPacketHeaderSize = 24U;
 constexpr std::size_t kPacketContextSize = 32U;
 constexpr std::size_t kPacketOverhead = kPacketHeaderSize + kPacketContextSize;
 constexpr std::size_t kEventPrefixSize = 13U;
+constexpr std::size_t kRouteLabelContextSize = 1U;
 
 CtfStreamWriter::Record::Record(std::vector<std::uint8_t>& buffer, std::size_t offset, std::size_t endOffset)
   : m_buffer(buffer),
@@ -74,7 +75,7 @@ CtfStreamWriter::~CtfStreamWriter()
 }
 
 void CtfStreamWriter::open(const std::filesystem::path& filePath, CtfStreamClassId streamClassId,
-                           const CtfUuid& traceUuid)
+                           const CtfUuid& traceUuid, EventContextLayout eventContextLayout)
 {
   abort();
   m_filePath = filePath;
@@ -82,6 +83,7 @@ void CtfStreamWriter::open(const std::filesystem::path& filePath, CtfStreamClass
   m_packetSequence = 0U;
   m_lastTimestamp.reset();
   m_traceUuid = traceUuid;
+  m_eventContextLayout = eventContextLayout;
 
   m_packetBuffer.assign(kPacketSizeBytes, 0U);
   beginPacket();
@@ -123,7 +125,8 @@ void CtfStreamWriter::writeRecord(std::uint32_t eventId, std::uint64_t timestamp
   if (!m_open) {
     return;
   }
-  const auto totalSize = kEventPrefixSize + payloadSize;
+  const auto routeContextSize = m_eventContextLayout == EventContextLayout::RouteLabeled ? kRouteLabelContextSize : 0U;
+  const auto totalSize = kEventPrefixSize + routeContextSize + payloadSize;
   if (totalSize > kPacketSizeBytes - kPacketOverhead) {
     throw std::invalid_argument("CTF record does not fit into a packet");
   }
@@ -137,6 +140,9 @@ void CtfStreamWriter::writeRecord(std::uint32_t eventId, std::uint64_t timestamp
   record.writeU32(eventId);
   record.writeU64(timestamp);
   record.writeU8(traceBusId);
+  if (m_eventContextLayout == EventContextLayout::RouteLabeled) {
+    record.writeU8(traceBusId);
+  }
   writePayload(record);
   if (record.m_offset != recordEnd) {
     throw std::logic_error("CTF record payload is shorter than its declared size");

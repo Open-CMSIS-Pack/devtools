@@ -448,7 +448,7 @@ TEST(CtraceUnitTests, testCtfEncoderKeepsFormattedStreamsLazyAndProjectsComplete
   EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_111"));
   encoder.stop();
 
-  const auto records = readCtfRecords(outputDirectory / "stream_1");
+  const auto records = readCtfRecords(outputDirectory / "stream_1", CtfStreamWriter::EventContextLayout::RouteLabeled);
   ASSERT_EQ(records.size(), 3U);
   EXPECT_EQ(records[0].id, CtfSchema::value(CtfSchema::EventId::TraceStatus));
   EXPECT_EQ(records[0].payload[0U], CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart));
@@ -498,8 +498,10 @@ TEST(CtraceUnitTests, testCtfEncoderWritesInterleavedNonContiguousStreamsWithInd
   encoder.writeEvent(atCycle(onRoute(softwarePacket(1U, 1U, 'D'), secondRoute), 20U));
   encoder.stop();
 
-  const auto firstRecords = readCtfRecords(outputDirectory / "stream_1");
-  const auto secondRecords = readCtfRecords(outputDirectory / "stream_111");
+  const auto firstRecords =
+      readCtfRecords(outputDirectory / "stream_1", CtfStreamWriter::EventContextLayout::RouteLabeled);
+  const auto secondRecords =
+      readCtfRecords(outputDirectory / "stream_111", CtfStreamWriter::EventContextLayout::RouteLabeled);
   ASSERT_EQ(firstRecords.size(), 4U);
   ASSERT_EQ(secondRecords.size(), 4U);
   EXPECT_EQ(firstRecords[0].id, CtfSchema::value(CtfSchema::EventId::TraceStatus));
@@ -581,8 +583,10 @@ TEST(CtraceUnitTests, testCtfEncoderKeepsOverflowQualityIndependentAcrossFormatt
   encoder.writeEvent(onRoute(softwarePacket(1U, 1U, 'A'), firstRoute));
   encoder.stop();
 
-  const auto firstRecords = readCtfRecords(outputDirectory / "stream_1");
-  const auto secondRecords = readCtfRecords(outputDirectory / "stream_111");
+  const auto firstRecords =
+      readCtfRecords(outputDirectory / "stream_1", CtfStreamWriter::EventContextLayout::RouteLabeled);
+  const auto secondRecords =
+      readCtfRecords(outputDirectory / "stream_111", CtfStreamWriter::EventContextLayout::RouteLabeled);
   const auto& firstSample =
       requireFirstCtfRecord(firstRecords, CtfSchema::EventId::Itm, "first route's CTF ITM sample is missing");
   const auto& secondRouteSample =
@@ -619,20 +623,22 @@ TEST(CtraceUnitTests, testCtfEncoderKeepsExceptionLanesIndependentAcrossFormatte
   encoder.writeEvent(onRoute(exceptionPacket(0U, ExceptionAction::Returned, 40U), secondRoute));
   encoder.stop();
 
-  EXPECT_EQ(readCtfExceptionRecords(outputDirectory / "stream_1"), (std::vector<CtfExceptionRecord>({
-                                                                       {0U, 0U, 1U},
-                                                                       {0U, 1U, 1U},
-                                                                       {15U, 0U, 0U},
-                                                                       {15U, 1U, 1U},
-                                                                       {16U, 0U, 0U},
-                                                                   })));
-  EXPECT_EQ(readCtfExceptionRecords(outputDirectory / "stream_111"), (std::vector<CtfExceptionRecord>({
-                                                                         {0U, 0U, 1U},
-                                                                         {0U, 1U, 1U},
-                                                                         {54U, 0U, 0U},
-                                                                         {54U, 1U, 1U},
-                                                                         {0U, 2U, 0U},
-                                                                     })));
+  EXPECT_EQ(readCtfExceptionRecords(outputDirectory / "stream_1", CtfStreamWriter::EventContextLayout::RouteLabeled),
+            (std::vector<CtfExceptionRecord>({
+                {0U, 0U, 1U},
+                {0U, 1U, 1U},
+                {15U, 0U, 0U},
+                {15U, 1U, 1U},
+                {16U, 0U, 0U},
+            })));
+  EXPECT_EQ(readCtfExceptionRecords(outputDirectory / "stream_111", CtfStreamWriter::EventContextLayout::RouteLabeled),
+            (std::vector<CtfExceptionRecord>({
+                {0U, 0U, 1U},
+                {0U, 1U, 1U},
+                {54U, 0U, 0U},
+                {54U, 1U, 1U},
+                {0U, 2U, 0U},
+            })));
   ASSERT_NE(encoder.completedMetadata(), nullptr);
   EXPECT_EQ(encoder.completedMetadata()->observedExceptions(CtfStreamClassId{1U}),
             (std::vector<ExceptionNumber>{0U, 15U, 16U}));
@@ -712,7 +718,8 @@ TEST(CtraceUnitTests, testCtfEncoderCreatesFormattedWritersForStatusOnlyOutput)
   startEncoder(syncEncoder, syncDirectory);
   syncEncoder.writeEvent(onRoute(TraceEvent{SyncTraceEvent{}}, route));
   syncEncoder.stop();
-  const auto syncRecords = readCtfRecords(syncDirectory / "stream_1");
+  const auto syncRecords =
+      readCtfRecords(syncDirectory / "stream_1", CtfStreamWriter::EventContextLayout::RouteLabeled);
   ASSERT_EQ(syncRecords.size(), 3U);
   EXPECT_EQ(syncRecords[0].payload[0U], CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart));
   EXPECT_EQ(syncRecords[1].id, CtfSchema::value(CtfSchema::EventId::Exception));
@@ -724,7 +731,8 @@ TEST(CtraceUnitTests, testCtfEncoderCreatesFormattedWritersForStatusOnlyOutput)
   startEncoder(overflowEncoder, overflowDirectory);
   overflowEncoder.writeEvent(onRoute(TraceEvent{OverflowTraceEvent{}}, route));
   overflowEncoder.stop();
-  const auto overflowRecords = readCtfRecords(overflowDirectory / "stream_1");
+  const auto overflowRecords =
+      readCtfRecords(overflowDirectory / "stream_1", CtfStreamWriter::EventContextLayout::RouteLabeled);
   ASSERT_EQ(overflowRecords.size(), 1U);
   EXPECT_EQ(overflowRecords.front().payload[0U], CtfSchema::value(CtfSchema::TraceStatusReason::Overflow));
 
@@ -734,7 +742,8 @@ TEST(CtraceUnitTests, testCtfEncoderCreatesFormattedWritersForStatusOnlyOutput)
   startEncoder(issueEncoder, issueDirectory);
   issueEncoder.writeEvent(onRoute(issuePacket(TraceIssueCode::OpenCsdDecodeError), route));
   issueEncoder.stop();
-  const auto issueRecords = readCtfRecords(issueDirectory / "stream_1");
+  const auto issueRecords =
+      readCtfRecords(issueDirectory / "stream_1", CtfStreamWriter::EventContextLayout::RouteLabeled);
   ASSERT_EQ(issueRecords.size(), 1U);
   EXPECT_EQ(issueRecords.front().payload[0U], CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError));
 }
