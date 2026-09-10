@@ -185,6 +185,19 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsInvalidTraceFormatDeclaration)
                   "'trace-format' must be a scalar value");
 }
 
+TEST(CtraceUnitTests, TraceRunReaderIgnoresUnspecifiedTraceFramingField)
+{
+  TraceRunFixture file("ctrace-run-reader-ignored-trace-framing-test");
+  const auto config = file.read(R"yml(ctrace-run:
+  trace-format: formatted
+  trace-framing:
+    unsupported: [fsync, hsync]
+  ctrace-refs: []
+)yml");
+
+  EXPECT_EQ(config.traceFormat, std::optional<TraceRunFormat>(TraceRunFormat::Formatted));
+}
+
 TEST(CtraceUnitTests, TraceRunReaderIgnoresCopiedItmAtbidForRouting)
 {
   TraceRunFixture file("ctrace-run-reader-itm-atbid-test");
