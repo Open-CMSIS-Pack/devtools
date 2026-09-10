@@ -11,6 +11,7 @@
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
 #include "TraceOutput.h"
+#include "TraceRoute.h"
 
 #include <gtest/gtest.h>
 
@@ -77,7 +78,8 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
   EXPECT_TRUE(unknownDiagnostics.events().empty());
 
   CollectingDiagnosticSink diagnostics;
-  DecodeConsumers consumers({}, diagnostics, 0x00000002U, {{2U, 0x00000004U}});
+  const TraceRouteIdentity stream2{TraceRouteId{20U}, 2U};
+  DecodeConsumers consumers({}, diagnostics, 0x00000002U, {{stream2.id, 0x00000004U}});
 
   auto enabled = softwarePacket(1U);
   consumers.append(enabled);
@@ -92,12 +94,10 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
   auto invalidChannel = softwarePacket(32U);
   consumers.append(invalidChannel);
 
-  auto streamSpecificDisabled = softwarePacket(1U);
-  streamSpecificDisabled.traceBusId = 2U;
+  auto streamSpecificDisabled = onRoute(softwarePacket(1U), stream2);
   consumers.append(streamSpecificDisabled);
 
-  auto streamSpecificEnabled = softwarePacket(2U);
-  streamSpecificEnabled.traceBusId = 2U;
+  auto streamSpecificEnabled = onRoute(softwarePacket(2U), stream2);
   consumers.append(streamSpecificEnabled);
 
   ASSERT_EQ(2U, diagnostics.events().size());
@@ -105,4 +105,25 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
     EXPECT_EQ(DiagnosticSink::Severity::Warning, event.severity);
     EXPECT_EQ(DiagnosticSink::Impact::NonFailing, event.impact);
   }
+}
+
+TEST(CtraceUnitTests, testDecodeConsumersTracksEnableWarningsByInternalRouteIdentity)
+{
+  CollectingDiagnosticSink diagnostics;
+  const TraceRouteIdentity noBusA{TraceRouteId{30U}, std::nullopt};
+  const TraceRouteIdentity noBusB{TraceRouteId{31U}, std::nullopt};
+  DecodeConsumers consumers({}, diagnostics, std::nullopt, {{noBusA.id, 0U}, {noBusB.id, 0U}});
+
+  const auto disabledA = onRoute(softwarePacket(3U), noBusA);
+  const auto disabledB = onRoute(softwarePacket(3U), noBusB);
+  consumers.append(disabledA);
+  consumers.append(disabledA);
+  consumers.append(disabledB);
+  consumers.append(disabledB);
+
+  ASSERT_EQ(diagnostics.events().size(), 2U) << "warning-once state must be independent for distinct no-bus route IDs";
+  EXPECT_TRUE(diagnostics.events()[0].context.size() == 2U && diagnostics.events()[1].context.size() == 2U)
+      << "an internal route ordinal must not be exposed as public stream context";
+  EXPECT_EQ(diagnostics.events()[0].context.front(), (std::pair<std::string, std::string>{"channel", "3"}));
+  EXPECT_EQ(diagnostics.events()[1].context.front(), (std::pair<std::string, std::string>{"channel", "3"}));
 }

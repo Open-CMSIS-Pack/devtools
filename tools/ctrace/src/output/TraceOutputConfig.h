@@ -8,6 +8,7 @@
 #ifndef CTRACE_SRC_OUTPUT_TRACEOUTPUTCONFIG_H
 #define CTRACE_SRC_OUTPUT_TRACEOUTPUTCONFIG_H
 
+#include "TraceRoute.h"
 #include "TraceSelection.h"
 
 #include <cstdint>
@@ -28,7 +29,7 @@ struct TraceOutputRequest {
 struct ResolvedTraceSource {
   std::string type;
   std::uint32_t source = 0;
-  std::uint8_t traceBusId = 0U;
+  TraceRouteIdentity route;
   std::optional<std::string> label;
   std::optional<std::uint64_t> address;
   std::string dataType = "unsigned";
@@ -45,12 +46,15 @@ struct CsvOutputConfig {
 struct CtfOutputConfig {
   /** @brief Creates a complete CTF output configuration. */
   CtfOutputConfig(std::filesystem::path outputDirectory, std::filesystem::path traceCompassXmlPath,
-                  std::uint64_t clockHz, TraceSelection selection, std::vector<ResolvedTraceSource> sources)
+                  std::uint64_t clockHz, TraceSelection selection, std::vector<ResolvedTraceSource> sources,
+                  std::vector<TraceRouteIdentity> routes = {}, bool routeCatalogueConfigured = false)
     : outputDirectory(std::move(outputDirectory)),
       traceCompassXmlPath(std::move(traceCompassXmlPath)),
       coreClockHz(clockHz),
       selection(std::move(selection)),
-      sources(std::move(sources))
+      sources(std::move(sources)),
+      routes(std::move(routes)),
+      routeCatalogueConfigured(routeCatalogueConfigured)
   {
   }
 
@@ -59,6 +63,9 @@ struct CtfOutputConfig {
   std::uint64_t coreClockHz = 0;
   TraceSelection selection;
   std::vector<ResolvedTraceSource> sources;
+  std::vector<TraceRouteIdentity> routes;
+  /** @brief Distinguishes an explicit empty catalogue from legacy route inference. */
+  bool routeCatalogueConfigured = false;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_TRACEOUTPUTCONFIG_H

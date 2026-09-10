@@ -441,7 +441,6 @@ static CtraceRunSourceMeta sourceMeta(const TraceRunConfig& config, const TraceR
   const auto dataSetup = reference.type == "dwt"
                              ? referencedDataSetup(config, boundReference, *reference.dataSetupIndex)
                              : std::optional<TraceRunDataSetup>{};
-  meta.traceBusId = static_cast<std::uint8_t>(reference.stream.value_or(0U));
   meta.source = source;
   meta.label = reference.label;
   if (reference.type != "dwt") {
@@ -812,13 +811,14 @@ struct FormattedRouteState {
 
 /** @brief Registers a bound processor route and rejects one processor mapped to two ITM IDs. */
 static void registerBoundRoute(const TraceRunConfig& config, const TraceRunReference& reference,
-                               const CtraceRunRoute& route, std::map<std::string, std::uint8_t>& boundRoutes)
+                               const CtraceRunRoute& route, std::uint8_t traceBusId,
+                               std::map<std::string, std::uint8_t>& boundRoutes)
 {
   if (!route.processorName.has_value()) {
     return;
   }
-  const auto [found, inserted] = boundRoutes.emplace(*route.processorName, *route.traceBusId);
-  if (!inserted && found->second != *route.traceBusId) {
+  const auto [found, inserted] = boundRoutes.emplace(*route.processorName, traceBusId);
+  if (!inserted && found->second != traceBusId) {
     throw std::runtime_error(configError(config, reference.line,
                                          "processor '" + *route.processorName +
                                              "' has ITM routes bound to multiple CoreSight Trace Bus IDs"));
@@ -835,7 +835,6 @@ static FormattedRouteState& mergeFormattedRoute(const TraceRunConfig& config, co
   auto [found, inserted] = routes.emplace(traceBusId, FormattedRouteState{});
   auto& state = found->second;
   if (inserted) {
-    state.route.traceBusId = traceBusId;
     state.route.processorName = processorName;
   } else if (state.route.processorName.has_value() && processorName.has_value() &&
              state.route.processorName != processorName) {
@@ -845,7 +844,7 @@ static FormattedRouteState& mergeFormattedRoute(const TraceRunConfig& config, co
   } else if (!state.route.processorName.has_value() && processorName.has_value()) {
     state.route.processorName = processorName;
   }
-  registerBoundRoute(config, reference, state.route, boundRoutes);
+  registerBoundRoute(config, reference, state.route, traceBusId, boundRoutes);
   return state;
 }
 
@@ -962,7 +961,7 @@ static CtraceRunSourceMeta formattedSourceMeta(const TraceRunConfig& config, con
   boundReference.processorName = route.processorName;
   auto meta = sourceMeta(config, boundReference, source, identity);
   meta.processorName = route.processorName;
-  meta.traceBusId = *route.traceBusId;
+  meta.route = route.identity;
   return meta;
 }
 
@@ -995,7 +994,7 @@ static void bindStreamlessRoute(const TraceRunConfig& config, const TraceRunRefe
   if (!route.processorName.has_value() && processorName.has_value()) {
     route.processorName = processorName;
   }
-  registerBoundRoute(config, reference, route, boundRoutes);
+  registerBoundRoute(config, reference, route, traceBusId, boundRoutes);
 }
 
 /** @brief Builds the strict formatted route catalogue without constructing decoder objects. */
@@ -1076,8 +1075,11 @@ static std::vector<CtraceRunRoute> formattedRoutes(const TraceRunConfig& config,
 
   std::vector<CtraceRunRoute> routes;
   routes.reserve(states.size());
+  std::uint32_t routeOrdinal = 0U;
   for (auto& [traceBusId, state] : states) {
     auto& route = state.route;
+    route.identity = {TraceRouteId{routeOrdinal}, traceBusId};
+    ++routeOrdinal;
     applyRouteSetupMetadata(config, route, routeSetupFragments(setups, route), warnings);
 
     for (const auto& reference : config.references) {
@@ -1119,7 +1121,7 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
     std::optional<std::uint32_t> commonPrescaler;
     std::optional<std::uint32_t> commonEnableMask;
     for (const auto& route : ctraceRunMeta.m_routes) {
-      const auto traceBusId = *route.traceBusId;
+      const auto traceBusId = *route.identity.traceBusId;
       ctraceRunMeta.m_timestampsByTraceBusId.emplace(
           traceBusId, CtraceRunTimestampMeta{route.processorName, route.timestampClockHz, route.timestampClockError});
       ctraceRunMeta.m_timestampPrescalersByTraceBusId.emplace(traceBusId, route.timestampPrescaler);
@@ -1249,9 +1251,6 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
   if (ctraceRunMeta.m_distinctProcessorPrescalers) {
     throw std::runtime_error(
         config.path + ": unformatted SINGLE trace cannot choose between different timestamps.itm-prescaler values");
-  }
-  for (auto& source : ctraceRunMeta.m_sources) {
-    source.traceBusId = 0U;
   }
   ctraceRunMeta.m_timestampClockHz = commonTimestampClock(processors);
   ctraceRunMeta.m_timestampPrescaler = timestampPrescaler;

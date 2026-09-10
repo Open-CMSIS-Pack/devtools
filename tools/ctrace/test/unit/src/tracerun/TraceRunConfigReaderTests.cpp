@@ -117,13 +117,13 @@ TEST(CtraceUnitTests, TraceRunReaderParsesConsumedFields)
   ASSERT_EQ(meta.sources().size(), 2U);
   const auto& itm = meta.sources()[0];
   EXPECT_EQ(itm.type, "itm");
-  EXPECT_EQ(itm.traceBusId, 2U);
+  EXPECT_EQ(itm.route.traceBusId, 2U);
   EXPECT_EQ(itm.source, 1U);
   EXPECT_EQ(itm.label, std::optional<std::string>("Console"));
 
   const auto& dwt = meta.sources()[1];
   EXPECT_EQ(dwt.type, "dwt");
-  EXPECT_EQ(dwt.traceBusId, 2U);
+  EXPECT_EQ(dwt.route.traceBusId, 2U);
   EXPECT_EQ(dwt.source, 0U);
   EXPECT_EQ(dwt.dataType, "signed");
   EXPECT_EQ(dwt.dataSize, 1U);
@@ -202,7 +202,7 @@ TEST(CtraceUnitTests, TraceRunReaderIgnoresCopiedItmAtbidForRouting)
   EXPECT_EQ(config.setups.front().itm->enableMask, 3U);
   const auto meta = CtraceRunMeta::fromConfig(config);
   ASSERT_EQ(meta.routes().size(), 1U);
-  EXPECT_EQ(meta.routes().front().traceBusId, std::optional<std::uint8_t>(1U));
+  EXPECT_EQ(meta.routes().front().identity.traceBusId, std::optional<std::uint8_t>(1U));
 }
 
 TEST(CtraceUnitTests, TraceRunReaderUsesReferencedSetupSizeAsFallback)

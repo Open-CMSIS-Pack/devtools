@@ -37,19 +37,18 @@ struct DecodeResult {
 class DecodePipeline final {
 public:
   /**
-   * @brief Creates a pipeline with stream-specific timestamp prescalers.
-   * @param timestampPrescalers Default and per-stream timestamp prescalers.
+   * @brief Creates a pipeline bound to one normalized semantic route.
+   * @param route Route identity and timestamp prescaler used by the SINGLE decoder.
    * @param eventSink Sink receiving decoded events synchronously.
    */
-  DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink);
+  DecodePipeline(CortexMDecodeRoute route, TraceEventSink& eventSink);
   /**
    * @brief Creates a pipeline with an injected OpenCSD session factory.
-   * @param timestampPrescalers Default and per-stream timestamp prescalers.
+   * @param route Route identity and timestamp prescaler used by the SINGLE decoder.
    * @param eventSink Sink receiving decoded events synchronously.
    * @param sessionFactory Factory used to create the OpenCSD session.
    */
-  DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
-                 const OpenCsdItmSessionFactory& sessionFactory);
+  DecodePipeline(CortexMDecodeRoute route, TraceEventSink& eventSink, const OpenCsdItmSessionFactory& sessionFactory);
 
   /**
    * @brief Pushes the next contiguous chunk of raw trace bytes.

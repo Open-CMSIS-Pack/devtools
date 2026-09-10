@@ -30,15 +30,16 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
 {
   const TemporaryTestPath path("ctrace-metadata-writer");
   path.createDirectory();
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
   const std::vector<ResolvedTraceSource> sources{
-      {"itm", 1U, 1U, std::string("ITM3"), std::nullopt, "unsigned", 4U},
-      {"itm", 2U, 1U, std::string("ITM3_1"), std::nullopt, "unsigned", 4U},
-      {"itm", 3U, 1U, std::string("ITM3"), std::nullopt, "unsigned", 4U},
-      {"itm", 4U, 1U, std::string("line\rbreak"), std::nullopt, "unsigned", 4U},
-      {"itm", 5U, 1U, std::nullopt, std::nullopt, "unsigned", 4U},
-      {"itm", 6U, 1U, std::string("ITM3"), std::nullopt, "unsigned", 4U},
-      {"future", 7U, 1U, std::string("ignored"), std::nullopt, "unsigned", 4U},
-      {"dwt", 0U, 1U, std::nullopt, std::numeric_limits<std::uint64_t>::max(), "unsigned", 4U},
+      {"itm", 1U, route, std::string("ITM3"), std::nullopt, "unsigned", 4U},
+      {"itm", 2U, route, std::string("ITM3_1"), std::nullopt, "unsigned", 4U},
+      {"itm", 3U, route, std::string("ITM3"), std::nullopt, "unsigned", 4U},
+      {"itm", 4U, route, std::string("line\rbreak"), std::nullopt, "unsigned", 4U},
+      {"itm", 5U, route, std::nullopt, std::nullopt, "unsigned", 4U},
+      {"itm", 6U, route, std::string("ITM3"), std::nullopt, "unsigned", 4U},
+      {"future", 7U, route, std::string("ignored"), std::nullopt, "unsigned", 4U},
+      {"dwt", 0U, route, std::nullopt, std::numeric_limits<std::uint64_t>::max(), "unsigned", 4U},
   };
 
   CtfMetadataWriter::write(path.path(), "00000000-0000-4000-8000-000000000000", 1000000U, sources,

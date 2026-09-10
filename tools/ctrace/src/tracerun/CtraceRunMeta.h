@@ -8,6 +8,8 @@
 #ifndef CTRACE_SRC_TRACERUN_CTRACERUNMETA_H
 #define CTRACE_SRC_TRACERUN_CTRACERUNMETA_H
 
+#include "TraceRoute.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -23,7 +25,7 @@ enum class TraceRunFormat;
 struct CtraceRunSourceMeta {
   std::string type;
   std::optional<std::string> processorName;
-  std::uint8_t traceBusId = 0U;
+  TraceRouteIdentity route;
   std::uint32_t source = 0;
   std::optional<std::string> label;
   std::optional<std::uint64_t> address;
@@ -71,7 +73,7 @@ struct CtraceRunReferenceDiagnostic {
 /** @brief Describes one normalized protocol route and its processor metadata. */
 struct CtraceRunRoute {
   CtraceRunProtocol protocol = CtraceRunProtocol::Itm;
-  std::optional<std::uint8_t> traceBusId;
+  TraceRouteIdentity identity;
   std::optional<std::string> processorName;
   bool timestampsConfigured = false;
   std::optional<std::uint64_t> timestampClockHz;

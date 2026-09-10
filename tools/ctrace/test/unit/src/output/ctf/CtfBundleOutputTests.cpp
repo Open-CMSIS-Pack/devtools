@@ -93,7 +93,7 @@ static ResolvedTraceSource resolvedSource(const CtraceRunSourceMeta& source)
   return {
       source.type,
       source.source,
-      source.traceBusId,
+      source.route,
       source.label,
       source.address,
       source.dataType,
@@ -212,11 +212,13 @@ TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
   ASSERT_TRUE(outputPlan.ctf.has_value() && preflightDiagnostics.events().empty()) << "resolved CTF source missing";
   auto options = std::move(*outputPlan.ctf);
   ASSERT_TRUE(!options.sources.empty()) << "resolved CTF source missing";
-  ASSERT_TRUE(options.sources.front().traceBusId == 7U) << "resolved CTF source must retain its Trace Bus ID";
+  ASSERT_TRUE(options.sources.front().route.traceBusId == 7U) << "resolved CTF source must retain its Trace Bus ID";
   ASSERT_TRUE(options.sources.front().dataType == "signed") << "resolved CTF source must retain its data type";
+  ASSERT_EQ(options.routes.size(), 1U);
+  const auto route = options.routes.front();
   CtfBundleOutput output(std::move(options));
   output.start();
-  output.writeEvent(atCycle(onStream(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Write}}, 7U), 100U));
+  output.writeEvent(atCycle(onRoute(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Write}}, route), 100U));
   output.stop();
 
   const auto metadata = readTestTextFile(outputDir / "metadata");
@@ -242,6 +244,34 @@ TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
   ASSERT_TRUE(dwtRecord.traceBusId == 7U) << "CTF event context must preserve the CoreSight Trace Bus ID";
   ASSERT_TRUE(dwtRecord.payload[2U] == 0U) << "CTF one-byte int payload must select the i8 variant";
   ASSERT_TRUE(dwtRecord.payload[3U] == 0xffU) << "CTF signed-byte payload mismatch";
+}
+
+TEST(CtraceUnitTests, testCtfOutputPlanningKeepsUnknownFilterWithoutLegacyBootstrap)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-unknown-selected-route-test");
+  const auto& outputDir = temporaryOutput.outputDirectory();
+  TraceRunConfig traceRun;
+  traceRun.path = "SelectedRoute.ctrace-run.yml";
+  traceRun.traceFormat = TraceRunFormat::Formatted;
+  traceRun.setups.push_back(TraceRunTestSupport::makeTimestampSetup("core", 1000000U, 1U));
+  traceRun.references.push_back(TraceRunTestSupport::makeReference("itm", "core", 2U, {1U}, "core/itm"));
+  const auto meta = CtraceRunMeta::fromConfig(traceRun);
+
+  TraceSelection unknownSelection;
+  unknownSelection.streams = {99U};
+  CollectingDiagnosticSink unknownDiagnostics;
+  auto plan = planTraceOutputs({false, true, unknownSelection}, outputDir.parent_path() / "output.SWO.raw", meta,
+                               unknownDiagnostics);
+  ASSERT_TRUE(plan.ctf.has_value());
+  ASSERT_EQ(plan.ctf->routes.size(), 1U);
+  EXPECT_EQ(plan.ctf->routes.front().traceBusId, 2U);
+  CtfBundleOutput output(std::move(*plan.ctf));
+  output.start();
+  output.stop();
+
+  const auto records = readCtfRecords(outputDir / "stream_0");
+  EXPECT_TRUE(records.empty()) << "an unmatched stream filter must not invent a synthetic no-bus bootstrap";
+  EXPECT_TRUE(unknownDiagnostics.events().empty());
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
@@ -313,7 +343,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
       TraceRunTestSupport::makeReference("itm", "core-two", 2U, {}, "core-two/itm"),
   };
   const auto meta = CtraceRunMeta::fromConfig(traceRun);
-  ASSERT_TRUE(meta.sources().size() == 2U && meta.sources().front().traceBusId == 1U &&
+  ASSERT_TRUE(meta.sources().size() == 2U && meta.sources().front().route.traceBusId == 1U &&
               meta.sources().front().label == std::optional<std::string>("core-one"))
       << "trace-run metadata must preserve the exact DWT stream route";
 }

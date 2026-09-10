@@ -9,6 +9,7 @@
 #define CTRACE_SRC_DECODE_OPENCSDITMDECODER_H
 
 #include "OpenCsdTraceElement.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
 #include <functional>
@@ -65,13 +66,14 @@ public:
    * @brief Creates a decoder using the production OpenCSD session.
    * @param elementSink Sink receiving decoded and recovery elements.
    */
-  OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink);
+  OpenCsdItmDecoder(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink);
   /**
    * @brief Creates a decoder with an injected OpenCSD session factory.
    * @param elementSink Sink receiving decoded and recovery elements.
    * @param sessionFactory Factory used to construct the external session.
    */
-  OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory);
+  OpenCsdItmDecoder(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink,
+                    const OpenCsdItmSessionFactory& sessionFactory);
   /** @brief Destroys the decoder implementation and external session. */
   ~OpenCsdItmDecoder();
 

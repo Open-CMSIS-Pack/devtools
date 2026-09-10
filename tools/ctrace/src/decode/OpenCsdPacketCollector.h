@@ -10,6 +10,7 @@
 
 #include "TraceEvent.h"
 #include "OpenCsdTraceElement.h"
+#include "TraceRoute.h"
 #include "common/trc_gen_elem.h"
 #include "interfaces/trc_gen_elem_in_i.h"
 #include "interfaces/trc_pkt_raw_in_i.h"
@@ -28,9 +29,10 @@ class OpenCsdPacketCollector : public ITrcGenElemIn, public IPktRawDataMon<ItmTr
 public:
   /**
    * @brief Creates a collector that emits committed elements to a sink.
+   * @param route Normalized semantic route assigned to every collected element.
    * @param elementSink Sink receiving elements after transaction commit.
    */
-  explicit OpenCsdPacketCollector(OpenCsdTraceElementSink& elementSink);
+  OpenCsdPacketCollector(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink);
 
   /**
    * @brief Starts buffering elements for one recoverable decoder operation.
@@ -94,15 +96,15 @@ private:
   /** @brief Appends a hardware overflow element. */
   void appendOverflow(ocsd_trc_index_t index);
   /** @brief Converts an OpenCSD global timestamp callback. */
-  void appendGlobalTimestamp(ocsd_trc_index_t index, std::uint8_t traceBusId, const OcsdTraceElement& elem);
+  void appendGlobalTimestamp(ocsd_trc_index_t index, const OcsdTraceElement& elem);
   /** @brief Converts an OpenCSD error packet callback. */
   void appendError(ocsd_trc_index_t index, const ItmTrcPacket& pkt);
   /** @brief Converts an ITM software packet callback. */
-  void appendSoftware(ocsd_trc_index_t index, std::uint8_t traceBusId, const OcsdTraceElement& elem);
+  void appendSoftware(ocsd_trc_index_t index, const OcsdTraceElement& elem);
   /** @brief Converts a DWT hardware packet callback. */
-  void appendDwt(ocsd_trc_index_t index, std::uint8_t traceBusId, const OcsdTraceElement& elem);
+  void appendDwt(ocsd_trc_index_t index, const OcsdTraceElement& elem);
   /** @brief Converts an OpenCSD local timestamp callback. */
-  void appendTimestamp(ocsd_trc_index_t index, std::uint8_t traceBusId, const OcsdTraceElement& elem);
+  void appendTimestamp(ocsd_trc_index_t index, const OcsdTraceElement& elem);
   /** @brief Maps the OpenCSD timestamp type to its semantic relation. */
   static LocalTimestampRelation timestampRelation(swt_itm_type type);
   /** @brief Buffers or commits one element according to transaction state. */
@@ -110,6 +112,7 @@ private:
   /** @brief Emits one committed element while deferring sink exceptions. */
   void appendCommitted(OpenCsdTraceElement element);
 
+  TraceRouteIdentity m_route;
   OpenCsdTraceElementSink& m_elementSink;
   bool m_transactionActive = false;
   std::vector<OpenCsdTraceElement> m_transactionElements;

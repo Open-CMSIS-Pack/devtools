@@ -156,7 +156,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesOnePreflightedInput)
     EXPECT_EQ(legacy.framing(), TraceRunInputFraming::MemoryAligned);
     EXPECT_FALSE(legacy.metadata().traceFormat().has_value());
     ASSERT_EQ(legacy.metadata().routes().size(), 1U);
-    EXPECT_FALSE(legacy.metadata().routes().front().traceBusId.has_value());
+    EXPECT_FALSE(legacy.metadata().routes().front().identity.traceBusId.has_value());
   }
 
   const auto explicitConfig = root / "Explicit.ctrace-run.yml";
@@ -183,7 +183,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesOnePreflightedInput)
     EXPECT_TRUE(descriptor.formatDeclared());
     EXPECT_EQ(descriptor.metadata().traceFormat(), TraceRunFormat::Formatted);
     ASSERT_EQ(descriptor.metadata().routes().size(), 1U);
-    EXPECT_EQ(descriptor.metadata().routes().front().traceBusId, 1U);
+    EXPECT_EQ(descriptor.metadata().routes().front().identity.traceBusId, 1U);
   }
   for (const auto size : {1U, 15U, 17U, 31U}) {
     writeTestFile(formatted, std::string(size, 'f'));

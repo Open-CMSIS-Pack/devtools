@@ -58,7 +58,7 @@ static OutputPaths outputPaths(const std::filesystem::path& rawInputPath)
 /** @brief Tests whether one configured source route is selected for output. */
 static bool routeMatchesSelection(const CtraceRunSourceMeta& source, const TraceSelection& selection)
 {
-  return selection.includesType(source.type) && selection.includesStream(source.traceBusId);
+  return selection.includesType(source.type) && selection.includesRoute(source.route);
 }
 
 static std::vector<std::pair<std::string, std::string>>
@@ -67,8 +67,10 @@ routeContext(const std::string_view& backend, const CtraceRunMeta& ctraceRunMeta
   std::vector<std::pair<std::string, std::string>> context{
       {"backend", std::string(backend)},
       {"channel", std::string(source.type == "itm" ? "ITM" : "DWT") + std::to_string(source.source)},
-      {"stream", std::to_string(source.traceBusId)},
   };
+  if (source.route.traceBusId.has_value()) {
+    context.emplace_back("stream", std::to_string(*source.route.traceBusId));
+  }
   if (!ctraceRunMeta.configPath().empty()) {
     context.emplace_back("config", ctraceRunMeta.configPath());
   }
@@ -108,8 +110,7 @@ static bool validateCtfRouteIdentity(const CtraceRunMeta& ctraceRunMeta, const T
                               first.addressError == source.addressError &&
                               first.dataTypeError == source.dataTypeError &&
                               first.dataSizeError == source.dataSizeError;
-    const auto indistinguishableProcessors =
-        first.traceBusId == source.traceBusId && first.processorName != source.processorName;
+    const auto indistinguishableProcessors = first.route == source.route && first.processorName != source.processorName;
     if ((sameMetadata && !indistinguishableProcessors) || !reported.insert(key).second) {
       continue;
     }
@@ -119,7 +120,8 @@ static bool validateCtfRouteIdentity(const CtraceRunMeta& ctraceRunMeta, const T
     context.emplace_back("type", source.type);
     context.emplace_back("firstProcessor", first.processorName.value_or("<unspecified>"));
     context.emplace_back("otherProcessor", source.processorName.value_or("<unspecified>"));
-    context.emplace_back("firstStream", std::to_string(first.traceBusId));
+    context.emplace_back("firstStream", first.route.traceBusId.has_value() ? std::to_string(*first.route.traceBusId)
+                                                                           : "<unformatted>");
     reportRequirementError(
         diagnostics,
         "CTF metadata cannot describe conflicting active type/source routes from different processors or Trace Bus IDs",
@@ -327,19 +329,19 @@ static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const Tra
 static std::vector<ResolvedTraceSource> resolveCtfSources(const CtraceRunMeta& ctraceRunMeta,
                                                           const TraceSelection& selection)
 {
-  std::set<std::tuple<std::string, std::uint32_t, std::uint8_t>> resolvedKeys;
+  std::set<std::tuple<std::string, std::uint32_t, TraceRouteId>> resolvedKeys;
   std::vector<ResolvedTraceSource> sources;
   for (const auto& route : ctraceRunMeta.sources()) {
     if ((route.type != "itm" && route.type != "dwt") || (route.type == "itm" && route.source == 0U) ||
         !routeMatchesSelection(route, selection) ||
-        !resolvedKeys.emplace(route.type, route.source, route.traceBusId).second) {
+        !resolvedKeys.emplace(route.type, route.source, route.route.id).second) {
       continue;
     }
 
     sources.push_back({
         route.type,
         route.source,
-        route.traceBusId,
+        route.route,
         route.label,
         route.address,
         route.dataType,
@@ -347,6 +349,16 @@ static std::vector<ResolvedTraceSource> resolveCtfSources(const CtraceRunMeta& c
     });
   }
   return sources;
+}
+
+/** @brief Copies the complete normalized route catalogue for CTF state validation. */
+static std::vector<TraceRouteIdentity> resolveCtfRoutes(const CtraceRunMeta& ctraceRunMeta)
+{
+  std::vector<TraceRouteIdentity> routes;
+  for (const auto& route : ctraceRunMeta.routes()) {
+    routes.push_back(route.identity);
+  }
+  return routes;
 }
 
 bool TraceOutputPlan::hasRequestedOutputs() const
@@ -386,7 +398,8 @@ TraceOutputPlan planTraceOutputs(const TraceOutputRequest& request, const std::f
             : std::nullopt;
     if (clock.has_value() && validRoutes && validTypes && sources.has_value()) {
       plan.ctf = CtfOutputConfig{
-          paths.ctf, paths.traceCompassXml, *clock, request.selection, std::move(*sources),
+          paths.ctf,           paths.traceCompassXml,           *clock, request.selection,
+          std::move(*sources), resolveCtfRoutes(ctraceRunMeta), true,
       };
     }
   }

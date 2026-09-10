@@ -4,6 +4,7 @@
 
 set(CTRACE_MODEL_HEADER_FILES
   model/TraceEvent.h
+  model/TraceRoute.h
   model/TraceSelection.h
   model/TraceStreamId.h
 )

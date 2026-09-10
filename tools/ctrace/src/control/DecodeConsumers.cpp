@@ -11,6 +11,7 @@
 #include "TraceEvent.h"
 #include "TraceOutput.h"
 #include "TraceOutputLifecycle.h"
+#include "TraceRoute.h"
 #include "TraceStreamId.h"
 
 #include <cstdint>
@@ -34,10 +35,10 @@ static std::string hexMask(std::uint32_t value)
 
 DecodeConsumers::DecodeConsumers(std::vector<std::unique_ptr<TraceOutput>> outputs, DiagnosticSink& diagnostics,
                                  std::optional<std::uint32_t> itmEnableMask,
-                                 std::map<std::uint8_t, std::uint32_t> itmEnableMasksByTraceBusId)
+                                 std::map<TraceRouteId, std::uint32_t> itmEnableMasksByRoute)
   : m_diagnostics(diagnostics),
     m_itmEnableMask(itmEnableMask),
-    m_itmEnableMasksByTraceBusId(std::move(itmEnableMasksByTraceBusId)),
+    m_itmEnableMasksByRoute(std::move(itmEnableMasksByRoute)),
     m_issueReporter(diagnostics),
     m_outputLifecycle(std::move(outputs), diagnostics)
 {
@@ -60,23 +61,25 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
   }
 
   auto enableMask = m_itmEnableMask;
-  const auto streamMask = m_itmEnableMasksByTraceBusId.find(event.traceBusId);
-  if (streamMask != m_itmEnableMasksByTraceBusId.end()) {
+  const auto streamMask = m_itmEnableMasksByRoute.find(event.route.id);
+  if (streamMask != m_itmEnableMasksByRoute.end()) {
     enableMask = streamMask->second;
   }
   if (!enableMask.has_value() || ((*enableMask & (1U << software->channel)) != 0U) ||
-      !m_reportedDisabledItmChannels.emplace(event.traceBusId, software->channel).second) {
+      !m_reportedDisabledItmChannels.emplace(event.route.id, software->channel).second) {
     return;
   }
 
+  std::vector<std::pair<std::string, std::string>> context;
+  if (event.route.traceBusId.has_value()) {
+    context.emplace_back("stream", std::to_string(*event.route.traceBusId));
+  }
+  context.emplace_back("channel", std::to_string(software->channel));
+  context.emplace_back("enable", hexMask(*enableMask));
   m_diagnostics.report({
       DiagnosticSink::Severity::Warning,
       "ITM data was received on a channel not enabled by ctrace-setup.itm.enable",
-      {
-          {"stream", std::to_string(event.traceBusId)},
-          {"channel", std::to_string(software->channel)},
-          {"enable", hexMask(*enableMask)},
-      },
+      std::move(context),
   });
 }
 

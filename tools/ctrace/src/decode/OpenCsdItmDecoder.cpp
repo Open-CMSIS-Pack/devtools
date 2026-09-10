@@ -12,6 +12,7 @@
 #include "OpenCsdPacketCollector.h"
 #include "OpenCsdItmSession.h"
 #include "OpenCsdTraceElement.h"
+#include "TraceRoute.h"
 #include "opencsd/ocsd_if_types.h"
 
 #include <algorithm>
@@ -20,6 +21,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 static_assert(sizeof(ocsd_trc_index_t) == sizeof(std::uint64_t), "ctrace requires 64-bit OpenCSD trace indices");
 
@@ -34,8 +36,9 @@ createDefaultOpenCsdItmSession(OpenCsdPacketCollector& collector, OpenCsdErrorCo
 class OpenCsdItmDecoderImpl {
 public:
   /** @brief Creates a decoder implementation around one session factory. */
-  OpenCsdItmDecoderImpl(OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory)
-    : m_collector(elementSink)
+  OpenCsdItmDecoderImpl(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink,
+                        const OpenCsdItmSessionFactory& sessionFactory)
+    : m_collector(std::move(route), elementSink)
   {
     try {
       m_session = sessionFactory(m_collector, m_errorController);
@@ -324,14 +327,14 @@ private:
   bool m_finished = false;
 };
 
-OpenCsdItmDecoder::OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink)
-  : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(elementSink, createDefaultOpenCsdItmSession))
+OpenCsdItmDecoder::OpenCsdItmDecoder(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink)
+  : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(std::move(route), elementSink, createDefaultOpenCsdItmSession))
 {
 }
 
-OpenCsdItmDecoder::OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink,
+OpenCsdItmDecoder::OpenCsdItmDecoder(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink,
                                      const OpenCsdItmSessionFactory& sessionFactory)
-  : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(elementSink, sessionFactory))
+  : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(std::move(route), elementSink, sessionFactory))
 {
 }
 

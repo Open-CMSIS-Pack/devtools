@@ -165,7 +165,7 @@ public:
   /** @brief Creates a decoder connected to a new empty session script. */
   ScriptedDecoderHarness()
     : m_script(std::make_shared<SessionScript>()),
-      m_decoder(m_sink, scriptedFactory(m_script))
+      m_decoder({}, m_sink, scriptedFactory(m_script))
   {
   }
 

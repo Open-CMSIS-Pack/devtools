@@ -13,6 +13,7 @@
 #include "TraceSelection.h"
 #include "TraceEvent.h"
 #include "TraceOutputConfig.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -29,6 +30,9 @@ struct CtfEncoderConfig {
   TraceSelection selection;
   std::vector<ResolvedTraceSource> sources;
   DiagnosticSink* diagnostics = nullptr;
+  std::vector<TraceRouteIdentity> routes;
+  /** @brief Permits direct legacy callers to infer a route when no catalogue was supplied. */
+  bool legacyRouteFallback = true;
 };
 
 /** @brief Encodes semantic trace events into one CTF stream and metadata set. */
@@ -62,11 +66,15 @@ private:
   };
 
   /** @brief Allocates the next monotonic event timestamp for one stream. */
-  std::uint64_t allocateEventTimestamp(std::uint8_t traceBusId);
+  std::uint64_t allocateEventTimestamp(const TraceRouteIdentity& route);
+  /** @brief Returns route-local CTF state while rejecting identity mismatches. */
+  StreamState& streamState(const TraceRouteIdentity& route);
+  /** @brief Emits the legacy stream-local bootstrap exactly once. */
+  void bootstrapRoute(const TraceRouteIdentity& route);
   /** @brief Writes metadata that matches the completed binary stream. */
   void writeMetadataFile();
   /** @brief Emits or applies a trace-status transition. */
-  void writeTraceStatusEvent(std::uint8_t reason, std::uint8_t traceBusId, bool emitEvent = true);
+  void writeTraceStatusEvent(std::uint8_t reason, const TraceRouteIdentity& route, bool emitEvent = true);
   /** @brief Encodes one ITM software event. */
   void writeSoftwareEvent(const TraceEvent& event, const SoftwareTraceEvent& software);
   /** @brief Encodes one DWT data value event. */
@@ -86,13 +94,12 @@ private:
   /** @brief Encodes one reconstructed global timestamp event. */
   void writeGlobalTimestampEvent(const TraceEvent& event, const GlobalTimestampTraceEvent& timestamp);
   /** @brief Applies one exception transition to its CTF lane state. */
-  void writeExceptionEvent(std::uint8_t traceBusId, const ExceptionTraceEvent& exception);
+  void writeExceptionEvent(const TraceRouteIdentity& route, const ExceptionTraceEvent& exception);
   /** @brief Emits one concrete exception lane record. */
-  void emitExceptionRecord(std::uint8_t traceBusId, ExceptionNumber number,
-                           CtfExceptionLaneTracker::RecordAction action,
-                           CtfExceptionLaneTracker::RecordOrigin origin);
+  void emitExceptionRecord(const TraceRouteIdentity& route, ExceptionNumber number,
+                           CtfExceptionLaneTracker::RecordAction action, CtfExceptionLaneTracker::RecordOrigin origin);
   /** @brief Returns the exception tracker for one stream. */
-  CtfExceptionLaneTracker& exceptionLane(std::uint8_t traceBusId);
+  CtfExceptionLaneTracker& exceptionLane(const TraceRouteIdentity& route);
   /** @brief Computes CTF sample flags and saturated overflow count. */
   std::pair<std::uint8_t, std::uint32_t> computeSampleQuality(const TraceEvent& event);
 
@@ -100,9 +107,11 @@ private:
   std::filesystem::path m_outputDirectory;
   CtfStreamWriter m_stream;
   bool m_recording = false;
-  std::map<std::uint8_t, StreamState> m_streamStates;
-  std::set<std::pair<std::uint8_t, std::uint32_t>> m_reportedDwtSizeMismatches;
-  std::map<std::uint8_t, CtfExceptionLaneTracker> m_exceptionLanes;
+  std::map<TraceRouteId, TraceRouteIdentity> m_routeIdentities;
+  std::set<TraceRouteId> m_bootstrappedRoutes;
+  std::map<TraceRouteId, StreamState> m_streamStates;
+  std::set<std::pair<TraceRouteId, std::uint32_t>> m_reportedDwtSizeMismatches;
+  std::map<TraceRouteId, CtfExceptionLaneTracker> m_exceptionLanes;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_CTF_CTFENCODER_H

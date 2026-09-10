@@ -447,8 +447,18 @@ TEST(CtraceUnitTests, testOutputRequirementsRejectUnknownStreamWithMultipleClock
   const auto commonPlan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, commonDiagnostics);
   ASSERT_TRUE(commonPlan.ctf.has_value());
   EXPECT_EQ(commonPlan.ctf->coreClockHz, 100U);
+  EXPECT_EQ(commonPlan.ctf->routes.size(), 2U);
   EXPECT_TRUE(commonDiagnostics.events().empty());
 
+  ctfRequest.selection.streams = {1U, 99U};
+  CollectingDiagnosticSink mixedDiagnostics;
+  const auto mixedPlan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, mixedDiagnostics);
+  ASSERT_TRUE(mixedPlan.ctf.has_value());
+  EXPECT_EQ(mixedPlan.ctf->coreClockHz, 100U);
+  EXPECT_EQ(mixedPlan.ctf->routes.size(), 2U);
+  EXPECT_TRUE(mixedDiagnostics.events().empty());
+
+  ctfRequest.selection.streams = {99U};
   config.setups[0].timestamps->clockHz.reset();
   config.setups[0].timestamps->clockError = "invalid processor clock";
   CollectingDiagnosticSink malformedDiagnostics;

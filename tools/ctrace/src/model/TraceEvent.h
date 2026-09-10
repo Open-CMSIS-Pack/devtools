@@ -8,6 +8,8 @@
 #ifndef CTRACE_SRC_MODEL_TRACEEVENT_H
 #define CTRACE_SRC_MODEL_TRACEEVENT_H
 
+#include "TraceRoute.h"
+
 #include <array>
 #include <cstdint>
 #include <optional>
@@ -269,8 +271,8 @@ struct TraceEvent {
   }
 
   std::uint64_t index = 0;
-  // CoreSight Trace Bus ID. ID 0 identifies unformatted single-source input.
-  std::uint8_t traceBusId = 0U;
+  // Normalized route identity; an unformatted route has no architectural ID.
+  TraceRouteIdentity route;
   std::optional<std::uint64_t> tcyc;
 
   // Quality is assigned atomically by the post-decoder. Wire/control events

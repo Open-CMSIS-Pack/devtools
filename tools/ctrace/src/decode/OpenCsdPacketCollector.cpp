@@ -8,8 +8,8 @@
 #include "OpenCsdPacketCollector.h"
 
 #include "TraceEvent.h"
-#include "TraceStreamId.h"
 #include "OpenCsdTraceElement.h"
+#include "TraceRoute.h"
 #include "common/trc_gen_elem.h"
 #include "opencsd/itm/trc_pkt_elem_itm.h"
 #include "opencsd/itm/trc_pkt_types_itm.h"
@@ -24,8 +24,9 @@
 #include <utility>
 #include <vector>
 
-OpenCsdPacketCollector::OpenCsdPacketCollector(OpenCsdTraceElementSink& elementSink)
-  : m_elementSink(elementSink)
+OpenCsdPacketCollector::OpenCsdPacketCollector(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink)
+  : m_route(std::move(route)),
+    m_elementSink(elementSink)
 {
 }
 
@@ -114,6 +115,7 @@ void OpenCsdPacketCollector::prependDiscontinuity(ocsd_trc_index_t index, const 
   element.issueCode = issueCode;
   element.errorMessage = message;
   element.rawBytesConsumed = rawBytesConsumed;
+  element.route = m_route;
   if (m_transactionActive) {
     m_transactionElements.insert(m_transactionElements.begin(), std::move(element));
     return;
@@ -131,6 +133,7 @@ void OpenCsdPacketCollector::prependDataLossError(ocsd_trc_index_t index, const 
   element.errorMessage = message;
   element.rawBytesConsumed = rawBytesConsumed;
   element.awaitingResumeTimestamp = true;
+  element.route = m_route;
   if (m_transactionActive) {
     m_transactionElements.insert(m_transactionElements.begin(), std::move(element));
     return;
@@ -138,8 +141,8 @@ void OpenCsdPacketCollector::prependDataLossError(ocsd_trc_index_t index, const 
   appendElement(std::move(element));
 }
 
-ocsd_datapath_resp_t OpenCsdPacketCollector::TraceElemIn(const ocsd_trc_index_t index_sop,
-                                                         const std::uint8_t trc_chan_id, const OcsdTraceElement& elem)
+ocsd_datapath_resp_t OpenCsdPacketCollector::TraceElemIn(const ocsd_trc_index_t index_sop, const std::uint8_t,
+                                                         const OcsdTraceElement& elem)
 {
   try {
     if (elem.getType() != OCSD_GEN_TRC_ELEM_ITMTRACE) {
@@ -147,22 +150,21 @@ ocsd_datapath_resp_t OpenCsdPacketCollector::TraceElemIn(const ocsd_trc_index_t 
     }
 
     const auto& info = elem.swt_itm;
-    const auto traceBusId = CoreSight::isTraceBusId(trc_chan_id) ? trc_chan_id : CoreSight::kUnformattedTraceBusId;
     switch (info.pkt_type) {
     case SWIT_PAYLOAD:
-      appendSoftware(index_sop, traceBusId, elem);
+      appendSoftware(index_sop, elem);
       break;
     case DWT_PAYLOAD:
-      appendDwt(index_sop, traceBusId, elem);
+      appendDwt(index_sop, elem);
       break;
     case TS_SYNC:
     case TS_DELAY:
     case TS_PKT_DELAY:
     case TS_PKT_TS_DELAY:
-      appendTimestamp(index_sop, traceBusId, elem);
+      appendTimestamp(index_sop, elem);
       break;
     case TS_GLOBAL:
-      appendGlobalTimestamp(index_sop, traceBusId, elem);
+      appendGlobalTimestamp(index_sop, elem);
       break;
     }
   } catch (...) {
@@ -236,13 +238,11 @@ void OpenCsdPacketCollector::appendOverflow(ocsd_trc_index_t index)
   appendElement(std::move(element));
 }
 
-void OpenCsdPacketCollector::appendGlobalTimestamp(ocsd_trc_index_t index, std::uint8_t traceBusId,
-                                                   const OcsdTraceElement& elem)
+void OpenCsdPacketCollector::appendGlobalTimestamp(ocsd_trc_index_t index, const OcsdTraceElement& elem)
 {
   OpenCsdTraceElement element;
   element.kind = OpenCsdTraceElement::Kind::GlobalTimestamp;
   element.sourceIndex = static_cast<std::uint64_t>(index);
-  element.traceBusId = traceBusId;
   element.timestampValue = elem.timestamp;
   element.clockChange = elem.cpu_freq_change != 0U;
   appendElement(std::move(element));
@@ -258,14 +258,12 @@ void OpenCsdPacketCollector::appendError(ocsd_trc_index_t index, const ItmTrcPac
   appendElement(std::move(element));
 }
 
-void OpenCsdPacketCollector::appendSoftware(ocsd_trc_index_t index, std::uint8_t traceBusId,
-                                            const OcsdTraceElement& elem)
+void OpenCsdPacketCollector::appendSoftware(ocsd_trc_index_t index, const OcsdTraceElement& elem)
 {
   const auto& info = elem.swt_itm;
   OpenCsdTraceElement element;
   element.kind = OpenCsdTraceElement::Kind::Software;
   element.sourceIndex = static_cast<std::uint64_t>(index);
-  element.traceBusId = traceBusId;
   element.channel = info.payload_src_id;
   element.size = info.payload_size;
   element.value = info.value;
@@ -273,13 +271,12 @@ void OpenCsdPacketCollector::appendSoftware(ocsd_trc_index_t index, std::uint8_t
   appendElement(std::move(element));
 }
 
-void OpenCsdPacketCollector::appendDwt(ocsd_trc_index_t index, std::uint8_t traceBusId, const OcsdTraceElement& elem)
+void OpenCsdPacketCollector::appendDwt(ocsd_trc_index_t index, const OcsdTraceElement& elem)
 {
   const auto& info = elem.swt_itm;
   OpenCsdTraceElement element;
   element.kind = OpenCsdTraceElement::Kind::Hardware;
   element.sourceIndex = static_cast<std::uint64_t>(index);
-  element.traceBusId = traceBusId;
   element.discriminator = info.payload_src_id;
   element.size = info.payload_size;
   element.value = info.value;
@@ -287,14 +284,12 @@ void OpenCsdPacketCollector::appendDwt(ocsd_trc_index_t index, std::uint8_t trac
   appendElement(std::move(element));
 }
 
-void OpenCsdPacketCollector::appendTimestamp(ocsd_trc_index_t index, std::uint8_t traceBusId,
-                                             const OcsdTraceElement& elem)
+void OpenCsdPacketCollector::appendTimestamp(ocsd_trc_index_t index, const OcsdTraceElement& elem)
 {
   const auto& info = elem.swt_itm;
   OpenCsdTraceElement element;
   element.kind = OpenCsdTraceElement::Kind::LocalTimestamp;
   element.sourceIndex = static_cast<std::uint64_t>(index);
-  element.traceBusId = traceBusId;
   element.timestampRelation = timestampRelation(info.pkt_type);
   element.tcyc = elem.timestamp;
   element.overflow = info.overflow;
@@ -317,6 +312,7 @@ LocalTimestampRelation OpenCsdPacketCollector::timestampRelation(swt_itm_type ty
 
 void OpenCsdPacketCollector::appendElement(OpenCsdTraceElement element)
 {
+  element.route = m_route;
   if (m_transactionActive) {
     m_transactionElements.push_back(std::move(element));
     return;

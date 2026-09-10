@@ -228,7 +228,8 @@ TEST(CtraceUnitTests, testCtraceRunMetaNormalizesAmbiguousUnformattedProcessorId
   EXPECT_EQ(selectedMeta.routes().front().processorName, std::optional<std::string>("a"));
   EXPECT_EQ(selectedMeta.routes().front().timestampClockHz, std::optional<std::uint64_t>(100U));
   EXPECT_EQ(selectedMeta.routes().front().timestampPrescaler, 4U);
-  EXPECT_EQ(selectedMeta.sources().front().traceBusId, 0U);
+  EXPECT_EQ(selectedMeta.sources().front().route, selectedMeta.routes().front().identity);
+  EXPECT_FALSE(selectedMeta.sources().front().route.traceBusId.has_value());
 
   selected.references.push_back(makeReference("itm", std::nullopt, 5U, {2U}, "messages"));
   const auto inferredReferenceMeta = CtraceRunMeta::fromConfig(selected);
@@ -388,8 +389,10 @@ TEST(CtraceUnitTests, testCtraceRunMetaMergesCompatibleUnformattedProcessorSetti
             std::optional<std::string>(
                 "unformatted SINGLE trace has ambiguous timestamps.clock values across processor candidates"));
   ASSERT_EQ(meta.sources().size(), 2U);
-  EXPECT_EQ(meta.sources()[0].traceBusId, 0U);
-  EXPECT_EQ(meta.sources()[1].traceBusId, 0U);
+  EXPECT_EQ(meta.sources()[0].route, meta.routes().front().identity);
+  EXPECT_EQ(meta.sources()[1].route, meta.routes().front().identity);
+  EXPECT_FALSE(meta.sources()[0].route.traceBusId.has_value());
+  EXPECT_FALSE(meta.sources()[1].route.traceBusId.has_value());
 
   config.setups[1] = makeTimestampSetup("b", 100U, 4U, 1U);
   const auto equivalent = CtraceRunMeta::fromConfig(config);
@@ -537,18 +540,22 @@ TEST(CtraceUnitTests, testCtraceRunMetaCreatesOneSyntheticUnformattedRoute)
     ASSERT_EQ(meta.routes().size(), 1U);
     const auto& route = meta.routes().front();
     EXPECT_EQ(route.protocol, CtraceRunProtocol::Itm);
-    EXPECT_FALSE(route.traceBusId.has_value());
+    EXPECT_EQ(route.identity.id, TraceRouteId{0U});
+    EXPECT_FALSE(route.identity.traceBusId.has_value());
     EXPECT_FALSE(route.timestampsConfigured);
     EXPECT_EQ(route.timestampPrescaler, TraceRunSchema::kDefaultTimestampPrescaler);
     ASSERT_EQ(route.sources.size(), 1U);
-    EXPECT_EQ(route.sources.front().traceBusId, 0U);
+    EXPECT_EQ(route.sources.front().route, route.identity);
     ASSERT_EQ(meta.sources().size(), 1U);
-    EXPECT_EQ(meta.sources().front().traceBusId, 0U) << "SINGLE accessors must expose the transport channel";
+    EXPECT_EQ(meta.sources().front().route, route.identity);
+    EXPECT_FALSE(meta.sources().front().route.traceBusId.has_value())
+        << "SINGLE metadata must not expose OpenCSD transport channel 0 as an architectural ID";
   }
 
   const auto emptyMeta = CtraceRunMeta::fromConfig(TraceRunConfig{});
   ASSERT_EQ(emptyMeta.routes().size(), 1U);
-  EXPECT_FALSE(emptyMeta.routes().front().traceBusId.has_value());
+  EXPECT_EQ(emptyMeta.routes().front().identity.id, TraceRouteId{0U});
+  EXPECT_FALSE(emptyMeta.routes().front().identity.traceBusId.has_value());
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaBuildsFormattedAnchorRoutesAndMetadata)
@@ -565,14 +572,14 @@ TEST(CtraceUnitTests, testCtraceRunMetaBuildsFormattedAnchorRoutesAndMetadata)
   auto data = routeReference("dwt", "first/data#0", "first", 1U, {2U});
   data.dataSetupIndex = 0U;
   data.address = 0x20000000U;
-  auto secondAnchor = routeReference("itm", "second/itm", "second", 111U);
+  auto secondAnchor = routeReference("itm", "second/itm", "second", 111U, {1U});
   const auto config = formattedConfig({firstAnchor, data, secondAnchor}, {firstSetup, secondSetup});
 
   const auto meta = CtraceRunMeta::fromConfig(config);
 
   ASSERT_EQ(meta.routes().size(), 2U);
   const auto& first = meta.routes()[0];
-  EXPECT_EQ(first.traceBusId, std::optional<std::uint8_t>(1U));
+  EXPECT_EQ(first.identity, (TraceRouteIdentity{TraceRouteId{0U}, 1U}));
   EXPECT_EQ(first.processorName, std::optional<std::string>("first"));
   EXPECT_TRUE(first.timestampsConfigured);
   EXPECT_EQ(first.timestampClockHz, std::optional<std::uint64_t>(100U));
@@ -582,6 +589,8 @@ TEST(CtraceUnitTests, testCtraceRunMetaBuildsFormattedAnchorRoutesAndMetadata)
   EXPECT_EQ(first.sources[0].type, "itm");
   EXPECT_EQ(first.sources[1].type, "dwt");
   EXPECT_EQ(first.sources[1].dataSize, 2U);
+  EXPECT_EQ(first.sources[0].route, first.identity);
+  EXPECT_EQ(first.sources[1].route, first.identity);
   ASSERT_EQ(first.referenceDiagnostics.size(), 3U);
   EXPECT_EQ(first.referenceDiagnostics[0].severity, CtraceRunReferenceDiagnostic::Severity::Info);
   EXPECT_EQ(first.referenceDiagnostics[1].severity, CtraceRunReferenceDiagnostic::Severity::Warning);
@@ -589,10 +598,20 @@ TEST(CtraceUnitTests, testCtraceRunMetaBuildsFormattedAnchorRoutesAndMetadata)
   EXPECT_EQ(meta.referenceDiagnostics().size(), 3U);
 
   const auto& second = meta.routes()[1];
-  EXPECT_EQ(second.traceBusId, std::optional<std::uint8_t>(111U));
+  EXPECT_EQ(second.identity, (TraceRouteIdentity{TraceRouteId{1U}, 111U}));
   EXPECT_EQ(second.processorName, std::optional<std::string>("second"));
   EXPECT_EQ(second.timestampClockHz, std::optional<std::uint64_t>(200U));
   EXPECT_EQ(second.timestampPrescaler, 16U);
+  ASSERT_EQ(second.sources.size(), 1U);
+  EXPECT_EQ(second.sources.front().source, 1U) << "the same ITM source number must remain valid on a distinct route";
+  EXPECT_EQ(second.sources.front().route, second.identity);
+
+  const auto reversed =
+      CtraceRunMeta::fromConfig(formattedConfig({secondAnchor, data, firstAnchor}, {secondSetup, firstSetup}));
+  ASSERT_EQ(reversed.routes().size(), 2U);
+  EXPECT_EQ(reversed.routes()[0].identity, first.identity);
+  EXPECT_EQ(reversed.routes()[1].identity, second.identity)
+      << "normalized route ordinals must be deterministic rather than reference-order dependent";
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaAcceptsOnlyConstrainedFormattedFallbacks)
@@ -615,7 +634,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaAcceptsOnlyConstrainedFormattedFallbacks)
     }
     const auto meta = CtraceRunMeta::fromConfig(formattedConfig({reference}));
     ASSERT_EQ(meta.routes().size(), 1U) << fallback.type << " / " << fallback.path;
-    EXPECT_EQ(meta.routes().front().traceBusId, std::optional<std::uint8_t>(1U));
+    EXPECT_EQ(meta.routes().front().identity.traceBusId, std::optional<std::uint8_t>(1U));
   }
 
   const std::vector<TraceRunReference> rejected{

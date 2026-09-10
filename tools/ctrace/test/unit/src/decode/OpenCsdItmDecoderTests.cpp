@@ -30,7 +30,7 @@ using OpenCsdTestSupport::CollectingOpenCsdElementSink;
 TEST(CtraceUnitTests, testOpenCsdItmDecoderConstructsDefaultSession)
 {
   CollectingOpenCsdElementSink sink;
-  OpenCsdItmDecoder decoder(sink);
+  OpenCsdItmDecoder decoder({}, sink);
 
   EXPECT_EQ(decoder.finish().bytesIn, 0U);
   EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdInitializationError));
@@ -231,7 +231,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsResetAndInitializationFailures
       [](OpenCsdPacketCollector&, OpenCsdErrorController&) -> std::unique_ptr<OpenCsdItmSessionInterface> {
     return nullptr;
   };
-  EXPECT_THROW((void)OpenCsdItmDecoder(nullSink, nullFactory), OpenCsdFatalError);
+  EXPECT_THROW((void)OpenCsdItmDecoder({}, nullSink, nullFactory), OpenCsdFatalError);
   EXPECT_TRUE(nullSink.hasIssue(TraceIssueCode::OpenCsdInitializationError));
 
   CollectingOpenCsdElementSink errorSink;
@@ -239,14 +239,14 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsResetAndInitializationFailures
       [](OpenCsdPacketCollector&, OpenCsdErrorController&) -> std::unique_ptr<OpenCsdItmSessionInterface> {
     throw OpenCsdItmSessionError("synthetic session setup failure");
   };
-  EXPECT_THROW((void)OpenCsdItmDecoder(errorSink, errorFactory), OpenCsdFatalError);
+  EXPECT_THROW((void)OpenCsdItmDecoder({}, errorSink, errorFactory), OpenCsdFatalError);
   EXPECT_TRUE(errorSink.hasIssue(TraceIssueCode::OpenCsdInitializationError));
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmSessionAcceptsEmptyDataPathOperations)
 {
   CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector(sink);
+  OpenCsdPacketCollector collector({}, sink);
   OpenCsdErrorController errors;
   OpenCsdItmSession session(collector, errors);
 
@@ -272,7 +272,7 @@ TEST(CtraceUnitTests, testOpenCsdSessionValidationRejectsInvalidApiResults)
 TEST(CtraceUnitTests, testOpenCsdItmSessionRejectsMissingDecoderRegistry)
 {
   CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector(sink);
+  OpenCsdPacketCollector collector({}, sink);
   OpenCsdErrorController errors;
   const auto missingRegistry = []() -> OcsdLibDcdRegister* { return nullptr; };
 

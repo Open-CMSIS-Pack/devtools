@@ -60,7 +60,8 @@ static OcsdTraceElement itmElement(swt_itm_type type, std::uint8_t source = 0U, 
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorUsesReconstructedGlobalTimestamp)
 {
   CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector(sink);
+  const TraceRouteIdentity route{TraceRouteId{9U}, 7U};
+  OpenCsdPacketCollector collector(route, sink);
 
   auto globalTimestamp = itmElement(TS_GLOBAL);
   globalTimestamp.setTS(0xfedcba9876543210ULL, true);
@@ -72,13 +73,13 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorUsesReconstructedGlobalTimestamp
   ASSERT_TRUE(element.kind == OpenCsdTraceElement::Kind::GlobalTimestamp)
       << "reconstructed global timestamp kind mismatch";
   ASSERT_TRUE(element.sourceIndex == 42U) << "reconstructed global timestamp source index mismatch";
-  ASSERT_TRUE(element.traceBusId == 7U) << "OpenCSD Trace Bus ID was not preserved";
+  ASSERT_EQ(element.route, route) << "bound normalized route was not preserved";
   ASSERT_TRUE(element.timestampValue == 0xfedcba9876543210ULL) << "reconstructed global timestamp value mismatch";
   ASSERT_TRUE(element.clockChange) << "reconstructed global timestamp clock-change flag missing";
 
   ASSERT_TRUE(collector.TraceElemIn(43U, 0xffU, globalTimestamp) == OCSD_RESP_CONT)
       << "OpenCSD global timestamp collection with missing source ID failed";
-  ASSERT_TRUE(sink.elements().back().traceBusId == 0U) << "an unavailable OpenCSD Trace Bus ID must fall back to zero";
+  ASSERT_EQ(sink.elements().back().route, route) << "OpenCSD callback channel must not override the bound route";
 
   ItmTrcPacket rawGts1;
   rawGts1.setPktType(ITM_PKT_TS_GLOBAL_1);
@@ -107,7 +108,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsLocalTimestampRelations)
   }};
 
   CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector(sink);
+  OpenCsdPacketCollector collector({}, sink);
   for (std::size_t index = 0; index < cases.size(); ++index) {
     auto timestamp = itmElement(cases[index].first);
     timestamp.setTS(100U + index, false);
@@ -127,7 +128,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsLocalTimestampRelations)
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
 {
   CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector(sink);
+  OpenCsdPacketCollector collector({}, sink);
 
   const auto software = itmElement(SWIT_PAYLOAD, 7U, 4U, 0x12345678U, true);
   EXPECT_EQ(collector.TraceElemIn(10U, 3U, software), OCSD_RESP_CONT);
@@ -192,10 +193,40 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
   EXPECT_EQ(sink.elements().size(), 6U);
 }
 
+TEST(CtraceUnitTests, testOpenCsdPacketCollectorNeverDerivesRouteFromCallbackChannelOrPacketKind)
+{
+  CollectingOpenCsdElementSink sink;
+  const TraceRouteIdentity route{TraceRouteId{23U}, 11U};
+  OpenCsdPacketCollector collector(route, sink);
+
+  auto localTimestamp = itmElement(TS_SYNC);
+  localTimestamp.setTS(7U, false);
+  EXPECT_EQ(collector.TraceElemIn(1U, 0U, itmElement(SWIT_PAYLOAD, 1U, 1U, 42U)), OCSD_RESP_CONT);
+  EXPECT_EQ(collector.TraceElemIn(2U, 7U, itmElement(DWT_PAYLOAD, 2U, 2U, 0x1234U)), OCSD_RESP_CONT);
+  EXPECT_EQ(collector.TraceElemIn(3U, 0xffU, localTimestamp), OCSD_RESP_CONT);
+
+  ItmTrcPacket packet;
+  packet.setPktType(ITM_PKT_ASYNC);
+  collector.RawPacketDataMon(OCSD_OP_DATA, 4U, &packet, 0U, nullptr);
+  packet.setPktType(ITM_PKT_OVERFLOW);
+  collector.RawPacketDataMon(OCSD_OP_DATA, 5U, &packet, 0U, nullptr);
+  packet.setPktType(ITM_PKT_RESERVED);
+  collector.RawPacketDataMon(OCSD_OP_DATA, 6U, &packet, 0U, nullptr);
+
+  collector.appendDecodeError(7U, "decode");
+  collector.prependDiscontinuity(8U, "recovered", TraceIssueCode::DataLoss);
+  collector.prependDataLossError(9U, "lost", 1U);
+
+  ASSERT_EQ(sink.elements().size(), 9U);
+  for (const auto& element : sink.elements()) {
+    EXPECT_EQ(element.route, route) << "callback channel or packet kind replaced the collector's bound route";
+  }
+}
+
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommittedElements)
 {
   CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector(sink);
+  OpenCsdPacketCollector collector({}, sink);
   EXPECT_NO_THROW(collector.rethrowOutputError());
   EXPECT_FALSE(collector.transactionFirstSourceOffset().has_value());
 
@@ -229,7 +260,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommitte
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorDefersOutputFailures)
 {
   ThrowingTraceElementSink sink;
-  OpenCsdPacketCollector collector(sink);
+  OpenCsdPacketCollector collector({}, sink);
   const auto software = itmElement(SWIT_PAYLOAD, 1U, 1U, 42U);
 
   EXPECT_EQ(collector.TraceElemIn(1U, 1U, software), OCSD_RESP_FATAL_SYS_ERR);

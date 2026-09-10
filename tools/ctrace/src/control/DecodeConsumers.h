@@ -13,6 +13,7 @@
 #include "TraceIssueReporter.h"
 #include "TraceOutput.h"
 #include "TraceOutputLifecycle.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
 #include <map>
@@ -28,7 +29,7 @@ public:
   /** @brief Creates the consumers for one raw trace input. */
   DecodeConsumers(std::vector<std::unique_ptr<TraceOutput>> outputs, DiagnosticSink& diagnostics,
                   std::optional<std::uint32_t> itmEnableMask = std::nullopt,
-                  std::map<std::uint8_t, std::uint32_t> itmEnableMasksByTraceBusId = {});
+                  std::map<TraceRouteId, std::uint32_t> itmEnableMasksByRoute = {});
 
   /** @brief Forwards one decoded event to all configured consumers. */
   void append(const TraceEvent& event) override;
@@ -47,8 +48,8 @@ private:
 
   DiagnosticSink& m_diagnostics;
   std::optional<std::uint32_t> m_itmEnableMask;
-  std::map<std::uint8_t, std::uint32_t> m_itmEnableMasksByTraceBusId;
-  std::set<std::pair<std::uint8_t, std::uint32_t>> m_reportedDisabledItmChannels;
+  std::map<TraceRouteId, std::uint32_t> m_itmEnableMasksByRoute;
+  std::set<std::pair<TraceRouteId, std::uint32_t>> m_reportedDisabledItmChannels;
   TraceIssueReporter m_issueReporter;
   TraceOutputLifecycle m_outputLifecycle;
   std::uint64_t m_eventCount = 0;

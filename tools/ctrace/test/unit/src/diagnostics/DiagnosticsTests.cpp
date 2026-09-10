@@ -10,6 +10,7 @@
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
 #include "TraceIssueReporter.h"
+#include "TraceRoute.h"
 #include <cstddef>
 #include <string>
 
@@ -122,6 +123,39 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsUnknownOverflowTimestamp)
   EXPECT_NE(diagnostics.events().front().message.find("unknown cycle timestamp"), std::string::npos);
   EXPECT_EQ(diagnostics.events().front().message.find("cycle timestamp 0"), std::string::npos);
   EXPECT_EQ(diagnostics.events().front().message.find("0 more occurred"), std::string::npos);
+}
+
+TEST(CtraceUnitTests, testTraceIssueReporterPartitionsIssuesAndOverflowByRoute)
+{
+  CollectingDiagnosticSink diagnostics;
+  TraceIssueReporter reporter(diagnostics);
+  const TraceRouteIdentity firstRoute{TraceRouteId{10U}, 1U};
+  const TraceRouteIdentity secondRoute{TraceRouteId{20U}, 111U};
+  const TraceRouteIdentity noBusA{TraceRouteId{30U}, std::nullopt};
+  const TraceRouteIdentity noBusB{TraceRouteId{31U}, std::nullopt};
+
+  reporter.append(onRoute(overflowPacket(10U), firstRoute));
+  reporter.append(onRoute(overflowPacket(100U), secondRoute));
+  reporter.append(onRoute(overflowPacket(20U), firstRoute));
+  reporter.append(onRoute(issuePacket(TraceIssueCode::DecodeError), firstRoute));
+  reporter.append(onRoute(issuePacket(TraceIssueCode::OpenCsdDecodeError, "route warning", TraceIssueSeverity::Warning),
+                          secondRoute));
+  reporter.append(onRoute(overflowPacket(30U), noBusA));
+  reporter.append(onRoute(overflowPacket(31U), noBusB));
+  reporter.finish();
+
+  ASSERT_EQ(diagnostics.events().size(), 6U);
+  EXPECT_EQ(diagnostics.events()[0].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "1"}}));
+  EXPECT_EQ(diagnostics.events()[1].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}}));
+  EXPECT_EQ(diagnostics.events()[2].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "1"}}));
+  EXPECT_NE(diagnostics.events()[2].message.find("cycle timestamp 10; 1 more occurred"), std::string::npos);
+  EXPECT_EQ(diagnostics.events()[3].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}}));
+  EXPECT_NE(diagnostics.events()[3].message.find("cycle timestamp 100"), std::string::npos);
+  EXPECT_TRUE(diagnostics.events()[4].context.empty());
+  EXPECT_TRUE(diagnostics.events()[5].context.empty());
+  EXPECT_NE(diagnostics.events()[4].message.find("cycle timestamp 30"), std::string::npos);
+  EXPECT_NE(diagnostics.events()[5].message.find("cycle timestamp 31"), std::string::npos)
+      << "distinct no-bus route IDs must not collapse into one overflow summary";
 }
 
 TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)

@@ -28,6 +28,7 @@
 #include <iomanip>
 #include <ios>
 #include <memory>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -93,11 +94,23 @@ static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady
   return out.str();
 }
 
-/** @brief Extracts fallback and per-stream timestamp prescalers from metadata. */
-static ItmTimestampPrescalers timestampPrescalers(const CtraceRunMeta& ctraceRunMeta)
+/** @brief Resolves the one semantic route used by the current SINGLE frontend. */
+static CortexMDecodeRoute decodeRoute(const CtraceRunMeta& ctraceRunMeta)
 {
-  return {ctraceRunMeta.timestampPrescaler().value_or(TraceRunSchema::kDefaultTimestampPrescaler),
-          ctraceRunMeta.timestampPrescalersByTraceBusId()};
+  const auto& route = ctraceRunMeta.routes().front();
+  return {route.identity, route.timestampPrescaler};
+}
+
+/** @brief Indexes route-local ITM enable masks without using a transport sentinel. */
+static std::map<TraceRouteId, std::uint32_t> itmEnableMasks(const CtraceRunMeta& ctraceRunMeta)
+{
+  std::map<TraceRouteId, std::uint32_t> result;
+  for (const auto& route : ctraceRunMeta.routes()) {
+    if (route.itmEnableMask.has_value()) {
+      result.emplace(route.identity.id, *route.itmEnableMask);
+    }
+  }
+  return result;
 }
 
 /** @brief Converts command-line output selection into an output request. */
@@ -152,7 +165,7 @@ void FileDecodeJob::run()
   }
 
   const auto& ctraceRunMeta = m_input.metadata();
-  const auto prescalers = timestampPrescalers(ctraceRunMeta);
+  const auto route = decodeRoute(ctraceRunMeta);
   auto outputPlan = planTraceOutputs(outputRequest(m_options), m_input.path(), ctraceRunMeta, m_diagnostics);
   if (outputPlan.hasRequestedOutputs() && !outputPlan.hasEnabledOutputs()) {
     return;
@@ -168,12 +181,12 @@ void FileDecodeJob::run()
   });
   auto outputs = createConfiguredOutputs(outputPlan, m_diagnostics);
   DecodeConsumers consumers(std::move(outputs), m_diagnostics, ctraceRunMeta.itmEnableMask(),
-                            ctraceRunMeta.itmEnableMasksByTraceBusId());
+                            itmEnableMasks(ctraceRunMeta));
 
   m_diagnostics.report({
       DiagnosticSink::Severity::Info,
       "using timestamp prescaler",
-      {{"value", std::to_string(*prescalers.fallback)}},
+      {{"value", std::to_string(route.timestampPrescaler)}},
   });
   const auto decodeStart = std::chrono::steady_clock::now();
   DecodeResult decode;
@@ -182,9 +195,9 @@ void FileDecodeJob::run()
     RawFileReader input(m_input.path(), m_input.stream());
     std::unique_ptr<DecodePipeline> pipeline;
     if (m_sessionFactory) {
-      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers, m_sessionFactory);
+      pipeline = std::make_unique<DecodePipeline>(route, consumers, m_sessionFactory);
     } else {
-      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers);
+      pipeline = std::make_unique<DecodePipeline>(route, consumers);
     }
     while (true) {
       const auto read = input.read();

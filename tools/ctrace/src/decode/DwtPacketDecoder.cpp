@@ -99,7 +99,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
           std::nullopt,
       }};
       error.index = payload.index;
-      error.traceBusId = payload.traceBusId;
+      error.route = payload.route;
       error.tcyc = payload.tcyc;
       error.quality = payload.quality;
       output.push_back(std::move(error));
@@ -107,7 +107,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
     }
     TraceEvent packet{DwtEventTraceEvent{static_cast<std::uint8_t>(payload.value)}};
     packet.index = payload.index;
-    packet.traceBusId = payload.traceBusId;
+    packet.route = payload.route;
     packet.tcyc = payload.tcyc;
     packet.quality = payload.quality;
     output.push_back(std::move(packet));
@@ -126,7 +126,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
           std::nullopt,
       }};
       error.index = payload.index;
-      error.traceBusId = payload.traceBusId;
+      error.route = payload.route;
       error.tcyc = payload.tcyc;
       error.quality = payload.quality;
       output.push_back(std::move(error));
@@ -134,7 +134,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
     }
     TraceEvent packet{PmuTraceEvent{static_cast<std::uint8_t>(payload.value)}};
     packet.index = payload.index;
-    packet.traceBusId = payload.traceBusId;
+    packet.route = payload.route;
     packet.tcyc = payload.tcyc;
     packet.quality = payload.quality;
     output.push_back(std::move(packet));
@@ -154,7 +154,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
           std::nullopt,
       }};
       error.index = payload.index;
-      error.traceBusId = payload.traceBusId;
+      error.route = payload.route;
       error.tcyc = payload.tcyc;
       error.quality = payload.quality;
       output.push_back(std::move(error));
@@ -162,7 +162,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
     }
     TraceEvent packet{ExceptionTraceEvent{exceptionNumber, action}};
     packet.index = payload.index;
-    packet.traceBusId = payload.traceBusId;
+    packet.route = payload.route;
     packet.tcyc = payload.tcyc;
     packet.quality = payload.quality;
     output.push_back(std::move(packet));
@@ -184,7 +184,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
           std::nullopt,
       }};
       error.index = payload.index;
-      error.traceBusId = payload.traceBusId;
+      error.route = payload.route;
       error.tcyc = payload.tcyc;
       error.quality = payload.quality;
       output.push_back(std::move(error));
@@ -192,7 +192,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload
     }
     TraceEvent packet{PcSampleTraceEvent{payload.value, isSleeping}};
     packet.index = payload.index;
-    packet.traceBusId = payload.traceBusId;
+    packet.route = payload.route;
     packet.tcyc = payload.tcyc;
     packet.quality = payload.quality;
     output.push_back(std::move(packet));
@@ -246,7 +246,7 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
 
   PendingDataTrace event;
   event.index = payload.index;
-  event.traceBusId = payload.traceBusId;
+  event.route = payload.route;
   event.quality = payload.quality;
 
   if (packetType == DwtDataPacketType::Address) {
@@ -258,7 +258,7 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
       }
       TraceEvent match{DwtMatchTraceEvent{comparator}};
       match.index = payload.index;
-      match.traceBusId = payload.traceBusId;
+      match.route = payload.route;
       match.tcyc = payload.tcyc;
       match.quality = payload.quality;
       output.push_back(std::move(match));
@@ -278,7 +278,7 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
           std::nullopt,
       }};
       error.index = payload.index;
-      error.traceBusId = payload.traceBusId;
+      error.route = payload.route;
       error.tcyc = payload.tcyc;
       error.quality = payload.quality;
       output.push_back(std::move(error));
@@ -321,7 +321,7 @@ void DwtPacketDecoder::sendDataTraceEvent(std::uint32_t comparator, const Pendin
                                    (pending->hasValue && event.hasValue);
   if (!repeatsFragmentKind) {
     pending->index = event.index;
-    pending->traceBusId = event.traceBusId;
+    pending->route = event.route;
     pending->pc = event.hasPc ? event.pc : pending->pc;
     pending->address = event.hasAddress ? event.address : pending->address;
     pending->value = event.hasValue ? event.value : pending->value;
@@ -371,7 +371,7 @@ void DwtPacketDecoder::flushPending(std::uint32_t comparator, const TraceQuality
 
   TraceEvent packet = makePacket();
   packet.index = pending->index;
-  packet.traceBusId = pending->traceBusId;
+  packet.route = pending->route;
   packet.tcyc = tcyc;
   packet.quality = quality;
   output.push_back(std::move(packet));

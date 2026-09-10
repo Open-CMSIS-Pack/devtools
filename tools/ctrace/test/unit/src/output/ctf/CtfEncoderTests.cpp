@@ -65,7 +65,9 @@ static ResolvedTraceSource resolvedDwtSource(std::uint32_t comparator, std::uint
   ResolvedTraceSource source;
   source.type = "dwt";
   source.source = comparator;
-  source.traceBusId = traceBusId;
+  source.route = traceBusId == 0U
+                     ? TraceRouteIdentity{}
+                     : TraceRouteIdentity{TraceRouteId{traceBusId}, std::optional<std::uint8_t>(traceBusId)};
   source.dataType = std::move(type);
   source.dataSize = size;
   return source;
@@ -466,11 +468,30 @@ TEST(CtraceUnitTests, testCtfEncoderRejectsConflictingUnformattedDwtRoutes)
   encoder.abort();
 }
 
+TEST(CtraceUnitTests, testCtfEncoderReportsRoutedDwtSizeMismatchContext)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-routed-size-warning-test");
+  temporaryPath.createDirectory();
+  const TraceRouteIdentity route{TraceRouteId{9U}, 7U};
+  auto source = resolvedDwtSource(0U, 7U, "unsigned", 4U);
+  source.route = route;
+  CollectingDiagnosticSink diagnostics;
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{{"dwt"}, {}}, {source}, &diagnostics, {route}});
+  encoder.start(temporaryPath.path());
+  encoder.writeEvent(onRoute(TraceEvent{DwtDataTraceEvent{0U, 1U, 0U, AccessType::Read}}, route));
+  encoder.stop();
+
+  ASSERT_EQ(diagnostics.events().size(), 1U);
+  EXPECT_TRUE(diagnostics.containsContext("stream", "7"));
+  EXPECT_TRUE(diagnostics.containsContext("channel", "DWT0"));
+}
+
 TEST(CtraceUnitTests, testCtfEncoderIgnoresUnselectedStreamTimeAndQuality)
 {
   const TemporaryTestPath temporaryPath("ctrace-ctf-filtered-stream-state-test");
   temporaryPath.createDirectory();
-  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{{"itm"}, {1U}}, {}});
+  const TraceRouteIdentity selectedRoute{TraceRouteId{1U}, 1U};
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{{"itm"}, {1U}}, {}, nullptr, {selectedRoute}});
   encoder.start(temporaryPath.path());
 
   auto excludedTimestamp = atCycle(onStream(TraceEvent{LocalTimestampTraceEvent{}}, 2U), 900U);
@@ -492,6 +513,32 @@ TEST(CtraceUnitTests, testCtfEncoderIgnoresUnselectedStreamTimeAndQuality)
   EXPECT_EQ(records[0].traceBusId, 1U);
   EXPECT_EQ(records[0].payload[3U], CtfSchema::SampleFlagTimestampReliable);
   EXPECT_EQ(readLe32(records[0].payload, 4U), 0U);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderDoesNotBootstrapNoBusRouteForAnotherExplicitStream)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-no-unknown-route-bootstrap-test");
+  temporaryPath.createDirectory();
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{{}, {2U}}, {}});
+  encoder.start(temporaryPath.path());
+  encoder.stop();
+
+  EXPECT_TRUE(readCtfRecords(temporaryPath.path() / "stream_0").empty());
+}
+
+TEST(CtraceUnitTests, testCtfEncoderDoesNotBootstrapNoBusRouteWhenKnownSourceIsFilteredOut)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-no-source-route-bootstrap-test");
+  temporaryPath.createDirectory();
+  CtfEncoder encoder(CtfEncoderConfig{
+      1000000U,
+      TraceSelection{{}, {0U}},
+      {resolvedDwtSource(0U, 1U, "unsigned", 4U)},
+  });
+  encoder.start(temporaryPath.path());
+  encoder.stop();
+
+  EXPECT_TRUE(readCtfRecords(temporaryPath.path() / "stream_0").empty());
 }
 
 TEST(CtraceUnitTests, testCtfEncoderStreamSelectionKeepsStartAndResyncContext)
@@ -556,4 +603,111 @@ TEST(CtraceUnitTests, testCtfEncoderTracksLocalTimeAndUnqualifiedOverflow)
   });
   ASSERT_NE(overflowStatus, records.end());
   EXPECT_EQ(readLe32(overflowStatus->payload, 1U), 1U);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderLazilyBootstrapsExactSelectedRoute)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-lazy-route-bootstrap-test");
+  temporaryPath.createDirectory();
+  const TraceRouteIdentity route{TraceRouteId{9U}, 2U};
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{{}, {2U}}, {}});
+  encoder.start(temporaryPath.path());
+  encoder.writeEvent(onRoute(softwarePacket(1U, 1U, 0x5aU), route));
+  encoder.stop();
+
+  const auto records = readCtfRecords(temporaryPath.path() / "stream_0");
+  ASSERT_EQ(records.size(), 3U);
+  EXPECT_EQ(records[0].id, CtfSchema::value(CtfSchema::EventId::TraceStatus));
+  EXPECT_EQ(records[0].traceBusId, 2U);
+  EXPECT_EQ(records[0].payload[0U], CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart));
+  EXPECT_EQ(records[1].id, CtfSchema::value(CtfSchema::EventId::Exception));
+  EXPECT_EQ(records[1].traceBusId, 2U);
+  EXPECT_EQ(records[2].id, CtfSchema::value(CtfSchema::EventId::Itm));
+  EXPECT_EQ(records[2].traceBusId, 2U);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderRejectsConflictingIdentityForSameRouteId)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-route-mismatch-test");
+  temporaryPath.createDirectory();
+  const TraceRouteIdentity configured{TraceRouteId{4U}, 1U};
+  CtfEncoder invalidConfig(
+      CtfEncoderConfig{1000000U, TraceSelection{}, {}, nullptr, {configured, {TraceRouteId{4U}, 2U}}});
+  EXPECT_THROW(invalidConfig.start(temporaryPath.path()), std::runtime_error);
+
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{}, {}, nullptr, {configured}});
+  encoder.start(temporaryPath.path());
+  EXPECT_THROW(encoder.writeEvent(onRoute(softwarePacket(1U), {TraceRouteId{4U}, 2U})), std::runtime_error);
+  EXPECT_THROW(encoder.writeEvent(onRoute(softwarePacket(1U), {TraceRouteId{9U}, 1U})), std::runtime_error);
+  encoder.abort();
+
+  CtfEncoder lazyEncoder(CtfEncoderConfig{1000000U, TraceSelection{}, {}});
+  lazyEncoder.start(temporaryPath.path());
+  lazyEncoder.writeEvent(onRoute(softwarePacket(1U), configured));
+  EXPECT_THROW(lazyEncoder.writeEvent(onRoute(softwarePacket(1U), {TraceRouteId{4U}, 2U})), std::runtime_error);
+  lazyEncoder.abort();
+}
+
+TEST(CtraceUnitTests, testCtfEncoderKeepsNoBusRouteStateIndependent)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-no-bus-route-state-test");
+  temporaryPath.createDirectory();
+  const TraceRouteIdentity first{TraceRouteId{4U}, std::nullopt};
+  const TraceRouteIdentity second{TraceRouteId{9U}, std::nullopt};
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{}, {}, nullptr, {first, second}});
+  encoder.start(temporaryPath.path());
+
+  auto firstOverflow = onRoute(TraceEvent{OverflowTraceEvent{}}, first);
+  firstOverflow.quality = TraceQuality{true, false, 5U};
+  encoder.writeEvent(firstOverflow);
+  auto secondOverflow = onRoute(TraceEvent{OverflowTraceEvent{}}, second);
+  secondOverflow.quality = TraceQuality{true, false, 1U};
+  encoder.writeEvent(secondOverflow);
+  encoder.stop();
+
+  std::vector<std::uint32_t> overflowCounts;
+  for (const auto& record : readCtfRecords(temporaryPath.path() / "stream_0")) {
+    EXPECT_EQ(record.traceBusId, 0U) << "opaque route ID must not leak into the CTF Trace Bus ID field";
+    if (record.id == CtfSchema::value(CtfSchema::EventId::TraceStatus) &&
+        record.payload[0U] == CtfSchema::value(CtfSchema::TraceStatusReason::Overflow)) {
+      overflowCounts.push_back(readLe32(record.payload, 1U));
+    }
+  }
+  EXPECT_EQ(overflowCounts, (std::vector<std::uint32_t>{5U, 1U}));
+}
+
+TEST(CtraceUnitTests, testCtfEncoderKeepsNoBusExceptionResetStateIndependent)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-no-bus-exception-state-test");
+  temporaryPath.createDirectory();
+  const TraceRouteIdentity first{TraceRouteId{4U}, std::nullopt};
+  const TraceRouteIdentity second{TraceRouteId{9U}, std::nullopt};
+  CtfEncoder encoder(CtfEncoderConfig{1000000U, TraceSelection{}, {}, nullptr, {first, second}});
+  encoder.start(temporaryPath.path());
+
+  encoder.writeEvent(onRoute(exceptionPacket(15U, ExceptionAction::Entered, 10U), first));
+  encoder.writeEvent(onRoute(exceptionPacket(54U, ExceptionAction::Entered, 20U), second));
+  encoder.writeEvent(atCycle(onRoute(TraceEvent{OverflowTraceEvent{}}, first), 30U));
+  encoder.writeEvent(onRoute(exceptionPacket(54U, ExceptionAction::Exited, 40U), second));
+  encoder.stop();
+
+  const auto records = readCtfRecords(temporaryPath.path() / "stream_0");
+  for (const auto& record : records) {
+    EXPECT_EQ(record.traceBusId, 0U) << "opaque route IDs must remain absent from the legacy CTF field";
+  }
+  const auto exceptions = timestampedCtfExceptionRecords(records);
+  const auto contains = [&](std::uint64_t timestamp, ExceptionNumber number, std::uint8_t action, std::uint8_t origin) {
+    return std::find(exceptions.begin(), exceptions.end(),
+                     TimestampedCtfExceptionRecord{timestamp, {number, action, origin}}) != exceptions.end();
+  };
+  EXPECT_TRUE(contains(10U, 15U, CtfSchema::value(CtfSchema::ExceptionAction::Entered),
+                       CtfSchema::value(CtfSchema::ExceptionOrigin::Trace)));
+  EXPECT_TRUE(contains(20U, 54U, CtfSchema::value(CtfSchema::ExceptionAction::Entered),
+                       CtfSchema::value(CtfSchema::ExceptionOrigin::Trace)));
+  EXPECT_TRUE(contains(30U, 15U, CtfSchema::value(CtfSchema::ExceptionAction::Exited),
+                       CtfSchema::value(CtfSchema::ExceptionOrigin::Synthetic)));
+  EXPECT_FALSE(contains(30U, 54U, CtfSchema::value(CtfSchema::ExceptionAction::Exited),
+                        CtfSchema::value(CtfSchema::ExceptionOrigin::Synthetic)));
+  EXPECT_TRUE(contains(40U, 54U, CtfSchema::value(CtfSchema::ExceptionAction::Exited),
+                       CtfSchema::value(CtfSchema::ExceptionOrigin::Trace)));
 }

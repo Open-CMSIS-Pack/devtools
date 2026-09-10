@@ -11,6 +11,7 @@
 #include "OpenCsdTraceElement.h"
 #include "DwtPacketDecoder.h"
 #include "TraceEvent.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
 #include <optional>
@@ -21,7 +22,7 @@
 class CortexMPostDecoder final : public OpenCsdTraceElementSink {
 public:
   /** @brief Creates a post-decoder that emits to the supplied event sink. */
-  explicit CortexMPostDecoder(TraceEventSink& eventSink);
+  CortexMPostDecoder(TraceRouteIdentity route, TraceEventSink& eventSink);
 
   /** @brief Appends one OpenCSD trace element. */
   void append(OpenCsdTraceElement element) override;
@@ -50,8 +51,8 @@ private:
   void appendTimestamp(const OpenCsdTraceElement& element);
 
   /** @brief Queues an issue whose final interval ends at the next reliable timestamp. */
-  void queueDiscontinuityIssue(std::uint64_t sourceIndex, std::uint8_t traceBusId, const TraceQuality& quality,
-                               TraceIssueCode issueCode, const std::string& message,
+  void queueDiscontinuityIssue(std::uint64_t sourceIndex, const TraceQuality& quality, TraceIssueCode issueCode,
+                               const std::string& message,
                                std::optional<std::uint64_t> rawBytesConsumed = std::nullopt);
   /** @brief Finalizes queued discontinuity intervals at the first resumed timestamp. */
   void finalizePendingDiscontinuityIssues(std::optional<std::uint64_t> firstResumedTcyc);
@@ -79,6 +80,7 @@ private:
   /** @brief Increments the saturated overflow counter. */
   void noteOverflow();
 
+  TraceRouteIdentity m_route;
   TraceEventSink& m_eventSink;
   std::uint64_t m_eventCount = 0;
   std::vector<TraceEvent> m_pendingEvents;

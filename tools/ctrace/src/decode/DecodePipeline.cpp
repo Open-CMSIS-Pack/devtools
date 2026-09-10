@@ -16,16 +16,16 @@
 #include <stdexcept>
 #include <utility>
 
-DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink)
-  : m_streamDecoder(std::move(timestampPrescalers), eventSink),
-    m_decoder(m_streamDecoder)
+DecodePipeline::DecodePipeline(CortexMDecodeRoute route, TraceEventSink& eventSink)
+  : m_streamDecoder({route}, eventSink),
+    m_decoder(std::move(route.identity), m_streamDecoder)
 {
 }
 
-DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
+DecodePipeline::DecodePipeline(CortexMDecodeRoute route, TraceEventSink& eventSink,
                                const OpenCsdItmSessionFactory& sessionFactory)
-  : m_streamDecoder(std::move(timestampPrescalers), eventSink),
-    m_decoder(m_streamDecoder, sessionFactory)
+  : m_streamDecoder({route}, eventSink),
+    m_decoder(std::move(route.identity), m_streamDecoder, sessionFactory)
 {
 }
 

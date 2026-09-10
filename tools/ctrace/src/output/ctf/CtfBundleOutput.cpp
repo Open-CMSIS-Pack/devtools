@@ -172,6 +172,8 @@ CtfBundleOutput::CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnos
         std::move(config.selection),
         std::move(config.sources),
         diagnostics,
+        std::move(config.routes),
+        !config.routeCatalogueConfigured,
     })
 {
   validateOutputTargets(m_ctfOutputDirectory, m_traceCompassXmlPath);
