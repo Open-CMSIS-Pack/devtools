@@ -7,19 +7,16 @@
 
 #include "CtfStreamWriter.h"
 
+#include "CtfMetadataModel.h"
 #include "CtfSchema.h"
+#include "CtfUuid.h"
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <iomanip>
 #include <ios>
-#include <random>
-#include <sstream>
 #include <stdexcept>
-#include <string>
 #include <vector>
 
 constexpr std::size_t kPacketSizeBytes = 65536U;
@@ -27,19 +24,6 @@ constexpr std::size_t kPacketHeaderSize = 24U;
 constexpr std::size_t kPacketContextSize = 32U;
 constexpr std::size_t kPacketOverhead = kPacketHeaderSize + kPacketContextSize;
 constexpr std::size_t kEventPrefixSize = 13U;
-/** @brief Formats a binary UUID in canonical textual form. */
-static std::string formatUuid(const std::array<std::uint8_t, 16U>& uuid)
-{
-  std::ostringstream out;
-  out << std::hex << std::setfill('0');
-  for (std::size_t index = 0; index < uuid.size(); ++index) {
-    if (index == 4U || index == 6U || index == 8U || index == 10U) {
-      out << '-';
-    }
-    out << std::setw(2) << static_cast<unsigned>(uuid[index]);
-  }
-  return out.str();
-}
 
 CtfStreamWriter::Record::Record(std::vector<std::uint8_t>& buffer, std::size_t offset, std::size_t endOffset)
   : m_buffer(buffer),
@@ -89,22 +73,15 @@ CtfStreamWriter::~CtfStreamWriter()
   abort();
 }
 
-void CtfStreamWriter::open(const std::filesystem::path& filePath, std::uint32_t streamId)
+void CtfStreamWriter::open(const std::filesystem::path& filePath, CtfStreamClassId streamClassId,
+                           const CtfUuid& traceUuid)
 {
   abort();
   m_filePath = filePath;
-  m_streamId = streamId;
+  m_streamId = streamClassId.value();
   m_packetSequence = 0U;
   m_lastTimestamp.reset();
-  m_uuid.fill(0U);
-
-  std::random_device random;
-  for (auto& byte : m_uuid) {
-    byte = static_cast<std::uint8_t>(random());
-  }
-  m_uuid[6] = static_cast<std::uint8_t>((m_uuid[6] & 0x0fU) | 0x40U);
-  m_uuid[8] = static_cast<std::uint8_t>((m_uuid[8] & 0x3fU) | 0x80U);
-  m_uuidString = formatUuid(m_uuid);
+  m_traceUuid = traceUuid;
 
   m_packetBuffer.assign(kPacketSizeBytes, 0U);
   beginPacket();
@@ -176,11 +153,6 @@ void CtfStreamWriter::writeRecord(std::uint32_t eventId, std::uint64_t timestamp
   ++m_eventCount;
 }
 
-const std::string& CtfStreamWriter::uuidString() const noexcept
-{
-  return m_uuidString;
-}
-
 void CtfStreamWriter::beginPacket()
 {
   std::fill(m_packetBuffer.begin(), m_packetBuffer.end(), std::uint8_t{0});
@@ -198,7 +170,7 @@ void CtfStreamWriter::flushPacket()
 
   Record header(m_packetBuffer, 0U, kPacketOverhead);
   header.writeU32(CtfSchema::Magic);
-  for (const auto byte : m_uuid) {
+  for (const auto byte : m_traceUuid.bytes()) {
     header.writeU8(byte);
   }
   header.writeU32(m_streamId);

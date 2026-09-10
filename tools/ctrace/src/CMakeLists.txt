@@ -45,9 +45,11 @@ set(CTRACE_OUTPUT_HEADER_FILES
   output/ctf/CtfBundleOutput.h
   output/ctf/CtfEncoder.h
   output/ctf/CtfExceptionLaneTracker.h
+  output/ctf/CtfMetadataModel.h
   output/ctf/CtfMetadataWriter.h
   output/ctf/CtfSchema.h
   output/ctf/CtfStreamWriter.h
+  output/ctf/CtfUuid.h
   output/ctf/TraceCompassXmlWriter.h
 )
 set(CTRACE_CONTROL_HEADER_FILES
@@ -150,8 +152,10 @@ add_library(ctrace-output STATIC
   output/ctf/CtfBundleOutput.cpp
   output/ctf/CtfEncoder.cpp
   output/ctf/CtfExceptionLaneTracker.cpp
+  output/ctf/CtfMetadataModel.cpp
   output/ctf/CtfMetadataWriter.cpp
   output/ctf/CtfStreamWriter.cpp
+  output/ctf/CtfUuid.cpp
   output/ctf/TraceCompassXmlWriter.cpp
   output/OutputRequirements.cpp
   output/TraceOutputLifecycle.cpp

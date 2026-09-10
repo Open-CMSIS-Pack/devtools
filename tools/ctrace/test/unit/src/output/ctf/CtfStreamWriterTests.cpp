@@ -14,6 +14,7 @@
 #include "ctf/CtfSchema.h"
 #include "ctf/CtfStreamWriter.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <stdexcept>
 
@@ -24,8 +25,7 @@ TEST(CtraceUnitTests, testCtfStreamWriterHandlesInactiveAndEmptyStreams)
   EXPECT_NO_THROW(writer.writeRecord(1U, 1U, 1U, 0U, [](CtfStreamWriter::Record&) {}));
 
   const TemporaryTestPath path("ctrace-empty-stream");
-  writer.open(path.path(), 7U);
-  EXPECT_FALSE(writer.uuidString().empty());
+  writer.open(path.path(), CtfStreamClassId{7U}, CtfTestSupport::testUuid());
   EXPECT_NO_THROW(writer.close());
 }
 
@@ -33,7 +33,7 @@ TEST(CtraceUnitTests, testCtfStreamWriterValidatesDeclaredPayloadSize)
 {
   const TemporaryTestPath path("ctrace-invalid-record-stream");
   CtfStreamWriter writer;
-  writer.open(path.path(), 7U);
+  writer.open(path.path(), CtfStreamClassId{7U}, CtfTestSupport::testUuid());
 
   EXPECT_THROW(writer.writeRecord(1U, 1U, 1U, 65536U, [](CtfStreamWriter::Record&) {}), std::invalid_argument);
   EXPECT_THROW(writer.writeRecord(1U, 1U, 1U, 1U, [](CtfStreamWriter::Record&) {}), std::logic_error);
@@ -46,7 +46,8 @@ TEST(CtraceUnitTests, testCtfStreamWriterHoldsRegressingTimestamps)
 {
   const TemporaryTestPath path("ctrace-monotonic-stream");
   CtfStreamWriter writer;
-  writer.open(path.path(), 7U);
+  const auto traceUuid = CtfTestSupport::testUuid(7U);
+  writer.open(path.path(), CtfStreamClassId{7U}, traceUuid);
   const auto eventId = CtfSchema::value(CtfSchema::EventId::TraceStatus);
   const auto writePayload = [](CtfStreamWriter::Record& record) {
     record.writeU8(CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError));
@@ -60,6 +61,9 @@ TEST(CtraceUnitTests, testCtfStreamWriterHoldsRegressingTimestamps)
   ASSERT_EQ(records.size(), 2U);
   EXPECT_EQ(records[0].timestamp, 100U);
   EXPECT_EQ(records[1].timestamp, 100U);
+  const auto bytes = readTestBinaryFile(path.path());
+  EXPECT_TRUE(std::equal(traceUuid.bytes().begin(), traceUuid.bytes().end(), bytes.begin() + 4U));
+  EXPECT_EQ(CtfTestSupport::readLe32(bytes, 20U), 7U);
 }
 
 TEST(CtraceUnitTests, testCtfStreamWriterReportsDeviceWriteFailures)
@@ -68,7 +72,7 @@ TEST(CtraceUnitTests, testCtfStreamWriterReportsDeviceWriteFailures)
     GTEST_SKIP();
   }
   CtfStreamWriter writer;
-  writer.open(TestPlatform::writeFailurePath(), 7U);
+  writer.open(TestPlatform::writeFailurePath(), CtfStreamClassId{7U}, CtfTestSupport::testUuid());
   writer.writeRecord(1U, 1U, 1U, 1U, [](CtfStreamWriter::Record& record) { record.writeU8(1U); });
   EXPECT_THROW(writer.close(), std::runtime_error);
 }

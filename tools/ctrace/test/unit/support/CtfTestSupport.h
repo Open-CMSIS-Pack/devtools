@@ -10,7 +10,9 @@
 
 #include "TestSupport.h"
 #include "TraceEvent.h"
+#include "ctf/CtfMetadataModel.h"
 #include "ctf/CtfSchema.h"
+#include "ctf/CtfUuid.h"
 
 #include <algorithm>
 #include <array>
@@ -19,9 +21,28 @@
 #include <filesystem>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace CtfTestSupport {
+
+/** @brief Returns a deterministic RFC 4122 version-4 UUID for CTF tests. */
+inline CtfUuid testUuid(std::uint8_t discriminator = 0U)
+{
+  return CtfUuid{{0x10U, discriminator, 0x22U, 0x33U, 0x44U, 0x55U, 0x46U, 0x77U, 0x88U, 0x99U, 0xaaU, 0xbbU, 0xccU,
+                  0xddU, 0xeeU, 0xffU}};
+}
+
+/** @brief Creates the explicit metadata topology used by the legacy SINGLE runtime. */
+inline CtfMetadataTopology legacyTopology(std::uint64_t clockHz, TraceRouteIdentity route = {},
+                                          std::vector<CtfSourceDescriptor> sources = {})
+{
+  return {
+      {{CtfClockDomainId{0U}, "swo_clock", std::nullopt, clockHz, false}},
+      {{CtfStreamClassId{0U}, route, CtfSourceKind::Itm, std::nullopt, CtfClockDomainId{0U}}},
+      std::move(sources),
+  };
+}
 
 inline constexpr std::size_t kCtfPacketHeaderSize = 24U;
 inline constexpr std::size_t kCtfPacketContextSize = 32U;

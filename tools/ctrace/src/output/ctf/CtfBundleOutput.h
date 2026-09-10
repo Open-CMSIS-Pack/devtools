@@ -9,6 +9,7 @@
 #define CTRACE_SRC_OUTPUT_CTF_CTFBUNDLEOUTPUT_H
 
 #include "CtfEncoder.h"
+#include "CtfUuid.h"
 #include "TraceEvent.h"
 #include "TraceOutput.h"
 #include "TraceOutputConfig.h"
@@ -49,6 +50,7 @@ private:
   std::filesystem::path m_ctfOutputDirectory;
   std::filesystem::path m_traceCompassXmlPath;
   CtfEncoder m_encoder;
+  CtfUuid m_traceUuid;
   bool m_active = false;
 };
 

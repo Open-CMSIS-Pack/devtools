@@ -8,6 +8,7 @@
 #include "CtfBundleOutput.h"
 
 #include "CtfEncoder.h"
+#include "CtfUuid.h"
 #include "TraceCompassXmlWriter.h"
 #include "TraceEvent.h"
 #include "TraceOutputConfig.h"
@@ -168,9 +169,8 @@ CtfBundleOutput::CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnos
   : m_ctfOutputDirectory(std::move(config.outputDirectory)),
     m_traceCompassXmlPath(std::move(config.traceCompassXmlPath)),
     m_encoder(CtfEncoderConfig{
-        config.coreClockHz,
+        std::move(config.metadata),
         std::move(config.selection),
-        std::move(config.sources),
         diagnostics,
         std::move(config.routes),
         !config.routeCatalogueConfigured,
@@ -207,7 +207,8 @@ void CtfBundleOutput::start()
   createOutputDirectory(m_ctfOutputDirectory);
   m_active = true;
   try {
-    m_encoder.start(m_ctfOutputDirectory);
+    m_traceUuid = CtfUuid::randomV4();
+    m_encoder.start(m_ctfOutputDirectory, m_traceUuid);
     TraceCompassXmlWriter::writeFile(m_traceCompassXmlPath);
   } catch (...) {
     abort();

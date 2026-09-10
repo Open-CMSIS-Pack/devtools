@@ -43,6 +43,7 @@ add_executable(CtraceUnitTests
   src/output/csv/CsvRowMapperTests.cpp
   src/output/ctf/CtfBundleOutputTests.cpp
   src/output/ctf/CtfEncoderTests.cpp
+  src/output/ctf/CtfMetadataModelTests.cpp
   src/output/ctf/CtfMetadataWriterTests.cpp
   src/output/ctf/CtfSchemaTests.cpp
   src/output/ctf/CtfStreamWriterTests.cpp

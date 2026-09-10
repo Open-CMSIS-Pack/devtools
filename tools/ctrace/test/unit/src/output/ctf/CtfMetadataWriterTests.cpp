@@ -5,6 +5,7 @@
  * Generated with AI
  */
 
+#include "CtfTestSupport.h"
 #include "TestPath.h"
 #include "TestPlatform.h"
 #include "TestSupport.h"
@@ -30,20 +31,22 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
 {
   const TemporaryTestPath path("ctrace-metadata-writer");
   path.createDirectory();
-  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
-  const std::vector<ResolvedTraceSource> sources{
+  const TraceRouteIdentity route{};
+  const std::vector<CtfSourceDescriptor> sources{
       {"itm", 1U, route, std::string("ITM3"), std::nullopt, "unsigned", 4U},
       {"itm", 2U, route, std::string("ITM3_1"), std::nullopt, "unsigned", 4U},
       {"itm", 3U, route, std::string("ITM3"), std::nullopt, "unsigned", 4U},
       {"itm", 4U, route, std::string("line\rbreak"), std::nullopt, "unsigned", 4U},
       {"itm", 5U, route, std::nullopt, std::nullopt, "unsigned", 4U},
       {"itm", 6U, route, std::string("ITM3"), std::nullopt, "unsigned", 4U},
-      {"future", 7U, route, std::string("ignored"), std::nullopt, "unsigned", 4U},
-      {"dwt", 0U, route, std::nullopt, std::numeric_limits<std::uint64_t>::max(), "unsigned", 4U},
+      {"dwt", 0U, route, std::nullopt, std::numeric_limits<std::uint64_t>::max() - 3U, "unsigned", 4U},
   };
 
-  CtfMetadataWriter::write(path.path(), "00000000-0000-4000-8000-000000000000", 1000000U, sources,
-                           {8U, 10U, 13U, 16U, 54U});
+  CtfMetadataModel model(CtfTestSupport::testUuid(), CtfTestSupport::legacyTopology(1000000U, route, sources));
+  for (const auto number : {8U, 10U, 13U, 16U, 54U}) {
+    model.observeException(CtfStreamClassId{0U}, number);
+  }
+  CtfMetadataWriter::write(path.path(), model);
   const auto metadata = readTestTextFile(path.path() / "metadata");
   EXPECT_NE(metadata.find("ITM3_2"), std::string::npos);
   EXPECT_NE(metadata.find("\"ITM6\" = 6"), std::string::npos);
@@ -65,12 +68,69 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
   EXPECT_NE(metadata.find("variant <cmsis_dwt_pc_type>"), std::string::npos);
   EXPECT_NE(metadata.find("variant <cmsis_dwt_address_type>"), std::string::npos);
   EXPECT_NE(metadata.find("uint32_t u32;"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_dwt0_address_end = \"0xFFFFFFFFFFFFFFFF\""), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfMetadataWriterRejectsMissingOutputDirectory)
 {
   const TemporaryTestPath path("ctrace-metadata-writer-missing");
-  EXPECT_THROW(CtfMetadataWriter::write(path.path(), "uuid", 1U, {}, {}), std::runtime_error);
+  const CtfMetadataModel model(CtfTestSupport::testUuid(), CtfTestSupport::legacyTopology(1U));
+  EXPECT_THROW(CtfMetadataWriter::write(path.path(), model), std::runtime_error);
+}
+
+TEST(CtraceUnitTests, testCtfMetadataWriterSerializesRouteScopedMultiStreamTopology)
+{
+  const TemporaryTestPath path("ctrace-multistream-metadata-writer");
+  path.createDirectory();
+  const TraceRouteIdentity first{TraceRouteId{8U}, 1U};
+  const TraceRouteIdentity second{TraceRouteId{91U}, 111U};
+  CtfMetadataTopology topology{
+      {
+          {CtfClockDomainId{19U}, "clock_nineteen", CtfTestSupport::testUuid(19U), 240000000U, false},
+          {CtfClockDomainId{3U}, "clock_three", CtfTestSupport::testUuid(3U), 240000000U, false},
+      },
+      {
+          {CtfStreamClassId{111U}, second, CtfSourceKind::Itm, std::string("second"), CtfClockDomainId{19U}},
+          {CtfStreamClassId{1U}, first, CtfSourceKind::Itm, std::string("first"), CtfClockDomainId{3U}},
+      },
+      {
+          {"dwt", 0U, first, std::string("First DWT"), 0x1000U, "unsigned", 4U},
+          {"dwt", 0U, second, std::string("Second DWT"), 0x2000U, "signed", 2U},
+          {"itm", 1U, first, std::string("First console"), std::nullopt, "unsigned", 4U},
+          {"itm", 1U, second, std::string("Second console"), std::nullopt, "unsigned", 4U},
+      },
+  };
+  CtfMetadataModel model(CtfTestSupport::testUuid(), std::move(topology));
+  model.observeException(CtfStreamClassId{1U}, 54U);
+  model.observeException(CtfStreamClassId{111U}, 75U);
+  CtfMetadataWriter::write(path.path(), model);
+
+  const auto metadata = readTestTextFile(path.path() / "metadata");
+  EXPECT_NE(metadata.find("uuid = \"" + CtfTestSupport::testUuid().toString() + "\";"), std::string::npos);
+  EXPECT_NE(metadata.find("name = clock_three;"), std::string::npos);
+  EXPECT_NE(metadata.find("uuid = \"" + CtfTestSupport::testUuid(3U).toString() + "\";"), std::string::npos);
+  EXPECT_NE(metadata.find("name = clock_nineteen;"), std::string::npos);
+  EXPECT_NE(metadata.find("uuid = \"" + CtfTestSupport::testUuid(19U).toString() + "\";"), std::string::npos);
+  EXPECT_NE(metadata.find("map = clock.clock_three.value; } := clock_three_t;"), std::string::npos);
+  EXPECT_NE(metadata.find("map = clock.clock_nineteen.value; } := clock_nineteen_t;"), std::string::npos);
+  EXPECT_NE(metadata.find("stream {\n    id = 1;"), std::string::npos);
+  EXPECT_NE(metadata.find("stream {\n    id = 111;"), std::string::npos);
+  EXPECT_NE(metadata.find("stream_id = 1;"), std::string::npos);
+  EXPECT_NE(metadata.find("stream_id = 111;"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_stream_1_dwt0_value_type = \"unsigned\";"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_stream_111_dwt0_value_type = \"signed\";"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_stream_1_dwt0_address_start = \"0x1000\";"), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_stream_111_dwt0_address_end = \"0x2001\";"), std::string::npos);
+  EXPECT_NE(metadata.find("\"First DWT\" = 0"), std::string::npos);
+  EXPECT_NE(metadata.find("\"Second DWT\" = 0"), std::string::npos);
+  EXPECT_NE(metadata.find("\"First console\" = 1"), std::string::npos);
+  EXPECT_NE(metadata.find("\"Second console\" = 1"), std::string::npos);
+  EXPECT_NE(metadata.find("\"External IRQ 38\" = 54"), std::string::npos);
+  EXPECT_NE(metadata.find("\"External IRQ 59\" = 75"), std::string::npos);
+  EXPECT_EQ(metadata.find("\n    cmsis_dwt0_value_type"), std::string::npos);
+  EXPECT_EQ(metadata.find("name = swo_clock;"), std::string::npos);
+  EXPECT_EQ(metadata.find("stream_id = 0;"), std::string::npos);
+  EXPECT_FALSE(std::filesystem::exists(path.path() / "stream_0"));
 }
 
 TEST(CtraceUnitTests, testTraceCompassXmlWriterRejectsDirectoryTarget)
@@ -177,6 +237,7 @@ TEST(CtraceUnitTests, testCtfTextWritersReportDeviceWriteFailures)
   const TemporaryTestPath path("ctrace-metadata-device-failure");
   path.createDirectory();
   std::filesystem::create_symlink(TestPlatform::writeFailurePath(), path.path() / "metadata");
-  EXPECT_THROW(CtfMetadataWriter::write(path.path(), "uuid", 1U, {}, {}), std::runtime_error);
+  const CtfMetadataModel model(CtfTestSupport::testUuid(), CtfTestSupport::legacyTopology(1U));
+  EXPECT_THROW(CtfMetadataWriter::write(path.path(), model), std::runtime_error);
   EXPECT_THROW(TraceCompassXmlWriter::writeFile(TestPlatform::writeFailurePath()), std::runtime_error);
 }

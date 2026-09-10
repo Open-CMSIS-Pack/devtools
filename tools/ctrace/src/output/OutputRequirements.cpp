@@ -8,6 +8,7 @@
 #include "OutputRequirements.h"
 
 #include "CtraceRunMeta.h"
+#include "ctf/CtfMetadataModel.h"
 #include "ctf/CtfSchema.h"
 #include "DiagnosticSink.h"
 #include "TraceSelection.h"
@@ -16,6 +17,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <map>
 #include <optional>
 #include <set>
@@ -77,6 +79,23 @@ routeContext(const std::string_view& backend, const CtraceRunMeta& ctraceRunMeta
   return context;
 }
 
+/** @brief Builds public diagnostic context for one normalized route. */
+static std::vector<std::pair<std::string, std::string>>
+routeContext(const std::string_view& backend, const CtraceRunMeta& ctraceRunMeta, const CtraceRunRoute& route)
+{
+  std::vector<std::pair<std::string, std::string>> context{{"backend", std::string(backend)}};
+  if (!ctraceRunMeta.configPath().empty()) {
+    context.emplace_back("config", ctraceRunMeta.configPath());
+  }
+  if (route.identity.traceBusId.has_value()) {
+    context.emplace_back("stream", std::to_string(*route.identity.traceBusId));
+  }
+  if (route.processorName.has_value()) {
+    context.emplace_back("pname", *route.processorName);
+  }
+  return context;
+}
+
 /** @brief Reports one output preflight failure with optional context. */
 static void reportRequirementError(DiagnosticSink& diagnostics, std::string message,
                                    std::vector<std::pair<std::string, std::string>> context)
@@ -89,18 +108,18 @@ static void reportRequirementError(DiagnosticSink& diagnostics, std::string mess
 }
 
 /** @brief Validates that selected CTF routes have unambiguous stream identities. */
-static bool validateCtfRouteIdentity(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,
-                                     DiagnosticSink& diagnostics)
+static bool validateCtfSourceIdentity(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,
+                                      DiagnosticSink& diagnostics)
 {
   bool valid = true;
-  std::map<std::pair<std::string, std::uint32_t>, const CtraceRunSourceMeta*> routes;
-  std::set<std::pair<std::string, std::uint32_t>> reported;
+  std::map<std::tuple<TraceRouteId, std::string, std::uint32_t>, const CtraceRunSourceMeta*> sources;
+  std::set<std::tuple<TraceRouteId, std::string, std::uint32_t>> reported;
   for (const auto& source : ctraceRunMeta.sources()) {
     if (!routeMatchesSelection(source, selection)) {
       continue;
     }
-    const auto key = std::make_pair(source.type, source.source);
-    const auto [found, inserted] = routes.emplace(key, &source);
+    const auto key = std::make_tuple(source.route.id, source.type, source.source);
+    const auto [found, inserted] = sources.emplace(key, &source);
     if (inserted) {
       continue;
     }
@@ -110,8 +129,8 @@ static bool validateCtfRouteIdentity(const CtraceRunMeta& ctraceRunMeta, const T
                               first.addressError == source.addressError &&
                               first.dataTypeError == source.dataTypeError &&
                               first.dataSizeError == source.dataSizeError;
-    const auto indistinguishableProcessors = first.route == source.route && first.processorName != source.processorName;
-    if ((sameMetadata && !indistinguishableProcessors) || !reported.insert(key).second) {
+    const auto sameBinding = first.route == source.route && first.processorName == source.processorName;
+    if ((sameMetadata && sameBinding) || !reported.insert(key).second) {
       continue;
     }
 
@@ -120,146 +139,79 @@ static bool validateCtfRouteIdentity(const CtraceRunMeta& ctraceRunMeta, const T
     context.emplace_back("type", source.type);
     context.emplace_back("firstProcessor", first.processorName.value_or("<unspecified>"));
     context.emplace_back("otherProcessor", source.processorName.value_or("<unspecified>"));
-    context.emplace_back("firstStream", first.route.traceBusId.has_value() ? std::to_string(*first.route.traceBusId)
-                                                                           : "<unformatted>");
-    reportRequirementError(
-        diagnostics,
-        "CTF metadata cannot describe conflicting active type/source routes from different processors or Trace Bus IDs",
-        std::move(context));
+    reportRequirementError(diagnostics,
+                           "CTF metadata cannot describe conflicting active metadata for one route/type/source key",
+                           std::move(context));
   }
   return valid;
 }
 
-/** @brief Stores an unambiguous clock or the diagnostics preventing selection. */
-struct SelectedClockResolution {
-  std::optional<std::uint64_t> clockHz;
-  bool hasRoutes{false};
-  bool valid{true};
-};
-
-/** @brief Resolves a common clock from all selected stream routes. */
-static SelectedClockResolution resolveSelectedCtfClock(const CtraceRunMeta& ctraceRunMeta,
-                                                       const TraceSelection& selection, DiagnosticSink& diagnostics)
+/** @brief Returns exactly the normalized routes selected for CTF output. */
+static std::vector<const CtraceRunRoute*> selectedCtfRoutes(const CtraceRunMeta& ctraceRunMeta,
+                                                            const TraceSelection& selection)
 {
-  SelectedClockResolution result;
-  for (const auto& [traceBusId, timestamp] : ctraceRunMeta.timestampsByTraceBusId()) {
-    if (!selection.includesStream(traceBusId)) {
-      continue;
+  std::vector<const CtraceRunRoute*> routes;
+  for (const auto& route : ctraceRunMeta.routes()) {
+    if (selection.includesRoute(route.identity)) {
+      routes.push_back(&route);
     }
-    result.hasRoutes = true;
-    if (timestamp.clockError.has_value()) {
-      result.valid = false;
-      reportRequirementError(diagnostics,
-                             "CTF output cannot use the configured timestamps.clock",
-                             {
-                                 {"backend", "ctf"},
-                                 {"config", ctraceRunMeta.configPath()},
-                                 {"stream", std::to_string(traceBusId)},
-                                 {"pname", timestamp.processorName.value_or("<unspecified>")},
-                                 {"error", *timestamp.clockError},
-                             });
-      continue;
-    }
-    if (!timestamp.clockHz.has_value()) {
-      result.valid = false;
-      reportRequirementError(diagnostics,
-                             "CTF output requires timestamps.clock for the processor assigned to this Trace Bus ID",
-                             {
-                                 {"backend", "ctf"},
-                                 {"config", ctraceRunMeta.configPath()},
-                                 {"stream", std::to_string(traceBusId)},
-                                 {"pname", timestamp.processorName.value_or("<unspecified>")},
-                             });
-      continue;
-    }
-    if (*timestamp.clockHz == 0U) {
-      result.valid = false;
-      reportRequirementError(diagnostics,
-                             "CTF output requires timestamps.clock to be greater than zero",
-                             {
-                                 {"backend", "ctf"},
-                                 {"config", ctraceRunMeta.configPath()},
-                                 {"stream", std::to_string(traceBusId)},
-                                 {"pname", timestamp.processorName.value_or("<unspecified>")},
-                             });
-      continue;
-    }
-    if (result.clockHz.has_value() && *result.clockHz != *timestamp.clockHz) {
-      result.valid = false;
-      reportRequirementError(diagnostics,
-                             "CTF output cannot combine selected Trace Bus IDs with different timestamps.clock values",
-                             {
-                                 {"backend", "ctf"},
-                                 {"config", ctraceRunMeta.configPath()},
-                                 {"stream", std::to_string(traceBusId)},
-                                 {"clock", std::to_string(*timestamp.clockHz)},
-                             });
-      continue;
-    }
-    result.clockHz = timestamp.clockHz;
   }
-  return result;
+  return routes;
 }
 
-/** @brief Resolves the fallback CTF clock when no selected route supplies one. */
-static std::optional<std::uint64_t> resolveDefaultCtfClock(const CtraceRunMeta& ctraceRunMeta,
-                                                           const TraceSelection& selection, DiagnosticSink& diagnostics)
+/** @brief Resolves route-specific CTF stream and clock-domain descriptors. */
+static std::optional<CtfMetadataTopology>
+resolveCtfTopology(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection, DiagnosticSink& diagnostics)
 {
-  for (const auto& error : ctraceRunMeta.timestampClockErrors()) {
-    reportRequirementError(diagnostics,
-                           "CTF output cannot use the configured timestamps.clock",
-                           {
-                               {"backend", "ctf"},
-                               {"config", ctraceRunMeta.configPath()},
-                               {"error", error},
-                           });
+  auto routes = selectedCtfRoutes(ctraceRunMeta, selection);
+  const auto legacy = ctraceRunMeta.routes().size() == 1U &&
+                      !ctraceRunMeta.routes().front().identity.traceBusId.has_value() &&
+                      ctraceRunMeta.traceFormat() != TraceRunFormat::Formatted;
+  if (legacy && routes.empty()) {
+    routes.push_back(&ctraceRunMeta.routes().front());
   }
-  if (!ctraceRunMeta.timestampClockErrors().empty()) {
-    return std::nullopt;
+  if (routes.empty()) {
+    return CtfMetadataTopology{};
   }
-  if (!ctraceRunMeta.timestampClockHz().has_value()) {
-    if (!selection.streams.empty() && !ctraceRunMeta.timestampsByTraceBusId().empty()) {
-      reportRequirementError(diagnostics,
-                             "CTF output cannot assign unformatted or unknown Trace Bus IDs to processors with "
-                             "different timestamps.clock values",
-                             {
-                                 {"backend", "ctf"},
-                                 {"config", ctraceRunMeta.configPath()},
-                             });
-      return std::nullopt;
-    }
-    reportRequirementError(diagnostics,
-                           "CTF output requires timestamps.clock from an active ctrace-setup; no default is assumed",
-                           {
-                               {"backend", "ctf"},
-                               {"config", ctraceRunMeta.configPath()},
-                           });
-    return std::nullopt;
-  }
-  if (*ctraceRunMeta.timestampClockHz() == 0U) {
-    reportRequirementError(diagnostics,
-                           "CTF output requires timestamps.clock to be greater than zero",
-                           {
-                               {"backend", "ctf"},
-                               {"config", ctraceRunMeta.configPath()},
-                           });
-    return std::nullopt;
-  }
-  return ctraceRunMeta.timestampClockHz();
-}
 
-/** @brief Resolves and validates the clock used by a CTF output. */
-static std::optional<std::uint64_t> resolveCtfClock(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection,
-                                                    DiagnosticSink& diagnostics)
-{
-  const auto selected = resolveSelectedCtfClock(ctraceRunMeta, selection, diagnostics);
-  if (!selected.valid) {
+  bool valid = true;
+  for (const auto* route : routes) {
+    auto context = routeContext("ctf", ctraceRunMeta, *route);
+    if (route->timestampClockError.has_value()) {
+      valid = false;
+      context.emplace_back("error", *route->timestampClockError);
+      reportRequirementError(diagnostics, "CTF output cannot use the configured timestamps.clock", std::move(context));
+    } else if (!route->timestampClockHz.has_value()) {
+      valid = false;
+      reportRequirementError(diagnostics, "CTF output requires timestamps.clock; no default is assumed",
+                             std::move(context));
+    } else if (*route->timestampClockHz == 0U) {
+      valid = false;
+      reportRequirementError(diagnostics, "CTF output requires timestamps.clock to be greater than zero",
+                             std::move(context));
+    }
+  }
+  if (!valid) {
     return std::nullopt;
   }
-  if (selected.hasRoutes) {
-    return selected.clockHz;
+
+  CtfMetadataTopology topology;
+  if (legacy) {
+    topology.clockDomains.push_back(
+        {CtfClockDomainId{0U}, "swo_clock", std::nullopt, *routes.front()->timestampClockHz, false});
+    topology.streams.push_back({CtfStreamClassId{0U}, routes.front()->identity, CtfSourceKind::Itm,
+                                routes.front()->processorName, CtfClockDomainId{0U}});
+    return topology;
   }
-  return resolveDefaultCtfClock(ctraceRunMeta, selection, diagnostics);
+
+  for (const auto* route : routes) {
+    const auto domainId = CtfClockDomainId{static_cast<std::uint32_t>(topology.clockDomains.size() + 1U)};
+    topology.clockDomains.push_back({domainId, "cmsis_clock_" + std::to_string(domainId.value()), CtfUuid::randomV4(),
+                                     *route->timestampClockHz, false});
+    const auto streamClassId = CtfStreamClassId{route->identity.traceBusId.value_or(0U)};
+    topology.streams.push_back({streamClassId, route->identity, CtfSourceKind::Itm, route->processorName, domainId});
+  }
+  return std::optional<CtfMetadataTopology>{std::move(topology)};
 }
 
 /** @brief Validates address, data type, and size metadata for selected DWT routes. */
@@ -299,6 +251,12 @@ static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const Tra
     if (!sourceValid) {
       continue;
     }
+    if (source.source > 3U) {
+      valid = false;
+      auto context = routeContext("ctf", ctraceRunMeta, source);
+      reportRequirementError(diagnostics, "CTF output requires DWT comparator sources between 0 and 3",
+                             std::move(context));
+    }
     const auto validType = TraceRunSchema::isDwtDataType(source.dataType);
     const auto* valueVariant = CtfSchema::valueVariantForTraceRunType(source.dataType, source.dataSize);
     if (!validType) {
@@ -321,16 +279,27 @@ static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const Tra
                                  std::string(CtfSchema::ValueTypeRequirements),
                              std::move(context));
     }
+    if (source.address.has_value() && valueVariant != nullptr) {
+      const auto extent = source.dataSize - 1U;
+      if (*source.address > std::numeric_limits<std::uint64_t>::max() - extent) {
+        valid = false;
+        auto context = routeContext("ctf", ctraceRunMeta, source);
+        context.emplace_back("address", std::to_string(*source.address));
+        context.emplace_back("dataSize", std::to_string(source.dataSize));
+        reportRequirementError(diagnostics, "CTF output cannot represent the configured DWT address range",
+                               std::move(context));
+      }
+    }
   }
   return valid;
 }
 
 /** @brief Converts selected trace-run sources into normalized CTF routes. */
-static std::vector<ResolvedTraceSource> resolveCtfSources(const CtraceRunMeta& ctraceRunMeta,
+static std::vector<CtfSourceDescriptor> resolveCtfSources(const CtraceRunMeta& ctraceRunMeta,
                                                           const TraceSelection& selection)
 {
   std::set<std::tuple<std::string, std::uint32_t, TraceRouteId>> resolvedKeys;
-  std::vector<ResolvedTraceSource> sources;
+  std::vector<CtfSourceDescriptor> sources;
   for (const auto& route : ctraceRunMeta.sources()) {
     if ((route.type != "itm" && route.type != "dwt") || (route.type == "itm" && route.source == 0U) ||
         !routeMatchesSelection(route, selection) ||
@@ -389,17 +358,14 @@ TraceOutputPlan planTraceOutputs(const TraceOutputRequest& request, const std::f
     };
   }
   if (plan.ctfRequested) {
-    auto clock = resolveCtfClock(ctraceRunMeta, request.selection, diagnostics);
-    const auto validRoutes = validateCtfRouteIdentity(ctraceRunMeta, request.selection, diagnostics);
+    auto metadata = resolveCtfTopology(ctraceRunMeta, request.selection, diagnostics);
+    const auto validRoutes = validateCtfSourceIdentity(ctraceRunMeta, request.selection, diagnostics);
     const auto validTypes = validateCtfDwtMetadata(ctraceRunMeta, request.selection, diagnostics);
-    auto sources =
-        clock.has_value() && validRoutes && validTypes
-            ? std::optional<std::vector<ResolvedTraceSource>>(resolveCtfSources(ctraceRunMeta, request.selection))
-            : std::nullopt;
-    if (clock.has_value() && validRoutes && validTypes && sources.has_value()) {
+    if (metadata.has_value() && validRoutes && validTypes) {
+      metadata->sources = resolveCtfSources(ctraceRunMeta, request.selection);
       plan.ctf = CtfOutputConfig{
-          paths.ctf,           paths.traceCompassXml,           *clock, request.selection,
-          std::move(*sources), resolveCtfRoutes(ctraceRunMeta), true,
+          paths.ctf, paths.traceCompassXml, request.selection, std::move(*metadata), resolveCtfRoutes(ctraceRunMeta),
+          true,
       };
     }
   }

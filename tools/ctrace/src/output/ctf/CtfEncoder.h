@@ -9,7 +9,9 @@
 #define CTRACE_SRC_OUTPUT_CTF_CTFENCODER_H
 
 #include "CtfExceptionLaneTracker.h"
+#include "CtfMetadataModel.h"
 #include "CtfStreamWriter.h"
+#include "CtfUuid.h"
 #include "TraceSelection.h"
 #include "TraceEvent.h"
 #include "TraceOutputConfig.h"
@@ -18,17 +20,17 @@
 #include <cstdint>
 #include <filesystem>
 #include <map>
+#include <optional>
 #include <set>
 #include <utility>
 #include <vector>
 
 class DiagnosticSink;
 
-/** @brief Stores the clock, selection, sources, and diagnostics for CTF encoding. */
+/** @brief Stores metadata topology, selection, route catalogue, and diagnostics for CTF encoding. */
 struct CtfEncoderConfig {
-  std::uint64_t coreClockHz = 0;
+  CtfMetadataTopology metadata;
   TraceSelection selection;
-  std::vector<ResolvedTraceSource> sources;
   DiagnosticSink* diagnostics = nullptr;
   std::vector<TraceRouteIdentity> routes;
   /** @brief Permits direct legacy callers to infer a route when no catalogue was supplied. */
@@ -49,7 +51,7 @@ public:
   CtfEncoder& operator=(const CtfEncoder&) = delete;
 
   /** @brief Starts writing into a prepared CTF directory. */
-  void start(const std::filesystem::path& outputDirectory);
+  void start(const std::filesystem::path& outputDirectory, const CtfUuid& traceUuid);
   /** @brief Completes stream data and writes final metadata. */
   void stop();
   /** @brief Aborts stream output without throwing. */
@@ -80,7 +82,7 @@ private:
   /** @brief Encodes one DWT data value event. */
   void writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceEvent& data);
   /** @brief Reports configured and decoded DWT width mismatches once per route. */
-  void reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data, const ResolvedTraceSource* source);
+  void reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data, const CtfSourceDescriptor* source);
   /** @brief Encodes one DWT address event. */
   void writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTraceEvent& address);
   /** @brief Encodes one comparator-only DWT match event. */
@@ -105,9 +107,9 @@ private:
 
   CtfEncoderConfig m_config;
   std::filesystem::path m_outputDirectory;
+  std::optional<CtfMetadataModel> m_metadata;
   CtfStreamWriter m_stream;
   bool m_recording = false;
-  std::map<TraceRouteId, TraceRouteIdentity> m_routeIdentities;
   std::set<TraceRouteId> m_bootstrappedRoutes;
   std::map<TraceRouteId, StreamState> m_streamStates;
   std::set<std::pair<TraceRouteId, std::uint32_t>> m_reportedDwtSizeMismatches;

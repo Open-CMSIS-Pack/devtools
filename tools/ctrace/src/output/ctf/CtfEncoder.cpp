@@ -8,6 +8,7 @@
 #include "CtfEncoder.h"
 
 #include "CtfExceptionLaneTracker.h"
+#include "CtfMetadataModel.h"
 #include "CtfMetadataWriter.h"
 #include "CtfSchema.h"
 #include "CtfStreamWriter.h"
@@ -53,52 +54,18 @@ static void validateConfiguredRoute(const CtfEncoderConfig& config, const TraceR
 }
 
 /** @brief Resolves the configured CTF value representation for one DWT comparator. */
-static const CtfSchema::ValueVariant& dwtValueVariant(const ResolvedTraceSource* source, std::uint32_t comparator)
+static const CtfSchema::ValueVariant& dwtValueVariant(const CtfSourceDescriptor* source)
 {
-  static const ResolvedTraceSource defaults;
+  static const CtfSourceDescriptor defaults;
   const auto& resolved = source != nullptr ? *source : defaults;
-  const auto* variant = CtfSchema::valueVariantForTraceRunType(resolved.dataType, resolved.dataSize);
-  if (variant == nullptr) {
-    throw std::runtime_error("CTF DWT value for comparator " + std::to_string(comparator) +
-                             " has invalid ctrace-run data-type/size metadata");
-  }
-  return *variant;
+  return *CtfSchema::valueVariantForTraceRunType(resolved.dataType, resolved.dataSize);
 }
 
-/** @brief Tests whether two routes describe equivalent CTF source metadata. */
-static bool equivalentSourceMetadata(const ResolvedTraceSource& left, const ResolvedTraceSource& right)
-{
-  // Trace Bus ID identifies the route, not the metadata attached to it.
-  return left.type == right.type && left.source == right.source && left.label == right.label &&
-         left.address == right.address && left.dataType == right.dataType && left.dataSize == right.dataSize;
-}
-
-/** @brief Finds an unambiguous configured source for one event route. */
-static const ResolvedTraceSource* resolvedTraceSource(const CtfEncoderConfig& config, const char* type,
+/** @brief Finds configured source metadata for one exact event route. */
+static const CtfSourceDescriptor* resolvedTraceSource(const CtfMetadataModel& metadata, const char* type,
                                                       const TraceRouteIdentity& route, std::uint32_t source)
 {
-  const auto exact =
-      std::find_if(config.sources.begin(), config.sources.end(), [&](const ResolvedTraceSource& candidate) {
-        return candidate.type == type && candidate.source == source && candidate.route == route;
-      });
-  if (exact != config.sources.end() || route.traceBusId.has_value()) {
-    return exact == config.sources.end() ? nullptr : &*exact;
-  }
-
-  const ResolvedTraceSource* unique = nullptr;
-  for (const auto& candidate : config.sources) {
-    if (candidate.type != type || candidate.source != source) {
-      continue;
-    }
-    if (unique != nullptr && !equivalentSourceMetadata(*unique, candidate)) {
-      throw std::runtime_error("CTF cannot resolve conflicting metadata for unformatted " + std::string(type) +
-                               " source " + std::to_string(source));
-    }
-    if (unique == nullptr) {
-      unique = &candidate;
-    }
-  }
-  return unique;
+  return metadata.source(route, type, source);
 }
 
 /** @brief Sign-extends a sample from its configured source width. */
@@ -163,9 +130,6 @@ static void writeDwtAddress(CtfStreamWriter::Record& record, const std::optional
 CtfEncoder::CtfEncoder(CtfEncoderConfig config)
   : m_config(std::move(config))
 {
-  if (m_config.coreClockHz == 0U) {
-    throw std::invalid_argument("CTF output requires a non-zero timestamps.clock");
-  }
 }
 
 CtfEncoder::~CtfEncoder()
@@ -173,17 +137,21 @@ CtfEncoder::~CtfEncoder()
   abort();
 }
 
-void CtfEncoder::start(const std::filesystem::path& outputDirectory)
+void CtfEncoder::start(const std::filesystem::path& outputDirectory, const CtfUuid& traceUuid)
 {
   abort();
   m_outputDirectory = outputDirectory;
   try {
-    m_routeIdentities.clear();
+    m_metadata.emplace(traceUuid, m_config.metadata);
+    if (!m_metadata->isLegacySingleStreamLayout()) {
+      throw std::runtime_error("CTF binary output currently requires exactly one legacy SINGLE stream topology");
+    }
     m_bootstrappedRoutes.clear();
     m_streamStates.clear();
     m_reportedDwtSizeMismatches.clear();
     m_exceptionLanes.clear();
-    m_stream.open(m_outputDirectory / "stream_0", CtfSchema::SwoStreamId);
+    const auto& runtimeStream = m_metadata->topology().streams.front();
+    m_stream.open(m_outputDirectory / "stream_0", runtimeStream.streamClassId, traceUuid);
     m_recording = true;
     std::map<TraceRouteId, TraceRouteIdentity> initialRoutes;
     const auto addInitialRoute = [&](const TraceRouteIdentity& route) {
@@ -195,16 +163,21 @@ void CtfEncoder::start(const std::filesystem::path& outputDirectory)
     for (const auto& route : m_config.routes) {
       addInitialRoute(route);
     }
-    for (const auto& source : m_config.sources) {
+    for (const auto& stream : m_metadata->topology().streams) {
+      validateConfiguredRoute(m_config, stream.route);
+      if (m_config.legacyRouteFallback && m_config.routes.empty()) {
+        addInitialRoute(stream.route);
+      }
+    }
+    for (const auto& source : m_metadata->topology().sources) {
       validateConfiguredRoute(m_config, source.route);
       if (m_config.legacyRouteFallback && m_config.routes.empty()) {
         addInitialRoute(source.route);
       }
     }
-    for (const auto& [routeId, route] : initialRoutes) {
-      (void)routeId;
-      if (m_config.selection.includesRoute(route)) {
-        bootstrapRoute(route);
+    for (const auto& stream : m_metadata->topology().streams) {
+      if (m_config.selection.includesRoute(stream.route)) {
+        bootstrapRoute(stream.route);
       }
     }
   } catch (...) {
@@ -218,10 +191,6 @@ void CtfEncoder::stop()
   if (!m_recording) {
     return;
   }
-  if (m_bootstrappedRoutes.empty() && m_config.legacyRouteFallback && m_config.routes.empty() &&
-      m_config.sources.empty() && m_config.selection.includesRoute({})) {
-    bootstrapRoute({});
-  }
   m_recording = false;
   m_stream.close();
   writeMetadataFile();
@@ -231,6 +200,7 @@ void CtfEncoder::abort() noexcept
 {
   m_recording = false;
   m_stream.abort();
+  m_metadata.reset();
   m_outputDirectory.clear();
 }
 
@@ -243,6 +213,11 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
     return;
   }
   validateConfiguredRoute(m_config, event.route);
+  const auto* stream = m_metadata->streamForRoute(event.route);
+  if (stream == nullptr || stream->streamClassId != m_metadata->topology().streams.front().streamClassId) {
+    throw std::runtime_error(
+        "CTF binary output cannot encode an event route without an exact runtime stream descriptor");
+  }
   bootstrapRoute(event.route);
   if (!isTraceEvent<GlobalTimestampTraceEvent>(event) && event.tcyc.has_value()) {
     auto& eventTimestamp = streamState(event.route).eventTimestamp;
@@ -345,10 +320,6 @@ std::uint64_t CtfEncoder::allocateEventTimestamp(const TraceRouteIdentity& route
 
 CtfEncoder::StreamState& CtfEncoder::streamState(const TraceRouteIdentity& route)
 {
-  const auto [identity, inserted] = m_routeIdentities.emplace(route.id, route);
-  if (!inserted && identity->second != route) {
-    throw std::runtime_error("CTF event route identity does not match normalized route catalogue");
-  }
   return m_streamStates[route.id];
 }
 
@@ -385,9 +356,9 @@ void CtfEncoder::writeSoftwareEvent(const TraceEvent& event, const SoftwareTrace
 
 void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceEvent& data)
 {
-  const auto* source = resolvedTraceSource(m_config, "dwt", event.route, data.comparator);
+  const auto* source = resolvedTraceSource(*m_metadata, "dwt", event.route, data.comparator);
   reportDwtSizeMismatch(event, data, source);
-  const auto& variant = dwtValueVariant(source, data.comparator);
+  const auto& variant = dwtValueVariant(source);
   const auto& pcVariant = dwtAddressVariant(data.pc);
   const auto& addressVariant = dwtAddressVariant(data.address);
   const auto payloadSize =
@@ -411,9 +382,9 @@ void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceE
 }
 
 void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data,
-                                       const ResolvedTraceSource* source)
+                                       const CtfSourceDescriptor* source)
 {
-  const auto configuredSize = source != nullptr ? source->dataSize : ResolvedTraceSource{}.dataSize;
+  const auto configuredSize = source != nullptr ? source->dataSize : CtfSourceDescriptor{}.dataSize;
   if (configuredSize == data.size || m_config.diagnostics == nullptr ||
       !m_reportedDwtSizeMismatches.insert({event.route.id, data.comparator}).second) {
     return;
@@ -425,9 +396,6 @@ void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTra
       {"configuredSize", std::to_string(configuredSize)},
       {"swoSize", std::to_string(data.size)},
   };
-  if (event.route.traceBusId.has_value()) {
-    context.emplace_back("stream", std::to_string(*event.route.traceBusId));
-  }
   m_config.diagnostics->report({
       DiagnosticSink::Severity::Warning,
       "configured ctrace-run size does not match the decoded SWO payload size",
@@ -621,14 +589,12 @@ std::pair<std::uint8_t, std::uint32_t> CtfEncoder::computeSampleQuality(const Tr
 
 void CtfEncoder::writeMetadataFile()
 {
-  std::set<ExceptionNumber> observedExceptionNumbers;
+  const auto streamClassId = m_metadata->topology().streams.front().streamClassId;
   for (const auto& [routeId, lane] : m_exceptionLanes) {
     (void)routeId;
-    observedExceptionNumbers.insert(lane.observedExceptionNumbers().begin(), lane.observedExceptionNumbers().end());
+    for (const auto number : lane.observedExceptionNumbers()) {
+      m_metadata->observeException(streamClassId, number);
+    }
   }
-  CtfMetadataWriter::write(m_outputDirectory, m_stream.uuidString(), m_config.coreClockHz, m_config.sources,
-                           {
-                               observedExceptionNumbers.begin(),
-                               observedExceptionNumbers.end(),
-                           });
+  CtfMetadataWriter::write(m_outputDirectory, *m_metadata);
 }

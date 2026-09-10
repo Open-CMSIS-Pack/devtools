@@ -14,6 +14,7 @@
 #include <gtest/gtest.h>
 
 #include "ctf/CtfBundleOutput.h"
+#include "ctf/CtfMetadataWriter.h"
 #include "ctf/CtfSchema.h"
 #include "CtraceRunMeta.h"
 #include "OutputRequirements.h"
@@ -54,7 +55,15 @@ static std::filesystem::path testTraceCompassXmlPath(const std::filesystem::path
 /** @brief Creates a CTF bundle configuration with test defaults. */
 static CtfOutputConfig makeCtfBundleConfig(const std::filesystem::path& outputDirectory, std::uint64_t coreClockHz)
 {
-  return CtfOutputConfig(outputDirectory, testTraceCompassXmlPath(outputDirectory), coreClockHz, {}, {});
+  return CtfOutputConfig(outputDirectory, testTraceCompassXmlPath(outputDirectory), {},
+                         CtfTestSupport::legacyTopology(coreClockHz));
+}
+
+/** @brief Creates a legacy CTF bundle configuration with explicit target paths. */
+static CtfOutputConfig makeCtfBundleConfig(const std::filesystem::path& outputDirectory,
+                                           const std::filesystem::path& traceCompassXmlPath, std::uint64_t coreClockHz)
+{
+  return CtfOutputConfig(outputDirectory, traceCompassXmlPath, {}, CtfTestSupport::legacyTopology(coreClockHz));
 }
 
 /** @brief Requires all files of a completed CTF bundle. */
@@ -88,7 +97,7 @@ private:
 };
 
 /** @brief Converts normalized trace-run source metadata for output tests. */
-static ResolvedTraceSource resolvedSource(const CtraceRunSourceMeta& source)
+static CtfSourceDescriptor resolvedSource(const CtraceRunSourceMeta& source)
 {
   return {
       source.type,
@@ -211,39 +220,32 @@ TEST(CtraceUnitTests, testCtfBundleOutputUsesCtraceRunMeta)
                                      CtraceRunMeta::fromConfig(traceRun), preflightDiagnostics);
   ASSERT_TRUE(outputPlan.ctf.has_value() && preflightDiagnostics.events().empty()) << "resolved CTF source missing";
   auto options = std::move(*outputPlan.ctf);
-  ASSERT_TRUE(!options.sources.empty()) << "resolved CTF source missing";
-  ASSERT_TRUE(options.sources.front().route.traceBusId == 7U) << "resolved CTF source must retain its Trace Bus ID";
-  ASSERT_TRUE(options.sources.front().dataType == "signed") << "resolved CTF source must retain its data type";
+  ASSERT_TRUE(!options.metadata.sources.empty()) << "resolved CTF source missing";
+  ASSERT_TRUE(options.metadata.sources.front().route.traceBusId == 7U)
+      << "resolved CTF source must retain its Trace Bus ID";
+  ASSERT_TRUE(options.metadata.sources.front().dataType == "signed") << "resolved CTF source must retain its data type";
   ASSERT_EQ(options.routes.size(), 1U);
-  const auto route = options.routes.front();
-  CtfBundleOutput output(std::move(options));
-  output.start();
-  output.writeEvent(atCycle(onRoute(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Write}}, route), 100U));
-  output.stop();
+  ASSERT_EQ(options.metadata.streams.size(), 1U);
+  EXPECT_EQ(options.metadata.streams.front().streamClassId, CtfStreamClassId{7U});
+  std::filesystem::create_directories(outputDir);
+  CtfMetadataModel model(CtfTestSupport::testUuid(), std::move(options.metadata));
+  CtfMetadataWriter::write(outputDir, model);
 
   const auto metadata = readTestTextFile(outputDir / "metadata");
-  const auto stream = readTestBinaryFile(outputDir / "stream_0");
 
   ASSERT_TRUE(metadata.find("freq = 280000000") != std::string::npos) << "CTF trace-run clock mismatch";
-  ASSERT_TRUE(metadata.find("cmsis_dwt0_value_type = \"signed\"") != std::string::npos)
+  ASSERT_TRUE(metadata.find("cmsis_stream_7_dwt0_value_type = \"signed\"") != std::string::npos)
       << "CTF signed-byte source type mismatch";
-  ASSERT_TRUE(metadata.find("cmsis_dwt2_value_type = \"signed\"") != std::string::npos)
+  ASSERT_TRUE(metadata.find("cmsis_stream_7_dwt2_value_type = \"signed\"") != std::string::npos)
       << "CTF trace-run type mismatch";
-  ASSERT_TRUE(metadata.find("cmsis_dwt2_address_start = \"0x24000E88\"") != std::string::npos)
+  ASSERT_TRUE(metadata.find("cmsis_stream_7_dwt2_address_start = \"0x24000E88\"") != std::string::npos)
       << "CTF trace-run start address mismatch";
-  ASSERT_TRUE(metadata.find("cmsis_dwt2_address_end = \"0x24000E8B\"") != std::string::npos)
+  ASSERT_TRUE(metadata.find("cmsis_stream_7_dwt2_address_end = \"0x24000E8B\"") != std::string::npos)
       << "CTF trace-run end address mismatch";
   ASSERT_TRUE(metadata.find("\"Current\\n\\t\\\"\\\\\\x01\" = 2") != std::string::npos)
       << "CTF trace-run label escaping mismatch";
-
-  const auto records = parseCtfRecords(stream);
-  ASSERT_TRUE(records.front().id == CtfSchema::value(CtfSchema::EventId::TraceStatus))
-      << "CTF trace-start event missing";
-  const auto& dwtRecord =
-      requireFirstCtfRecord(records, CtfSchema::EventId::DwtValue, "expected CTF DWT value event missing");
-  ASSERT_TRUE(dwtRecord.traceBusId == 7U) << "CTF event context must preserve the CoreSight Trace Bus ID";
-  ASSERT_TRUE(dwtRecord.payload[2U] == 0U) << "CTF one-byte int payload must select the i8 variant";
-  ASSERT_TRUE(dwtRecord.payload[3U] == 0xffU) << "CTF signed-byte payload mismatch";
+  ASSERT_TRUE(metadata.find("stream_id = 7") != std::string::npos)
+      << "generalized metadata must bind events to the configured stream class";
 }
 
 TEST(CtraceUnitTests, testCtfOutputPlanningKeepsUnknownFilterWithoutLegacyBootstrap)
@@ -262,16 +264,40 @@ TEST(CtraceUnitTests, testCtfOutputPlanningKeepsUnknownFilterWithoutLegacyBootst
   CollectingDiagnosticSink unknownDiagnostics;
   auto plan = planTraceOutputs({false, true, unknownSelection}, outputDir.parent_path() / "output.SWO.raw", meta,
                                unknownDiagnostics);
-  ASSERT_TRUE(plan.ctf.has_value());
-  ASSERT_EQ(plan.ctf->routes.size(), 1U);
-  EXPECT_EQ(plan.ctf->routes.front().traceBusId, 2U);
+  ASSERT_TRUE(plan.ctf.has_value()) << "an unmatched stream filter must retain the requested CTF plan";
+  EXPECT_TRUE(plan.ctf->metadata.streams.empty())
+      << "an unmatched formatted stream filter must not invent a CTF topology";
+  EXPECT_TRUE(unknownDiagnostics.events().empty());
+  EXPECT_FALSE(std::filesystem::exists(outputDir));
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputPreservesLegacyUnknownStreamFilter)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-legacy-unknown-stream-test");
+  const auto& outputDir = temporaryOutput.outputDirectory();
+  TraceRunConfig traceRun;
+  traceRun.path = "Legacy.ctrace-run.yml";
+  traceRun.setups.push_back(TraceRunTestSupport::makeTimestampSetup(std::nullopt, 1000000U));
+  traceRun.references.push_back(TraceRunTestSupport::makeReference("itm", std::nullopt, std::nullopt, {1U}, "itm"));
+  TraceSelection selection;
+  selection.streams = {99U};
+  CollectingDiagnosticSink diagnostics;
+  auto plan = planTraceOutputs({false, true, selection}, outputDir.parent_path() / "output.SWO.raw",
+                               CtraceRunMeta::fromConfig(traceRun), diagnostics);
+
+  ASSERT_TRUE(plan.ctf.has_value() && diagnostics.events().empty());
+  ASSERT_TRUE(CtfMetadataModel(CtfTestSupport::testUuid(), plan.ctf->metadata).isLegacySingleStreamLayout());
   CtfBundleOutput output(std::move(*plan.ctf));
   output.start();
   output.stop();
 
-  const auto records = readCtfRecords(outputDir / "stream_0");
-  EXPECT_TRUE(records.empty()) << "an unmatched stream filter must not invent a synthetic no-bus bootstrap";
-  EXPECT_TRUE(unknownDiagnostics.events().empty());
+  ASSERT_TRUE(std::filesystem::is_regular_file(outputDir / "stream_0"));
+  EXPECT_EQ(std::filesystem::file_size(outputDir / "stream_0"), 0U);
+  EXPECT_TRUE(readCtfRecords(outputDir / "stream_0").empty());
+  const auto metadata = readTestTextFile(outputDir / "metadata");
+  EXPECT_NE(metadata.find("name = swo_clock;"), std::string::npos);
+  EXPECT_NE(metadata.find("stream {\n    id = 0;"), std::string::npos);
+  EXPECT_TRUE(std::filesystem::is_regular_file(testTraceCompassXmlPath(outputDir)));
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
@@ -291,7 +317,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
 
   const auto defaultOutputDir = root / "default";
   auto defaultOptions = makeCtfBundleConfig(defaultOutputDir, 1000000U);
-  defaultOptions.sources = {resolvedSource(defaultMeta.sources().front())};
+  defaultOptions.metadata.sources = {resolvedSource(defaultMeta.sources().front())};
   CollectingDiagnosticSink diagnostics;
   CtfBundleOutput defaultOutput(std::move(defaultOptions), &diagnostics);
   defaultOutput.start();
@@ -313,7 +339,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   ASSERT_TRUE(signedMeta.sources().size() == 1U) << "signed DWT source missing";
   const auto signedOutputDir = root / "signed";
   auto signedOptions = makeCtfBundleConfig(signedOutputDir, 1000000U);
-  signedOptions.sources = {resolvedSource(signedMeta.sources().front())};
+  signedOptions.metadata.sources = {resolvedSource(signedMeta.sources().front())};
   CollectingDiagnosticSink signedDiagnostics;
   CtfBundleOutput signedOutput(std::move(signedOptions), &signedDiagnostics);
   signedOutput.start();
@@ -494,7 +520,8 @@ TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
   CollectingDiagnosticSink preflightDiagnostics;
   auto outputPlan = planTraceOutputs({false, true, selection}, outputDir.parent_path() / "output.SWO.raw",
                                      CtraceRunMeta::fromConfig(traceRun), preflightDiagnostics);
-  ASSERT_TRUE(outputPlan.ctf.has_value() && outputPlan.ctf->sources.empty() && preflightDiagnostics.events().empty())
+  ASSERT_TRUE(outputPlan.ctf.has_value() && outputPlan.ctf->metadata.sources.empty() &&
+              preflightDiagnostics.events().empty())
       << "CTF preflight must exclude software channel zero metadata";
   auto options = std::move(*outputPlan.ctf);
   CtfBundleOutput output(std::move(options));
@@ -576,7 +603,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputRejectsOverlappingTargetsBeforeDeletion
   writeTestFile(nestedXml, "old-xml");
 
   const auto rejected = throwsException<std::invalid_argument>(
-      [&] { CtfBundleOutput output(CtfOutputConfig(ctfDirectory, nestedXml, 1000000U, {}, {})); });
+      [&] { CtfBundleOutput output(makeCtfBundleConfig(ctfDirectory, nestedXml, 1000000U)); });
   ASSERT_TRUE(rejected && readTestTextFile(ctfDirectory / "old-marker") == "old-ctf" &&
               readTestTextFile(nestedXml) == "old-xml")
       << "overlapping CTF targets must be rejected before either existing target is deleted";
@@ -586,7 +613,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputRejectsOverlappingTargetsBeforeDeletion
   writeTestFile(wrongTypeCtf, "not-a-directory");
   std::filesystem::create_directory(wrongTypeXml);
   const auto rejectedWrongTypes = throwsException([&] {
-    CtfBundleOutput output(CtfOutputConfig(wrongTypeCtf, wrongTypeXml, 1000000U, {}, {}));
+    CtfBundleOutput output(makeCtfBundleConfig(wrongTypeCtf, wrongTypeXml, 1000000U));
     output.start();
   });
   ASSERT_TRUE(rejectedWrongTypes && readTestTextFile(wrongTypeCtf) == "not-a-directory" &&
@@ -595,7 +622,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputRejectsOverlappingTargetsBeforeDeletion
 
   const auto rejectedCaseInsensitiveOverlap = throwsException<std::invalid_argument>([&] {
     CtfBundleOutput output(
-        CtfOutputConfig(root / "Bundle.ctf", root / "BUNDLE.CTF" / "Bundle.SWO.traceanalysis.xml", 1000000U, {}, {}));
+        makeCtfBundleConfig(root / "Bundle.ctf", root / "BUNDLE.CTF" / "Bundle.SWO.traceanalysis.xml", 1000000U));
   });
   ASSERT_TRUE(rejectedCaseInsensitiveOverlap) << "CTF target overlap checks must conservatively ignore ASCII case";
 }
@@ -659,8 +686,8 @@ TEST(CtraceUnitTests, testCtfBundleOutputRejectsUnsafeTargets)
   const auto safeCtf = temporaryPath.path() / "safe.ctf";
   const auto safeXml = temporaryPath.path() / "safe.xml";
   for (const auto& unsafe : {std::filesystem::path{}, std::filesystem::path("."), std::filesystem::path("..")}) {
-    EXPECT_THROW((void)CtfBundleOutput(CtfOutputConfig(unsafe, safeXml, 1000000U, {}, {})), std::invalid_argument);
-    EXPECT_THROW((void)CtfBundleOutput(CtfOutputConfig(safeCtf, unsafe, 1000000U, {}, {})), std::invalid_argument);
+    EXPECT_THROW((void)CtfBundleOutput(makeCtfBundleConfig(unsafe, safeXml, 1000000U)), std::invalid_argument);
+    EXPECT_THROW((void)CtfBundleOutput(makeCtfBundleConfig(safeCtf, unsafe, 1000000U)), std::invalid_argument);
   }
 }
 
@@ -670,15 +697,15 @@ TEST(CtraceUnitTests, testCtfBundleOutputRejectsInvalidExistingXmlAndLongPaths)
   const auto ctfDirectory = temporaryPath.path() / "output.ctf";
   const auto xmlDirectory = temporaryPath.path() / "output.xml";
   std::filesystem::create_directories(xmlDirectory);
-  CtfBundleOutput directoryXml(CtfOutputConfig(ctfDirectory, xmlDirectory, 1000000U, {}, {}));
+  CtfBundleOutput directoryXml(makeCtfBundleConfig(ctfDirectory, xmlDirectory, 1000000U));
   EXPECT_THROW(directoryXml.start(), std::runtime_error);
 
   const auto longName = std::string(1024U, 'x');
   CtfBundleOutput longCtf(
-      CtfOutputConfig(temporaryPath.path() / longName, temporaryPath.path() / "long-ctf.xml", 1000000U, {}, {}));
+      makeCtfBundleConfig(temporaryPath.path() / longName, temporaryPath.path() / "long-ctf.xml", 1000000U));
   EXPECT_THROW(longCtf.start(), std::runtime_error);
   CtfBundleOutput longXml(
-      CtfOutputConfig(temporaryPath.path() / "long-xml.ctf", temporaryPath.path() / longName, 1000000U, {}, {}));
+      makeCtfBundleConfig(temporaryPath.path() / "long-xml.ctf", temporaryPath.path() / longName, 1000000U));
   EXPECT_THROW(longXml.start(), std::runtime_error);
 }
 
@@ -704,7 +731,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputCleansUpAfterTraceCompassStartFailure)
   const auto outputDirectory = root.path() / "trace.ctf";
   const auto xmlPath = blockedParent / "trace.xml";
 
-  CtfBundleOutput output(CtfOutputConfig(outputDirectory, xmlPath, 1000000U, {}, {}));
+  CtfBundleOutput output(makeCtfBundleConfig(outputDirectory, xmlPath, 1000000U));
   EXPECT_THROW(output.start(), std::runtime_error);
   EXPECT_FALSE(std::filesystem::exists(outputDirectory));
 }
@@ -716,8 +743,8 @@ TEST(CtraceUnitTests, testCtfBundleOutputReportsPseudoFilesystemStartFailure)
   }
   const TemporaryTestPath temporaryPath("ctrace-ctf-pseudo-filesystem-test");
   const auto outputDirectory = temporaryPath.path() / "output.ctf";
-  CtfBundleOutput output(CtfOutputConfig(
-      outputDirectory, TestPlatform::creationFailurePath("ctrace-coverage-output.xml"), 1000000U, {}, {}));
+  CtfBundleOutput output(
+      makeCtfBundleConfig(outputDirectory, TestPlatform::creationFailurePath("ctrace-coverage-output.xml"), 1000000U));
   EXPECT_THROW(output.start(), std::runtime_error);
   EXPECT_FALSE(std::filesystem::exists(outputDirectory));
 }
@@ -733,7 +760,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputReportsPermissionFailures)
   const auto destructorCtf = root / "destructor.ctf";
   const auto destructorXml = root / "destructor.xml";
   {
-    CtfBundleOutput output(CtfOutputConfig(destructorCtf, destructorXml, 1000000U, {}, {}));
+    CtfBundleOutput output(makeCtfBundleConfig(destructorCtf, destructorXml, 1000000U));
     output.start();
     std::filesystem::permissions(root, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
   }
@@ -747,7 +774,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputReportsPermissionFailures)
   const auto existingXml = root / "existing.xml";
   writeTestFile(existingCtf / "marker", "existing");
   std::filesystem::permissions(root, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
-  CtfBundleOutput removeDirectoryFailure(CtfOutputConfig(existingCtf, existingXml, 1000000U, {}, {}));
+  CtfBundleOutput removeDirectoryFailure(makeCtfBundleConfig(existingCtf, existingXml, 1000000U));
   EXPECT_THROW(removeDirectoryFailure.start(), std::runtime_error);
   std::filesystem::permissions(root, std::filesystem::perms::owner_all);
   std::filesystem::remove_all(existingCtf);
@@ -759,20 +786,20 @@ TEST(CtraceUnitTests, testCtfBundleOutputReportsPermissionFailures)
   const auto blockedXml = blockedParent / "existing.xml";
   writeTestFile(blockedXml, "existing");
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
-  CtfBundleOutput removeFileFailure(CtfOutputConfig(writableParent / "output.ctf", blockedXml, 1000000U, {}, {}));
+  CtfBundleOutput removeFileFailure(makeCtfBundleConfig(writableParent / "output.ctf", blockedXml, 1000000U));
   EXPECT_THROW(removeFileFailure.start(), std::runtime_error);
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_all);
 
   const auto cleanupCtf = writableParent / "cleanup.ctf";
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
-  CtfBundleOutput startCleanupFailure(CtfOutputConfig(cleanupCtf, blockedParent / "new.xml", 1000000U, {}, {}));
+  CtfBundleOutput startCleanupFailure(makeCtfBundleConfig(cleanupCtf, blockedParent / "new.xml", 1000000U));
   EXPECT_THROW(startCleanupFailure.start(), std::runtime_error);
   EXPECT_FALSE(std::filesystem::exists(cleanupCtf));
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_all);
 
   const auto blockedCtf = blockedParent / "new.ctf";
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
-  CtfBundleOutput createDirectoryFailure(CtfOutputConfig(blockedCtf, writableParent / "new.xml", 1000000U, {}, {}));
+  CtfBundleOutput createDirectoryFailure(makeCtfBundleConfig(blockedCtf, writableParent / "new.xml", 1000000U));
   EXPECT_THROW(createDirectoryFailure.start(), std::runtime_error);
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_all);
 }

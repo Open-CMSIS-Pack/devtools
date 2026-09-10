@@ -12,8 +12,10 @@
 #include "OutputRequirements.h"
 #include "TraceOutputConfig.h"
 #include "TraceRunConfig.h"
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -38,6 +40,28 @@ static TraceOutputPlan planOutputs(const TraceOutputRequest& request, const std:
                                    const TraceRunConfig& config, DiagnosticSink& diagnostics)
 {
   return planOutputs(request, rawInputPath, CtraceRunMeta::fromConfig(config), diagnostics);
+}
+
+/** @brief Finds one configured CTF stream class by its public numeric ID. */
+static const CtfStreamDescriptor* findCtfStream(const CtfOutputConfig& config, std::uint32_t streamClassId)
+{
+  const auto found = std::find_if(
+      config.metadata.streams.begin(), config.metadata.streams.end(),
+      [&](const CtfStreamDescriptor& stream) { return stream.streamClassId == CtfStreamClassId{streamClassId}; });
+  return found == config.metadata.streams.end() ? nullptr : &*found;
+}
+
+/** @brief Resolves the clock descriptor referenced by one configured CTF stream. */
+static const CtfClockDomainDescriptor* clockForStream(const CtfOutputConfig& config, std::uint32_t streamClassId)
+{
+  const auto* stream = findCtfStream(config, streamClassId);
+  if (stream == nullptr) {
+    return nullptr;
+  }
+  const auto found =
+      std::find_if(config.metadata.clockDomains.begin(), config.metadata.clockDomains.end(),
+                   [&](const CtfClockDomainDescriptor& clock) { return clock.id == stream->clockDomainId; });
+  return found == config.metadata.clockDomains.end() ? nullptr : &*found;
 }
 
 /** @brief Creates metadata satisfying the default backend requirements. */
@@ -78,6 +102,25 @@ TEST(CtraceUnitTests, testBackendRequirementsUsePerStreamMetadata)
                std::map<std::uint8_t, std::uint32_t>({{1U, 1U}, {2U, 1U}})))
       << "the default prescaler must be retained per ATB stream";
 
+  CollectingDiagnosticSink equalClockDiagnostics;
+  const auto equalClockPlan = planOutputs(outputRequest(false, true), "captures/Multicore.SWO.raw",
+                                          missingPrescalerMeta, equalClockDiagnostics);
+  ASSERT_TRUE(equalClockPlan.ctf.has_value());
+  ASSERT_EQ(equalClockPlan.ctf->metadata.streams.size(), 2U);
+  ASSERT_EQ(equalClockPlan.ctf->metadata.clockDomains.size(), 2U)
+      << "equal frequency must not merge independent processor clock domains";
+  const auto* equalCore0Clock = clockForStream(*equalClockPlan.ctf, 1U);
+  const auto* equalCore1Clock = clockForStream(*equalClockPlan.ctf, 2U);
+  ASSERT_NE(equalCore0Clock, nullptr);
+  ASSERT_NE(equalCore1Clock, nullptr);
+  ASSERT_TRUE(equalCore0Clock->uuid.has_value());
+  ASSERT_TRUE(equalCore1Clock->uuid.has_value());
+  EXPECT_NE(equalCore0Clock->id, equalCore1Clock->id);
+  EXPECT_NE(equalCore0Clock->uuid, equalCore1Clock->uuid);
+  EXPECT_EQ(equalCore0Clock->frequencyHz, 400000000U);
+  EXPECT_EQ(equalCore1Clock->frequencyHz, 400000000U);
+  EXPECT_TRUE(equalClockDiagnostics.events().empty());
+
   core0.timestamps = TraceRunTimestampSetup{400000000U, 4U};
   multicore.setups = {core0, core1};
   const auto mixedMissingPrescalerMeta = CtraceRunMeta::fromConfig(multicore);
@@ -98,16 +141,32 @@ TEST(CtraceUnitTests, testBackendRequirementsUsePerStreamMetadata)
   CollectingDiagnosticSink allClockDiagnostics;
   const auto allClockPlan =
       planOutputs(ctfRequest, "captures/Multicore.SWO.raw", distinctClockMeta, allClockDiagnostics);
-  ASSERT_TRUE(!allClockPlan.ctf.has_value()) << "CTF must reject selected Trace Bus IDs with different clocks";
-  allClockDiagnostics.singleEvent();
+  ASSERT_TRUE(allClockPlan.ctf.has_value()) << "independent CTF clock domains may use different frequencies";
+  ASSERT_EQ(allClockPlan.ctf->metadata.streams.size(), 2U);
+  ASSERT_EQ(allClockPlan.ctf->metadata.clockDomains.size(), 2U);
+  const auto* core0Clock = clockForStream(*allClockPlan.ctf, 1U);
+  const auto* core1Clock = clockForStream(*allClockPlan.ctf, 2U);
+  ASSERT_NE(core0Clock, nullptr);
+  ASSERT_NE(core1Clock, nullptr);
+  EXPECT_EQ(core0Clock->frequencyHz, 400000000U);
+  EXPECT_EQ(core1Clock->frequencyHz, 200000000U);
+  EXPECT_NE(core0Clock->id, core1Clock->id);
+  EXPECT_TRUE(allClockDiagnostics.events().empty());
 
   ctfRequest.selection.streams = {2U};
   CollectingDiagnosticSink selectedClockDiagnostics;
   const auto selectedClockPlan =
       planOutputs(ctfRequest, "captures/Multicore.SWO.raw", distinctClockMeta, selectedClockDiagnostics);
-  ASSERT_TRUE(selectedClockPlan.ctf.has_value() && selectedClockPlan.ctf->coreClockHz == 200000000U &&
-              selectedClockDiagnostics.events().empty())
-      << "a selected Trace Bus ID must use its processor's clock";
+  ASSERT_TRUE(selectedClockPlan.ctf.has_value());
+  ASSERT_EQ(selectedClockPlan.ctf->metadata.streams.size(), 1U);
+  ASSERT_EQ(selectedClockPlan.ctf->metadata.clockDomains.size(), 1U);
+  const auto* selectedClock = clockForStream(*selectedClockPlan.ctf, 2U);
+  ASSERT_NE(selectedClock, nullptr);
+  ASSERT_TRUE(selectedClock->uuid.has_value());
+  EXPECT_EQ(selectedClock->frequencyHz, 200000000U);
+  EXPECT_EQ(selectedClockPlan.ctf->routes.size(), 2U)
+      << "the normalized route catalogue remains authoritative beyond the output filter";
+  ASSERT_TRUE(selectedClockDiagnostics.events().empty()) << "a selected Trace Bus ID must use its processor's clock";
 }
 
 TEST(CtraceUnitTests, testDwtDataMetadataDefaultsAndValidation)
@@ -139,10 +198,10 @@ TEST(CtraceUnitTests, testDwtDataMetadataDefaultsAndValidation)
       << "valid or missing DWT metadata must not disable CSV or CTF";
   ASSERT_TRUE(configurationDiagnostics.events().empty())
       << "valid or missing DWT metadata must not produce diagnostics";
-  ASSERT_TRUE(outputPlan.ctf->sources.size() == 3U && outputPlan.ctf->sources[0].dataType == "unsigned" &&
-              outputPlan.ctf->sources[0].dataSize == 4U && outputPlan.ctf->sources[1].dataType == "unsigned" &&
-              outputPlan.ctf->sources[1].dataSize == 1U && outputPlan.ctf->sources[2].dataType == "signed" &&
-              outputPlan.ctf->sources[2].dataSize == 2U)
+  const auto& sources = outputPlan.ctf->metadata.sources;
+  ASSERT_TRUE(sources.size() == 3U && sources[0].dataType == "unsigned" && sources[0].dataSize == 4U &&
+              sources[1].dataType == "unsigned" && sources[1].dataSize == 1U && sources[2].dataType == "signed" &&
+              sources[2].dataSize == 2U)
       << "CTF data-type/size defaults or explicit values mismatch";
 
   config.setups[0].data[1].size = 0U;
@@ -151,6 +210,82 @@ TEST(CtraceUnitTests, testDwtDataMetadataDefaultsAndValidation)
   ASSERT_TRUE(invalidSizePlan.csv.has_value() && !invalidSizePlan.ctf.has_value())
       << "invalid ctrace-setup data.size must disable only CTF";
   invalidSizeDiagnostics.singleEvent();
+}
+
+TEST(CtraceUnitTests, testOutputRequirementsValidateDwtAddressRangeForCtfOnly)
+{
+  auto config = backendRequirementsConfig();
+  config.references[0].dataType = "unsigned";
+  const auto maximumAddress = std::numeric_limits<std::uint64_t>::max();
+  config.references[0].address = maximumAddress - 3U;
+
+  const auto allRequest = outputRequest(true, true);
+  CollectingDiagnosticSink maximumRangeDiagnostics;
+  const auto maximumRange = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, maximumRangeDiagnostics);
+  ASSERT_TRUE(maximumRange.csv.has_value() && maximumRange.ctf.has_value())
+      << "a DWT size-4 range ending exactly at UINT64_MAX must remain representable";
+  ASSERT_EQ(maximumRange.ctf->metadata.sources.size(), 1U);
+  EXPECT_EQ(maximumRange.ctf->metadata.sources.front().address, std::optional<std::uint64_t>(maximumAddress - 3U));
+  EXPECT_TRUE(maximumRangeDiagnostics.events().empty());
+
+  config.references[0].address = maximumAddress - 2U;
+  CollectingDiagnosticSink overflowDiagnostics;
+  const auto overflow = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, overflowDiagnostics);
+  ASSERT_TRUE(overflow.csv.has_value() && !overflow.ctf.has_value())
+      << "an overflowing DWT address range must disable only CTF for --all";
+  EXPECT_EQ(overflowDiagnostics.singleEvent().message, "CTF output cannot represent the configured DWT address range");
+  EXPECT_TRUE(overflowDiagnostics.containsContext("backend", "ctf"));
+  EXPECT_TRUE(overflowDiagnostics.containsContext("address", std::to_string(maximumAddress - 2U)));
+  EXPECT_TRUE(overflowDiagnostics.containsContext("dataSize", "4"));
+  EXPECT_GT(overflowDiagnostics.failureCount(), 0U);
+}
+
+TEST(CtraceUnitTests, testOutputRequirementsRejectDwtComparatorOutsideCtfDomainOnly)
+{
+  auto config = backendRequirementsConfig();
+  config.references[0].sources = {4U};
+  config.references[0].dataType = "unsigned";
+
+  CollectingDiagnosticSink diagnostics;
+  const auto plan = planOutputs(outputRequest(true, true), "BackendRequirements.SWO.raw", config, diagnostics);
+  ASSERT_TRUE(plan.csv.has_value() && !plan.ctf.has_value())
+      << "a DWT comparator outside the CTF schema must disable only CTF for --all";
+  EXPECT_EQ(diagnostics.singleEvent().message, "CTF output requires DWT comparator sources between 0 and 3");
+  EXPECT_TRUE(diagnostics.containsContext("backend", "ctf"));
+  EXPECT_TRUE(diagnostics.containsContext("channel", "DWT4"));
+  EXPECT_GT(diagnostics.failureCount(), 0U);
+}
+
+TEST(CtraceUnitTests, testOutputRequirementsReportRepeatedRouteSourceConflictOnce)
+{
+  auto config = backendRequirementsConfig();
+  auto first = config.references.front();
+  first.dataType = "unsigned";
+  auto second = first;
+  second.dataSize = 4U;
+  second.dataSizeError = "second invalid size";
+  auto third = first;
+  third.dataSize = 4U;
+  third.dataSizeError = "third invalid size";
+  config.references = {first, second, third};
+
+  const auto meta = CtraceRunMeta::fromConfig(config);
+  ASSERT_EQ(meta.sources().size(), 3U)
+      << "normalization must retain conflicting route-local source metadata for output-specific validation";
+  CollectingDiagnosticSink diagnostics;
+  const auto plan = planOutputs(outputRequest(true, true), "BackendRequirements.SWO.raw", meta, diagnostics);
+  ASSERT_TRUE(plan.csv.has_value() && !plan.ctf.has_value())
+      << "conflicting CTF-only source metadata must not disable CSV for --all";
+  const auto conflictCount =
+      std::count_if(diagnostics.events().begin(), diagnostics.events().end(), [](const auto& event) {
+        return event.message ==
+               "CTF metadata cannot describe conflicting active metadata for one route/type/source key";
+      });
+  EXPECT_EQ(conflictCount, 1U) << "repeated conflicts for one route/type/source key must be diagnosed exactly once";
+  EXPECT_EQ(diagnostics.events().size(), 3U) << "each malformed source must retain its own targeted size diagnostic";
+  EXPECT_TRUE(diagnostics.containsContext("backend", "ctf"));
+  EXPECT_TRUE(diagnostics.containsContext("channel", "DWT0"));
+  EXPECT_GT(diagnostics.failureCount(), 0U);
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
@@ -183,8 +318,10 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
       (missingType.csv->outputPath == std::filesystem::path("BackendRequirements.SWO.csv") &&
        missingType.ctf->outputDirectory == std::filesystem::path("BackendRequirements.ctf") &&
        missingType.ctf->traceCompassXmlPath == std::filesystem::path("BackendRequirements.SWO.traceanalysis.xml") &&
-       missingType.ctf->coreClockHz == 400000000U && missingType.ctf->sources.size() == 1U &&
-       missingType.ctf->sources[0].dataType == "unsigned" && missingType.ctf->sources[0].dataSize == 4U))
+       missingType.ctf->metadata.clockDomains.size() == 1U &&
+       missingType.ctf->metadata.clockDomains[0].frequencyHz == 400000000U &&
+       missingType.ctf->metadata.sources.size() == 1U && missingType.ctf->metadata.sources[0].dataType == "unsigned" &&
+       missingType.ctf->metadata.sources[0].dataSize == 4U))
       << "output preflight must resolve artifact paths, clock, routes, and defaults";
   ASSERT_TRUE(missingTypeDiagnostics.events().empty()) << "missing optional data-type must not produce diagnostics";
 
@@ -208,8 +345,8 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
   CollectingDiagnosticSink currentMetadataDiagnostics;
   const auto currentMetadata =
       planOutputs(allRequest, "BackendRequirements.SWO.raw", config, currentMetadataDiagnostics);
-  ASSERT_TRUE(currentMetadata.ctf.has_value() && currentMetadata.ctf->sources[0].dataType == "signed" &&
-              currentMetadata.ctf->sources[0].dataSize == 1U)
+  ASSERT_TRUE(currentMetadata.ctf.has_value() && currentMetadata.ctf->metadata.sources[0].dataType == "signed" &&
+              currentMetadata.ctf->metadata.sources[0].dataSize == 1U)
       << "reference data-type/size must be retained for CTF";
   ASSERT_TRUE(currentMetadataDiagnostics.events().empty());
 
@@ -226,24 +363,67 @@ TEST(CtraceUnitTests, testCtfOutputRequiresAValidClock)
 {
   auto config = backendRequirementsConfig();
   config.setups[0].data[0] = TraceRunDataSetup{};
+  config.references[0].dataType.reset();
   const auto allRequest = outputRequest(true, true);
   config.setups[0].timestamps->clockHz.reset();
   CollectingDiagnosticSink missingClockDiagnostics;
   const auto missingClock = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, missingClockDiagnostics);
   ASSERT_TRUE(missingClock.csv.has_value() && !missingClock.ctf.has_value())
       << "missing timestamps.clock must disable only CTF";
+  EXPECT_EQ(missingClockDiagnostics.singleEvent().message,
+            "CTF output requires timestamps.clock; no default is assumed");
+  EXPECT_TRUE(missingClockDiagnostics.containsContext("backend", "ctf"));
+  EXPECT_GT(missingClockDiagnostics.failureCount(), 0U)
+      << "--all must remain unsuccessful when its requested CTF backend is invalid";
 
   config.setups[0].timestamps->clockError = "timestamps.clock must be unsigned";
   CollectingDiagnosticSink malformedClockDiagnostics;
   const auto malformedClock = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, malformedClockDiagnostics);
   ASSERT_TRUE(malformedClock.csv.has_value() && !malformedClock.ctf.has_value())
       << "malformed timestamps.clock must disable only CTF";
+  EXPECT_EQ(malformedClockDiagnostics.singleEvent().message, "CTF output cannot use the configured timestamps.clock");
+  EXPECT_GT(malformedClockDiagnostics.failureCount(), 0U);
 
   config.setups[0].timestamps->clockError.reset();
   config.setups[0].timestamps->clockHz = 0U;
   CollectingDiagnosticSink zeroClockDiagnostics;
   const auto zeroClock = planOutputs(allRequest, "BackendRequirements.SWO.raw", config, zeroClockDiagnostics);
   ASSERT_TRUE(zeroClock.csv.has_value() && !zeroClock.ctf.has_value()) << "zero timestamps.clock must disable only CTF";
+  EXPECT_EQ(zeroClockDiagnostics.singleEvent().message, "CTF output requires timestamps.clock to be greater than zero");
+  EXPECT_GT(zeroClockDiagnostics.failureCount(), 0U);
+
+  CollectingDiagnosticSink csvOnlyDiagnostics;
+  const auto csvOnly =
+      planOutputs(outputRequest(true, false), "BackendRequirements.SWO.raw", config, csvOnlyDiagnostics);
+  EXPECT_TRUE(csvOnly.csv.has_value());
+  EXPECT_FALSE(csvOnly.ctf.has_value());
+  EXPECT_TRUE(csvOnlyDiagnostics.events().empty())
+      << "CSV-only planning must not inspect or report CTF clock requirements";
+}
+
+TEST(CtraceUnitTests, testCtfOutputRejectsConflictingClockFragmentsForSharedProcessorRoute)
+{
+  TraceRunConfig config;
+  config.path = "SharedProcessorClock.ctrace-run.yml";
+  config.traceFormat = TraceRunFormat::Formatted;
+  config.setups = {
+      TraceRunTestSupport::makeTimestampSetup("core", 100000000U, 1U),
+      TraceRunTestSupport::makeTimestampSetup("core", 200000000U, 1U),
+  };
+  config.references = {
+      TraceRunTestSupport::makeReference("itm", "core", 1U, {1U}, "core/itm"),
+  };
+
+  CollectingDiagnosticSink diagnostics;
+  const auto plan = planOutputs(outputRequest(true, true), "SharedProcessorClock.TB.raw", config, diagnostics);
+  EXPECT_TRUE(plan.csv.has_value());
+  EXPECT_FALSE(plan.ctf.has_value());
+  const auto& error = diagnostics.singleEvent();
+  EXPECT_EQ(error.message, "CTF output cannot use the configured timestamps.clock");
+  EXPECT_TRUE(diagnostics.containsContext("backend", "ctf"));
+  EXPECT_TRUE(diagnostics.containsContext("stream", "1"));
+  EXPECT_TRUE(diagnostics.containsContext("pname", "core"));
+  EXPECT_TRUE(diagnostics.containsContext("error", "conflicting active ctrace-setup timestamps.clock values"));
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsHonorFiltersAndCheckOnlyMode)
@@ -282,6 +462,9 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   first.label = "core-one";
   TraceRunReference second = first;
   second.label = "core-two";
+  second.address = 0x2000U;
+  second.dataType = "signed";
+  second.dataSize = 2U;
   const auto firstAnchor = TraceRunTestSupport::makeReference("itm", "core0", 1U, {}, "core0/itm");
   const auto secondAnchor = TraceRunTestSupport::makeReference("itm", "core1", 2U, {}, "core1/itm");
   config.references = {first, second, firstAnchor, secondAnchor};
@@ -296,13 +479,22 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   config.references[1].stream = 2U;
   config.references[1].processorName = "core1";
   config.references[1].ctraceRef = "core1/data#0";
-  config.references[1].label = "core-one";
   CollectingDiagnosticSink routeDiagnostics;
   const auto routePlan = planOutputs(allRequest, "captures/AmbiguousRoutes.SWO.raw", config, routeDiagnostics);
-  ASSERT_TRUE(routePlan.csv.has_value() && routePlan.ctf.has_value() && routePlan.ctf->sources.size() == 2U)
-      << "CTF must retain equivalent routes with distinct Trace Bus IDs";
+  ASSERT_TRUE(routePlan.csv.has_value() && routePlan.ctf.has_value() && routePlan.ctf->metadata.sources.size() == 2U)
+      << "CTF must retain the same source number independently on distinct routes";
+  const auto& routeSources = routePlan.ctf->metadata.sources;
+  EXPECT_EQ(routeSources[0].route.traceBusId, 1U);
+  EXPECT_EQ(routeSources[0].label, std::optional<std::string>("core-one"));
+  EXPECT_EQ(routeSources[0].dataType, "unsigned");
+  EXPECT_EQ(routeSources[0].dataSize, 4U);
+  EXPECT_EQ(routeSources[1].route.traceBusId, 2U);
+  EXPECT_EQ(routeSources[1].label, std::optional<std::string>("core-two"));
+  EXPECT_EQ(routeSources[1].address, std::optional<std::uint64_t>(0x2000U));
+  EXPECT_EQ(routeSources[1].dataType, "signed");
+  EXPECT_EQ(routeSources[1].dataSize, 2U);
   ASSERT_TRUE(routeDiagnostics.events().empty())
-      << "equivalent CTF metadata on distinct Trace Bus IDs must not be ambiguous";
+      << "route-local CTF metadata with the same source number must not be ambiguous";
 
   TraceRunConfig processorConfig;
   processorConfig.path = "AmbiguousProcessors.ctrace-run.yml";
@@ -325,8 +517,9 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   allRequest.selection.streams = {1U};
   CollectingDiagnosticSink selectedDiagnostics;
   const auto selectedPlan = planOutputs(allRequest, "captures/AmbiguousRoutes.SWO.raw", config, selectedDiagnostics);
-  ASSERT_TRUE(selectedPlan.csv.has_value() && selectedPlan.ctf.has_value() && selectedPlan.ctf->sources.size() == 1U &&
-              selectedPlan.ctf->sources[0].label == std::optional<std::string>("core-one"))
+  ASSERT_TRUE(selectedPlan.csv.has_value() && selectedPlan.ctf.has_value() &&
+              selectedPlan.ctf->metadata.sources.size() == 1U &&
+              selectedPlan.ctf->metadata.sources[0].label == std::optional<std::string>("core-one"))
       << "an explicit stream selection must produce one resolved CTF route";
   ASSERT_TRUE(selectedDiagnostics.events().empty())
       << "an unambiguous selected route must not produce preflight diagnostics";
@@ -421,7 +614,7 @@ TEST(CtraceUnitTests, testOutputRequirementsDeferUnformattedSingleClockAmbiguity
   EXPECT_EQ(missingCandidateDiagnostics.singleEvent().message, "CTF output cannot use the configured timestamps.clock");
 }
 
-TEST(CtraceUnitTests, testOutputRequirementsRejectUnknownStreamWithMultipleClocks)
+TEST(CtraceUnitTests, testOutputRequirementsTreatUnknownStreamsAsPureFilters)
 {
   TraceRunConfig config;
   config.path = "Multicore.ctrace-run.yml";
@@ -439,41 +632,72 @@ TEST(CtraceUnitTests, testOutputRequirementsRejectUnknownStreamWithMultipleClock
   ctfRequest.selection.streams = {99U};
   CollectingDiagnosticSink diagnostics;
   const auto plan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, diagnostics);
-  ASSERT_FALSE(plan.ctf.has_value());
-  diagnostics.singleEvent();
-
-  config.setups[1].timestamps->clockHz = 100U;
-  CollectingDiagnosticSink commonDiagnostics;
-  const auto commonPlan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, commonDiagnostics);
-  ASSERT_TRUE(commonPlan.ctf.has_value());
-  EXPECT_EQ(commonPlan.ctf->coreClockHz, 100U);
-  EXPECT_EQ(commonPlan.ctf->routes.size(), 2U);
-  EXPECT_TRUE(commonDiagnostics.events().empty());
+  ASSERT_TRUE(plan.ctf.has_value());
+  EXPECT_TRUE(plan.ctf->metadata.streams.empty());
+  EXPECT_TRUE(plan.ctf->metadata.clockDomains.empty());
+  EXPECT_TRUE(plan.ctf->metadata.sources.empty());
+  EXPECT_EQ(plan.ctf->routes.size(), 2U);
+  EXPECT_TRUE(diagnostics.events().empty()) << "an unknown-only stream filter must not inspect unrelated route clocks";
 
   ctfRequest.selection.streams = {1U, 99U};
   CollectingDiagnosticSink mixedDiagnostics;
   const auto mixedPlan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, mixedDiagnostics);
   ASSERT_TRUE(mixedPlan.ctf.has_value());
-  EXPECT_EQ(mixedPlan.ctf->coreClockHz, 100U);
+  ASSERT_EQ(mixedPlan.ctf->metadata.streams.size(), 1U);
+  ASSERT_EQ(mixedPlan.ctf->metadata.clockDomains.size(), 1U);
+  const auto* firstClock = clockForStream(*mixedPlan.ctf, 1U);
+  ASSERT_NE(firstClock, nullptr);
+  EXPECT_EQ(firstClock->frequencyHz, 100U);
   EXPECT_EQ(mixedPlan.ctf->routes.size(), 2U);
   EXPECT_TRUE(mixedDiagnostics.events().empty());
 
-  ctfRequest.selection.streams = {99U};
-  config.setups[0].timestamps->clockHz.reset();
-  config.setups[0].timestamps->clockError = "invalid processor clock";
-  CollectingDiagnosticSink malformedDiagnostics;
-  const auto malformedPlan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, malformedDiagnostics);
-  ASSERT_FALSE(malformedPlan.ctf.has_value());
-  EXPECT_EQ(malformedDiagnostics.singleEvent().message, "CTF output cannot use the configured timestamps.clock");
+  config.setups[1].timestamps->clockHz.reset();
+  config.setups[1].timestamps->clockError = "invalid second processor clock";
+  CollectingDiagnosticSink unselectedErrorDiagnostics;
+  const auto unselectedErrorPlan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, unselectedErrorDiagnostics);
+  ASSERT_TRUE(unselectedErrorPlan.ctf.has_value());
+  EXPECT_EQ(unselectedErrorPlan.ctf->metadata.streams.size(), 1U);
+  EXPECT_TRUE(unselectedErrorDiagnostics.events().empty())
+      << "an invalid clock on an unselected route must not disable CTF";
 
-  for (auto& setup : config.setups) {
-    setup.timestamps->clockError.reset();
-    setup.timestamps->clockHz = 0U;
-  }
-  CollectingDiagnosticSink zeroDiagnostics;
-  const auto zeroPlan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, zeroDiagnostics);
-  ASSERT_FALSE(zeroPlan.ctf.has_value());
-  EXPECT_EQ(zeroDiagnostics.singleEvent().message, "CTF output requires timestamps.clock to be greater than zero");
+  CollectingDiagnosticSink allDiagnostics;
+  const auto allPlan = planOutputs(outputRequest(true, true), "Multicore.SWO.raw", config, allDiagnostics);
+  EXPECT_TRUE(allPlan.csv.has_value());
+  EXPECT_FALSE(allPlan.ctf.has_value());
+  EXPECT_EQ(allDiagnostics.singleEvent().message, "CTF output cannot use the configured timestamps.clock");
+  EXPECT_TRUE(allDiagnostics.containsContext("stream", "2"));
+
+  ctfRequest.selection.streams = {99U};
+  config.setups[0].timestamps->clockHz = 0U;
+  CollectingDiagnosticSink unknownInvalidDiagnostics;
+  const auto unknownInvalidPlan = planOutputs(ctfRequest, "Multicore.SWO.raw", config, unknownInvalidDiagnostics);
+  ASSERT_TRUE(unknownInvalidPlan.ctf.has_value());
+  EXPECT_TRUE(unknownInvalidPlan.ctf->metadata.streams.empty());
+  EXPECT_TRUE(unknownInvalidPlan.ctf->metadata.clockDomains.empty());
+  EXPECT_TRUE(unknownInvalidDiagnostics.events().empty())
+      << "unknown-only selection must not report malformed or zero clocks on filtered routes";
+}
+
+TEST(CtraceUnitTests, testOutputRequirementsPreserveLegacyTopologyForUnknownStreamFilter)
+{
+  TraceRunConfig config;
+  config.path = "Legacy.ctrace-run.yml";
+  config.setups.push_back(TraceRunTestSupport::makeTimestampSetup("core", 1000000U, 1U));
+
+  auto request = outputRequest(false, true);
+  request.selection.streams = {99U};
+  CollectingDiagnosticSink diagnostics;
+  const auto plan = planOutputs(request, "Legacy.SWO.raw", config, diagnostics);
+
+  ASSERT_TRUE(plan.ctf.has_value());
+  ASSERT_EQ(plan.ctf->metadata.streams.size(), 1U);
+  ASSERT_EQ(plan.ctf->metadata.clockDomains.size(), 1U);
+  EXPECT_EQ(plan.ctf->metadata.streams.front().streamClassId, CtfStreamClassId{0U});
+  EXPECT_FALSE(plan.ctf->metadata.streams.front().route.traceBusId.has_value());
+  EXPECT_EQ(plan.ctf->metadata.clockDomains.front().name, "swo_clock");
+  EXPECT_EQ(plan.ctf->metadata.clockDomains.front().frequencyHz, 1000000U);
+  EXPECT_FALSE(plan.ctf->metadata.clockDomains.front().uuid.has_value());
+  EXPECT_TRUE(diagnostics.events().empty());
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsRejectsInputWithoutArtifactName)
