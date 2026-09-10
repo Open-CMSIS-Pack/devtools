@@ -518,8 +518,8 @@ The following shared-instance assumptions must be changed or reviewed during imp
   source metadata by `(Trace Bus ID, source)` and generate stream-specific type aliases/environment names so equal
   source numbers on different processors cannot overwrite each other's labels, types, sizes, or addresses.
 - `TraceCompassXmlWriter` currently builds one global state-system path per event/source. Prefix relevant state paths
-  with Trace Bus ID or resolved processor identity so exceptions, sleep, DWT sources, and counters from different
-  processors do not merge into the same GUI lane.
+  with resolved processor/route label and architectural Trace Bus ID so exceptions, sleep, DWT sources, and counters
+  from different routes do not merge into the same GUI lane.
 
 ## Sequential implementation phases
 
@@ -544,7 +544,7 @@ Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4
 | 6 | DecodeTree `SINGLE` migration | Complete |
 | 7 | Clean formatted decoding and TB integration | Complete |
 | 8 | Route-local recovery and error isolation | Complete |
-| 9 | Consumer validation, documentation, and final hardening | Complete |
+| 9 | Consumer validation, documentation, and final hardening | Implementation complete; supported-platform CI pending |
 
 Update this table only after the corresponding exit criterion and common gate pass.
 
@@ -704,7 +704,8 @@ Purpose: make CTF and Trace Compass consume the route-aware model before formatt
 4. Remove the equal-clock restriction. Distinct processor domains get distinct clock UUIDs even at equal frequency;
    sharing requires an explicitly identical counter/timebase domain.
 5. Generate Trace Compass XML only when every emitted stream uses the same one clock declaration, and partition its
-   state paths by route/processor. Otherwise keep valid CTF, remove stale XML, and report one Warning.
+   state paths by route/processor label followed by architectural Trace Bus ID. Otherwise keep valid CTF, remove
+   stale XML, and report one Warning.
 6. Treat all stream files plus metadata and optional XML as one CTF backend lifecycle. Any CTF start/write/finish
    failure cleans the incomplete bundle while an independent CSV backend may still complete.
 7. Drive the encoder directly with interleaved semantic events on at least two routes and test lazy creation,
@@ -718,7 +719,12 @@ raw frontend; all legacy CTF/XML tests remain green.
 
 Purpose: replace the direct ITM session with the final common frontend while changing only the `SINGLE` path.
 
-1. Add a tree-session wrapper that owns `DecodeTree`, its configured components, callback adapters, and error state.
+1. Add one lifetime-safe session stack around `DecodeTree`: the low-level tree session owns `DecodeTree`, its
+   configured decoder components, and logger lease; the format-specific outer session owns callback adapters,
+   monitors, and callback error state for longer than the tree; and the decoder implementation owns the event
+   collector and recovery error controller for longer than that outer session. Keep this split so feed/recovery
+   policy stays outside the low-level tree wrapper while every callback target remains alive until `DecodeTree` has
+   been destroyed.
 2. Install the alternate OpenCSD logger for exactly the tree lifetime, restore the previously installed logger on
    every exit path, and enforce at most one live tree session.
 3. Create one ITM decoder in `OCSD_TRC_SRC_SINGLE` mode, bind OpenCSD channel `0` to the synthetic route, and attach
@@ -1044,7 +1050,9 @@ an Error and does not start. Processor labels are omitted or use the existing ge
 11. Keep `cmsis_trace_bus_id` in CoreSight/ITM event contexts for CMSIS CTF profile and consumer compatibility. Write
     the architectural ID for formatted CoreSight routes and retain `0` as the existing no-ATB-ID sentinel for the
     legacy unformatted ITM route. Event Recorder stream classes omit this field; never write a CTF-local ID such as
-    `0x80` into it.
+    `0x80` into it. In generalized ITM schemas, keep that field an unchanged `uint8_t` and add the ctrace-private
+    `ctrace_route` enum as separate visualization metadata. Label it with the bound processor name when available and
+    with the decimal CTF stream-class ID otherwise; do not add it to the legacy event context.
 12. Remove the output-planning rejection for selected streams with different valid clocks. Resolve frequency once
     per clock-domain descriptor: one valid value is used by every stream on that domain, while conflicting valid
     values are a CTF requirement failure. Diagnose missing, null, invalid, zero, or conflicting declarations with an
@@ -1063,8 +1071,10 @@ an Error and does not start. Processor labels are omitted or use the existing ge
     the CTF output, ensure no stale companion XML remains at the target path, and emit one clear Warning. A future
     per-domain-bundle/experiment output may restore a combined GUI without claiming false cross-domain ordering.
     An empty formatted capture produces a metadata-only CTF bundle with no XML and no multiple-clock Warning.
-16. When XML is generated, partition Trace Compass state-system paths by normalized route/processor identity before
-    the existing event/source hierarchy.
+16. When XML is generated, partition Trace Compass state-system paths by the generalized `ctrace_route` label and
+    then `cmsis_trace_bus_id` before the existing event/source hierarchy. The label represents the normalized
+    processor binding when available and otherwise the numeric CTF stream-class identity; the following
+    architectural ID keeps complete paths unique when two labels happen to match.
 17. Without a common time reference, describe clocks as independent and do not claim wall-clock or cross-core
     synchronization. Their frequencies still provide correct elapsed time within each stream. When usable global
     timestamp correlation is available, specify and test the appropriate separate-clock offset/absolute

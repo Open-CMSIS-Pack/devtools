@@ -41,8 +41,16 @@ successful trace import:
 - The single-clock `trace-match` output exposed seven events. Its generated XML
   analysis produced the `DWT_MATCH` time-graph states at 1,000, 3,000, 6,000,
   and 10,000 ns.
-- The two-clock `TB-Trace` output exposed 614 events and intentionally had no
-  companion XML, avoiding an unsupported combined time graph.
+- A current generalized single-clock TB conversion filtered to CM4/stream 1
+  exposed 244 events from 0 through 8,844,454 ns. Its event table placed the
+  25,729-tick PC sample at 107,204 ns with stream context
+  `[cmsis_trace_bus_id=1, ctrace_route=CM4]`. The XML exception time graph
+  returned 29 states each for Thread Mode, Exception Return, and SysTick; a
+  literal-path query returned the same states below `CM4/1/...`, proving the
+  two-component route prefix.
+- The two-clock `TB-Trace` output exposed 614 events, emitted exactly one
+  multi-clock warning, and intentionally had no companion XML, avoiding an
+  unsupported combined time graph.
 - A two-route equal-frequency variant retained two separate clock domains;
   equal frequency did not imply a common origin. Re-conversion removed a stale
   XML target when the emitted topology was multi-clock.

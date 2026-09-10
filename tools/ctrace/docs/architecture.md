@@ -95,6 +95,13 @@ route to one ITM decoder. `FRAME_FORMATTED` owns the frame deformatter and one r
 configured Trace Bus ID. Ctrace creates and feeds one tree at a time because OpenCSD's alternate logger and live-tree
 registry use process-global state; the session restores the previously installed logger when it is destroyed.
 
+Ownership is deliberately split by responsibility while preserving one enclosing lifetime: `OpenCsdTreeSession`
+owns the tree and configured decoder components; the format-specific session owns callback adapters, monitors, and
+captured callback errors; and the decoder implementation owns the event collector and error controller. Members are
+ordered so the tree is destroyed first, before any callback target or diagnostic state it can reference. This keeps
+format-specific feed and recovery policy out of the low-level tree wrapper without weakening callback lifetime
+safety.
+
 `CortexMStreamDecoder` maintains an independent post-decoder for each normalized route. All post-decoders emit into
 the same `TraceEventSink`, preserving input order while keeping route-specific timestamp and DWT state apart.
 
@@ -205,10 +212,15 @@ independent CSV output remains valid. `--all` therefore does not make the backen
 CSV remains one combined file in synchronous semantic callback order; formatted rows carry their architectural Trace
 Bus ID and the legacy unformatted stream column stays empty. CTF owns one bundle-local metadata model and lazily
 creates one `stream_<id>` writer per formatted route that emits a selected event. Each stream class references an
-explicit clock domain. Distinct processor bindings remain distinct domains even when their clock frequencies match.
+explicit clock domain. Generalized metadata stores the optional processor name in a stream-scoped environment entry
+and exposes the same display identity through a private `ctrace_route` enum. Generated Trace Compass XML groups by
+that enum and then by `cmsis_trace_bus_id`, so processor labels remain readable while complete state-system paths
+stay unique even when a processor name equals another route's numeric fallback. An unbound route label falls back to
+its decimal CTF stream-class ID. The existing `uint8_t cmsis_trace_bus_id` field remains unchanged for CMSIS-profile
+consumers. Distinct processor bindings remain distinct domains even when their clock frequencies match.
 Because the supported Trace Compass reader cannot reliably combine multiple clock declarations, ctrace keeps that
 valid CTF bundle but omits any stale/new companion XML and reports one Warning. The legacy unformatted CTF path keeps
-its eager `stream_0`, `swo_clock`, and single-clock XML behavior.
+its eager `stream_0`, `swo_clock`, original event context, and single-clock XML behavior.
 
 Outputs use an explicit `start`, `writeEvent`, `stop`, and `abort` lifecycle. A successful backend can finish even if
 another backend fails. Decode or finalization failures trigger cleanup of incomplete artifacts.

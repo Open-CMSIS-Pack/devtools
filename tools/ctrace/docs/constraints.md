@@ -74,8 +74,10 @@ producer follow-ups are recorded in the
 - The DecodeTree-reported processed-byte count is the only formatted-input cursor. Bytes reported as consumed are
   never re-fed. Only the affected route remains in data loss until a real hardware sync; unresolved loss is closed at
   end of input.
-- A channel-less or deformatter error, failed route reset, incomplete input, unrecoverable response, exhausted wait,
-  or repeated lack of progress is input-fatal and aborts every active output.
+- A channel-less or deformatter error, failed route reset, incomplete formatted framing/input, unrecoverable response,
+  exhausted wait, or repeated lack of progress is input-fatal and aborts every active output. An incomplete packet at
+  the end of an unformatted ITM stream retains the legacy recoverable behavior: it is published as a decoder issue and
+  does not by itself abort otherwise valid output.
 - Discontinuities flush or clear pending route-local DWT state and invalidate timestamp quality before decoding
   continues. Timestamp prescalers default to `1`, accept only `1`, `4`, `16`, or `64`, and are applied exactly once
   after OpenCSD exposes raw ITM ticks.
@@ -88,6 +90,12 @@ producer follow-ups are recorded in the
 - Formatted CTF stream files are created lazily as `stream_<id>` only for routes with selected semantic output. Every
   emitted stream class references an explicit clock domain. The legacy unformatted path retains eager `stream_0`,
   its UUID-optional `swo_clock` metadata form, and companion XML compatibility.
+- Generalized CTF metadata records a bound processor name in the corresponding stream-scoped environment entry.
+  Its event context preserves the CMSIS-profile `uint8_t cmsis_trace_bus_id` field and adds the ctrace-private
+  `ctrace_route` enum used by generated Trace Compass XML. The enum label is the processor name when bound and the
+  decimal CTF stream-class ID otherwise. Generalized XML prefixes every state path with that label and then the
+  architectural `cmsis_trace_bus_id`, preventing equal display labels from merging routes. The exact legacy CTF
+  event context remains unchanged.
 - `timestamps.clock` has no ctrace fallback. Missing, null, invalid, zero, or conflicting frequency is accepted for
   validation-only and CSV operation but prevents CTF generation with an Error. With `--all`, valid CSV still
   completes while the invocation returns non-zero.
