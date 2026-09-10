@@ -4,6 +4,7 @@
 
 set(CTRACE_TEST_HEADER_FILES
   support/CtfTestSupport.h
+  support/FormattedTraceTestSupport.h
   support/OpenCsdSessionTestSupport.h
   support/OpenCsdTestSupport.h
   support/TestPath.h
@@ -33,6 +34,7 @@ add_executable(CtraceUnitTests
   src/decode/DecodePipelineTests.cpp
   src/decode/DwtPacketDecoderTests.cpp
   src/decode/OpenCsdErrorControllerTests.cpp
+  src/decode/OpenCsdFormattedItmSessionTests.cpp
   src/decode/OpenCsdItmDecoderTests.cpp
   src/decode/OpenCsdPacketCollectorTests.cpp
   src/decode/OpenCsdTreeSessionTests.cpp

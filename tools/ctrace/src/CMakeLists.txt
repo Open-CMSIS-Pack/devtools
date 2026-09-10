@@ -29,6 +29,7 @@ set(CTRACE_DECODE_HEADER_FILES
   decode/DecodePipeline.h
   decode/DwtPacketDecoder.h
   decode/OpenCsdErrorController.h
+  decode/OpenCsdFormattedItmSession.h
   decode/OpenCsdItmDecoder.h
   decode/OpenCsdItmSession.h
   decode/OpenCsdPacketCollector.h
@@ -131,6 +132,7 @@ add_library(ctrace-decode STATIC
   decode/DecodePipeline.cpp
   decode/DwtPacketDecoder.cpp
   decode/OpenCsdErrorController.cpp
+  decode/OpenCsdFormattedItmSession.cpp
   decode/OpenCsdItmDecoder.cpp
   decode/OpenCsdItmSession.cpp
   decode/OpenCsdPacketCollector.cpp

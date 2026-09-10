@@ -20,6 +20,7 @@ class CSConfig;
 class DecodeTree;
 class ITraceErrorLog;
 class ITrcGenElemIn;
+class ITrcRawFrameIn;
 class ITrcTypedBase;
 
 /** @brief Reports an OpenCSD tree-session creation or API failure. */
@@ -107,6 +108,12 @@ public:
    * @param packetMonitor Raw protocol-packet monitor attached to the packet processor.
    */
   void attachDecoderCallbacks(std::uint8_t channel, ITrcTypedBase& packetMonitor);
+  /**
+   * @brief Attaches the one raw-frame monitor supported by a formatted tree.
+   * @param frameMonitor Monitor receiving deformatter observations.
+   * @throws OpenCsdTreeSessionError If this is not a formatted tree or attachment fails.
+   */
+  void attachRawFrameMonitor(ITrcRawFrameIn& frameMonitor);
   /** @brief Routes one data-path operation through the DecodeTree root. */
   ocsd_datapath_resp_t traceDataIn(ocsd_datapath_op_t operation, ocsd_trc_index_t index, std::uint32_t size,
                                    const std::uint8_t* data, std::uint32_t* processed);
@@ -123,9 +130,14 @@ private:
 
   /** @brief Returns production DecodeTree construction operations. */
   static TreeLifecycle defaultLifecycle();
+  /** @brief Rejects source types unsupported by the common ctrace tree wrapper. */
+  static ocsd_dcd_tree_src_t validateSourceType(ocsd_dcd_tree_src_t sourceType);
+  /** @brief Enforces the channel namespace of the configured tree source type. */
+  void validateChannel(std::uint8_t channel) const;
 
   // Declaration order is intentional: reverse destruction removes the tree
   // before the global logger lease can restore its predecessor.
+  ocsd_dcd_tree_src_t m_sourceType;
   ITraceErrorLog& m_errorLogger;
   std::unique_ptr<LoggerLease> m_loggerLease;
   std::unique_ptr<DecodeTree, TreeDeleter> m_tree;

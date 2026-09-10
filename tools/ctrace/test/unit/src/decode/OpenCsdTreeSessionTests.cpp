@@ -54,7 +54,7 @@ private:
 /** @brief Creates a collector bound to a collecting sink for one tree test. */
 struct TreeTestContext {
   CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector{{}, sink};
+  OpenCsdPacketCollector collector{TraceRouteIdentity{}, sink};
   OpenCsdErrorController errors;
 };
 

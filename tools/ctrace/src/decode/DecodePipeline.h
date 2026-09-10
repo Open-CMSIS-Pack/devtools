@@ -14,6 +14,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 /** @brief Provides a non-owning view of one raw trace byte chunk. */
 struct RawByteView {
@@ -49,6 +50,24 @@ public:
    * @param sessionFactory Factory used to create the OpenCSD session.
    */
   DecodePipeline(CortexMDecodeRoute route, TraceEventSink& eventSink, const OpenCsdItmSessionFactory& sessionFactory);
+  /**
+   * @brief Creates a pipeline for normalized SINGLE or formatted routes.
+   * @param routes Route identities and timestamp prescalers used by the decoders.
+   * @param inputMode Raw transport presented to OpenCSD.
+   * @param eventSink Sink receiving decoded events synchronously.
+   * @param unsupportedTraceIdSink Observer for unconfigured normal formatted IDs.
+   */
+  DecodePipeline(std::vector<CortexMDecodeRoute> routes, OpenCsdItmInputMode inputMode, TraceEventSink& eventSink,
+                 OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdSink = {});
+  /**
+   * @brief Creates a configured pipeline with an injected OpenCSD session.
+   * @param routes Route identities and timestamp prescalers used by the decoders.
+   * @param inputMode Decoder policy mode applied around the injected session.
+   * @param eventSink Sink receiving decoded events synchronously.
+   * @param sessionFactory Factory used to create the OpenCSD session.
+   */
+  DecodePipeline(std::vector<CortexMDecodeRoute> routes, OpenCsdItmInputMode inputMode, TraceEventSink& eventSink,
+                 const OpenCsdItmSessionFactory& sessionFactory);
 
   /**
    * @brief Pushes the next contiguous chunk of raw trace bytes.
@@ -68,4 +87,4 @@ private:
   OpenCsdItmDecoder m_decoder;
 };
 
-#endif  // CTRACE_SRC_DECODE_DECODEPIPELINE_H
+#endif // CTRACE_SRC_DECODE_DECODEPIPELINE_H

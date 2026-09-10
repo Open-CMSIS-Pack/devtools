@@ -7,6 +7,7 @@
 
 // Cortex-M post-decoder and end-to-end decode pipeline tests.
 #include "OpenCsdTestSupport.h"
+#include "OpenCsdSessionTestSupport.h"
 #include "TestSupport.h"
 
 #include <gtest/gtest.h>
@@ -22,6 +23,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -366,6 +368,18 @@ TEST(CtraceUnitTests, testDecodePipelineRejectsInvalidChunkSizes)
   EXPECT_EQ(result.eventsOut, 0U);
 }
 
+TEST(CtraceUnitTests, testDecodePipelineRetainsInjectedSingleRouteConstructor)
+{
+  CollectingEventSink sink;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  DecodePipeline pipeline(singleDecodeRoute(), sink, OpenCsdSessionTestSupport::scriptedFactory(script));
+
+  const auto result = pipeline.finish();
+  EXPECT_EQ(result.bytesIn, 0U);
+  EXPECT_EQ(result.eventsOut, 0U);
+  EXPECT_EQ(script->endCalls, 1U);
+}
+
 TEST(CtraceUnitTests, testCortexMPostDecoderReportsDiscontinuityInterval)
 {
   CollectingEventSink sink;
@@ -467,8 +481,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderOverflowFlushesDwtSegments)
       << "overflow segment first packet should be timestamp";
   const auto* address = traceEventPayload<DwtAddressTraceEvent>(packets[1]);
   ASSERT_TRUE(address != nullptr) << "overflow should flush pending DWT fragment as an address event";
-  ASSERT_TRUE(dwtAddressPc(*address) ==
-              std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001234U}))
+  ASSERT_TRUE(dwtAddressPc(*address) == std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001234U}))
       << "flushed DWT PC mismatch";
   ASSERT_TRUE(packets[1].tcyc.has_value() && packets[1].tcyc.value() == 100) << "flushed DWT PC timestamp mismatch";
   ASSERT_TRUE(packets[1].quality.has_value() && packets[1].quality->overflow)
@@ -756,9 +769,7 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesDwtEventAndPmuPackets)
 TEST(CtraceUnitTests, testDecodePipelinePreservesPeriodicPcSamples)
 {
   const std::uint8_t trace[] = {
-      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U,
-      0x17U, 0x34U, 0x12U, 0x00U, 0x08U,
-      0x15U, 0x00U,
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x17U, 0x34U, 0x12U, 0x00U, 0x08U, 0x15U, 0x00U,
   };
   const auto decoded = decodeTrace({rawBytes(trace)});
 
@@ -778,10 +789,7 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesPeriodicPcSamples)
 TEST(CtraceUnitTests, testDecodePipelinePreservesCompressedDataTracePcValues)
 {
   const std::uint8_t trace[] = {
-      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U,
-      0x45U, 0x58U,
-      0x46U, 0x58U, 0x78U,
-      0x47U, 0x58U, 0x78U, 0x00U, 0x08U,
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x45U, 0x58U, 0x46U, 0x58U, 0x78U, 0x47U, 0x58U, 0x78U, 0x00U, 0x08U,
   };
   const auto decoded = decodeTrace({rawBytes(trace)});
 

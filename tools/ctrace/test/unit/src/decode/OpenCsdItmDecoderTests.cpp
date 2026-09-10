@@ -7,11 +7,13 @@
 
 #include "OpenCsdTestSupport.h"
 #include "OpenCsdSessionTestSupport.h"
+#include "FormattedTraceTestSupport.h"
 #include "TestSupport.h"
 
 #include <gtest/gtest.h>
 
 #include "OpenCsdErrorController.h"
+#include "OpenCsdFormattedItmSession.h"
 #include "OpenCsdItmDecoder.h"
 #include "OpenCsdItmSession.h"
 #include "OpenCsdPacketCollector.h"
@@ -19,21 +21,319 @@
 #include "opencsd/ocsd_if_types.h"
 
 #include <cstdint>
+#include <array>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
+using FormattedTraceTestSupport::itmHardwareSync;
+using FormattedTraceTestSupport::memoryAlignedFrames;
 using OpenCsdSessionTestSupport::ScriptedDecoderHarness;
 using OpenCsdTestSupport::CollectingOpenCsdElementSink;
+
+namespace {
+
+/** @brief Tracks calls made after a synthetic formatted-session failure. */
+struct ThrowingSessionState {
+  std::uint32_t resetCalls = 0U;
+};
+
+/** @brief Emits transactional output and then simulates a post-root session failure. */
+class ThrowingFormattedSession final : public OpenCsdItmSessionInterface {
+public:
+  /** @brief Binds shared observations and the collector under test. */
+  ThrowingFormattedSession(std::shared_ptr<ThrowingSessionState> state, OpenCsdPacketCollector& collector,
+                           std::optional<TraceRouteIdentity> incompleteTailRoute = std::nullopt)
+    : m_state(std::move(state)),
+      m_collector(collector),
+      m_incompleteTailRoute(std::move(incompleteTailRoute))
+  {
+  }
+
+  /** @brief Consumes the input, emits temporary semantics, and throws. */
+  ocsd_datapath_resp_t pushData(ocsd_trc_index_t index, std::uint32_t size, const std::uint8_t*,
+                                std::uint32_t& processed) override
+  {
+    processed = size;
+    if (m_incompleteTailRoute.has_value()) {
+      return OCSD_RESP_CONT;
+    }
+    m_collector.appendDecodeError(index + 3U, "temporary callback output", TraceIssueCode::DecodeError, false,
+                                  TraceIssueSeverity::Warning);
+    throw std::runtime_error("synthetic post-root session failure");
+  }
+
+  /** @brief Accepts a flush operation. */
+  ocsd_datapath_resp_t flush() override
+  {
+    return OCSD_RESP_CONT;
+  }
+
+  /** @brief Records an unexpected recovery reset. */
+  ocsd_datapath_resp_t reset() override
+  {
+    ++m_state->resetCalls;
+    return OCSD_RESP_CONT;
+  }
+
+  /** @brief Accepts end of trace. */
+  ocsd_datapath_resp_t endOfTrace() override
+  {
+    if (m_incompleteTailRoute.has_value()) {
+      m_collector.appendDecodeError(5U, "temporary end-of-trace output", TraceIssueCode::DecodeError, false,
+                                    TraceIssueSeverity::Warning);
+      ItmTrcPacket packet;
+      packet.setPktType(ITM_PKT_INCOMPLETE_EOT);
+      m_collector.rawPacketForRoute(*m_incompleteTailRoute, OCSD_OP_EOT, 6U, &packet, 0U, nullptr);
+      throw std::runtime_error("synthetic post-root end-of-trace failure");
+    }
+    return OCSD_RESP_CONT;
+  }
+
+private:
+  std::shared_ptr<ThrowingSessionState> m_state;
+  OpenCsdPacketCollector& m_collector;
+  std::optional<TraceRouteIdentity> m_incompleteTailRoute;
+};
+
+} // namespace
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderConstructsDefaultSession)
 {
   CollectingOpenCsdElementSink sink;
-  OpenCsdItmDecoder decoder({}, sink);
-
-  EXPECT_EQ(decoder.finish().bytesIn, 0U);
+  {
+    OpenCsdItmDecoder decoder({}, sink);
+    EXPECT_EQ(decoder.finish().bytesIn, 0U);
+  }
   EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdInitializationError));
+
+  const TraceRouteIdentity formattedRoute{TraceRouteId{0U}, 1U};
+  OpenCsdItmDecoder formatted({formattedRoute}, OpenCsdItmInputMode::CoreSightFormatted, sink);
+  EXPECT_EQ(formatted.finish().bytesIn, 0U);
+}
+
+TEST(CtraceUnitTests, testOpenCsdItmDecoderValidatesInputRouteCountAndDataPointer)
+{
+  CollectingOpenCsdElementSink sink;
+  EXPECT_THROW((void)OpenCsdItmDecoder({}, OpenCsdItmInputMode::Single, sink), std::invalid_argument);
+  EXPECT_THROW((void)OpenCsdItmDecoder({TraceRouteIdentity{}, TraceRouteIdentity{}}, OpenCsdItmInputMode::Single, sink),
+               std::invalid_argument);
+
+  OpenCsdItmDecoder decoder({}, sink);
+  EXPECT_THROW(decoder.push(nullptr, 1U), std::invalid_argument);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderTreatsProtocolRecoveryAsInputFatal)
+{
+  const auto route = TraceRouteIdentity{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes = {
+      {OCSD_RESP_ERR_CONT, 16U, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 5U, "bad packet"}}},
+  };
+  OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                            OpenCsdSessionTestSupport::scriptedFactory(script));
+  const std::array<std::uint8_t, 16U> frame{};
+
+  EXPECT_THROW(decoder.push(frame.data(), frame.size()), OpenCsdFatalError);
+  EXPECT_EQ(script->resetCalls, 0U);
+  EXPECT_TRUE(sink.hasIssue(TraceIssueCode::OpenCsdInvalidPacketHeader));
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderDoesNotInferDataLossFromSilentFrames)
+{
+  const auto route = TraceRouteIdentity{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes = {{OCSD_RESP_CONT, 16U, false}};
+  OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                            OpenCsdSessionTestSupport::scriptedFactory(script));
+  const std::array<std::uint8_t, 16U> frame{};
+
+  decoder.push(frame.data(), frame.size());
+  EXPECT_EQ(decoder.finish().bytesIn, frame.size());
+  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::DataLoss));
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRejectsNoProgressAndPartialFramesWithoutReset)
+{
+  const auto route = TraceRouteIdentity{TraceRouteId{0U}, 1U};
+  const std::array<std::uint8_t, 16U> frame{};
+
+  CollectingOpenCsdElementSink stalledSink;
+  const auto stalledScript = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  stalledScript->pushes = {{OCSD_RESP_CONT, 0U, false}};
+  OpenCsdItmDecoder stalled({route}, OpenCsdItmInputMode::CoreSightFormatted, stalledSink,
+                            OpenCsdSessionTestSupport::scriptedFactory(stalledScript));
+  EXPECT_THROW(stalled.push(frame.data(), frame.size()), OpenCsdFatalError);
+  EXPECT_EQ(stalledScript->resetCalls, 0U);
+  EXPECT_TRUE(stalledSink.hasIssue(TraceIssueCode::OpenCsdNoProgress));
+
+  CollectingOpenCsdElementSink partialSink;
+  OpenCsdItmDecoder partial(
+      {route}, OpenCsdItmInputMode::CoreSightFormatted, partialSink,
+      OpenCsdSessionTestSupport::scriptedFactory(std::make_shared<OpenCsdSessionTestSupport::SessionScript>()));
+  EXPECT_THROW(partial.push(frame.data(), frame.size() - 1U), OpenCsdFatalError);
+  EXPECT_TRUE(partialSink.hasIssue(TraceIssueCode::OpenCsdDecodeError));
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderPreservesRoutedIncompleteTailAsFatal)
+{
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  CollectingOpenCsdElementSink sink;
+  OpenCsdItmDecoder decoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, sink);
+  const auto capture = memoryAlignedFrames({
+      {2U, itmHardwareSync()},
+      {2U, {0x03U, 0x12U}},
+  });
+
+  decoder.push(capture.data(), static_cast<std::uint32_t>(capture.size()));
+  try {
+    (void)decoder.finish();
+    FAIL() << "incomplete formatted ITM packet did not fail the input";
+  } catch (const OpenCsdFatalError& error) {
+    EXPECT_EQ(error.bytesProcessed(), capture.size());
+  }
+
+  std::vector<const OpenCsdTraceElement*> issues;
+  for (const auto& element : sink.elements()) {
+    if (element.issueCode.has_value()) {
+      issues.push_back(&element);
+    }
+  }
+  ASSERT_EQ(issues.size(), 1U);
+  EXPECT_EQ(issues.front()->issueCode, TraceIssueCode::OpenCsdIncompleteTail);
+  EXPECT_EQ(issues.front()->route, route2);
+  EXPECT_EQ(issues.front()->sourceIndex, 6U);
+  EXPECT_TRUE(issues.front()->discontinuity);
+  EXPECT_EQ(issues.front()->issueSeverity, TraceIssueSeverity::Error);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderNormalizesUnassignedDataWithExactOffset)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink);
+  const std::array<std::uint8_t, 16U> unassignedFrame{};
+
+  try {
+    decoder.push(unassignedFrame.data(), unassignedFrame.size());
+    FAIL() << "formatted data before the first source ID did not fail";
+  } catch (const OpenCsdFatalError& error) {
+    EXPECT_EQ(error.bytesProcessed(), unassignedFrame.size());
+    EXPECT_NE(std::string(error.what()).find("has no source ID"), std::string::npos);
+  }
+
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().kind, OpenCsdTraceElement::Kind::Error);
+  EXPECT_EQ(sink.elements().front().issueCode, TraceIssueCode::OpenCsdFormattedInputError);
+  EXPECT_EQ(sink.elements().front().sourceIndex, 0U);
+  EXPECT_TRUE(sink.elements().front().discontinuity);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderNormalizesPostRootSessionExceptionsAndRollsBack)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  const auto state = std::make_shared<ThrowingSessionState>();
+  const OpenCsdItmSessionFactory factory =
+      [state](OpenCsdPacketCollector& collector,
+              OpenCsdErrorController&) -> std::unique_ptr<OpenCsdItmSessionInterface> {
+    return std::make_unique<ThrowingFormattedSession>(state, collector);
+  };
+  OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink, factory);
+  const std::array<std::uint8_t, 16U> frame{};
+
+  try {
+    decoder.push(frame.data(), frame.size());
+    FAIL() << "formatted session exception escaped without normalization";
+  } catch (const OpenCsdFatalError& error) {
+    EXPECT_EQ(error.bytesProcessed(), frame.size());
+    EXPECT_NE(std::string(error.what()).find("formatted OpenCSD session operation failed"), std::string::npos);
+    EXPECT_NE(std::string(error.what()).find("synthetic post-root session failure"), std::string::npos);
+  }
+
+  EXPECT_EQ(state->resetCalls, 0U);
+  ASSERT_EQ(sink.elements().size(), 1U) << "temporary transaction output was not rolled back";
+  EXPECT_EQ(sink.elements().front().issueCode, TraceIssueCode::OpenCsdDecodeError);
+  EXPECT_EQ(sink.elements().front().sourceIndex, 3U);
+  EXPECT_EQ(sink.elements().front().issueSeverity, TraceIssueSeverity::Error);
+}
+
+TEST(CtraceUnitTests, testSingleOpenCsdItmDecoderLeavesSessionExceptionBehaviorUnchanged)
+{
+  CollectingOpenCsdElementSink sink;
+  const auto state = std::make_shared<ThrowingSessionState>();
+  const OpenCsdItmSessionFactory factory =
+      [state](OpenCsdPacketCollector& collector,
+              OpenCsdErrorController&) -> std::unique_ptr<OpenCsdItmSessionInterface> {
+    return std::make_unique<ThrowingFormattedSession>(state, collector);
+  };
+  OpenCsdItmDecoder decoder(TraceRouteIdentity{}, sink, factory);
+  const std::uint8_t byte = 0U;
+
+  try {
+    decoder.push(&byte, 1U);
+    FAIL() << "SINGLE session exception did not propagate";
+  } catch (const OpenCsdFatalError&) {
+    FAIL() << "SINGLE session exception was normalized by formatted-input policy";
+  } catch (const std::runtime_error& error) {
+    EXPECT_EQ(std::string(error.what()), "synthetic post-root session failure");
+  }
+  EXPECT_EQ(state->resetCalls, 0U);
+  EXPECT_TRUE(sink.elements().empty());
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderKeepsIncompleteTailWhenEndOperationThrows)
+{
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  CollectingOpenCsdElementSink sink;
+  const auto state = std::make_shared<ThrowingSessionState>();
+  const OpenCsdItmSessionFactory factory =
+      [state, route2](OpenCsdPacketCollector& collector,
+                      OpenCsdErrorController&) -> std::unique_ptr<OpenCsdItmSessionInterface> {
+    return std::make_unique<ThrowingFormattedSession>(state, collector, route2);
+  };
+  OpenCsdItmDecoder decoder({route1, route2}, OpenCsdItmInputMode::CoreSightFormatted, sink, factory);
+  const std::array<std::uint8_t, 16U> frame{};
+  decoder.push(frame.data(), frame.size());
+
+  EXPECT_THROW((void)decoder.finish(), OpenCsdFatalError);
+  EXPECT_EQ(state->resetCalls, 0U);
+  ASSERT_EQ(sink.elements().size(), 2U) << "temporary end-of-trace transaction output was not discarded";
+  EXPECT_EQ(sink.elements()[0].issueCode, TraceIssueCode::OpenCsdIncompleteTail);
+  EXPECT_EQ(sink.elements()[0].route, route2);
+  EXPECT_EQ(sink.elements()[0].sourceIndex, 6U);
+  EXPECT_EQ(sink.elements()[1].issueCode, TraceIssueCode::OpenCsdDecodeError);
+  EXPECT_EQ(sink.elements()[1].route, route1);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderNormalizesObserverExceptionAfterRootReturn)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink, [](std::uint8_t, std::uint64_t) {
+    throw std::runtime_error("synthetic observer failure");
+  });
+  const auto capture = memoryAlignedFrames({{42U, {0xdeU, 0xadU}}});
+
+  try {
+    decoder.push(capture.data(), static_cast<std::uint32_t>(capture.size()));
+    FAIL() << "formatted observer exception escaped without normalization";
+  } catch (const OpenCsdFatalError& error) {
+    EXPECT_EQ(error.bytesProcessed(), capture.size());
+    EXPECT_NE(std::string(error.what()).find("formatted OpenCSD session operation failed"), std::string::npos);
+    EXPECT_NE(std::string(error.what()).find("synthetic observer failure"), std::string::npos);
+  }
+
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().issueCode, TraceIssueCode::OpenCsdDecodeError);
+  EXPECT_EQ(sink.elements().front().sourceIndex, 0U);
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderChunksAndFinishesOnce)
@@ -246,7 +546,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsResetAndInitializationFailures
 TEST(CtraceUnitTests, testOpenCsdItmSessionAcceptsEmptyDataPathOperations)
 {
   CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector({}, sink);
+  OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
   OpenCsdErrorController errors;
   OpenCsdItmSession session(collector, errors);
 

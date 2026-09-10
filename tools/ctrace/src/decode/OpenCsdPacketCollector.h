@@ -8,6 +8,7 @@
 #ifndef CTRACE_SRC_DECODE_OPENCSDPACKETCOLLECTOR_H
 #define CTRACE_SRC_DECODE_OPENCSDPACKETCOLLECTOR_H
 
+#include "OpenCsdFormattedItmSession.h"
 #include "TraceEvent.h"
 #include "OpenCsdTraceElement.h"
 #include "TraceRoute.h"
@@ -21,11 +22,15 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
 /** @brief Collects OpenCSD callbacks into transactional ctrace elements. */
-class OpenCsdPacketCollector : public ITrcGenElemIn, public IPktRawDataMon<ItmTrcPacket> {
+class OpenCsdPacketCollector : public ITrcGenElemIn,
+                               public IPktRawDataMon<ItmTrcPacket>,
+                               public OpenCsdFormattedItmPacketSink {
 public:
   /**
    * @brief Creates a collector that emits committed elements to a sink.
@@ -33,6 +38,13 @@ public:
    * @param elementSink Sink receiving elements after transaction commit.
    */
   OpenCsdPacketCollector(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink);
+  /**
+   * @brief Creates a collector that routes formatted callbacks by Trace Bus ID.
+   * @param routes Normalized routes, each carrying one unique architectural Trace Bus ID.
+   * @param elementSink Sink receiving elements after transaction commit.
+   * @throws std::invalid_argument If the route catalogue is empty, invalid, or ambiguous.
+   */
+  OpenCsdPacketCollector(std::vector<TraceRouteIdentity> routes, OpenCsdTraceElementSink& elementSink);
 
   /**
    * @brief Starts buffering elements for one recoverable decoder operation.
@@ -44,6 +56,12 @@ public:
   /** @brief Commits all buffered elements. */
   void commitTransaction();
   /**
+   * @brief Commits only matching failing issues and discards every other buffered element.
+   * @param issueCode Issue code retained from the current transaction.
+   * @return Number of retained issues.
+   */
+  std::size_t commitTransactionErrors(TraceIssueCode issueCode);
+  /**
    * @brief Commits buffered elements before a raw source offset.
    * @param sourceOffset First raw offset that remains buffered.
    */
@@ -54,6 +72,8 @@ public:
   void rethrowOutputError();
   /** @brief Returns the number of currently buffered elements. */
   std::size_t transactionElementCount() const;
+  /** @brief Tests whether the current transaction contains a failing diagnostic. */
+  bool transactionHasError() const;
   /** @brief Returns the first buffered raw offset, if present. */
   std::optional<std::uint64_t> transactionFirstSourceOffset() const;
   /**
@@ -89,30 +109,53 @@ public:
   /** @brief Receives one raw ITM packet callback from OpenCSD. */
   void RawPacketDataMon(ocsd_datapath_op_t op, ocsd_trc_index_t index_sop, const ItmTrcPacket* pkt, std::uint32_t size,
                         const std::uint8_t* data) override;
+  /**
+   * @brief Receives a raw ITM packet from a decoder adapter bound to one route.
+   * @param route Exact normalized route bound to the decoder callback.
+   * @param op OpenCSD data-path operation.
+   * @param index_sop Raw input offset at the start of the packet.
+   * @param pkt Decoded ITM packet, or null for an operation-only callback.
+   * @param size Number of raw packet bytes.
+   * @param data Raw packet bytes.
+   */
+  void rawPacketForRoute(const TraceRouteIdentity& route, ocsd_datapath_op_t op, ocsd_trc_index_t index_sop,
+                         const ItmTrcPacket* pkt, std::uint32_t size, const std::uint8_t* data) override;
 
 private:
+  /** @brief Returns the SINGLE route, or null for a formatted collector. */
+  const TraceRouteIdentity* singleRoute() const noexcept;
+  /** @brief Returns the deterministic route for an input-wide diagnostic. */
+  const TraceRouteIdentity& defaultRoute() const noexcept;
+  /** @brief Resolves a generic callback channel to its normalized route. */
+  const TraceRouteIdentity* routeForChannel(std::uint8_t channel) const noexcept;
+  /** @brief Tests whether an explicit packet route belongs to this collector. */
+  bool containsRoute(const TraceRouteIdentity& route) const noexcept;
+  /** @brief Converts one raw packet callback after its route has been resolved. */
+  void appendRawPacket(const TraceRouteIdentity& route, ocsd_datapath_op_t op, ocsd_trc_index_t index_sop,
+                       const ItmTrcPacket* pkt);
   /** @brief Appends a hardware synchronization element. */
-  void appendSync(ocsd_trc_index_t index);
+  void appendSync(ocsd_trc_index_t index, const TraceRouteIdentity& route);
   /** @brief Appends a hardware overflow element. */
-  void appendOverflow(ocsd_trc_index_t index);
+  void appendOverflow(ocsd_trc_index_t index, const TraceRouteIdentity& route);
   /** @brief Converts an OpenCSD global timestamp callback. */
-  void appendGlobalTimestamp(ocsd_trc_index_t index, const OcsdTraceElement& elem);
+  void appendGlobalTimestamp(ocsd_trc_index_t index, const OcsdTraceElement& elem, const TraceRouteIdentity& route);
   /** @brief Converts an OpenCSD error packet callback. */
-  void appendError(ocsd_trc_index_t index, const ItmTrcPacket& pkt);
+  void appendError(ocsd_trc_index_t index, const ItmTrcPacket& pkt, const TraceRouteIdentity& route);
   /** @brief Converts an ITM software packet callback. */
-  void appendSoftware(ocsd_trc_index_t index, const OcsdTraceElement& elem);
+  void appendSoftware(ocsd_trc_index_t index, const OcsdTraceElement& elem, const TraceRouteIdentity& route);
   /** @brief Converts a DWT hardware packet callback. */
-  void appendDwt(ocsd_trc_index_t index, const OcsdTraceElement& elem);
+  void appendDwt(ocsd_trc_index_t index, const OcsdTraceElement& elem, const TraceRouteIdentity& route);
   /** @brief Converts an OpenCSD local timestamp callback. */
-  void appendTimestamp(ocsd_trc_index_t index, const OcsdTraceElement& elem);
+  void appendTimestamp(ocsd_trc_index_t index, const OcsdTraceElement& elem, const TraceRouteIdentity& route);
   /** @brief Maps the OpenCSD timestamp type to its semantic relation. */
   static LocalTimestampRelation timestampRelation(swt_itm_type type);
   /** @brief Buffers or commits one element according to transaction state. */
-  void appendElement(OpenCsdTraceElement element);
+  void appendElement(OpenCsdTraceElement element, const TraceRouteIdentity& route);
   /** @brief Emits one committed element while deferring sink exceptions. */
   void appendCommitted(OpenCsdTraceElement element);
 
-  TraceRouteIdentity m_route;
+  std::optional<TraceRouteIdentity> m_singleRoute;
+  std::map<std::uint8_t, TraceRouteIdentity> m_routesByChannel;
   OpenCsdTraceElementSink& m_elementSink;
   bool m_transactionActive = false;
   std::vector<OpenCsdTraceElement> m_transactionElements;

@@ -94,11 +94,22 @@ static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady
   return out.str();
 }
 
-/** @brief Resolves the one semantic route used by the current SINGLE frontend. */
-static CortexMDecodeRoute decodeRoute(const CtraceRunMeta& ctraceRunMeta)
+/** @brief Converts normalized trace-run routes into semantic decoder routes. */
+static std::vector<CortexMDecodeRoute> decodeRoutes(const CtraceRunMeta& ctraceRunMeta)
 {
-  const auto& route = ctraceRunMeta.routes().front();
-  return {route.identity, route.timestampPrescaler};
+  std::vector<CortexMDecodeRoute> result;
+  result.reserve(ctraceRunMeta.routes().size());
+  for (const auto& route : ctraceRunMeta.routes()) {
+    result.push_back({route.identity, route.timestampPrescaler});
+  }
+  return result;
+}
+
+/** @brief Maps the preflighted raw-input contract to the decode frontend. */
+static OpenCsdItmInputMode decodeInputMode(const TraceRunInputDescriptor& input)
+{
+  return input.format() == TraceRunFormat::Formatted ? OpenCsdItmInputMode::CoreSightFormatted
+                                                     : OpenCsdItmInputMode::Single;
 }
 
 /** @brief Indexes route-local ITM enable masks without using a transport sentinel. */
@@ -160,12 +171,9 @@ FileDecodeJob::FileDecodeJob(CliOptions options, TraceRunInputDescriptor input, 
 
 void FileDecodeJob::run()
 {
-  if (m_input.format() == TraceRunFormat::Formatted) {
-    throw std::runtime_error("formatted trace input is not enabled yet");
-  }
-
   const auto& ctraceRunMeta = m_input.metadata();
-  const auto route = decodeRoute(ctraceRunMeta);
+  const auto routes = decodeRoutes(ctraceRunMeta);
+  const auto inputMode = decodeInputMode(m_input);
   auto outputPlan = planTraceOutputs(outputRequest(m_options), m_input.path(), ctraceRunMeta, m_diagnostics);
   if (outputPlan.hasRequestedOutputs() && !outputPlan.hasEnabledOutputs()) {
     return;
@@ -183,11 +191,21 @@ void FileDecodeJob::run()
   DecodeConsumers consumers(std::move(outputs), m_diagnostics, ctraceRunMeta.itmEnableMask(),
                             itmEnableMasks(ctraceRunMeta));
 
-  m_diagnostics.report({
-      DiagnosticSink::Severity::Info,
-      "using timestamp prescaler",
-      {{"value", std::to_string(route.timestampPrescaler)}},
-  });
+  for (const auto& route : ctraceRunMeta.routes()) {
+    std::vector<std::pair<std::string, std::string>> context;
+    context.emplace_back("value", std::to_string(route.timestampPrescaler));
+    if (route.identity.traceBusId.has_value()) {
+      context.emplace_back("stream", std::to_string(*route.identity.traceBusId));
+    }
+    if (route.processorName.has_value()) {
+      context.emplace_back("pname", *route.processorName);
+    }
+    m_diagnostics.report({
+        DiagnosticSink::Severity::Info,
+        "using timestamp prescaler",
+        std::move(context),
+    });
+  }
   const auto decodeStart = std::chrono::steady_clock::now();
   DecodeResult decode;
   bool decoderFatal = false;
@@ -195,9 +213,19 @@ void FileDecodeJob::run()
     RawFileReader input(m_input.path(), m_input.stream());
     std::unique_ptr<DecodePipeline> pipeline;
     if (m_sessionFactory) {
-      pipeline = std::make_unique<DecodePipeline>(route, consumers, m_sessionFactory);
+      pipeline = std::make_unique<DecodePipeline>(routes, inputMode, consumers, m_sessionFactory);
     } else {
-      pipeline = std::make_unique<DecodePipeline>(route, consumers);
+      pipeline = std::make_unique<DecodePipeline>(routes, inputMode, consumers,
+                                                  [&](std::uint8_t traceBusId, std::uint64_t sourceOffset) {
+                                                    m_diagnostics.report({
+                                                        DiagnosticSink::Severity::Warning,
+                                                        "skipping unsupported formatted CoreSight trace source",
+                                                        {
+                                                            {"stream", std::to_string(traceBusId)},
+                                                            {"rawOffset", std::to_string(sourceOffset)},
+                                                        },
+                                                    });
+                                                  });
     }
     while (true) {
       const auto read = input.read();

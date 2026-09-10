@@ -9,6 +9,7 @@
 
 #include "TraceEvent.h"
 #include "OpenCsdErrorController.h"
+#include "OpenCsdFormattedItmSession.h"
 #include "OpenCsdPacketCollector.h"
 #include "OpenCsdItmSession.h"
 #include "OpenCsdTraceElement.h"
@@ -16,32 +17,43 @@
 #include "opencsd/ocsd_if_types.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 static_assert(sizeof(ocsd_trc_index_t) == sizeof(std::uint64_t), "ctrace requires 64-bit OpenCSD trace indices");
-
-/** @brief Creates the production OpenCSD ITM session. */
-static std::unique_ptr<OpenCsdItmSessionInterface>
-createDefaultOpenCsdItmSession(OpenCsdPacketCollector& collector, OpenCsdErrorController& errorController)
-{
-  return std::make_unique<OpenCsdItmSession>(collector, errorController);
-}
 
 /** @brief Implements OpenCSD feeding, bounded retry, and hardware-sync recovery. */
 class OpenCsdItmDecoderImpl {
 public:
-  /** @brief Creates a decoder implementation around one session factory. */
-  OpenCsdItmDecoderImpl(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink,
-                        const OpenCsdItmSessionFactory& sessionFactory)
-    : m_collector(std::move(route), elementSink)
+  /** @brief Creates a decoder implementation around the selected frontend and optional session factory. */
+  OpenCsdItmDecoderImpl(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
+                        OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory,
+                        OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdObserver)
+    : m_inputMode(inputMode),
+      m_collector(createCollector(routes, inputMode, elementSink))
   {
     try {
-      m_session = sessionFactory(m_collector, m_errorController);
+      if (sessionFactory) {
+        m_session = sessionFactory(m_collector, m_errorController);
+      } else if (isFormatted()) {
+        OpenCsdUnsupportedTraceIdSink unsupportedTraceIdSink;
+        if (unsupportedTraceIdObserver) {
+          unsupportedTraceIdSink = [observer = std::move(unsupportedTraceIdObserver)](std::uint8_t traceBusId,
+                                                                                      ocsd_trc_index_t sourceOffset) {
+            observer(traceBusId, static_cast<std::uint64_t>(sourceOffset));
+          };
+        }
+        m_session = std::make_unique<OpenCsdFormattedItmSession>(std::move(routes), m_collector, m_errorController,
+                                                                 m_collector, std::move(unsupportedTraceIdSink));
+      } else {
+        m_session = std::make_unique<OpenCsdItmSession>(m_collector, m_errorController);
+      }
       if (m_session == nullptr) {
         failInitialization("OpenCSD ITM session factory returned no session");
       }
@@ -55,6 +67,15 @@ public:
   {
     if (m_finished) {
       throw std::runtime_error("OpenCSD ITM decoder already finished");
+    }
+    if (data == nullptr && size != 0U) {
+      throw std::invalid_argument("raw trace data pointer is null while bytes are present");
+    }
+    if (isFormatted() && size % kFormattedFrameSize != 0U) {
+      m_collector.appendDecodeError(m_traceIndex, "formatted raw trace chunk is not a multiple of 16 bytes",
+                                    TraceIssueCode::OpenCsdDecodeError, false);
+      throw OpenCsdFatalError("formatted raw trace chunk is not a multiple of 16 bytes",
+                              static_cast<std::uint64_t>(m_traceIndex));
     }
     std::uint32_t offset = 0;
     while (offset < size) {
@@ -74,11 +95,11 @@ public:
     completeConsumedDataLoss(m_traceIndex);
     m_collector.beginTransaction();
     m_errorController.beginDataPathCall();
-    const auto response = m_session->endOfTrace();
-    m_collector.rethrowOutputError();
+    const auto response = invokeSessionOperation([&] { return m_session->endOfTrace(); }, m_traceIndex, 0U, nullptr,
+                                                 "OpenCSD aborted end-of-trace processing: ", true);
     const auto decision = m_errorController.decide(response);
-    if (decision.action == OpenCsdErrorController::Action::Abort) {
-      abortDecode(decision, 0U, m_traceIndex, 0U, "OpenCSD aborted end-of-trace processing: ");
+    if (decision.action == OpenCsdErrorController::Action::Abort || formattedOperationFailed(decision)) {
+      abortDecode(decision, 0U, m_traceIndex, 0U, "OpenCSD aborted end-of-trace processing: ", isFormatted());
     }
     if (decision.action == OpenCsdErrorController::Action::RecoverStream) {
       const auto sourceOffset = OpenCsdErrorController::errorOffset(decision, m_traceIndex);
@@ -98,6 +119,91 @@ public:
 
 private:
   static constexpr std::uint32_t kMaxTraceDataInBytes = 4U * 1024U;
+  static constexpr std::uint32_t kFormattedFrameSize = 16U;
+
+  /** @brief Creates a fixed-route or channel-routed collector for the selected transport. */
+  static OpenCsdPacketCollector createCollector(const std::vector<TraceRouteIdentity>& routes,
+                                                OpenCsdItmInputMode inputMode, OpenCsdTraceElementSink& elementSink)
+  {
+    if (routes.empty()) {
+      throw std::invalid_argument("OpenCSD ITM decoding requires at least one normalized route");
+    }
+    if (inputMode == OpenCsdItmInputMode::Single) {
+      if (routes.size() != 1U) {
+        throw std::invalid_argument("OpenCSD SINGLE decoding requires exactly one normalized route");
+      }
+      return OpenCsdPacketCollector(routes.front(), elementSink);
+    }
+    return OpenCsdPacketCollector(routes, elementSink);
+  }
+
+  /** @brief Reports whether the frontend is a CoreSight frame deformatter. */
+  bool isFormatted() const noexcept
+  {
+    return m_inputMode == OpenCsdItmInputMode::CoreSightFormatted;
+  }
+
+  /** @brief Makes every formatted protocol or deformatter error input-fatal in Phase 7. */
+  bool formattedOperationFailed(const OpenCsdErrorController::Decision& decision) const
+  {
+    if (!isFormatted()) {
+      return false;
+    }
+    const auto reportedError = std::any_of(decision.errors.begin(), decision.errors.end(),
+                                           [](const auto& error) { return error.severity == OCSD_ERR_SEV_ERROR; });
+    return decision.action == OpenCsdErrorController::Action::RecoverStream || reportedError ||
+           OpenCsdErrorController::responseReportsError(decision.response) || m_collector.transactionHasError();
+  }
+
+  /** @brief Runs one session operation while keeping legacy SINGLE exception behavior unchanged. */
+  template <typename Operation>
+  ocsd_datapath_resp_t invokeSessionOperation(Operation&& operation, std::uint64_t baseOffset, std::uint32_t size,
+                                              const std::uint32_t* bytesConsumed, const std::string& fatalPrefix,
+                                              bool preserveIncompleteTail = false)
+  {
+    if (!isFormatted()) {
+      const auto response = operation();
+      m_collector.rethrowOutputError();
+      return response;
+    }
+
+    try {
+      const auto response = operation();
+      m_collector.rethrowOutputError();
+      return response;
+    } catch (const OpenCsdFormattedInputError& error) {
+      abortFormattedException(error.what(), error.sourceOffset(), processedOffset(baseOffset, size, bytesConsumed),
+                              fatalPrefix, TraceIssueCode::OpenCsdFormattedInputError, preserveIncompleteTail);
+    } catch (const std::exception& error) {
+      const auto sourceOffset = m_collector.transactionFirstSourceOffset().value_or(baseOffset);
+      abortFormattedException(std::string("formatted OpenCSD session operation failed: ") + error.what() +
+                                  " at raw input offset " + std::to_string(sourceOffset),
+                              sourceOffset, processedOffset(baseOffset, size, bytesConsumed), fatalPrefix,
+                              TraceIssueCode::OpenCsdDecodeError, preserveIncompleteTail);
+    }
+  }
+
+  /** @brief Computes the raw byte boundary reached by a session operation. */
+  static std::uint64_t processedOffset(std::uint64_t baseOffset, std::uint32_t size,
+                                       const std::uint32_t* bytesConsumed) noexcept
+  {
+    return baseOffset +
+           (bytesConsumed == nullptr ? 0U : std::min<std::uint64_t>(*bytesConsumed, static_cast<std::uint64_t>(size)));
+  }
+
+  /** @brief Normalizes one formatted-session exception into the input-fatal decoder contract. */
+  [[noreturn]] void abortFormattedException(const std::string& message, std::uint64_t sourceOffset,
+                                            std::uint64_t bytesProcessed, const std::string& fatalPrefix,
+                                            TraceIssueCode issueCode, bool preserveIncompleteTail)
+  {
+    if (preserveIncompleteTail) {
+      static_cast<void>(m_collector.commitTransactionErrors(TraceIssueCode::OpenCsdIncompleteTail));
+    } else {
+      m_collector.rollbackTransaction();
+    }
+    m_collector.appendDecodeError(static_cast<ocsd_trc_index_t>(sourceOffset), message, issueCode, true);
+    throw OpenCsdFatalError(fatalPrefix + message, bytesProcessed);
+  }
 
   void appendReportedErrors(const OpenCsdErrorController::Decision& decision, std::uint64_t baseOffset,
                             bool discontinuity, bool force = false)
@@ -130,11 +236,17 @@ private:
   }
 
   [[noreturn]] void abortDecode(const OpenCsdErrorController::Decision& decision, std::uint32_t size,
-                                std::uint64_t baseOffset, std::uint32_t bytesConsumed, const std::string& prefix)
+                                std::uint64_t baseOffset, std::uint32_t bytesConsumed, const std::string& prefix,
+                                bool preserveIncompleteTail = false)
   {
-    m_collector.rollbackTransaction();
+    std::size_t retainedErrors = 0U;
+    if (preserveIncompleteTail) {
+      retainedErrors = m_collector.commitTransactionErrors(TraceIssueCode::OpenCsdIncompleteTail);
+    } else {
+      m_collector.rollbackTransaction();
+    }
     completeConsumedDataLoss(OpenCsdErrorController::errorOffset(decision, baseOffset));
-    appendReportedErrors(decision, baseOffset, true);
+    appendReportedErrors(decision, baseOffset, true, retainedErrors == 0U);
     const auto processed = baseOffset + std::min<std::uint64_t>(bytesConsumed, size);
     throw OpenCsdFatalError(prefix + OpenCsdErrorController::describeSummary(decision), processed);
   }
@@ -174,10 +286,11 @@ private:
       std::uint32_t processedThisPass = 0;
       m_collector.beginTransaction();
       m_errorController.beginDataPathCall();
-      const auto response = m_session->pushData(m_traceIndex, callSize, data + processed, processedThisPass);
-      m_collector.rethrowOutputError();
+      const auto response = invokeSessionOperation(
+          [&] { return m_session->pushData(m_traceIndex, callSize, data + processed, processedThisPass); }, callIndex,
+          callSize, &processedThisPass, "OpenCSD aborted decode: ");
       const auto decision = m_errorController.decide(response);
-      if (decision.action == OpenCsdErrorController::Action::Abort) {
+      if (decision.action == OpenCsdErrorController::Action::Abort || formattedOperationFailed(decision)) {
         abortDecode(decision, callSize, callIndex, processedThisPass, "OpenCSD aborted decode: ");
       }
 
@@ -226,6 +339,12 @@ private:
       }
       if (consumed == 0U) {
         m_collector.rollbackTransaction();
+        if (isFormatted()) {
+          m_collector.appendDecodeError(m_traceIndex, "OpenCSD made no progress on formatted trace input",
+                                        TraceIssueCode::OpenCsdNoProgress, false);
+          throw OpenCsdFatalError("OpenCSD made no progress on formatted trace input",
+                                  static_cast<std::uint64_t>(m_traceIndex));
+        }
         m_collector.appendDecodeError(
             m_traceIndex,
             "OpenCSD made no progress while raw data was present; decoder reset and searching "
@@ -240,6 +359,11 @@ private:
       if (m_collector.transactionElementCount() == 0U) {
         m_collector.rollbackTransaction();
         appendReportedErrors(decision, callIndex, false);
+        if (isFormatted()) {
+          processed += consumed;
+          m_traceIndex += consumed;
+          continue;
+        }
         if (!m_dataLossActive) {
           m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
           m_consumedDataLossBoundaryMarked = false;
@@ -265,10 +389,10 @@ private:
     for (std::uint32_t call = 0; call < kMaxFlushCalls; ++call) {
       m_collector.beginTransaction();
       m_errorController.beginDataPathCall();
-      const auto response = m_session->flush();
-      m_collector.rethrowOutputError();
+      const auto response = invokeSessionOperation([&] { return m_session->flush(); }, m_traceIndex, 0U, nullptr,
+                                                   "OpenCSD aborted while flushing a WAIT response: ");
       const auto decision = m_errorController.decide(response);
-      if (decision.action == OpenCsdErrorController::Action::Abort) {
+      if (decision.action == OpenCsdErrorController::Action::Abort || formattedOperationFailed(decision)) {
         abortDecode(decision, 0U, m_traceIndex, 0U, "OpenCSD aborted while flushing a WAIT response: ");
       }
       if (decision.action == OpenCsdErrorController::Action::RecoverStream) {
@@ -316,6 +440,7 @@ private:
     throw OpenCsdFatalError(message, static_cast<std::uint64_t>(m_traceIndex));
   }
 
+  OpenCsdItmInputMode m_inputMode = OpenCsdItmInputMode::Single;
   OpenCsdPacketCollector m_collector;
   OpenCsdErrorController m_errorController;
   std::unique_ptr<OpenCsdItmSessionInterface> m_session;
@@ -328,13 +453,30 @@ private:
 };
 
 OpenCsdItmDecoder::OpenCsdItmDecoder(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink)
-  : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(std::move(route), elementSink, createDefaultOpenCsdItmSession))
+  : OpenCsdItmDecoder(std::vector<TraceRouteIdentity>{std::move(route)}, OpenCsdItmInputMode::Single, elementSink)
 {
 }
 
 OpenCsdItmDecoder::OpenCsdItmDecoder(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink,
                                      const OpenCsdItmSessionFactory& sessionFactory)
-  : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(std::move(route), elementSink, sessionFactory))
+  : OpenCsdItmDecoder(std::vector<TraceRouteIdentity>{std::move(route)}, OpenCsdItmInputMode::Single, elementSink,
+                      sessionFactory)
+{
+}
+
+OpenCsdItmDecoder::OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
+                                     OpenCsdTraceElementSink& elementSink,
+                                     OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdObserver)
+  : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(std::move(routes), inputMode, elementSink,
+                                                   OpenCsdItmSessionFactory{}, std::move(unsupportedTraceIdObserver)))
+{
+}
+
+OpenCsdItmDecoder::OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
+                                     OpenCsdTraceElementSink& elementSink,
+                                     const OpenCsdItmSessionFactory& sessionFactory)
+  : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(std::move(routes), inputMode, elementSink, sessionFactory,
+                                                   OpenCsdUnsupportedTraceIdObserver{}))
 {
 }
 

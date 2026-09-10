@@ -16,6 +16,16 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
+
+/** @brief Selects the root transport presented to the OpenCSD ITM decoders. */
+enum class OpenCsdItmInputMode {
+  Single,
+  CoreSightFormatted,
+};
+
+/** @brief Receives one observed but unconfigured normal CoreSight Trace Bus ID. */
+using OpenCsdUnsupportedTraceIdObserver = std::function<void(std::uint8_t, std::uint64_t)>;
 
 /** @brief Summarizes raw input consumed by an OpenCSD ITM decoder. */
 struct OpenCsdItmDecodeResult {
@@ -74,6 +84,25 @@ public:
    */
   OpenCsdItmDecoder(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink,
                     const OpenCsdItmSessionFactory& sessionFactory);
+  /**
+   * @brief Creates a decoder for one SINGLE route or several formatted routes.
+   * @param routes Normalized routes accepted by the input frontend.
+   * @param inputMode OpenCSD root transport used for the raw bytes.
+   * @param elementSink Sink receiving decoded and recovery elements.
+   * @param unsupportedTraceIdSink Observer for unconfigured normal formatted IDs.
+   */
+  OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
+                    OpenCsdTraceElementSink& elementSink,
+                    OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdSink = {});
+  /**
+   * @brief Creates a configured decoder with an injected external session.
+   * @param routes Normalized routes accepted by the input frontend.
+   * @param inputMode Policy mode applied around the injected session.
+   * @param elementSink Sink receiving decoded and recovery elements.
+   * @param sessionFactory Factory used to construct the external session.
+   */
+  OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
+                    OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory);
   /** @brief Destroys the decoder implementation and external session. */
   ~OpenCsdItmDecoder();
 
@@ -100,4 +129,4 @@ private:
   std::unique_ptr<OpenCsdItmDecoderImpl> m_impl;
 };
 
-#endif  // CTRACE_SRC_DECODE_OPENCSDITMDECODER_H
+#endif // CTRACE_SRC_DECODE_OPENCSDITMDECODER_H

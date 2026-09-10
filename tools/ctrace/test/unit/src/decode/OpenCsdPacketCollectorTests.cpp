@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 using OpenCsdTestSupport::CollectingOpenCsdElementSink;
 
@@ -108,7 +109,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsLocalTimestampRelations)
   }};
 
   CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector({}, sink);
+  OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
   for (std::size_t index = 0; index < cases.size(); ++index) {
     auto timestamp = itmElement(cases[index].first);
     timestamp.setTS(100U + index, false);
@@ -128,7 +129,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsLocalTimestampRelations)
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
 {
   CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector({}, sink);
+  OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
 
   const auto software = itmElement(SWIT_PAYLOAD, 7U, 4U, 0x12345678U, true);
   EXPECT_EQ(collector.TraceElemIn(10U, 3U, software), OCSD_RESP_CONT);
@@ -223,26 +224,154 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorNeverDerivesRouteFromCallbackCha
   }
 }
 
+TEST(CtraceUnitTests, testOpenCsdPacketCollectorRoutesFormattedCallbacksInTheirOriginalOrder)
+{
+  CollectingOpenCsdElementSink sink;
+  const TraceRouteIdentity route1{TraceRouteId{3U}, 1U};
+  const TraceRouteIdentity route111{TraceRouteId{8U}, 111U};
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{route1, route111}, sink);
+
+  ItmTrcPacket packet;
+  collector.beginTransaction();
+  EXPECT_EQ(collector.TraceElemIn(10U, 1U, itmElement(SWIT_PAYLOAD, 2U, 1U, 0x11U)), OCSD_RESP_CONT);
+  packet.setPktType(ITM_PKT_ASYNC);
+  collector.rawPacketForRoute(route111, OCSD_OP_DATA, 11U, &packet, 0U, nullptr);
+  EXPECT_EQ(collector.TraceElemIn(12U, 111U, itmElement(DWT_PAYLOAD, 9U, 2U, 0x2222U)), OCSD_RESP_CONT);
+  packet.setPktType(ITM_PKT_OVERFLOW);
+  collector.rawPacketForRoute(route1, OCSD_OP_DATA, 13U, &packet, 0U, nullptr);
+
+  for (const auto unknownChannel : {0U, 2U, 112U, 255U}) {
+    EXPECT_EQ(
+        collector.TraceElemIn(14U, static_cast<std::uint8_t>(unknownChannel), itmElement(SWIT_PAYLOAD, 1U, 1U, 0xffU)),
+        OCSD_RESP_CONT);
+  }
+  EXPECT_NO_THROW(collector.rethrowOutputError());
+  EXPECT_TRUE(sink.elements().empty());
+  EXPECT_EQ(collector.transactionElementCount(), 4U);
+
+  collector.commitTransaction();
+  ASSERT_EQ(sink.elements().size(), 4U);
+  EXPECT_EQ(sink.elements()[0].sourceIndex, 10U);
+  EXPECT_EQ(sink.elements()[0].kind, OpenCsdTraceElement::Kind::Software);
+  EXPECT_EQ(sink.elements()[0].route, route1);
+  EXPECT_EQ(sink.elements()[1].sourceIndex, 11U);
+  EXPECT_EQ(sink.elements()[1].kind, OpenCsdTraceElement::Kind::Sync);
+  EXPECT_EQ(sink.elements()[1].route, route111);
+  EXPECT_EQ(sink.elements()[2].sourceIndex, 12U);
+  EXPECT_EQ(sink.elements()[2].kind, OpenCsdTraceElement::Kind::Hardware);
+  EXPECT_EQ(sink.elements()[2].route, route111);
+  EXPECT_EQ(sink.elements()[3].sourceIndex, 13U);
+  EXPECT_EQ(sink.elements()[3].kind, OpenCsdTraceElement::Kind::Overflow);
+  EXPECT_EQ(sink.elements()[3].route, route1);
+
+  collector.beginTransaction();
+  packet.setPktType(ITM_PKT_RESERVED);
+  collector.rawPacketForRoute(route111, OCSD_OP_DATA, 14U, &packet, 0U, nullptr);
+  EXPECT_TRUE(collector.transactionHasError());
+  collector.rollbackTransaction();
+  EXPECT_FALSE(collector.transactionHasError());
+}
+
+TEST(CtraceUnitTests, testOpenCsdPacketCollectorRequiresExplicitRawRouteForFormattedInput)
+{
+  CollectingOpenCsdElementSink sink;
+  const TraceRouteIdentity route{TraceRouteId{3U}, 7U};
+  const TraceRouteIdentity diagnosticRoute{TraceRouteId{4U}, 3U};
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{route, diagnosticRoute}, sink);
+  ItmTrcPacket packet;
+  packet.setPktType(ITM_PKT_ASYNC);
+
+  collector.RawPacketDataMon(OCSD_OP_DATA, 1U, &packet, 0U, nullptr);
+  collector.appendDecodeError(2U, "input-wide fatal error");
+  collector.prependDiscontinuity(3U, "input-wide recovery", TraceIssueCode::DataLoss);
+  collector.prependDataLossError(4U, "input-wide loss", 1U);
+  ASSERT_EQ(sink.elements().size(), 3U);
+  for (const auto& element : sink.elements()) {
+    EXPECT_EQ(element.route, diagnosticRoute);
+  }
+
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 5U, &packet, 0U, nullptr);
+  ASSERT_EQ(sink.elements().size(), 4U);
+  EXPECT_EQ(sink.elements().back().route, route);
+  EXPECT_EQ(sink.elements().back().kind, OpenCsdTraceElement::Kind::Sync);
+
+  const TraceRouteIdentity unknownRoute{TraceRouteId{4U}, 7U};
+  collector.rawPacketForRoute(unknownRoute, OCSD_OP_DATA, 6U, &packet, 0U, nullptr);
+  EXPECT_THROW(collector.rethrowOutputError(), std::invalid_argument);
+  EXPECT_NO_THROW(collector.rethrowOutputError());
+  EXPECT_EQ(sink.elements().size(), 4U);
+
+  collector.rawPacketForRoute(TraceRouteIdentity{TraceRouteId{5U}, std::nullopt}, OCSD_OP_DATA, 7U, &packet, 0U,
+                              nullptr);
+  EXPECT_THROW(collector.rethrowOutputError(), std::invalid_argument);
+  EXPECT_EQ(sink.elements().size(), 4U);
+}
+
+TEST(CtraceUnitTests, testOpenCsdPacketCollectorRetainsOnlySelectedRoutedTransactionErrors)
+{
+  CollectingOpenCsdElementSink sink;
+  const TraceRouteIdentity route1{TraceRouteId{3U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{8U}, 2U};
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{route1, route2}, sink);
+  ItmTrcPacket packet;
+
+  collector.beginTransaction();
+  EXPECT_EQ(collector.TraceElemIn(3U, 1U, itmElement(SWIT_PAYLOAD, 1U, 1U, 0x41U)), OCSD_RESP_CONT);
+  packet.setPktType(ITM_PKT_RESERVED);
+  collector.rawPacketForRoute(route1, OCSD_OP_DATA, 4U, &packet, 0U, nullptr);
+  packet.setPktType(ITM_PKT_INCOMPLETE_EOT);
+  collector.rawPacketForRoute(route2, OCSD_OP_EOT, 6U, &packet, 0U, nullptr);
+
+  EXPECT_EQ(collector.commitTransactionErrors(TraceIssueCode::OpenCsdIncompleteTail), 1U);
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().kind, OpenCsdTraceElement::Kind::Error);
+  EXPECT_EQ(sink.elements().front().issueCode, TraceIssueCode::OpenCsdIncompleteTail);
+  EXPECT_EQ(sink.elements().front().sourceIndex, 6U);
+  EXPECT_EQ(sink.elements().front().route, route2);
+  EXPECT_EQ(collector.transactionElementCount(), 0U);
+}
+
+TEST(CtraceUnitTests, testOpenCsdPacketCollectorValidatesFormattedRouteCatalogue)
+{
+  CollectingOpenCsdElementSink sink;
+  const auto construct = [&](std::vector<TraceRouteIdentity> routes) {
+    return OpenCsdPacketCollector(std::move(routes), sink);
+  };
+
+  EXPECT_THROW((void)construct({}), std::invalid_argument);
+  EXPECT_THROW((void)construct({{TraceRouteId{0U}, std::nullopt}}), std::invalid_argument);
+  EXPECT_THROW((void)construct({{TraceRouteId{0U}, 0U}}), std::invalid_argument);
+  EXPECT_THROW((void)construct({{TraceRouteId{0U}, 112U}}), std::invalid_argument);
+  EXPECT_THROW((void)construct({{TraceRouteId{0U}, 1U}, {TraceRouteId{1U}, 1U}}), std::invalid_argument);
+}
+
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommittedElements)
 {
   CollectingOpenCsdElementSink sink;
-  OpenCsdPacketCollector collector({}, sink);
+  OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
   EXPECT_NO_THROW(collector.rethrowOutputError());
   EXPECT_FALSE(collector.transactionFirstSourceOffset().has_value());
+  EXPECT_FALSE(collector.transactionHasError());
 
   collector.beginTransaction();
+  collector.appendDecodeError(2U, "warning", TraceIssueCode::DecodeError, false, TraceIssueSeverity::Warning);
+  EXPECT_FALSE(collector.transactionHasError());
   collector.appendDecodeError(5U, "decode", TraceIssueCode::DecodeError);
+  EXPECT_TRUE(collector.transactionHasError());
   collector.prependDiscontinuity(4U, "gap", TraceIssueCode::DataLoss, 2U);
   collector.prependDataLossError(3U, "loss", 3U);
-  EXPECT_EQ(collector.transactionElementCount(), 3U);
-  EXPECT_EQ(collector.transactionFirstSourceOffset(), 3U);
+  EXPECT_EQ(collector.transactionElementCount(), 4U);
+  EXPECT_EQ(collector.transactionFirstSourceOffset(), 2U);
   collector.commitTransactionBefore(5U);
+  EXPECT_FALSE(collector.transactionHasError());
   ASSERT_EQ(sink.elements().size(), 1U);
   EXPECT_EQ(sink.elements().front().kind, OpenCsdTraceElement::Kind::Discontinuity);
 
   collector.beginTransaction();
   collector.appendDecodeError(7U, "rolled back");
+  EXPECT_TRUE(collector.transactionHasError());
   collector.rollbackTransaction();
+  EXPECT_FALSE(collector.transactionHasError());
   EXPECT_EQ(sink.elements().size(), 1U);
 
   collector.prependDiscontinuity(8U, "outside", TraceIssueCode::DataLoss);
@@ -253,6 +382,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommitte
   collector.beginTransaction();
   collector.appendDecodeError(10U, "committed");
   collector.commitTransaction();
+  EXPECT_FALSE(collector.transactionHasError());
   ASSERT_EQ(sink.elements().size(), 4U);
   EXPECT_EQ(sink.elements().back().sourceIndex, 10U);
 }
@@ -260,7 +390,7 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommitte
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorDefersOutputFailures)
 {
   ThrowingTraceElementSink sink;
-  OpenCsdPacketCollector collector({}, sink);
+  OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
   const auto software = itmElement(SWIT_PAYLOAD, 1U, 1U, 42U);
 
   EXPECT_EQ(collector.TraceElemIn(1U, 1U, software), OCSD_RESP_FATAL_SYS_ERR);

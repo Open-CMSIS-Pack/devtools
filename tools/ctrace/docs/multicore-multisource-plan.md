@@ -542,8 +542,8 @@ Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4
 | 4 | CTF descriptors and metadata model | Complete |
 | 5 | Multi-stream CTF bundle and Trace Compass policy | Complete |
 | 6 | DecodeTree `SINGLE` migration | Complete |
-| 7 | Clean formatted decoding and TB integration | Next |
-| 8 | Route-local recovery and error isolation | Pending |
+| 7 | Clean formatted decoding and TB integration | Complete |
+| 8 | Route-local recovery and error isolation | Next |
 | 9 | Consumer validation, documentation, and final hardening | Pending |
 
 Update this table only after the corresponding exit criterion and common gate pass.
@@ -742,8 +742,10 @@ Purpose: add the memory-aligned formatted path after the semantic and output lay
    formatter IDs.
 3. Keep ID `0` silent as NULL/padding. Diagnose each unsupported normal source ID once and skip it without guessing a
    protocol; preserve supported routes and outputs.
-4. Preserve the architectural Trace Bus ID through semantic events, CSV filtering/stream values, CTF stream-class
-   mapping, diagnostics, and Trace Compass when XML is valid.
+4. Preserve the architectural Trace Bus ID through successfully decoded semantic events, CSV filtering/stream
+   values, CTF stream-class mapping, unsupported-source diagnostics, and Trace Compass when XML is valid. Keep
+   OpenCSD protocol/deformatter diagnostics input-wide with deterministic provisional attribution until Phase 8
+   retains and resolves the OpenCSD error channel.
 5. Enable the reconstructed TB fixture end to end and add focused clean formatted fixtures for single-source,
    boundary-ID, unsupported-ID, and empty-input behavior.
 6. Treat any formatted protocol or deformatter error as input-fatal in this phase. Route-local recovery is enabled

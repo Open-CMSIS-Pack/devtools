@@ -6,6 +6,7 @@
  */
 
 #include "OpenCsdSessionTestSupport.h"
+#include "FormattedTraceTestSupport.h"
 #include "TestPath.h"
 #include "TestPlatform.h"
 #include "TestSupport.h"
@@ -196,15 +197,20 @@ TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
       << "check-only trace directory should fail on decoder error packets";
 }
 
-TEST(CtraceUnitTests, testTraceDirectoryRejectsFormattedInputBeforeRawFrontendAndOutput)
+TEST(CtraceUnitTests, testTraceDirectoryDecodesFormattedInputThroughRawFrontend)
 {
-  const TemporaryTestPath temporaryPath("ctrace-trace-directory-formatted-guard-test");
+  const TemporaryTestPath temporaryPath("ctrace-trace-directory-formatted-frontend-test");
   const auto traceDir = temporaryPath.path() / ".trace";
   writeTestFile(traceDir / "Formatted.ctrace-run.yml", "ctrace-run:\n");
-  writeTestFile(traceDir / "Formatted.SWO.raw", std::string(TraceRunInputContract::kMemoryAlignedFrameSize, 'f'));
+  auto itm = FormattedTraceTestSupport::itmHardwareSync();
+  const auto software = FormattedTraceTestSupport::itmSoftwarePacket(1U, 'A');
+  itm.insert(itm.end(), software.begin(), software.end());
+  const auto raw = FormattedTraceTestSupport::memoryAlignedFrames({{1U, std::move(itm)}});
+  writeTestFile(traceDir / "Formatted.TB.raw", std::string(raw.begin(), raw.end()));
 
   TraceRunConfig config;
   config.traceFormat = TraceRunFormat::Formatted;
+  config.setups.push_back(TraceRunTestSupport::makeTimestampSetup("core", 400000000U));
   config.references.push_back(TraceRunTestSupport::makeReference("itm", "core", 1U, {}, "core/itm"));
 
   CliOptions options;
@@ -216,16 +222,18 @@ TEST(CtraceUnitTests, testTraceDirectoryRejectsFormattedInputBeforeRawFrontendAn
   TestTraceRunConfigReader reader(config);
   TraceDirectoryJob(options, diagnostics, reader).run();
 
-  EXPECT_TRUE(diagnostics.containsMessage("formatted trace input is not enabled yet"));
+  EXPECT_EQ(diagnostics.failureCount(), 0U);
+  EXPECT_FALSE(diagnostics.containsMessage("formatted trace input is not enabled yet"));
   EXPECT_FALSE(diagnostics.containsMessage("CTF output requires timestamps.clock"));
   EXPECT_FALSE(diagnostics.containsMessage("skipping raw trace channel"));
   EXPECT_FALSE(diagnostics.containsMessage("formatted raw trace input size"));
-  EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.SWO.csv"));
-  EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.ctf"));
-  EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.SWO.traceanalysis.xml"));
+  EXPECT_NE(readTestTextFile(traceDir / "Formatted.TB.csv").find(",1,itm,1,0x41,,,"), std::string::npos);
+  EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Formatted.ctf" / "stream_1"));
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.ctf" / "stream_0"));
+  EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Formatted.TB.traceanalysis.xml"));
 }
 
-TEST(CtraceUnitTests, testTraceDirectoryPreflightsFormattedAlignmentBeforeGuardAndArtifacts)
+TEST(CtraceUnitTests, testTraceDirectoryPreflightsFormattedAlignmentBeforeDecoderAndArtifacts)
 {
   const TemporaryTestPath temporaryPath("ctrace-trace-directory-formatted-preflight-test");
   const auto traceDir = temporaryPath.path() / ".trace";
@@ -551,14 +559,11 @@ TEST(CtraceUnitTests, testFileDecodeJobHandlesDisabledCtf)
   EXPECT_FALSE(std::filesystem::exists(temporaryPath.path() / "empty.ctf"));
 }
 
-TEST(CtraceUnitTests, testFileDecodeJobNeverConstructsDirectDecoderForFormattedInput)
+TEST(CtraceUnitTests, testFileDecodeJobUsesInjectedSessionForFormattedInput)
 {
-  const TemporaryTestPath temporaryPath("ctrace-file-decode-formatted-guard-test");
+  const TemporaryTestPath temporaryPath("ctrace-file-decode-formatted-session-test");
   const auto rawPath = temporaryPath.path() / "formatted.TB.raw";
   writeTestFile(rawPath, std::string(TraceRunInputContract::kMemoryAlignedFrameSize, 'f'));
-  writeTestFile(temporaryPath.path() / "formatted.TB.csv", "csv sentinel");
-  writeTestFile(temporaryPath.path() / "formatted.ctf" / "sentinel", "ctf sentinel");
-  writeTestFile(temporaryPath.path() / "formatted.TB.traceanalysis.xml", "xml sentinel");
 
   bool sessionCreated = false;
   const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
@@ -569,19 +574,18 @@ TEST(CtraceUnitTests, testFileDecodeJobNeverConstructsDirectDecoderForFormattedI
   };
 
   CliOptions options;
-  options.outputFormat = OutputFormat::All;
+  options.outputFormat = OutputFormat::Csv;
   TraceRunConfig config;
   config.traceFormat = TraceRunFormat::Formatted;
   config.references.push_back(TraceRunTestSupport::makeReference("itm", "core", 1U, {}, "core/itm"));
   CollectingDiagnosticSink diagnostics;
   FileDecodeJob job(options, testInput(rawPath, config), diagnostics, std::move(factory));
 
-  EXPECT_TRUE(throwsWithMessage([&] { job.run(); }, "formatted trace input is not enabled yet"));
-  EXPECT_FALSE(sessionCreated);
-  EXPECT_FALSE(diagnostics.containsMessage("CTF output requires timestamps.clock"));
-  EXPECT_EQ(readTestTextFile(temporaryPath.path() / "formatted.TB.csv"), "csv sentinel");
-  EXPECT_EQ(readTestTextFile(temporaryPath.path() / "formatted.ctf" / "sentinel"), "ctf sentinel");
-  EXPECT_EQ(readTestTextFile(temporaryPath.path() / "formatted.TB.traceanalysis.xml"), "xml sentinel");
+  EXPECT_NO_THROW(job.run());
+  EXPECT_TRUE(sessionCreated);
+  EXPECT_FALSE(diagnostics.containsMessage("formatted trace input is not enabled yet"));
+  EXPECT_EQ(readTestTextFile(temporaryPath.path() / "formatted.TB.csv"),
+            "cycles,stream,type,source,value,pc,address,note\n");
 }
 
 TEST(CtraceUnitTests, testInputSelectionAndPreflightNeverConstructDecoder)

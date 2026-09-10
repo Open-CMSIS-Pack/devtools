@@ -53,6 +53,7 @@ enum class TraceIssueCode {
   OpenCsdNoProgress,
   OpenCsdWaitTimeout,
   OpenCsdInitializationError,
+  OpenCsdFormattedInputError,
 };
 
 /** @brief Contains one decoded ITM software stimulus event. */

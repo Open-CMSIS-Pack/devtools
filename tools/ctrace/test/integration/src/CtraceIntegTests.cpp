@@ -131,6 +131,24 @@ std::size_t countOccurrences(std::string_view text, std::string_view value)
   return count;
 }
 
+std::size_t countCsvStreamRows(std::string_view csv, std::string_view stream)
+{
+  std::size_t count = 0U;
+  auto lineStart = csv.find('\n');
+  while (lineStart != std::string_view::npos && lineStart + 1U < csv.size()) {
+    ++lineStart;
+    const auto lineEnd = csv.find('\n', lineStart);
+    const auto firstComma = csv.find(',', lineStart);
+    const auto secondComma = firstComma == std::string_view::npos ? firstComma : csv.find(',', firstComma + 1U);
+    if (firstComma != std::string_view::npos && secondComma != std::string_view::npos &&
+        csv.substr(firstComma + 1U, secondComma - firstComma - 1U) == stream) {
+      ++count;
+    }
+    lineStart = lineEnd;
+  }
+  return count;
+}
+
 std::string normalizeGeneratedTextLineEndings(std::string text, std::string_view artifact)
 {
   std::string normalized;
@@ -318,6 +336,111 @@ TEST_F(CtraceIntegTests, RejectsPartialFormattedFrameBeforeCreatingArtifacts)
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Partial.TB.traceanalysis.xml"));
 }
 
+TEST_F(CtraceIntegTests, SkipsUnsupportedFormattedSourceOnceAndKeepsConfiguredRoute)
+{
+  writeFile(workDirectory() / "Mixed.ctrace-run.yml", R"yml(ctrace-run:
+  trace-format: formatted
+  ctrace-setup:
+    - pname: core
+      timestamps:
+        clock: 400000000
+  ctrace-refs:
+    - ctrace-ref: core/itm
+      type: itm
+      pname: core
+      stream: 1
+)yml");
+  // Memory-aligned formatter frames contain two ID-42 runs between clean ID-1 ITM packets.
+  constexpr std::array<unsigned char, 32U> raw{{
+      0x03U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x55U, 0x80U, 0xdeU, 0xadU, 0x03U, 0x09U, 0x55U, 0x41U, 0xbeU, 0x48U,
+      0x03U, 0xefU, 0x10U, 0x42U, 0x01U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x03U,
+  }};
+  writeFile(workDirectory() / "Mixed.TB.raw",
+            {reinterpret_cast<const char*>(raw.data()), static_cast<std::size_t>(raw.size())});
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Mixed", "--all"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  EXPECT_EQ(countOccurrences(result.stderrText, "skipping unsupported formatted CoreSight trace source"), 1U);
+  expectContains(result.stderrText, "stream=42");
+  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+            "0,1,itm,1,0x41,,,\n"
+            "0,1,itm,2,0x42,,,\n",
+            readTextFile(workDirectory() / "Mixed.TB.csv"));
+  expectNonEmptyFile(workDirectory() / "Mixed.ctf" / "stream_1");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Mixed.ctf" / "stream_42"));
+  expectNonEmptyFile(workDirectory() / "Mixed.TB.traceanalysis.xml");
+}
+
+TEST_F(CtraceIntegTests, AbortsAllOutputsOnFormattedProtocolError)
+{
+  writeFile(workDirectory() / "Invalid.ctrace-run.yml", R"yml(ctrace-run:
+  trace-format: formatted
+  ctrace-setup:
+    - pname: core
+      timestamps:
+        clock: 400000000
+  ctrace-refs:
+    - ctrace-ref: core/itm
+      type: itm
+      pname: core
+      stream: 1
+)yml");
+  // ID 1 carries a hardware sync followed by the reserved ITM header 0x04.
+  constexpr std::array<unsigned char, 16U> raw{{
+      0x03U,
+      0x00U,
+      0x00U,
+      0x00U,
+      0x00U,
+      0x00U,
+      0x80U,
+      0x04U,
+      0x01U,
+      0x00U,
+      0x00U,
+      0x00U,
+      0x00U,
+      0x00U,
+      0x00U,
+      0x00U,
+  }};
+  writeFile(workDirectory() / "Invalid.TB.raw",
+            {reinterpret_cast<const char*>(raw.data()), static_cast<std::size_t>(raw.size())});
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Invalid", "--all"});
+  EXPECT_EQ(1, result.exitCode);
+  expectContains(result.stderrText, "invalid ITM packet header at raw offset 6");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Invalid.TB.csv"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Invalid.ctf"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Invalid.TB.traceanalysis.xml"));
+}
+
+TEST_F(CtraceIntegTests, AbortsAllOutputsOnFormattedDataBeforeFirstSourceId)
+{
+  writeFile(workDirectory() / "Unassigned.ctrace-run.yml", R"yml(ctrace-run:
+  trace-format: formatted
+  ctrace-setup:
+    - pname: core
+      timestamps:
+        clock: 400000000
+  ctrace-refs:
+    - ctrace-ref: core/itm
+      type: itm
+      pname: core
+      stream: 1
+)yml");
+  writeFile(workDirectory() / "Unassigned.TB.raw", std::string(16U, '\0'));
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Unassigned", "--all"});
+  EXPECT_EQ(1, result.exitCode);
+  expectContains(result.stderrText, "formatted trace data has no source ID at raw input offset 0");
+  expectContains(result.stderrText, "stream=1");
+  expectContains(result.stderrText, "[info] decoded 1 events from 16 bytes");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Unassigned.TB.csv"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Unassigned.ctf"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Unassigned.TB.traceanalysis.xml"));
+}
+
 TEST_F(CtraceIntegTests, ExpandsDwtEventCountersAcrossCsvAndCtf)
 {
   writeFile(workDirectory() / "Events.ctrace-run.yml", R"yml(ctrace-run:
@@ -351,8 +474,24 @@ TEST_F(CtraceIntegTests, ConvertsDwtMatchAcrossCsvAndCtf)
   // This Armv8-M packet stream is completely synthetic and was generated from
   // the architecture specification without a capture from real hardware.
   constexpr std::array<unsigned char, 18U> expectedRaw{{
-      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x45U, 0x01U, 0x10U,
-      0x55U, 0x01U, 0x20U, 0x65U, 0x01U, 0x30U, 0x75U, 0x01U, 0x40U,
+      0x00U,
+      0x00U,
+      0x00U,
+      0x00U,
+      0x00U,
+      0x80U,
+      0x45U,
+      0x01U,
+      0x10U,
+      0x55U,
+      0x01U,
+      0x20U,
+      0x65U,
+      0x01U,
+      0x30U,
+      0x75U,
+      0x01U,
+      0x40U,
   }};
   EXPECT_EQ(readBinaryFile(workDirectory() / "trace-match.SWO.raw"),
             std::vector<unsigned char>(expectedRaw.begin(), expectedRaw.end()));
@@ -481,8 +620,7 @@ TEST_F(CtraceIntegTests, ExpandsPmuEventCountersAcrossCsvAndCtf)
             readTextFile(workDirectory() / "Pmu.SWO.csv"));
   expectContains(readTextFile(workDirectory() / "Pmu.ctf" / "metadata"), "name = \"PMU_EVENT\"");
   expectNonEmptyFile(workDirectory() / "Pmu.ctf" / "stream_0");
-  expectContains(readTextFile(workDirectory() / "Pmu.SWO.traceanalysis.xml"),
-                 "<label value=\"PMU Event Counters\" />");
+  expectContains(readTextFile(workDirectory() / "Pmu.SWO.traceanalysis.xml"), "<label value=\"PMU Event Counters\" />");
 }
 
 TEST_F(CtraceIntegTests, ReportsInvalidPmuEventCounterWithoutPartialDecode)
@@ -605,8 +743,7 @@ TEST_F(CtraceIntegTests, ConvertsBlinkyFixtureToGoldenOutputsAndSkipsUnsupported
 
   // The legacy pyTS configuration predates timestamps.clock. CTF requires it, and the captured CM7 ran at 480 MHz.
   auto traceRun = readTextFile(fixtureDirectory / "Blinky+Arm.ctrace-run.yml");
-  constexpr std::string_view legacyTimestampBlock{
-      "    timestamps:\n      itm-prescaler: 1\n  - pname: CM4"};
+  constexpr std::string_view legacyTimestampBlock{"    timestamps:\n      itm-prescaler: 1\n  - pname: CM4"};
   constexpr std::string_view ctfTimestampBlock{
       "    timestamps:\n      clock: 480000000\n      itm-prescaler: 1\n  - pname: CM4"};
   const auto timestampPosition = traceRun.find(legacyTimestampBlock);
@@ -629,8 +766,7 @@ TEST_F(CtraceIntegTests, ConvertsBlinkyFixtureToGoldenOutputsAndSkipsUnsupported
   auto stream = readBinaryFile(workDirectory() / "Blinky+Arm.ctf" / "stream_0");
   normalizeCtfStreamTraceUuid(stream, traceUuid);
   expectMatchesGolden(readTextFile(goldenDirectory / "Blinky+Arm.ctf" / "metadata"), metadata, "CTF metadata");
-  expectMatchesGolden(readBinaryFile(goldenDirectory / "Blinky+Arm.ctf" / "stream_0"), stream,
-                      "CTF binary stream");
+  expectMatchesGolden(readBinaryFile(goldenDirectory / "Blinky+Arm.ctf" / "stream_0"), stream, "CTF binary stream");
   expectMatchesGolden(readTextFile(goldenDirectory / "Blinky+Arm.SWO.traceanalysis.xml"),
                       normalizeGeneratedTextLineEndings(
                           readTextFile(workDirectory() / "Blinky+Arm.SWO.traceanalysis.xml"), "Trace Compass XML"),
@@ -639,6 +775,38 @@ TEST_F(CtraceIntegTests, ConvertsBlinkyFixtureToGoldenOutputsAndSkipsUnsupported
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.TB.csv"));
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.TB.traceanalysis.xml"));
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.TB.ctf"));
+}
+
+TEST_F(CtraceIntegTests, ConvertsReconstructedFormattedTraceBusFixture)
+{
+  const auto fixtureDirectory = testDataDirectory() / "TB-Trace";
+  copyFixtureFile(fixtureDirectory, "Blinky+Arm.ctrace-run.yml");
+  copyFixtureFile(fixtureDirectory, "Blinky+Arm.TB.raw");
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Blinky+Arm", "--all"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+
+  const auto csv = readTextFile(workDirectory() / "Blinky+Arm.TB.csv");
+  EXPECT_EQ(countOccurrences(csv, "\n"), 526U);
+  EXPECT_EQ(countCsvStreamRows(csv, "1"), 213U);
+  EXPECT_EQ(countCsvStreamRows(csv, "2"), 312U);
+  EXPECT_EQ(countCsvStreamRows(csv, "0"), 0U);
+
+  const auto ctfDirectory = workDirectory() / "Blinky+Arm.ctf";
+  const auto stream1 = CtfTestSupport::readCtfRecords(ctfDirectory / "stream_1");
+  const auto stream2 = CtfTestSupport::readCtfRecords(ctfDirectory / "stream_2");
+  ASSERT_FALSE(stream1.empty());
+  ASSERT_FALSE(stream2.empty());
+  EXPECT_TRUE(std::all_of(stream1.begin(), stream1.end(), [](const auto& record) { return record.traceBusId == 1U; }));
+  EXPECT_TRUE(std::all_of(stream2.begin(), stream2.end(), [](const auto& record) { return record.traceBusId == 2U; }));
+  EXPECT_FALSE(std::filesystem::exists(ctfDirectory / "stream_0"));
+  EXPECT_EQ(countOccurrences(readTextFile(ctfDirectory / "metadata"), "clock {"), 2U);
+
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.TB.traceanalysis.xml"));
+  EXPECT_EQ(countOccurrences(result.stderrText,
+                             "Trace Compass XML was not generated because emitted CTF streams use multiple clock "
+                             "domains"),
+            1U);
 }
 
 TEST_F(CtraceIntegTests, RecoversAtHardwareSyncAfterResetDiscontinuity)
