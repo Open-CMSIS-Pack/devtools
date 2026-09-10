@@ -32,6 +32,7 @@
 #include <utility>
 #include <vector>
 
+using FormattedTraceTestSupport::itmGlobalTimestampPacket;
 using FormattedTraceTestSupport::itmHardwareSync;
 using FormattedTraceTestSupport::itmSoftwarePacket;
 using FormattedTraceTestSupport::memoryAlignedFrames;
@@ -219,6 +220,14 @@ TEST(CtraceUnitTests, testFormattedTraceTestSupportBuildsCanonicalMemoryAlignedF
       0x08U, 0x41U, 0xdfU, 0x11U, 0x01U, 0x42U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x05U,
   };
   EXPECT_EQ(boundaryIds, expectedBoundaryIds);
+}
+
+TEST(CtraceUnitTests, testFormattedTraceTestSupportBuildsUnflaggedGlobalTimestampPair)
+{
+  const std::vector<std::uint8_t> expected{
+      0x94U, 0xd6U, 0xe8U, 0xc8U, 0x07U, 0xb4U, 0x80U, 0xa6U, 0xb0U, 0xc0U, 0xc0U, 0x00U,
+  };
+  EXPECT_EQ(itmGlobalTimestampPacket(0x1020304c00f23456ULL), expected);
 }
 
 TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionRoutesBoundaryIdsIndependently)

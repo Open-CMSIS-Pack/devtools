@@ -38,11 +38,12 @@ CSV rows without decoder errors:
 | 1 / CM4 | 129 | 84 | 0 | 213 |
 | 2 / CM7 | 121 | 165 | 26 | 312 |
 
-`Blinky+Arm.ctrace-run.yml` follows the current per-processor setup and generated-reference structure. The proposed
-global root-level `trace-format: formatted` field selects CoreSight frame decoding. Ctrace internally defaults
-formatted input to 16-byte memory-aligned framing; no public framing field is assumed. The declared processor clocks
-are fixture metadata and are not encoded in the raw trace. Explicit file-association metadata remains to be
-specified.
+`Blinky+Arm.ctrace-run.yml` follows the current per-processor setup and generated-reference structure. The
+ctrace-private provisional root-level `trace-format: formatted` field selects CoreSight frame decoding. Ctrace
+internally defaults formatted input to 16-byte memory-aligned framing; no public `trace-framing` field is assumed or
+emitted. The declared processor clocks are fixture metadata and are not encoded in the raw trace. Normative format,
+framing, and explicit file-association metadata remain to be specified by CMSIS-Toolbox and emitted by the producer
+that knows the effective capture configuration.
 
 `regenerate_tb_trace.py` performs the documented reconstruction without reading the canonical output. It validates the
 source hash and structure, removes the terminal CM7 synchronization bytes even though formatter interleaving separates
@@ -65,7 +66,8 @@ The command reports 4096 bytes, 256 frames, 252 formatter ID changes, payload le
 and reconstructed SHA-256 `aab49e56a07783b984fa7c6faeea101a51141423e66ba043dbd8d30702012639`.
 
 `split_tb_trace.py` is the independent analysis helper. It deformats the fixture into one raw ITM file per valid Trace
-Bus ID, allowing the existing ITM decoder to be used as a countercheck while formatted input is implemented:
+Bus ID, allowing the unformatted decoder path to remain an implementation-independent semantic countercheck for the
+combined formatted path:
 
 ```sh
 python3 tools/ctrace/test/data/TB-Trace/split_tb_trace.py \
@@ -96,3 +98,8 @@ done
 The expected row counts, excluding the CSV header, are `stream 01: 213 semantic rows` and
 `stream 02: 312 semantic rows`. These counterchecks inspect the generated output; the checked-in reconstructed capture
 remains the canonical test artifact.
+
+The executable integration test also decodes the canonical combined capture directly. It requires 213 CSV rows on
+Trace Bus ID 1 and 312 on ID 2, no row or CTF file for ID-0 padding, one CTF stream per active ID, and two independent
+clock declarations for the 240 MHz CM4 and 480 MHz CM7 routes. Because those clock domains have no specified common
+origin, the valid CTF bundle deliberately has no companion Trace Compass XML and reports that limitation once.

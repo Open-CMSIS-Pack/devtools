@@ -7,6 +7,7 @@
 
 #include "CtraceMain.h"
 #include "CtfTestSupport.h"
+#include "FormattedTraceTestSupport.h"
 
 #include <gtest/gtest.h>
 
@@ -17,13 +18,16 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <initializer_list>
 #include <ios>
 #include <iterator>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -119,6 +123,197 @@ void expectContains(std::string_view text, std::string_view expected)
 void expectNotContains(std::string_view text, std::string_view unexpected)
 {
   EXPECT_EQ(std::string_view::npos, text.find(unexpected)) << unexpected << "\n" << text;
+}
+
+void appendBytes(std::vector<std::uint8_t>& destination, const std::vector<std::uint8_t>& source)
+{
+  destination.insert(destination.end(), source.begin(), source.end());
+}
+
+/** @brief Builds one deterministic ITM byte stream covering formatted-output packet families. */
+std::vector<std::uint8_t> syntheticFormattedRoute(std::uint32_t timestampIncrement, std::uint64_t globalTimestamp,
+                                                  std::uint32_t pc, std::uint16_t address)
+{
+  using namespace FormattedTraceTestSupport;
+
+  auto bytes = itmHardwareSync();
+  std::uint8_t channel = 1U;
+  for (const auto width : {1U, 2U, 4U}) {
+    appendBytes(bytes, itmSoftwarePacket(channel++, static_cast<std::uint8_t>(width), 0U));
+  }
+  appendBytes(bytes, itmHardwarePacket(16U, 1U, 0U));
+  appendBytes(bytes, itmHardwarePacket(18U, 2U, 0U));
+  appendBytes(bytes, itmHardwarePacket(20U, 4U, 0U));
+  appendBytes(bytes, itmHardwarePacket(14U, 4U, pc));
+  appendBytes(bytes, itmHardwarePacket(15U, 2U, address));
+  appendBytes(bytes, itmHardwarePacket(14U, 1U, 1U));
+  appendBytes(bytes, itmHardwarePacket(2U, 1U, 0U));
+  appendBytes(bytes, itmHardwarePacket(0U, 1U, 0x21U));
+  appendBytes(bytes, itmHardwarePacket(3U, 1U, 0x81U));
+  appendBytes(bytes, itmGlobalTimestampPacket(globalTimestamp));
+  appendBytes(bytes, itmLocalTimestampPacket(timestampIncrement));
+  appendBytes(bytes, itmOverflowPacket());
+  return bytes;
+}
+
+constexpr std::uint64_t kAnchoredGlobalTimestamp = 0x1020304c00f23456ULL;
+constexpr std::uint64_t kFallbackGlobalTimestamp = 0x2030405000123456ULL;
+
+std::size_t countCsvStreamRows(std::string_view csv, std::string_view stream);
+
+/** @brief Builds the common two-route CoreSight-formatted integration capture. */
+std::vector<std::uint8_t> syntheticFormattedCapture()
+{
+  const auto anchored = syntheticFormattedRoute(240U, kAnchoredGlobalTimestamp, 0x08001000U, 0x1000U);
+  const auto fallback = syntheticFormattedRoute(120U, kFallbackGlobalTimestamp, 0x08002000U, 0x2000U);
+  return FormattedTraceTestSupport::memoryAlignedFrames({{1U, anchored}, {2U, fallback}});
+}
+
+/** @brief Writes one independent test case using the common synthetic formatted capture. */
+void writeSyntheticFormattedFixture(const std::filesystem::path& directory, const std::string& traceRun,
+                                    std::string_view rawChannel = "TB")
+{
+  std::error_code error;
+  std::filesystem::create_directories(directory, error);
+  ASSERT_FALSE(error) << directory << ": " << error.message();
+  writeFile(directory / "Synthetic.ctrace-run.yml", traceRun);
+  const auto raw = syntheticFormattedCapture();
+  ASSERT_FALSE(raw.empty());
+  ASSERT_EQ(raw.size() % 16U, 0U);
+  writeFile(directory / ("Synthetic." + std::string(rawChannel) + ".raw"),
+            {reinterpret_cast<const char*>(raw.data()), raw.size()});
+}
+
+/** @brief Replaces every required occurrence in deterministic fixture text. */
+void replaceFixtureText(std::string& text, std::string_view from, std::string_view to)
+{
+  std::size_t replacements = 0U;
+  for (auto position = text.find(from); position != std::string::npos;
+       position = text.find(from, position + to.size())) {
+    text.replace(position, from.size(), to);
+    ++replacements;
+  }
+  ASSERT_GT(replacements, 0U) << from;
+}
+
+void expectSyntheticCsvRoute(std::string_view csv, std::uint8_t stream, std::uint64_t cycles, std::uint32_t pc,
+                             std::uint16_t address, std::uint64_t globalTimestamp)
+{
+  const auto prefix = std::to_string(cycles) + "," + std::to_string(stream) + ",";
+  for (const auto& expected : {
+           prefix + "itm,1,0x00,,,\n",
+           prefix + "itm,2,0x0000,,,\n",
+           prefix + "itm,3,0x00000000,,,\n",
+           prefix + "dwt,0,0x00,,,\n",
+           prefix + "dwt,1,0x0000,,,\n",
+           prefix + "dwt,2,0x00000000,,,\n",
+           prefix + "pcsample,,,,,\n",
+           prefix + "event,0,0x21,,,\n",
+           prefix + "pmu,3,0x81,,,\n",
+           std::to_string(globalTimestamp) + "," + std::to_string(stream) + ",global_ts,,,,,\n",
+       }) {
+    expectContains(csv, expected);
+  }
+
+  std::ostringstream addressRow;
+  addressRow << prefix << "dwt,3,,0x" << std::hex << std::setfill('0') << std::setw(8) << pc << ",0x" << std::setw(4)
+             << address << ",\n";
+  expectContains(csv, addressRow.str());
+  expectContains(csv, prefix + "dwt,3,,,,\n");
+  expectContains(csv,
+                 prefix + "overflow,,,,,overflow: new timestamp segment; time across boundary may be unreliable\n");
+}
+
+void expectSyntheticCtfRoute(const std::filesystem::path& streamPath, std::uint8_t traceBusId,
+                             std::uint64_t payloadTimestamp)
+{
+  const auto records = CtfTestSupport::readCtfRecords(streamPath);
+  ASSERT_FALSE(records.empty());
+
+  std::array<bool, 10U> eventIds{};
+  std::array<bool, 5U> statusReasons{};
+  for (const auto& record : records) {
+    ASSERT_EQ(record.traceBusId, traceBusId);
+    ASSERT_LT(record.id, eventIds.size());
+    eventIds[record.id] = true;
+    if (record.id == CtfSchema::value(CtfSchema::EventId::TraceStatus)) {
+      ASSERT_FALSE(record.payload.empty());
+      ASSERT_LT(record.payload.front(), statusReasons.size());
+      statusReasons[record.payload.front()] = true;
+    }
+    if (record.id == CtfSchema::value(CtfSchema::EventId::PcSample)) {
+      ASSERT_EQ(record.payload.size(), 6U);
+      EXPECT_EQ(record.payload.front(), CtfSchema::value(CtfSchema::PcSampleState::Sleep));
+    }
+    if (record.id == CtfSchema::value(CtfSchema::EventId::Itm) ||
+        record.id == CtfSchema::value(CtfSchema::EventId::DwtValue) ||
+        record.id == CtfSchema::value(CtfSchema::EventId::DwtAddress) ||
+        record.id == CtfSchema::value(CtfSchema::EventId::DwtMatch) ||
+        record.id == CtfSchema::value(CtfSchema::EventId::PcSample) ||
+        record.id == CtfSchema::value(CtfSchema::EventId::DwtEvent) ||
+        record.id == CtfSchema::value(CtfSchema::EventId::PmuEvent)) {
+      EXPECT_EQ(record.timestamp, payloadTimestamp);
+    }
+  }
+
+  for (const auto id :
+       {CtfSchema::EventId::Itm, CtfSchema::EventId::DwtValue, CtfSchema::EventId::DwtAddress,
+        CtfSchema::EventId::TraceStatus, CtfSchema::EventId::GlobalTimestamp, CtfSchema::EventId::PcSample,
+        CtfSchema::EventId::DwtEvent, CtfSchema::EventId::PmuEvent, CtfSchema::EventId::DwtMatch}) {
+    EXPECT_TRUE(eventIds[CtfSchema::value(id)]) << CtfSchema::eventName(id);
+  }
+  for (const auto reason : {CtfSchema::TraceStatusReason::TraceStart, CtfSchema::TraceStatusReason::Resync,
+                            CtfSchema::TraceStatusReason::Overflow}) {
+    EXPECT_TRUE(statusReasons[CtfSchema::value(reason)]);
+  }
+}
+
+/** @brief Verifies the complete semantic CSV content of the common synthetic capture. */
+void expectCompleteSyntheticCsv(const std::filesystem::path& csvPath)
+{
+  const auto csv = readTextFile(csvPath);
+  expectSyntheticCsvRoute(csv, 1U, 240U, 0x08001000U, 0x1000U, kAnchoredGlobalTimestamp);
+  expectSyntheticCsvRoute(csv, 2U, 480U, 0x08002000U, 0x2000U, kFallbackGlobalTimestamp);
+  EXPECT_EQ(countCsvStreamRows(csv, "1"), 13U);
+  EXPECT_EQ(countCsvStreamRows(csv, "2"), 13U);
+  EXPECT_EQ(countCsvStreamRows(csv, "0"), 0U);
+}
+
+/** @brief Requires all CTF records to use, and to cover, exactly the listed event families. */
+void expectOnlyCtfEventIds(const std::filesystem::path& streamPath,
+                           std::initializer_list<CtfSchema::EventId> expectedIds)
+{
+  const auto records = CtfTestSupport::readCtfRecords(streamPath);
+  ASSERT_FALSE(records.empty());
+  for (const auto& record : records) {
+    EXPECT_TRUE(std::any_of(expectedIds.begin(), expectedIds.end(), [&](const auto id) {
+      return record.id == CtfSchema::value(id);
+    })) << record.id;
+  }
+  for (const auto id : expectedIds) {
+    EXPECT_TRUE(std::any_of(records.begin(), records.end(), [&](const auto& record) {
+      return record.id == CtfSchema::value(id);
+    })) << CtfSchema::eventName(id);
+  }
+}
+
+/** @brief Verifies the complete output artifact set for the multi-clock synthetic fixture. */
+void expectSyntheticArtifacts(const std::filesystem::path& directory, bool csvExpected, bool ctfExpected)
+{
+  EXPECT_EQ(std::filesystem::is_regular_file(directory / "Synthetic.TB.csv"), csvExpected);
+  EXPECT_EQ(std::filesystem::is_directory(directory / "Synthetic.ctf"), ctfExpected);
+  EXPECT_FALSE(std::filesystem::exists(directory / "Synthetic.TB.traceanalysis.xml"));
+  if (!ctfExpected) {
+    return;
+  }
+
+  std::vector<std::string> files;
+  for (const auto& entry : std::filesystem::directory_iterator(directory / "Synthetic.ctf")) {
+    ASSERT_TRUE(entry.is_regular_file()) << entry.path();
+    files.push_back(entry.path().filename().string());
+  }
+  std::sort(files.begin(), files.end());
+  EXPECT_EQ(files, (std::vector<std::string>{"metadata", "stream_1", "stream_2"}));
 }
 
 std::size_t countOccurrences(std::string_view text, std::string_view value)
@@ -860,6 +1055,250 @@ TEST_F(CtraceIntegTests, ConvertsReconstructedFormattedTraceBusFixture)
                              "Trace Compass XML was not generated because emitted CTF streams use multiple clock "
                              "domains"),
             1U);
+}
+
+TEST_F(CtraceIntegTests, DecodesDeterministicSyntheticFormattedPacketFamiliesOnAnchorAndFallbackRoutes)
+{
+  const auto fixtureDirectory = testDataDirectory() / "formatted-synthetic";
+  writeSyntheticFormattedFixture(workDirectory(), readTextFile(fixtureDirectory / "Synthetic.ctrace-run.yml"));
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Synthetic", "--all"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  expectNotContains(result.stderrText, "decode error");
+
+  expectCompleteSyntheticCsv(workDirectory() / "Synthetic.TB.csv");
+
+  const auto ctfDirectory = workDirectory() / "Synthetic.ctf";
+  expectSyntheticCtfRoute(ctfDirectory / "stream_1", 1U, 240U);
+  expectSyntheticCtfRoute(ctfDirectory / "stream_2", 2U, 480U);
+  EXPECT_FALSE(std::filesystem::exists(ctfDirectory / "stream_0"));
+  const auto metadata = readTextFile(ctfDirectory / "metadata");
+  expectContains(metadata, "freq = 240000000;");
+  expectContains(metadata, "freq = 480000000;");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Synthetic.TB.traceanalysis.xml"));
+  EXPECT_EQ(countOccurrences(result.stderrText,
+                             "Trace Compass XML was not generated because emitted CTF streams use multiple clock "
+                             "domains"),
+            1U);
+}
+
+TEST_F(CtraceIntegTests, SupportsFormattedCheckCsvCtfAndAllArtifactMatrix)
+{
+  struct Mode {
+    std::string_view name;
+    std::string_view option;
+    bool csv;
+    bool ctf;
+  };
+  constexpr std::array<Mode, 4U> modes{{
+      {"check", {}, false, false},
+      {"csv", "--csv", true, false},
+      {"ctf", "--ctf", false, true},
+      {"all", "--all", true, true},
+  }};
+  const auto traceRun = readTextFile(testDataDirectory() / "formatted-synthetic" / "Synthetic.ctrace-run.yml");
+
+  for (const auto& mode : modes) {
+    const auto directory = workDirectory() / mode.name;
+    writeSyntheticFormattedFixture(directory, traceRun);
+    std::vector<std::string> arguments{"ctrace", directory.string(), "--target", "Synthetic"};
+    if (!mode.option.empty()) {
+      arguments.emplace_back(mode.option);
+    }
+
+    const auto result = run(std::move(arguments));
+    EXPECT_EQ(0, result.exitCode) << mode.name << ": " << result.stderrText;
+    expectSyntheticArtifacts(directory, mode.csv, mode.ctf);
+    if (mode.csv) {
+      expectCompleteSyntheticCsv(directory / "Synthetic.TB.csv");
+    }
+  }
+}
+
+TEST_F(CtraceIntegTests, AppliesMultiValueTypeAndStreamUnionsAndTheirIntersection)
+{
+  const auto traceRun = readTextFile(testDataDirectory() / "formatted-synthetic" / "Synthetic.ctrace-run.yml");
+  const auto unionDirectory = workDirectory() / "union";
+  writeSyntheticFormattedFixture(unionDirectory, traceRun);
+
+  auto result = run({"ctrace", unionDirectory.string(), "--target", "Synthetic", "--all", "--type", "itm", "pmu",
+                     "--stream", "1", "2"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  expectSyntheticArtifacts(unionDirectory, true, true);
+  const auto unionCsv = readTextFile(unionDirectory / "Synthetic.TB.csv");
+  EXPECT_EQ(countOccurrences(unionCsv, ",itm,"), 6U);
+  EXPECT_EQ(countOccurrences(unionCsv, ",pmu,"), 2U);
+  EXPECT_EQ(countCsvStreamRows(unionCsv, "1"), 4U);
+  EXPECT_EQ(countCsvStreamRows(unionCsv, "2"), 4U);
+  for (const auto unexpected : {",dwt,", ",event,", ",pcsample,", ",global_ts,", ",overflow,"}) {
+    expectNotContains(unionCsv, unexpected);
+  }
+  expectOnlyCtfEventIds(unionDirectory / "Synthetic.ctf" / "stream_1",
+                        {CtfSchema::EventId::Itm, CtfSchema::EventId::PmuEvent});
+  expectOnlyCtfEventIds(unionDirectory / "Synthetic.ctf" / "stream_2",
+                        {CtfSchema::EventId::Itm, CtfSchema::EventId::PmuEvent});
+
+  const auto intersectionDirectory = workDirectory() / "intersection";
+  writeSyntheticFormattedFixture(intersectionDirectory, traceRun);
+  result = run({"ctrace", intersectionDirectory.string(), "--target", "Synthetic", "--all", "--type", "dwt", "pmu",
+                "--stream", "2"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  const auto intersectionCsv = readTextFile(intersectionDirectory / "Synthetic.TB.csv");
+  EXPECT_EQ(countCsvStreamRows(intersectionCsv, "1"), 0U);
+  EXPECT_EQ(countCsvStreamRows(intersectionCsv, "2"), 6U);
+  EXPECT_EQ(countOccurrences(intersectionCsv, ",dwt,"), 5U);
+  EXPECT_EQ(countOccurrences(intersectionCsv, ",pmu,"), 1U);
+  expectOnlyCtfEventIds(intersectionDirectory / "Synthetic.ctf" / "stream_2",
+                        {CtfSchema::EventId::DwtValue, CtfSchema::EventId::DwtAddress, CtfSchema::EventId::DwtMatch,
+                         CtfSchema::EventId::PmuEvent});
+  EXPECT_FALSE(std::filesystem::exists(intersectionDirectory / "Synthetic.ctf" / "stream_1"));
+  expectNonEmptyFile(intersectionDirectory / "Synthetic.TB.traceanalysis.xml");
+}
+
+TEST_F(CtraceIntegTests, DefersAbsentAndNullFormattedClocksToCtfOutputValidation)
+{
+  struct Mode {
+    std::string_view name;
+    std::string_view option;
+    int exitCode;
+    bool csv;
+  };
+  constexpr std::array<Mode, 4U> modes{{
+      {"check", {}, 0, false},
+      {"csv", "--csv", 0, true},
+      {"ctf", "--ctf", 1, false},
+      {"all", "--all", 1, true},
+  }};
+  const auto original = readTextFile(testDataDirectory() / "formatted-synthetic" / "Synthetic.ctrace-run.yml");
+
+  for (const auto nullValue : {false, true}) {
+    auto traceRun = original;
+    const auto replacement = nullValue ? std::string("        clock: null\n") : std::string{};
+    replaceFixtureText(traceRun, "        clock: 240000000\n", replacement);
+    replaceFixtureText(traceRun, "        clock: 480000000\n", replacement);
+    const auto variant = nullValue ? std::string("null") : std::string("absent");
+
+    for (const auto& mode : modes) {
+      const auto directory = workDirectory() / (variant + "-" + std::string(mode.name));
+      writeSyntheticFormattedFixture(directory, traceRun);
+      std::vector<std::string> arguments{"ctrace", directory.string(), "--target", "Synthetic"};
+      if (!mode.option.empty()) {
+        arguments.emplace_back(mode.option);
+      }
+
+      const auto result = run(std::move(arguments));
+      EXPECT_EQ(mode.exitCode, result.exitCode) << variant << "/" << mode.name << ": " << result.stderrText;
+      expectSyntheticArtifacts(directory, mode.csv, false);
+      if (mode.exitCode != 0) {
+        expectContains(result.stderrText, "timestamps.clock");
+      }
+      if (mode.csv) {
+        expectCompleteSyntheticCsv(directory / "Synthetic.TB.csv");
+      }
+    }
+  }
+}
+
+TEST_F(CtraceIntegTests, RejectsMissingAndInvalidFormattedRouteFallbacksBeforeOutputs)
+{
+  constexpr std::string_view missingRoute = R"yml(ctrace-run:
+  trace-format: formatted
+  ctrace-setup:
+    - pname: core
+      timestamps:
+        clock: 240000000
+  ctrace-refs: []
+)yml";
+  constexpr std::string_view invalidFallback = R"yml(ctrace-run:
+  trace-format: formatted
+  ctrace-setup:
+    - pname: core
+      timestamps:
+        clock: 240000000
+  ctrace-refs:
+    - ctrace-ref: core/timesync
+      type: global_ts
+      pname: core
+      stream: 1
+)yml";
+
+  for (const auto& invalid :
+       {std::pair<std::string_view, std::string_view>{"missing", missingRoute}, {"invalid", invalidFallback}}) {
+    const auto directory = workDirectory() / invalid.first;
+    writeSyntheticFormattedFixture(directory, std::string(invalid.second));
+    const auto result = run({"ctrace", directory.string(), "--target", "Synthetic", "--all"});
+    EXPECT_EQ(1, result.exitCode) << invalid.first << ": " << result.stderrText;
+    expectContains(result.stderrText, "requires an ITM route anchor or supported feature fallback");
+    expectSyntheticArtifacts(directory, false, false);
+  }
+}
+
+TEST_F(CtraceIntegTests, RoutesExplicitlyFormattedSwoNamedInputToNonzeroStreams)
+{
+  const auto traceRun = readTextFile(testDataDirectory() / "formatted-synthetic" / "Synthetic.ctrace-run.yml");
+  writeSyntheticFormattedFixture(workDirectory(), traceRun, "SWO");
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Synthetic", "--all"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  const auto csvPath = workDirectory() / "Synthetic.SWO.csv";
+  expectCompleteSyntheticCsv(csvPath);
+  expectNonEmptyFile(workDirectory() / "Synthetic.ctf" / "stream_1");
+  expectNonEmptyFile(workDirectory() / "Synthetic.ctf" / "stream_2");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Synthetic.ctf" / "stream_0"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Synthetic.SWO.traceanalysis.xml"));
+}
+
+TEST_F(CtraceIntegTests, CompletesHealthyBackendWhenOtherOutputTargetHasWrongType)
+{
+  const auto traceRun = readTextFile(testDataDirectory() / "formatted-synthetic" / "Synthetic.ctrace-run.yml");
+  const auto csvFailure = workDirectory() / "csv-failure";
+  writeSyntheticFormattedFixture(csvFailure, traceRun);
+  ASSERT_TRUE(std::filesystem::create_directory(csvFailure / "Synthetic.TB.csv"));
+
+  auto result = run({"ctrace", csvFailure.string(), "--target", "Synthetic", "--all"});
+  EXPECT_EQ(1, result.exitCode) << result.stderrText;
+  expectContains(result.stderrText, "csv output");
+  expectContains(result.stderrText, "failed during start");
+  EXPECT_TRUE(std::filesystem::is_directory(csvFailure / "Synthetic.TB.csv"));
+  expectSyntheticCtfRoute(csvFailure / "Synthetic.ctf" / "stream_1", 1U, 240U);
+  expectSyntheticCtfRoute(csvFailure / "Synthetic.ctf" / "stream_2", 2U, 480U);
+
+  const auto ctfFailure = workDirectory() / "ctf-failure";
+  writeSyntheticFormattedFixture(ctfFailure, traceRun);
+  writeFile(ctfFailure / "Synthetic.ctf", "non-directory collision\n");
+  result = run({"ctrace", ctfFailure.string(), "--target", "Synthetic", "--all"});
+  EXPECT_EQ(1, result.exitCode) << result.stderrText;
+  expectContains(result.stderrText, "ctf output");
+  expectContains(result.stderrText, "failed during start");
+  EXPECT_TRUE(std::filesystem::is_regular_file(ctfFailure / "Synthetic.ctf"));
+  expectCompleteSyntheticCsv(ctfFailure / "Synthetic.TB.csv");
+}
+
+TEST_F(CtraceIntegTests, ReplacesStaleArtifactsAcrossMultiSingleMultiClockConversions)
+{
+  const auto traceRun = readTextFile(testDataDirectory() / "formatted-synthetic" / "Synthetic.ctrace-run.yml");
+  writeSyntheticFormattedFixture(workDirectory(), traceRun);
+  const auto ctfDirectory = workDirectory() / "Synthetic.ctf";
+  const auto xmlPath = workDirectory() / "Synthetic.TB.traceanalysis.xml";
+
+  auto result = run({"ctrace", workDirectory().string(), "--target", "Synthetic", "--ctf"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  expectSyntheticArtifacts(workDirectory(), false, true);
+
+  writeFile(xmlPath, "stale xml\n");
+  result = run({"ctrace", workDirectory().string(), "--target", "Synthetic", "--ctf", "--stream", "1"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  expectNonEmptyFile(ctfDirectory / "metadata");
+  expectNonEmptyFile(ctfDirectory / "stream_1");
+  EXPECT_FALSE(std::filesystem::exists(ctfDirectory / "stream_2"));
+  expectNonEmptyFile(xmlPath);
+  EXPECT_NE(readTextFile(xmlPath), "stale xml\n");
+
+  writeFile(ctfDirectory / "stream_99", "stale stream\n");
+  result = run({"ctrace", workDirectory().string(), "--target", "Synthetic", "--ctf"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  expectSyntheticArtifacts(workDirectory(), false, true);
+  EXPECT_FALSE(std::filesystem::exists(ctfDirectory / "stream_99"));
 }
 
 TEST_F(CtraceIntegTests, RecoversAtHardwareSyncAfterResetDiscontinuity)

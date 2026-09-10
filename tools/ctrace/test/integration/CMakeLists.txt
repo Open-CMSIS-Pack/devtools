@@ -91,3 +91,26 @@ set_tests_properties(ctrace-windows-manifest PROPERTIES
   LABELS "integration"
   TIMEOUT 30
 )
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_CROSSCOMPILING)
+  find_program(BABELTRACE2_EXECUTABLE NAMES babeltrace2)
+  if(BABELTRACE2_EXECUTABLE)
+    add_test(
+      NAME CtraceBabeltrace2Consumer
+      COMMAND "${CMAKE_COMMAND}"
+        "-DCTRACE_EXECUTABLE=$<TARGET_FILE:ctrace>"
+        "-DBABELTRACE2_EXECUTABLE=${BABELTRACE2_EXECUTABLE}"
+        "-DFIXTURE_DIRECTORY=${PROJECT_SOURCE_DIR}/test/data/TB-Trace"
+        "-DBUILD_ROOT=${CMAKE_BINARY_DIR}"
+        "-DTEST_WORK_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/babeltrace2-consumer"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/src/ValidateBabeltrace2Consumer.cmake"
+    )
+    set_tests_properties(CtraceBabeltrace2Consumer PROPERTIES
+      ENVIRONMENT "LC_ALL=C"
+      LABELS "linux-consumer"
+      TIMEOUT 120
+    )
+  else()
+    message(STATUS "babeltrace2 not found; CtraceBabeltrace2Consumer is not registered")
+  endif()
+endif()

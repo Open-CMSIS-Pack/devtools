@@ -33,6 +33,7 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  BABELTRACE2_DEB_VERSION: 2.0.5-3build2
 
 jobs:
   setup:
@@ -181,6 +182,14 @@ jobs:
         with:
           submodules: true
 
+      - name: Install pinned Babeltrace consumer
+        if: matrix.run_tests && matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            babeltrace2=${{ env.BABELTRACE2_DEB_VERSION }} \
+            libbabeltrace2-0=${{ env.BABELTRACE2_DEB_VERSION }}
+
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CtraceUnitTests
         id: build_unit_tests
@@ -201,19 +210,26 @@ jobs:
 
       - name: Run ctrace unit tests
         id: run_unit_tests
-        if: always() && (matrix.arch != 'arm64') && (steps.build_unit_tests.outcome == 'success')
+        if: always() && matrix.run_tests && (steps.build_unit_tests.outcome == 'success')
         run: ctest -V -C Debug -R '^CtraceUnitTests$'
         working-directory: ./build
 
       - name: Run ctrace integration tests
         id: run_integration_tests
-        if: always() && (matrix.arch != 'arm64') && (steps.build_integration_target.outcome == 'success')
+        if: always() && matrix.run_tests && (steps.build_integration_target.outcome == 'success')
         run: ctest -V -C Debug -R '^(CtraceIntegTests|ctrace-)'
+        working-directory: ./build
+
+      - name: Run pinned Babeltrace consumer test
+        if: |
+          always() && matrix.run_tests && matrix.target == 'linux' &&
+          (steps.build_integration_target.outcome == 'success')
+        run: ctest -V -C Debug --no-tests=error -L '^linux-consumer$'
         working-directory: ./build
 
       - name: Archive unit test results
         # Keep the report available when test execution fails.
-        if: always() && (matrix.arch != 'arm64') && (steps.run_unit_tests.outcome != 'skipped')
+        if: always() && matrix.run_tests && (steps.run_unit_tests.outcome != 'skipped')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_ctrace-${{ matrix.target }}-${{ matrix.arch }}
@@ -223,7 +239,7 @@ jobs:
 
       - name: Archive integration test results
         # Keep the report available when test execution fails.
-        if: always() && (matrix.arch != 'arm64') && (steps.run_integration_tests.outcome != 'skipped')
+        if: always() && matrix.run_tests && (steps.run_integration_tests.outcome != 'skipped')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: integ_test_result_ctrace-${{ matrix.target }}-${{ matrix.arch }}
@@ -256,6 +272,13 @@ jobs:
         with:
           submodules: true
 
+      - name: Install pinned Babeltrace consumer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            babeltrace2=${{ env.BABELTRACE2_DEB_VERSION }} \
+            libbabeltrace2-0=${{ env.BABELTRACE2_DEB_VERSION }}
+
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CtraceUnitTests
         uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
@@ -277,6 +300,10 @@ jobs:
 
       - name: Run ctrace integration tests
         run: ctest -V -C Debug -R '^(CtraceIntegTests|ctrace-)'
+        working-directory: ./build
+
+      - name: Run pinned Babeltrace consumer test
+        run: ctest -V -C Debug --no-tests=error -L '^linux-consumer$'
         working-directory: ./build
 
       - name: Get retention days

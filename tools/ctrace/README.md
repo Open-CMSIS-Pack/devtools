@@ -46,6 +46,14 @@ For `ctrace .trace --target Board --all`, the supported input produces:
   Board.SWO.traceanalysis.xml
 ```
 
+Without an explicit format declaration, ctrace preserves the legacy SWO-only
+selection and decodes `Board.SWO.raw` as unformatted ITM. The ctrace-private
+provisional root field `trace-format: unformatted | formatted` selects exactly
+one eligible SWO, TB, or named-TB input. Formatted input currently requires
+complete 16-byte memory-aligned CoreSight frames; there is no public
+`trace-framing` field yet. See the [constraints](docs/constraints.md) for the
+full discovery, routing, and compatibility contract.
+
 ## Build and test
 
 Initialize all dependencies and configure the repository from its root:
@@ -61,6 +69,17 @@ Run the GoogleTest unit and integration suites plus the executable smoke tests:
 ```bash
 ctest --test-dir build -C Debug -R '^(CtraceUnitTests|CtraceIntegTests|ctrace-)'
 ```
+
+On native Linux, installing exactly Babeltrace `2.0.5` before configuration
+also registers the external consumer gate:
+
+```bash
+ctest --test-dir build -C Debug --no-tests=error -L '^linux-consumer$'
+```
+
+CI installs the pinned consumer and treats a missing labelled test as a
+failure. The separate versioned Trace Compass acceptance record is documented
+with the [integration tests](test/integration/README.md).
 
 Editors using `clangd` should open the devtools repository root and configure into `build`. The tool-local
 `.clangd` file points clangd at that compilation database.

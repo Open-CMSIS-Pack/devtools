@@ -544,7 +544,7 @@ Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4
 | 6 | DecodeTree `SINGLE` migration | Complete |
 | 7 | Clean formatted decoding and TB integration | Complete |
 | 8 | Route-local recovery and error isolation | Complete |
-| 9 | Consumer validation, documentation, and final hardening | Next |
+| 9 | Consumer validation, documentation, and final hardening | Complete |
 
 Update this table only after the corresponding exit criterion and common gate pass.
 
@@ -783,10 +783,14 @@ Purpose: close coverage gaps and validate the complete feature as one product ch
 
 1. Add documented synthetic formatted fixtures for every currently supported ITM-carried trace type not covered by
    the reconstructed hardware fixture, including malformed/recovery intervals and zero-width-sensitive payloads.
+   The deterministic `formatted-synthetic` input keeps its canonical YAML in the test-data tree, generates its raw
+   frames from reviewed packet/formatter helpers, and records both route forms, packet contents, and output hash in
+   its directory README.
 2. Run the full CLI matrix for check, CSV, CTF, and `--all`; type/stream filters; absent/null clocks; missing routes;
    unsupported IDs; output failures; and repeated conversions with stale artifacts.
-3. Add the pinned Linux Babeltrace consumer test and validate each stream's time scaling independently. Validate the
-   supported Trace Compass single-clock case and the deliberate multi-clock no-XML case semantically.
+3. Add the pinned Linux Babeltrace 2.0.5 consumer test and validate each stream's time scaling independently. Validate
+   the supported Trace Compass single-clock case and the deliberate multi-clock no-XML case semantically against the
+   versioned Trace Compass Server/TSP acceptance stack recorded with the integration tests.
 4. Update `architecture.md`, `constraints.md`, fixture provenance, and `todo.md`. Mark `trace-format` and internal
    framing as ctrace-private provisional decisions, link their specification/producer follow-ups, and keep
    FSYNC/HSYNC, explicit file identity, ETM/ETE/PTM/MTB, Event Recorder decoding, and cross-domain correlation visibly
@@ -1237,13 +1241,16 @@ and allocation of other backend-only sources from 256 upward without using `0x70
 ### CI and external consumer gates (Phases 0 and 9)
 
 - Keep the portable internal CTF structure/integration tests in `CtraceIntegTests` on every supported platform.
-- Register the Babeltrace consumer check as a separately labelled Linux-only CTest. Add a pinned Babeltrace 2.x
-  installation to the Linux test and coverage jobs; absence is a CI failure, not a silent skip.
+- Register the Babeltrace consumer check as a separately labelled Linux-only CTest. Pin Babeltrace 2.0.5 in the Linux
+  test and coverage jobs, require that exact reported consumer version, and make absence a CI failure rather than a
+  silent skip.
 - Keep generating and archiving line/branch LCOV data. Add a deterministic 100% source-line check to the coverage job;
   Codecov's current relative line threshold and archived branch HTML alone are not that gate. Continue publishing
   the branch report for review without filtering new code or adding exclusions.
 - Before PR review, repeat the documented single-clock positive and multiple-clock negative acceptance cases with
-  the supported Trace Compass/trace-server version; successful import alone is insufficient.
+  Trace Compass Server 0.17.0 and TSP 0.6.0 at commit `b626f3c61f8d0dac15451c7663aa36d9bf3db33e`
+  (TMF Core 10.2.0, CTF 5.0.2, XML Core 4.3.2). Query event timestamps and the XML-defined time graph; successful
+  import alone is insufficient. `cmsis-trace-server` is not the acceptance consumer for this gate.
 
 ## Documentation updates (Phases 0 and 9)
 

@@ -12,15 +12,13 @@
 - [ ] Complete Armv7-M linked-comparator, range, and value-match decoding.
 - [ ] Resolve programmable PMU event-counter names from trace-run configuration.
 
-## Inputs and multiple streams
+## Inputs and time correlation
 
 [Implementation plan](multicore-multisource-plan.md)
 
-- [ ] Define raw-input format and framing metadata for `ctrace-run.yml`.
-- [ ] Move the unformatted SWO/ITM path to an OpenCSD `DecodeTree`.
-- [ ] Decode formatted CoreSight frames and route them by Trace Bus ID.
-- [ ] Preserve normalized source-route-to-processor bindings and use them in outputs.
-- [ ] Support separate trace clock domains in CTF.
+- [ ] Standardize explicit raw-input identity plus format/framing metadata in the CMSIS-Toolbox trace specification,
+      then migrate the provisional global `trace-format` reader contract and producer output deliberately.
+- [ ] Support FSYNC and FSYNC+HSYNC formatted input after a public framing field is specified.
 - [ ] Define cross-stream clock correlation and offsets once a common producer time reference is available.
 - [ ] Add per-clock-domain Trace Compass bundles/experiments for uncorrelated streams when required.
 

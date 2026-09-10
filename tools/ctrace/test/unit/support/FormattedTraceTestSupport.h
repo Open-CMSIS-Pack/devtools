@@ -29,13 +29,86 @@ inline std::vector<std::uint8_t> itmHardwareSync()
   return {0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U};
 }
 
+/** @brief Returns one ITM source packet with a little-endian payload. */
+inline std::vector<std::uint8_t> itmSourcePacket(std::uint8_t source, bool hardware, std::uint8_t width,
+                                                 std::uint32_t value)
+{
+  if (source > 31U) {
+    throw std::invalid_argument("ITM source must be between 0 and 31");
+  }
+  const auto sizeCode = width == 1U ? 1U : width == 2U ? 2U : width == 4U ? 3U : 0U;
+  if (sizeCode == 0U) {
+    throw std::invalid_argument("ITM source packet width must be 1, 2, or 4 bytes");
+  }
+
+  std::vector<std::uint8_t> packet{static_cast<std::uint8_t>((source << 3U) | (hardware ? 0x04U : 0x00U) | sizeCode)};
+  for (std::uint8_t byte = 0U; byte < width; ++byte) {
+    packet.push_back(static_cast<std::uint8_t>(value >> (byte * 8U)));
+  }
+  return packet;
+}
+
 /** @brief Returns one one-byte ITM software packet. */
 inline std::vector<std::uint8_t> itmSoftwarePacket(std::uint8_t channel, std::uint8_t value)
 {
-  if (channel > 31U) {
-    throw std::invalid_argument("ITM software channel must be between 0 and 31");
+  return itmSourcePacket(channel, false, 1U, value);
+}
+
+/** @brief Returns one width-preserving ITM software packet. */
+inline std::vector<std::uint8_t> itmSoftwarePacket(std::uint8_t channel, std::uint8_t width, std::uint32_t value)
+{
+  return itmSourcePacket(channel, false, width, value);
+}
+
+/** @brief Returns one width-preserving DWT hardware-source packet. */
+inline std::vector<std::uint8_t> itmHardwarePacket(std::uint8_t discriminator, std::uint8_t width, std::uint32_t value)
+{
+  return itmSourcePacket(discriminator, true, width, value);
+}
+
+/** @brief Returns one synchronous format-1 ITM local-timestamp packet. */
+inline std::vector<std::uint8_t> itmLocalTimestampPacket(std::uint32_t increment)
+{
+  if (increment > 0x0fffffffU) {
+    throw std::invalid_argument("ITM local timestamp must fit in 28 bits");
   }
-  return {static_cast<std::uint8_t>((channel << 3U) | 0x01U), value};
+
+  std::vector<std::uint8_t> packet{0xc0U};
+  do {
+    auto byte = static_cast<std::uint8_t>(increment & 0x7fU);
+    increment >>= 7U;
+    if (increment != 0U) {
+      byte |= 0x80U;
+    }
+    packet.push_back(byte);
+  } while (increment != 0U);
+  return packet;
+}
+
+/** @brief Returns one paired GTS1/GTS2 packet carrying a complete global timestamp. */
+inline std::vector<std::uint8_t> itmGlobalTimestampPacket(std::uint64_t value)
+{
+  std::vector<std::uint8_t> packet{
+      0x94U,
+      static_cast<std::uint8_t>(0x80U | ((value >> 0U) & 0x7fU)),
+      static_cast<std::uint8_t>(0x80U | ((value >> 7U) & 0x7fU)),
+      static_cast<std::uint8_t>(0x80U | ((value >> 14U) & 0x7fU)),
+      static_cast<std::uint8_t>((value >> 21U) & 0x1fU),
+      0xb4U,
+      static_cast<std::uint8_t>(0x80U | ((value >> 26U) & 0x7fU)),
+      static_cast<std::uint8_t>(0x80U | ((value >> 33U) & 0x7fU)),
+      static_cast<std::uint8_t>(0x80U | ((value >> 40U) & 0x7fU)),
+      static_cast<std::uint8_t>(0x80U | ((value >> 47U) & 0x7fU)),
+      static_cast<std::uint8_t>(0x80U | ((value >> 54U) & 0x7fU)),
+      static_cast<std::uint8_t>((value >> 61U) & 0x07U),
+  };
+  return packet;
+}
+
+/** @brief Returns one ITM overflow packet. */
+inline std::vector<std::uint8_t> itmOverflowPacket()
+{
+  return {0x70U};
 }
 
 namespace Detail {

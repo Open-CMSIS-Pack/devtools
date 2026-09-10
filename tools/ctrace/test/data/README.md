@@ -43,16 +43,55 @@ metadata and packet headers before the byte-for-byte comparison.
 The `TB-Trace` fixture is a reconstructed, memory-aligned CoreSight formatter
 capture derived from the approved Blinky TB capture. It preserves the usable
 real-hardware payload and its formatter interleaving, remaps the source IDs to
-the current CM4/CM7 configuration, and adds leading ITM synchronization. The
-directory README documents deterministic regeneration and independent
-deformatting/countercheck commands. Neither Python tool is used by ctrace at
-runtime.
+the current CM4/CM7 configuration, and adds leading ITM synchronization. Its
+`trace-format: formatted` declaration is a manually added ctrace-private test
+annotation, not metadata emitted by the original producer. The directory
+README documents every transformation, deterministic regeneration, direct
+formatted decoding, and independent deformatting/countercheck commands.
+Neither Python tool is used by ctrace at runtime.
 
 - Reconstructed TB capture: `aab49e56a07783b984fa7c6faeea101a51141423e66ba043dbd8d30702012639`
 - Trace-run YAML: `19efd6f35a647f1e5fb73f71ffafa867278d693a7114e3861a43309ebf8f8c4a`
 - Reconstruction tool: `8ce6ca54cedc216c04a03587b8388003a8ab0563e6c79c39ebf436d9bfcd0050`
 - Analysis helper: `0ce65b99a2c51b2978cf0b790c653f5172715a1fa86521da8088fbd851ef9347`
-- Fixture README: `8d4bc39ac1bb656fc72b1545863c6c68a6bcf2c22aa30e1e6a3a37c73c328508`
+- Fixture README: `740249499f9cb5f9ef71a82357a6189b9274150775f16c0e9748f555abdab0d1`
+
+The `formatted-synthetic` fixture is completely synthetic and complements the
+reconstructed hardware payload with deterministic packet-family coverage on
+two routes. Its checked-in YAML contains one authoritative processor-ITM
+anchor and one constrained current-pyTS fallback. The integration test builds
+the 128-byte raw capture from reviewed ITM packet and memory-aligned formatter
+helpers; no generated raw file is checked in. The directory README documents
+the exact route values, packet sequence, provenance, generated hash, and test
+matrix.
+
+- Generated raw trace: `e8a62ad20f048385fde894ed1b869bdfb402feabf8a5e4d88283334a92674847`
+- Trace-run YAML: `a8370d26cd2f75264fc4f48fcdbf5fa2c9e1404c80a61c898dd30de8a44b91c6`
+- Fixture README: `c881be35e8159b96036ba63171b644b503d10765ccfe8b4ef7cee312dfe571fb`
+
+The integration test also creates focused formatted inputs as byte literals in
+`test/integration/src/CtraceIntegTests.cpp`. They are hand-authored from the
+CoreSight memory-aligned formatter and ITM packet encodings; they are not
+hardware captures and make no claim about pyTS or pyOCD producer output:
+
+- `Partial.TB.raw` is 15 arbitrary bytes and exists only to prove alignment
+  preflight before output creation.
+- `Mixed.TB.raw` is two frames containing clean ID-1 ITM software packets and
+  two opaque ID-42 runs; it proves one warning and no guessed decoder/output
+  for an unsupported normal formatter ID.
+- `Invalid.TB.raw` is one ID-1 frame containing ITM hardware sync followed by
+  reserved header `0x04`; it proves an unresolved route-local loss interval at
+  end of input.
+- `Recovery.TB.raw` is three frames interleaving IDs 1 and 2. ID 2 contains a
+  reserved header, continues into the next frame without a repeated formatter
+  ID marker, then resynchronizes; it proves that reset and rollback stay local
+  while ID 1 and the deformatter retain state.
+- `Unassigned.TB.raw` is one all-zero frame with payload before any formatter
+  source ID; it proves that an input-wide deformatter error aborts all outputs.
+
+These generated files exist only in each test's build-tree working directory.
+Their canonical representation and expected semantics are the reviewed source
+literals and assertions, so there are no separate fixture hashes or generators.
 
 The `Arm-reset` fixture is an approved excerpt of an Arm target capture. It
 starts at the hardware ITM sync immediately before an MCU-reset discontinuity
