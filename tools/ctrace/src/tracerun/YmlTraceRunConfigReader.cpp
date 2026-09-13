@@ -76,11 +76,8 @@ static Node childContainer(const Node& element, const std::string_view& tag)
 static std::optional<std::string> optionalAttribute(const Node& element, const std::string_view& name)
 {
   const auto node = childNode(element, name);
-  if (!node) {
+  if (!node || node.IsNull()) {
     return std::nullopt;
-  }
-  if (node.IsNull()) {
-    return std::string{};
   }
   if (!node.IsScalar()) {
     return std::nullopt;
@@ -163,7 +160,7 @@ static std::optional<std::uint64_t> deferredReferenceUnsignedAttribute(
     std::optional<std::string>& error)
 {
   const auto node = childNode(element, name);
-  if (!node) {
+  if (!node || node.IsNull()) {
     return std::nullopt;
   }
   if (!node.IsScalar()) {
@@ -183,7 +180,7 @@ static std::optional<std::string> deferredReferenceStringAttribute(const Node& e
                                                                    std::optional<std::string>& error)
 {
   const auto node = childNode(element, name);
-  if (!node) {
+  if (!node || node.IsNull()) {
     return std::nullopt;
   }
   if (!node.IsScalar()) {
@@ -264,18 +261,20 @@ static Node traceRunRoot(const std::string& path, const Node& document)
 static std::vector<std::uint32_t> parseSources(const std::string& path, const Node& reference)
 {
   const auto sourceNode = childNode(reference, "source");
-  if (!sourceNode) {
+  if (!sourceNode || sourceNode.IsNull()) {
     return {};
   }
-  if (sourceNode.IsScalar() || sourceNode.IsNull()) {
-    const auto scalarSource = sourceNode.IsScalar() ? sourceNode.Scalar() : std::string{};
+  if (sourceNode.IsScalar()) {
     return {static_cast<std::uint32_t>(
-        unsignedValue(path, sourceNode, "source", scalarSource, std::numeric_limits<std::uint32_t>::max()))};
+        unsignedValue(path, sourceNode, "source", sourceNode.Scalar(), std::numeric_limits<std::uint32_t>::max()))};
   }
 
   requireSequence(path, sourceNode, "source");
   std::vector<std::uint32_t> sources;
   for (const auto& item : sourceNode) {
+    if (item.IsNull()) {
+      continue;
+    }
     if (!item.IsScalar() || item.Scalar().empty()) {
       fail(path, item, "each 'source' entry must be an unsigned integer");
     }
@@ -298,11 +297,8 @@ static ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, c
 {
   const auto messages = [&](const std::string_view& name) {
     const auto node = childNode(element, name);
-    if (!node) {
+    if (!node || node.IsNull()) {
       return std::vector<std::string>{};
-    }
-    if (node.IsNull()) {
-      return std::vector<std::string>{std::string{}};
     }
     if (node.IsScalar()) {
       return std::vector<std::string>{node.Scalar()};
@@ -312,6 +308,9 @@ static ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, c
     }
     std::vector<std::string> result;
     for (const auto& item : node) {
+      if (item.IsNull()) {
+        continue;
+      }
       if (!item.IsScalar()) {
         fail(path, item, "each '" + std::string(name) + "' entry must be a string");
       }
@@ -329,6 +328,9 @@ static ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, c
 /** @brief Parses one relevant trace-run reference. */
 static std::optional<TraceRunReference> parseReference(const std::string& path, const Node& element)
 {
+  if (element.IsNull()) {
+    return std::nullopt;
+  }
   if (!element.IsMap()) {
     fail(path, element, "each 'ctrace-refs' entry must be a map");
   }
@@ -471,19 +473,22 @@ static std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::stri
   return timestamps;
 }
 
-/** @brief Parses ITM enable-mask metadata from one consumed setup. */
+/** @brief Parses ITM enable-mask metadata from one consumed setup, if available. */
 static std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, const Node& element)
 {
   const auto itmNode = childNode(element, "itm");
-  if (!itmNode) {
+  if (!itmNode || itmNode.IsNull()) {
     return std::nullopt;
   }
   if (!itmNode.IsMap()) {
     fail(path, itmNode, "'itm' must be a map containing 'enable'");
   }
   const auto enableNode = childNode(itmNode, "enable");
-  if (!enableNode || !enableNode.IsScalar() || enableNode.Scalar().empty()) {
-    fail(path, enableNode ? enableNode : itmNode, "'itm.enable' is required and must be a scalar unsigned integer");
+  if (!enableNode || enableNode.IsNull()) {
+    return std::nullopt;
+  }
+  if (!enableNode.IsScalar() || enableNode.Scalar().empty()) {
+    fail(path, enableNode, "'itm.enable' must be a scalar unsigned integer");
   }
   return TraceRunItmSetup{static_cast<std::uint32_t>(
       unsignedValue(path, enableNode, "itm.enable", enableNode.Scalar(), std::numeric_limits<std::uint32_t>::max()))};
@@ -544,13 +549,16 @@ static std::vector<TraceRunSetup> parseSetups(const std::string& path, const Nod
                                               const std::vector<TraceRunReference>& references)
 {
   const auto setupNode = childNode(root, "ctrace-setup");
-  if (!setupNode) {
+  if (!setupNode || setupNode.IsNull()) {
     return {};
   }
   requireSequence(path, setupNode, "ctrace-setup");
 
   std::vector<TraceRunSetup> setups;
   for (const auto& item : setupNode) {
+    if (item.IsNull()) {
+      continue;
+    }
     if (!item.IsMap()) {
       fail(path, item, "each 'ctrace-setup' entry must be a map");
     }
