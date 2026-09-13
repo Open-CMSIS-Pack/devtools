@@ -1,0 +1,173 @@
+{
+  "$comment": "For documentation refer to https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#file-structure-of-ctraceyml",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/schemas/projmgr/2.14.0/tools/projmgr/schemas/ctrace.schema.json",
+  "title": "CMSIS ctrace",
+  "description": "defines trace generation settings for a solution set",
+  "version": "2.14.0",
+  "type": "object",
+  "properties": {
+    "ctrace": { "$ref": "#/definitions/TraceDescType" }
+  },
+  "additionalProperties": false,
+  "required": [ "ctrace" ],
+  "definitions": {
+    "TraceDescType": {
+      "type": "object",
+      "properties": {
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate or last update this file." },
+        "setup": { "$ref": "#/definitions/TraceSetupType" }
+      },
+      "additionalProperties": false,
+      "required": [ "setup" ]
+    },
+    "TraceSetupType": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/ProcessorTraceSetupType" }
+    },
+    "ProcessorTraceSetupType": {
+      "type": "object",
+      "properties": {
+        "pname": { "type": "string", "description": "Processor name to which this setup applies." },
+        "disable": { "type": "null", "description": "When present, this processor trace setup is ignored." },
+        "timestamps": { "$ref": "#/definitions/TimestampsType" },
+        "timesync": { "type": "null", "description": "Enables time synchronization between trace streams." },
+        "data": { "$ref": "#/definitions/DataTraceType" },
+        "exceptions": { "type": "null", "description": "Enables DWT exception trace." },
+        "events": { "$ref": "#/definitions/EventsType" },
+        "itm": { "$ref": "#/definitions/ItmType" },
+        "instructions": { "$ref": "#/definitions/InstructionsType" },
+        "pcsampling": { "$ref": "#/definitions/PcSamplingType" },
+        "synchronization": { "$ref": "#/definitions/SynchronizationType" },
+        "tracehalt": { "$ref": "#/definitions/ConditionsType" }
+      },
+      "additionalProperties": false
+    },
+    "TimestampsType": {
+      "type": [ "object", "null" ],
+      "properties": {
+        "clock": { "type": "integer", "minimum": 1, "description": "Timestamp clock frequency in Hz." },
+        "itm-prescaler": { "type": "integer", "enum": [ 1, 4, 16, 64 ], "default": 1, "description": "ITM timestamp prescaler." }
+      },
+      "additionalProperties": false
+    },
+    "DataTraceType": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/DataTraceItemType" }
+    },
+    "DataTraceItemType": {
+      "type": "object",
+      "properties": {
+        "location": { "$ref": "#/definitions/LocationType" },
+        "label": { "type": "string", "description": "User-defined short label for Trace Compass." },
+        "access": { "enum": [ "W", "R", "RW" ], "default": "W", "description": "Access type to trace." },
+        "size": { "type": "integer", "minimum": 1, "description": "Number of bytes in the traced range." },
+        "output": { "enum": [ "value", "offset", "PC", "match", "PC+value", "offset+value", "PC+offset" ], "default": "value", "description": "Trace output mode." },
+        "match": { "$ref": "#/definitions/MatchType" }
+      },
+      "additionalProperties": false,
+      "required": [ "location" ]
+    },
+    "LocationType": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "integer", "minimum": 0 }
+      ],
+      "description": "Symbol or numeric address, optionally qualified by a project or image file."
+    },
+    "MatchType": {
+      "type": "object",
+      "properties": {
+        "value": { "$ref": "#/definitions/UnsignedValueType" },
+        "size": { "type": "integer", "enum": [ 1, 2, 4 ], "default": 4, "description": "Number of bytes to compare." }
+      },
+      "additionalProperties": false,
+      "required": [ "value" ]
+    },
+    "UnsignedValueType": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "string", "pattern": "^0[xX][0-9a-fA-F]+$" }
+      ]
+    },
+    "EventsType": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "event": {
+          "type": "string",
+          "minLength": 1,
+          "description": "DWT or PMU event selector."
+        }
+        },
+        "additionalProperties": false,
+        "required": [ "event" ]
+      }
+    },
+    "ItmType": {
+      "type": "object",
+      "properties": {
+        "enable": { "type": "integer", "minimum": 0, "maximum": 4294967295, "description": "ITM channel enable bit mask." },
+        "privileged": { "type": "integer", "minimum": 0, "maximum": 15, "default": 0, "description": "Privileged access mask for blocks of eight ITM channels." }
+      },
+      "additionalProperties": false,
+      "required": [ "enable" ]
+    },
+    "PcSamplingType": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "integer",
+          "enum": [ 0, 64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8192, 9216, 10240, 11264, 12288, 13312, 14336, 15360, 16384 ],
+          "default": 0,
+          "description": "DWT PC sampling period in processor cycles."
+        }
+      },
+      "additionalProperties": false
+    },
+    "SynchronizationType": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "DWT": {
+            "enum": [ "off", "16M", "64M", "256M" ],
+            "default": "256M",
+            "description": "DWT synchronization packet period in processor cycles."
+          }
+        },
+        "additionalProperties": false,
+        "required": [ "DWT" ]
+      }
+    },
+    "InstructionsType": {
+      "type": [ "object", "null" ],
+      "properties": {
+        "start": { "$ref": "#/definitions/ConditionsType" },
+        "stop": { "$ref": "#/definitions/ConditionsType" }
+      },
+      "additionalProperties": false
+    },
+    "ConditionsType": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/ConditionType" }
+    },
+    "ConditionType": {
+      "type": "object",
+      "properties": {
+        "location": { "$ref": "#/definitions/LocationType" },
+        "access": { "enum": [ "X", "R", "W", "RW" ], "description": "Access type that activates the condition." },
+        "size": { "type": "integer", "minimum": 1, "description": "Number of bytes in the condition range." },
+        "match": { "$ref": "#/definitions/MatchType" }
+      },
+      "additionalProperties": false,
+      "required": [ "location" ]
+    }
+  }
+}
