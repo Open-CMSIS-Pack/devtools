@@ -20,6 +20,28 @@
 using TraceRunTestSupport::makeReference;
 using TraceRunTestSupport::makeTimestampSetup;
 
+/** @brief Counts source metadata directly from canonical normalized routes. */
+static std::size_t sourceCount(const CtraceRunMeta& meta)
+{
+  std::size_t count = 0U;
+  for (const auto& route : meta.routes()) {
+    count += route.sources.size();
+  }
+  return count;
+}
+
+/** @brief Returns one source in deterministic route/source order. */
+static const CtraceRunSourceMeta& sourceAt(const CtraceRunMeta& meta, std::size_t index)
+{
+  for (const auto& route : meta.routes()) {
+    if (index < route.sources.size()) {
+      return route.sources[index];
+    }
+    index -= route.sources.size();
+  }
+  throw std::out_of_range("source index exceeds normalized route sources");
+}
+
 /** @brief Tests whether metadata normalization rejects a configuration. */
 static bool metaRejects(const TraceRunConfig& config, std::string_view message)
 {
@@ -47,23 +69,20 @@ static TraceRunReference routeReference(std::string type, std::string path, std:
 TEST(CtraceUnitTests, testTimestampPrescalerMetadataDefaults)
 {
   const auto ctraceRunMeta = CtraceRunMeta::fromConfig(TraceRunConfig{});
-  ASSERT_TRUE(!ctraceRunMeta.timestampPrescaler().has_value())
-      << "a missing timestamp setup must leave the metadata prescaler unspecified";
 
   TraceRunConfig incompleteTraceRun;
   TraceRunSetup incompleteSetup;
   incompleteSetup.timestamps = TraceRunTimestampSetup{};
   incompleteTraceRun.setups.push_back(incompleteSetup);
   const auto missingPrescalerMeta = CtraceRunMeta::fromConfig(incompleteTraceRun);
-  ASSERT_TRUE(missingPrescalerMeta.timestampPrescaler() ==
-              std::optional<std::uint32_t>(TraceRunSchema::kDefaultTimestampPrescaler))
+  ASSERT_EQ(missingPrescalerMeta.routes().front().timestampPrescaler, TraceRunSchema::kDefaultTimestampPrescaler)
       << "timestamp setup must resolve an omitted prescaler to the specified default";
   TraceRunConfig traceRun;
   TraceRunSetup setup;
   setup.timestamps = TraceRunTimestampSetup{std::nullopt, 4U};
   traceRun.setups.push_back(setup);
   const auto prescalerOnlyMeta = CtraceRunMeta::fromConfig(traceRun);
-  ASSERT_TRUE(prescalerOnlyMeta.timestampPrescaler() == std::optional<std::uint32_t>(4U))
+  ASSERT_EQ(prescalerOnlyMeta.routes().front().timestampPrescaler, 4U)
       << "explicit timestamp prescaler metadata mismatch";
 }
 
@@ -109,9 +128,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidReferences)
   diagnosedBinding.references.push_back(makeReference("itm", "core", 1U, {}, "core/itm"));
   diagnosedBinding.references.front().error = {"producer rejected this route"};
   const auto meta = CtraceRunMeta::fromConfig(diagnosedBinding);
-  EXPECT_EQ(meta.processorCount(), 1U);
-  EXPECT_TRUE(meta.sources().empty());
-  EXPECT_EQ(meta.referenceDiagnostics().size(), 1U);
+  EXPECT_TRUE(sourceCount(meta) == 0U);
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaExpandsItmAndDwtSourceArrays)
@@ -123,15 +140,15 @@ TEST(CtraceUnitTests, testCtraceRunMetaExpandsItmAndDwtSourceArrays)
   config.references.push_back(dwtReference);
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  ASSERT_EQ(meta.sources().size(), 4U);
-  EXPECT_EQ(meta.sources()[0].type, "itm");
-  EXPECT_EQ(meta.sources()[0].source, 1U);
-  EXPECT_EQ(meta.sources()[1].type, "itm");
-  EXPECT_EQ(meta.sources()[1].source, 2U);
-  EXPECT_EQ(meta.sources()[2].type, "dwt");
-  EXPECT_EQ(meta.sources()[2].source, 3U);
-  EXPECT_EQ(meta.sources()[3].type, "dwt");
-  EXPECT_EQ(meta.sources()[3].source, 4U);
+  ASSERT_EQ(sourceCount(meta), 4U);
+  EXPECT_EQ(sourceAt(meta, 0).type, "itm");
+  EXPECT_EQ(sourceAt(meta, 0).source, 1U);
+  EXPECT_EQ(sourceAt(meta, 1).type, "itm");
+  EXPECT_EQ(sourceAt(meta, 1).source, 2U);
+  EXPECT_EQ(sourceAt(meta, 2).type, "dwt");
+  EXPECT_EQ(sourceAt(meta, 2).source, 3U);
+  EXPECT_EQ(sourceAt(meta, 3).type, "dwt");
+  EXPECT_EQ(sourceAt(meta, 3).source, 4U);
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidPrescalers)
@@ -151,8 +168,8 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsDuplicateSetups)
   duplicate.path = "trace.yml";
   duplicate.setups = {makeTimestampSetup(std::nullopt, 100U, 4U), makeTimestampSetup(std::nullopt, 100U, 4U)};
   const auto merged = CtraceRunMeta::fromConfig(duplicate);
-  EXPECT_EQ(merged.timestampClockHz(), std::optional<std::uint64_t>(100U));
-  EXPECT_EQ(merged.timestampPrescaler(), std::optional<std::uint32_t>(4U));
+  EXPECT_EQ(merged.routes().front().timestampClockHz, std::optional<std::uint64_t>(100U));
+  EXPECT_EQ(merged.routes().front().timestampPrescaler, 4U);
 
   duplicate.setups.back().timestamps->timestampPrescaler = 16U;
   duplicate.setups.back().timestamps->line = 9U;
@@ -167,14 +184,12 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsDuplicateSetups)
   TraceRunConfig inferredFragment;
   inferredFragment.setups = {makeTimestampSetup("core", 100U, 4U), makeTimestampSetup(std::nullopt, 100U, 4U)};
   const auto inferred = CtraceRunMeta::fromConfig(inferredFragment);
-  EXPECT_EQ(inferred.processorCount(), 1U);
   EXPECT_EQ(inferred.routes().front().processorName, std::optional<std::string>("core"));
 
   TraceRunConfig conflictingClock;
   conflictingClock.setups = {makeTimestampSetup("core", 100U, 4U), makeTimestampSetup("core", 200U, 4U)};
   const auto deferredClock = CtraceRunMeta::fromConfig(conflictingClock);
-  EXPECT_FALSE(deferredClock.timestampClockHz().has_value());
-  ASSERT_EQ(deferredClock.timestampClockErrors().size(), 1U);
+  EXPECT_FALSE(deferredClock.routes().front().timestampClockHz.has_value());
   EXPECT_EQ(deferredClock.routes().front().timestampClockError,
             std::optional<std::string>("conflicting active ctrace-setup timestamps.clock values"));
 
@@ -184,7 +199,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsDuplicateSetups)
     complementConfig.setups = reverse ? std::vector<TraceRunSetup>{makeTimestampSetup("core", 100U, 4U), missingClock}
                                       : std::vector<TraceRunSetup>{missingClock, makeTimestampSetup("core", 100U, 4U)};
     const auto complemented = CtraceRunMeta::fromConfig(complementConfig);
-    EXPECT_EQ(complemented.timestampClockHz(), std::optional<std::uint64_t>(100U));
+    EXPECT_EQ(complemented.routes().front().timestampClockHz, std::optional<std::uint64_t>(100U));
     EXPECT_FALSE(complemented.routes().front().timestampClockError.has_value());
   }
 
@@ -207,15 +222,13 @@ TEST(CtraceUnitTests, testCtraceRunMetaNormalizesAmbiguousUnformattedProcessorId
   multiUnnamed.references.push_back(makeReference("itm", std::nullopt, 1U, {1U}));
   multiUnnamed.references.front().line = 17U;
   const auto unnamedMeta = CtraceRunMeta::fromConfig(multiUnnamed);
-  EXPECT_EQ(unnamedMeta.processorCount(), 2U);
-  EXPECT_TRUE(unnamedMeta.sources().empty());
+  EXPECT_TRUE(sourceCount(unnamedMeta) == 0U);
   EXPECT_FALSE(unnamedMeta.routes().front().processorName.has_value());
 
   TraceRunConfig multiUnmatched = multiUnnamed;
   multiUnmatched.references.front().processorName = "c";
   const auto unmatchedMeta = CtraceRunMeta::fromConfig(multiUnmatched);
-  EXPECT_EQ(unmatchedMeta.processorCount(), 2U);
-  EXPECT_TRUE(unmatchedMeta.sources().empty());
+  EXPECT_TRUE(sourceCount(unmatchedMeta) == 0U);
 
   TraceRunConfig selected;
   selected.setups = {
@@ -224,28 +237,28 @@ TEST(CtraceUnitTests, testCtraceRunMetaNormalizesAmbiguousUnformattedProcessorId
   };
   selected.references = {makeReference("itm", "a", 5U, {1U}, "a/itm")};
   const auto selectedMeta = CtraceRunMeta::fromConfig(selected);
-  EXPECT_EQ(selectedMeta.processorCount(), 1U);
   EXPECT_EQ(selectedMeta.routes().front().processorName, std::optional<std::string>("a"));
   EXPECT_EQ(selectedMeta.routes().front().timestampClockHz, std::optional<std::uint64_t>(100U));
   EXPECT_EQ(selectedMeta.routes().front().timestampPrescaler, 4U);
-  EXPECT_EQ(selectedMeta.sources().front().route, selectedMeta.routes().front().identity);
-  EXPECT_FALSE(selectedMeta.sources().front().route.traceBusId.has_value());
+  EXPECT_EQ(sourceAt(selectedMeta, 0U).route, selectedMeta.routes().front().identity);
+  EXPECT_FALSE(sourceAt(selectedMeta, 0U).route.traceBusId.has_value());
 
   selected.references.push_back(makeReference("itm", std::nullopt, 5U, {2U}, "messages"));
   const auto inferredReferenceMeta = CtraceRunMeta::fromConfig(selected);
-  ASSERT_EQ(inferredReferenceMeta.sources().size(), 2U);
-  EXPECT_EQ(inferredReferenceMeta.sources().back().processorName, std::optional<std::string>("a"));
+  ASSERT_EQ(sourceCount(inferredReferenceMeta), 2U);
+  EXPECT_EQ(sourceAt(inferredReferenceMeta, sourceCount(inferredReferenceMeta) - 1U).processorName,
+            std::optional<std::string>("a"));
 
   selected.references.back().stream = 6U;
   const auto ambiguousReferenceMeta = CtraceRunMeta::fromConfig(selected);
-  ASSERT_EQ(ambiguousReferenceMeta.sources().size(), 1U);
+  ASSERT_EQ(sourceCount(ambiguousReferenceMeta), 1U);
   ASSERT_EQ(ambiguousReferenceMeta.warnings().size(), 1U);
   EXPECT_NE(ambiguousReferenceMeta.warnings().front().message.find("processor binding is ambiguous"),
             std::string::npos);
 
   selected.references.push_back(routeReference("event", "unused", std::nullopt, std::nullopt));
   const auto ignoredReferenceMeta = CtraceRunMeta::fromConfig(selected);
-  EXPECT_EQ(ignoredReferenceMeta.sources().size(), 1U);
+  EXPECT_EQ(sourceCount(ignoredReferenceMeta), 1U);
 
   TraceRunConfig eventBinding;
   eventBinding.setups = selected.setups;
@@ -256,7 +269,6 @@ TEST(CtraceUnitTests, testCtraceRunMetaNormalizesAmbiguousUnformattedProcessorId
   eventBinding.setups.clear();
   eventBinding.references.push_back(routeReference("exception", "b/exceptions", "b", 6U));
   const auto eventCandidates = CtraceRunMeta::fromConfig(eventBinding);
-  EXPECT_EQ(eventCandidates.processorCount(), 2U);
   EXPECT_FALSE(eventCandidates.routes().front().processorName.has_value());
 
   TraceRunConfig pathOnly;
@@ -266,8 +278,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaNormalizesAmbiguousUnformattedProcessorId
       routeReference("itm", "b/itm", std::nullopt, 2U, {2U}),
   };
   const auto pathOnlyMeta = CtraceRunMeta::fromConfig(pathOnly);
-  EXPECT_EQ(pathOnlyMeta.processorCount(), 2U);
-  ASSERT_EQ(pathOnlyMeta.sources().size(), 2U);
+  ASSERT_EQ(sourceCount(pathOnlyMeta), 2U);
   EXPECT_FALSE(pathOnlyMeta.routes().front().processorName.has_value());
 
   TraceRunConfig pathMismatch;
@@ -275,7 +286,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaNormalizesAmbiguousUnformattedProcessorId
   pathMismatch.setups = {makeTimestampSetup("a")};
   pathMismatch.references = {routeReference("itm", "b/itm", std::nullopt, 1U, {1U})};
   const auto mismatchMeta = CtraceRunMeta::fromConfig(pathMismatch);
-  EXPECT_TRUE(mismatchMeta.sources().empty());
+  EXPECT_TRUE(sourceCount(mismatchMeta) == 0U);
 
   pathMismatch.references.front().processorName = "a";
   EXPECT_TRUE(metaRejects(pathMismatch, "path processor conflicts with pname"));
@@ -283,8 +294,8 @@ TEST(CtraceUnitTests, testCtraceRunMetaNormalizesAmbiguousUnformattedProcessorId
   TraceRunConfig opaquePath;
   opaquePath.references = {routeReference("itm", "opaque/printf-route", std::nullopt, 1U, {1U})};
   const auto opaqueMeta = CtraceRunMeta::fromConfig(opaquePath);
-  ASSERT_EQ(opaqueMeta.sources().size(), 1U);
-  EXPECT_FALSE(opaqueMeta.sources().front().processorName.has_value());
+  ASSERT_EQ(sourceCount(opaqueMeta), 1U);
+  EXPECT_FALSE(sourceAt(opaqueMeta, 0U).processorName.has_value());
 
   TraceRunConfig pathBoundData;
   TraceRunSetup foreignData;
@@ -295,9 +306,9 @@ TEST(CtraceUnitTests, testCtraceRunMetaNormalizesAmbiguousUnformattedProcessorId
   otherData.dataSetupIndex = 0U;
   pathBoundData.references = {otherData};
   const auto pathBoundMeta = CtraceRunMeta::fromConfig(pathBoundData);
-  ASSERT_EQ(pathBoundMeta.sources().size(), 1U);
+  ASSERT_EQ(sourceCount(pathBoundMeta), 1U);
   EXPECT_EQ(pathBoundMeta.routes().front().processorName, std::optional<std::string>("other"));
-  EXPECT_EQ(pathBoundMeta.sources().front().dataSize, TraceRunSchema::kDefaultDwtDataSize);
+  EXPECT_EQ(sourceAt(pathBoundMeta, 0U).dataSize, TraceRunSchema::kDefaultDwtDataSize);
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaWarnsForSingleSetupIdentityConflicts)
@@ -307,7 +318,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaWarnsForSingleSetupIdentityConflicts)
   namedSetup.setups.push_back(makeTimestampSetup("a"));
   namedSetup.references.push_back(makeReference("itm", "b", 1U, {1U}));
   const auto namedMeta = CtraceRunMeta::fromConfig(namedSetup);
-  EXPECT_TRUE(namedMeta.sources().empty());
+  EXPECT_TRUE(sourceCount(namedMeta) == 0U);
   ASSERT_EQ(namedMeta.warnings().size(), 1U);
 
   TraceRunConfig unnamedSetup;
@@ -329,8 +340,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaWarnsForSingleSetupIdentityConflicts)
 
   referencesOnly.references.pop_back();
   const auto mergedReferences = CtraceRunMeta::fromConfig(referencesOnly);
-  EXPECT_EQ(mergedReferences.processorCount(), 2U);
-  EXPECT_EQ(mergedReferences.sources().size(), 2U);
+  EXPECT_EQ(sourceCount(mergedReferences), 2U);
   EXPECT_FALSE(mergedReferences.routes().front().processorName.has_value());
 }
 
@@ -342,11 +352,10 @@ TEST(CtraceUnitTests, testCtraceRunMetaBindsOneNamedReferenceToUnnamedSetup)
 
   const auto meta = CtraceRunMeta::fromConfig(config);
 
-  ASSERT_EQ(meta.sources().size(), 1U);
-  EXPECT_EQ(meta.sources().front().processorName, std::optional<std::string>("core"));
-  ASSERT_EQ(meta.timestampsByTraceBusId().size(), 1U);
-  EXPECT_EQ(meta.timestampsByTraceBusId().at(0U).processorName, std::optional<std::string>("core"));
-  EXPECT_EQ(meta.timestampsByTraceBusId().at(0U).clockHz, std::optional<std::uint64_t>(100U));
+  ASSERT_EQ(sourceCount(meta), 1U);
+  EXPECT_EQ(sourceAt(meta, 0U).processorName, std::optional<std::string>("core"));
+  EXPECT_EQ(meta.routes().front().processorName, std::optional<std::string>("core"));
+  EXPECT_EQ(meta.routes().front().timestampClockHz, std::optional<std::uint64_t>(100U));
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaBindsStreamlessTimestampToInternalRoute)
@@ -357,12 +366,10 @@ TEST(CtraceUnitTests, testCtraceRunMetaBindsStreamlessTimestampToInternalRoute)
 
   const auto meta = CtraceRunMeta::fromConfig(config);
 
-  EXPECT_TRUE(meta.sources().empty());
-  ASSERT_EQ(meta.timestampsByTraceBusId().size(), 1U);
-  EXPECT_EQ(meta.timestampsByTraceBusId().at(0U).processorName, std::optional<std::string>("core"));
-  EXPECT_EQ(meta.timestampsByTraceBusId().at(0U).clockHz, std::optional<std::uint64_t>(100U));
-  ASSERT_EQ(meta.timestampPrescalersByTraceBusId().size(), 1U);
-  EXPECT_EQ(meta.timestampPrescalersByTraceBusId().at(0U), 1U);
+  EXPECT_TRUE(sourceCount(meta) == 0U);
+  EXPECT_EQ(meta.routes().front().processorName, std::optional<std::string>("core"));
+  EXPECT_EQ(meta.routes().front().timestampClockHz, std::optional<std::uint64_t>(100U));
+  EXPECT_EQ(meta.routes().front().timestampPrescaler, 1U);
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaMergesCompatibleUnformattedProcessorSettings)
@@ -379,25 +386,26 @@ TEST(CtraceUnitTests, testCtraceRunMetaMergesCompatibleUnformattedProcessorSetti
   };
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  EXPECT_EQ(meta.processorCount(), 2U);
-  EXPECT_EQ(meta.timestampPrescaler(), std::optional<std::uint32_t>(4U));
-  EXPECT_FALSE(meta.timestampClockHz().has_value());
-  EXPECT_FALSE(meta.itmEnableMask().has_value());
   ASSERT_EQ(meta.routes().size(), 1U);
   EXPECT_FALSE(meta.routes().front().processorName.has_value());
+  EXPECT_EQ(meta.routes().front().timestampPrescaler, 4U);
+  EXPECT_FALSE(meta.routes().front().itmEnableMask.has_value());
   EXPECT_EQ(meta.routes().front().timestampClockError,
             std::optional<std::string>(
                 "unformatted SINGLE trace has ambiguous timestamps.clock values across processor candidates"));
-  ASSERT_EQ(meta.sources().size(), 2U);
-  EXPECT_EQ(meta.sources()[0].route, meta.routes().front().identity);
-  EXPECT_EQ(meta.sources()[1].route, meta.routes().front().identity);
-  EXPECT_FALSE(meta.sources()[0].route.traceBusId.has_value());
-  EXPECT_FALSE(meta.sources()[1].route.traceBusId.has_value());
+  ASSERT_EQ(meta.warnings().size(), 1U);
+  EXPECT_NE(meta.warnings().front().message.find("itm.enable"), std::string::npos);
+  ASSERT_EQ(sourceCount(meta), 2U);
+  EXPECT_EQ(sourceAt(meta, 0).route, meta.routes().front().identity);
+  EXPECT_EQ(sourceAt(meta, 1).route, meta.routes().front().identity);
+  EXPECT_FALSE(sourceAt(meta, 0).route.traceBusId.has_value());
+  EXPECT_FALSE(sourceAt(meta, 1).route.traceBusId.has_value());
 
   config.setups[1] = makeTimestampSetup("b", 100U, 4U, 1U);
   const auto equivalent = CtraceRunMeta::fromConfig(config);
-  EXPECT_EQ(equivalent.timestampClockHz(), std::optional<std::uint64_t>(100U));
-  EXPECT_EQ(equivalent.itmEnableMask(), std::optional<std::uint32_t>(1U));
+  EXPECT_EQ(equivalent.routes().front().timestampClockHz, std::optional<std::uint64_t>(100U));
+  EXPECT_EQ(equivalent.routes().front().itmEnableMask, std::optional<std::uint32_t>(1U));
+  EXPECT_TRUE(equivalent.warnings().empty());
 
   TraceRunSetup defaulted;
   defaulted.processorName = "b";
@@ -407,8 +415,8 @@ TEST(CtraceUnitTests, testCtraceRunMetaMergesCompatibleUnformattedProcessorSetti
 
   config.setups[0].timestamps->timestampPrescaler = 1U;
   const auto missingClock = CtraceRunMeta::fromConfig(config);
-  EXPECT_EQ(missingClock.timestampPrescaler(), std::optional<std::uint32_t>(1U));
-  EXPECT_FALSE(missingClock.timestampClockHz().has_value());
+  EXPECT_EQ(missingClock.routes().front().timestampPrescaler, 1U);
+  EXPECT_FALSE(missingClock.routes().front().timestampClockHz.has_value());
   EXPECT_EQ(missingClock.routes().front().timestampClockError,
             std::optional<std::string>(
                 "unformatted SINGLE trace has ambiguous timestamps.clock values across processor candidates"));
@@ -431,10 +439,8 @@ TEST(CtraceUnitTests, testCtraceRunMetaMapsDistinctPrescalersPerStream)
   config.references[0].ctraceRef = "a/itm";
   config.references[1].ctraceRef = "b/itm";
   const auto meta = CtraceRunMeta::fromConfig(config);
-  EXPECT_TRUE(meta.hasDistinctProcessorPrescalers());
-  EXPECT_FALSE(meta.timestampPrescaler().has_value());
-  EXPECT_EQ(meta.timestampPrescalersByTraceBusId().at(5U), 4U);
-  EXPECT_EQ(meta.timestampPrescalersByTraceBusId().at(6U), 16U);
+  EXPECT_EQ(meta.routes()[0].timestampPrescaler, 4U);
+  EXPECT_EQ(meta.routes()[1].timestampPrescaler, 16U);
 
   config.path = "trace.yml";
   config.references.back().stream = 5U;
@@ -463,15 +469,15 @@ TEST(CtraceUnitTests, testCtraceRunMetaResolvesDwtDataAndDefaults)
   config.references = {configured, missingIndex, outOfRange};
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  ASSERT_EQ(meta.sources().size(), 2U);
+  ASSERT_EQ(sourceCount(meta), 2U);
   EXPECT_EQ(meta.configPath(), "trace.yml");
-  EXPECT_EQ(meta.sources()[0].dataType, "float");
-  EXPECT_EQ(meta.sources()[0].dataSize, 4U);
-  EXPECT_EQ(meta.sources()[0].address, std::optional<std::uint64_t>(0x20000000U));
-  EXPECT_FALSE(meta.sources()[0].dataTypeError.has_value());
-  EXPECT_FALSE(meta.sources()[0].dataSizeError.has_value());
-  EXPECT_EQ(meta.sources()[1].dataType, std::string(TraceRunSchema::kDefaultDwtDataType));
-  EXPECT_EQ(meta.sources()[1].dataSize, TraceRunSchema::kDefaultDwtDataSize);
+  EXPECT_EQ(sourceAt(meta, 0).dataType, "float");
+  EXPECT_EQ(sourceAt(meta, 0).dataSize, 4U);
+  EXPECT_EQ(sourceAt(meta, 0).address, std::optional<std::uint64_t>(0x20000000U));
+  EXPECT_FALSE(sourceAt(meta, 0).dataTypeError.has_value());
+  EXPECT_FALSE(sourceAt(meta, 0).dataSizeError.has_value());
+  EXPECT_EQ(sourceAt(meta, 1).dataType, std::string(TraceRunSchema::kDefaultDwtDataType));
+  EXPECT_EQ(sourceAt(meta, 1).dataSize, TraceRunSchema::kDefaultDwtDataSize);
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaIgnoresInactiveSetups)
@@ -485,8 +491,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaIgnoresInactiveSetups)
   config.references.front().dataSetupIndex = 4U;
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  EXPECT_EQ(meta.processorCount(), 1U);
-  EXPECT_EQ(meta.sources().front().dataType, std::string(TraceRunSchema::kDefaultDwtDataType));
+  EXPECT_EQ(sourceAt(meta, 0U).dataType, std::string(TraceRunSchema::kDefaultDwtDataType));
 
   TraceRunConfig dataOnly;
   TraceRunSetup dataSetup;
@@ -497,8 +502,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaIgnoresInactiveSetups)
   dataReference.dataSetupIndex = 0U;
   dataOnly.references.push_back(dataReference);
   const auto dataMeta = CtraceRunMeta::fromConfig(dataOnly);
-  EXPECT_EQ(dataMeta.processorCount(), 1U);
-  ASSERT_EQ(dataMeta.sources().size(), 1U);
+  ASSERT_EQ(sourceCount(dataMeta), 1U);
 
   TraceRunConfig unrelatedFeature;
   unrelatedFeature.setups.push_back(makeTimestampSetup("core", 100U));
@@ -509,7 +513,6 @@ TEST(CtraceUnitTests, testCtraceRunMetaIgnoresInactiveSetups)
   unrelatedFeature.references.push_back(makeReference("itm", "core", 1U, {1U}, "core/itm"));
   unrelatedFeature.references.push_back(routeReference("unsupported", "other/instructions", "other", 2U));
   const auto unrelatedMeta = CtraceRunMeta::fromConfig(unrelatedFeature);
-  EXPECT_EQ(unrelatedMeta.processorCount(), 1U);
   EXPECT_EQ(unrelatedMeta.routes().front().processorName, std::optional<std::string>("core"));
 }
 
@@ -522,9 +525,8 @@ TEST(CtraceUnitTests, testCtraceRunMetaDoesNotExposeDwtControlReferencesAsDataSo
   config.references = {data, start};
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  ASSERT_EQ(meta.sources().size(), 1U);
-  EXPECT_EQ(meta.sources().front().source, 0U);
-  EXPECT_EQ(meta.processorCount(), 1U);
+  ASSERT_EQ(sourceCount(meta), 1U);
+  EXPECT_EQ(sourceAt(meta, 0U).source, 0U);
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaCreatesOneSyntheticUnformattedRoute)
@@ -539,16 +541,14 @@ TEST(CtraceUnitTests, testCtraceRunMetaCreatesOneSyntheticUnformattedRoute)
 
     ASSERT_EQ(meta.routes().size(), 1U);
     const auto& route = meta.routes().front();
-    EXPECT_EQ(route.protocol, CtraceRunProtocol::Itm);
     EXPECT_EQ(route.identity.id, TraceRouteId{0U});
     EXPECT_FALSE(route.identity.traceBusId.has_value());
-    EXPECT_FALSE(route.timestampsConfigured);
     EXPECT_EQ(route.timestampPrescaler, TraceRunSchema::kDefaultTimestampPrescaler);
     ASSERT_EQ(route.sources.size(), 1U);
     EXPECT_EQ(route.sources.front().route, route.identity);
-    ASSERT_EQ(meta.sources().size(), 1U);
-    EXPECT_EQ(meta.sources().front().route, route.identity);
-    EXPECT_FALSE(meta.sources().front().route.traceBusId.has_value())
+    ASSERT_EQ(sourceCount(meta), 1U);
+    EXPECT_EQ(sourceAt(meta, 0U).route, route.identity);
+    EXPECT_FALSE(sourceAt(meta, 0U).route.traceBusId.has_value())
         << "SINGLE metadata must not expose OpenCSD transport channel 0 as an architectural ID";
   }
 
@@ -581,7 +581,6 @@ TEST(CtraceUnitTests, testCtraceRunMetaBuildsFormattedAnchorRoutesAndMetadata)
   const auto& first = meta.routes()[0];
   EXPECT_EQ(first.identity, (TraceRouteIdentity{TraceRouteId{0U}, 1U}));
   EXPECT_EQ(first.processorName, std::optional<std::string>("first"));
-  EXPECT_TRUE(first.timestampsConfigured);
   EXPECT_EQ(first.timestampClockHz, std::optional<std::uint64_t>(100U));
   EXPECT_EQ(first.timestampPrescaler, 4U);
   EXPECT_EQ(first.itmEnableMask, std::optional<std::uint32_t>(3U));
@@ -591,17 +590,13 @@ TEST(CtraceUnitTests, testCtraceRunMetaBuildsFormattedAnchorRoutesAndMetadata)
   EXPECT_EQ(first.sources[1].dataSize, 2U);
   EXPECT_EQ(first.sources[0].route, first.identity);
   EXPECT_EQ(first.sources[1].route, first.identity);
-  ASSERT_EQ(first.referenceDiagnostics.size(), 3U);
-  EXPECT_EQ(first.referenceDiagnostics[0].severity, CtraceRunReferenceDiagnostic::Severity::Info);
-  EXPECT_EQ(first.referenceDiagnostics[1].severity, CtraceRunReferenceDiagnostic::Severity::Warning);
-  EXPECT_EQ(first.referenceDiagnostics[2].severity, CtraceRunReferenceDiagnostic::Severity::Error);
-  EXPECT_EQ(meta.referenceDiagnostics().size(), 3U);
 
   const auto& second = meta.routes()[1];
   EXPECT_EQ(second.identity, (TraceRouteIdentity{TraceRouteId{1U}, 111U}));
   EXPECT_EQ(second.processorName, std::optional<std::string>("second"));
   EXPECT_EQ(second.timestampClockHz, std::optional<std::uint64_t>(200U));
   EXPECT_EQ(second.timestampPrescaler, 16U);
+  EXPECT_EQ(second.itmEnableMask, std::optional<std::uint32_t>(5U));
   ASSERT_EQ(second.sources.size(), 1U);
   EXPECT_EQ(second.sources.front().source, 1U) << "the same ITM source number must remain valid on a distinct route";
   EXPECT_EQ(second.sources.front().route, second.identity);
@@ -804,9 +799,11 @@ TEST(CtraceUnitTests, testCtraceRunMetaMergesRepeatedFormattedSetupFragments)
 
   auto conflictingItm = itm;
   conflictingItm.itm->enableMask = 5U;
+  const auto repeatedItm = CtraceRunMeta::fromConfig(formattedConfig(config.references, {itm, itm}));
+  EXPECT_EQ(repeatedItm.routes().front().itmEnableMask, std::optional<std::uint32_t>(3U));
+  EXPECT_TRUE(repeatedItm.warnings().empty());
   const auto nonFatalItm = CtraceRunMeta::fromConfig(formattedConfig(config.references, {itm, conflictingItm}));
   EXPECT_FALSE(nonFatalItm.routes().front().itmEnableMask.has_value());
-  EXPECT_TRUE(nonFatalItm.routes().front().itmEnableError.has_value());
   ASSERT_EQ(nonFatalItm.warnings().size(), 1U);
   EXPECT_NE(nonFatalItm.warnings().front().message.find("itm.enable"), std::string::npos);
 
@@ -855,7 +852,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaMergesRepeatedFormattedSetupFragments)
             std::optional<std::string>("conflicting active ctrace-setup data.size values"));
 }
 
-TEST(CtraceUnitTests, testCtraceRunMetaRetainsItmSetupErrorsIndependentlyOfFragmentOrder)
+TEST(CtraceUnitTests, testCtraceRunMetaRejectsMalformedConsumedItmSetupMetadata)
 {
   TraceRunSetup valid;
   valid.processorName = "core";
@@ -871,10 +868,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaRetainsItmSetupErrorsIndependentlyOfFragm
           reverse ? std::vector<TraceRunSetup>{malformed, valid} : std::vector<TraceRunSetup>{valid, malformed};
       auto config = formattedConfig({anchor}, std::move(setups));
       config.traceFormat = format;
-      const auto meta = CtraceRunMeta::fromConfig(config);
-      ASSERT_EQ(meta.routes().size(), 1U);
-      EXPECT_FALSE(meta.routes().front().itmEnableMask.has_value());
-      EXPECT_EQ(meta.routes().front().itmEnableError, std::optional<std::string>("invalid itm.enable"));
+      EXPECT_TRUE(metaRejects(config, "invalid itm.enable"));
     }
   }
 
@@ -883,19 +877,15 @@ TEST(CtraceUnitTests, testCtraceRunMetaRetainsItmSetupErrorsIndependentlyOfFragm
   for (const auto format : {TraceRunFormat::Unformatted, TraceRunFormat::Formatted}) {
     auto config = formattedConfig({anchor}, {malformed, secondMalformed});
     config.traceFormat = format;
-    const auto meta = CtraceRunMeta::fromConfig(config);
-    EXPECT_EQ(meta.routes().front().itmEnableError,
-              std::optional<std::string>("conflicting active ctrace-setup itm.enable values"));
+    EXPECT_TRUE(metaRejects(config, "itm.enable"));
   }
 
   auto secondValid = valid;
   secondValid.itm->enableMask = 5U;
-  auto unformattedConflict = formattedConfig({anchor}, {valid, secondValid});
+  auto unformattedConflict = formattedConfig({anchor}, {valid, secondValid, valid});
   unformattedConflict.traceFormat = TraceRunFormat::Unformatted;
   const auto conflictMeta = CtraceRunMeta::fromConfig(unformattedConflict);
   EXPECT_FALSE(conflictMeta.routes().front().itmEnableMask.has_value());
-  EXPECT_EQ(conflictMeta.routes().front().itmEnableError,
-            std::optional<std::string>("conflicting active ctrace-setup itm.enable values"));
   ASSERT_EQ(conflictMeta.warnings().size(), 1U);
 
   TraceRunSetup emptyItm;
@@ -903,7 +893,33 @@ TEST(CtraceUnitTests, testCtraceRunMetaRetainsItmSetupErrorsIndependentlyOfFragm
   emptyItm.itm = TraceRunItmSetup{};
   const auto emptyMeta = CtraceRunMeta::fromConfig(formattedConfig({anchor}, {emptyItm}));
   EXPECT_FALSE(emptyMeta.routes().front().itmEnableMask.has_value());
-  EXPECT_FALSE(emptyMeta.routes().front().itmEnableError.has_value());
+
+  auto unformattedAbsent = formattedConfig({anchor}, {valid, emptyItm});
+  unformattedAbsent.traceFormat = TraceRunFormat::Unformatted;
+  const auto absentMeta = CtraceRunMeta::fromConfig(unformattedAbsent);
+  EXPECT_EQ(absentMeta.routes().front().itmEnableMask, valid.itm->enableMask);
+  EXPECT_TRUE(absentMeta.warnings().empty());
+}
+
+TEST(CtraceUnitTests, testCtraceRunMetaIgnoresMalformedItmMetadataOutsideSelectedProcessor)
+{
+  TraceRunSetup selected;
+  selected.processorName = "core";
+  selected.itm = TraceRunItmSetup{3U};
+  TraceRunSetup unused;
+  unused.processorName = "unused";
+  unused.itm = TraceRunItmSetup{};
+  unused.itm->enableError = "invalid unused itm.enable";
+  const auto anchor = routeReference("itm", "core/itm", "core", 1U);
+
+  for (const auto format : {TraceRunFormat::Unformatted, TraceRunFormat::Formatted}) {
+    auto config = formattedConfig({anchor}, {selected, unused});
+    config.traceFormat = format;
+    const auto meta = CtraceRunMeta::fromConfig(config);
+    ASSERT_EQ(meta.routes().size(), 1U);
+    EXPECT_EQ(meta.routes().front().processorName, std::optional<std::string>("core"));
+    EXPECT_EQ(meta.routes().front().itmEnableMask, std::optional<std::uint32_t>(3U));
+  }
 }
 
 TEST(CtraceUnitTests, testCtraceRunMetaResolvesDisabledFragmentsLocally)
@@ -959,15 +975,13 @@ TEST(CtraceUnitTests, testCtraceRunMetaResolvesDisabledFragmentsLocally)
   EXPECT_TRUE(metaRejects(unformatted, "resolves only to disabled ctrace-setup fragment"));
 }
 
-TEST(CtraceUnitTests, testCtraceRunMetaRetainsDiagnosticsWithoutWeakeningRouting)
+TEST(CtraceUnitTests, testCtraceRunMetaProducerFailuresDoNotWeakenRouting)
 {
   auto diagnosedAnchor = routeReference("itm", "core/itm", "core", 1U, {32U});
   diagnosedAnchor.error = {"source setup failed"};
   const auto diagnosed = CtraceRunMeta::fromConfig(formattedConfig({diagnosedAnchor}));
   ASSERT_EQ(diagnosed.routes().size(), 1U);
   EXPECT_TRUE(diagnosed.routes().front().sources.empty());
-  ASSERT_EQ(diagnosed.routes().front().referenceDiagnostics.size(), 1U);
-  EXPECT_EQ(diagnosed.routes().front().referenceDiagnostics.front().message, "source setup failed");
 
   TraceRunConfig diagnosedSingle;
   diagnosedSingle.references = {diagnosedAnchor};
@@ -984,16 +998,15 @@ TEST(CtraceUnitTests, testCtraceRunMetaRetainsDiagnosticsWithoutWeakeningRouting
   streamlessDiagnostic.warning = {"time sync unavailable"};
   const auto routeDiagnostic =
       CtraceRunMeta::fromConfig(formattedConfig({routeReference("itm", "core/itm", "core", 1U), streamlessDiagnostic}));
-  ASSERT_EQ(routeDiagnostic.routes().front().referenceDiagnostics.size(), 1U);
-  EXPECT_EQ(routeDiagnostic.routes().front().referenceDiagnostics.front().message, "time sync unavailable");
+  ASSERT_EQ(routeDiagnostic.routes().size(), 1U);
+  EXPECT_EQ(routeDiagnostic.routes().front().identity.traceBusId, 1U);
 
   auto secondAnchor = routeReference("itm", "other/itm", "other", 2U);
   const auto routedDiagnostic = CtraceRunMeta::fromConfig(
       formattedConfig({routeReference("itm", "core/itm", "core", 1U), secondAnchor, streamlessDiagnostic}));
   ASSERT_EQ(routedDiagnostic.routes().size(), 2U);
-  ASSERT_EQ(routedDiagnostic.routes()[0].referenceDiagnostics.size(), 1U);
-  EXPECT_EQ(routedDiagnostic.routes()[0].referenceDiagnostics.front().message, "time sync unavailable");
-  EXPECT_TRUE(routedDiagnostic.routes()[1].referenceDiagnostics.empty());
+  EXPECT_EQ(routedDiagnostic.routes()[0].identity.traceBusId, 1U);
+  EXPECT_EQ(routedDiagnostic.routes()[1].identity.traceBusId, 2U);
 
   const auto conflictingStreamless = formattedConfig({
       routeReference("itm", "itm", std::nullopt, 1U),
@@ -1020,7 +1033,6 @@ TEST(CtraceUnitTests, testCtraceRunMetaDefersFormattedOutputMetadataErrors)
 
   ASSERT_EQ(meta.routes().size(), 1U);
   const auto& route = meta.routes().front();
-  EXPECT_TRUE(route.timestampsConfigured);
   EXPECT_FALSE(route.timestampClockHz.has_value());
   EXPECT_EQ(route.timestampClockError, std::optional<std::string>("invalid timestamps.clock"));
   EXPECT_EQ(route.timestampPrescaler, TraceRunSchema::kDefaultTimestampPrescaler);

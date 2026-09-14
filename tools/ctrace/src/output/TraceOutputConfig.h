@@ -36,14 +36,12 @@ struct CsvOutputConfig {
 struct CtfOutputConfig {
   /** @brief Creates a complete CTF output configuration. */
   CtfOutputConfig(std::filesystem::path outputDirectory, std::filesystem::path traceCompassXmlPath,
-                  TraceSelection selection, CtfMetadataTopology metadata, std::vector<TraceRouteIdentity> routes = {},
-                  bool routeCatalogueConfigured = false)
+                  TraceSelection selection, CtfMetadataTopology metadata, std::vector<TraceRouteIdentity> routes = {})
     : outputDirectory(std::move(outputDirectory)),
       traceCompassXmlPath(std::move(traceCompassXmlPath)),
       selection(std::move(selection)),
       metadata(std::move(metadata)),
-      routes(std::move(routes)),
-      routeCatalogueConfigured(routeCatalogueConfigured)
+      routes(std::move(routes))
   {
   }
 
@@ -52,8 +50,6 @@ struct CtfOutputConfig {
   TraceSelection selection;
   CtfMetadataTopology metadata;
   std::vector<TraceRouteIdentity> routes;
-  /** @brief Distinguishes an explicit empty catalogue from legacy route inference. */
-  bool routeCatalogueConfigured = false;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_TRACEOUTPUTCONFIG_H

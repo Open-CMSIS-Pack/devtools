@@ -217,7 +217,7 @@ jobs:
       - name: Run ctrace integration tests
         id: run_integration_tests
         if: always() && matrix.run_tests && (steps.build_integration_target.outcome == 'success')
-        run: ctest -V -C Debug -R '^(CtraceIntegTests|ctrace-)'
+        run: ctest -V -C Debug -R '^(CtraceIntegTests|CtraceFixtureIntegrity|ctrace-)'
         working-directory: ./build
 
       - name: Run pinned Babeltrace consumer test
@@ -299,7 +299,7 @@ jobs:
         working-directory: ./build
 
       - name: Run ctrace integration tests
-        run: ctest -V -C Debug -R '^(CtraceIntegTests|ctrace-)'
+        run: ctest -V -C Debug -R '^(CtraceIntegTests|CtraceFixtureIntegrity|ctrace-)'
         working-directory: ./build
 
       - name: Run pinned Babeltrace consumer test

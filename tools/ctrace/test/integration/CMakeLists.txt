@@ -42,6 +42,17 @@ set_tests_properties(CtraceIntegTests PROPERTIES
 )
 
 add_test(
+  NAME CtraceFixtureIntegrity
+  COMMAND "${CMAKE_COMMAND}"
+    "-DFIXTURE_ROOT=${PROJECT_SOURCE_DIR}/test/data"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/src/ValidateFixtureIntegrity.cmake"
+)
+set_tests_properties(CtraceFixtureIntegrity PROPERTIES
+  LABELS "integration"
+  TIMEOUT 30
+)
+
+add_test(
   NAME ctrace-version
   COMMAND ctrace --version
 )

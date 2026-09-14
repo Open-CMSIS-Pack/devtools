@@ -40,8 +40,6 @@ public:
   void resetForDiscontinuity(const RecordEmitter& emit);
   /** @brief Applies one exception transition and emits resulting lane records. */
   void consume(const ExceptionTraceEvent& event, const RecordEmitter& emit);
-  /** @brief Returns exception numbers observed by this tracker. */
-  const std::vector<ExceptionNumber>& observedExceptionNumbers() const;
 
 private:
   static constexpr ExceptionNumber kThreadModeNumber = 0;
@@ -64,8 +62,6 @@ private:
   void closeActiveContext(RecordOrigin origin, const RecordEmitter& emit);
   /** @brief Activates the context selected by the stack after an enter or return. */
   void updateActiveContext(RecordAction action, RecordOrigin origin, const RecordEmitter& emit);
-  /** @brief Emits and records one lane transition. */
-  void emitRecord(ExceptionNumber number, RecordAction action, RecordOrigin origin, const RecordEmitter& emit);
   /** @brief Pushes or reactivates an entered exception context. */
   void enterContext(ExceptionNumber number);
   /** @brief Removes an exited running exception context. */
@@ -75,7 +71,6 @@ private:
 
   std::vector<ContextFrame> m_contextStack;
   std::optional<ExceptionNumber> m_activeContextNumber;
-  std::vector<ExceptionNumber> m_observedExceptionNumbers;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_CTF_CTFEXCEPTIONLANETRACKER_H

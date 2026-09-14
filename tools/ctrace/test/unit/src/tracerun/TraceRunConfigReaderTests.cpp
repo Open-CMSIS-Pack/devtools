@@ -16,9 +16,32 @@
 #include <filesystem>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
+
+/** @brief Counts source metadata directly from canonical normalized routes. */
+static std::size_t sourceCount(const CtraceRunMeta& meta)
+{
+  std::size_t count = 0U;
+  for (const auto& route : meta.routes()) {
+    count += route.sources.size();
+  }
+  return count;
+}
+
+/** @brief Returns one source in deterministic route/source order. */
+static const CtraceRunSourceMeta& sourceAt(const CtraceRunMeta& meta, std::size_t index)
+{
+  for (const auto& route : meta.routes()) {
+    if (index < route.sources.size()) {
+      return route.sources[index];
+    }
+    index -= route.sources.size();
+  }
+  throw std::out_of_range("source index exceeds normalized route sources");
+}
 
 /** @brief Owns one temporary trace-run file used by YAML reader tests. */
 class TraceRunFixture {
@@ -109,19 +132,19 @@ TEST(CtraceUnitTests, TraceRunReaderParsesConsumedFields)
   ASSERT_EQ(config.setups.size(), 1U);
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  EXPECT_EQ(meta.processorCount(), 1U);
-  EXPECT_EQ(meta.timestampClockHz(), std::optional<std::uint64_t>(400000000U));
-  EXPECT_EQ(meta.timestampPrescaler(), std::optional<std::uint32_t>(4U));
-  ASSERT_EQ(meta.itmEnableMasksByTraceBusId().at(2U), 0x00000006U);
+  ASSERT_EQ(meta.routes().size(), 1U);
+  EXPECT_EQ(meta.routes().front().timestampClockHz, std::optional<std::uint64_t>(400000000U));
+  EXPECT_EQ(meta.routes().front().timestampPrescaler, 4U);
+  ASSERT_EQ(meta.routes().front().itmEnableMask, 0x00000006U);
 
-  ASSERT_EQ(meta.sources().size(), 2U);
-  const auto& itm = meta.sources()[0];
+  ASSERT_EQ(sourceCount(meta), 2U);
+  const auto& itm = sourceAt(meta, 0);
   EXPECT_EQ(itm.type, "itm");
   EXPECT_EQ(itm.route.traceBusId, 2U);
   EXPECT_EQ(itm.source, 1U);
   EXPECT_EQ(itm.label, std::optional<std::string>("Console"));
 
-  const auto& dwt = meta.sources()[1];
+  const auto& dwt = sourceAt(meta, 1);
   EXPECT_EQ(dwt.type, "dwt");
   EXPECT_EQ(dwt.route.traceBusId, 2U);
   EXPECT_EQ(dwt.source, 0U);
@@ -233,10 +256,10 @@ TEST(CtraceUnitTests, TraceRunReaderUsesReferencedSetupSizeAsFallback)
 )yml");
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  ASSERT_EQ(meta.sources().size(), 1U);
-  EXPECT_FALSE(meta.sources()[0].address.has_value());
-  EXPECT_EQ(meta.sources()[0].dataType, "signed");
-  EXPECT_EQ(meta.sources()[0].dataSize, 2U);
+  ASSERT_EQ(sourceCount(meta), 1U);
+  EXPECT_FALSE(sourceAt(meta, 0).address.has_value());
+  EXPECT_EQ(sourceAt(meta, 0).dataType, "signed");
+  EXPECT_EQ(sourceAt(meta, 0).dataSize, 2U);
 }
 
 TEST(CtraceUnitTests, TraceRunReaderIgnoresUnsupportedMetadataNames)
@@ -255,10 +278,10 @@ TEST(CtraceUnitTests, TraceRunReaderIgnoresUnsupportedMetadataNames)
 )yml");
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  ASSERT_EQ(meta.sources().size(), 1U);
-  EXPECT_FALSE(meta.sources()[0].address.has_value());
-  EXPECT_EQ(meta.sources()[0].dataType, "unsigned");
-  EXPECT_EQ(meta.sources()[0].dataSize, 4U);
+  ASSERT_EQ(sourceCount(meta), 1U);
+  EXPECT_FALSE(sourceAt(meta, 0).address.has_value());
+  EXPECT_EQ(sourceAt(meta, 0).dataType, "unsigned");
+  EXPECT_EQ(sourceAt(meta, 0).dataSize, 4U);
 }
 
 TEST(CtraceUnitTests, TraceRunReaderDefersMalformedDwtMetadataToOutputPlanning)
@@ -300,11 +323,9 @@ TEST(CtraceUnitTests, TraceRunReaderAcceptsProcessorItmReferenceWithoutEnabledCh
   EXPECT_TRUE(config.references.front().sources.empty());
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  EXPECT_EQ(meta.processorCount(), 1U);
-  EXPECT_TRUE(meta.sources().empty());
-  EXPECT_EQ(meta.itmEnableMask(), std::optional<std::uint32_t>(0U));
-  ASSERT_EQ(meta.itmEnableMasksByTraceBusId().size(), 1U);
-  EXPECT_EQ(meta.itmEnableMasksByTraceBusId().at(2U), 0U);
+  EXPECT_TRUE(sourceCount(meta) == 0U);
+  ASSERT_EQ(meta.routes().size(), 1U);
+  EXPECT_EQ(meta.routes().front().itmEnableMask, 0U);
 }
 
 TEST(CtraceUnitTests, TraceRunReaderReportsDocumentErrors)
@@ -562,8 +583,8 @@ TEST(CtraceUnitTests, TraceRunReaderTreatsNullOptionalSetupValuesAsAbsent)
   EXPECT_FALSE(config.setups[0].itm.has_value());
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  EXPECT_FALSE(meta.timestampClockHz().has_value());
-  EXPECT_EQ(meta.timestampPrescaler(), std::optional<std::uint32_t>(TraceRunSchema::kDefaultTimestampPrescaler));
+  EXPECT_FALSE(meta.routes().front().timestampClockHz.has_value());
+  EXPECT_EQ(meta.routes().front().timestampPrescaler, TraceRunSchema::kDefaultTimestampPrescaler);
 
   const auto generatedSetup = file.read(R"yml(ctrace-run:
   ctrace-setup:
@@ -641,18 +662,13 @@ TEST(CtraceUnitTests, TraceRunReaderDefersMalformedItmSetupMetadata)
     ASSERT_TRUE(config.setups.front().itm.has_value()) << setup;
     EXPECT_FALSE(config.setups.front().itm->enableMask.has_value()) << setup;
     ASSERT_TRUE(config.setups.front().itm->enableError.has_value()) << setup;
+    EXPECT_NE(config.setups.front().itm->enableError->find("(7):"), std::string::npos) << setup;
 
-    const auto formatted = CtraceRunMeta::fromConfig(config);
-    ASSERT_EQ(formatted.routes().size(), 1U) << setup;
-    EXPECT_FALSE(formatted.routes().front().itmEnableMask.has_value()) << setup;
-    EXPECT_TRUE(formatted.routes().front().itmEnableError.has_value()) << setup;
+    EXPECT_THROW((void)CtraceRunMeta::fromConfig(config), std::runtime_error) << setup;
 
     auto unformattedConfig = config;
     unformattedConfig.traceFormat.reset();
-    const auto unformatted = CtraceRunMeta::fromConfig(unformattedConfig);
-    ASSERT_EQ(unformatted.routes().size(), 1U) << setup;
-    EXPECT_FALSE(unformatted.routes().front().itmEnableMask.has_value()) << setup;
-    EXPECT_TRUE(unformatted.routes().front().itmEnableError.has_value()) << setup;
+    EXPECT_THROW((void)CtraceRunMeta::fromConfig(unformattedConfig), std::runtime_error) << setup;
   }
 }
 
@@ -734,9 +750,9 @@ TEST(CtraceUnitTests, TraceRunReaderDefersMalformedDataContainerWithoutIndexSize
   EXPECT_TRUE(config.setups.front().data.empty());
   EXPECT_EQ(config.setups.front().dataError, std::optional<std::string>("'data' must be an array"));
   const auto meta = CtraceRunMeta::fromConfig(config);
-  ASSERT_EQ(meta.sources().size(), 1U);
-  EXPECT_EQ(meta.sources().front().dataSize, TraceRunSchema::kDefaultDwtDataSize);
-  EXPECT_EQ(meta.sources().front().dataSizeError, std::optional<std::string>("'data' must be an array"));
+  ASSERT_EQ(sourceCount(meta), 1U);
+  EXPECT_EQ(sourceAt(meta, 0U).dataSize, TraceRunSchema::kDefaultDwtDataSize);
+  EXPECT_EQ(sourceAt(meta, 0U).dataSizeError, std::optional<std::string>("'data' must be an array"));
 }
 
 TEST(CtraceUnitTests, TraceRunReaderPropagatesMalformedDataEntryToSourceMetadata)
@@ -757,9 +773,9 @@ TEST(CtraceUnitTests, TraceRunReaderPropagatesMalformedDataEntryToSourceMetadata
   EXPECT_EQ(config.setups.front().data.front().sizeError,
             std::optional<std::string>("each 'data' entry must be a map"));
   const auto meta = CtraceRunMeta::fromConfig(config);
-  ASSERT_EQ(meta.sources().size(), 1U);
-  EXPECT_EQ(meta.sources().front().dataSize, TraceRunSchema::kDefaultDwtDataSize);
-  EXPECT_EQ(meta.sources().front().dataSizeError, std::optional<std::string>("each 'data' entry must be a map"));
+  ASSERT_EQ(sourceCount(meta), 1U);
+  EXPECT_EQ(sourceAt(meta, 0U).dataSize, TraceRunSchema::kDefaultDwtDataSize);
+  EXPECT_EQ(sourceAt(meta, 0U).dataSizeError, std::optional<std::string>("each 'data' entry must be a map"));
 }
 
 TEST(CtraceUnitTests, TraceRunReaderDoesNotCreateSetupMetadataFromNullDataEntries)
@@ -776,9 +792,9 @@ TEST(CtraceUnitTests, TraceRunReaderDoesNotCreateSetupMetadataFromNullDataEntrie
 
   EXPECT_TRUE(config.setups.empty());
   const auto meta = CtraceRunMeta::fromConfig(config);
-  ASSERT_EQ(meta.sources().size(), 1U);
-  EXPECT_EQ(meta.sources().front().dataSize, TraceRunSchema::kDefaultDwtDataSize);
-  EXPECT_FALSE(meta.sources().front().dataSizeError.has_value());
+  ASSERT_EQ(sourceCount(meta), 1U);
+  EXPECT_EQ(sourceAt(meta, 0U).dataSize, TraceRunSchema::kDefaultDwtDataSize);
+  EXPECT_FALSE(sourceAt(meta, 0U).dataSizeError.has_value());
 
   const auto otherProcessor = file.read(R"yml(ctrace-run:
   ctrace-setup:
@@ -792,7 +808,7 @@ TEST(CtraceUnitTests, TraceRunReaderDoesNotCreateSetupMetadataFromNullDataEntrie
   ASSERT_EQ(otherProcessor.setups.size(), 1U);
   EXPECT_EQ(otherProcessor.setups.front().processorName, std::optional<std::string>("other"));
   const auto otherMeta = CtraceRunMeta::fromConfig(otherProcessor);
-  EXPECT_TRUE(otherMeta.sources().empty());
+  EXPECT_TRUE(sourceCount(otherMeta) == 0U);
   EXPECT_EQ(otherMeta.routes().front().processorName, std::optional<std::string>("other"));
 
   const auto malformedIndex = file.read(R"yml(ctrace-run:
@@ -815,9 +831,9 @@ TEST(CtraceUnitTests, TraceRunReaderDoesNotCreateSetupMetadataFromNullDataEntrie
   ASSERT_EQ(foreignProcessor.setups.size(), 1U);
   EXPECT_FALSE(foreignProcessor.setups.front().dataError.has_value());
   const auto foreignMeta = CtraceRunMeta::fromConfig(foreignProcessor);
-  ASSERT_EQ(foreignMeta.sources().size(), 1U);
-  EXPECT_EQ(foreignMeta.sources().front().processorName, std::optional<std::string>("other"));
-  EXPECT_EQ(foreignMeta.sources().front().dataSize, TraceRunSchema::kDefaultDwtDataSize);
+  ASSERT_EQ(sourceCount(foreignMeta), 1U);
+  EXPECT_EQ(sourceAt(foreignMeta, 0U).processorName, std::optional<std::string>("other"));
+  EXPECT_EQ(sourceAt(foreignMeta, 0U).dataSize, TraceRunSchema::kDefaultDwtDataSize);
 }
 
 TEST(CtraceUnitTests, TraceRunReaderSkipsEmptyActiveSetupsAndNullDataEntries)

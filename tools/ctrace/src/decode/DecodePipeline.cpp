@@ -17,18 +17,6 @@
 #include <utility>
 #include <vector>
 
-DecodePipeline::DecodePipeline(CortexMDecodeRoute route, TraceEventSink& eventSink)
-  : DecodePipeline(std::vector<CortexMDecodeRoute>{std::move(route)}, OpenCsdItmInputMode::Single, eventSink)
-{
-}
-
-DecodePipeline::DecodePipeline(CortexMDecodeRoute route, TraceEventSink& eventSink,
-                               const OpenCsdItmSessionFactory& sessionFactory)
-  : DecodePipeline(std::vector<CortexMDecodeRoute>{std::move(route)}, OpenCsdItmInputMode::Single, eventSink,
-                   sessionFactory)
-{
-}
-
 /** @brief Extracts decoder identities while retaining post-decoder route configuration. */
 static std::vector<TraceRouteIdentity> routeIdentities(const std::vector<CortexMDecodeRoute>& routes)
 {

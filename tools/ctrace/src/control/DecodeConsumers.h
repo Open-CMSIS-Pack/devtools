@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <optional>
 #include <set>
 #include <utility>
 #include <vector>
@@ -28,7 +27,6 @@ class DecodeConsumers final : public TraceEventSink {
 public:
   /** @brief Creates the consumers for one raw trace input. */
   DecodeConsumers(std::vector<std::unique_ptr<TraceOutput>> outputs, DiagnosticSink& diagnostics,
-                  std::optional<std::uint32_t> itmEnableMask = std::nullopt,
                   std::map<TraceRouteId, std::uint32_t> itmEnableMasksByRoute = {});
 
   /** @brief Forwards one decoded event to all configured consumers. */
@@ -47,7 +45,6 @@ private:
   void reportItmConfigurationMismatch(const TraceEvent& event);
 
   DiagnosticSink& m_diagnostics;
-  std::optional<std::uint32_t> m_itmEnableMask;
   std::map<TraceRouteId, std::uint32_t> m_itmEnableMasksByRoute;
   std::set<std::pair<TraceRouteId, std::uint32_t>> m_reportedDisabledItmChannels;
   TraceIssueReporter m_issueReporter;

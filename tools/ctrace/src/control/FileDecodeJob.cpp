@@ -124,6 +124,16 @@ static std::map<TraceRouteId, std::uint32_t> itmEnableMasks(const CtraceRunMeta&
   return result;
 }
 
+/** @brief Counts source metadata directly from the canonical route catalogue. */
+static std::size_t sourceCount(const CtraceRunMeta& ctraceRunMeta)
+{
+  std::size_t result = 0U;
+  for (const auto& route : ctraceRunMeta.routes()) {
+    result += route.sources.size();
+  }
+  return result;
+}
+
 /** @brief Converts command-line output selection into an output request. */
 static TraceOutputRequest outputRequest(const CliOptions& options)
 {
@@ -183,13 +193,12 @@ void FileDecodeJob::run()
       "applied ctrace-run meta",
       {
           {"path", ctraceRunMeta.configPath()},
-          {"processors", std::to_string(ctraceRunMeta.processorCount())},
-          {"sources", std::to_string(ctraceRunMeta.sources().size())},
+          {"routes", std::to_string(ctraceRunMeta.routes().size())},
+          {"sources", std::to_string(sourceCount(ctraceRunMeta))},
       },
   });
   auto outputs = createConfiguredOutputs(outputPlan, m_diagnostics);
-  DecodeConsumers consumers(std::move(outputs), m_diagnostics, ctraceRunMeta.itmEnableMask(),
-                            itmEnableMasks(ctraceRunMeta));
+  DecodeConsumers consumers(std::move(outputs), m_diagnostics, itmEnableMasks(ctraceRunMeta));
 
   for (const auto& route : ctraceRunMeta.routes()) {
     std::vector<std::pair<std::string, std::string>> context;

@@ -108,6 +108,64 @@ std::vector<ExceptionNumber> CtfMetadataModel::observedExceptions(CtfStreamClass
                                              : std::vector<ExceptionNumber>{found->second.begin(), found->second.end()};
 }
 
+void CtfMetadataModel::observeGraphicalTopic(CtfStreamClassId streamClassId, CtfGraphicalTopic topic)
+{
+  if (std::none_of(m_topology.streams.begin(), m_topology.streams.end(), [&](const auto& stream) {
+        return stream.streamClassId == streamClassId;
+      })) {
+    throw std::runtime_error("CTF graphical-topic observation references an unknown stream class");
+  }
+  m_observedGraphicalTopics[streamClassId].insert(topic);
+}
+
+bool CtfMetadataModel::observedGraphicalTopic(CtfStreamClassId streamClassId, CtfGraphicalTopic topic) const
+{
+  const auto found = m_observedGraphicalTopics.find(streamClassId);
+  return found != m_observedGraphicalTopics.end() && found->second.find(topic) != found->second.end();
+}
+
+CtfMetadataModel CtfMetadataModel::projectToEmittedStreams(const std::set<CtfStreamClassId>& streamClassIds) const
+{
+  CtfMetadataTopology topology;
+  std::set<CtfClockDomainId> clockDomainIds;
+  std::set<TraceRouteId> routeIds;
+  for (const auto& stream : m_topology.streams) {
+    if (streamClassIds.find(stream.streamClassId) != streamClassIds.end()) {
+      topology.streams.push_back(stream);
+      clockDomainIds.insert(stream.clockDomainId);
+      routeIds.insert(stream.route.id);
+    }
+  }
+  for (const auto& clock : m_topology.clockDomains) {
+    if (clockDomainIds.find(clock.id) != clockDomainIds.end()) {
+      topology.clockDomains.push_back(clock);
+    }
+  }
+  for (const auto& source : m_topology.sources) {
+    if (routeIds.find(source.route.id) != routeIds.end()) {
+      topology.sources.push_back(source);
+    }
+  }
+
+  CtfMetadataModel projected(m_traceUuid, std::move(topology));
+  for (const auto streamClassId : streamClassIds) {
+    if (std::none_of(projected.topology().streams.begin(), projected.topology().streams.end(),
+                     [&](const auto& stream) { return stream.streamClassId == streamClassId; })) {
+      continue;
+    }
+    for (const auto number : observedExceptions(streamClassId)) {
+      projected.observeException(streamClassId, number);
+    }
+    const auto topics = m_observedGraphicalTopics.find(streamClassId);
+    if (topics != m_observedGraphicalTopics.end()) {
+      for (const auto topic : topics->second) {
+        projected.observeGraphicalTopic(streamClassId, topic);
+      }
+    }
+  }
+  return projected;
+}
+
 bool CtfMetadataModel::isLegacySingleStreamLayout() const noexcept
 {
   if (m_topology.clockDomains.size() != 1U || m_topology.streams.size() != 1U) {
@@ -117,7 +175,7 @@ bool CtfMetadataModel::isLegacySingleStreamLayout() const noexcept
   const auto& stream = m_topology.streams.front();
   return clock.id == CtfClockDomainId{0U} && clock.name == "swo_clock" && !clock.uuid.has_value() && !clock.absolute &&
          stream.streamClassId == CtfStreamClassId{0U} && !stream.route.traceBusId.has_value() &&
-         stream.sourceKind == CtfSourceKind::Itm && stream.clockDomainId == clock.id;
+         stream.clockDomainId == clock.id;
 }
 
 void CtfMetadataModel::validate() const
@@ -157,8 +215,7 @@ void CtfMetadataModel::validate() const
       throw std::invalid_argument("CTF stream class references an unknown clock domain");
     }
     referencedClockIds.insert(stream.clockDomainId);
-    if (stream.sourceKind == CtfSourceKind::Itm && stream.route.traceBusId.has_value() &&
-        !CoreSight::isAtbTraceId(*stream.route.traceBusId)) {
+    if (stream.route.traceBusId.has_value() && !CoreSight::isAtbTraceId(*stream.route.traceBusId)) {
       throw std::invalid_argument("CTF ITM stream route requires a CoreSight ATB trace ID between 1 and 111");
     }
     const auto expectedStreamClassId = CtfStreamClassId{stream.route.traceBusId.value_or(0U)};

@@ -43,7 +43,7 @@ namespace {
 
 /** @brief Tracks calls made after a synthetic formatted-session failure. */
 struct ThrowingSessionState {
-  std::uint32_t resetCalls = 0U;
+  std::uint32_t routeResetCalls = 0U;
 };
 
 /** @brief Records callback-target availability during session destruction. */
@@ -89,12 +89,6 @@ public:
 
   /** @brief Accepts an unused flush. */
   ocsd_datapath_resp_t flush() override
-  {
-    return OCSD_RESP_CONT;
-  }
-
-  /** @brief Accepts an unused complete reset. */
-  ocsd_datapath_resp_t reset() override
   {
     return OCSD_RESP_CONT;
   }
@@ -148,17 +142,10 @@ public:
     return OCSD_RESP_CONT;
   }
 
-  /** @brief Records an unexpected recovery reset. */
-  ocsd_datapath_resp_t reset() override
-  {
-    ++m_state->resetCalls;
-    return OCSD_RESP_CONT;
-  }
-
   /** @brief Records an unexpected route-local recovery reset. */
   ocsd_datapath_resp_t resetRoute(std::uint8_t, ocsd_trc_index_t) override
   {
-    ++m_state->resetCalls;
+    ++m_state->routeResetCalls;
     return OCSD_RESP_CONT;
   }
 
@@ -188,7 +175,8 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderConstructsDefaultSession)
 {
   CollectingOpenCsdElementSink sink;
   {
-    OpenCsdItmDecoder decoder({}, sink);
+    OpenCsdItmDecoder decoder(std::vector<TraceRouteIdentity>{TraceRouteIdentity{}}, OpenCsdItmInputMode::Single,
+                              sink);
     EXPECT_EQ(decoder.finish().bytesIn, 0U);
   }
   EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdInitializationError));
@@ -208,7 +196,8 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderDestroysSessionBeforeItsCallbackTarge
   };
 
   {
-    OpenCsdItmDecoder decoder(TraceRouteIdentity{}, sink, factory);
+    OpenCsdItmDecoder decoder(std::vector<TraceRouteIdentity>{TraceRouteIdentity{}}, OpenCsdItmInputMode::Single,
+                              sink, factory);
   }
 
   EXPECT_TRUE(state->sessionDestroyed);
@@ -224,7 +213,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderValidatesInputRouteCountAndDataPointe
   EXPECT_THROW((void)OpenCsdItmDecoder({TraceRouteIdentity{}, TraceRouteIdentity{}}, OpenCsdItmInputMode::Single, sink),
                std::invalid_argument);
 
-  OpenCsdItmDecoder decoder({}, sink);
+  OpenCsdItmDecoder decoder(std::vector<TraceRouteIdentity>{TraceRouteIdentity{}}, OpenCsdItmInputMode::Single, sink);
   EXPECT_THROW(decoder.push(nullptr, 1U), std::invalid_argument);
 }
 
@@ -242,7 +231,6 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRecoversRoutedProtocolFailur
 
   EXPECT_NO_THROW(decoder.push(frame.data(), frame.size()));
   EXPECT_EQ(decoder.finish().bytesIn, frame.size());
-  EXPECT_EQ(script->resetCalls, 0U);
   EXPECT_EQ(script->routeResetCalls[1U], 1U);
   EXPECT_EQ(script->flushCalls, 1U);
   EXPECT_TRUE(sink.hasIssue(TraceIssueCode::OpenCsdInvalidPacketHeader));
@@ -272,7 +260,6 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderPreservesOtherRoutesAndDrain
 
   EXPECT_NO_THROW(decoder.push(frame.data(), frame.size()));
   EXPECT_EQ(decoder.finish().bytesIn, frame.size());
-  EXPECT_EQ(script->resetCalls, 0U);
   EXPECT_EQ(script->routeResetCalls[1U], 0U);
   EXPECT_EQ(script->routeResetCalls[2U], 1U);
   EXPECT_EQ(script->routeResetOrder, std::vector<std::uint8_t>{2U});
@@ -326,7 +313,6 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderMakesUnassignableFailureInpu
 
   EXPECT_THROW(decoder.push(frame.data(), frame.size()), OpenCsdFatalError);
   EXPECT_TRUE(script->routeResetCalls.empty());
-  EXPECT_EQ(script->resetCalls, 0U);
   EXPECT_EQ(script->flushCalls, 0U);
   EXPECT_TRUE(std::none_of(sink.elements().begin(), sink.elements().end(), [](const auto& element) {
     return element.kind == OpenCsdTraceElement::Kind::Software;
@@ -350,7 +336,6 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderMakesDeformatterErrorInputFa
 
   EXPECT_THROW(decoder.push(frame.data(), frame.size()), OpenCsdFatalError);
   EXPECT_TRUE(script->routeResetCalls.empty());
-  EXPECT_EQ(script->resetCalls, 0U);
   EXPECT_EQ(script->flushCalls, 0U);
   ASSERT_EQ(sink.elements().size(), 1U);
   EXPECT_EQ(sink.elements().front().kind, OpenCsdTraceElement::Kind::Error);
@@ -469,7 +454,6 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderAbortsFailedLocalResetWithou
   }
   EXPECT_EQ(script->routeResetCalls[2U], 1U);
   EXPECT_EQ(script->routeResetCalls[1U], 0U);
-  EXPECT_EQ(script->resetCalls, 0U);
   EXPECT_EQ(script->flushCalls, 0U);
 }
 
@@ -775,7 +759,6 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRejectsNoProgressAndPartialF
   OpenCsdItmDecoder stalled({route}, OpenCsdItmInputMode::CoreSightFormatted, stalledSink,
                             OpenCsdSessionTestSupport::scriptedFactory(stalledScript));
   EXPECT_THROW(stalled.push(frame.data(), frame.size()), OpenCsdFatalError);
-  EXPECT_EQ(stalledScript->resetCalls, 0U);
   EXPECT_TRUE(stalledSink.hasIssue(TraceIssueCode::OpenCsdNoProgress));
 
   CollectingOpenCsdElementSink partialSink;
@@ -863,7 +846,7 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderNormalizesPostRootSessionExc
     EXPECT_NE(std::string(error.what()).find("synthetic post-root session failure"), std::string::npos);
   }
 
-  EXPECT_EQ(state->resetCalls, 0U);
+  EXPECT_EQ(state->routeResetCalls, 0U);
   ASSERT_EQ(sink.elements().size(), 1U) << "temporary transaction output was not rolled back";
   EXPECT_EQ(sink.elements().front().issueCode, TraceIssueCode::OpenCsdDecodeError);
   EXPECT_EQ(sink.elements().front().sourceIndex, 3U);
@@ -879,7 +862,8 @@ TEST(CtraceUnitTests, testSingleOpenCsdItmDecoderLeavesSessionExceptionBehaviorU
               OpenCsdErrorController&) -> std::unique_ptr<OpenCsdItmSessionInterface> {
     return std::make_unique<ThrowingFormattedSession>(state, collector);
   };
-  OpenCsdItmDecoder decoder(TraceRouteIdentity{}, sink, factory);
+  OpenCsdItmDecoder decoder(std::vector<TraceRouteIdentity>{TraceRouteIdentity{}}, OpenCsdItmInputMode::Single, sink,
+                            factory);
   const std::uint8_t byte = 0U;
 
   try {
@@ -890,7 +874,7 @@ TEST(CtraceUnitTests, testSingleOpenCsdItmDecoderLeavesSessionExceptionBehaviorU
   } catch (const std::runtime_error& error) {
     EXPECT_EQ(std::string(error.what()), "synthetic post-root session failure");
   }
-  EXPECT_EQ(state->resetCalls, 0U);
+  EXPECT_EQ(state->routeResetCalls, 0U);
   EXPECT_TRUE(sink.elements().empty());
 }
 
@@ -910,7 +894,7 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderKeepsIncompleteTailWhenEndOp
   decoder.push(frame.data(), frame.size());
 
   EXPECT_THROW((void)decoder.finish(), OpenCsdFatalError);
-  EXPECT_EQ(state->resetCalls, 0U);
+  EXPECT_EQ(state->routeResetCalls, 0U);
   ASSERT_EQ(sink.elements().size(), 2U) << "temporary end-of-trace transaction output was not discarded";
   EXPECT_EQ(sink.elements()[0].issueCode, TraceIssueCode::OpenCsdIncompleteTail);
   EXPECT_EQ(sink.elements()[0].route, route2);
@@ -964,7 +948,6 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderRecoversAndMarksConsumedDataLoss)
   };
   harness.push(6U);
   EXPECT_EQ(harness.decoder().finish().bytesIn, 6U);
-  EXPECT_EQ(harness.script().resetCalls, 0U);
   EXPECT_EQ(harness.script().routeResetCalls[0U], 1U);
   EXPECT_EQ(harness.script().routeResetIndexes, (std::vector<ocsd_trc_index_t>{1U}));
   EXPECT_TRUE(harness.sink().hasIssue(TraceIssueCode::OpenCsdInvalidPacketHeader));
@@ -1058,7 +1041,6 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderBoundsZeroProgressRecoveryAndWaitRetr
   };
   EXPECT_THROW(recovery.push(1U), OpenCsdFatalError);
   EXPECT_EQ(recovery.script().pushCalls, 2U);
-  EXPECT_EQ(recovery.script().resetCalls, 0U);
   EXPECT_EQ(recovery.script().routeResetCalls[0U], 1U);
   EXPECT_EQ(recovery.script().routeResetIndexes, (std::vector<ocsd_trc_index_t>{0U}));
   EXPECT_TRUE(recovery.sink().hasIssue(TraceIssueCode::OpenCsdNoProgress));
@@ -1097,7 +1079,6 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderAllowsZeroProgressRetriesToResume)
   EXPECT_NO_THROW(recovery.push(1U));
   EXPECT_EQ(recovery.decoder().finish().bytesIn, 1U);
   EXPECT_EQ(recovery.script().pushCalls, 2U);
-  EXPECT_EQ(recovery.script().resetCalls, 0U);
   EXPECT_EQ(recovery.script().routeResetCalls[0U], 1U);
   EXPECT_EQ(recovery.script().routeResetIndexes, (std::vector<ocsd_trc_index_t>{0U}));
 }
@@ -1109,7 +1090,6 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderHandlesFlushRecoveryAndTimeout)
   recovery.script().flushes = {
       {OCSD_RESP_ERR_CONT, std::nullopt, false, {{OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, 0U, "bad flush"}}}};
   EXPECT_NO_THROW(recovery.decoder().finish());
-  EXPECT_EQ(recovery.script().resetCalls, 0U);
   EXPECT_EQ(recovery.script().routeResetCalls[0U], 1U);
   EXPECT_EQ(recovery.script().routeResetIndexes, (std::vector<ocsd_trc_index_t>{0U}));
 
@@ -1145,7 +1125,9 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsResetAndInitializationFailures
       [](OpenCsdPacketCollector&, OpenCsdErrorController&) -> std::unique_ptr<OpenCsdItmSessionInterface> {
     return nullptr;
   };
-  EXPECT_THROW((void)OpenCsdItmDecoder({}, nullSink, nullFactory), OpenCsdFatalError);
+  EXPECT_THROW((void)OpenCsdItmDecoder(std::vector<TraceRouteIdentity>{TraceRouteIdentity{}},
+                                       OpenCsdItmInputMode::Single, nullSink, nullFactory),
+               OpenCsdFatalError);
   EXPECT_TRUE(nullSink.hasIssue(TraceIssueCode::OpenCsdInitializationError));
 
   CollectingOpenCsdElementSink errorSink;
@@ -1153,18 +1135,19 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsResetAndInitializationFailures
       [](OpenCsdPacketCollector&, OpenCsdErrorController&) -> std::unique_ptr<OpenCsdItmSessionInterface> {
     throw OpenCsdItmSessionError("synthetic session setup failure");
   };
-  EXPECT_THROW((void)OpenCsdItmDecoder({}, errorSink, errorFactory), OpenCsdFatalError);
+  EXPECT_THROW((void)OpenCsdItmDecoder(std::vector<TraceRouteIdentity>{TraceRouteIdentity{}},
+                                       OpenCsdItmInputMode::Single, errorSink, errorFactory),
+               OpenCsdFatalError);
   EXPECT_TRUE(errorSink.hasIssue(TraceIssueCode::OpenCsdInitializationError));
 }
 
-TEST(CtraceUnitTests, testOpenCsdItmSessionUsesDecoderLocalResetForSingleInput)
+TEST(CtraceUnitTests, testOpenCsdItmSessionUsesRouteLocalResetForSingleInput)
 {
   CollectingOpenCsdElementSink sink;
   OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
   OpenCsdErrorController errors;
   OpenCsdItmSession session(collector, errors);
 
-  EXPECT_NE(errors.decide(session.reset()).action, OpenCsdErrorController::Action::Abort);
   EXPECT_NE(errors.decide(session.resetRoute(0U, 37U)).action, OpenCsdErrorController::Action::Abort);
   EXPECT_THROW(session.resetRoute(1U, 38U), OpenCsdItmSessionError);
   EXPECT_NE(errors.decide(session.flush()).action, OpenCsdErrorController::Action::Abort);
@@ -1174,7 +1157,7 @@ TEST(CtraceUnitTests, testOpenCsdItmSessionUsesDecoderLocalResetForSingleInput)
 TEST(CtraceUnitTests, testOpenCsdItmSessionUsesSingleChannelAndAssociatedErrorLogger)
 {
   CollectingOpenCsdElementSink sink;
-  OpenCsdItmDecoder decoder({}, sink);
+  OpenCsdItmDecoder decoder(std::vector<TraceRouteIdentity>{TraceRouteIdentity{}}, OpenCsdItmInputMode::Single, sink);
   const std::uint8_t trace[]{
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('A'), 0x04U,
       0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x01U, static_cast<std::uint8_t>('B'),

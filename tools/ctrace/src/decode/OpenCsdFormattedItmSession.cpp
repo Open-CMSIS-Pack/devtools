@@ -225,11 +225,6 @@ ocsd_datapath_resp_t OpenCsdFormattedItmSession::flush()
   return completeOperation(m_treeSession.traceDataIn(OCSD_OP_FLUSH, 0, 0, nullptr, nullptr));
 }
 
-ocsd_datapath_resp_t OpenCsdFormattedItmSession::reset()
-{
-  return completeOperation(m_treeSession.traceDataIn(OCSD_OP_RESET, 0, 0, nullptr, nullptr));
-}
-
 ocsd_datapath_resp_t OpenCsdFormattedItmSession::resetRoute(std::uint8_t channel, ocsd_trc_index_t index)
 {
   return completeOperation(m_treeSession.resetDecoder(channel, index));

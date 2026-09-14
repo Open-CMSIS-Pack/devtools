@@ -30,7 +30,6 @@ struct ProcessorMeta {
   std::optional<std::uint32_t> timestampPrescaler;
   bool itmEnableConflict = false;
   std::optional<std::uint32_t> itmEnableMask;
-  std::optional<std::string> itmEnableError;
 };
 
 /** @brief Derives a processor name from a one-segment `[pname/]feature` reference path. */
@@ -141,6 +140,20 @@ static std::string configError(const TraceRunConfig& config, std::size_t line, c
     location += "(" + std::to_string(line) + ")";
   }
   return location + ": " + message;
+}
+
+/** @brief Preserves reader locations while locating programmatically supplied setup errors. */
+static std::string itmEnableError(const TraceRunConfig& config, const TraceRunSetup& setup)
+{
+  const auto& error = *setup.itm->enableError;
+  const auto pathLocation = config.path + ':';
+  const auto lineLocation = config.path + '(';
+  if (!config.path.empty() &&
+      (error.compare(0U, pathLocation.size(), pathLocation) == 0 ||
+       error.compare(0U, lineLocation.size(), lineLocation) == 0)) {
+    return error;
+  }
+  return configError(config, setup.line, error);
 }
 
 /** @brief Merges one optional clock fragment without treating an absent scalar as a conflict. */
@@ -519,6 +532,22 @@ static std::optional<std::uint32_t> commonItmEnableMask(const std::vector<Proces
   return common;
 }
 
+/** @brief Tests whether processor candidates supply different explicit ITM masks. */
+static bool hasDistinctItmEnableMasks(const std::vector<ProcessorMeta>& processors)
+{
+  std::optional<std::uint32_t> first;
+  for (const auto& processor : processors) {
+    if (!processor.itmEnableMask.has_value()) {
+      continue;
+    }
+    if (first.has_value() && first != processor.itmEnableMask) {
+      return true;
+    }
+    first = processor.itmEnableMask;
+  }
+  return false;
+}
+
 /** @brief Retains a common clock error or describes ambiguous SINGLE clock candidates. */
 static std::optional<std::string> commonTimestampClockError(const std::vector<ProcessorMeta>& processors)
 {
@@ -598,37 +627,6 @@ static bool describesFormattedRoute(const TraceRunReference& reference)
   return isProcessorItmAnchor(reference) || isFormattedRouteFallback(reference) ||
          (reference.type == "overflow" && hasFeaturePath(reference, "overflow")) ||
          (reference.type == "global_ts" && hasFeaturePath(reference, "timesync"));
-}
-
-/** @brief Retains all producer diagnostics independently from normalized route validity. */
-static void appendReferenceDiagnostics(const TraceRunReference& reference,
-                                       std::vector<CtraceRunReferenceDiagnostic>& diagnostics)
-{
-  const auto append = [&](CtraceRunReferenceDiagnostic::Severity severity, const std::vector<std::string>& messages) {
-    for (const auto& message : messages) {
-      diagnostics.push_back({
-          severity,
-          message,
-          reference.ctraceRef,
-          TraceRunSchema::normalizedProcessorName(reference.processorName),
-          reference.stream,
-          reference.line,
-      });
-    }
-  };
-  append(CtraceRunReferenceDiagnostic::Severity::Info, reference.info);
-  append(CtraceRunReferenceDiagnostic::Severity::Warning, reference.warning);
-  append(CtraceRunReferenceDiagnostic::Severity::Error, reference.error);
-}
-
-/** @brief Retains all producer diagnostics independently from normalized route validity. */
-static std::vector<CtraceRunReferenceDiagnostic> collectReferenceDiagnostics(const TraceRunConfig& config)
-{
-  std::vector<CtraceRunReferenceDiagnostic> diagnostics;
-  for (const auto& reference : config.references) {
-    appendReferenceDiagnostics(reference, diagnostics);
-  }
-  return diagnostics;
 }
 
 /** @brief Indexes active setup fragments by their optional processor identity. */
@@ -882,13 +880,11 @@ static void applyRouteSetupMetadata(const TraceRunConfig& config, CtraceRunRoute
                                     const std::vector<const TraceRunSetup*>& setups,
                                     std::vector<CtraceRunWarning>& warnings)
 {
-  bool timestampSeen = false;
   bool enableMaskConflict = false;
   std::optional<std::uint64_t> clockHz;
   std::optional<std::string> clockError;
   std::optional<std::uint32_t> prescaler;
   std::optional<std::uint32_t> enableMask;
-  std::optional<std::string> enableError;
 
   for (const auto* setup : setups) {
     if (setup->timestamps.has_value()) {
@@ -910,16 +906,10 @@ static void applyRouteSetupMetadata(const TraceRunConfig& config, CtraceRunRoute
 
       mergeTimestampClock(clockHz, clockError, timestamps.clockHz, timestamps.clockError,
                           "conflicting active ctrace-setup timestamps.clock values");
-      timestampSeen = true;
     }
     if (setup->itm.has_value()) {
       if (setup->itm->enableError.has_value()) {
-        if (enableError.has_value() && enableError != setup->itm->enableError) {
-          enableMaskConflict = true;
-        } else {
-          enableError = setup->itm->enableError;
-        }
-        continue;
+        throw std::runtime_error(itmEnableError(config, *setup));
       }
       const auto candidateMask = setup->itm->enableMask;
       if (!candidateMask.has_value()) {
@@ -938,13 +928,8 @@ static void applyRouteSetupMetadata(const TraceRunConfig& config, CtraceRunRoute
     }
   }
 
-  route.timestampsConfigured = timestampSeen;
   route.timestampPrescaler = prescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
-  if (enableMaskConflict) {
-    route.itmEnableError = "conflicting active ctrace-setup itm.enable values";
-  } else if (enableError.has_value()) {
-    route.itmEnableError = enableError;
-  } else {
+  if (!enableMaskConflict) {
     route.itmEnableMask = enableMask;
   }
   route.timestampClockHz = clockHz;
@@ -1093,10 +1078,6 @@ static std::vector<CtraceRunRoute> formattedRoutes(const TraceRunConfig& config,
           route.sources.push_back(formattedSourceMeta(config, reference, source, route));
         }
       }
-      const auto hasDiagnostics = !reference.info.empty() || !reference.warning.empty() || !reference.error.empty();
-      if (hasDiagnostics && describesRoute) {
-        appendReferenceDiagnostics(reference, route.referenceDiagnostics);
-      }
     }
     routes.push_back(std::move(route));
   }
@@ -1108,56 +1089,11 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
   CtraceRunMeta ctraceRunMeta;
   ctraceRunMeta.m_configPath = config.path;
   ctraceRunMeta.m_traceFormat = config.traceFormat;
-  ctraceRunMeta.m_referenceDiagnostics = collectReferenceDiagnostics(config);
   validateDisabledReferences(config);
 
   if (TraceRunSchema::effectiveTraceFormat(config.traceFormat) == TraceRunFormat::Formatted) {
     ctraceRunMeta.m_routes = formattedRoutes(config, ctraceRunMeta.m_warnings);
 
-    bool commonClockValid = true;
-    bool commonPrescalerValid = true;
-    bool commonEnableMaskValid = true;
-    std::optional<std::uint64_t> commonClock;
-    std::optional<std::uint32_t> commonPrescaler;
-    std::optional<std::uint32_t> commonEnableMask;
-    for (const auto& route : ctraceRunMeta.m_routes) {
-      const auto traceBusId = *route.identity.traceBusId;
-      ctraceRunMeta.m_timestampsByTraceBusId.emplace(
-          traceBusId, CtraceRunTimestampMeta{route.processorName, route.timestampClockHz, route.timestampClockError});
-      ctraceRunMeta.m_timestampPrescalersByTraceBusId.emplace(traceBusId, route.timestampPrescaler);
-      if (route.itmEnableMask.has_value()) {
-        ctraceRunMeta.m_itmEnableMasksByTraceBusId.emplace(traceBusId, *route.itmEnableMask);
-      }
-      ctraceRunMeta.m_sources.insert(ctraceRunMeta.m_sources.end(), route.sources.begin(), route.sources.end());
-      if (route.timestampClockError.has_value()) {
-        ctraceRunMeta.m_timestampClockErrors.push_back(*route.timestampClockError);
-      }
-
-      if (route.timestampClockError.has_value() || !route.timestampClockHz.has_value()) {
-        commonClockValid = false;
-      } else if (commonClock.has_value() && commonClock != route.timestampClockHz) {
-        commonClockValid = false;
-      } else {
-        commonClock = route.timestampClockHz;
-      }
-      if (commonPrescaler.has_value() && *commonPrescaler != route.timestampPrescaler) {
-        commonPrescalerValid = false;
-      } else {
-        commonPrescaler = route.timestampPrescaler;
-      }
-      if (!route.itmEnableMask.has_value()) {
-        commonEnableMaskValid = false;
-      } else if (commonEnableMask.has_value() && commonEnableMask != route.itmEnableMask) {
-        commonEnableMaskValid = false;
-      } else {
-        commonEnableMask = route.itmEnableMask;
-      }
-    }
-    ctraceRunMeta.m_timestampClockHz = commonClockValid ? commonClock : std::nullopt;
-    ctraceRunMeta.m_timestampPrescaler = commonPrescalerValid ? commonPrescaler : std::nullopt;
-    ctraceRunMeta.m_itmEnableMask = commonEnableMaskValid ? commonEnableMask : std::nullopt;
-    ctraceRunMeta.m_processorCount = ctraceRunMeta.m_routes.size();
-    ctraceRunMeta.m_distinctProcessorPrescalers = !commonPrescalerValid;
     return ctraceRunMeta;
   }
 
@@ -1175,18 +1111,23 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
   }
   const auto identity = processorIdentity(config, ctraceRunMeta.m_warnings);
   for (const auto& setup : config.setups) {
-    if (!identity.acceptsSetup(setup) || !consumesSetup(config, setup) || !setup.timestamps.has_value() ||
-        !setup.timestamps->timestampPrescaler.has_value() ||
-        TraceRunSchema::isTimestampPrescaler(*setup.timestamps->timestampPrescaler)) {
+    if (!identity.acceptsSetup(setup) || !consumesSetup(config, setup)) {
       continue;
     }
-    throw std::runtime_error(configError(config, setup.timestamps->line,
-                                         setup.timestamps->line > 0U
-                                             ? "'timestamps.itm-prescaler' must be one of 1, 4, 16, or 64"
-                                             : "ctrace-setup timestamps.itm-prescaler must be one of 1, 4, 16, or 64"));
+    if (setup.timestamps.has_value() && setup.timestamps->timestampPrescaler.has_value() &&
+        !TraceRunSchema::isTimestampPrescaler(*setup.timestamps->timestampPrescaler)) {
+      throw std::runtime_error(
+          configError(config, setup.timestamps->line,
+                      setup.timestamps->line > 0U ? "'timestamps.itm-prescaler' must be one of 1, 4, 16, or 64"
+                                                  : "ctrace-setup timestamps.itm-prescaler must be one of 1, 4, 16, or 64"));
+    }
+    if (setup.itm.has_value() && setup.itm->enableError.has_value()) {
+      throw std::runtime_error(itmEnableError(config, setup));
+    }
   }
 
   std::vector<ProcessorMeta> processors;
+  std::vector<CtraceRunSourceMeta> sources;
 
   for (const auto& setup : config.setups) {
     if (!identity.acceptsSetup(setup) || !consumesSetup(config, setup)) {
@@ -1205,22 +1146,9 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
                           setup.timestamps->clockError, "conflicting active ctrace-setup timestamps.clock values");
       processor.timestampsEnabled = true;
       processor.timestampPrescaler = prescaler;
-      if (setup.timestamps->clockError.has_value()) {
-        ctraceRunMeta.m_timestampClockErrors.push_back(*setup.timestamps->clockError);
-      }
     }
     if (setup.itm.has_value()) {
-      if (setup.itm->enableError.has_value()) {
-        if (processor.itmEnableError.has_value() && processor.itmEnableError != setup.itm->enableError) {
-          processor.itmEnableConflict = true;
-          processor.itmEnableError.reset();
-        } else if (!processor.itmEnableConflict) {
-          processor.itmEnableError = setup.itm->enableError;
-        }
-        processor.itmEnableMask.reset();
-        continue;
-      }
-      if (!setup.itm->enableMask.has_value() || processor.itmEnableError.has_value() || processor.itmEnableConflict) {
+      if (!setup.itm->enableMask.has_value() || processor.itmEnableConflict) {
         continue;
       }
       if (processor.itmEnableMask.has_value() && processor.itmEnableMask != setup.itm->enableMask) {
@@ -1243,60 +1171,37 @@ CtraceRunMeta CtraceRunMeta::fromConfig(const TraceRunConfig& config)
       continue;
     }
     for (const auto source : reference.sources) {
-      ctraceRunMeta.m_sources.push_back(sourceMeta(config, reference, source, identity));
+      sources.push_back(sourceMeta(config, reference, source, identity));
     }
   }
   const auto timestampPrescaler = commonTimestampPrescaler(processors);
-  ctraceRunMeta.m_distinctProcessorPrescalers = !processors.empty() && !timestampPrescaler.has_value();
-  if (ctraceRunMeta.m_distinctProcessorPrescalers) {
+  if (!processors.empty() && !timestampPrescaler.has_value()) {
     throw std::runtime_error(
         config.path + ": unformatted SINGLE trace cannot choose between different timestamps.itm-prescaler values");
   }
-  ctraceRunMeta.m_timestampClockHz = commonTimestampClock(processors);
-  ctraceRunMeta.m_timestampPrescaler = timestampPrescaler;
-  ctraceRunMeta.m_itmEnableMask = commonItmEnableMask(processors);
-  ctraceRunMeta.m_processorCount = processors.size();
+  const auto timestampClockHz = commonTimestampClock(processors);
+  const auto itmEnableMask = commonItmEnableMask(processors);
+  if (hasDistinctItmEnableMasks(processors)) {
+    addRootInconsistency(
+        ctraceRunMeta.m_warnings,
+        "ignoring different ctrace-setup itm.enable values across processor candidates for unformatted SINGLE trace");
+  }
   const auto clockError = commonTimestampClockError(processors);
-  if (clockError.has_value() &&
-      std::find(ctraceRunMeta.m_timestampClockErrors.begin(), ctraceRunMeta.m_timestampClockErrors.end(),
-                *clockError) == ctraceRunMeta.m_timestampClockErrors.end()) {
-    ctraceRunMeta.m_timestampClockErrors.push_back(*clockError);
-  }
-  if (!processors.empty() && std::any_of(processors.begin(), processors.end(),
-                                         [](const ProcessorMeta& processor) { return processor.timestampsEnabled; })) {
-    const auto processorName = processors.size() == 1U ? processors.front().name : std::nullopt;
-    ctraceRunMeta.m_timestampsByTraceBusId.emplace(
-        0U, CtraceRunTimestampMeta{processorName, ctraceRunMeta.m_timestampClockHz, clockError});
-    ctraceRunMeta.m_timestampPrescalersByTraceBusId.emplace(
-        0U, ctraceRunMeta.m_timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler));
-  }
-  if (ctraceRunMeta.m_itmEnableMask.has_value()) {
-    ctraceRunMeta.m_itmEnableMasksByTraceBusId.emplace(0U, *ctraceRunMeta.m_itmEnableMask);
-  }
 
   CtraceRunRoute syntheticRoute;
-  syntheticRoute.sources = ctraceRunMeta.m_sources;
-  syntheticRoute.referenceDiagnostics = ctraceRunMeta.m_referenceDiagnostics;
-  syntheticRoute.timestampsConfigured = std::any_of(
-      processors.begin(), processors.end(), [](const ProcessorMeta& processor) { return processor.timestampsEnabled; });
-  syntheticRoute.timestampClockHz = ctraceRunMeta.m_timestampClockHz;
+  syntheticRoute.sources = std::move(sources);
+  syntheticRoute.timestampClockHz = timestampClockHz;
   syntheticRoute.timestampPrescaler =
-      ctraceRunMeta.m_timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
-  syntheticRoute.itmEnableMask = ctraceRunMeta.m_itmEnableMask;
+      timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
+  syntheticRoute.itmEnableMask = itmEnableMask;
   syntheticRoute.timestampClockError = clockError;
   if (processors.size() == 1U) {
     syntheticRoute.processorName = processors.front().name;
-    syntheticRoute.timestampsConfigured = processors.front().timestampsEnabled;
     syntheticRoute.timestampClockHz = processors.front().timestampClockHz;
     syntheticRoute.timestampClockError = processors.front().timestampClockError;
     syntheticRoute.timestampPrescaler =
         processors.front().timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
     syntheticRoute.itmEnableMask = processors.front().itmEnableMask;
-    if (processors.front().itmEnableConflict) {
-      syntheticRoute.itmEnableError = "conflicting active ctrace-setup itm.enable values";
-    } else {
-      syntheticRoute.itmEnableError = processors.front().itmEnableError;
-    }
   }
   ctraceRunMeta.m_routes.push_back(std::move(syntheticRoute));
 
@@ -1313,64 +1218,9 @@ const std::optional<TraceRunFormat>& CtraceRunMeta::traceFormat() const
   return m_traceFormat;
 }
 
-const std::optional<std::uint64_t>& CtraceRunMeta::timestampClockHz() const
-{
-  return m_timestampClockHz;
-}
-
-const std::map<std::uint8_t, CtraceRunTimestampMeta>& CtraceRunMeta::timestampsByTraceBusId() const
-{
-  return m_timestampsByTraceBusId;
-}
-
-const std::optional<std::uint32_t>& CtraceRunMeta::timestampPrescaler() const
-{
-  return m_timestampPrescaler;
-}
-
-const std::map<std::uint8_t, std::uint32_t>& CtraceRunMeta::timestampPrescalersByTraceBusId() const
-{
-  return m_timestampPrescalersByTraceBusId;
-}
-
-const std::optional<std::uint32_t>& CtraceRunMeta::itmEnableMask() const
-{
-  return m_itmEnableMask;
-}
-
-const std::map<std::uint8_t, std::uint32_t>& CtraceRunMeta::itmEnableMasksByTraceBusId() const
-{
-  return m_itmEnableMasksByTraceBusId;
-}
-
-const std::vector<std::string>& CtraceRunMeta::timestampClockErrors() const
-{
-  return m_timestampClockErrors;
-}
-
-bool CtraceRunMeta::hasDistinctProcessorPrescalers() const
-{
-  return m_distinctProcessorPrescalers;
-}
-
-std::size_t CtraceRunMeta::processorCount() const
-{
-  return m_processorCount;
-}
-
-const std::vector<CtraceRunSourceMeta>& CtraceRunMeta::sources() const
-{
-  return m_sources;
-}
-
 const std::vector<CtraceRunRoute>& CtraceRunMeta::routes() const
 {
   return m_routes;
-}
-
-const std::vector<CtraceRunReferenceDiagnostic>& CtraceRunMeta::referenceDiagnostics() const
-{
-  return m_referenceDiagnostics;
 }
 
 const std::vector<CtraceRunWarning>& CtraceRunMeta::warnings() const

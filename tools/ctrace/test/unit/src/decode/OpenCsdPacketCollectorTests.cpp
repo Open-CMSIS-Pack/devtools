@@ -268,9 +268,10 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorRoutesFormattedCallbacksInTheirO
   collector.beginTransaction();
   packet.setPktType(ITM_PKT_RESERVED);
   collector.rawPacketForRoute(route111, OCSD_OP_DATA, 14U, &packet, 0U, nullptr);
-  EXPECT_TRUE(collector.transactionHasError());
+  EXPECT_EQ(collector.transactionElementCount(), 1U);
   collector.rollbackTransaction();
-  EXPECT_FALSE(collector.transactionHasError());
+  EXPECT_EQ(collector.transactionElementCount(), 0U);
+  EXPECT_EQ(sink.elements().size(), 4U);
 }
 
 TEST(CtraceUnitTests, testOpenCsdPacketCollectorSelectivelyCommitsSeveralFailingRoutesInCallbackOrder)
@@ -357,17 +358,11 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorInsertsRouteDataLossImmediatelyB
   collector.rawPacketForRoute(route1, OCSD_OP_DATA, 10U, &packet, 0U, nullptr);
   collector.rawPacketForRoute(route2, OCSD_OP_DATA, 12U, &packet, 0U, nullptr);
 
-  EXPECT_EQ(collector.transactionFirstSourceOffset(route1), 5U);
-  EXPECT_EQ(collector.transactionFirstSourceOffset(route2), 7U);
-  EXPECT_FALSE(collector.transactionFirstSourceOffset(unknownRoute).has_value());
   EXPECT_EQ(collector.transactionFirstSyncOffset(route1), 10U);
   EXPECT_FALSE(collector.transactionFirstSyncOffset(route1, 10U).has_value());
   EXPECT_EQ(collector.transactionFirstSyncOffset(route1, 11U), 10U);
   EXPECT_FALSE(collector.insertDataLossBeforeSync(route1, 2U, "sync is unsafe", 8U, 10U));
   EXPECT_TRUE(collector.insertDataLossBeforeSync(route2, 3U, "route two recovered", 9U));
-  EXPECT_TRUE(collector.transactionHasIssue(TraceIssueCode::DataLoss));
-  EXPECT_TRUE(collector.transactionHasIssue(TraceIssueCode::DataLoss, route2));
-  EXPECT_FALSE(collector.transactionHasIssue(TraceIssueCode::DataLoss, route1));
 
   collector.appendDataLossError(route1, 2U, "route one unresolved", 11U);
   collector.commitTransactionForRouteFailures({{route1.id, 20U}});
@@ -422,8 +417,6 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorDetectsErrorsUnmatchedByRouteRec
   EXPECT_FALSE(collector.transactionHasUnmatchedError({{route1.id, 5U}}));
   packet.setPktType(ITM_PKT_INCOMPLETE_EOT);
   collector.rawPacketForRoute(route1, OCSD_OP_EOT, 6U, &packet, 0U, nullptr);
-  EXPECT_TRUE(collector.transactionHasIssue(TraceIssueCode::OpenCsdIncompleteTail));
-  EXPECT_TRUE(collector.transactionHasIssue(TraceIssueCode::OpenCsdIncompleteTail, route1));
   EXPECT_TRUE(collector.transactionHasUnmatchedError({{route1.id, 5U}}));
   collector.rollbackTransaction();
 }
@@ -513,27 +506,23 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommitte
   EXPECT_NO_THROW(collector.rethrowOutputError());
   EXPECT_FALSE(collector.reserveTransactionOrder().has_value());
   EXPECT_FALSE(collector.transactionFirstSourceOffset().has_value());
-  EXPECT_FALSE(collector.transactionHasError());
 
   collector.beginTransaction();
   collector.appendDecodeError(2U, "warning", TraceIssueCode::DecodeError, false, TraceIssueSeverity::Warning);
-  EXPECT_FALSE(collector.transactionHasError());
   collector.appendDecodeError(5U, "decode", TraceIssueCode::DecodeError);
-  EXPECT_TRUE(collector.transactionHasError());
   collector.prependDiscontinuity(4U, "gap", TraceIssueCode::DataLoss, 2U);
   collector.prependDataLossError(3U, "loss", 3U);
   EXPECT_EQ(collector.transactionElementCount(), 4U);
   EXPECT_EQ(collector.transactionFirstSourceOffset(), 2U);
   collector.commitTransactionBefore(5U);
-  EXPECT_FALSE(collector.transactionHasError());
   ASSERT_EQ(sink.elements().size(), 1U);
   EXPECT_EQ(sink.elements().front().kind, OpenCsdTraceElement::Kind::Discontinuity);
 
   collector.beginTransaction();
   collector.appendDecodeError(7U, "rolled back");
-  EXPECT_TRUE(collector.transactionHasError());
+  EXPECT_EQ(collector.transactionElementCount(), 1U);
   collector.rollbackTransaction();
-  EXPECT_FALSE(collector.transactionHasError());
+  EXPECT_EQ(collector.transactionElementCount(), 0U);
   EXPECT_EQ(sink.elements().size(), 1U);
 
   collector.prependDiscontinuity(8U, "outside", TraceIssueCode::DataLoss);
@@ -544,8 +533,8 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorTransactionsPreserveOnlyCommitte
   collector.beginTransaction();
   collector.appendDecodeError(10U, "committed");
   collector.commitTransaction();
-  EXPECT_FALSE(collector.transactionHasError());
   ASSERT_EQ(sink.elements().size(), 4U);
+  EXPECT_EQ(sink.elements().back().kind, OpenCsdTraceElement::Kind::Error);
   EXPECT_EQ(sink.elements().back().sourceIndex, 10U);
 }
 

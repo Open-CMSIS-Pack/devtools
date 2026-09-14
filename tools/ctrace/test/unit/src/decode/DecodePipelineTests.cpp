@@ -118,7 +118,8 @@ static OpenCsdTraceElement onDecodeRoute(OpenCsdTraceElement element, TraceRoute
 static DecodedTrace decodeTrace(std::initializer_list<RawByteView> chunks, std::uint32_t timestampPrescaler = 16U)
 {
   CollectingEventSink sink;
-  DecodePipeline pipeline(singleDecodeRoute(timestampPrescaler), sink);
+  DecodePipeline pipeline(std::vector<CortexMDecodeRoute>{singleDecodeRoute(timestampPrescaler)},
+                          OpenCsdItmInputMode::Single, sink);
   for (const auto chunk : chunks) {
     pipeline.push(chunk);
   }
@@ -359,7 +360,7 @@ TEST(CtraceUnitTests, testCortexMStreamDecoderKeepsTwoNoBusRoutesIndependent)
 TEST(CtraceUnitTests, testDecodePipelineRejectsInvalidChunkSizes)
 {
   CollectingEventSink sink;
-  DecodePipeline pipeline(singleDecodeRoute(), sink);
+  DecodePipeline pipeline(std::vector<CortexMDecodeRoute>{singleDecodeRoute()}, OpenCsdItmInputMode::Single, sink);
   EXPECT_NO_THROW(pipeline.push({nullptr, 0U}));
   EXPECT_THROW(pipeline.push({nullptr, static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()) + 1U}),
                std::runtime_error);
@@ -368,11 +369,12 @@ TEST(CtraceUnitTests, testDecodePipelineRejectsInvalidChunkSizes)
   EXPECT_EQ(result.eventsOut, 0U);
 }
 
-TEST(CtraceUnitTests, testDecodePipelineRetainsInjectedSingleRouteConstructor)
+TEST(CtraceUnitTests, testDecodePipelineUsesInjectedSingleRouteConfiguration)
 {
   CollectingEventSink sink;
   const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
-  DecodePipeline pipeline(singleDecodeRoute(), sink, OpenCsdSessionTestSupport::scriptedFactory(script));
+  DecodePipeline pipeline(std::vector<CortexMDecodeRoute>{singleDecodeRoute()}, OpenCsdItmInputMode::Single, sink,
+                          OpenCsdSessionTestSupport::scriptedFactory(script));
 
   const auto result = pipeline.finish();
   EXPECT_EQ(result.bytesIn, 0U);

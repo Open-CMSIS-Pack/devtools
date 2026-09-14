@@ -38,7 +38,15 @@ metadata and packet headers before the byte-for-byte comparison.
 
 - Normalized CTF metadata: `5179a4768c9faa9c9ce8ffb0639f373748c1d961195fb46af65c9a67c21739c6`
 - Normalized CTF stream: `2054d43163cf1ff8e921be92b397469e2eb75fb55f4f81c08c20382f38918ef6`
-- Trace Compass XML: `df52c670767351441135e363d9d8f2e7a953f84b6c77efea49bb0e40a9eb4d40`
+- Trace Compass XML: `2ef7a28b11497494f8c8d8aa7b96252bd92ee17b144dc4f344b5780cf526da4f`
+
+`CtraceFixtureIntegrity` verifies the complete 22-file fixture manifest
+(including fixture-local provenance documents), every listed file's SHA-256
+and size, and the 256-frame size of the reconstructed Trace Bus capture. Its
+portable CMake manifest lives in
+`test/integration/src/ValidateFixtureIntegrity.cmake`; update it in the same
+review as a fixture change. The TB reconstruction tool additionally validates
+the formatter-ID and payload counters used to derive its capture.
 
 The `TB-Trace` fixture is a reconstructed, memory-aligned CoreSight formatter
 capture derived from the approved Blinky TB capture. It preserves the usable

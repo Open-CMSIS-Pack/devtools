@@ -72,7 +72,7 @@ public:
             EventContextLayout eventContextLayout = EventContextLayout::Legacy);
   /** @brief Flushes the final packet and closes the stream. */
   void close();
-  /** @brief Closes and removes an incomplete stream without throwing. */
+  /** @brief Closes an incomplete stream and discards buffered writer state without throwing. */
   void abort() noexcept;
 
   /** @brief Appends one timestamped CTF event record; its size is needed up front for packet rollover and bounds. */

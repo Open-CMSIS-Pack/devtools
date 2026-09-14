@@ -38,19 +38,6 @@ struct DecodeResult {
 class DecodePipeline final {
 public:
   /**
-   * @brief Creates a pipeline bound to one normalized semantic route.
-   * @param route Route identity and timestamp prescaler used by the SINGLE decoder.
-   * @param eventSink Sink receiving decoded events synchronously.
-   */
-  DecodePipeline(CortexMDecodeRoute route, TraceEventSink& eventSink);
-  /**
-   * @brief Creates a pipeline with an injected OpenCSD session factory.
-   * @param route Route identity and timestamp prescaler used by the SINGLE decoder.
-   * @param eventSink Sink receiving decoded events synchronously.
-   * @param sessionFactory Factory used to create the OpenCSD session.
-   */
-  DecodePipeline(CortexMDecodeRoute route, TraceEventSink& eventSink, const OpenCsdItmSessionFactory& sessionFactory);
-  /**
    * @brief Creates a pipeline for normalized SINGLE or formatted routes.
    * @param routes Route identities and timestamp prescalers used by the decoders.
    * @param inputMode Raw transport presented to OpenCSD.

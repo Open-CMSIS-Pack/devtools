@@ -114,34 +114,36 @@ static bool validateCtfSourceIdentity(const CtraceRunMeta& ctraceRunMeta, const 
   bool valid = true;
   std::map<std::tuple<TraceRouteId, std::string, std::uint32_t>, const CtraceRunSourceMeta*> sources;
   std::set<std::tuple<TraceRouteId, std::string, std::uint32_t>> reported;
-  for (const auto& source : ctraceRunMeta.sources()) {
-    if (!routeMatchesSelection(source, selection)) {
-      continue;
-    }
-    const auto key = std::make_tuple(source.route.id, source.type, source.source);
-    const auto [found, inserted] = sources.emplace(key, &source);
-    if (inserted) {
-      continue;
-    }
-    const auto& first = *found->second;
-    const auto sameMetadata = first.label == source.label && first.address == source.address &&
-                              first.dataType == source.dataType && first.dataSize == source.dataSize &&
-                              first.addressError == source.addressError &&
-                              first.dataTypeError == source.dataTypeError &&
-                              first.dataSizeError == source.dataSizeError;
-    const auto sameBinding = first.route == source.route && first.processorName == source.processorName;
-    if ((sameMetadata && sameBinding) || !reported.insert(key).second) {
-      continue;
-    }
+  for (const auto& route : ctraceRunMeta.routes()) {
+    for (const auto& source : route.sources) {
+      if (!routeMatchesSelection(source, selection)) {
+        continue;
+      }
+      const auto key = std::make_tuple(source.route.id, source.type, source.source);
+      const auto [found, inserted] = sources.emplace(key, &source);
+      if (inserted) {
+        continue;
+      }
+      const auto& first = *found->second;
+      const auto sameMetadata = first.label == source.label && first.address == source.address &&
+                                first.dataType == source.dataType && first.dataSize == source.dataSize &&
+                                first.addressError == source.addressError &&
+                                first.dataTypeError == source.dataTypeError &&
+                                first.dataSizeError == source.dataSizeError;
+      const auto sameBinding = first.route == source.route && first.processorName == source.processorName;
+      if ((sameMetadata && sameBinding) || !reported.insert(key).second) {
+        continue;
+      }
 
-    valid = false;
-    auto context = routeContext("ctf", ctraceRunMeta, source);
-    context.emplace_back("type", source.type);
-    context.emplace_back("firstProcessor", first.processorName.value_or("<unspecified>"));
-    context.emplace_back("otherProcessor", source.processorName.value_or("<unspecified>"));
-    reportRequirementError(diagnostics,
-                           "CTF metadata cannot describe conflicting active metadata for one route/type/source key",
-                           std::move(context));
+      valid = false;
+      auto context = routeContext("ctf", ctraceRunMeta, source);
+      context.emplace_back("type", source.type);
+      context.emplace_back("firstProcessor", first.processorName.value_or("<unspecified>"));
+      context.emplace_back("otherProcessor", source.processorName.value_or("<unspecified>"));
+      reportRequirementError(diagnostics,
+                             "CTF metadata cannot describe conflicting active metadata for one route/type/source key",
+                             std::move(context));
+    }
   }
   return valid;
 }
@@ -199,8 +201,8 @@ resolveCtfTopology(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& sel
   if (legacy) {
     topology.clockDomains.push_back(
         {CtfClockDomainId{0U}, "swo_clock", std::nullopt, *routes.front()->timestampClockHz, false});
-    topology.streams.push_back({CtfStreamClassId{0U}, routes.front()->identity, CtfSourceKind::Itm,
-                                routes.front()->processorName, CtfClockDomainId{0U}});
+    topology.streams.push_back(
+        {CtfStreamClassId{0U}, routes.front()->identity, routes.front()->processorName, CtfClockDomainId{0U}});
     return topology;
   }
 
@@ -209,7 +211,7 @@ resolveCtfTopology(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& sel
     topology.clockDomains.push_back({domainId, "cmsis_clock_" + std::to_string(domainId.value()), CtfUuid::randomV4(),
                                      *route->timestampClockHz, false});
     const auto streamClassId = CtfStreamClassId{route->identity.traceBusId.value_or(0U)};
-    topology.streams.push_back({streamClassId, route->identity, CtfSourceKind::Itm, route->processorName, domainId});
+    topology.streams.push_back({streamClassId, route->identity, route->processorName, domainId});
   }
   return std::optional<CtfMetadataTopology>{std::move(topology)};
 }
@@ -219,75 +221,77 @@ static bool validateCtfDwtMetadata(const CtraceRunMeta& ctraceRunMeta, const Tra
                                    DiagnosticSink& diagnostics)
 {
   bool valid = true;
-  for (const auto& source : ctraceRunMeta.sources()) {
-    if (source.type != "dwt" || !routeMatchesSelection(source, selection)) {
-      continue;
-    }
-    bool sourceValid = true;
-    if (source.addressError.has_value()) {
-      valid = false;
-      sourceValid = false;
-      auto context = routeContext("ctf", ctraceRunMeta, source);
-      context.emplace_back("error", *source.addressError);
-      reportRequirementError(diagnostics, "CTF output cannot use the configured ctrace-run address",
-                             std::move(context));
-    }
-    if (source.dataTypeError.has_value()) {
-      valid = false;
-      sourceValid = false;
-      auto context = routeContext("ctf", ctraceRunMeta, source);
-      context.emplace_back("error", *source.dataTypeError);
-      reportRequirementError(diagnostics, "CTF output cannot use the configured ctrace-run data-type",
-                             std::move(context));
-    }
-    if (source.dataSizeError.has_value()) {
-      valid = false;
-      sourceValid = false;
-      auto context = routeContext("ctf", ctraceRunMeta, source);
-      context.emplace_back("error", *source.dataSizeError);
-      reportRequirementError(diagnostics, "CTF output cannot use the configured ctrace-run size",
-                             std::move(context));
-    }
-    if (!sourceValid) {
-      continue;
-    }
-    if (source.source > 3U) {
-      valid = false;
-      auto context = routeContext("ctf", ctraceRunMeta, source);
-      reportRequirementError(diagnostics, "CTF output requires DWT comparator sources between 0 and 3",
-                             std::move(context));
-    }
-    const auto validType = TraceRunSchema::isDwtDataType(source.dataType);
-    const auto* valueVariant = CtfSchema::valueVariantForTraceRunType(source.dataType, source.dataSize);
-    if (!validType) {
-      valid = false;
-      auto context = routeContext("ctf", ctraceRunMeta, source);
-      context.emplace_back("dataType", source.dataType);
-      reportRequirementError(diagnostics,
-                             "CTF output cannot use ctrace-run data-type '" + source.dataType + "'; " +
-                                 std::string(CtfSchema::ValueTypeRequirements),
-                             std::move(context));
-    }
-    if (!TraceRunSchema::isDwtDataSize(source.dataSize) || (validType && valueVariant == nullptr)) {
-      valid = false;
-      auto context = routeContext("ctf", ctraceRunMeta, source);
-      context.emplace_back("dataType", source.dataType);
-      context.emplace_back("dataSize", std::to_string(source.dataSize));
-      reportRequirementError(diagnostics,
-                             "CTF output cannot use ctrace-run size " + std::to_string(source.dataSize) +
-                                 " with data-type '" + source.dataType + "'; " +
-                                 std::string(CtfSchema::ValueTypeRequirements),
-                             std::move(context));
-    }
-    if (source.address.has_value() && valueVariant != nullptr) {
-      const auto extent = source.dataSize - 1U;
-      if (*source.address > std::numeric_limits<std::uint64_t>::max() - extent) {
+  for (const auto& route : ctraceRunMeta.routes()) {
+    for (const auto& source : route.sources) {
+      if (source.type != "dwt" || !routeMatchesSelection(source, selection)) {
+        continue;
+      }
+      bool sourceValid = true;
+      if (source.addressError.has_value()) {
+        valid = false;
+        sourceValid = false;
+        auto context = routeContext("ctf", ctraceRunMeta, source);
+        context.emplace_back("error", *source.addressError);
+        reportRequirementError(diagnostics, "CTF output cannot use the configured ctrace-run address",
+                               std::move(context));
+      }
+      if (source.dataTypeError.has_value()) {
+        valid = false;
+        sourceValid = false;
+        auto context = routeContext("ctf", ctraceRunMeta, source);
+        context.emplace_back("error", *source.dataTypeError);
+        reportRequirementError(diagnostics, "CTF output cannot use the configured ctrace-run data-type",
+                               std::move(context));
+      }
+      if (source.dataSizeError.has_value()) {
+        valid = false;
+        sourceValid = false;
+        auto context = routeContext("ctf", ctraceRunMeta, source);
+        context.emplace_back("error", *source.dataSizeError);
+        reportRequirementError(diagnostics, "CTF output cannot use the configured ctrace-run size",
+                               std::move(context));
+      }
+      if (!sourceValid) {
+        continue;
+      }
+      if (source.source > 3U) {
         valid = false;
         auto context = routeContext("ctf", ctraceRunMeta, source);
-        context.emplace_back("address", std::to_string(*source.address));
-        context.emplace_back("dataSize", std::to_string(source.dataSize));
-        reportRequirementError(diagnostics, "CTF output cannot represent the configured DWT address range",
+        reportRequirementError(diagnostics, "CTF output requires DWT comparator sources between 0 and 3",
                                std::move(context));
+      }
+      const auto validType = TraceRunSchema::isDwtDataType(source.dataType);
+      const auto* valueVariant = CtfSchema::valueVariantForTraceRunType(source.dataType, source.dataSize);
+      if (!validType) {
+        valid = false;
+        auto context = routeContext("ctf", ctraceRunMeta, source);
+        context.emplace_back("dataType", source.dataType);
+        reportRequirementError(diagnostics,
+                               "CTF output cannot use ctrace-run data-type '" + source.dataType + "'; " +
+                                   std::string(CtfSchema::ValueTypeRequirements),
+                               std::move(context));
+      }
+      if (!TraceRunSchema::isDwtDataSize(source.dataSize) || (validType && valueVariant == nullptr)) {
+        valid = false;
+        auto context = routeContext("ctf", ctraceRunMeta, source);
+        context.emplace_back("dataType", source.dataType);
+        context.emplace_back("dataSize", std::to_string(source.dataSize));
+        reportRequirementError(diagnostics,
+                               "CTF output cannot use ctrace-run size " + std::to_string(source.dataSize) +
+                                   " with data-type '" + source.dataType + "'; " +
+                                   std::string(CtfSchema::ValueTypeRequirements),
+                               std::move(context));
+      }
+      if (source.address.has_value() && valueVariant != nullptr) {
+        const auto extent = source.dataSize - 1U;
+        if (*source.address > std::numeric_limits<std::uint64_t>::max() - extent) {
+          valid = false;
+          auto context = routeContext("ctf", ctraceRunMeta, source);
+          context.emplace_back("address", std::to_string(*source.address));
+          context.emplace_back("dataSize", std::to_string(source.dataSize));
+          reportRequirementError(diagnostics, "CTF output cannot represent the configured DWT address range",
+                                 std::move(context));
+        }
       }
     }
   }
@@ -300,22 +304,24 @@ static std::vector<CtfSourceDescriptor> resolveCtfSources(const CtraceRunMeta& c
 {
   std::set<std::tuple<std::string, std::uint32_t, TraceRouteId>> resolvedKeys;
   std::vector<CtfSourceDescriptor> sources;
-  for (const auto& route : ctraceRunMeta.sources()) {
-    if ((route.type != "itm" && route.type != "dwt") || (route.type == "itm" && route.source == 0U) ||
-        !routeMatchesSelection(route, selection) ||
-        !resolvedKeys.emplace(route.type, route.source, route.route.id).second) {
-      continue;
-    }
+  for (const auto& route : ctraceRunMeta.routes()) {
+    for (const auto& source : route.sources) {
+      if ((source.type != "itm" && source.type != "dwt") || (source.type == "itm" && source.source == 0U) ||
+          !routeMatchesSelection(source, selection) ||
+          !resolvedKeys.emplace(source.type, source.source, source.route.id).second) {
+        continue;
+      }
 
-    sources.push_back({
-        route.type,
-        route.source,
-        route.route,
-        route.label,
-        route.address,
-        route.dataType,
-        static_cast<std::uint8_t>(route.dataSize),
-    });
+      sources.push_back({
+          source.type,
+          source.source,
+          source.route,
+          source.label,
+          source.address,
+          source.dataType,
+          static_cast<std::uint8_t>(source.dataSize),
+      });
+    }
   }
   return sources;
 }
@@ -365,7 +371,6 @@ TraceOutputPlan planTraceOutputs(const TraceOutputRequest& request, const std::f
       metadata->sources = resolveCtfSources(ctraceRunMeta, request.selection);
       plan.ctf = CtfOutputConfig{
           paths.ctf, paths.traceCompassXml, request.selection, std::move(*metadata), resolveCtfRoutes(ctraceRunMeta),
-          true,
       };
     }
   }

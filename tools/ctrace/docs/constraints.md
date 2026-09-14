@@ -7,7 +7,7 @@ and unfinished work in the [TODO list](todo.md). The CMSIS-Toolbox
 for standardized `*.ctrace-run.yml` fields. The root `trace-format` field described below is a ctrace-private,
 provisional extension, not a normative CMSIS-Toolbox field or a producer-emission requirement. Its specification and
 producer follow-ups are recorded in the
-[multi-source decision record](multicore-multisource-plan.md#provisional-ctrace-runyml-extension).
+[multi-source decision record](multicore-multisource-plan.md#input-and-routing-contract).
 
 ## Boundaries
 
@@ -20,7 +20,10 @@ producer follow-ups are recorded in the
 - The YAML reader validates fields consumed by ctrace; unrelated fields are outside its validation scope. Malformed
   consumed fields remain errors. Optional null scalars and null collection entries are read as absent wherever
   possible; presence-only nodes retain their defined flag semantics. Defaults and operation-specific requirements
-  are evaluated after reading. An ITM reference without `source` values is valid and contributes no source events.
+  are evaluated after reading. Missing or null `ctrace-setup.itm.enable` is absent; malformed metadata bound to an
+  active route is an Error. Conflicting valid masks on one route produce one Warning and disable that route's optional
+  received-on-disabled-channel check. An ITM reference without `source` values is valid and contributes no source
+  events.
 - DWT data metadata comes from reference-level `address`, `size`, and `data-type`. When reference `size` is absent,
   the referenced `ctrace-setup.data.size` supplies it. DWT instruction-control references may bind a processor stream
   but do not create decoded data-source routes.
@@ -94,11 +97,19 @@ producer follow-ups are recorded in the
   Its event context preserves the CMSIS-profile `uint8_t cmsis_trace_bus_id` field and adds the ctrace-private
   `ctrace_route` enum used by generated Trace Compass XML. The enum label is the processor name when bound and the
   decimal CTF stream-class ID otherwise. Generalized XML prefixes every state path with that label and then the
-  architectural `cmsis_trace_bus_id`, preventing equal display labels from merging routes. The exact legacy CTF
-  event context remains unchanged.
-- `timestamps.clock` has no ctrace fallback. Missing, null, invalid, zero, or conflicting frequency is accepted for
-  validation-only and CSV operation but prevents CTF generation with an Error. With `--all`, valid CSV still
-  completes while the invocation returns non-zero.
+  architectural `cmsis_trace_bus_id`; it exposes a separate graphical provider per emitted route and topic, named
+  with the resolved processor label when available but never with its numeric ID. The exact legacy CTF event context
+  remains unchanged.
+- XML declares only graphical outputs: DWT values and addresses as XY series; trace-origin exceptions, DWT matches,
+  DWT/PMU overflow events, and processor sleep state as time graphs. Each block is emitted only if the completed stream
+  contains matching trace data; synthetic exception bootstrap records alone do not enable an exception block, and
+  `Processor State` specifically requires a sleep indication. ITM payloads, ordinary sampled
+  PCs, and trace-status records stay available through the CTF event table. Trace Compass XML has no data-driven
+  table-view type, so ctrace does not model these point records as artificial timelines.
+- `timestamps.clock` has no ctrace fallback. For every route selected for CTF, missing, null, invalid, zero, or
+  conflicting frequency is accepted for validation-only and CSV operation but prevents CTF generation with an Error.
+  A filter selecting no configured route requires no clock because it can emit no CTF stream. With `--all`, valid CSV
+  still completes while the invocation returns non-zero.
 - Different processor bindings are independent CTF clock domains even when their frequencies match. A multi-clock
   CTF bundle remains valid, but ctrace emits one Warning, removes any stale companion XML, and creates no new Trace
   Compass XML because the supported reader cannot establish a correct combined order. Cross-domain time correlation

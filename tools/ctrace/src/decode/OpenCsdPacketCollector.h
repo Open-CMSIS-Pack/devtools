@@ -84,12 +84,6 @@ public:
   void rethrowOutputError();
   /** @brief Returns the number of currently buffered elements. */
   std::size_t transactionElementCount() const;
-  /** @brief Tests whether the current transaction contains a failing diagnostic. */
-  bool transactionHasError() const;
-  /** @brief Tests whether the current transaction contains the supplied issue. */
-  bool transactionHasIssue(TraceIssueCode issueCode) const;
-  /** @brief Tests whether the current transaction contains the supplied issue on one route. */
-  bool transactionHasIssue(TraceIssueCode issueCode, const TraceRouteIdentity& route) const;
   /**
    * @brief Tests for an error element not explained by the supplied route failures.
    * @param sourceOffsetsByRoute First unsafe raw offset for every failing route.
@@ -100,8 +94,6 @@ public:
   bool transactionHasUnmatchedError(const std::map<TraceRouteId, std::uint64_t>& sourceOffsetsByRoute) const;
   /** @brief Returns the first buffered raw offset, if present. */
   std::optional<std::uint64_t> transactionFirstSourceOffset() const;
-  /** @brief Returns the first buffered raw offset for one route, if present. */
-  std::optional<std::uint64_t> transactionFirstSourceOffset(const TraceRouteIdentity& route) const;
   /**
    * @brief Returns the first buffered hardware-sync offset for one route.
    * @param route Route whose synchronization is requested.

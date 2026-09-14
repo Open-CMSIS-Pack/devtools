@@ -74,8 +74,8 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesCsvAfterLaterCtfStreamFai
   CtfMetadataTopology topology{
       {{CtfClockDomainId{1U}, "shared_clock", CtfTestSupport::testUuid(1U), 1000000U, false}},
       {
-          {CtfStreamClassId{1U}, firstRoute, CtfSourceKind::Itm, "core-one", CtfClockDomainId{1U}},
-          {CtfStreamClassId{111U}, lastRoute, CtfSourceKind::Itm, "core-last", CtfClockDomainId{1U}},
+          {CtfStreamClassId{1U}, firstRoute, "core-one", CtfClockDomainId{1U}},
+          {CtfStreamClassId{111U}, lastRoute, "core-last", CtfClockDomainId{1U}},
       },
       {},
   };
@@ -84,7 +84,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesCsvAfterLaterCtfStreamFai
   std::vector<std::unique_ptr<TraceOutput>> outputs;
   outputs.push_back(
       std::make_unique<CtfBundleOutput>(CtfOutputConfig(ctfDirectory, xmlPath, {}, std::move(topology),
-                                                        std::vector<TraceRouteIdentity>{firstRoute, lastRoute}, true),
+                                                        std::vector<TraceRouteIdentity>{firstRoute, lastRoute}),
                                         &diagnostics));
   outputs.push_back(std::make_unique<CsvFileOutput>(csvPath));
   TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);

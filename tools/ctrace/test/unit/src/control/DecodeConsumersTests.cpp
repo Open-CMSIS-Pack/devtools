@@ -79,7 +79,7 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
 
   CollectingDiagnosticSink diagnostics;
   const TraceRouteIdentity stream2{TraceRouteId{20U}, 2U};
-  DecodeConsumers consumers({}, diagnostics, 0x00000002U, {{stream2.id, 0x00000004U}});
+  DecodeConsumers consumers({}, diagnostics, {{TraceRouteId{0U}, 0x00000002U}, {stream2.id, 0x00000004U}});
 
   auto enabled = softwarePacket(1U);
   consumers.append(enabled);
@@ -112,7 +112,7 @@ TEST(CtraceUnitTests, testDecodeConsumersTracksEnableWarningsByInternalRouteIden
   CollectingDiagnosticSink diagnostics;
   const TraceRouteIdentity noBusA{TraceRouteId{30U}, std::nullopt};
   const TraceRouteIdentity noBusB{TraceRouteId{31U}, std::nullopt};
-  DecodeConsumers consumers({}, diagnostics, std::nullopt, {{noBusA.id, 0U}, {noBusB.id, 0U}});
+  DecodeConsumers consumers({}, diagnostics, {{noBusA.id, 0U}, {noBusB.id, 0U}});
 
   const auto disabledA = onRoute(softwarePacket(3U), noBusA);
   const auto disabledB = onRoute(softwarePacket(3U), noBusB);

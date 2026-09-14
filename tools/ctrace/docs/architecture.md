@@ -15,11 +15,13 @@ The first release profile supports unformatted SWO and memory-aligned formatted 
 packets. The command line accepts the stable type names `itm`, `dwt`, `event`, `pmu`, `exception`, `pcsample`,
 `global_ts`, `overflow`, and `error`. Output semantics are implemented for every listed type on every configured ITM
 route. Valid DWT event-counter and PMU trace-on-overflow packets reach CSV as one row containing the hardware mask.
-The CTF backend expands each mask into one timestamped record per set bit so Trace Compass can show exact table rows
-and labeled one-microsecond visualization pulses. DWT records use their fixed architectural counter names; PMU
+The CTF backend expands each mask into one timestamped record per set bit so Trace Compass can show exact event-table
+rows and labeled one-microsecond visualization pulses. DWT records use their fixed architectural counter names; PMU
 records provisionally use `Event0` through `Event7` until trace-run configuration can resolve the programmable
 counter assignments. Periodic PC samples reach CSV and CTF as semantic events; the CTF event distinguishes a sampled
-PC from a processor-sleep indication, and Trace Compass shows processor-sleep intervals as a timeline.
+PC from a processor-sleep indication, and Trace Compass shows processor-sleep intervals as a `Processor State`
+timeline. Sampled PCs, ITM payloads, and trace-status records remain in the generic event table instead of being
+misrepresented as states with duration.
 
 Exactly one raw input is active for each trace-run configuration. Legacy configurations select `*.SWO.raw` as an
 unformatted stream. An explicit provisional `trace-format` declaration can select one SWO, TB, or named-TB file as
@@ -78,10 +80,11 @@ or null selects the legacy `unformatted` default and SWO-only discovery; an expl
 value enables selection of exactly one eligible SWO/TB file. The value describes the selected file's effective bytes,
 not the target's formatter capability. Its specification and producer integration remain separate follow-up work.
 
-Formatted input currently means complete, 16-byte memory-aligned CoreSight frames. Framing is an internal global
-value; there is no public `trace-framing` YAML field and FSYNC/HSYNC modes remain deferred. Generated
-`ctrace-refs.stream` values in the architectural range `1..111` bind formatter IDs to ITM routes. The legacy
-unformatted path remains one synthetic route with no architectural ID and preserves its existing CSV and CTF shape.
+Formatted input currently means complete, 16-byte memory-aligned CoreSight frames. Memory alignment is one internal
+decoder contract, not a stored or user-selectable value; there is no public `trace-framing` YAML field, and FSYNC/HSYNC
+modes remain deferred. Generated `ctrace-refs.stream` values in the architectural range `1..111` bind formatter IDs
+to ITM routes. The legacy unformatted path remains one synthetic route with no architectural ID and preserves its
+existing CSV and CTF shape.
 
 ## Processing state and ownership
 
@@ -175,7 +178,7 @@ The YAML reader's validation, provisional input-format, and metadata rules are r
 [constraints](constraints.md).
 
 `CtraceRunMeta` is the boundary between the YAML representation and runtime processing. `TraceRunInputDescriptor`
-combines it with the selected open raw file, effective format, declaration state, and internal framing. Decode and
+combines it with the selected open raw file and effective format. Decode and
 output modules consume these normalized values instead of navigating YAML nodes or repeating discovery decisions.
 
 ### Decode and event model
@@ -206,18 +209,23 @@ state.
 The generated event IDs, fields, enum values, quality markers, and visualization semantics are specified in the
 [ctrace CTF profile](ctf-format.md).
 
-Output requirements are evaluated per backend. For example, missing CTF-specific metadata may disable CTF while an
-independent CSV output remains valid. `--all` therefore does not make the backends share failure state unnecessarily.
+Output requirements are evaluated per backend and selected route. For example, missing CTF-specific metadata on an
+active route may disable CTF while an independent CSV output remains valid; metadata on a route excluded by the
+stream filter is not required. `--all` therefore does not make the backends share failure state unnecessarily.
 
 CSV remains one combined file in synchronous semantic callback order; formatted rows carry their architectural Trace
 Bus ID and the legacy unformatted stream column stays empty. CTF owns one bundle-local metadata model and lazily
 creates one `stream_<id>` writer per formatted route that emits a selected event. Each stream class references an
 explicit clock domain. Generalized metadata stores the optional processor name in a stream-scoped environment entry
-and exposes the same display identity through a private `ctrace_route` enum. Generated Trace Compass XML groups by
-that enum and then by `cmsis_trace_bus_id`, so processor labels remain readable while complete state-system paths
-stay unique even when a processor name equals another route's numeric fallback. An unbound route label falls back to
-its decimal CTF stream-class ID. The existing `uint8_t cmsis_trace_bus_id` field remains unchanged for CMSIS-profile
-consumers. Distinct processor bindings remain distinct domains even when their clock frequencies match.
+and exposes the same display identity through a private `ctrace_route` enum. Generated Trace Compass XML creates a
+graphical provider only when the completed stream contains trace data for that topic. Synthetic exception bootstrap
+records alone do not create an exception view. A `Processor State` provider requires an actual sleep indication;
+ordinary PC samples do not create it. Visible provider names append the resolved processor name but never a numeric
+ID; without a resolved name they retain the topic name alone. The provider ID and its state query select the
+architectural `cmsis_trace_bus_id`, so equal display names cannot merge routes. Internally, an unbound `ctrace_route`
+enum label falls back to its decimal CTF stream-class ID to keep the state path unique. The existing
+`uint8_t cmsis_trace_bus_id` field remains unchanged for CMSIS-profile consumers. Distinct processor bindings remain
+distinct domains even when their clock frequencies match.
 Because the supported Trace Compass reader cannot reliably combine multiple clock declarations, ctrace keeps that
 valid CTF bundle but omits any stale/new companion XML and reports one Warning. The legacy unformatted CTF path keeps
 its eager `stream_0`, `swo_clock`, original event context, and single-clock XML behavior.

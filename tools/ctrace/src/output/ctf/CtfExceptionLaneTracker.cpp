@@ -9,9 +9,7 @@
 
 #include "TraceEvent.h"
 
-#include <algorithm>
 #include <cstdint>
-#include <vector>
 
 void CtfExceptionLaneTracker::startThreadMode(const RecordEmitter& emit)
 {
@@ -46,24 +44,19 @@ void CtfExceptionLaneTracker::consume(const ExceptionTraceEvent& event, const Re
   }
 }
 
-const std::vector<ExceptionNumber>& CtfExceptionLaneTracker::observedExceptionNumbers() const
-{
-  return m_observedExceptionNumbers;
-}
-
 void CtfExceptionLaneTracker::setActiveContext(ExceptionNumber number, RecordAction action, RecordOrigin origin,
                                                const RecordEmitter& emit)
 {
   if (m_activeContextNumber.has_value() && *m_activeContextNumber == number) {
     if (action == RecordAction::Return) {
-      emitRecord(number, action, origin, emit);
+      emit(number, action, origin);
     }
     return;
   }
   if (m_activeContextNumber.has_value()) {
-    emitRecord(*m_activeContextNumber, RecordAction::Exit, RecordOrigin::Synthetic, emit);
+    emit(*m_activeContextNumber, RecordAction::Exit, RecordOrigin::Synthetic);
   }
-  emitRecord(number, action, origin, emit);
+  emit(number, action, origin);
   m_activeContextNumber = number;
 }
 
@@ -72,23 +65,13 @@ void CtfExceptionLaneTracker::closeActiveContext(RecordOrigin origin, const Reco
   if (!m_activeContextNumber.has_value()) {
     return;
   }
-  emitRecord(*m_activeContextNumber, RecordAction::Exit, origin, emit);
+  emit(*m_activeContextNumber, RecordAction::Exit, origin);
   m_activeContextNumber.reset();
 }
 
 void CtfExceptionLaneTracker::updateActiveContext(RecordAction action, RecordOrigin origin, const RecordEmitter& emit)
 {
   setActiveContext(m_contextStack.empty() ? kThreadModeNumber : m_contextStack.back().number, action, origin, emit);
-}
-
-void CtfExceptionLaneTracker::emitRecord(ExceptionNumber number, RecordAction action, RecordOrigin origin,
-                                         const RecordEmitter& emit)
-{
-  if (std::find(m_observedExceptionNumbers.begin(), m_observedExceptionNumbers.end(), number) ==
-      m_observedExceptionNumbers.end()) {
-    m_observedExceptionNumbers.push_back(number);
-  }
-  emit(number, action, origin);
 }
 
 void CtfExceptionLaneTracker::enterContext(ExceptionNumber number)

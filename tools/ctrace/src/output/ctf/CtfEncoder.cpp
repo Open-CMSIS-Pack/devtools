@@ -41,10 +41,10 @@ static std::uint8_t legacyCtfTraceBusId(const TraceRouteIdentity& route)
   return route.traceBusId.value_or(0U);
 }
 
-/** @brief Enforces an explicit normalized route catalogue while retaining the legacy lazy fallback. */
+/** @brief Enforces an explicit normalized route catalogue when one was supplied. */
 static void validateConfiguredRoute(const CtfEncoderConfig& config, const TraceRouteIdentity& route)
 {
-  if (config.legacyRouteFallback && config.routes.empty()) {
+  if (config.routes.empty()) {
     return;
   }
   const auto configured = std::find_if(config.routes.begin(), config.routes.end(),
@@ -144,14 +144,10 @@ void CtfEncoder::start(const std::filesystem::path& outputDirectory, const CtfUu
   m_outputDirectory = outputDirectory;
   try {
     m_metadata.emplace(traceUuid, m_config.metadata);
-    if (m_metadata->topology().streams.empty() && m_config.legacyRouteFallback) {
-      throw std::runtime_error("CTF encoder requires an explicit metadata topology or normalized route catalogue");
-    }
     m_completedMetadata.reset();
     m_streams.clear();
     m_bootstrappedRoutes.clear();
     m_streamStates.clear();
-    m_emittedExceptionNumbers.clear();
     m_reportedDwtSizeMismatches.clear();
     m_exceptionLanes.clear();
     std::map<TraceRouteId, TraceRouteIdentity> initialRoutes;
@@ -166,15 +162,9 @@ void CtfEncoder::start(const std::filesystem::path& outputDirectory, const CtfUu
     }
     for (const auto& stream : m_metadata->topology().streams) {
       validateConfiguredRoute(m_config, stream.route);
-      if (m_config.legacyRouteFallback && m_config.routes.empty()) {
-        addInitialRoute(stream.route);
-      }
     }
     for (const auto& source : m_metadata->topology().sources) {
       validateConfiguredRoute(m_config, source.route);
-      if (m_config.legacyRouteFallback && m_config.routes.empty()) {
-        addInitialRoute(source.route);
-      }
     }
     m_recording = true;
     if (m_metadata->isLegacySingleStreamLayout()) {
@@ -215,7 +205,6 @@ void CtfEncoder::abort() noexcept
   m_completedMetadata.reset();
   m_bootstrappedRoutes.clear();
   m_streamStates.clear();
-  m_emittedExceptionNumbers.clear();
   m_reportedDwtSizeMismatches.clear();
   m_exceptionLanes.clear();
   m_outputDirectory.clear();
@@ -335,6 +324,10 @@ void CtfEncoder::writePcSampleEvent(const TraceEvent& event, const PcSampleTrace
                      record.writeU8(quality.first);
                      record.writeU32(quality.second);
                    });
+  const auto streamClassId = streamDescriptor(event.route).streamClassId;
+  if (sample.sleeping) {
+    m_metadata->observeGraphicalTopic(streamClassId, CtfGraphicalTopic::ProcessorState);
+  }
 }
 
 std::uint64_t CtfEncoder::allocateEventTimestamp(const TraceRouteIdentity& route)
@@ -455,6 +448,7 @@ void CtfEncoder::writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceE
                      record.writeU8(quality.first);
                      record.writeU32(quality.second);
                    });
+  m_metadata->observeGraphicalTopic(streamDescriptor(event.route).streamClassId, CtfGraphicalTopic::DwtValue);
 }
 
 void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data,
@@ -498,6 +492,9 @@ void CtfEncoder::writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTrac
                      record.writeU8(quality.first);
                      record.writeU32(quality.second);
                    });
+  if (address.has_value()) {
+    m_metadata->observeGraphicalTopic(streamDescriptor(event.route).streamClassId, CtfGraphicalTopic::DwtAddress);
+  }
 }
 
 void CtfEncoder::writeDwtMatchEvent(const TraceEvent& event, const DwtMatchTraceEvent& match)
@@ -513,6 +510,7 @@ void CtfEncoder::writeDwtMatchEvent(const TraceEvent& event, const DwtMatchTrace
                      record.writeU8(quality.first);
                      record.writeU32(quality.second);
                    });
+  m_metadata->observeGraphicalTopic(streamDescriptor(event.route).streamClassId, CtfGraphicalTopic::DwtMatch);
 }
 
 void CtfEncoder::writeDwtEvent(const TraceEvent& event, const DwtEventTraceEvent& counters)
@@ -521,6 +519,7 @@ void CtfEncoder::writeDwtEvent(const TraceEvent& event, const DwtEventTraceEvent
   const auto eventTimestamp = allocateEventTimestamp(event.route);
   const auto traceBusId = legacyCtfTraceBusId(event.route);
   const auto quality = computeSampleQuality(event);
+  auto emitted = false;
   for (const auto counter : kDwtEventCounters) {
     const auto counterBit = dwtEventCounterBit(counter);
     if ((counters.counterMask & counterBit) == 0U) {
@@ -533,6 +532,10 @@ void CtfEncoder::writeDwtEvent(const TraceEvent& event, const DwtEventTraceEvent
                        record.writeU8(quality.first);
                        record.writeU32(quality.second);
                      });
+    emitted = true;
+  }
+  if (emitted) {
+    m_metadata->observeGraphicalTopic(streamDescriptor(event.route).streamClassId, CtfGraphicalTopic::DwtEvent);
   }
 }
 
@@ -542,6 +545,7 @@ void CtfEncoder::writePmuEvent(const TraceEvent& event, const PmuTraceEvent& cou
   const auto eventTimestamp = allocateEventTimestamp(event.route);
   const auto traceBusId = legacyCtfTraceBusId(event.route);
   const auto quality = computeSampleQuality(event);
+  auto emitted = false;
   for (const auto counter : kPmuEventCounters) {
     if ((counters.overflowMask & pmuEventCounterBit(counter)) == 0U) {
       continue;
@@ -553,6 +557,10 @@ void CtfEncoder::writePmuEvent(const TraceEvent& event, const PmuTraceEvent& cou
                        record.writeU8(quality.first);
                        record.writeU32(quality.second);
                      });
+    emitted = true;
+  }
+  if (emitted) {
+    m_metadata->observeGraphicalTopic(streamDescriptor(event.route).streamClassId, CtfGraphicalTopic::PmuEvent);
   }
 }
 
@@ -638,7 +646,11 @@ void CtfEncoder::emitExceptionRecord(const TraceRouteIdentity& route, ExceptionN
                                     record.writeU16(number);
                                     record.writeU8(encodedOrigin);
                                   });
-  m_emittedExceptionNumbers[route.id].insert(number);
+  const auto streamClassId = streamDescriptor(route).streamClassId;
+  m_metadata->observeException(streamClassId, number);
+  if (origin == CtfExceptionLaneTracker::RecordOrigin::Trace) {
+    m_metadata->observeGraphicalTopic(streamClassId, CtfGraphicalTopic::Exception);
+  }
 }
 
 CtfExceptionLaneTracker& CtfEncoder::exceptionLane(const TraceRouteIdentity& route)
@@ -671,38 +683,12 @@ std::pair<std::uint8_t, std::uint32_t> CtfEncoder::computeSampleQuality(const Tr
 
 void CtfEncoder::writeMetadataFile()
 {
-  CtfMetadataTopology emittedTopology;
-  std::set<CtfClockDomainId> emittedClockDomains;
-  std::set<TraceRouteId> emittedRoutes;
-  for (const auto& stream : m_metadata->topology().streams) {
-    if (m_streams.find(stream.streamClassId) == m_streams.end()) {
-      continue;
-    }
-    emittedTopology.streams.push_back(stream);
-    emittedClockDomains.insert(stream.clockDomainId);
-    emittedRoutes.insert(stream.route.id);
+  std::set<CtfStreamClassId> emittedStreamClassIds;
+  for (const auto& [streamClassId, stream] : m_streams) {
+    (void)stream;
+    emittedStreamClassIds.insert(streamClassId);
   }
-  for (const auto& clock : m_metadata->topology().clockDomains) {
-    if (emittedClockDomains.find(clock.id) != emittedClockDomains.end()) {
-      emittedTopology.clockDomains.push_back(clock);
-    }
-  }
-  for (const auto& source : m_metadata->topology().sources) {
-    if (emittedRoutes.find(source.route.id) != emittedRoutes.end()) {
-      emittedTopology.sources.push_back(source);
-    }
-  }
-
-  CtfMetadataModel completed(m_metadata->traceUuid(), std::move(emittedTopology));
-  for (const auto& stream : completed.topology().streams) {
-    const auto numbers = m_emittedExceptionNumbers.find(stream.route.id);
-    if (numbers == m_emittedExceptionNumbers.end()) {
-      continue;
-    }
-    for (const auto number : numbers->second) {
-      completed.observeException(stream.streamClassId, number);
-    }
-  }
+  CtfMetadataModel completed = m_metadata->projectToEmittedStreams(emittedStreamClassIds);
   CtfMetadataWriter::write(m_outputDirectory, completed);
   m_completedMetadata.emplace(std::move(completed));
 }

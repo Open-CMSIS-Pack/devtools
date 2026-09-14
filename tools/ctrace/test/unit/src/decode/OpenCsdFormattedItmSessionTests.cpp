@@ -508,7 +508,6 @@ TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionAcceptsEmptyInput)
   OpenCsdFormattedItmSession session({route}, elements, errors, packets,
                                      [&](std::uint8_t traceId, ocsd_trc_index_t) { unsupported.push_back(traceId); });
 
-  EXPECT_EQ(session.reset(), OCSD_RESP_CONT);
   EXPECT_EQ(session.flush(), OCSD_RESP_CONT);
   EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
   EXPECT_TRUE(elements.software().empty());

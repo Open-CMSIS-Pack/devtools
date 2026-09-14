@@ -82,7 +82,6 @@ TEST(CtraceUnitTests, testTraceRunDiscovery)
     const auto legacy = TraceRunDiscovery::resolveInput(
         inputMetadata(selected[0]), [&](const auto& input) { skippedChannels.push_back(input.channel); });
     EXPECT_EQ(legacy.path().filename(), "Alpha.SWO.raw");
-    EXPECT_EQ(legacy.channel(), "SWO");
   }
   EXPECT_EQ(skippedChannels, (std::vector<std::string>{"ER", "TB", "TB_ETB-0", "TB_ETB_0", "TB_MTB"}));
 
@@ -150,10 +149,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesOnePreflightedInput)
   {
     auto legacy = TraceRunDiscovery::resolveInput(inputMetadata(legacyConfig));
     EXPECT_EQ(legacy.path(), swo);
-    EXPECT_EQ(legacy.channel(), "SWO");
     EXPECT_EQ(legacy.format(), TraceRunFormat::Unformatted);
-    EXPECT_FALSE(legacy.formatDeclared());
-    EXPECT_EQ(legacy.framing(), TraceRunInputFraming::MemoryAligned);
     EXPECT_FALSE(legacy.metadata().traceFormat().has_value());
     ASSERT_EQ(legacy.metadata().routes().size(), 1U);
     EXPECT_FALSE(legacy.metadata().routes().front().identity.traceBusId.has_value());
@@ -166,9 +162,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesOnePreflightedInput)
     auto explicitUnformatted =
         TraceRunDiscovery::resolveInput(inputMetadata(explicitConfig, TraceRunFormat::Unformatted));
     EXPECT_EQ(explicitUnformatted.path(), tb);
-    EXPECT_EQ(explicitUnformatted.channel(), "TB_MTB");
     EXPECT_EQ(explicitUnformatted.format(), TraceRunFormat::Unformatted);
-    EXPECT_TRUE(explicitUnformatted.formatDeclared());
     EXPECT_EQ(explicitUnformatted.metadata().traceFormat(), TraceRunFormat::Unformatted);
   }
 
@@ -178,9 +172,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesOnePreflightedInput)
     writeTestFile(formatted, std::string(size, 'f'));
     auto descriptor = TraceRunDiscovery::resolveInput(inputMetadata(formattedConfig, TraceRunFormat::Formatted));
     EXPECT_EQ(descriptor.path(), formatted);
-    EXPECT_EQ(descriptor.channel(), "TB");
     EXPECT_EQ(descriptor.format(), TraceRunFormat::Formatted);
-    EXPECT_TRUE(descriptor.formatDeclared());
     EXPECT_EQ(descriptor.metadata().traceFormat(), TraceRunFormat::Formatted);
     ASSERT_EQ(descriptor.metadata().routes().size(), 1U);
     EXPECT_EQ(descriptor.metadata().routes().front().identity.traceBusId, 1U);

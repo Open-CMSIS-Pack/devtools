@@ -33,8 +33,6 @@ struct CtfEncoderConfig {
   TraceSelection selection;
   DiagnosticSink* diagnostics = nullptr;
   std::vector<TraceRouteIdentity> routes;
-  /** @brief Permits direct legacy callers to infer a route when no catalogue was supplied. */
-  bool legacyRouteFallback = true;
 };
 
 /** @brief Encodes semantic trace events into lazy route-specific CTF streams and one metadata set. */
@@ -123,7 +121,6 @@ private:
   bool m_recording = false;
   std::set<TraceRouteId> m_bootstrappedRoutes;
   std::map<TraceRouteId, StreamState> m_streamStates;
-  std::map<TraceRouteId, std::set<ExceptionNumber>> m_emittedExceptionNumbers;
   std::set<std::pair<TraceRouteId, std::uint32_t>> m_reportedDwtSizeMismatches;
   std::map<TraceRouteId, CtfExceptionLaneTracker> m_exceptionLanes;
 };

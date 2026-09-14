@@ -23,7 +23,7 @@
 static CtfStreamDescriptor modelStream(std::uint32_t routeId, std::uint8_t traceBusId, std::uint32_t clockDomainId)
 {
   return {
-      CtfStreamClassId{traceBusId},    {TraceRouteId{routeId}, traceBusId}, CtfSourceKind::Itm, std::nullopt,
+      CtfStreamClassId{traceBusId}, {TraceRouteId{routeId}, traceBusId}, std::nullopt,
       CtfClockDomainId{clockDomainId},
   };
 }
@@ -91,6 +91,34 @@ TEST(CtraceUnitTests, testCtfMetadataModelKeepsRouteClockAndSourceIdentityIndepe
   EXPECT_FALSE(model.isLegacySingleStreamLayout());
 }
 
+TEST(CtraceUnitTests, testCtfMetadataModelProjectsRuntimeObservationsToEmittedStreams)
+{
+  CtfMetadataModel model(CtfTestSupport::testUuid(), independentModelTopology());
+  EXPECT_FALSE(model.observedGraphicalTopic(CtfStreamClassId{1U}, CtfGraphicalTopic::DwtValue));
+  model.observeGraphicalTopic(CtfStreamClassId{1U}, CtfGraphicalTopic::DwtValue);
+  model.observeGraphicalTopic(CtfStreamClassId{1U}, CtfGraphicalTopic::ProcessorState);
+  model.observeGraphicalTopic(CtfStreamClassId{1U}, CtfGraphicalTopic::DwtValue);
+  model.observeException(CtfStreamClassId{111U}, 16U);
+  EXPECT_TRUE(model.observedGraphicalTopic(CtfStreamClassId{1U}, CtfGraphicalTopic::DwtValue));
+  EXPECT_TRUE(model.observedGraphicalTopic(CtfStreamClassId{1U}, CtfGraphicalTopic::ProcessorState));
+  EXPECT_FALSE(model.observedGraphicalTopic(CtfStreamClassId{111U}, CtfGraphicalTopic::DwtValue));
+  EXPECT_FALSE(model.observedGraphicalTopic(CtfStreamClassId{1U}, CtfGraphicalTopic::DwtAddress));
+  EXPECT_THROW(model.observeGraphicalTopic(CtfStreamClassId{7U}, CtfGraphicalTopic::DwtValue), std::runtime_error);
+
+  const auto projected = model.projectToEmittedStreams({CtfStreamClassId{1U}});
+  EXPECT_EQ(projected.topology().clockDomains.size(), 1U);
+  ASSERT_EQ(projected.topology().streams.size(), 1U);
+  EXPECT_EQ(projected.topology().sources.size(), 2U);
+  EXPECT_EQ(projected.topology().streams.front().streamClassId, CtfStreamClassId{1U});
+  EXPECT_TRUE(projected.observedExceptions(CtfStreamClassId{111U}).empty());
+  EXPECT_TRUE(projected.observedGraphicalTopic(CtfStreamClassId{1U}, CtfGraphicalTopic::DwtValue));
+
+  const auto unknownProjection = model.projectToEmittedStreams({CtfStreamClassId{7U}});
+  EXPECT_TRUE(unknownProjection.topology().clockDomains.empty());
+  EXPECT_TRUE(unknownProjection.topology().streams.empty());
+  EXPECT_TRUE(unknownProjection.topology().sources.empty());
+}
+
 TEST(CtraceUnitTests, testCtfMetadataModelAcceptsSharedDomainsAndItmRouteBoundaries)
 {
   CtfMetadataTopology shared{
@@ -113,7 +141,6 @@ TEST(CtraceUnitTests, testCtfMetadataModelAcceptsSharedDomainsAndItmRouteBoundar
       {modelClock(4U, "unformatted_clock", 4U)},
       {{CtfStreamClassId{0U},
         {TraceRouteId{88U}, std::nullopt},
-        CtfSourceKind::Itm,
         std::nullopt,
         CtfClockDomainId{4U}}},
       {},

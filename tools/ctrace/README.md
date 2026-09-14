@@ -67,7 +67,7 @@ cmake --build build --target ctrace CtraceUnitTests CtraceIntegTests
 Run the GoogleTest unit and integration suites plus the executable smoke tests:
 
 ```bash
-ctest --test-dir build -C Debug -R '^(CtraceUnitTests|CtraceIntegTests|ctrace-)'
+ctest --test-dir build -C Debug -R '^(CtraceUnitTests|CtraceIntegTests|CtraceFixtureIntegrity|ctrace-)'
 ```
 
 On native Linux, installing exactly Babeltrace `2.0.5` before configuration

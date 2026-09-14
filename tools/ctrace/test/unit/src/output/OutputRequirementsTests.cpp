@@ -22,6 +22,16 @@
 #include <string>
 #include <utility>
 
+/** @brief Counts source metadata directly from canonical normalized routes. */
+static std::size_t sourceCount(const CtraceRunMeta& meta)
+{
+  std::size_t count = 0U;
+  for (const auto& route : meta.routes()) {
+    count += route.sources.size();
+  }
+  return count;
+}
+
 /** @brief Creates an output request selecting test formats. */
 static TraceOutputRequest outputRequest(bool csv, bool ctf)
 {
@@ -95,11 +105,9 @@ TEST(CtraceUnitTests, testBackendRequirementsUsePerStreamMetadata)
   core1.timestamps = TraceRunTimestampSetup{400000000U, std::nullopt};
   multicore.setups = {core0, core1};
   const auto missingPrescalerMeta = CtraceRunMeta::fromConfig(multicore);
-  ASSERT_TRUE(missingPrescalerMeta.timestampPrescaler() ==
-              std::optional<std::uint32_t>(TraceRunSchema::kDefaultTimestampPrescaler))
-      << "an omitted processor prescaler must resolve to the specified default";
-  ASSERT_TRUE((missingPrescalerMeta.timestampPrescalersByTraceBusId() ==
-               std::map<std::uint8_t, std::uint32_t>({{1U, 1U}, {2U, 1U}})))
+  ASSERT_EQ(missingPrescalerMeta.routes().size(), 2U);
+  ASSERT_EQ(missingPrescalerMeta.routes()[0].timestampPrescaler, TraceRunSchema::kDefaultTimestampPrescaler);
+  ASSERT_EQ(missingPrescalerMeta.routes()[1].timestampPrescaler, TraceRunSchema::kDefaultTimestampPrescaler)
       << "the default prescaler must be retained per ATB stream";
 
   CollectingDiagnosticSink equalClockDiagnostics;
@@ -124,17 +132,16 @@ TEST(CtraceUnitTests, testBackendRequirementsUsePerStreamMetadata)
   core0.timestamps = TraceRunTimestampSetup{400000000U, 4U};
   multicore.setups = {core0, core1};
   const auto mixedMissingPrescalerMeta = CtraceRunMeta::fromConfig(multicore);
-  ASSERT_TRUE(mixedMissingPrescalerMeta.hasDistinctProcessorPrescalers())
-      << "an explicit prescaler must be compared with another processor's default";
-  ASSERT_TRUE((mixedMissingPrescalerMeta.timestampPrescalersByTraceBusId() ==
-               std::map<std::uint8_t, std::uint32_t>({{1U, 4U}, {2U, 1U}})))
+  ASSERT_EQ(mixedMissingPrescalerMeta.routes().size(), 2U);
+  ASSERT_EQ(mixedMissingPrescalerMeta.routes()[0].timestampPrescaler, 4U);
+  ASSERT_EQ(mixedMissingPrescalerMeta.routes()[1].timestampPrescaler, TraceRunSchema::kDefaultTimestampPrescaler)
       << "different explicit and default prescalers must remain stream-specific";
 
   core1.timestamps = TraceRunTimestampSetup{200000000U, 1U};
   multicore.setups = {core0, core1};
   const auto distinctClockMeta = CtraceRunMeta::fromConfig(multicore);
-  ASSERT_TRUE(distinctClockMeta.timestampsByTraceBusId().at(1U).clockHz == std::optional<std::uint64_t>(400000000U) &&
-              distinctClockMeta.timestampsByTraceBusId().at(2U).clockHz == std::optional<std::uint64_t>(200000000U))
+  ASSERT_TRUE(distinctClockMeta.routes()[0].timestampClockHz == std::optional<std::uint64_t>(400000000U) &&
+              distinctClockMeta.routes()[1].timestampClockHz == std::optional<std::uint64_t>(200000000U))
       << "processor clocks must remain associated with their Trace Bus IDs";
 
   auto ctfRequest = outputRequest(false, true);
@@ -270,7 +277,7 @@ TEST(CtraceUnitTests, testOutputRequirementsReportRepeatedRouteSourceConflictOnc
   config.references = {first, second, third};
 
   const auto meta = CtraceRunMeta::fromConfig(config);
-  ASSERT_EQ(meta.sources().size(), 3U)
+  ASSERT_EQ(sourceCount(meta), 3U)
       << "normalization must retain conflicting route-local source metadata for output-specific validation";
   CollectingDiagnosticSink diagnostics;
   const auto plan = planOutputs(outputRequest(true, true), "BackendRequirements.SWO.raw", meta, diagnostics);

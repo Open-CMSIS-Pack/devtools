@@ -41,7 +41,7 @@ inline CtfMetadataTopology legacyTopology(std::uint64_t clockHz, TraceRouteIdent
 {
   return {
       {{CtfClockDomainId{0U}, "swo_clock", std::nullopt, clockHz, false}},
-      {{CtfStreamClassId{0U}, route, CtfSourceKind::Itm, std::nullopt, CtfClockDomainId{0U}}},
+      {{CtfStreamClassId{0U}, route, std::nullopt, CtfClockDomainId{0U}}},
       std::move(sources),
   };
 }

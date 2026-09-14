@@ -160,30 +160,6 @@ std::size_t OpenCsdPacketCollector::transactionElementCount() const
   return m_transactionElements.size();
 }
 
-bool OpenCsdPacketCollector::transactionHasError() const
-{
-  for (const auto& buffered : m_transactionElements) {
-    const auto& element = buffered.element;
-    if (element.kind == OpenCsdTraceElement::Kind::Error && element.issueSeverity == TraceIssueSeverity::Error) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool OpenCsdPacketCollector::transactionHasIssue(TraceIssueCode issueCode) const
-{
-  return std::any_of(m_transactionElements.begin(), m_transactionElements.end(),
-                     [issueCode](const auto& buffered) { return buffered.element.issueCode == issueCode; });
-}
-
-bool OpenCsdPacketCollector::transactionHasIssue(TraceIssueCode issueCode, const TraceRouteIdentity& route) const
-{
-  return std::any_of(m_transactionElements.begin(), m_transactionElements.end(), [&](const auto& buffered) {
-    return buffered.element.route == route && buffered.element.issueCode == issueCode;
-  });
-}
-
 bool OpenCsdPacketCollector::transactionHasUnmatchedError(
     const std::map<TraceRouteId, std::uint64_t>& sourceOffsetsByRoute) const
 {
@@ -208,22 +184,6 @@ std::optional<std::uint64_t> OpenCsdPacketCollector::transactionFirstSourceOffse
   std::optional<std::uint64_t> firstOffset;
   for (const auto& buffered : m_transactionElements) {
     const auto& element = buffered.element;
-    const auto offset = element.sourceIndex;
-    if (!firstOffset.has_value() || offset < *firstOffset) {
-      firstOffset = offset;
-    }
-  }
-  return firstOffset;
-}
-
-std::optional<std::uint64_t> OpenCsdPacketCollector::transactionFirstSourceOffset(const TraceRouteIdentity& route) const
-{
-  std::optional<std::uint64_t> firstOffset;
-  for (const auto& buffered : m_transactionElements) {
-    const auto& element = buffered.element;
-    if (element.route != route) {
-      continue;
-    }
     const auto offset = element.sourceIndex;
     if (!firstOffset.has_value() || offset < *firstOffset) {
       firstOffset = offset;

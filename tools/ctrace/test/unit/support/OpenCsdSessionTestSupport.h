@@ -137,13 +137,11 @@ struct SessionStep {
 struct SessionScript {
   std::deque<SessionStep> pushes;
   std::deque<SessionStep> flushes;
-  std::deque<SessionStep> resets;
   std::deque<SessionStep> ends;
   std::map<std::uint8_t, std::deque<SessionStep>> routeResets;
   ocsd_datapath_resp_t defaultFlushResponse = OCSD_RESP_CONT;
   std::uint32_t pushCalls = 0U;
   std::uint32_t flushCalls = 0U;
-  std::uint32_t resetCalls = 0U;
   std::uint32_t endCalls = 0U;
   std::map<std::uint8_t, std::uint32_t> routeResetCalls;
   std::vector<std::uint8_t> routeResetOrder;
@@ -178,15 +176,6 @@ public:
   {
     ++m_script->flushCalls;
     auto step = take(m_script->flushes, SessionStep{m_script->defaultFlushResponse});
-    apply(step, 0U);
-    return step.response;
-  }
-
-  /** @brief Applies the next scripted reset response. */
-  ocsd_datapath_resp_t reset() override
-  {
-    ++m_script->resetCalls;
-    auto step = take(m_script->resets, SessionStep{});
     apply(step, 0U);
     return step.response;
   }
@@ -285,7 +274,8 @@ public:
   /** @brief Creates a decoder connected to a new empty session script. */
   ScriptedDecoderHarness()
     : m_script(std::make_shared<SessionScript>()),
-      m_decoder({}, m_sink, scriptedFactory(m_script))
+      m_decoder(std::vector<TraceRouteIdentity>{TraceRouteIdentity{}}, OpenCsdItmInputMode::Single, m_sink,
+                scriptedFactory(m_script))
   {
   }
 

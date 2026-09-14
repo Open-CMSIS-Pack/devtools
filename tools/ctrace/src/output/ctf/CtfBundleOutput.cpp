@@ -24,6 +24,7 @@
 #include <string_view>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 /** @brief Rejects empty and root-like output targets. */
 static void requireOutputTarget(const std::filesystem::path& path, const char* description)
@@ -168,6 +169,27 @@ static void removeIncompleteOutputs(const std::filesystem::path& ctfDirectory,
   }
 }
 
+/** @brief Selects only graphical views backed by emitted records in one completed stream. */
+static TraceCompassXmlWriter::ViewMask traceCompassViews(const CtfMetadataModel& metadata,
+                                                         CtfStreamClassId streamClassId)
+{
+  using View = TraceCompassXmlWriter::View;
+  auto views = TraceCompassXmlWriter::ViewMask{0U};
+  const auto addIfObserved = [&](CtfGraphicalTopic topic, View view) {
+    if (metadata.observedGraphicalTopic(streamClassId, topic)) {
+      views |= TraceCompassXmlWriter::viewMask(view);
+    }
+  };
+  addIfObserved(CtfGraphicalTopic::DwtValue, View::DwtValue);
+  addIfObserved(CtfGraphicalTopic::DwtAddress, View::DwtAddress);
+  addIfObserved(CtfGraphicalTopic::DwtMatch, View::DwtMatch);
+  addIfObserved(CtfGraphicalTopic::DwtEvent, View::DwtEvent);
+  addIfObserved(CtfGraphicalTopic::PmuEvent, View::PmuEvent);
+  addIfObserved(CtfGraphicalTopic::Exception, View::Exception);
+  addIfObserved(CtfGraphicalTopic::ProcessorState, View::ProcessorState);
+  return views;
+}
+
 CtfBundleOutput::CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnostics)
   : m_ctfOutputDirectory(std::move(config.outputDirectory)),
     m_traceCompassXmlPath(std::move(config.traceCompassXmlPath)),
@@ -176,7 +198,6 @@ CtfBundleOutput::CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnos
         std::move(config.selection),
         diagnostics,
         std::move(config.routes),
-        !config.routeCatalogueConfigured,
     }),
     m_diagnostics(diagnostics)
 {
@@ -211,8 +232,8 @@ void CtfBundleOutput::start()
   createOutputDirectory(m_ctfOutputDirectory);
   m_active = true;
   try {
-    m_traceUuid = CtfUuid::randomV4();
-    m_encoder.start(m_ctfOutputDirectory, m_traceUuid);
+    const auto traceUuid = CtfUuid::randomV4();
+    m_encoder.start(m_ctfOutputDirectory, traceUuid);
   } catch (...) {
     abort();
     throw;
@@ -239,9 +260,20 @@ void CtfBundleOutput::stop()
         clocks.insert(stream.clockDomainId);
       }
       if (clocks.size() == 1U) {
-        const auto layout = metadata->isLegacySingleStreamLayout() ? TraceCompassXmlWriter::PathLayout::Legacy
-                                                                   : TraceCompassXmlWriter::PathLayout::RoutePrefixed;
-        TraceCompassXmlWriter::writeFile(m_traceCompassXmlPath, layout);
+        if (!metadata->isLegacySingleStreamLayout()) {
+          std::vector<TraceCompassXmlWriter::ViewRoute> viewRoutes;
+          for (const auto& stream : streams) {
+            viewRoutes.push_back({
+                stream.route.traceBusId.value_or(0U),
+                stream.processorName.value_or(std::string{}),
+                traceCompassViews(*metadata, stream.streamClassId),
+            });
+          }
+          TraceCompassXmlWriter::writeRoutedFile(m_traceCompassXmlPath, viewRoutes);
+        } else {
+          TraceCompassXmlWriter::writeLegacyFile(m_traceCompassXmlPath,
+                                                  traceCompassViews(*metadata, streams.front().streamClassId));
+        }
       } else {
         removeOutputFile(m_traceCompassXmlPath);
         if (m_diagnostics != nullptr) {

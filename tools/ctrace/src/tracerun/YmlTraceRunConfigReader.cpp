@@ -498,7 +498,7 @@ static std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, co
   }
   if (!itmNode.IsMap()) {
     TraceRunItmSetup setup;
-    setup.enableError = "'itm' must be a map containing 'enable'";
+    setup.enableError = errorMessage(path, itmNode, "'itm' must be a map containing 'enable'");
     return setup;
   }
   const auto enableNode = childNode(itmNode, "enable");
@@ -507,7 +507,7 @@ static std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, co
   }
   if (!enableNode.IsScalar() || enableNode.Scalar().empty()) {
     TraceRunItmSetup setup;
-    setup.enableError = "'itm.enable' must be a scalar unsigned integer";
+    setup.enableError = errorMessage(path, enableNode, "'itm.enable' must be a scalar unsigned integer");
     return setup;
   }
   TraceRunItmSetup setup;

@@ -99,11 +99,6 @@ constexpr bool operator<(CtfClockDomainId left, CtfClockDomainId right) noexcept
   return left.value() < right.value();
 }
 
-/** @brief Identifies the semantic source family represented by a CTF stream. */
-enum class CtfSourceKind {
-  Itm,
-};
-
 /** @brief Describes one counter/timebase declaration in a CTF bundle. */
 struct CtfClockDomainDescriptor {
   CtfClockDomainId id;
@@ -117,7 +112,6 @@ struct CtfClockDomainDescriptor {
 struct CtfStreamDescriptor {
   CtfStreamClassId streamClassId;
   TraceRouteIdentity route;
-  CtfSourceKind sourceKind = CtfSourceKind::Itm;
   std::optional<std::string> processorName;
   CtfClockDomainId clockDomainId;
 };
@@ -138,6 +132,17 @@ struct CtfMetadataTopology {
   std::vector<CtfClockDomainDescriptor> clockDomains;
   std::vector<CtfStreamDescriptor> streams;
   std::vector<CtfSourceDescriptor> sources;
+};
+
+/** @brief Identifies one graphical Trace Compass topic backed by emitted CTF records. */
+enum class CtfGraphicalTopic {
+  DwtValue,
+  DwtAddress,
+  DwtMatch,
+  DwtEvent,
+  PmuEvent,
+  Exception,
+  ProcessorState,
 };
 
 /** @brief Owns validated CTF metadata and runtime observations for one bundle. */
@@ -161,6 +166,12 @@ public:
   void observeException(CtfStreamClassId streamClassId, ExceptionNumber number);
   /** @brief Returns sorted exception numbers observed on one stream class. */
   std::vector<ExceptionNumber> observedExceptions(CtfStreamClassId streamClassId) const;
+  /** @brief Records one graphical topic backed by emitted records on a concrete stream class. */
+  void observeGraphicalTopic(CtfStreamClassId streamClassId, CtfGraphicalTopic topic);
+  /** @brief Tests whether one graphical topic is backed by emitted records on a stream class. */
+  bool observedGraphicalTopic(CtfStreamClassId streamClassId, CtfGraphicalTopic topic) const;
+  /** @brief Projects configured topology and observations to streams with completed packet output. */
+  CtfMetadataModel projectToEmittedStreams(const std::set<CtfStreamClassId>& streamClassIds) const;
   /** @brief Tests whether this topology uses the exact legacy single-stream CTF layout. */
   bool isLegacySingleStreamLayout() const noexcept;
 
@@ -171,6 +182,7 @@ private:
   CtfUuid m_traceUuid;
   CtfMetadataTopology m_topology;
   std::map<CtfStreamClassId, std::set<ExceptionNumber>> m_observedExceptions;
+  std::map<CtfStreamClassId, std::set<CtfGraphicalTopic>> m_observedGraphicalTopics;
 };
 
 #endif // CTRACE_SRC_OUTPUT_CTF_CTFMETADATAMODEL_H

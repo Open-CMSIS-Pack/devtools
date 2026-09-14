@@ -73,18 +73,6 @@ class OpenCsdItmDecoderImpl;
 class OpenCsdItmDecoder {
 public:
   /**
-   * @brief Creates a decoder using the production OpenCSD session.
-   * @param elementSink Sink receiving decoded and recovery elements.
-   */
-  OpenCsdItmDecoder(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink);
-  /**
-   * @brief Creates a decoder with an injected OpenCSD session factory.
-   * @param elementSink Sink receiving decoded and recovery elements.
-   * @param sessionFactory Factory used to construct the external session.
-   */
-  OpenCsdItmDecoder(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink,
-                    const OpenCsdItmSessionFactory& sessionFactory);
-  /**
    * @brief Creates a decoder for one SINGLE route or several formatted routes.
    * @param routes Normalized routes accepted by the input frontend.
    * @param inputMode OpenCSD root transport used for the raw bytes.

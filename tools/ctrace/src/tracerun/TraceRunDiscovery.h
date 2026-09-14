@@ -26,18 +26,6 @@ struct TraceRunRawInput {
   std::string channel;
 };
 
-/** @brief Identifies the internal framing contract for formatted raw input. */
-enum class TraceRunInputFraming {
-  MemoryAligned,
-};
-
-namespace TraceRunInputContract {
-
-/** @brief Size of one memory-aligned CoreSight formatter frame. */
-inline constexpr std::uintmax_t kMemoryAlignedFrameSize = 16U;
-
-} // namespace TraceRunInputContract
-
 class FileDecodeJob;
 class TraceRunInputDescriptorTestAccess;
 
@@ -55,14 +43,8 @@ public:
 
   /** @brief Returns the selected raw-input path used for diagnostics and output naming. */
   const std::filesystem::path& path() const noexcept;
-  /** @brief Returns the selected trace channel. */
-  const std::string& channel() const noexcept;
   /** @brief Returns the effective global byte format. */
   TraceRunFormat format() const noexcept;
-  /** @brief Reports whether a non-null byte-format declaration was supplied. */
-  bool formatDeclared() const noexcept;
-  /** @brief Returns the internal formatted-input framing contract. */
-  TraceRunInputFraming framing() const noexcept;
   /** @brief Returns the normalized trace-run metadata and routes. */
   const CtraceRunMeta& metadata() const noexcept;
 
@@ -75,14 +57,11 @@ private:
   std::istream& stream() noexcept;
 
   /** @brief Creates one descriptor after successful selection and preflight. */
-  TraceRunInputDescriptor(std::filesystem::path path, std::string channel, TraceRunFormat format, bool formatDeclared,
-                          TraceRunInputFraming framing, CtraceRunMeta metadata, std::ifstream stream);
+  TraceRunInputDescriptor(std::filesystem::path path, TraceRunFormat format, CtraceRunMeta metadata,
+                          std::ifstream stream);
 
   std::filesystem::path m_path;
-  std::string m_channel;
   TraceRunFormat m_format = TraceRunFormat::Unformatted;
-  bool m_formatDeclared = false;
-  TraceRunInputFraming m_framing = TraceRunInputFraming::MemoryAligned;
   CtraceRunMeta m_metadata;
   std::ifstream m_stream;
 };

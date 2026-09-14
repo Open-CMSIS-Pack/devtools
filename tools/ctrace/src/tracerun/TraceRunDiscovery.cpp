@@ -7,6 +7,8 @@
 
 #include "TraceRunDiscovery.h"
 
+#include "CoreSightFormatter.h"
+
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
@@ -21,14 +23,10 @@
 
 constexpr std::string_view ConfigSuffix = ".ctrace-run.yml";
 
-TraceRunInputDescriptor::TraceRunInputDescriptor(std::filesystem::path path, std::string channel, TraceRunFormat format,
-                                                 bool formatDeclared, TraceRunInputFraming framing,
+TraceRunInputDescriptor::TraceRunInputDescriptor(std::filesystem::path path, TraceRunFormat format,
                                                  CtraceRunMeta metadata, std::ifstream stream)
   : m_path(std::move(path)),
-    m_channel(std::move(channel)),
     m_format(format),
-    m_formatDeclared(formatDeclared),
-    m_framing(framing),
     m_metadata(std::move(metadata)),
     m_stream(std::move(stream))
 {
@@ -39,24 +37,9 @@ const std::filesystem::path& TraceRunInputDescriptor::path() const noexcept
   return m_path;
 }
 
-const std::string& TraceRunInputDescriptor::channel() const noexcept
-{
-  return m_channel;
-}
-
 TraceRunFormat TraceRunInputDescriptor::format() const noexcept
 {
   return m_format;
-}
-
-bool TraceRunInputDescriptor::formatDeclared() const noexcept
-{
-  return m_formatDeclared;
-}
-
-TraceRunInputFraming TraceRunInputDescriptor::framing() const noexcept
-{
-  return m_framing;
 }
 
 const CtraceRunMeta& TraceRunInputDescriptor::metadata() const noexcept
@@ -264,15 +247,14 @@ TraceRunInputDescriptor TraceRunDiscovery::resolveInput(CtraceRunMeta metadata,
   readable.exceptions(std::ios::badbit | std::ios::failbit);
   const auto endPosition = readable.tellg();
   const auto fileSize = static_cast<std::uintmax_t>(static_cast<std::streamoff>(endPosition));
-  if (format == TraceRunFormat::Formatted && fileSize % TraceRunInputContract::kMemoryAlignedFrameSize != 0U) {
+  if (format == TraceRunFormat::Formatted && fileSize % CoreSightFormatter::kMemoryAlignedFrameSize != 0U) {
     throw std::runtime_error("formatted raw trace input size must be a multiple of " +
-                             std::to_string(TraceRunInputContract::kMemoryAlignedFrameSize) +
+                             std::to_string(CoreSightFormatter::kMemoryAlignedFrameSize) +
                              " bytes: " + selected.path.string() + " (size=" + std::to_string(fileSize) + ")");
   }
 
   readable.seekg(0U, std::ios::beg);
   readable.exceptions(std::ios::goodbit);
 
-  return TraceRunInputDescriptor(selected.path, selected.channel, format, traceFormat.has_value(),
-                                 TraceRunInputFraming::MemoryAligned, std::move(metadata), std::move(readable));
+  return TraceRunInputDescriptor(selected.path, format, std::move(metadata), std::move(readable));
 }

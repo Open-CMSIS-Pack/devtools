@@ -6,6 +6,7 @@
  */
 
 #include "OpenCsdSessionTestSupport.h"
+#include "CoreSightFormatter.h"
 #include "FormattedTraceTestSupport.h"
 #include "TestPath.h"
 #include "TestPlatform.h"
@@ -537,6 +538,35 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsConfigFailureAndRequiresDirectory
   EXPECT_TRUE(diagnostics.containsMessage("synthetic config failure"));
 }
 
+TEST(CtraceUnitTests, testTraceDirectoryRejectsMalformedConsumedItmSetupBeforeOutput)
+{
+  const TemporaryTestPath temporaryPath("ctrace-trace-directory-itm-setup-error-test");
+  const auto traceDir = temporaryPath.path() / ".trace";
+  writeTraceInputs(traceDir, {"InvalidItm"});
+
+  TraceRunSetup setup;
+  setup.processorName = "core";
+  setup.line = 7U;
+  setup.itm = TraceRunItmSetup{};
+  setup.itm->enableError = "'itm.enable' must be a scalar unsigned integer";
+  TraceRunConfig config;
+  config.setups.push_back(std::move(setup));
+
+  CliOptions options;
+  options.traceDir = traceDir.string();
+  options.targetName = "InvalidItm";
+  options.outputFormat = OutputFormat::Csv;
+
+  CollectingDiagnosticSink diagnostics;
+  TestTraceRunConfigReader reader(std::move(config));
+  const auto checkpoint = diagnostics.failureCount();
+  TraceDirectoryJob(options, diagnostics, reader).run();
+
+  EXPECT_EQ(diagnostics.failureCount(), checkpoint + 1U);
+  EXPECT_TRUE(diagnostics.containsMessage("'itm.enable' must be a scalar unsigned integer"));
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "InvalidItm.SWO.csv"));
+}
+
 TEST(CtraceUnitTests, testFileDecodeJobHandlesDisabledCtf)
 {
   const TemporaryTestPath temporaryPath("ctrace-file-decode-control-test");
@@ -563,7 +593,7 @@ TEST(CtraceUnitTests, testFileDecodeJobUsesInjectedSessionForFormattedInput)
 {
   const TemporaryTestPath temporaryPath("ctrace-file-decode-formatted-session-test");
   const auto rawPath = temporaryPath.path() / "formatted.TB.raw";
-  writeTestFile(rawPath, std::string(TraceRunInputContract::kMemoryAlignedFrameSize, 'f'));
+  writeTestFile(rawPath, std::string(CoreSightFormatter::kMemoryAlignedFrameSize, 'f'));
 
   bool sessionCreated = false;
   const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();

@@ -7,6 +7,7 @@
 
 #include "OpenCsdItmDecoder.h"
 
+#include "CoreSightFormatter.h"
 #include "TraceEvent.h"
 #include "OpenCsdErrorController.h"
 #include "OpenCsdFormattedItmSession.h"
@@ -74,7 +75,7 @@ public:
     if (data == nullptr && size != 0U) {
       throw std::invalid_argument("raw trace data pointer is null while bytes are present");
     }
-    if (isFormatted() && size % kFormattedFrameSize != 0U) {
+    if (isFormatted() && size % CoreSightFormatter::kMemoryAlignedFrameSize != 0U) {
       m_collector.appendDecodeError(m_traceIndex, "formatted raw trace chunk is not a multiple of 16 bytes",
                                     TraceIssueCode::OpenCsdDecodeError, false);
       throw OpenCsdFatalError("formatted raw trace chunk is not a multiple of 16 bytes",
@@ -83,7 +84,8 @@ public:
     std::uint32_t offset = 0;
     while (offset < size) {
       const auto span =
-          isFormatted() ? std::min(kFormattedFrameSize, size - offset) : std::min(kMaxTraceDataInBytes, size - offset);
+          isFormatted() ? std::min(CoreSightFormatter::kMemoryAlignedFrameSize, size - offset)
+                        : std::min(kMaxTraceDataInBytes, size - offset);
       if (isFormatted()) {
         processFormattedFrame(data + offset, span);
       } else {
@@ -130,7 +132,6 @@ public:
 
 private:
   static constexpr std::uint32_t kMaxTraceDataInBytes = 4U * 1024U;
-  static constexpr std::uint32_t kFormattedFrameSize = 16U;
   static constexpr std::uint32_t kMaxFlushCalls = 1024U;
 
   /** @brief Describes the first recoverable failure observed for one formatted route. */
@@ -837,18 +838,6 @@ private:
   OpenCsdItmDecodeResult m_result;
   bool m_finished = false;
 };
-
-OpenCsdItmDecoder::OpenCsdItmDecoder(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink)
-  : OpenCsdItmDecoder(std::vector<TraceRouteIdentity>{std::move(route)}, OpenCsdItmInputMode::Single, elementSink)
-{
-}
-
-OpenCsdItmDecoder::OpenCsdItmDecoder(TraceRouteIdentity route, OpenCsdTraceElementSink& elementSink,
-                                     const OpenCsdItmSessionFactory& sessionFactory)
-  : OpenCsdItmDecoder(std::vector<TraceRouteIdentity>{std::move(route)}, OpenCsdItmInputMode::Single, elementSink,
-                      sessionFactory)
-{
-}
 
 OpenCsdItmDecoder::OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
                                      OpenCsdTraceElementSink& elementSink,

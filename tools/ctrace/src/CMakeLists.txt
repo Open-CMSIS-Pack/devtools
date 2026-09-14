@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set(CTRACE_MODEL_HEADER_FILES
+  model/CoreSightFormatter.h
   model/TraceEvent.h
   model/TraceRoute.h
   model/TraceSelection.h

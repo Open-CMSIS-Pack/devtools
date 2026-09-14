@@ -77,8 +77,7 @@ static CtfSourceDescriptor resolvedDwtSource(std::uint32_t comparator, std::stri
 static CtfEncoderConfig legacyEncoderConfig(std::uint64_t clockHz, TraceSelection selection = {},
                                             std::vector<CtfSourceDescriptor> sources = {},
                                             DiagnosticSink* diagnostics = nullptr,
-                                            std::vector<TraceRouteIdentity> routes = {},
-                                            bool legacyRouteFallback = true)
+                                            std::vector<TraceRouteIdentity> routes = {})
 {
   const auto metadataRoute = routes.empty() ? TraceRouteIdentity{} : routes.front();
   return {
@@ -86,7 +85,6 @@ static CtfEncoderConfig legacyEncoderConfig(std::uint64_t clockHz, TraceSelectio
       std::move(selection),
       diagnostics,
       std::move(routes),
-      legacyRouteFallback,
   };
 }
 
@@ -101,8 +99,8 @@ static CtfMetadataTopology formattedEncoderTopology(bool sharedClock = false)
           {CtfClockDomainId{9U}, "second_clock", CtfTestSupport::testUuid(9U), 480000000U, false},
       },
       {
-          {CtfStreamClassId{1U}, first, CtfSourceKind::Itm, std::string("first"), CtfClockDomainId{3U}},
-          {CtfStreamClassId{111U}, second, CtfSourceKind::Itm, std::string("second"),
+          {CtfStreamClassId{1U}, first, std::string("first"), CtfClockDomainId{3U}},
+          {CtfStreamClassId{111U}, second, std::string("second"),
            sharedClock ? CtfClockDomainId{3U} : CtfClockDomainId{9U}},
       },
       {
@@ -126,7 +124,6 @@ static CtfEncoderConfig formattedEncoderConfig(TraceSelection selection = {}, bo
       std::move(selection),
       nullptr,
       {{TraceRouteId{4U}, 1U}, {TraceRouteId{90U}, 111U}},
-      false,
   };
 }
 
@@ -394,6 +391,10 @@ TEST(CtraceUnitTests, testCtfEncoderDwtAddressEncoding)
   EXPECT_EQ(records[5].payload[1U], CtfSchema::value(CtfSchema::DwtAddressTag::U16));
   EXPECT_EQ(readLe16(records[5].payload, 2U), 0x7858U);
 
+  ASSERT_NE(encoder.completedMetadata(), nullptr);
+  EXPECT_TRUE(encoder.completedMetadata()->observedGraphicalTopic(CtfStreamClassId{0U},
+                                                                   CtfGraphicalTopic::DwtAddress));
+
   encoder.abort();
 }
 
@@ -401,12 +402,6 @@ TEST(CtraceUnitTests, testCtfEncoderRejectsInvalidClockAndPayloadMetadata)
 {
   const TemporaryTestPath temporaryPath("ctrace-ctf-invalid-payload-test");
   temporaryPath.createDirectory();
-  CtfEncoder missingTopology(CtfEncoderConfig{});
-  EXPECT_THROW(startEncoder(missingTopology, temporaryPath.path()), std::runtime_error);
-
-  CtfEncoder fallbackWithoutTopology(CtfEncoderConfig{{}, {}, nullptr, {{TraceRouteId{4U}, 1U}}, true});
-  EXPECT_THROW(startEncoder(fallbackWithoutTopology, temporaryPath.path()), std::runtime_error);
-
   CtfEncoder zeroClock(legacyEncoderConfig(0U));
   EXPECT_THROW(startEncoder(zeroClock, temporaryPath.path()), std::invalid_argument);
 
@@ -644,13 +639,17 @@ TEST(CtraceUnitTests, testCtfEncoderKeepsExceptionLanesIndependentAcrossFormatte
             (std::vector<ExceptionNumber>{0U, 15U, 16U}));
   EXPECT_EQ(encoder.completedMetadata()->observedExceptions(CtfStreamClassId{111U}),
             (std::vector<ExceptionNumber>{0U, 54U}));
+  EXPECT_TRUE(encoder.completedMetadata()->observedGraphicalTopic(CtfStreamClassId{1U},
+                                                                   CtfGraphicalTopic::Exception));
+  EXPECT_TRUE(encoder.completedMetadata()->observedGraphicalTopic(CtfStreamClassId{111U},
+                                                                   CtfGraphicalTopic::Exception));
 }
 
 TEST(CtraceUnitTests, testCtfEncoderWritesMetadataOnlyForEmptyFormattedTopology)
 {
   const TemporaryTestPath temporaryPath("ctrace-ctf-formatted-empty-test");
   const auto& outputDirectory = temporaryPath.createDirectory();
-  CtfEncoder encoder(CtfEncoderConfig{{}, {}, nullptr, {}, false});
+  CtfEncoder encoder(CtfEncoderConfig{});
   startEncoder(encoder, outputDirectory);
   encoder.stop();
 
@@ -809,7 +808,7 @@ TEST(CtraceUnitTests, testCtfEncoderDoesNotBorrowDwtMetadataFromAnotherRoute)
   const TraceRouteIdentity other{TraceRouteId{9U}, std::nullopt};
   CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{{"dwt"}, {}},
                                          {resolvedDwtSource(0U, "signed", 1U, configured)}, nullptr,
-                                         {configured, other}, false));
+                                         {configured, other}));
   startEncoder(encoder, temporaryPath.path());
   EXPECT_TRUE(throwsWithMessage(
       [&] { encoder.writeEvent(onRoute(TraceEvent{DwtDataTraceEvent{0U, 1U, 0xffU, AccessType::Read}}, other)); },
@@ -825,7 +824,7 @@ TEST(CtraceUnitTests, testCtfEncoderReportsRoutedDwtSizeMismatchContext)
   auto source = resolvedDwtSource(0U, "unsigned", 4U, route);
   CollectingDiagnosticSink diagnostics;
   CtfEncoder encoder(
-      legacyEncoderConfig(1000000U, TraceSelection{{"dwt"}, {}}, {source}, &diagnostics, {route}, false));
+      legacyEncoderConfig(1000000U, TraceSelection{{"dwt"}, {}}, {source}, &diagnostics, {route}));
   startEncoder(encoder, temporaryPath.path());
   encoder.writeEvent(onRoute(TraceEvent{DwtDataTraceEvent{0U, 1U, 0U, AccessType::Read}}, route));
   encoder.stop();
@@ -839,7 +838,7 @@ TEST(CtraceUnitTests, testCtfEncoderIgnoresUnselectedStreamTimeAndQuality)
   const TemporaryTestPath temporaryPath("ctrace-ctf-filtered-stream-state-test");
   temporaryPath.createDirectory();
   const TraceRouteIdentity selectedRoute{TraceRouteId{1U}, std::nullopt};
-  CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{{"itm"}, {0U}}, {}, nullptr, {selectedRoute}, false));
+  CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{{"itm"}, {0U}}, {}, nullptr, {selectedRoute}));
   startEncoder(encoder, temporaryPath.path());
 
   auto excludedTimestamp = atCycle(onStream(TraceEvent{LocalTimestampTraceEvent{}}, 2U), 900U);
@@ -954,7 +953,7 @@ TEST(CtraceUnitTests, testCtfEncoderLazilyBootstrapsExactSelectedRoute)
   const TemporaryTestPath temporaryPath("ctrace-ctf-lazy-route-bootstrap-test");
   temporaryPath.createDirectory();
   const TraceRouteIdentity route{TraceRouteId{9U}, std::nullopt};
-  CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{{}, {0U}}, {}, nullptr, {route}, false));
+  CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{{}, {0U}}, {}, nullptr, {route}));
   startEncoder(encoder, temporaryPath.path());
   encoder.writeEvent(onRoute(softwarePacket(1U, 1U, 0x5aU), route));
   encoder.stop();
@@ -976,10 +975,10 @@ TEST(CtraceUnitTests, testCtfEncoderRejectsConflictingIdentityForSameRouteId)
   temporaryPath.createDirectory();
   const TraceRouteIdentity configured{TraceRouteId{4U}, std::nullopt};
   CtfEncoder invalidConfig(
-      legacyEncoderConfig(1000000U, TraceSelection{}, {}, nullptr, {configured, {TraceRouteId{4U}, 2U}}, false));
+      legacyEncoderConfig(1000000U, TraceSelection{}, {}, nullptr, {configured, {TraceRouteId{4U}, 2U}}));
   EXPECT_THROW(startEncoder(invalidConfig, temporaryPath.path()), std::runtime_error);
 
-  CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{}, {}, nullptr, {configured}, false));
+  CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{}, {}, nullptr, {configured}));
   startEncoder(encoder, temporaryPath.path());
   EXPECT_THROW(encoder.writeEvent(onRoute(softwarePacket(1U), {TraceRouteId{4U}, 2U})), std::runtime_error);
   EXPECT_THROW(encoder.writeEvent(onRoute(softwarePacket(1U), {TraceRouteId{9U}, std::nullopt})), std::runtime_error);
@@ -998,7 +997,7 @@ TEST(CtraceUnitTests, testCtfEncoderBootstrapsOnlyTheMetadataStreamRoute)
   temporaryPath.createDirectory();
   const TraceRouteIdentity first{TraceRouteId{4U}, std::nullopt};
   const TraceRouteIdentity second{TraceRouteId{9U}, std::nullopt};
-  CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{}, {}, nullptr, {first, second}, false));
+  CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{}, {}, nullptr, {first, second}));
   startEncoder(encoder, temporaryPath.path());
   encoder.stop();
 
@@ -1017,7 +1016,7 @@ TEST(CtraceUnitTests, testCtfEncoderRejectsCataloguedRouteWithoutRuntimeStreamDe
   temporaryPath.createDirectory();
   const TraceRouteIdentity first{TraceRouteId{4U}, std::nullopt};
   const TraceRouteIdentity second{TraceRouteId{9U}, std::nullopt};
-  CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{}, {}, nullptr, {first, second}, false));
+  CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{}, {}, nullptr, {first, second}));
   startEncoder(encoder, temporaryPath.path());
 
   encoder.writeEvent(onRoute(exceptionPacket(15U, ExceptionAction::Entered, 10U), first));
