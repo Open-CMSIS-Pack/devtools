@@ -7951,11 +7951,20 @@ TEST_F(ProjMgrUnitTests, GenerateMLOps) {
   csolution = testinput_folder + "/MLOps/npu_mismatch.csolution.yml";
   argv[2] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
-  const string warningStr = streamRedirect.GetErrorString();
+  string warningStr = streamRedirect.GetErrorString();
   EXPECT_EQ(string::npos, warningStr.find("npu_mismatch.csolution.yml - warning csolution: "
     "mlops.npu.type value does not match DFP device information"));
   EXPECT_NE(string::npos, warningStr.find("npu_mismatch.csolution.yml - warning csolution: "
     "mlops.npu.macs value does not match DFP device information"));
+
+  // the configured NPU is retained without warnings when the DFP has no NPU metadata
+  streamRedirect.ClearStringStreams();
+  csolution = testinput_folder + "/MLOps/no_npu_info.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  warningStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(string::npos, warningStr.find("mlops.npu.type value does not match DFP device information"));
+  EXPECT_EQ(string::npos, warningStr.find("mlops.npu.macs value does not match DFP device information"));
 
   // hardware target is not present
   csolution = testinput_folder + "/MLOps/no_hardware.csolution.yml";

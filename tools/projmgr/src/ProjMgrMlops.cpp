@@ -284,7 +284,7 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   }
 
   // print warnings if the required NPU type and/or MACs do not match the DFP device information
-  if (!mlops.npu.type.empty()) {
+  if (!npuInfoItems.empty() && !mlops.npu.type.empty()) {
     const auto matchesType = [&mlops](const NpuInfoItem& npu) {
       return npu.type == mlops.npu.type;
     };
@@ -292,7 +292,7 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
       ProjMgrLogger::Get().Warn("mlops.npu.type value does not match DFP device information", "", csolution.path);
     }
   }
-  if (!mlops.npu.macs.empty()) {
+  if (!npuInfoItems.empty() && !mlops.npu.macs.empty()) {
     const auto matchesMacs = [&mlops](const NpuInfoItem& npu) {
       return (mlops.npu.type.empty() || npu.type == mlops.npu.type) &&
         RteUtils::StringToULL(npu.macs) == RteUtils::StringToULL(mlops.npu.macs);
