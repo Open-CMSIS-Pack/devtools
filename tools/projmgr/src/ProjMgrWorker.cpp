@@ -4783,11 +4783,11 @@ bool ProjMgrWorker::ListTemplates(vector<string>& templates, const string& filte
     if (!filter.empty() && !CheckFilter(filter, templateItem)) {
       continue;
     }
-    string templateStr = templateItem.name + " (" + templateItem.pack + ")";
+    string templateStr = templateItem.file + " (" + templateItem.name + ")";
     if (m_verbose) {
       templateStr += "\n  description: " + templateItem.description;
+      templateStr += "\n  pack: " + templateItem.pack;
       templateStr += "\n  path: " + templateItem.path;
-      templateStr += "\n  file: " + templateItem.file;
       if (!templateItem.copyTo.empty()) {
         templateStr += "\n  copy-to: " + templateItem.copyTo;
       }
