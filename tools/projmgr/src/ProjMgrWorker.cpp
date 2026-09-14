@@ -4121,6 +4121,10 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
     ret &= ProcessGpdsc(context);
     ret &= ProcessGeneratedLayers(context);
   }
+  // Add compiler define for TrustZone disabled
+  if (context.controls.processed.processor.trustzone == RteConstants::YAML_OFF) {
+    context.rteActiveTarget->InsertDefine("ARM_DEVICE_TZ_DISABLED");
+  }
   // Check regions header, generate it if needed
   if (!context.linker.regions.empty()) {
     CheckAndGenerateRegionsHeader(context);
