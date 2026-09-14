@@ -33,6 +33,9 @@ build:
       path: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
     - pack: ARM::RteTest_DFP@0.2.0
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
+  misc:
+    C:
+      - --setup-misc=../../../../single/relative/from-setup
   define:
     - ARMCM4_FP
     - _RTE_
