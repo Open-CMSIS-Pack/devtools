@@ -160,6 +160,9 @@ to make independent decisions without reconstructing decoder state.
 | `src/output/csv` | Stable CSV schema, row mapping, filtering, and file output |
 | `src/output/ctf` | CTF metadata and stream encoding plus Trace Compass analysis XML |
 
+The generated event IDs, fields, enum values, quality markers, and visualization semantics are specified in the
+[ctrace CTF profile](ctf-format.md).
+
 Output requirements are evaluated per backend. For example, missing CTF-specific metadata may disable CTF while an
 independent CSV output remains valid. `--all` therefore does not make the backends share failure state unnecessarily.
 

@@ -69,6 +69,8 @@ Editors using `clangd` should open the devtools repository root and configure in
 
 - [Architecture](docs/architecture.md): supported features, runtime flow, module boundaries, dependencies, tests,
   and CI.
+- [CTF profile](docs/ctf-format.md): generated CTF structure, event groups, field semantics, and Trace Compass
+  representation.
 - [Constraints](docs/constraints.md): contracts that implementation changes must preserve.
 - [TODO](docs/todo.md): planned work and pull-request boundaries.
 - [OpenCSD issues](docs/opencsd-issues.md): known issues in the pinned decoder revision.
