@@ -5050,6 +5050,7 @@ bool ProjMgrWorker::GetTypeContent(ContextItem& context) {
 }
 
 bool ProjMgrWorker::GetProjectSetup(ContextItem& context) {
+  context.controls.setups.clear();
   for (const auto& setup : context.cproject->setups) {
     if (CheckContextFilters(setup.type, context) && CheckCompiler(setup.forCompiler, context.compiler)) {
       context.controls.setups.push_back(setup.build);
