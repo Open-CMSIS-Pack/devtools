@@ -66,6 +66,8 @@ private:
   void flushPendingEvents(std::optional<std::uint64_t> tcyc, const TraceQuality& quality);
   /** @brief Appends reconstructed DWT events to the pending sequence. */
   void appendPendingEvents(std::vector<TraceEvent> events);
+  /** @brief Creates an event with decoder-local source and route identity. */
+  TraceEvent makeEvent(std::uint64_t sourceIndex, TraceEventPayload payload) const;
   /** @brief Sends one finalized event to the downstream sink. */
   void emitEvent(const TraceEvent& event);
   /** @brief Maps a decoder-local timestamp onto the monotonic output timeline. */
