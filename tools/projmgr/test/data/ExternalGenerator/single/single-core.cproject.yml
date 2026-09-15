@@ -4,6 +4,13 @@ project:
   components:
     - component: RteTestGenerator:Check Global Generator
 
+  setups:
+    - setup: AC6 misc options
+      for-compiler: AC6
+      misc:
+        - C:
+            - --setup-misc=./relative/from-setup
+
   groups:
     - group: sources
       files: 

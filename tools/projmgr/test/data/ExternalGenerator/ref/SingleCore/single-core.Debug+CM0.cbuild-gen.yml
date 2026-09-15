@@ -13,6 +13,9 @@ build-gen:
   packs:
     - pack: ARM::RteTestGenerator@0.1.0
       path: ${DEVTOOLS(packs)}/ARM/RteTestGenerator/0.1.0
+  misc:
+    C:
+      - --setup-misc=../../../../single/relative/from-setup
   define:
     - _RTE_
   define-asm:
