@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 *.csv text eol=lf
+*.py text eol=lf
 *.xml text eol=lf
 metadata text eol=lf
 stream_* binary
