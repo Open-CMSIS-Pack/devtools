@@ -114,7 +114,7 @@ private:
   class RawFrameMonitor;
 
   /** @brief Validates route IDs before any OpenCSD process-global state is acquired. */
-  static std::vector<TraceRouteIdentity> validateRoutes(std::vector<TraceRouteIdentity> routes);
+  static std::vector<TraceRouteIdentity> validateRoutes(std::vector<TraceRouteIdentity>&& routes);
   /** @brief Rethrows callback failures and publishes observations after one tree operation. */
   ocsd_datapath_resp_t completeOperation(ocsd_datapath_resp_t response);
 
@@ -127,6 +127,7 @@ private:
   std::vector<std::unique_ptr<RoutePacketMonitor>> m_packetMonitors;
   std::unique_ptr<RawFrameMonitor> m_rawFrameMonitor;
   OpenCsdTreeSession m_treeSession;
+  bool m_receivedInput = false;
 };
 
 #endif // CTRACE_SRC_DECODE_OPENCSDFORMATTEDITMSESSION_H

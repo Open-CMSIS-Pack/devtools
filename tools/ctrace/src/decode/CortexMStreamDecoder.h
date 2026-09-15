@@ -29,7 +29,7 @@ struct CortexMDecodeRoute {
 class CortexMStreamDecoder final : public OpenCsdTraceElementSink {
 public:
   /** @brief Creates a stream router with timestamp scaling configuration. */
-  CortexMStreamDecoder(std::vector<CortexMDecodeRoute> routes, TraceEventSink& eventSink);
+  CortexMStreamDecoder(const std::vector<CortexMDecodeRoute>& routes, TraceEventSink& eventSink);
   /** @brief Destroys all per-stream post-decoders. */
   ~CortexMStreamDecoder();
 

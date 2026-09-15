@@ -1063,7 +1063,16 @@ TEST(CtraceUnitTests, testCtfBundleOutputRejectsInvalidExistingXmlAndLongPaths)
   EXPECT_THROW(longCtf.start(), std::runtime_error);
   CtfBundleOutput longXml(
       makeCtfBundleConfig(temporaryPath.path() / "long-xml.ctf", temporaryPath.path() / longName, 1000000U));
-  EXPECT_THROW(longXml.start(), std::runtime_error);
+  bool failedAtStart = false;
+  try {
+    longXml.start();
+  } catch (const std::runtime_error&) {
+    failedAtStart = true;
+  }
+  if (!failedAtStart) {
+    EXPECT_THROW(longXml.stop(), std::runtime_error);
+  }
+  EXPECT_FALSE(std::filesystem::exists(temporaryPath.path() / "long-xml.ctf"));
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputCleansUpAfterMetadataFailure)

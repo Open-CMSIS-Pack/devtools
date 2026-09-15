@@ -74,6 +74,31 @@ static bool isAncestorPath(const std::filesystem::path& candidate, const std::fi
   return true;
 }
 
+/** @brief Rejects an output whose nearest existing parent is not a directory. */
+static void validateOutputParent(const std::filesystem::path& path, const char* description)
+{
+  auto parent = normalizedAbsolutePath(path).parent_path();
+  while (!parent.empty()) {
+    std::error_code error;
+    const auto status = std::filesystem::status(parent, error);
+    if (!error && std::filesystem::exists(status)) {
+      if (!std::filesystem::is_directory(status)) {
+        throw std::runtime_error(std::string(description) + " parent is not a directory: " + parent.string());
+      }
+      return;
+    }
+    if (error && error != std::errc::no_such_file_or_directory) {
+      throw std::runtime_error(std::string("Failed to inspect ") + description + " parent " + parent.string() +
+                               ": " + error.message());
+    }
+    const auto ancestor = parent.parent_path();
+    if (ancestor == parent) {
+      return;
+    }
+    parent = ancestor;
+  }
+}
+
 /** @brief Rejects CTF and Trace Compass targets that overlap unsafely. */
 static void validateOutputTargets(const std::filesystem::path& ctfDirectory,
                                   const std::filesystem::path& traceCompassXml)
@@ -101,6 +126,9 @@ static void removeOutputDirectory(const std::filesystem::path& path)
 static void validateExistingOutputTypes(const std::filesystem::path& ctfDirectory,
                                         const std::filesystem::path& traceCompassXml)
 {
+  validateOutputParent(ctfDirectory, "CTF output");
+  validateOutputParent(traceCompassXml, "Trace Compass XML output");
+
   std::error_code ctfError;
   const auto ctfStatus = std::filesystem::symlink_status(ctfDirectory, ctfError);
   if (ctfError && ctfError != std::errc::no_such_file_or_directory) {

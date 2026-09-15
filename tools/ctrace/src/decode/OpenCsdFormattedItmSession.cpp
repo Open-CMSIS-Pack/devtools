@@ -98,8 +98,9 @@ public:
   }
 
   /** @brief Forwards one packet with its bound route without throwing through OpenCSD. */
-  void RawPacketDataMon(ocsd_datapath_op_t operation, ocsd_trc_index_t index, const ItmTrcPacket* packet,
-                        std::uint32_t size, const std::uint8_t* data) noexcept override
+  [[maybe_unused]] void RawPacketDataMon(ocsd_datapath_op_t operation, ocsd_trc_index_t index,
+                                         const ItmTrcPacket* packet, std::uint32_t size,
+                                         const std::uint8_t* data) noexcept override
   {
     try {
       m_sink.rawPacketForRoute(m_route, operation, index, packet, size, data);
@@ -126,8 +127,9 @@ public:
   }
 
   /** @brief Records unsupported or unassigned deformatter output without external calls. */
-  ocsd_err_t TraceRawFrameIn(ocsd_datapath_op_t operation, ocsd_trc_index_t index, ocsd_rawframe_elem_t frameElement,
-                             int dataSize, const std::uint8_t*, std::uint8_t traceId) noexcept override
+  [[maybe_unused]] ocsd_err_t TraceRawFrameIn(ocsd_datapath_op_t operation, ocsd_trc_index_t index,
+                                              ocsd_rawframe_elem_t frameElement, int dataSize, const std::uint8_t*,
+                                              std::uint8_t traceId) noexcept override
   {
     if (operation != OCSD_OP_DATA || frameElement != OCSD_FRM_ID_DATA || dataSize <= 0) {
       return OCSD_OK;
@@ -172,7 +174,8 @@ private:
   std::optional<ocsd_trc_index_t> m_unassignedIndex;
 };
 
-std::vector<TraceRouteIdentity> OpenCsdFormattedItmSession::validateRoutes(std::vector<TraceRouteIdentity> routes)
+std::vector<TraceRouteIdentity>
+OpenCsdFormattedItmSession::validateRoutes(std::vector<TraceRouteIdentity>&& routes)
 {
   if (routes.empty()) {
     throw OpenCsdItmSessionError("formatted OpenCSD ITM session requires at least one route");
@@ -187,7 +190,7 @@ std::vector<TraceRouteIdentity> OpenCsdFormattedItmSession::validateRoutes(std::
     }
     configured[*route.traceBusId] = true;
   }
-  return routes;
+  return std::move(routes);
 }
 
 OpenCsdFormattedItmSession::OpenCsdFormattedItmSession(std::vector<TraceRouteIdentity> routes,
@@ -217,11 +220,18 @@ OpenCsdFormattedItmSession::~OpenCsdFormattedItmSession() noexcept = default;
 ocsd_datapath_resp_t OpenCsdFormattedItmSession::pushData(ocsd_trc_index_t index, std::uint32_t size,
                                                           const std::uint8_t* data, std::uint32_t& processed)
 {
-  return completeOperation(m_treeSession.traceDataIn(OCSD_OP_DATA, index, size, data, &processed));
+  const auto response = completeOperation(m_treeSession.traceDataIn(OCSD_OP_DATA, index, size, data, &processed));
+  m_receivedInput = m_receivedInput || processed > 0U;
+  return response;
 }
 
 ocsd_datapath_resp_t OpenCsdFormattedItmSession::flush()
 {
+  // OpenCSD's formatted frontend has no initialized frame to flush until it
+  // has consumed input. Avoid entering that external undefined state.
+  if (!m_receivedInput) {
+    return OCSD_RESP_CONT;
+  }
   return completeOperation(m_treeSession.traceDataIn(OCSD_OP_FLUSH, 0, 0, nullptr, nullptr));
 }
 

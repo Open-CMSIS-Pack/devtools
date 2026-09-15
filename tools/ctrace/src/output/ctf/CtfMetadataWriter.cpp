@@ -803,7 +803,7 @@ static void writeGeneralStreamSchemas(std::ostream& out, const CtfMetadataModel&
 void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const CtfMetadataModel& model)
 {
   const auto metadataPath = outputDir / "metadata";
-  std::ofstream out(metadataPath, std::ios::out | std::ios::trunc);
+  std::ofstream out(metadataPath, std::ios::out | std::ios::binary | std::ios::trunc);
   if (!out) {
     throw std::runtime_error("Failed to write CTF metadata " + metadataPath.string());
   }

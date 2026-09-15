@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-CortexMStreamDecoder::CortexMStreamDecoder(std::vector<CortexMDecodeRoute> routes, TraceEventSink& eventSink)
+CortexMStreamDecoder::CortexMStreamDecoder(const std::vector<CortexMDecodeRoute>& routes, TraceEventSink& eventSink)
 {
   if (routes.empty()) {
     throw std::invalid_argument("Cortex-M stream decoding requires at least one normalized route");
