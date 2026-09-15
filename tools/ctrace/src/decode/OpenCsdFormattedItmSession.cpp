@@ -98,9 +98,8 @@ public:
   }
 
   /** @brief Forwards one packet with its bound route without throwing through OpenCSD. */
-  [[maybe_unused]] void RawPacketDataMon(ocsd_datapath_op_t operation, ocsd_trc_index_t index,
-                                         const ItmTrcPacket* packet, std::uint32_t size,
-                                         const std::uint8_t* data) noexcept override
+  void RawPacketDataMon(ocsd_datapath_op_t operation, ocsd_trc_index_t index, const ItmTrcPacket* packet,
+                        std::uint32_t size, const std::uint8_t* data) noexcept override
   {
     try {
       m_sink.rawPacketForRoute(m_route, operation, index, packet, size, data);
@@ -127,9 +126,9 @@ public:
   }
 
   /** @brief Records unsupported or unassigned deformatter output without external calls. */
-  [[maybe_unused]] ocsd_err_t TraceRawFrameIn(ocsd_datapath_op_t operation, ocsd_trc_index_t index,
-                                              ocsd_rawframe_elem_t frameElement, int dataSize, const std::uint8_t*,
-                                              std::uint8_t traceId) noexcept override
+  ocsd_err_t TraceRawFrameIn(ocsd_datapath_op_t operation, ocsd_trc_index_t index,
+                             ocsd_rawframe_elem_t frameElement, int dataSize, const std::uint8_t*,
+                             std::uint8_t traceId) noexcept override
   {
     if (operation != OCSD_OP_DATA || frameElement != OCSD_FRM_ID_DATA || dataSize <= 0) {
       return OCSD_OK;
@@ -204,6 +203,13 @@ OpenCsdFormattedItmSession::OpenCsdFormattedItmSession(std::vector<TraceRouteIde
     m_rawFrameMonitor(std::make_unique<RawFrameMonitor>(m_routes)),
     m_treeSession(OCSD_TRC_SRC_FRAME_FORMATTED, kFormattedTreeFlags, errorLogger, *m_elementAdapter)
 {
+  // OpenCSD reaches these overrides only through interfaces implemented in the
+  // external library. Retain the concrete callback identities at the binding site.
+  const auto packetCallback = &RoutePacketMonitor::RawPacketDataMon;
+  const auto rawFrameCallback = &RawFrameMonitor::TraceRawFrameIn;
+  (void)packetCallback;
+  (void)rawFrameCallback;
+
   m_treeSession.attachRawFrameMonitor(*m_rawFrameMonitor);
   m_packetMonitors.reserve(m_routes.size());
   for (const auto& route : m_routes) {
