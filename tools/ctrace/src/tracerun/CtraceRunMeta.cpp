@@ -1096,6 +1096,8 @@ static std::vector<CtraceRunRoute> formattedRoutes(const TraceRunConfig& config,
     }
   }
 
+  // Materialize stable route identities only after every reference has been
+  // validated and all processor bindings have converged.
   std::vector<CtraceRunRoute> routes;
   routes.reserve(states.size());
   std::uint32_t routeOrdinal = 0U;
