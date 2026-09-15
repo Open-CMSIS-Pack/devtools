@@ -32,9 +32,11 @@ build:
     - SETUP_GCC
     - SETUP_COMMON
     - ARMCM0
+    - ARM_DEVICE_TZ_DISABLED
     - _RTE_
   define-asm:
     - ARMCM0
+    - ARM_DEVICE_TZ_DISABLED
     - _RTE_
   add-path:
     - ../data/TestProjectSetup/setup/GCC
