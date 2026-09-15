@@ -79,23 +79,14 @@ static void validateOutputParent(const std::filesystem::path& path, const char* 
 {
   auto parent = normalizedAbsolutePath(path).parent_path();
   while (!parent.empty()) {
-    std::error_code error;
-    const auto status = std::filesystem::status(parent, error);
-    if (!error && std::filesystem::exists(status)) {
+    const auto status = std::filesystem::status(parent);
+    if (std::filesystem::exists(status)) {
       if (!std::filesystem::is_directory(status)) {
         throw std::runtime_error(std::string(description) + " parent is not a directory: " + parent.string());
       }
       return;
     }
-    if (error && error != std::errc::no_such_file_or_directory) {
-      throw std::runtime_error(std::string("Failed to inspect ") + description + " parent " + parent.string() +
-                               ": " + error.message());
-    }
-    const auto ancestor = parent.parent_path();
-    if (ancestor == parent) {
-      return;
-    }
-    parent = ancestor;
+    parent = parent.parent_path();
   }
 }
 
