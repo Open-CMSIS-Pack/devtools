@@ -57,6 +57,10 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
 
   ASSERT_TRUE(CsvRowMapper::header() == "cycles,stream,type,source,value,pc,address,note")
       << "CSV schema header integration mismatch";
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{LocalTimestampTraceEvent{}}), ",,,,,,,")
+      << "local timestamp control packets must not populate payload-specific CSV columns";
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{SyncTraceEvent{}}), ",,,,,,,")
+      << "synchronization control packets must not populate payload-specific CSV columns";
   ASSERT_TRUE(
       (CsvRowMapper::row(TraceEvent{ExceptionTraceEvent{11U, ExceptionAction::Entered}}) == ",,exception,11,0x1,,,"))
       << "CSV exception value mismatch";
