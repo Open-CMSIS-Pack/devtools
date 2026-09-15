@@ -13,6 +13,7 @@
 #include "TraceOutput.h"
 #include "TraceOutputConfig.h"
 
+#include <cstddef>
 #include <filesystem>
 
 class DiagnosticSink;
@@ -46,6 +47,11 @@ public:
   std::string targetPath() const override;
 
 private:
+  /** @brief Finalizes or omits the companion Trace Compass XML for completed CTF metadata. */
+  void finalizeTraceCompassXml(const CtfMetadataModel& metadata);
+  /** @brief Removes Trace Compass XML and reports incompatible emitted clock domains. */
+  void omitTraceCompassXml(std::size_t clockDomainCount);
+
   std::filesystem::path m_ctfOutputDirectory;
   std::filesystem::path m_traceCompassXmlPath;
   CtfEncoder m_encoder;

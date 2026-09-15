@@ -201,6 +201,30 @@ static TraceCompassXmlWriter::ViewMask traceCompassViews(const CtfMetadataModel&
   return views;
 }
 
+/** @brief Counts the clock domains referenced by completed CTF streams. */
+static std::size_t traceCompassClockDomainCount(const std::vector<CtfStreamDescriptor>& streams)
+{
+  std::set<CtfClockDomainId> clocks;
+  for (const auto& stream : streams) {
+    clocks.insert(stream.clockDomainId);
+  }
+  return clocks.size();
+}
+
+/** @brief Builds the Trace Compass view routes for completed CTF streams. */
+static std::vector<TraceCompassXmlWriter::ViewRoute> traceCompassViewRoutes(const CtfMetadataModel& metadata)
+{
+  std::vector<TraceCompassXmlWriter::ViewRoute> viewRoutes;
+  for (const auto& stream : metadata.topology().streams) {
+    viewRoutes.push_back({
+        stream.route.traceBusId.value_or(0U),
+        stream.processorName.value_or(std::string{}),
+        traceCompassViews(metadata, stream.streamClassId),
+    });
+  }
+  return viewRoutes;
+}
+
 CtfBundleOutput::CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnostics)
   : m_ctfOutputDirectory(std::move(config.outputDirectory)),
     m_traceCompassXmlPath(std::move(config.traceCompassXmlPath)),
@@ -261,50 +285,51 @@ void CtfBundleOutput::stop()
     const auto* metadata = m_encoder.completedMetadata();
     // A successful encoder stop always publishes its completed metadata model.
     assert(metadata != nullptr);
-
-    const auto& streams = metadata->topology().streams;
-    if (streams.empty()) {
-      removeOutputFile(m_traceCompassXmlPath);
-    } else {
-      std::set<CtfClockDomainId> clocks;
-      for (const auto& stream : streams) {
-        clocks.insert(stream.clockDomainId);
-      }
-      if (clocks.size() == 1U) {
-        if (!metadata->isLegacySingleStreamLayout()) {
-          std::vector<TraceCompassXmlWriter::ViewRoute> viewRoutes;
-          for (const auto& stream : streams) {
-            viewRoutes.push_back({
-                stream.route.traceBusId.value_or(0U),
-                stream.processorName.value_or(std::string{}),
-                traceCompassViews(*metadata, stream.streamClassId),
-            });
-          }
-          TraceCompassXmlWriter::writeRoutedFile(m_traceCompassXmlPath, viewRoutes);
-        } else {
-          TraceCompassXmlWriter::writeLegacyFile(m_traceCompassXmlPath,
-                                                 traceCompassViews(*metadata, streams.front().streamClassId));
-        }
-      } else {
-        removeOutputFile(m_traceCompassXmlPath);
-        if (m_diagnostics != nullptr) {
-          m_diagnostics->report({
-              DiagnosticSink::Severity::Warning,
-              "Trace Compass XML was not generated because emitted CTF streams use multiple clock domains",
-              {
-                  {"backend", "ctf"},
-                  {"path", m_traceCompassXmlPath.string()},
-                  {"clockDomains", std::to_string(clocks.size())},
-              },
-          });
-        }
-      }
-    }
+    finalizeTraceCompassXml(*metadata);
     m_active = false;
   } catch (...) {
     abort();
     throw;
   }
+}
+
+void CtfBundleOutput::finalizeTraceCompassXml(const CtfMetadataModel& metadata)
+{
+  const auto& streams = metadata.topology().streams;
+  if (streams.empty()) {
+    removeOutputFile(m_traceCompassXmlPath);
+    return;
+  }
+
+  const auto clockDomainCount = traceCompassClockDomainCount(streams);
+  if (clockDomainCount != 1U) {
+    omitTraceCompassXml(clockDomainCount);
+    return;
+  }
+
+  if (metadata.isLegacySingleStreamLayout()) {
+    TraceCompassXmlWriter::writeLegacyFile(m_traceCompassXmlPath,
+                                           traceCompassViews(metadata, streams.front().streamClassId));
+    return;
+  }
+  TraceCompassXmlWriter::writeRoutedFile(m_traceCompassXmlPath, traceCompassViewRoutes(metadata));
+}
+
+void CtfBundleOutput::omitTraceCompassXml(std::size_t clockDomainCount)
+{
+  removeOutputFile(m_traceCompassXmlPath);
+  if (m_diagnostics == nullptr) {
+    return;
+  }
+  m_diagnostics->report({
+      DiagnosticSink::Severity::Warning,
+      "Trace Compass XML was not generated because emitted CTF streams use multiple clock domains",
+      {
+          {"backend", "ctf"},
+          {"path", m_traceCompassXmlPath.string()},
+          {"clockDomains", std::to_string(clockDomainCount)},
+      },
+  });
 }
 
 void CtfBundleOutput::abort()
