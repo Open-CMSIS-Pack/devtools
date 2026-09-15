@@ -273,9 +273,8 @@ clock {
 )";
 }
 
-/** @brief Writes reusable TSDL type and enumeration declarations. */
-static void writeTypeDefinitions(std::ostream& out, const MetadataSymbols& symbols,
-                                 const std::vector<ExceptionNumber>& observedExceptionNumbers)
+/** @brief Writes primitive TSDL type aliases shared by all metadata layouts. */
+static void writePrimitiveTypeDefinitions(std::ostream& out)
 {
   out << R"(
 typealias integer { size = 8; align = 8; signed = false; } := uint8_t;
@@ -286,8 +285,13 @@ typealias integer { size = 16; align = 8; signed = true; byte_order = le; } := i
 typealias integer { size = 32; align = 8; signed = true; byte_order = le; } := int32_t;
 typealias floating_point { exp_dig = 8; mant_dig = 24; align = 8; byte_order = le; } := ieee_float32_t;
 typealias integer { size = 64; align = 8; signed = false; byte_order = le; } := uint64_t;
-typealias integer { size = 64; align = 8; signed = false; map = clock.swo_clock.value; } := swo_clock_t;
+)";
+}
 
+/** @brief Writes fixed CMSIS enumeration declarations shared by all metadata layouts. */
+static void writeFixedCmsisEnumerationDefinitions(std::ostream& out)
+{
+  out << R"(
 typealias enum : uint8_t {
     "read" = )"
       << static_cast<unsigned>(CtfSchema::value(CtfSchema::DwtAccess::Read)) << R"(,
@@ -323,18 +327,28 @@ typealias enum : uint8_t {
 typealias enum : uint8_t {
 )";
   for (const auto counter : kDwtEventCounters) {
-    out << "    \"" << CtfSchema::dwtEventCounterName(counter) << "\" = "
-        << static_cast<unsigned>(CtfSchema::value(counter)) << ",\n";
+    out << "    \"" << CtfSchema::dwtEventCounterName(counter)
+        << "\" = " << static_cast<unsigned>(CtfSchema::value(counter)) << ",\n";
   }
   out << R"(} := cmsis_dwt_event_counter_t;
 typealias enum : uint8_t {
 )";
   for (const auto counter : kPmuEventCounters) {
-    out << "    \"" << CtfSchema::pmuEventCounterName(counter) << "\" = "
-        << static_cast<unsigned>(CtfSchema::value(counter)) << ",\n";
+    out << "    \"" << CtfSchema::pmuEventCounterName(counter)
+        << "\" = " << static_cast<unsigned>(CtfSchema::value(counter)) << ",\n";
   }
-  out << R"(} := cmsis_pmu_event_counter_t;
-typealias enum : uint8_t {
+  out << "} := cmsis_pmu_event_counter_t;\n";
+}
+
+/** @brief Writes reusable TSDL type and enumeration declarations. */
+static void writeTypeDefinitions(std::ostream& out, const MetadataSymbols& symbols,
+                                 const std::vector<ExceptionNumber>& observedExceptionNumbers)
+{
+  writePrimitiveTypeDefinitions(out);
+  out << "typealias integer { size = 64; align = 8; signed = false; map = clock.swo_clock.value; } := "
+         "swo_clock_t;\n";
+  writeFixedCmsisEnumerationDefinitions(out);
+  out << R"(typealias enum : uint8_t {
 )";
   std::set<std::string> itmLabels;
   for (std::uint32_t channel = 1U; channel < 32U; ++channel) {
@@ -684,67 +698,12 @@ env {
 /** @brief Writes primitive and fixed CMSIS types shared by all generalized streams. */
 static void writeGeneralCommonTypes(std::ostream& out, const CtfMetadataModel& model)
 {
-  out << R"(
-typealias integer { size = 8; align = 8; signed = false; } := uint8_t;
-typealias integer { size = 16; align = 8; signed = false; byte_order = le; } := uint16_t;
-typealias integer { size = 32; align = 8; signed = false; byte_order = le; } := uint32_t;
-typealias integer { size = 8; align = 8; signed = true; } := int8_t;
-typealias integer { size = 16; align = 8; signed = true; byte_order = le; } := int16_t;
-typealias integer { size = 32; align = 8; signed = true; byte_order = le; } := int32_t;
-typealias floating_point { exp_dig = 8; mant_dig = 24; align = 8; byte_order = le; } := ieee_float32_t;
-typealias integer { size = 64; align = 8; signed = false; byte_order = le; } := uint64_t;
-)";
+  writePrimitiveTypeDefinitions(out);
   for (const auto& clock : model.topology().clockDomains) {
     out << "typealias integer { size = 64; align = 8; signed = false; map = clock." << clock.name
         << ".value; } := " << clock.name << "_t;\n";
   }
-  out << R"(
-typealias enum : uint8_t {
-    "read" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::DwtAccess::Read)) << R"(,
-    "write" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::DwtAccess::Write)) << R"(
-} := cmsis_dwt_access_t;
-typealias enum : uint8_t {
-    "trace_start" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart)) << R"(,
-    "resync" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::TraceStatusReason::Resync)) << R"(,
-    "overflow" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::TraceStatusReason::Overflow)) << R"(,
-    "decode_error" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError)) << R"(,
-    "data_loss" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss)) << R"(
-} := cmsis_trace_status_reason_t;
-typealias enum : uint8_t {
-    "entered" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Entered)) << R"(,
-    "exited" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Exited)) << R"(,
-    "returned" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Returned)) << R"(
-} := cmsis_exception_action_t;
-typealias enum : uint8_t {
-    "trace" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionOrigin::Trace)) << R"(,
-    "synthetic" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionOrigin::Synthetic)) << R"(
-} := cmsis_exception_origin_t;
-typealias enum : uint8_t {
-)";
-  for (const auto counter : kDwtEventCounters) {
-    out << "    \"" << CtfSchema::dwtEventCounterName(counter)
-        << "\" = " << static_cast<unsigned>(CtfSchema::value(counter)) << ",\n";
-  }
-  out << R"(} := cmsis_dwt_event_counter_t;
-typealias enum : uint8_t {
-)";
-  for (const auto counter : kPmuEventCounters) {
-    out << "    \"" << CtfSchema::pmuEventCounterName(counter)
-        << "\" = " << static_cast<unsigned>(CtfSchema::value(counter)) << ",\n";
-  }
-  out << "} := cmsis_pmu_event_counter_t;\n";
+  writeFixedCmsisEnumerationDefinitions(out);
 }
 
 /** @brief Writes route-specific channel, comparator, and exception types. */

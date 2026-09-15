@@ -8,8 +8,11 @@
 #ifndef CTRACE_SRC_OUTPUT_CTF_TRACECOMPASSXMLWRITER_H
 #define CTRACE_SRC_OUTPUT_CTF_TRACECOMPASSXMLWRITER_H
 
+#include "CtfGraphicalTopic.h"
+
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -17,33 +20,22 @@
 class TraceCompassXmlWriter final {
 public:
   /** @brief Identifies one graphical analysis block that can be exposed in Trace Compass. */
-  enum class View : std::uint32_t {
-    DwtValue = 1U << 0U,
-    DwtAddress = 1U << 1U,
-    DwtMatch = 1U << 2U,
-    DwtEvent = 1U << 3U,
-    PmuEvent = 1U << 4U,
-    Exception = 1U << 5U,
-    ProcessorState = 1U << 6U,
-  };
+  using View = CtfGraphicalTopic;
 
   /** @brief Stores a set of graphical analysis blocks. */
   using ViewMask = std::uint32_t;
 
+  static_assert(static_cast<ViewMask>(View::Count) < std::numeric_limits<ViewMask>::digits,
+                "Trace Compass view mask must represent every graphical topic");
+
   /** @brief Converts one graphical view to its set bit. */
   static constexpr ViewMask viewMask(View view) noexcept
   {
-    return static_cast<ViewMask>(view);
+    return ViewMask{1U} << static_cast<ViewMask>(view);
   }
 
   /** @brief Enables every supported graphical analysis block. */
-  static constexpr ViewMask AllViews = static_cast<ViewMask>(View::DwtValue) |
-                                       static_cast<ViewMask>(View::DwtAddress) |
-                                       static_cast<ViewMask>(View::DwtMatch) |
-                                       static_cast<ViewMask>(View::DwtEvent) |
-                                       static_cast<ViewMask>(View::PmuEvent) |
-                                       static_cast<ViewMask>(View::Exception) |
-                                       static_cast<ViewMask>(View::ProcessorState);
+  static constexpr ViewMask AllViews = (ViewMask{1U} << static_cast<ViewMask>(View::Count)) - 1U;
 
   /** @brief Identifies one visible route without exposing its architectural ID in the label. */
   struct ViewRoute {
@@ -62,4 +54,4 @@ private:
   TraceCompassXmlWriter() = delete;
 };
 
-#endif  // CTRACE_SRC_OUTPUT_CTF_TRACECOMPASSXMLWRITER_H
+#endif // CTRACE_SRC_OUTPUT_CTF_TRACECOMPASSXMLWRITER_H

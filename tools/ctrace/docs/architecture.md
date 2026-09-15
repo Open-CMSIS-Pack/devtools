@@ -73,6 +73,12 @@ The `TraceEvent` boundary is the central design point. Before it, code handles b
 recovery, and Cortex-M state. After it, code sees backend-independent events in decode order and does not depend on
 OpenCSD types.
 
+The similarly named decode types are consecutive pipeline stages, not interchangeable implementations of one decoder
+contract. `OpenCsdItmDecoder` decodes transport bytes, `CortexMStreamDecoder` routes normalized elements, and each
+`CortexMPostDecoder` reconstructs semantic events with help from `DwtPacketDecoder`. Common interfaces exist only at
+actual substitution boundaries such as `OpenCsdItmSessionInterface`, `OpenCsdTraceElementSink`, and `TraceEventSink`;
+there is deliberately no common base class for all decode stages.
+
 ## Input and compatibility contract
 
 Root-level `trace-format` is a ctrace-private working field, not yet part of the CMSIS-Toolbox specification. Missing

@@ -8,6 +8,7 @@
 #ifndef CTRACE_SRC_OUTPUT_CTF_CTFMETADATAMODEL_H
 #define CTRACE_SRC_OUTPUT_CTF_CTFMETADATAMODEL_H
 
+#include "CtfGraphicalTopic.h"
 #include "CtfUuid.h"
 #include "TraceEvent.h"
 #include "TraceRoute.h"
@@ -132,17 +133,6 @@ struct CtfMetadataTopology {
   std::vector<CtfClockDomainDescriptor> clockDomains;
   std::vector<CtfStreamDescriptor> streams;
   std::vector<CtfSourceDescriptor> sources;
-};
-
-/** @brief Identifies one graphical Trace Compass topic backed by emitted CTF records. */
-enum class CtfGraphicalTopic {
-  DwtValue,
-  DwtAddress,
-  DwtMatch,
-  DwtEvent,
-  PmuEvent,
-  Exception,
-  ProcessorState,
 };
 
 /** @brief Owns validated CTF metadata and runtime observations for one bundle. */

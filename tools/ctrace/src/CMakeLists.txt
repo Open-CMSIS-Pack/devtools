@@ -48,6 +48,7 @@ set(CTRACE_OUTPUT_HEADER_FILES
   output/ctf/CtfBundleOutput.h
   output/ctf/CtfEncoder.h
   output/ctf/CtfExceptionLaneTracker.h
+  output/ctf/CtfGraphicalTopic.h
   output/ctf/CtfMetadataModel.h
   output/ctf/CtfMetadataWriter.h
   output/ctf/CtfSchema.h

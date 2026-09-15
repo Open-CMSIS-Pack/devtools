@@ -192,20 +192,12 @@ static void removeIncompleteOutputs(const std::filesystem::path& ctfDirectory,
 static TraceCompassXmlWriter::ViewMask traceCompassViews(const CtfMetadataModel& metadata,
                                                          CtfStreamClassId streamClassId)
 {
-  using View = TraceCompassXmlWriter::View;
   auto views = TraceCompassXmlWriter::ViewMask{0U};
-  const auto addIfObserved = [&](CtfGraphicalTopic topic, View view) {
+  for (const auto topic : kCtfGraphicalTopics) {
     if (metadata.observedGraphicalTopic(streamClassId, topic)) {
-      views |= TraceCompassXmlWriter::viewMask(view);
+      views |= TraceCompassXmlWriter::viewMask(topic);
     }
-  };
-  addIfObserved(CtfGraphicalTopic::DwtValue, View::DwtValue);
-  addIfObserved(CtfGraphicalTopic::DwtAddress, View::DwtAddress);
-  addIfObserved(CtfGraphicalTopic::DwtMatch, View::DwtMatch);
-  addIfObserved(CtfGraphicalTopic::DwtEvent, View::DwtEvent);
-  addIfObserved(CtfGraphicalTopic::PmuEvent, View::PmuEvent);
-  addIfObserved(CtfGraphicalTopic::Exception, View::Exception);
-  addIfObserved(CtfGraphicalTopic::ProcessorState, View::ProcessorState);
+  }
   return views;
 }
 
@@ -291,7 +283,7 @@ void CtfBundleOutput::stop()
           TraceCompassXmlWriter::writeRoutedFile(m_traceCompassXmlPath, viewRoutes);
         } else {
           TraceCompassXmlWriter::writeLegacyFile(m_traceCompassXmlPath,
-                                                  traceCompassViews(*metadata, streams.front().streamClassId));
+                                                 traceCompassViews(*metadata, streams.front().streamClassId));
         }
       } else {
         removeOutputFile(m_traceCompassXmlPath);
