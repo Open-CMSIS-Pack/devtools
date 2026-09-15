@@ -33,7 +33,7 @@ Commands:\n\
   list devices                  Print list of available device names\n\
   list environment              Print list of environment configurations\n\
   list examples                 Print list of examples\n\
-  list templates                Print list of templates\n\
+  list templates                Print list of csolution project templates\n\
   list generators               Print list of code generators of a given context\n\
   list layers                   Print list of available, referenced and compatible layers\n\
   list npus                     Print list of available NPUs\n\

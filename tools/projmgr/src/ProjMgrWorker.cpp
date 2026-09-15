@@ -4121,6 +4121,10 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
     ret &= ProcessGpdsc(context);
     ret &= ProcessGeneratedLayers(context);
   }
+  // Add compiler define for TrustZone disabled
+  if (context.controls.processed.processor.trustzone == RteConstants::YAML_OFF) {
+    context.rteActiveTarget->InsertDefine("ARM_DEVICE_TZ_DISABLED");
+  }
   // Check regions header, generate it if needed
   if (!context.linker.regions.empty()) {
     CheckAndGenerateRegionsHeader(context);
@@ -4783,11 +4787,11 @@ bool ProjMgrWorker::ListTemplates(vector<string>& templates, const string& filte
     if (!filter.empty() && !CheckFilter(filter, templateItem)) {
       continue;
     }
-    string templateStr = templateItem.name + " (" + templateItem.pack + ")";
+    string templateStr = templateItem.file + " (" + templateItem.name + ")";
     if (m_verbose) {
       templateStr += "\n  description: " + templateItem.description;
+      templateStr += "\n  pack: " + templateItem.pack;
       templateStr += "\n  path: " + templateItem.path;
-      templateStr += "\n  file: " + templateItem.file;
       if (!templateItem.copyTo.empty()) {
         templateStr += "\n  copy-to: " + templateItem.copyTo;
       }
