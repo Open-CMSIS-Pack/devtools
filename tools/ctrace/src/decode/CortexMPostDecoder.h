@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 /** @brief Converts OpenCSD elements from one Cortex-M stream into semantic events. */
@@ -67,7 +68,13 @@ private:
   /** @brief Appends reconstructed DWT events to the pending sequence. */
   void appendPendingEvents(std::vector<TraceEvent> events);
   /** @brief Creates an event with decoder-local source and route identity. */
-  TraceEvent makeEvent(std::uint64_t sourceIndex, TraceEventPayload payload) const;
+  template <typename Payload> TraceEvent makeEvent(std::uint64_t sourceIndex, Payload payload) const
+  {
+    TraceEvent event{std::move(payload)};
+    event.index = sourceIndex;
+    event.route = m_route;
+    return event;
+  }
   /** @brief Sends one finalized event to the downstream sink. */
   void emitEvent(const TraceEvent& event);
   /** @brief Maps a decoder-local timestamp onto the monotonic output timeline. */

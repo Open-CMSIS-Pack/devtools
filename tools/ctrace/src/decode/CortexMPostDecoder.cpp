@@ -238,14 +238,6 @@ void CortexMPostDecoder::appendPendingEvents(std::vector<TraceEvent> events)
                          std::make_move_iterator(events.end()));
 }
 
-TraceEvent CortexMPostDecoder::makeEvent(std::uint64_t sourceIndex, TraceEventPayload payload) const
-{
-  TraceEvent event{std::move(payload)};
-  event.index = sourceIndex;
-  event.route = m_route;
-  return event;
-}
-
 void CortexMPostDecoder::queueDiscontinuityIssue(std::uint64_t sourceIndex, const TraceQuality& quality,
                                                  TraceIssueCode issueCode, const std::string& message,
                                                  std::optional<std::uint64_t> rawBytesConsumed)
