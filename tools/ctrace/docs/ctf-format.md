@@ -23,11 +23,11 @@ cmsis_ctf_profile_version = 1
 
 ## Files and common structure
 
-Every CTF bundle contains a `metadata` file and one or more binary stream files. ctrace preserves the established
-single-source layout for unformatted SWO: stream class `0` is written to `stream_0` and references `swo_clock`.
-Formatted input uses the generalized layout: each emitted Trace Bus route has its own stream class, binary
-`stream_<id>` file, and explicit clock-domain reference. Streams without emitted records are omitted from the final
-bundle and metadata.
+Every CTF bundle contains a `metadata` file and zero or more binary stream files. When selected, unformatted SWO
+preserves the established single-source layout: stream class `0` is written eagerly to `stream_0` and references
+`swo_clock`. Formatted input uses the generalized layout: each emitted Trace Bus route has its own stream class,
+binary `stream_<id>` file, and explicit clock-domain reference. Formatted streams without emitted records are omitted
+from the final bundle and metadata; a stream filter that selects no route therefore produces a metadata-only bundle.
 
 Every event has this common header and public context:
 

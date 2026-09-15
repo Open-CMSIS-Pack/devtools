@@ -823,11 +823,6 @@ static void validateFormattedReference(const TraceRunConfig& config, const Trace
   }
 }
 
-/** @brief Stores one formatted route while its binding evidence is accumulated. */
-struct FormattedRouteState {
-  CtraceRunRoute route;
-};
-
 /** @brief Registers a bound processor route and rejects one processor mapped to two ITM IDs. */
 static void registerBoundRoute(const TraceRunConfig& config, const TraceRunReference& reference,
                                const CtraceRunRoute& route, std::uint8_t traceBusId,
@@ -845,26 +840,25 @@ static void registerBoundRoute(const TraceRunConfig& config, const TraceRunRefer
 }
 
 /** @brief Adds compatible evidence to one formatted route or rejects an ID-to-processor conflict. */
-static FormattedRouteState& mergeFormattedRoute(const TraceRunConfig& config, const TraceRunReference& reference,
-                                                const std::optional<std::string>& processorName,
-                                                std::map<std::uint8_t, FormattedRouteState>& routes,
-                                                std::map<std::string, std::uint8_t>& boundRoutes)
+static CtraceRunRoute& mergeFormattedRoute(const TraceRunConfig& config, const TraceRunReference& reference,
+                                           const std::optional<std::string>& processorName,
+                                           std::map<std::uint8_t, CtraceRunRoute>& routes,
+                                           std::map<std::string, std::uint8_t>& boundRoutes)
 {
   const auto traceBusId = static_cast<std::uint8_t>(*reference.stream);
-  auto [found, inserted] = routes.emplace(traceBusId, FormattedRouteState{});
-  auto& state = found->second;
+  auto [found, inserted] = routes.emplace(traceBusId, CtraceRunRoute{});
+  auto& route = found->second;
   if (inserted) {
-    state.route.processorName = processorName;
-  } else if (state.route.processorName.has_value() && processorName.has_value() &&
-             state.route.processorName != processorName) {
+    route.processorName = processorName;
+  } else if (route.processorName.has_value() && processorName.has_value() && route.processorName != processorName) {
     throw std::runtime_error(configError(config, reference.line,
                                          "CoreSight Trace Bus ID " + std::to_string(traceBusId) +
                                              " has conflicting ITM processor bindings"));
-  } else if (!state.route.processorName.has_value() && processorName.has_value()) {
-    state.route.processorName = processorName;
+  } else if (!route.processorName.has_value() && processorName.has_value()) {
+    route.processorName = processorName;
   }
-  registerBoundRoute(config, reference, state.route, traceBusId, boundRoutes);
-  return state;
+  registerBoundRoute(config, reference, route, traceBusId, boundRoutes);
+  return route;
 }
 
 /** @brief Resolves setup and source metadata for the formatted routes of one trace run. */
@@ -990,7 +984,7 @@ private:
 /** @brief Finds the established route described by a streamless compatible reference. */
 static std::optional<std::uint8_t> streamlessRouteId(const TraceRunConfig& config, const ActiveSetupIndex& setups,
                                                      const TraceRunReference& reference,
-                                                     const std::map<std::uint8_t, FormattedRouteState>& states,
+                                                     const std::map<std::uint8_t, CtraceRunRoute>& states,
                                                      const std::map<std::string, std::uint8_t>& boundRoutes)
 {
   const auto processorName = formattedProcessorName(config, setups, reference);
@@ -999,7 +993,7 @@ static std::optional<std::uint8_t> streamlessRouteId(const TraceRunConfig& confi
     if (bound != boundRoutes.end()) {
       return bound->second;
     }
-    if (states.size() != 1U || states.begin()->second.route.processorName.has_value()) {
+    if (states.size() != 1U || states.begin()->second.processorName.has_value()) {
       return std::nullopt;
     }
   }
@@ -1009,10 +1003,10 @@ static std::optional<std::uint8_t> streamlessRouteId(const TraceRunConfig& confi
 /** @brief Applies processor evidence from a streamless reference to its unique formatted route. */
 static void bindStreamlessRoute(const TraceRunConfig& config, const TraceRunReference& reference,
                                 std::uint8_t traceBusId, const std::optional<std::string>& processorName,
-                                std::map<std::uint8_t, FormattedRouteState>& states,
+                                std::map<std::uint8_t, CtraceRunRoute>& states,
                                 std::map<std::string, std::uint8_t>& boundRoutes)
 {
-  auto& route = states.at(traceBusId).route;
+  auto& route = states.at(traceBusId);
   if (!route.processorName.has_value() && processorName.has_value()) {
     route.processorName = processorName;
   }
@@ -1045,7 +1039,7 @@ static std::vector<CtraceRunRoute> formattedRoutes(const TraceRunConfig& config,
                                ": one unnamed ctrace-setup processor cannot bind multiple formatted pnames");
     }
   }
-  std::map<std::uint8_t, FormattedRouteState> states;
+  std::map<std::uint8_t, CtraceRunRoute> states;
   std::map<std::string, std::uint8_t> boundRoutes;
 
   for (const auto& reference : config.references) {
@@ -1101,8 +1095,7 @@ static std::vector<CtraceRunRoute> formattedRoutes(const TraceRunConfig& config,
   std::vector<CtraceRunRoute> routes;
   routes.reserve(states.size());
   std::uint32_t routeOrdinal = 0U;
-  for (auto& [traceBusId, state] : states) {
-    auto& route = state.route;
+  for (auto& [traceBusId, route] : states) {
     route.identity = {TraceRouteId{routeOrdinal}, traceBusId};
     ++routeOrdinal;
     routeMetadata.applySetup(route);

@@ -214,6 +214,7 @@ TEST(CtraceUnitTests, testTraceCompassXmlRejectsInvalidRouteViews)
   const TemporaryTestPath path("ctrace-trace-compass-invalid-route-views.xml");
   EXPECT_THROW(TraceCompassXmlWriter::writeRoutedFile(path.path(), {}), std::invalid_argument);
   EXPECT_THROW(TraceCompassXmlWriter::writeRoutedFile(path.path(), {{0U, "invalid"}}), std::invalid_argument);
+  EXPECT_THROW(TraceCompassXmlWriter::writeRoutedFile(path.path(), {{112U, "invalid"}}), std::invalid_argument);
   EXPECT_THROW(TraceCompassXmlWriter::writeRoutedFile(path.path(), {{1U, "first"}, {1U, "duplicate"}}),
                std::invalid_argument);
   EXPECT_THROW(TraceCompassXmlWriter::writeLegacyFile(path.path(), TraceCompassXmlWriter::AllViews + 1U),

@@ -301,11 +301,13 @@ The source tree has seven static library targets: `model`, `cli`, `trace-run`, `
 `control`. The shared `ctracelib` object contains `CtraceMain`; the executable adds only the platform trampoline and
 manifest where required. Dependencies form a directed, cycle-free graph with `control` as the composition root.
 
-The tool-specific GitHub workflow is selected by a `tools/ctrace/<version>` release tag. It builds Windows AMD64 and
-Arm64, Linux AMD64 and Arm64, and macOS Arm64 binaries. Unit and integration tests run on Windows AMD64, Linux AMD64,
-and macOS Arm64; Windows Arm64 and Linux Arm64 remain compile-only. Native Linux additionally runs the exact
-Babeltrace 2.0.5 consumer gate on AMD64. The versioned manual Trace Compass Server/TSP acceptance record is documented
-beside the [integration tests](../test/integration/README.md).
-The version compiled into the executable is derived from the same tag. Archive contents and license material are
-described in the [third-party notices](THIRD_PARTY_NOTICES.md); unfinished release work remains in the
+The tool-specific GitHub workflow runs for matching pull requests and pushes to `main`, can be called by another
+workflow, and reacts to published releases. Only its release job is selected by a `tools/ctrace/<version>` release
+tag. The build matrix covers Windows AMD64 and Arm64, Linux AMD64 and Arm64, and macOS Arm64 binaries. Unit and
+integration tests run on Windows AMD64, Linux AMD64, and macOS Arm64; Windows Arm64 and Linux Arm64 remain
+compile-only. Native Linux additionally runs the exact Babeltrace 2.0.5 consumer gate on AMD64. The versioned manual
+Trace Compass Server/TSP acceptance record is documented beside the
+[integration tests](../test/integration/README.md).
+The release version compiled into the executable is derived from the same tag. Archive contents and license material
+are described in the [third-party notices](THIRD_PARTY_NOTICES.md); unfinished release work remains in the
 [TODO list](todo.md).

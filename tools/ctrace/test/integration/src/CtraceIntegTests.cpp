@@ -982,7 +982,7 @@ TEST_F(CtraceIntegTests, GeneratesRequestedOutputsAfterDecoderError)
   expectNonEmptyFile(workDirectory() / "Minimal.SWO.traceanalysis.xml");
 }
 
-TEST_F(CtraceIntegTests, ConvertsBlinkyFixtureToGoldenOutputsAndSkipsUnsupportedTraceBusInput)
+TEST_F(CtraceIntegTests, ConvertsBlinkyFixtureToGoldenOutputsAndSkipsLegacyExcludedTraceBusInput)
 {
   const auto fixtureDirectory = testDataDirectory() / "Blinky+Arm";
   copyFixtureFile(fixtureDirectory, "Blinky+Arm.SWO.raw");
@@ -1001,7 +1001,7 @@ TEST_F(CtraceIntegTests, ConvertsBlinkyFixtureToGoldenOutputsAndSkipsUnsupported
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Blinky+Arm", "--all"});
   EXPECT_EQ(1, result.exitCode) << result.stderrText;
-  expectContains(result.stderrText, "skipping raw trace channel that is not implemented yet:");
+  expectContains(result.stderrText, "skipping raw trace channel excluded from active input selection:");
   expectContains(result.stderrText, "channel=TB");
   EXPECT_EQ(readTestTextFile(fixtureDirectory / "Blinky+Arm.SWO.csv"),
             readTestTextFile(workDirectory() / "Blinky+Arm.SWO.csv"));

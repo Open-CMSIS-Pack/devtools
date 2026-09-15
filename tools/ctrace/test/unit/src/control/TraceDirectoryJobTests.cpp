@@ -341,7 +341,7 @@ TEST(CtraceUnitTests, testTraceDirectoryDecodesExplicitUnformattedTraceBuffersAn
   TraceDirectoryJob(options, diagnostics, reader).run();
 
   EXPECT_EQ(diagnostics.failureCount(), 0U);
-  EXPECT_TRUE(diagnostics.containsMessage("skipping raw trace channel that is not implemented yet"));
+  EXPECT_TRUE(diagnostics.containsMessage("skipping raw trace channel excluded from active input selection"));
   EXPECT_TRUE(diagnostics.containsContext("channel", "ER"));
   EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Plain.TB.csv"));
   EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Named.TB_MTB.csv"));
@@ -465,7 +465,7 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   EXPECT_TRUE(diagnostics.containsMessage("no eligible raw trace input found"));
 
   const auto skipped = std::find_if(diagnostics.events().begin(), diagnostics.events().end(), [](const auto& event) {
-    return event.message == "skipping raw trace channel that is not implemented yet";
+    return event.message == "skipping raw trace channel excluded from active input selection";
   });
   const auto missing = std::find_if(diagnostics.events().begin(), diagnostics.events().end(), [](const auto& event) {
     return event.message.find("no eligible raw trace input found") != std::string::npos;

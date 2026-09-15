@@ -163,7 +163,7 @@
 
   <rect x="430" y="1035" width="340" height="74" class="box output"/>
   <text x="600" y="1062" class="box-title">CTF bundle</text>
-  <text x="600" y="1084" class="box-detail">one metadata · lazy stream_&lt;id&gt;</text>
+  <text x="600" y="1084" class="box-detail">legacy stream_0 eager · formatted lazy</text>
   <text x="600" y="1102" class="box-detail">explicit route clocks · no fallback</text>
 
   <rect x="860" y="1035" width="330" height="74" class="box output"/>

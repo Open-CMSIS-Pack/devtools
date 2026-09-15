@@ -8,6 +8,7 @@
 #include "TraceCompassXmlWriter.h"
 
 #include "CtfSchema.h"
+#include "TraceStreamId.h"
 
 #include <array>
 #include <cstddef>
@@ -684,13 +685,16 @@ static void writeXmlFile(const std::filesystem::path& filePath, bool routePrefix
     if (routes.empty()) {
       throw std::invalid_argument("route-prefixed Trace Compass XML requires at least one view route");
     }
-    std::array<bool, 256U> seenIds{};
+    std::array<bool, static_cast<std::size_t>(CoreSight::kMaxAtbTraceId) + 1U> seenIds{};
     for (const auto& route : routes) {
       if ((route.views & ~TraceCompassXmlWriter::AllViews) != 0U) {
         throw std::invalid_argument("Trace Compass XML contains an unsupported route view selection");
       }
-      if (route.traceBusId == 0U || seenIds[route.traceBusId]) {
-        throw std::invalid_argument("route-prefixed Trace Compass XML requires unique nonzero Trace Bus IDs");
+      if (!CoreSight::isAtbTraceId(route.traceBusId)) {
+        throw std::invalid_argument("route-prefixed Trace Compass XML requires Trace Bus IDs between 1 and 111");
+      }
+      if (seenIds[route.traceBusId]) {
+        throw std::invalid_argument("route-prefixed Trace Compass XML requires unique Trace Bus IDs");
       }
       seenIds[route.traceBusId] = true;
     }

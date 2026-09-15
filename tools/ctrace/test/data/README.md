@@ -14,8 +14,8 @@ The Blinky fixture is stored under the generic `Blinky+Arm` target name. It was
 captured from a CMSIS project with CMSIS-Debugger 1.4.0 and pyTS 0.1.0, as
 recorded in the accompanying `ctrace-run` file. It contains SWO and TB input.
 The integration test compares the generated SWO CSV byte-for-byte with its
-reference and verifies that TB is reported as a trace channel that is not
-implemented yet.
+reference and verifies that the coexisting TB input is excluded by the legacy
+undeclared-format selection contract.
 
 The Blinky YAML, SWO capture, and TB capture are approved ctrace test assets and
 may be redistributed as part of Open-CMSIS-Pack/devtools. The reference CSV is

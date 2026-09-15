@@ -3,8 +3,6 @@
 ## Cleanup
 
 - [ ] Add explicit parentheses to compound payload-validation expressions where they improve readability.
-- [ ] Replace the CSV payload-type `if`/`else` chain with a backend-local `std::visit` visitor.
-- [ ] Replace the CTF payload-type `if`/`else` chain with a backend-local `std::visit` visitor.
 
 ## DWT
 
@@ -16,8 +14,11 @@
 
 [Implementation plan](multicore-multisource-plan.md)
 
-- [ ] Standardize explicit raw-input identity plus format/framing metadata in the CMSIS-Toolbox trace specification,
-      then migrate the provisional global `trace-format` reader contract and producer output deliberately.
+- [ ] Resolve the cross-tool raw-input contract tracked by
+      [vscode-cmsis-debugger #1150](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/1150) and
+      [devtools #2573](https://github.com/Open-CMSIS-Pack/devtools/issues/2573): standardize selected raw-input identity
+      plus effective byte format/framing in the CMSIS-Toolbox trace specification, then migrate the provisional global
+      `trace-format` reader contract and producer output deliberately.
 - [ ] Support FSYNC and FSYNC+HSYNC formatted input after a public framing field is specified.
 - [ ] Define cross-stream clock correlation and offsets once a common producer time reference is available.
 - [ ] Add per-clock-domain Trace Compass bundles/experiments for uncorrelated streams when required.

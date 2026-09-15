@@ -36,7 +36,7 @@ producer follow-ups are recorded in the
   an Error and remains an undeclared value for discovery compatibility. An explicit non-null declaration opts the
   eligible SWO, TB, and named-TB candidates into the new selection rule.
 - A legacy undeclared configuration activates only `<set>.SWO.raw`; coexisting TB files retain their non-failing
-  unsupported-channel Warning. With an explicit format, exactly one existing `<set>.SWO.raw`, `<set>.TB.raw`, or
+  excluded-input Warning. With an explicit format, exactly one existing `<set>.SWO.raw`, `<set>.TB.raw`, or
   `<set>.TB_<name>.raw` must be selected. Zero or multiple candidates fail before decoder or output construction.
   Event Recorder input remains diagnosed and excluded from the active candidate count.
 - Formatted input globally uses 16-byte memory-aligned CoreSight frames. Its length must be a multiple of 16, and it
@@ -47,9 +47,14 @@ producer follow-ups are recorded in the
 
 ## Routing invariants
 
-- Generated `ctrace-refs.stream` values are the routing authority. Processor ITM references are the preferred route
-  anchors; only the documented constrained current-pyTS feature fallback may establish a route without one. A copied
-  or enriched `ctrace-setup.itm.atbid` is tolerated but never creates, changes, or invalidates a route.
+- Generated `ctrace-refs.stream` values are the routing authority. Processor `itm` references using a `[pname/]itm`
+  path are the preferred route anchors. For compatibility with current pyTS output, only these reference-type and
+  `[pname/]feature` pairs may establish a route without that anchor, and only when the reference supplies `stream`:
+  `dwt` with a resolved `data#<index>`, `timestamps`, or `synchronization`; `itm` with `timestamps`; `exception` with
+  `exceptions`; `event` or `pmu` with `events#<index>`; and `pcsample` with `pcsampling`. The optional `pname/` prefix
+  is one path segment; nested feature paths are not fallbacks. `overflow`/`overflow` and `global_ts`/`timesync` may
+  describe an established route but cannot establish one. A copied or enriched `ctrace-setup.itm.atbid` is tolerated
+  but never creates, changes, or invalidates a route.
 - Configured architectural Trace Bus IDs are restricted to `1` through `111` and bind one supported ITM protocol
   route each. DWT and PMU data travel on that processor's ITM route rather than creating separate decoders.
 - Unformatted input has one synthetic route with no architectural Trace Bus ID. OpenCSD channel `0`, public stream

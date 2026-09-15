@@ -241,7 +241,6 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
   return row;
 }
 
-
 std::string CsvRowMapper::header()
 {
   return joinColumns(kCsvColumnNames);

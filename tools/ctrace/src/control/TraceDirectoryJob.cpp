@@ -121,7 +121,7 @@ void TraceDirectoryJob::run()
       auto input = TraceRunDiscovery::resolveInput(std::move(ctraceRunMeta), [&](const auto& rawInput) {
         m_diagnostics.report({
             DiagnosticSink::Severity::Warning,
-            "skipping raw trace channel that is not implemented yet",
+            "skipping raw trace channel excluded from active input selection",
             {
                 {"solutionSet", solutionSet},
                 {"channel", rawInput.channel},
