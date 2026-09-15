@@ -233,8 +233,8 @@ enum label falls back to its decimal CTF stream-class ID to keep the state path 
 `uint8_t cmsis_trace_bus_id` field remains unchanged for CMSIS-profile consumers. Distinct processor bindings remain
 distinct domains even when their clock frequencies match.
 Because the supported Trace Compass reader cannot reliably combine multiple clock declarations, ctrace keeps that
-valid CTF bundle but omits any stale/new companion XML and reports one Warning. The legacy unformatted CTF path keeps
-its eager `stream_0`, `swo_clock`, original event context, and single-clock XML behavior.
+valid CTF bundle but omits any stale/new companion XML and reports one Warning. When selected, the legacy unformatted
+CTF path keeps its eager `stream_0`, `swo_clock`, original event context, and single-clock XML behavior.
 
 Outputs use an explicit `start`, `writeEvent`, `stop`, and `abort` lifecycle. A successful backend can finish even if
 another backend fails. Decode or finalization failures trigger cleanup of incomplete artifacts.

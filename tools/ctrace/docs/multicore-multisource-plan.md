@@ -51,7 +51,7 @@ CMSIS-Toolbox schema nor asserts producer behaviour.
 - A multi-clock bundle remains valid CTF, removes stale XML, and reports one
   Warning rather than claiming a global event order. CTF failures clean the
   complete CTF/XML bundle without discarding an independently valid CSV.
-- The legacy unformatted CTF representation remains `stream_0` with
+- The selected legacy unformatted CTF representation remains `stream_0` with
   `swo_clock` and its established event context. CSV and CTF golden comparison
   remain exact after their documented UUID normalisation.
 

@@ -685,26 +685,24 @@ TEST(CtraceUnitTests, testOutputRequirementsTreatUnknownStreamsAsPureFilters)
       << "unknown-only selection must not report malformed or zero clocks on filtered routes";
 }
 
-TEST(CtraceUnitTests, testOutputRequirementsPreserveLegacyTopologyForUnknownStreamFilter)
+TEST(CtraceUnitTests, testOutputRequirementsIgnoreMissingLegacyClockForExcludedStream)
 {
   TraceRunConfig config;
   config.path = "Legacy.ctrace-run.yml";
   config.setups.push_back(TraceRunTestSupport::makeTimestampSetup("core", 1000000U, 1U));
+  config.setups.front().timestamps->clockHz.reset();
 
   auto request = outputRequest(false, true);
-  request.selection.streams = {99U};
+  request.selection.streams = {1U};
   CollectingDiagnosticSink diagnostics;
   const auto plan = planOutputs(request, "Legacy.SWO.raw", config, diagnostics);
 
   ASSERT_TRUE(plan.ctf.has_value());
-  ASSERT_EQ(plan.ctf->metadata.streams.size(), 1U);
-  ASSERT_EQ(plan.ctf->metadata.clockDomains.size(), 1U);
-  EXPECT_EQ(plan.ctf->metadata.streams.front().streamClassId, CtfStreamClassId{0U});
-  EXPECT_FALSE(plan.ctf->metadata.streams.front().route.traceBusId.has_value());
-  EXPECT_EQ(plan.ctf->metadata.clockDomains.front().name, "swo_clock");
-  EXPECT_EQ(plan.ctf->metadata.clockDomains.front().frequencyHz, 1000000U);
-  EXPECT_FALSE(plan.ctf->metadata.clockDomains.front().uuid.has_value());
-  EXPECT_TRUE(diagnostics.events().empty());
+  EXPECT_TRUE(plan.ctf->metadata.streams.empty());
+  EXPECT_TRUE(plan.ctf->metadata.clockDomains.empty());
+  EXPECT_TRUE(plan.ctf->metadata.sources.empty());
+  EXPECT_TRUE(diagnostics.events().empty())
+      << "an excluded legacy route must not require timestamps.clock or create CTF topology";
 }
 
 TEST(CtraceUnitTests, testOutputRequirementsRejectsInputWithoutArtifactName)

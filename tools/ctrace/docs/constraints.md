@@ -91,8 +91,8 @@ producer follow-ups are recorded in the
   formatted routes expose their architectural IDs. Type and stream filters affect output, not decoding or diagnostic
   reporting.
 - Formatted CTF stream files are created lazily as `stream_<id>` only for routes with selected semantic output. Every
-  emitted stream class references an explicit clock domain. The legacy unformatted path retains eager `stream_0`,
-  its UUID-optional `swo_clock` metadata form, and companion XML compatibility.
+  emitted stream class references an explicit clock domain. When selected, the legacy unformatted path retains eager
+  `stream_0`, its UUID-optional `swo_clock` metadata form, and companion XML compatibility.
 - Generalized CTF metadata records a bound processor name in the corresponding stream-scoped environment entry.
   Its event context preserves the CMSIS-profile `uint8_t cmsis_trace_bus_id` field and adds the ctrace-private
   `ctrace_route` enum used by generated Trace Compass XML. The enum label is the processor name when bound and the

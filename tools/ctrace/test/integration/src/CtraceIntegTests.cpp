@@ -480,6 +480,32 @@ TEST_F(CtraceIntegTests, DecodesExplicitUnformattedNamedTraceBuffer)
   expectNonEmptyFile(workDirectory() / "Named.TB_MTB.traceanalysis.xml");
 }
 
+TEST_F(CtraceIntegTests, ExcludesUnformattedRawSwoWithoutRequiringClock)
+{
+  writeTestFile(workDirectory() / "Filtered.ctrace-run.yml", R"yml(ctrace-run:
+  ctrace-setup:
+    - timestamps:
+        itm-prescaler: 1
+  ctrace-refs: []
+)yml");
+
+  const std::string raw{"\0\0\0\0\0\x80\x17\x34\x12\x00\x08\x09\x41", 13U};
+  writeTestFile(workDirectory() / "Filtered.SWO.raw", raw);
+
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "Filtered", "--ctf", "--stream", "1"});
+  EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  expectNotContains(result.stderrText, "timestamps.clock");
+
+  const auto ctfDirectory = workDirectory() / "Filtered.ctf";
+  const auto metadata = readTestTextFile(ctfDirectory / "metadata");
+  EXPECT_FALSE(metadata.empty());
+  expectNotContains(metadata, "\nclock {");
+  expectNotContains(metadata, "\nstream {");
+  expectNotContains(metadata, "\nevent {");
+  EXPECT_FALSE(std::filesystem::exists(ctfDirectory / "stream_0"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Filtered.SWO.traceanalysis.xml"));
+}
+
 TEST_F(CtraceIntegTests, RejectsPartialFormattedFrameBeforeCreatingArtifacts)
 {
   writeTestFile(workDirectory() / "Partial.ctrace-run.yml", R"yml(ctrace-run:

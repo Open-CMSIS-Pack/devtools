@@ -165,16 +165,14 @@ static std::vector<const CtraceRunRoute*> selectedCtfRoutes(const CtraceRunMeta&
 static std::optional<CtfMetadataTopology>
 resolveCtfTopology(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& selection, DiagnosticSink& diagnostics)
 {
-  auto routes = selectedCtfRoutes(ctraceRunMeta, selection);
-  const auto legacy = ctraceRunMeta.routes().size() == 1U &&
-                      !ctraceRunMeta.routes().front().identity.traceBusId.has_value() &&
-                      ctraceRunMeta.traceFormat() != TraceRunFormat::Formatted;
-  if (legacy && routes.empty()) {
-    routes.push_back(&ctraceRunMeta.routes().front());
-  }
+  const auto routes = selectedCtfRoutes(ctraceRunMeta, selection);
   if (routes.empty()) {
     return CtfMetadataTopology{};
   }
+
+  const auto legacy = ctraceRunMeta.routes().size() == 1U &&
+                      !ctraceRunMeta.routes().front().identity.traceBusId.has_value() &&
+                      ctraceRunMeta.traceFormat() != TraceRunFormat::Formatted;
 
   bool valid = true;
   for (const auto* route : routes) {

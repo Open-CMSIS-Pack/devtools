@@ -331,33 +331,34 @@ TEST(CtraceUnitTests, testCtfOutputPlanningKeepsUnknownFilterWithoutLegacyBootst
   EXPECT_FALSE(std::filesystem::exists(outputDir));
 }
 
-TEST(CtraceUnitTests, testCtfBundleOutputPreservesLegacyUnknownStreamFilter)
+TEST(CtraceUnitTests, testCtfBundleOutputOmitsExcludedLegacyStream)
 {
-  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-legacy-unknown-stream-test");
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-excluded-legacy-stream-test");
   const auto& outputDir = temporaryOutput.outputDirectory();
   TraceRunConfig traceRun;
   traceRun.path = "Legacy.ctrace-run.yml";
   traceRun.setups.push_back(TraceRunTestSupport::makeTimestampSetup(std::nullopt, 1000000U));
+  traceRun.setups.front().timestamps->clockHz.reset();
   traceRun.references.push_back(TraceRunTestSupport::makeReference("itm", std::nullopt, std::nullopt, {1U}, "itm"));
   TraceSelection selection;
-  selection.streams = {99U};
+  selection.streams = {1U};
   CollectingDiagnosticSink diagnostics;
   auto plan = planTraceOutputs({false, true, selection}, outputDir.parent_path() / "output.SWO.raw",
                                CtraceRunMeta::fromConfig(traceRun), diagnostics);
 
   ASSERT_TRUE(plan.ctf.has_value() && diagnostics.events().empty());
-  ASSERT_TRUE(CtfMetadataModel(CtfTestSupport::testUuid(), plan.ctf->metadata).isLegacySingleStreamLayout());
+  EXPECT_TRUE(plan.ctf->metadata.streams.empty());
+  EXPECT_TRUE(plan.ctf->metadata.clockDomains.empty());
   CtfBundleOutput output(std::move(*plan.ctf));
   output.start();
   output.stop();
 
-  ASSERT_TRUE(std::filesystem::is_regular_file(outputDir / "stream_0"));
-  EXPECT_EQ(std::filesystem::file_size(outputDir / "stream_0"), 0U);
-  EXPECT_TRUE(readCtfRecords(outputDir / "stream_0").empty());
+  EXPECT_FALSE(std::filesystem::exists(outputDir / "stream_0"));
   const auto metadata = readTestTextFile(outputDir / "metadata");
-  EXPECT_NE(metadata.find("name = swo_clock;"), std::string::npos);
-  EXPECT_NE(metadata.find("stream {\n    id = 0;"), std::string::npos);
-  EXPECT_TRUE(std::filesystem::is_regular_file(testTraceCompassXmlPath(outputDir)));
+  EXPECT_EQ(metadata.find("\nclock {"), std::string::npos);
+  EXPECT_EQ(metadata.find("\nstream {"), std::string::npos);
+  EXPECT_EQ(metadata.find("\nevent {"), std::string::npos);
+  EXPECT_FALSE(std::filesystem::exists(testTraceCompassXmlPath(outputDir)));
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
