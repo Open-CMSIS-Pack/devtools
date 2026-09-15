@@ -10,25 +10,26 @@
 
 #include "OpenCsdTraceElement.h"
 #include "TraceEvent.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <optional>
+#include <vector>
 
 class CortexMPostDecoder;
 
-/** @brief Stores fallback and stream-specific ITM timestamp prescalers. */
-struct ItmTimestampPrescalers {
-  std::optional<std::uint32_t> fallback;
-  std::map<std::uint8_t, std::uint32_t> byTraceBusId;
+/** @brief Configures semantic state and timestamp scaling for one normalized route. */
+struct CortexMDecodeRoute {
+  TraceRouteIdentity identity;
+  std::uint32_t timestampPrescaler = 1U;
 };
 
 /** @brief Routes OpenCSD elements to per-stream Cortex-M post-decoders. */
 class CortexMStreamDecoder final : public OpenCsdTraceElementSink {
 public:
   /** @brief Creates a stream router with timestamp scaling configuration. */
-  CortexMStreamDecoder(ItmTimestampPrescalers prescalers, TraceEventSink& eventSink);
+  CortexMStreamDecoder(const std::vector<CortexMDecodeRoute>& routes, TraceEventSink& eventSink);
   /** @brief Destroys all per-stream post-decoders. */
   ~CortexMStreamDecoder();
 
@@ -45,14 +46,14 @@ public:
   std::uint64_t eventCount() const;
 
 private:
-  /** @brief Resolves the configured timestamp prescaler for one Trace Bus ID. */
-  std::uint32_t prescaler(std::uint8_t traceBusId) const;
-  /** @brief Returns or lazily creates the post-decoder for one Trace Bus ID. */
-  CortexMPostDecoder& decoder(std::uint8_t traceBusId);
+  /** @brief Owns semantic state and timestamp scaling for one normalized route. */
+  struct RouteDecoder {
+    TraceRouteIdentity identity;
+    std::uint32_t timestampPrescaler = 1U;
+    std::unique_ptr<CortexMPostDecoder> decoder;
+  };
 
-  ItmTimestampPrescalers m_prescalers;
-  TraceEventSink& m_eventSink;
-  std::map<std::uint8_t, std::unique_ptr<CortexMPostDecoder>> m_decoders;
+  std::map<TraceRouteId, RouteDecoder> m_decoders;
 };
 
 #endif  // CTRACE_SRC_DECODE_CORTEXMSTREAMDECODER_H

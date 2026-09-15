@@ -13,6 +13,7 @@
 #include "TraceOutput.h"
 #include "TraceOutputConfig.h"
 
+#include <cstddef>
 #include <filesystem>
 
 class DiagnosticSink;
@@ -29,9 +30,9 @@ public:
   /** @brief Aborts an active bundle before destruction. */
   ~CtfBundleOutput() override;
 
-  /** @brief Prepares empty CTF and XML targets. */
+  /** @brief Prepares an empty CTF target and removes stale companion XML. */
   void start() override;
-  /** @brief Completes metadata, stream, and XML output. */
+  /** @brief Completes metadata and streams, then writes XML when their clocks permit it. */
   void stop() override;
   /** @brief Removes incomplete CTF and XML targets. */
   void abort() override;
@@ -46,9 +47,15 @@ public:
   std::string targetPath() const override;
 
 private:
+  /** @brief Finalizes or omits the companion Trace Compass XML for completed CTF metadata. */
+  void finalizeTraceCompassXml(const CtfMetadataModel& metadata);
+  /** @brief Removes Trace Compass XML and reports incompatible emitted clock domains. */
+  void omitTraceCompassXml(std::size_t clockDomainCount);
+
   std::filesystem::path m_ctfOutputDirectory;
   std::filesystem::path m_traceCompassXmlPath;
   CtfEncoder m_encoder;
+  DiagnosticSink* m_diagnostics = nullptr;
   bool m_active = false;
 };
 

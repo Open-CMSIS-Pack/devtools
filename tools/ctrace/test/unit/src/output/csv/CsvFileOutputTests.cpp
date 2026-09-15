@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <streambuf>
 #include <stdexcept>
@@ -91,7 +92,7 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
 
   for (const auto stream : {3U, 0U}) {
     auto excluded = accepted;
-    excluded.traceBusId = static_cast<std::uint8_t>(stream);
+    excluded = onStream(std::move(excluded), static_cast<std::uint8_t>(stream));
     output.writeEvent(excluded);
   }
 
@@ -99,7 +100,7 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
   std::get<SoftwareTraceEvent>(excludedChannel.payload).channel = 0U;
   output.writeEvent(excludedChannel);
 
-  output.writeEvent(onStream(issuePacket(TraceIssueCode::DecodeError), accepted.traceBusId));
+  output.writeEvent(onRoute(issuePacket(TraceIssueCode::DecodeError), accepted.route));
   output.stop();
 
   ASSERT_TRUE(
@@ -144,6 +145,30 @@ TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
   ASSERT_TRUE(lines[1] == "949338400,,dwt,2,0xfffffdf9,0x08001234,0xfdf9,") << "CSV DWT row schema mismatch";
   ASSERT_TRUE(lines[2] == "950364820,,exception,11,0x1,,,") << "CSV exception state schema mismatch";
   ASSERT_TRUE(lines[3] == "950364900,,pcsample,,,0x08000100,,") << "CSV PC-sample row schema mismatch";
+}
+
+TEST(CtraceUnitTests, testCsvFileOutputPreservesInterleavedRouteOrderAndOnlyWritesArchitecturalIds)
+{
+  const TemporaryTestPath temporaryPath("ctrace-csv-routes-test.csv");
+  CsvFileOutput output(temporaryPath.path());
+  const TraceRouteIdentity firstRoute{TraceRouteId{90U}, 7U};
+  const TraceRouteIdentity secondRoute{TraceRouteId{4U}, 2U};
+  const TraceRouteIdentity unformattedRoute{TraceRouteId{17U}, std::nullopt};
+
+  output.start();
+  output.writeEvent(onRoute(softwarePacket(1U, 1U, 'A'), firstRoute));
+  output.writeEvent(onRoute(softwarePacket(2U, 1U, 'B'), secondRoute));
+  output.writeEvent(onRoute(softwarePacket(3U, 1U, 'C'), firstRoute));
+  output.writeEvent(onRoute(softwarePacket(4U, 1U, 'D'), unformattedRoute));
+  output.stop();
+
+  const auto lines = readTestLines(temporaryPath.path());
+  ASSERT_EQ(lines.size(), 5U);
+  EXPECT_EQ(lines[0], "cycles,stream,type,source,value,pc,address,note");
+  EXPECT_EQ(lines[1], ",7,itm,1,0x41,,,");
+  EXPECT_EQ(lines[2], ",2,itm,2,0x42,,,");
+  EXPECT_EQ(lines[3], ",7,itm,3,0x43,,,");
+  EXPECT_EQ(lines[4], ",,itm,4,0x44,,,");
 }
 
 TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)

@@ -116,38 +116,21 @@ void TraceDirectoryJob::run()
           },
       });
       reportConsumedReferenceDiagnostics(config, m_diagnostics);
-      const auto ctraceRunMeta = CtraceRunMeta::fromConfig(config);
+      auto ctraceRunMeta = CtraceRunMeta::fromConfig(config);
       reportTraceRunWarnings(ctraceRunMeta, m_diagnostics);
-      const auto rawInputs = TraceRunDiscovery::rawInputs(configFile);
-      bool processedSolutionSet = false;
-      for (const auto& rawInput : rawInputs) {
-        if (rawInput.channel != "SWO") {
-          m_diagnostics.report({
-              DiagnosticSink::Severity::Warning,
-              "skipping raw trace channel that is not implemented yet",
-              {
-                  {"solutionSet", solutionSet},
-                  {"channel", rawInput.channel},
-                  {"path", rawInput.path.string()},
-              },
-          });
-          continue;
-        }
-
-        FileDecodeJob fileJob(m_options, rawInput.path, m_diagnostics, ctraceRunMeta);
-        fileJob.run();
-        processedSolutionSet = true;
-      }
-      if (!processedSolutionSet) {
+      auto input = TraceRunDiscovery::resolveInput(std::move(ctraceRunMeta), [&](const auto& rawInput) {
         m_diagnostics.report({
-            DiagnosticSink::Severity::Error,
-            "no supported <solution-set>.SWO.raw input found",
+            DiagnosticSink::Severity::Warning,
+            "skipping raw trace channel excluded from active input selection",
             {
                 {"solutionSet", solutionSet},
-                {"traceDir", configFile.parent_path().string()},
+                {"channel", rawInput.channel},
+                {"path", rawInput.path.string()},
             },
         });
-      }
+      });
+      FileDecodeJob fileJob(m_options, std::move(input), m_diagnostics);
+      fileJob.run();
     } catch (const std::exception& error) {
       m_diagnostics.report({
           DiagnosticSink::Severity::Error,

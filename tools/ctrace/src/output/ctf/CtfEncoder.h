@@ -9,29 +9,33 @@
 #define CTRACE_SRC_OUTPUT_CTF_CTFENCODER_H
 
 #include "CtfExceptionLaneTracker.h"
+#include "CtfMetadataModel.h"
 #include "CtfStreamWriter.h"
+#include "CtfUuid.h"
 #include "TraceSelection.h"
 #include "TraceEvent.h"
 #include "TraceOutputConfig.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
 #include <filesystem>
 #include <map>
+#include <optional>
 #include <set>
 #include <utility>
 #include <vector>
 
 class DiagnosticSink;
 
-/** @brief Stores the clock, selection, sources, and diagnostics for CTF encoding. */
+/** @brief Stores metadata topology, selection, route catalogue, and diagnostics for CTF encoding. */
 struct CtfEncoderConfig {
-  std::uint64_t coreClockHz = 0;
+  CtfMetadataTopology metadata;
   TraceSelection selection;
-  std::vector<ResolvedTraceSource> sources;
   DiagnosticSink* diagnostics = nullptr;
+  std::vector<TraceRouteIdentity> routes;
 };
 
-/** @brief Encodes semantic trace events into one CTF stream and metadata set. */
+/** @brief Encodes semantic trace events into lazy route-specific CTF streams and one metadata set. */
 class CtfEncoder final {
 public:
   /** @brief Creates an encoder from validated CTF configuration. */
@@ -45,13 +49,15 @@ public:
   CtfEncoder& operator=(const CtfEncoder&) = delete;
 
   /** @brief Starts writing into a prepared CTF directory. */
-  void start(const std::filesystem::path& outputDirectory);
+  void start(const std::filesystem::path& outputDirectory, const CtfUuid& traceUuid);
   /** @brief Completes stream data and writes final metadata. */
   void stop();
   /** @brief Aborts stream output without throwing. */
   void abort() noexcept;
   /** @brief Encodes one selected semantic event. */
   void writeEvent(const TraceEvent& event);
+  /** @brief Returns completed emitted metadata after a successful stop. */
+  const CtfMetadataModel* completedMetadata() const noexcept;
 
 private:
   /** @brief Tracks timestamp and trace-quality state for one output stream. */
@@ -62,17 +68,29 @@ private:
   };
 
   /** @brief Allocates the next monotonic event timestamp for one stream. */
-  std::uint64_t allocateEventTimestamp(std::uint8_t traceBusId);
+  std::uint64_t allocateEventTimestamp(const TraceRouteIdentity& route);
+  /** @brief Returns route-local CTF state while rejecting identity mismatches. */
+  StreamState& streamState(const TraceRouteIdentity& route);
+  /** @brief Returns the exact configured stream descriptor for one normalized route. */
+  const CtfStreamDescriptor& streamDescriptor(const TraceRouteIdentity& route) const;
+  /** @brief Creates or returns the lazy binary writer for one configured stream. */
+  CtfStreamWriter& ensureStreamWriter(const CtfStreamDescriptor& stream);
+  /** @brief Returns the already-created binary writer for one normalized route. */
+  CtfStreamWriter& streamWriter(const TraceRouteIdentity& route);
+  /** @brief Tests whether one event can create selected CTF output. */
+  bool activatesStream(const TraceEvent& event, bool selected) const;
+  /** @brief Emits the legacy stream-local bootstrap exactly once. */
+  void bootstrapRoute(const TraceRouteIdentity& route);
   /** @brief Writes metadata that matches the completed binary stream. */
   void writeMetadataFile();
   /** @brief Emits or applies a trace-status transition. */
-  void writeTraceStatusEvent(std::uint8_t reason, std::uint8_t traceBusId, bool emitEvent = true);
+  void writeTraceStatusEvent(std::uint8_t reason, const TraceRouteIdentity& route, bool emitEvent = true);
   /** @brief Encodes one ITM software event. */
   void writeSoftwareEvent(const TraceEvent& event, const SoftwareTraceEvent& software);
   /** @brief Encodes one DWT data value event. */
   void writeDwtValueEvent(const TraceEvent& event, const DwtDataTraceEvent& data);
   /** @brief Reports configured and decoded DWT width mismatches once per route. */
-  void reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data, const ResolvedTraceSource* source);
+  void reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTraceEvent& data, const CtfSourceDescriptor* source);
   /** @brief Encodes one DWT address event. */
   void writeDwtAddrEvent(const TraceEvent& event, const DwtAddressTraceEvent& address);
   /** @brief Encodes one comparator-only DWT match event. */
@@ -86,23 +104,25 @@ private:
   /** @brief Encodes one reconstructed global timestamp event. */
   void writeGlobalTimestampEvent(const TraceEvent& event, const GlobalTimestampTraceEvent& timestamp);
   /** @brief Applies one exception transition to its CTF lane state. */
-  void writeExceptionEvent(std::uint8_t traceBusId, const ExceptionTraceEvent& exception);
+  void writeExceptionEvent(const TraceRouteIdentity& route, const ExceptionTraceEvent& exception);
   /** @brief Emits one concrete exception lane record. */
-  void emitExceptionRecord(std::uint8_t traceBusId, ExceptionNumber number,
-                           CtfExceptionLaneTracker::RecordAction action,
-                           CtfExceptionLaneTracker::RecordOrigin origin);
+  void emitExceptionRecord(const TraceRouteIdentity& route, ExceptionNumber number,
+                           CtfExceptionLaneTracker::RecordAction action, CtfExceptionLaneTracker::RecordOrigin origin);
   /** @brief Returns the exception tracker for one stream. */
-  CtfExceptionLaneTracker& exceptionLane(std::uint8_t traceBusId);
+  CtfExceptionLaneTracker& exceptionLane(const TraceRouteIdentity& route);
   /** @brief Computes CTF sample flags and saturated overflow count. */
   std::pair<std::uint8_t, std::uint32_t> computeSampleQuality(const TraceEvent& event);
 
   CtfEncoderConfig m_config;
   std::filesystem::path m_outputDirectory;
-  CtfStreamWriter m_stream;
+  std::optional<CtfMetadataModel> m_metadata;
+  std::optional<CtfMetadataModel> m_completedMetadata;
+  std::map<CtfStreamClassId, CtfStreamWriter> m_streams;
   bool m_recording = false;
-  std::map<std::uint8_t, StreamState> m_streamStates;
-  std::set<std::pair<std::uint8_t, std::uint32_t>> m_reportedDwtSizeMismatches;
-  std::map<std::uint8_t, CtfExceptionLaneTracker> m_exceptionLanes;
+  std::set<TraceRouteId> m_bootstrappedRoutes;
+  std::map<TraceRouteId, StreamState> m_streamStates;
+  std::set<std::pair<TraceRouteId, std::uint32_t>> m_reportedDwtSizeMismatches;
+  std::map<TraceRouteId, CtfExceptionLaneTracker> m_exceptionLanes;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_CTF_CTFENCODER_H

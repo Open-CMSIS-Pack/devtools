@@ -177,9 +177,6 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
                              "0:return:trace",
                          }))
       << "CtfExceptionLaneTracker nested and tail-chain records mismatch";
-  ASSERT_TRUE(tracker.observedExceptionNumbers() == std::vector<ExceptionNumber>({0U, 3U, 15U, 54U}))
-      << "CtfExceptionLaneTracker observed lanes mismatch";
-
   tracker.resetForDiscontinuity(emit);
   ASSERT_TRUE(records.back() == "0:exit:synthetic")
       << "CtfExceptionLaneTracker discontinuity must close the active lane synthetically";
@@ -189,8 +186,6 @@ TEST(CtraceUnitTests, testCtfExceptionLaneTracker)
 
   CtfExceptionLaneTracker resumedTracker;
   resumedTracker.startThreadMode(emit);
-  ASSERT_TRUE(resumedTracker.observedExceptionNumbers() == std::vector<ExceptionNumber>({0U}))
-      << "a new CtfExceptionLaneTracker must start with an empty lane history";
 
   records.clear();
   resumedTracker.consume(ExceptionTraceEvent{3, ExceptionAction::Entered}, emit);

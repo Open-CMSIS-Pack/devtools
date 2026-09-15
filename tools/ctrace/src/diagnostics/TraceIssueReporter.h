@@ -10,10 +10,14 @@
 
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
 /** @brief Converts trace issue and overflow events into structured diagnostics. */
 class TraceIssueReporter final : public TraceEventSink {
@@ -27,16 +31,23 @@ public:
   void finish();
 
 private:
+  /** @brief Stores deferred overflow state for one normalized route. */
+  struct OverflowState {
+    TraceRouteIdentity route;
+    std::optional<std::uint64_t> firstTimestamp;
+    std::uint64_t packetCount = 0U;
+  };
+
   /** @brief Accumulates overflow state for the final summary. */
   void reportOverflow(const TraceEvent& event);
   /** @brief Reports one semantic decoder issue. */
   void reportError(const TraceEvent& event, const TraceIssueEvent& issue);
   /** @brief Submits one normalized trace diagnostic to the sink. */
-  void report(DiagnosticSink::Severity severity, std::string message);
+  void report(DiagnosticSink::Severity severity, std::string message,
+              std::vector<std::pair<std::string, std::string>> context = {});
 
   DiagnosticSink& m_diagnostics;
-  std::optional<std::uint64_t> m_firstOverflowTimestamp;
-  std::uint64_t m_overflowPackets = 0;
+  std::map<TraceRouteId, OverflowState> m_overflowByRoute;
   bool m_finished = false;
 };
 

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tmfxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="xmlDefinition.xsd">
+    <stateProvider version="1191691736" id="arm.cmsis.swo.analysis.v1">
+        <head><label value="SWO Trace Analysis" /></head>
+        <eventHandler eventName="DWT_VALUE">
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="m_cmsisdwt_value_type" />
+                        <stateValue type="string" value="i8" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="DWT_VALUE" />
+                    <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
+                    <stateAttribute type="constant" value="data" />
+                    <stateValue type="eventField" value="m_cmsisdwt_value.i8" forcedType="long" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="m_cmsisdwt_value_type" />
+                        <stateValue type="string" value="u8" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="DWT_VALUE" />
+                    <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
+                    <stateAttribute type="constant" value="data" />
+                    <stateValue type="eventField" value="m_cmsisdwt_value.u8" forcedType="long" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="m_cmsisdwt_value_type" />
+                        <stateValue type="string" value="i16" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="DWT_VALUE" />
+                    <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
+                    <stateAttribute type="constant" value="data" />
+                    <stateValue type="eventField" value="m_cmsisdwt_value.i16" forcedType="long" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="m_cmsisdwt_value_type" />
+                        <stateValue type="string" value="u16" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="DWT_VALUE" />
+                    <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
+                    <stateAttribute type="constant" value="data" />
+                    <stateValue type="eventField" value="m_cmsisdwt_value.u16" forcedType="long" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="m_cmsisdwt_value_type" />
+                        <stateValue type="string" value="i32" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="DWT_VALUE" />
+                    <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
+                    <stateAttribute type="constant" value="data" />
+                    <stateValue type="eventField" value="m_cmsisdwt_value.i32" forcedType="long" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="m_cmsisdwt_value_type" />
+                        <stateValue type="string" value="u32" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="DWT_VALUE" />
+                    <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
+                    <stateAttribute type="constant" value="data" />
+                    <stateValue type="eventField" value="m_cmsisdwt_value.u32" forcedType="long" />
+                </then>
+            </stateChange>
+            <stateChange>
+                <if>
+                    <condition>
+                        <stateValue type="eventField" value="m_cmsisdwt_value_type" />
+                        <stateValue type="string" value="f32" />
+                    </condition>
+                </if>
+                <then>
+                    <stateAttribute type="constant" value="DWT_VALUE" />
+                    <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
+                    <stateAttribute type="constant" value="data" />
+                    <stateValue type="eventField" value="m_cmsisdwt_value.f32" forcedType="double" />
+                </then>
+            </stateChange>
+        </eventHandler>
+    </stateProvider>
+    <xyView id="arm.cmsis.swo.xy.dwt_value.v1">
+        <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value="DWT_VALUE" /></head>
+        <entry path="DWT_VALUE/*"><display type="constant" value="data" /><name type="self" /></entry>
+    </xyView>
+</tmfxml>

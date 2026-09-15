@@ -33,6 +33,7 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  BABELTRACE2_DEB_VERSION: 2.0.5-3build2
 
 jobs:
   setup:
@@ -181,6 +182,14 @@ jobs:
         with:
           submodules: true
 
+      - name: Install pinned Babeltrace consumer
+        if: matrix.run_tests && matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            babeltrace2=${{ env.BABELTRACE2_DEB_VERSION }} \
+            libbabeltrace2-0=${{ env.BABELTRACE2_DEB_VERSION }}
+
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CtraceUnitTests
         id: build_unit_tests
@@ -201,19 +210,26 @@ jobs:
 
       - name: Run ctrace unit tests
         id: run_unit_tests
-        if: always() && (matrix.arch != 'arm64') && (steps.build_unit_tests.outcome == 'success')
+        if: always() && matrix.run_tests && (steps.build_unit_tests.outcome == 'success')
         run: ctest -V -C Debug -R '^CtraceUnitTests$'
         working-directory: ./build
 
       - name: Run ctrace integration tests
         id: run_integration_tests
-        if: always() && (matrix.arch != 'arm64') && (steps.build_integration_target.outcome == 'success')
-        run: ctest -V -C Debug -R '^(CtraceIntegTests|ctrace-)'
+        if: always() && matrix.run_tests && (steps.build_integration_target.outcome == 'success')
+        run: ctest -V -C Debug -R '^(CtraceIntegTests|CtraceFixtureIntegrity|ctrace-)'
+        working-directory: ./build
+
+      - name: Run pinned Babeltrace consumer test
+        if: |
+          always() && matrix.run_tests && matrix.target == 'linux' &&
+          (steps.build_integration_target.outcome == 'success')
+        run: ctest -V -C Debug --no-tests=error -L '^linux-consumer$'
         working-directory: ./build
 
       - name: Archive unit test results
         # Keep the report available when test execution fails.
-        if: always() && (matrix.arch != 'arm64') && (steps.run_unit_tests.outcome != 'skipped')
+        if: always() && matrix.run_tests && (steps.run_unit_tests.outcome != 'skipped')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_result_ctrace-${{ matrix.target }}-${{ matrix.arch }}
@@ -223,7 +239,7 @@ jobs:
 
       - name: Archive integration test results
         # Keep the report available when test execution fails.
-        if: always() && (matrix.arch != 'arm64') && (steps.run_integration_tests.outcome != 'skipped')
+        if: always() && matrix.run_tests && (steps.run_integration_tests.outcome != 'skipped')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: integ_test_result_ctrace-${{ matrix.target }}-${{ matrix.arch }}
@@ -256,6 +272,13 @@ jobs:
         with:
           submodules: true
 
+      - name: Install pinned Babeltrace consumer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            babeltrace2=${{ env.BABELTRACE2_DEB_VERSION }} \
+            libbabeltrace2-0=${{ env.BABELTRACE2_DEB_VERSION }}
+
       # https://github.com/Open-CMSIS-Pack/devtools-build-action
       - name: Build CtraceUnitTests
         uses: Open-CMSIS-Pack/devtools-build-action@5b24a2b5145eb406a664269b3704bb983c19242d # arm64
@@ -276,7 +299,11 @@ jobs:
         working-directory: ./build
 
       - name: Run ctrace integration tests
-        run: ctest -V -C Debug -R '^(CtraceIntegTests|ctrace-)'
+        run: ctest -V -C Debug -R '^(CtraceIntegTests|CtraceFixtureIntegrity|ctrace-)'
+        working-directory: ./build
+
+      - name: Run pinned Babeltrace consumer test
+        run: ctest -V -C Debug --no-tests=error -L '^linux-consumer$'
         working-directory: ./build
 
       - name: Get retention days
@@ -310,12 +337,43 @@ jobs:
         working-directory: ./build/tools/ctrace
 
       - name: Generate coverage report
+        id: generate_coverage_report
         run: |
           lcov-1.15/bin/lcov --rc lcov_branch_coverage=1 --rc geninfo_no_exception_branch=1 -c --directory . --output-file full_coverage.info
           lcov-1.15/bin/lcov --rc lcov_branch_coverage=1 --rc geninfo_no_exception_branch=1 -e full_coverage.info '*/tools/ctrace/src/*' -o coverage_ctrace.info
           # Preserve unfiltered branch data for review, but gate on portable source-line coverage.
           lcov-1.15/bin/lcov --rc lcov_branch_coverage=0 -e full_coverage.info '*/tools/ctrace/src/*' -o coverage_ctrace_codecov.info
           lcov-1.15/bin/genhtml coverage_ctrace.info --output-directory coverage_ctrace --branch-coverage
+        working-directory: ./build/tools/ctrace
+
+      - name: Enforce 100% ctrace source-line coverage
+        run: |
+          awk '
+            /^SF:/ {
+              source = substr($0, 4)
+              files += 1
+              next
+            }
+            /^DA:/ {
+              split(substr($0, 4), fields, ",")
+              lines += 1
+              if ((fields[2] + 0) == 0) {
+                printf "uncovered source line: %s:%s\n", source, fields[1]
+                missed += 1
+              }
+            }
+            END {
+              if (files == 0 || lines == 0) {
+                print "coverage gate failed: no ctrace source-line records found" > "/dev/stderr"
+                exit 2
+              }
+              printf "ctrace source-line coverage: %d/%d lines\n", lines - missed, lines
+              if (missed != 0) {
+                printf "coverage gate failed: %d source lines are uncovered\n", missed > "/dev/stderr"
+                exit 1
+              }
+            }
+          ' coverage_ctrace_codecov.info
         working-directory: ./build/tools/ctrace
 
       - name: Upload Report to Codecov
@@ -333,6 +391,7 @@ jobs:
           attempt_delay: 5000
 
       - name: Archive coverage report
+        if: ${{ always() && steps.generate_coverage_report.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-report-ctrace

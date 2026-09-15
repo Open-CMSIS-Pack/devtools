@@ -11,17 +11,19 @@
 #include "OpenCsdTraceElement.h"
 #include "DwtPacketDecoder.h"
 #include "TraceEvent.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 /** @brief Converts OpenCSD elements from one Cortex-M stream into semantic events. */
 class CortexMPostDecoder final : public OpenCsdTraceElementSink {
 public:
   /** @brief Creates a post-decoder that emits to the supplied event sink. */
-  explicit CortexMPostDecoder(TraceEventSink& eventSink);
+  CortexMPostDecoder(TraceRouteIdentity route, TraceEventSink& eventSink);
 
   /** @brief Appends one OpenCSD trace element. */
   void append(OpenCsdTraceElement element) override;
@@ -50,8 +52,8 @@ private:
   void appendTimestamp(const OpenCsdTraceElement& element);
 
   /** @brief Queues an issue whose final interval ends at the next reliable timestamp. */
-  void queueDiscontinuityIssue(std::uint64_t sourceIndex, std::uint8_t traceBusId, const TraceQuality& quality,
-                               TraceIssueCode issueCode, const std::string& message,
+  void queueDiscontinuityIssue(std::uint64_t sourceIndex, const TraceQuality& quality, TraceIssueCode issueCode,
+                               const std::string& message,
                                std::optional<std::uint64_t> rawBytesConsumed = std::nullopt);
   /** @brief Finalizes queued discontinuity intervals at the first resumed timestamp. */
   void finalizePendingDiscontinuityIssues(std::optional<std::uint64_t> firstResumedTcyc);
@@ -65,6 +67,14 @@ private:
   void flushPendingEvents(std::optional<std::uint64_t> tcyc, const TraceQuality& quality);
   /** @brief Appends reconstructed DWT events to the pending sequence. */
   void appendPendingEvents(std::vector<TraceEvent> events);
+  /** @brief Creates an event with decoder-local source and route identity. */
+  template <typename Payload> TraceEvent makeEvent(std::uint64_t sourceIndex, Payload payload) const
+  {
+    TraceEvent event{std::move(payload)};
+    event.index = sourceIndex;
+    event.route = m_route;
+    return event;
+  }
   /** @brief Sends one finalized event to the downstream sink. */
   void emitEvent(const TraceEvent& event);
   /** @brief Maps a decoder-local timestamp onto the monotonic output timeline. */
@@ -79,6 +89,7 @@ private:
   /** @brief Increments the saturated overflow counter. */
   void noteOverflow();
 
+  TraceRouteIdentity m_route;
   TraceEventSink& m_eventSink;
   std::uint64_t m_eventCount = 0;
   std::vector<TraceEvent> m_pendingEvents;

@@ -9,6 +9,7 @@
 #define CTRACE_SRC_DECODE_DWTPACKETDECODER_H
 
 #include "TraceEvent.h"
+#include "TraceRoute.h"
 
 #include <array>
 #include <cstddef>
@@ -19,7 +20,7 @@
 /** @brief Stores a decoded DWT hardware payload and its trace metadata. */
 struct DwtPayloadPacket {
   std::uint64_t index = 0;
-  std::uint8_t traceBusId = 0U;
+  TraceRouteIdentity route;
   std::uint8_t discriminator = 0;
   std::uint8_t size = 0;
   std::uint32_t value = 0;
@@ -43,7 +44,7 @@ private:
   /** @brief Accumulates the fragments of one pending DWT data-trace event. */
   struct PendingDataTrace {
     std::uint64_t index = 0;
-    std::uint8_t traceBusId = 0U;
+    TraceRouteIdentity route;
     DwtAddressFragment pc;
     DwtAddressFragment address;
     std::uint32_t value = 0;

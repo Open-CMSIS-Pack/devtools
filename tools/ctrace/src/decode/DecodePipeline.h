@@ -14,6 +14,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 /** @brief Provides a non-owning view of one raw trace byte chunk. */
 struct RawByteView {
@@ -37,18 +38,22 @@ struct DecodeResult {
 class DecodePipeline final {
 public:
   /**
-   * @brief Creates a pipeline with stream-specific timestamp prescalers.
-   * @param timestampPrescalers Default and per-stream timestamp prescalers.
+   * @brief Creates a pipeline for normalized SINGLE or formatted routes.
+   * @param routes Route identities and timestamp prescalers used by the decoders.
+   * @param inputMode Raw transport presented to OpenCSD.
    * @param eventSink Sink receiving decoded events synchronously.
+   * @param unsupportedTraceIdSink Observer for unconfigured normal formatted IDs.
    */
-  DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink);
+  DecodePipeline(std::vector<CortexMDecodeRoute> routes, OpenCsdItmInputMode inputMode, TraceEventSink& eventSink,
+                 OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdSink = {});
   /**
-   * @brief Creates a pipeline with an injected OpenCSD session factory.
-   * @param timestampPrescalers Default and per-stream timestamp prescalers.
+   * @brief Creates a configured pipeline with an injected OpenCSD session.
+   * @param routes Route identities and timestamp prescalers used by the decoders.
+   * @param inputMode Decoder policy mode applied around the injected session.
    * @param eventSink Sink receiving decoded events synchronously.
    * @param sessionFactory Factory used to create the OpenCSD session.
    */
-  DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
+  DecodePipeline(std::vector<CortexMDecodeRoute> routes, OpenCsdItmInputMode inputMode, TraceEventSink& eventSink,
                  const OpenCsdItmSessionFactory& sessionFactory);
 
   /**
@@ -69,4 +74,4 @@ private:
   OpenCsdItmDecoder m_decoder;
 };
 
-#endif  // CTRACE_SRC_DECODE_DECODEPIPELINE_H
+#endif // CTRACE_SRC_DECODE_DECODEPIPELINE_H

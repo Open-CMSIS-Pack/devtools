@@ -8,6 +8,8 @@
 #ifndef CTRACE_SRC_OUTPUT_TRACEOUTPUTCONFIG_H
 #define CTRACE_SRC_OUTPUT_TRACEOUTPUTCONFIG_H
 
+#include "ctf/CtfMetadataModel.h"
+#include "TraceRoute.h"
 #include "TraceSelection.h"
 
 #include <cstdint>
@@ -24,17 +26,6 @@ struct TraceOutputRequest {
   TraceSelection selection;
 };
 
-/** @brief Stores normalized source metadata required by trace outputs. */
-struct ResolvedTraceSource {
-  std::string type;
-  std::uint32_t source = 0;
-  std::uint8_t traceBusId = 0U;
-  std::optional<std::string> label;
-  std::optional<std::uint64_t> address;
-  std::string dataType = "unsigned";
-  std::uint8_t dataSize = 4U;
-};
-
 /** @brief Configures one CSV output artifact. */
 struct CsvOutputConfig {
   std::filesystem::path outputPath;
@@ -45,20 +36,20 @@ struct CsvOutputConfig {
 struct CtfOutputConfig {
   /** @brief Creates a complete CTF output configuration. */
   CtfOutputConfig(std::filesystem::path outputDirectory, std::filesystem::path traceCompassXmlPath,
-                  std::uint64_t clockHz, TraceSelection selection, std::vector<ResolvedTraceSource> sources)
+                  TraceSelection selection, CtfMetadataTopology metadata, std::vector<TraceRouteIdentity> routes = {})
     : outputDirectory(std::move(outputDirectory)),
       traceCompassXmlPath(std::move(traceCompassXmlPath)),
-      coreClockHz(clockHz),
       selection(std::move(selection)),
-      sources(std::move(sources))
+      metadata(std::move(metadata)),
+      routes(std::move(routes))
   {
   }
 
   std::filesystem::path outputDirectory;
   std::filesystem::path traceCompassXmlPath;
-  std::uint64_t coreClockHz = 0;
   TraceSelection selection;
-  std::vector<ResolvedTraceSource> sources;
+  CtfMetadataTopology metadata;
+  std::vector<TraceRouteIdentity> routes;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_TRACEOUTPUTCONFIG_H

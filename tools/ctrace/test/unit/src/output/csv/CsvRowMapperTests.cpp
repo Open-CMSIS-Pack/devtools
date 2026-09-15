@@ -8,6 +8,7 @@
 #include "TestSupport.h"
 #include <gtest/gtest.h>
 #include "TraceEvent.h"
+#include "TraceRoute.h"
 #include "TraceSelection.h"
 #include "csv/CsvRowMapper.h"
 #include <array>
@@ -56,6 +57,10 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
 
   ASSERT_TRUE(CsvRowMapper::header() == "cycles,stream,type,source,value,pc,address,note")
       << "CSV schema header integration mismatch";
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{LocalTimestampTraceEvent{}}), ",,,,,,,")
+      << "local timestamp control packets must not populate payload-specific CSV columns";
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{SyncTraceEvent{}}), ",,,,,,,")
+      << "synchronization control packets must not populate payload-specific CSV columns";
   ASSERT_TRUE(
       (CsvRowMapper::row(TraceEvent{ExceptionTraceEvent{11U, ExceptionAction::Entered}}) == ",,exception,11,0x1,,,"))
       << "CSV exception value mismatch";
@@ -66,6 +71,12 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
       << "CSV must render the raw hexadecimal DWT value with the two-byte SWO width";
   ASSERT_TRUE(CsvRowMapper::row(softwarePacket(1U)) == ",,itm,1,0x00,,,")
       << "CSV must leave the stream field empty for unformatted input";
+  EXPECT_EQ(CsvRowMapper::row(softwarePacket(1U, 1U, 0U)), ",,itm,1,0x00,,,");
+  EXPECT_EQ(CsvRowMapper::row(softwarePacket(1U, 2U, 0U)), ",,itm,1,0x0000,,,");
+  EXPECT_EQ(CsvRowMapper::row(softwarePacket(1U, 4U, 0U)), ",,itm,1,0x00000000,,,");
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 1U, 0U, AccessType::Write}}), ",,dwt,0,0x00,,,");
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 2U, 0U, AccessType::Write}}), ",,dwt,0,0x0000,,,");
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 4U, 0U, AccessType::Write}}), ",,dwt,0,0x00000000,,,");
   ASSERT_TRUE(CsvRowMapper::row(TraceEvent{DwtMatchTraceEvent{2U}}) == ",,dwt,2,,,,")
       << "CSV must expose a match only through its DWT comparator source";
   ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U, false}}, 949339000U)) ==
@@ -99,6 +110,20 @@ TEST(CtraceUnitTests, testCsvRowMapperEscapesDiagnosticText)
   EXPECT_EQ(CsvRowMapper::row(issue), ",7,error,,,,,\"comma, quote \"\" and\nnewline\"");
 
   EXPECT_EQ(CsvRowMapper::row(atCycle(TraceEvent{GlobalTimestampTraceEvent{123U, false}}, 99U)), "123,,global_ts,,,,,");
+}
+
+TEST(CtraceUnitTests, testCsvRowMapperSerializesOnlyArchitecturalTraceBusId)
+{
+  const TraceRouteIdentity noBusRoute{TraceRouteId{97U}, std::nullopt};
+  const TraceRouteIdentity formattedRoute{TraceRouteId{97U}, 7U};
+
+  EXPECT_EQ(CsvRowMapper::row(onRoute(softwarePacket(1U, 1U, 0x2aU), noBusRoute)), ",,itm,1,0x2a,,,")
+      << "an internal route ordinal must never appear in the CSV stream column";
+  EXPECT_EQ(CsvRowMapper::row(onRoute(softwarePacket(1U, 1U, 0x2aU), formattedRoute)), ",7,itm,1,0x2a,,,")
+      << "CSV must serialize the architectural Trace Bus ID rather than the internal route ordinal";
+
+  TraceEvent overflow{OverflowTraceEvent{"route overflow"}};
+  EXPECT_EQ(CsvRowMapper::row(onRoute(std::move(overflow), formattedRoute)), ",7,overflow,,,,,route overflow");
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperHandlesInternalAndCustomOverflowEvents)

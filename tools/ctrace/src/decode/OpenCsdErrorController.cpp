@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <string>
+#include <utility>
 
 /** @brief Removes line terminators and trailing whitespace from an OpenCSD message. */
 static std::string trimTrailingWhitespace(std::string value)
@@ -29,9 +30,7 @@ static std::string trimTrailingWhitespace(std::string value)
 /** @brief Uses OpenCSD itself to format one native error enum. */
 static std::string openCsdErrorText(const OpenCsdErrorRecord& error)
 {
-  const auto nativeError =
-      error.hasIndex ? ocsdError(error.severity, error.code, static_cast<ocsd_trc_index_t>(error.index), error.message)
-                     : ocsdError(error.severity, error.code, error.message);
+  const ocsdError nativeError(error.severity, error.code, error.message);
   return trimTrailingWhitespace(ocsdError::getErrorString(nativeError));
 }
 
@@ -44,6 +43,11 @@ OpenCsdErrorController::OpenCsdErrorController()
 void OpenCsdErrorController::beginDataPathCall()
 {
   m_callErrors.clear();
+}
+
+void OpenCsdErrorController::setCallbackOrderSource(std::function<std::optional<std::uint64_t>()> callbackOrderSource)
+{
+  m_callbackOrderSource = std::move(callbackOrderSource);
 }
 
 OpenCsdErrorController::Decision OpenCsdErrorController::decide(ocsd_datapath_resp_t response) const
@@ -118,7 +122,10 @@ TraceIssueCode OpenCsdErrorController::issueCode(const Decision& decision)
 
 std::string OpenCsdErrorController::describeApiError(ocsd_err_t code, const std::string& message)
 {
-  return openCsdErrorText({OCSD_ERR_SEV_ERROR, code, 0U, false, message});
+  OpenCsdErrorRecord error;
+  error.code = code;
+  error.message = message;
+  return openCsdErrorText(error);
 }
 
 std::string OpenCsdErrorController::describeSummary(const Decision& decision)
@@ -187,7 +194,11 @@ void OpenCsdErrorController::LogError(ocsd_hndl_err_log_t handle, const ocsdErro
   if (error == nullptr) {
     return;
   }
-  m_callErrors.push_back(makeRecord(*error));
+  auto record = makeRecord(*error);
+  if (m_callbackOrderSource) {
+    record.callbackOrder = m_callbackOrderSource();
+  }
+  m_callErrors.push_back(std::move(record));
   ocsdDefaultErrorLogger::LogError(handle, error);
 }
 
@@ -196,8 +207,13 @@ OpenCsdErrorRecord OpenCsdErrorController::makeRecord(const ocsdError& error)
   OpenCsdErrorRecord record;
   record.severity = error.getErrorSeverity();
   record.code = error.getErrorCode();
-  record.hasIndex = error.getErrorIndex() != OCSD_BAD_TRC_INDEX;
-  record.index = record.hasIndex ? static_cast<std::uint64_t>(error.getErrorIndex()) : 0U;
+  const auto index = error.getErrorIndex();
+  record.hasIndex = index != OCSD_BAD_TRC_INDEX;
+  record.index = record.hasIndex ? static_cast<std::uint64_t>(index) : 0U;
+  const auto channel = error.getErrorChanID();
+  if (channel != OCSD_BAD_CS_SRC_ID) {
+    record.channel = channel;
+  }
   record.message = trimTrailingWhitespace(error.getMessage());
   return record;
 }

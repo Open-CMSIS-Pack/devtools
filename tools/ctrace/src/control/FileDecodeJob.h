@@ -11,9 +11,7 @@
 #include "CliOptions.h"
 #include "DiagnosticSink.h"
 #include "OpenCsdItmDecoder.h"
-#include "CtraceRunMeta.h"
-
-#include <filesystem>
+#include "TraceRunDiscovery.h"
 
 /** @brief Decodes one raw trace file and owns its configured output lifecycle. */
 class FileDecodeJob {
@@ -21,22 +19,19 @@ public:
   /**
    * @brief Creates a file decode job using the production OpenCSD session.
    * @param options Validated command-line options.
-   * @param rawInputPath Raw SWO input to decode.
+   * @param input Selected and preflighted raw input with normalized metadata.
    * @param diagnostics Sink receiving operational diagnostics.
-   * @param ctraceRunMeta Normalized metadata for decoding and output.
    */
-  FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
-                CtraceRunMeta ctraceRunMeta);
+  FileDecodeJob(CliOptions options, TraceRunInputDescriptor input, DiagnosticSink& diagnostics);
   /**
    * @brief Creates a file decode job with an injected OpenCSD session factory.
    * @param options Validated command-line options.
-   * @param rawInputPath Raw SWO input to decode.
+   * @param input Selected and preflighted raw input with normalized metadata.
    * @param diagnostics Sink receiving operational diagnostics.
-   * @param ctraceRunMeta Normalized metadata for decoding and output.
    * @param sessionFactory Factory used to create the decoder session.
    */
-  FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
-                CtraceRunMeta ctraceRunMeta, OpenCsdItmSessionFactory sessionFactory);
+  FileDecodeJob(CliOptions options, TraceRunInputDescriptor input, DiagnosticSink& diagnostics,
+                OpenCsdItmSessionFactory sessionFactory);
 
   /**
    * @brief Runs decoding, reporting, and output completion for the input file.
@@ -49,9 +44,8 @@ public:
 
 private:
   CliOptions m_options;
-  std::filesystem::path m_rawInputPath;
+  TraceRunInputDescriptor m_input;
   DiagnosticSink& m_diagnostics;
-  CtraceRunMeta m_ctraceRunMeta;
   OpenCsdItmSessionFactory m_sessionFactory;
 };
 

@@ -1,0 +1,150 @@
+# Reconstructed from real STM32H747I-EVAL trace-buffer data. The formatter
+# stream IDs and leading ITM synchronization packets are part of this fixture.
+ctrace-run:
+  generated-by: ctrace reconstructed test fixture
+  trace-format: formatted
+  ctrace-setup:
+  - pname: CM4
+    timestamps:
+      clock: 240000000
+      itm-prescaler: 1
+    data:
+    exceptions:
+    events:
+    itm:
+      enable: 0x00000000
+    pcsampling:
+      period: 16384
+  - pname: CM7
+    timestamps:
+      clock: 480000000
+      itm-prescaler: 1
+    data:
+    - location: Blinky_cm7|osRtxInfo.kernel.tick
+      access: W
+      output: PC+value
+      size: 4
+    exceptions:
+    events:
+    itm:
+      enable: 0x00000000
+    pcsampling:
+      period: 16384
+    synchronization:
+      DWT: 16M
+  ctrace-refs:
+  - ctrace-ref: CM4/timestamps
+    type: dwt
+    pname: CM4
+    stream: 1
+    regs:
+    - name: ITM_TCR
+      value: 0x00000003
+      mask: 0x00000303
+  - ctrace-ref: CM4/exceptions
+    type: exception
+    pname: CM4
+    stream: 1
+    regs:
+    - name: DWT_CTRL
+      value: 0x00010000
+      mask: 0x00010000
+    - name: ITM_TCR
+      value: 0x00000009
+      mask: 0x00000009
+  - ctrace-ref: CM4/itm
+    type: itm
+    pname: CM4
+    stream: 1
+    regs:
+    - name: ITM_TER0
+      value: 0x00000000
+    - name: ITM_TPR
+      value: 0x00000000
+      mask: 0x0000000f
+    - name: ITM_TCR
+      value: 0x00010001
+      mask: 0x007f0001
+  - ctrace-ref: CM4/pcsampling
+    type: pcsample
+    pname: CM4
+    stream: 1
+    regs:
+    - name: DWT_CTRL
+      value: 0x0000121f
+      mask: 0x0000121f
+    - name: ITM_TCR
+      value: 0x00000009
+      mask: 0x00000009
+  - ctrace-ref: CM7/timestamps
+    type: dwt
+    pname: CM7
+    stream: 2
+    regs:
+    - name: ITM_TCR
+      value: 0x00000003
+      mask: 0x00000303
+  - ctrace-ref: CM7/data#0
+    type: dwt
+    pname: CM7
+    address: 0x24000024
+    size: 4
+    data-type: unsigned
+    source: 0
+    stream: 2
+    regs:
+    - name: DWT_COMP0
+      value: 0x24000024
+    - name: DWT_MASK0
+      value: 0x00000002
+    - name: DWT_FUNCTION0
+      value: 0x0000000f
+    - name: ITM_TCR
+      value: 0x00000009
+      mask: 0x00000009
+  - ctrace-ref: CM7/exceptions
+    type: exception
+    pname: CM7
+    stream: 2
+    regs:
+    - name: DWT_CTRL
+      value: 0x00010000
+      mask: 0x00010000
+    - name: ITM_TCR
+      value: 0x00000009
+      mask: 0x00000009
+  - ctrace-ref: CM7/itm
+    type: itm
+    pname: CM7
+    stream: 2
+    regs:
+    - name: ITM_TER0
+      value: 0x00000000
+    - name: ITM_TPR
+      value: 0x00000000
+      mask: 0x0000000f
+    - name: ITM_TCR
+      value: 0x00020001
+      mask: 0x007f0001
+  - ctrace-ref: CM7/pcsampling
+    type: pcsample
+    pname: CM7
+    stream: 2
+    regs:
+    - name: DWT_CTRL
+      value: 0x0000121f
+      mask: 0x0000121f
+    - name: ITM_TCR
+      value: 0x00000009
+      mask: 0x00000009
+  - ctrace-ref: CM7/synchronization
+    type: dwt
+    pname: CM7
+    stream: 2
+    regs:
+    - name: DWT_CTRL
+      value: 0x00000400
+      mask: 0x00000c00
+    - name: ITM_TCR
+      value: 0x00000005
+      mask: 0x00000005
