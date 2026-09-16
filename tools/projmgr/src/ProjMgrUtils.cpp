@@ -82,22 +82,16 @@ static string StripCComments(const string& input) {
 }
 
 void ProjMgrUtils::MergeCustomItems(const CustomItem& src, CustomItem& dst) {
-  if (!src.scalar.empty()) {
-    dst.scalar = src.scalar;
-  } else if (!src.vec.empty()) {
-    dst.vec = src.vec;
-  } else if (!src.map.empty()) {
-    for (const auto& customItem : src.map) {
-      const auto& key = customItem.first;
-      const auto& value = customItem.second;
-      auto match = find_if(dst.map.begin(), dst.map.end(), [&key](const auto& item) {
-        return item.first == key;
-      });
-      if (match == dst.map.end()) {
-        dst.map.push_back({ key, value });
-      } else {
-        match->second = value;
-      }
+  for (const auto& customItem : src.map) {
+    const auto& key = customItem.first;
+    const auto& value = customItem.second;
+    auto match = find_if(dst.map.begin(), dst.map.end(), [&key](const auto& item) {
+      return item.first == key;
+    });
+    if (match == dst.map.end()) {
+      dst.map.push_back({ key, value });
+    } else {
+      match->second = value;
     }
   }
 }
