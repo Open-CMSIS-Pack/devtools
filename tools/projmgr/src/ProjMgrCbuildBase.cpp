@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -33,6 +33,33 @@ void ProjMgrCbuildBase::SetNodeValueUniquely(YAML::Node node, const string& valu
       }
     }
     node.push_back(value);
+  }
+}
+
+YAML::Node ProjMgrCbuildBase::GetCustomNode(const CustomItem& value) {
+  if (value.type == CustomItemType::Scalar) {
+    return YAML::Node(value.scalar);
+  }
+  if (value.type == CustomItemType::Sequence) {
+    YAML::Node node(YAML::NodeType::Sequence);
+    for (const auto& item : value.vec) {
+      node.push_back(GetCustomNode(item));
+    }
+    return node;
+  }
+  if (value.type == CustomItemType::Map) {
+    YAML::Node node(YAML::NodeType::Map);
+    for (const auto& [key, item] : value.map) {
+      node[key] = GetCustomNode(item);
+    }
+    return node;
+  }
+  return {};
+}
+
+void ProjMgrCbuildBase::SetCustomNodes(YAML::Node node, const CustomItem& custom) {
+  for (const auto& [key, value] : custom.map) {
+    node[key] = GetCustomNode(value);
   }
 }
 

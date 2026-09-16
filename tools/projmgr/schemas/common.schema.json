@@ -2781,10 +2781,9 @@
           "type": "object",
           "description": "AI model configuration.",
           "properties": {
-            "clayer": { "type": "string", "description": "Path to the AI clayer file or variable." },
-            "name":   { "type": "string", "description": "Model name used as namespace (default: Algorithm)." }
+            "clayer": { "type": "string", "description": "Path to the AI clayer file or variable." }
           },
-          "additionalProperties": { "type": [ "string", "number" ] }
+          "additionalProperties": true
         },
         "hardware":    { "$ref": "#/definitions/MlopsTargetType" },
         "simulator":   { "$ref": "#/definitions/MlopsTargetType" }
@@ -2827,10 +2826,9 @@
           "type": "object",
           "description": "AI model information.",
           "properties": {
-            "clayer": { "type": "string", "description": "Path to the AI clayer file." },
-            "name":   { "type": "string", "description": "Model name used as namespace." }
+            "clayer": { "type": "string", "description": "Path to the AI clayer file." }
           },
-          "additionalProperties": { "type": [ "string", "number" ] }
+          "additionalProperties": true
         },
         "hardware":  { "$ref": "#/definitions/MlopsRunDescType" },
         "simulator": { "$ref": "#/definitions/MlopsRunDescType" }
