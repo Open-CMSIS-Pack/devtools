@@ -180,6 +180,14 @@ bool CtfMetadataModel::isLegacySingleStreamLayout() const noexcept
 
 void CtfMetadataModel::validate() const
 {
+  validateClockDomains();
+  validateStreams();
+  validateSources();
+  validateNonLegacyClockDomains();
+}
+
+void CtfMetadataModel::validateClockDomains() const
+{
   std::set<CtfClockDomainId> clockIds;
   std::set<std::string> clockNames;
   std::set<CtfUuid> clockUuids;
@@ -197,7 +205,10 @@ void CtfMetadataModel::validate() const
       throw std::invalid_argument("CTF clock UUIDs must be distinct from the trace and other clock domains");
     }
   }
+}
 
+void CtfMetadataModel::validateStreams() const
+{
   std::set<CtfStreamClassId> streamIds;
   std::set<CtfClockDomainId> referencedClockIds;
   std::map<TraceRouteId, TraceRouteIdentity> routeIdentities;
@@ -229,7 +240,10 @@ void CtfMetadataModel::validate() const
       throw std::invalid_argument("CTF metadata contains a clock domain without a referencing stream class");
     }
   }
+}
 
+void CtfMetadataModel::validateSources() const
+{
   for (std::size_t index = 0U; index < m_topology.sources.size(); ++index) {
     const auto& source = m_topology.sources[index];
     if (streamForRoute(source.route) == nullptr) {
@@ -264,7 +278,10 @@ void CtfMetadataModel::validate() const
       }
     }
   }
+}
 
+void CtfMetadataModel::validateNonLegacyClockDomains() const
+{
   if (!isLegacySingleStreamLayout()) {
     for (const auto& clock : m_topology.clockDomains) {
       if (!clock.uuid.has_value()) {

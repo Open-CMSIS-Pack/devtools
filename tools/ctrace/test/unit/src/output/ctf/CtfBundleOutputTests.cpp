@@ -801,6 +801,38 @@ TEST(CtraceUnitTests, testCtfBundleOutputKeepsIndependentClockCtfAndOmitsStaleXm
   EXPECT_TRUE(diagnostics.containsContext("clockDomains", "2"));
 }
 
+TEST(CtraceUnitTests, testCtfBundleOutputOmitsIndependentClockXmlWithoutDiagnosticSink)
+{
+  const TemporaryCtfOutput temporaryOutput("ctrace-ctf-independent-clock-no-diagnostics-test");
+  const auto& outputDirectory = temporaryOutput.outputDirectory();
+  const auto xmlPath = testTraceCompassXmlPath(outputDirectory);
+  const TraceRouteIdentity first{TraceRouteId{10U}, 1U};
+  const TraceRouteIdentity second{TraceRouteId{20U}, 2U};
+  CtfMetadataTopology topology{
+      {
+          {CtfClockDomainId{1U}, "first_clock", CtfTestSupport::testUuid(1U), 1000000U, false},
+          {CtfClockDomainId{2U}, "second_clock", CtfTestSupport::testUuid(2U), 1000000U, false},
+      },
+      {
+          {CtfStreamClassId{1U}, first, "core-one", CtfClockDomainId{1U}},
+          {CtfStreamClassId{2U}, second, "core-two", CtfClockDomainId{2U}},
+      },
+      {},
+  };
+  CtfBundleOutput output(makeFormattedCtfBundleConfig(outputDirectory, std::move(topology)));
+
+  output.start();
+  writeTestFile(xmlPath, "stale-xml");
+  output.writeEvent(onRoute(softwarePacket(1U, 1U, 'A'), first));
+  output.writeEvent(onRoute(softwarePacket(2U, 1U, 'B'), second));
+  EXPECT_NO_THROW(output.stop());
+
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "metadata"));
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_1"));
+  EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "stream_2"));
+  EXPECT_FALSE(std::filesystem::exists(xmlPath));
+}
+
 TEST(CtraceUnitTests, testCtfBundleOutputBasesXmlAndMetadataOnEmittedStreams)
 {
   const TemporaryCtfOutput temporaryOutput("ctrace-ctf-emitted-clock-xml-test");

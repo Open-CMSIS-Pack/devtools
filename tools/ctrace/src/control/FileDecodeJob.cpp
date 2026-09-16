@@ -163,6 +163,72 @@ static std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const T
   return outputs;
 }
 
+/** @brief Reports the normalized trace-run model selected for one decode job. */
+static void reportTraceRunMeta(const CtraceRunMeta& meta, DiagnosticSink& diagnostics)
+{
+  diagnostics.report({
+      DiagnosticSink::Severity::Info,
+      "applied ctrace-run meta",
+      {
+          {"path", meta.configPath()},
+          {"routes", std::to_string(meta.routes().size())},
+          {"sources", std::to_string(sourceCount(meta))},
+      },
+  });
+}
+
+/** @brief Reports the timestamp prescaler applied to every normalized route. */
+static void reportTimestampPrescalers(const CtraceRunMeta& meta, DiagnosticSink& diagnostics)
+{
+  for (const auto& route : meta.routes()) {
+    std::vector<std::pair<std::string, std::string>> context;
+    context.emplace_back("value", std::to_string(route.timestampPrescaler));
+    if (route.identity.traceBusId.has_value()) {
+      context.emplace_back("stream", std::to_string(*route.identity.traceBusId));
+    }
+    if (route.processorName.has_value()) {
+      context.emplace_back("pname", *route.processorName);
+    }
+    diagnostics.report({DiagnosticSink::Severity::Info, "using timestamp prescaler", std::move(context)});
+  }
+}
+
+/** @brief Creates the production or injected OpenCSD decode pipeline. */
+static std::unique_ptr<DecodePipeline>
+createDecodePipeline(const std::vector<CortexMDecodeRoute>& routes, OpenCsdItmInputMode inputMode,
+                     DecodeConsumers& consumers, const OpenCsdItmSessionFactory& sessionFactory,
+                     DiagnosticSink& diagnostics)
+{
+  if (sessionFactory) {
+    return std::make_unique<DecodePipeline>(routes, inputMode, consumers, sessionFactory);
+  }
+  return std::make_unique<DecodePipeline>(
+      routes, inputMode, consumers, [&diagnostics](std::uint8_t traceBusId, std::uint64_t sourceOffset) {
+        diagnostics.report({
+            DiagnosticSink::Severity::Warning,
+            "skipping unsupported formatted CoreSight trace source",
+            {
+                {"stream", std::to_string(traceBusId)},
+                {"rawOffset", std::to_string(sourceOffset)},
+            },
+        });
+      });
+}
+
+/** @brief Streams one preflighted raw input through its configured decode pipeline. */
+static DecodeResult decodeRawInput(const std::filesystem::path& path, std::istream& stream, DecodePipeline& pipeline)
+{
+  RawFileReader input(path, stream);
+  while (true) {
+    const auto read = input.read();
+    if (read.eof) {
+      break;
+    }
+    pipeline.push(read.bytes);
+  }
+  return pipeline.finish();
+}
+
 FileDecodeJob::FileDecodeJob(CliOptions options, TraceRunInputDescriptor input, DiagnosticSink& diagnostics)
   : m_options(std::move(options)),
     m_input(std::move(input)),
@@ -188,62 +254,17 @@ void FileDecodeJob::run()
   if (outputPlan.hasRequestedOutputs() && !outputPlan.hasEnabledOutputs()) {
     return;
   }
-  m_diagnostics.report({
-      DiagnosticSink::Severity::Info,
-      "applied ctrace-run meta",
-      {
-          {"path", ctraceRunMeta.configPath()},
-          {"routes", std::to_string(ctraceRunMeta.routes().size())},
-          {"sources", std::to_string(sourceCount(ctraceRunMeta))},
-      },
-  });
+  reportTraceRunMeta(ctraceRunMeta, m_diagnostics);
   auto outputs = createConfiguredOutputs(outputPlan, m_diagnostics);
   DecodeConsumers consumers(std::move(outputs), m_diagnostics, itmEnableMasks(ctraceRunMeta));
+  reportTimestampPrescalers(ctraceRunMeta, m_diagnostics);
 
-  for (const auto& route : ctraceRunMeta.routes()) {
-    std::vector<std::pair<std::string, std::string>> context;
-    context.emplace_back("value", std::to_string(route.timestampPrescaler));
-    if (route.identity.traceBusId.has_value()) {
-      context.emplace_back("stream", std::to_string(*route.identity.traceBusId));
-    }
-    if (route.processorName.has_value()) {
-      context.emplace_back("pname", *route.processorName);
-    }
-    m_diagnostics.report({
-        DiagnosticSink::Severity::Info,
-        "using timestamp prescaler",
-        std::move(context),
-    });
-  }
   const auto decodeStart = std::chrono::steady_clock::now();
   DecodeResult decode;
   bool decoderFatal = false;
   try {
-    RawFileReader input(m_input.path(), m_input.stream());
-    std::unique_ptr<DecodePipeline> pipeline;
-    if (m_sessionFactory) {
-      pipeline = std::make_unique<DecodePipeline>(routes, inputMode, consumers, m_sessionFactory);
-    } else {
-      pipeline = std::make_unique<DecodePipeline>(routes, inputMode, consumers,
-                                                  [&](std::uint8_t traceBusId, std::uint64_t sourceOffset) {
-                                                    m_diagnostics.report({
-                                                        DiagnosticSink::Severity::Warning,
-                                                        "skipping unsupported formatted CoreSight trace source",
-                                                        {
-                                                            {"stream", std::to_string(traceBusId)},
-                                                            {"rawOffset", std::to_string(sourceOffset)},
-                                                        },
-                                                    });
-                                                  });
-    }
-    while (true) {
-      const auto read = input.read();
-      if (read.eof) {
-        break;
-      }
-      pipeline->push(read.bytes);
-    }
-    decode = pipeline->finish();
+    auto pipeline = createDecodePipeline(routes, inputMode, consumers, m_sessionFactory, m_diagnostics);
+    decode = decodeRawInput(m_input.path(), m_input.stream(), *pipeline);
   } catch (const OpenCsdFatalError& error) {
     decoderFatal = true;
     decode.bytesIn = error.bytesProcessed();

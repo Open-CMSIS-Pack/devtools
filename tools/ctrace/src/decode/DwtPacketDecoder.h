@@ -56,8 +56,22 @@ private:
     TraceQuality quality;
   };
 
+  /** @brief Decodes a DWT event-counter packet. */
+  std::vector<TraceEvent> decodeEventCounter(const DwtPayloadPacket& payload);
+  /** @brief Decodes a PMU trace-on-overflow packet. */
+  std::vector<TraceEvent> decodePmuTraceOnOverflow(const DwtPayloadPacket& payload);
+  /** @brief Decodes a DWT exception packet. */
+  std::vector<TraceEvent> decodeExceptionTrace(const DwtPayloadPacket& payload);
+  /** @brief Decodes a periodic PC or sleep sample. */
+  std::vector<TraceEvent> decodePeriodicPcSample(const DwtPayloadPacket& payload);
   /** @brief Accumulates one DWT data-trace packet and emits completed events. */
   void decodeDataTrace(const DwtPayloadPacket& payload, std::vector<TraceEvent>& output);
+  /** @brief Decodes an address, match, or PC fragment for one comparator. */
+  void decodeDataAddressTrace(const DwtPayloadPacket& payload, std::uint32_t comparator, bool secondarySubtype,
+                              PendingDataTrace event, std::vector<TraceEvent>& output);
+  /** @brief Decodes a data-value fragment for one comparator. */
+  void decodeDataValueTrace(const DwtPayloadPacket& payload, std::uint32_t comparator, bool secondarySubtype,
+                            PendingDataTrace event, std::vector<TraceEvent>& output);
   /** @brief Converts one complete pending comparator state into an event. */
   void sendDataTraceEvent(std::uint32_t comparator, const PendingDataTrace& event, const TraceQuality& quality,
                           std::uint64_t tcyc, std::vector<TraceEvent>& output);

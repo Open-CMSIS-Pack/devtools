@@ -156,6 +156,42 @@ private:
     bool wait = false;
   };
 
+  /** @brief Tracks progress while one memory-aligned formatter frame is consumed. */
+  struct FormattedFrameState {
+    std::uint32_t processed = 0U;
+    bool retriedWithoutProgress = false;
+  };
+
+  /** @brief Captures the result of one formatted root DATA operation. */
+  struct FormattedPushResult {
+    std::uint64_t baseOffset = 0U;
+    std::uint32_t supplied = 0U;
+    std::uint32_t consumed = 0U;
+    OpenCsdErrorController::Decision decision;
+    FormattedOperationOutcome outcome;
+  };
+
+  /** @brief Tracks input progress and bounded retries within one SINGLE block. */
+  struct SingleBlockState {
+    std::uint32_t processed = 0U;
+    bool retriedWithoutProgress = false;
+  };
+
+  /** @brief Captures the result of one SINGLE root DATA operation. */
+  struct SinglePushResult {
+    std::uint64_t baseOffset = 0U;
+    std::uint32_t supplied = 0U;
+    std::uint32_t consumed = 0U;
+    OpenCsdErrorController::Decision decision;
+  };
+
+  /** @brief Tracks which formatted diagnostics have already opened a discontinuity. */
+  struct FormattedDiagnosticState {
+    std::set<TraceRouteId> discontinuousRoutes;
+    bool emittedError = false;
+    bool inputWideDiscontinuity = true;
+  };
+
   /** @brief Creates a fixed-route or channel-routed collector for the selected transport. */
   static OpenCsdPacketCollector createCollector(const std::vector<TraceRouteIdentity>& routes,
                                                 OpenCsdItmInputMode inputMode, OpenCsdTraceElementSink& elementSink)
@@ -188,46 +224,55 @@ private:
     return offsets;
   }
 
-  /** @brief Resolves recoverable formatted errors and rejects every input-wide failure. */
-  FormattedOperationOutcome classifyFormattedOperation(const OpenCsdErrorController::Decision& decision,
-                                                       std::uint64_t baseOffset) const
+  /** @brief Records one route's earliest recoverable failure in an operation outcome. */
+  static void recordFormattedFailure(FormattedOperationOutcome& outcome, const TraceRouteIdentity& route,
+                                     std::uint64_t sourceOffset)
   {
-    FormattedOperationOutcome outcome;
-    outcome.fatalDecision = decision;
-    outcome.wait = OCSD_DATA_RESP_IS_WAIT(decision.response);
+    const auto found = outcome.failures.find(route.id);
+    if (found == outcome.failures.end()) {
+      outcome.failures.emplace(route.id, FormattedRouteFailure{route, sourceOffset});
+    } else {
+      found->second.sourceOffset = std::min(found->second.sourceOffset, sourceOffset);
+    }
+  }
 
-    for (const auto& error : decision.errors) {
-      if (error.severity != OCSD_ERR_SEV_ERROR) {
-        continue;
+  /** @brief Classifies one formatted error callback as route-local or input-fatal. */
+  void classifyFormattedError(FormattedOperationOutcome& outcome, const OpenCsdErrorRecord& error,
+                              std::uint64_t baseOffset) const
+  {
+    if (error.severity != OCSD_ERR_SEV_ERROR) {
+      return;
+    }
+    const auto* route = error.channel.has_value() ? m_collector.routeForChannel(*error.channel) : nullptr;
+    if (!OpenCsdErrorController::isRecoverableStreamError(error.code) || route == nullptr) {
+      if (!outcome.fatal) {
+        outcome.fatalDecision.error = error;
       }
-      const auto* route = error.channel.has_value() ? m_collector.routeForChannel(*error.channel) : nullptr;
-      if (!OpenCsdErrorController::isRecoverableStreamError(error.code) || route == nullptr) {
-        if (!outcome.fatal) {
-          outcome.fatalDecision.error = error;
-        }
-        outcome.fatal = true;
-        continue;
-      }
-
-      const auto sourceOffset = error.hasIndex ? error.index : baseOffset;
-      const auto found = outcome.failures.find(route->id);
-      if (found == outcome.failures.end()) {
-        outcome.failures.emplace(route->id, FormattedRouteFailure{*route, sourceOffset});
-      } else {
-        found->second.sourceOffset = std::min(found->second.sourceOffset, sourceOffset);
-      }
+      outcome.fatal = true;
+      return;
     }
 
+    recordFormattedFailure(outcome, *route, error.hasIndex ? error.index : baseOffset);
+  }
+
+  /** @brief Returns whether a callback batch contains an input-fatal decoder error. */
+  static bool hasNonRecoverableError(const OpenCsdErrorController::Decision& decision)
+  {
+    return std::any_of(decision.errors.begin(), decision.errors.end(), [](const auto& error) {
+      return error.severity == OCSD_ERR_SEV_ERROR &&
+             !OpenCsdErrorController::isRecoverableStreamError(error.code);
+    });
+  }
+
+  /** @brief Applies root response semantics after callback errors have been classified. */
+  static void classifyFormattedResponse(FormattedOperationOutcome& outcome,
+                                        const OpenCsdErrorController::Decision& decision)
+  {
     const auto recoverableInvalidData =
         decision.response == OCSD_RESP_FATAL_INVALID_DATA && !outcome.fatal && !outcome.failures.empty();
     if (OCSD_DATA_RESP_IS_FATAL(decision.response) && !recoverableInvalidData) {
       outcome.fatal = true;
-      const auto hasNonRecoverableError =
-          std::any_of(decision.errors.begin(), decision.errors.end(), [](const auto& error) {
-            return error.severity == OCSD_ERR_SEV_ERROR &&
-                   !OpenCsdErrorController::isRecoverableStreamError(error.code);
-          });
-      if (decision.response != OCSD_RESP_FATAL_INVALID_DATA && !hasNonRecoverableError) {
+      if (decision.response != OCSD_RESP_FATAL_INVALID_DATA && !hasNonRecoverableError(decision)) {
         outcome.fatalDecision.error.reset();
         outcome.fatalDecision.errors.clear();
       }
@@ -235,6 +280,19 @@ private:
     if (OpenCsdErrorController::responseReportsError(decision.response) && outcome.failures.empty()) {
       outcome.fatal = true;
     }
+  }
+
+  /** @brief Resolves recoverable formatted errors and rejects every input-wide failure. */
+  FormattedOperationOutcome classifyFormattedOperation(const OpenCsdErrorController::Decision& decision,
+                                                       std::uint64_t baseOffset) const
+  {
+    FormattedOperationOutcome outcome;
+    outcome.fatalDecision = decision;
+    outcome.wait = OCSD_DATA_RESP_IS_WAIT(decision.response);
+    for (const auto& error : decision.errors) {
+      classifyFormattedError(outcome, error, baseOffset);
+    }
+    classifyFormattedResponse(outcome, decision);
 
     const auto cutoffs = failureOffsets(outcome.failures);
     if (m_collector.transactionHasUnmatchedError(cutoffs)) {
@@ -246,49 +304,60 @@ private:
     return outcome;
   }
 
+  /** @brief Seeds one formatted diagnostic batch with already active route recoveries. */
+  FormattedDiagnosticState formattedDiagnosticState() const
+  {
+    FormattedDiagnosticState state;
+    for (const auto& [routeId, recovery] : m_formattedRecoveries) {
+      static_cast<void>(recovery);
+      state.discontinuousRoutes.insert(routeId);
+    }
+    return state;
+  }
+
+  /** @brief Appends one formatted warning or error with its route-local discontinuity state. */
+  void appendFormattedReportedError(const OpenCsdErrorController::Decision& decision,
+                                    const OpenCsdErrorRecord& error, std::uint64_t baseOffset,
+                                    FormattedDiagnosticState& state)
+  {
+    auto item = decision;
+    item.error = error;
+    const auto sourceOffset = OpenCsdErrorController::errorOffset(item, baseOffset);
+    const auto isError = error.severity == OCSD_ERR_SEV_ERROR;
+    const auto* route = error.channel.has_value() ? m_collector.routeForChannel(*error.channel) : nullptr;
+    bool discontinuity = false;
+    if (isError) {
+      state.emittedError = true;
+      if (route != nullptr) {
+        discontinuity = state.discontinuousRoutes.insert(route->id).second;
+      } else {
+        discontinuity = std::exchange(state.inputWideDiscontinuity, false);
+      }
+    }
+
+    const auto severity = isError ? TraceIssueSeverity::Error : TraceIssueSeverity::Warning;
+    if (route != nullptr) {
+      m_collector.appendReportedDecodeError(*route, static_cast<ocsd_trc_index_t>(sourceOffset),
+                                            OpenCsdErrorController::describeSummary(item), error.callbackOrder,
+                                            OpenCsdErrorController::issueCode(item), discontinuity, severity);
+    } else {
+      m_collector.appendReportedDecodeError(static_cast<ocsd_trc_index_t>(sourceOffset),
+                                            OpenCsdErrorController::describeSummary(item), error.callbackOrder,
+                                            OpenCsdErrorController::issueCode(item), discontinuity, severity);
+    }
+  }
+
   /** @brief Reports a formatted callback batch while retaining exact channel attribution. */
   void appendFormattedReportedErrors(const OpenCsdErrorController::Decision& decision, std::uint64_t baseOffset,
                                      bool force = false)
   {
-    bool emittedError = false;
-    bool inputWideDiscontinuity = true;
-    std::set<TraceRouteId> discontinuousRoutes;
-    for (const auto& [routeId, recovery] : m_formattedRecoveries) {
-      static_cast<void>(recovery);
-      discontinuousRoutes.insert(routeId);
-    }
-
+    auto state = formattedDiagnosticState();
     for (const auto& error : decision.errors) {
-      if (error.severity != OCSD_ERR_SEV_ERROR && error.severity != OCSD_ERR_SEV_WARN) {
-        continue;
-      }
-      auto item = decision;
-      item.error = error;
-      const auto sourceOffset = OpenCsdErrorController::errorOffset(item, baseOffset);
-      const auto isError = error.severity == OCSD_ERR_SEV_ERROR;
-      const auto* route = error.channel.has_value() ? m_collector.routeForChannel(*error.channel) : nullptr;
-      bool discontinuity = false;
-      if (isError) {
-        emittedError = true;
-        if (route != nullptr) {
-          discontinuity = discontinuousRoutes.insert(route->id).second;
-        } else {
-          discontinuity = std::exchange(inputWideDiscontinuity, false);
-        }
-      }
-      if (route != nullptr) {
-        m_collector.appendReportedDecodeError(*route, static_cast<ocsd_trc_index_t>(sourceOffset),
-                                              OpenCsdErrorController::describeSummary(item), error.callbackOrder,
-                                              OpenCsdErrorController::issueCode(item), discontinuity,
-                                              isError ? TraceIssueSeverity::Error : TraceIssueSeverity::Warning);
-      } else {
-        m_collector.appendReportedDecodeError(static_cast<ocsd_trc_index_t>(sourceOffset),
-                                              OpenCsdErrorController::describeSummary(item), error.callbackOrder,
-                                              OpenCsdErrorController::issueCode(item), discontinuity,
-                                              isError ? TraceIssueSeverity::Error : TraceIssueSeverity::Warning);
+      if (error.severity == OCSD_ERR_SEV_ERROR || error.severity == OCSD_ERR_SEV_WARN) {
+        appendFormattedReportedError(decision, error, baseOffset, state);
       }
     }
-    if (!emittedError && (force || OpenCsdErrorController::responseReportsError(decision.response))) {
+    if (!state.emittedError && (force || OpenCsdErrorController::responseReportsError(decision.response))) {
       m_collector.appendDecodeError(
           static_cast<ocsd_trc_index_t>(OpenCsdErrorController::errorOffset(decision, baseOffset)),
           OpenCsdErrorController::describeSummary(decision), OpenCsdErrorController::issueCode(decision), true,
@@ -540,64 +609,80 @@ private:
                             static_cast<std::uint64_t>(m_traceIndex));
   }
 
+  /** @brief Executes and validates one formatted root DATA operation. */
+  FormattedPushResult pushFormattedData(const std::uint8_t* data, std::uint32_t size)
+  {
+    FormattedPushResult result;
+    result.baseOffset = static_cast<std::uint64_t>(m_traceIndex);
+    result.supplied = size;
+    m_collector.beginTransaction();
+    m_errorController.beginDataPathCall();
+    const auto response = invokeSessionOperation(
+        [&] { return m_session->pushData(m_traceIndex, result.supplied, data, result.consumed); }, result.baseOffset,
+        result.supplied, &result.consumed, "OpenCSD aborted decode: ");
+    result.decision = m_errorController.decide(response);
+    result.outcome = classifyFormattedOperation(result.decision, result.baseOffset);
+    if (result.outcome.fatal) {
+      abortFormattedDecode(result.outcome.fatalDecision, result.supplied, result.baseOffset, result.consumed,
+                           "OpenCSD aborted decode: ");
+    }
+    if (result.consumed > result.supplied) {
+      abortFormattedProgress(result.baseOffset, result.supplied, result.supplied,
+                             "OpenCSD reported more formatted bytes processed than were supplied");
+    }
+    if (result.consumed != 0U && result.consumed != result.supplied) {
+      abortFormattedProgress(result.baseOffset, result.supplied, result.consumed,
+                             "OpenCSD stopped inside a memory-aligned formatter frame");
+    }
+    return result;
+  }
+
+  /** @brief Performs any route reset and root draining requested by a formatted DATA operation. */
+  void recoverFormattedData(const FormattedOperationOutcome& outcome)
+  {
+    if (!outcome.failures.empty()) {
+      openFormattedRecoveries(outcome.failures);
+      resetFormattedRoutes(outcome.failures);
+      drainFormattedPending();
+    } else if (outcome.wait) {
+      drainFormattedPending();
+    }
+  }
+
+  /** @brief Updates the bounded retry state after recovery and rejects permanent stalls. */
+  void updateFormattedProgress(FormattedFrameState& state, const FormattedPushResult& result)
+  {
+    if (result.consumed != 0U) {
+      state.retriedWithoutProgress = false;
+      return;
+    }
+    if (!result.outcome.wait && result.outcome.failures.empty()) {
+      m_collector.appendDecodeError(m_traceIndex, "OpenCSD made no progress on formatted trace input",
+                                    TraceIssueCode::OpenCsdNoProgress, false);
+      throw OpenCsdFatalError("OpenCSD made no progress on formatted trace input",
+                              static_cast<std::uint64_t>(m_traceIndex));
+    }
+    if (state.retriedWithoutProgress) {
+      m_collector.appendDecodeError(m_traceIndex,
+                                    "OpenCSD made no progress after draining formatted trace; decode aborted",
+                                    TraceIssueCode::OpenCsdNoProgress, false);
+      throw OpenCsdFatalError("OpenCSD made no progress after draining formatted trace",
+                              static_cast<std::uint64_t>(m_traceIndex));
+    }
+    state.retriedWithoutProgress = true;
+  }
+
   /** @brief Processes exactly one memory-aligned formatter frame. */
   void processFormattedFrame(const std::uint8_t* data, std::uint32_t size)
   {
-    std::uint32_t processed = 0U;
-    bool retriedWithoutProgress = false;
-    while (processed < size) {
-      const auto callIndex = static_cast<std::uint64_t>(m_traceIndex);
-      const auto callSize = size - processed;
-      std::uint32_t processedThisPass = 0U;
-      m_collector.beginTransaction();
-      m_errorController.beginDataPathCall();
-      const auto response = invokeSessionOperation(
-          [&] { return m_session->pushData(m_traceIndex, callSize, data + processed, processedThisPass); }, callIndex,
-          callSize, &processedThisPass, "OpenCSD aborted decode: ");
-      const auto decision = m_errorController.decide(response);
-      const auto outcome = classifyFormattedOperation(decision, callIndex);
-      if (outcome.fatal) {
-        abortFormattedDecode(outcome.fatalDecision, callSize, callIndex, processedThisPass, "OpenCSD aborted decode: ");
-      }
-      if (processedThisPass > callSize) {
-        abortFormattedProgress(callIndex, callSize, callSize,
-                               "OpenCSD reported more formatted bytes processed than were supplied");
-      }
-      if (processedThisPass != 0U && processedThisPass != callSize) {
-        abortFormattedProgress(callIndex, callSize, processedThisPass,
-                               "OpenCSD stopped inside a memory-aligned formatter frame");
-      }
-
-      commitFormattedOperation(outcome, decision, callIndex);
-      processed += processedThisPass;
-      m_traceIndex += processedThisPass;
-
-      if (!outcome.failures.empty()) {
-        openFormattedRecoveries(outcome.failures);
-        resetFormattedRoutes(outcome.failures);
-        drainFormattedPending();
-      } else if (outcome.wait) {
-        drainFormattedPending();
-      }
-
-      if (processedThisPass != 0U) {
-        retriedWithoutProgress = false;
-        continue;
-      }
-      if (!outcome.wait && outcome.failures.empty()) {
-        m_collector.appendDecodeError(m_traceIndex, "OpenCSD made no progress on formatted trace input",
-                                      TraceIssueCode::OpenCsdNoProgress, false);
-        throw OpenCsdFatalError("OpenCSD made no progress on formatted trace input",
-                                static_cast<std::uint64_t>(m_traceIndex));
-      }
-      if (retriedWithoutProgress) {
-        m_collector.appendDecodeError(m_traceIndex,
-                                      "OpenCSD made no progress after draining formatted trace; decode aborted",
-                                      TraceIssueCode::OpenCsdNoProgress, false);
-        throw OpenCsdFatalError("OpenCSD made no progress after draining formatted trace",
-                                static_cast<std::uint64_t>(m_traceIndex));
-      }
-      retriedWithoutProgress = true;
+    FormattedFrameState state;
+    while (state.processed < size) {
+      const auto result = pushFormattedData(data + state.processed, size - state.processed);
+      commitFormattedOperation(result.outcome, result.decision, result.baseOffset);
+      state.processed += result.consumed;
+      m_traceIndex += result.consumed;
+      recoverFormattedData(result.outcome);
+      updateFormattedProgress(state, result);
     }
   }
 
@@ -671,98 +756,136 @@ private:
     }
   }
 
+  /** @brief Executes one SINGLE root DATA operation and normalizes its consumed-byte count. */
+  SinglePushResult pushSingleData(const std::uint8_t* data, std::uint32_t size)
+  {
+    SinglePushResult result;
+    result.baseOffset = static_cast<std::uint64_t>(m_traceIndex);
+    result.supplied = size;
+    m_collector.beginTransaction();
+    m_errorController.beginDataPathCall();
+    const auto response = invokeSessionOperation(
+        [&] { return m_session->pushData(m_traceIndex, result.supplied, data, result.consumed); }, result.baseOffset,
+        result.supplied, &result.consumed, "OpenCSD aborted decode: ");
+    result.decision = m_errorController.decide(response);
+    if (result.decision.action == OpenCsdErrorController::Action::Abort) {
+      abortDecode(result.decision, result.supplied, result.baseOffset, result.consumed, "OpenCSD aborted decode: ");
+    }
+    result.consumed = std::min(result.consumed, result.supplied);
+    return result;
+  }
+
+  /** @brief Updates the bounded SINGLE retry state before response-specific recovery. */
+  void updateSingleProgress(SingleBlockState& state, const SinglePushResult& result)
+  {
+    if (result.consumed != 0U) {
+      state.retriedWithoutProgress = false;
+      return;
+    }
+    if (state.retriedWithoutProgress) {
+      m_collector.rollbackTransaction();
+      completeConsumedDataLoss(m_traceIndex);
+      m_collector.appendDecodeError(m_traceIndex, "OpenCSD made no progress after a retry; decode aborted",
+                                    TraceIssueCode::OpenCsdNoProgress, false);
+      throw OpenCsdFatalError("OpenCSD made no progress after a retry", static_cast<std::uint64_t>(m_traceIndex));
+    }
+    state.retriedWithoutProgress = true;
+  }
+
+  /** @brief Advances both the caller-visible block cursor and the absolute raw trace index. */
+  void advanceSingleInput(SingleBlockState& state, std::uint32_t consumed)
+  {
+    state.processed += consumed;
+    m_traceIndex += consumed;
+  }
+
+  /** @brief Commits valid callbacks before a recoverable SINGLE stream error and resets the decoder. */
+  void recoverSingleStream(SingleBlockState& state, const SinglePushResult& result)
+  {
+    const auto sourceOffset = OpenCsdErrorController::errorOffset(result.decision, result.baseOffset);
+    completeConsumedDataLoss(
+        std::min(sourceOffset, m_collector.transactionFirstSourceOffset().value_or(sourceOffset)));
+    // Callbacks before the bad packet remain valid; callbacks at or
+    // after its offset belong to the failed decode transaction.
+    m_collector.commitTransactionBefore(sourceOffset);
+    appendReportedErrors(result.decision, result.baseOffset, true);
+    advanceSingleInput(state, result.consumed);
+    m_dataLossActive = true;
+    m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
+    m_consumedDataLossBoundaryMarked = true;
+    resetDecoder(static_cast<ocsd_trc_index_t>(sourceOffset));
+  }
+
+  /** @brief Commits any valid SINGLE callbacks before draining a WAIT response. */
+  void drainSingleWait(SingleBlockState& state, const SinglePushResult& result)
+  {
+    if (m_collector.transactionElementCount() == 0U) {
+      m_collector.rollbackTransaction();
+    } else {
+      completeConsumedDataLoss(m_collector.transactionFirstSourceOffset().value_or(result.baseOffset));
+      m_collector.commitTransaction();
+    }
+    appendReportedErrors(result.decision, result.baseOffset, false);
+    advanceSingleInput(state, result.consumed);
+    flushAfterWait();
+  }
+
+  /** @brief Resets a stalled SINGLE decoder so the next call can search for hardware sync. */
+  void recoverSingleNoProgress()
+  {
+    m_collector.rollbackTransaction();
+    m_collector.appendDecodeError(
+        m_traceIndex,
+        "OpenCSD made no progress while raw data was present; decoder reset and searching "
+        "for next real ITM async sync",
+        TraceIssueCode::OpenCsdNoProgress);
+    m_dataLossActive = true;
+    m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
+    m_consumedDataLossBoundaryMarked = true;
+    resetDecoder(m_traceIndex);
+  }
+
+  /** @brief Records consumed SINGLE input that produced no trace elements. */
+  void consumeSilentSingleData(SingleBlockState& state, const SinglePushResult& result)
+  {
+    m_collector.rollbackTransaction();
+    appendReportedErrors(result.decision, result.baseOffset, false);
+    if (!m_dataLossActive) {
+      m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
+      m_consumedDataLossBoundaryMarked = false;
+      m_dataLossActive = true;
+    }
+    advanceSingleInput(state, result.consumed);
+  }
+
+  /** @brief Commits a successful SINGLE DATA operation containing trace elements. */
+  void commitSingleData(SingleBlockState& state, const SinglePushResult& result)
+  {
+    completeConsumedDataLoss(m_collector.transactionFirstSourceOffset().value_or(result.baseOffset));
+    m_collector.commitTransaction();
+    appendReportedErrors(result.decision, result.baseOffset, false);
+    m_dataLossActive = false;
+    advanceSingleInput(state, result.consumed);
+  }
+
+  /** @brief Processes one bounded block of unformatted SINGLE trace input. */
   void processSingleBlock(const std::uint8_t* data, std::uint32_t size)
   {
-    std::uint32_t processed = 0;
-    bool retriedWithoutProgress = false;
-    while (processed < size) {
-      const auto callIndex = static_cast<std::uint64_t>(m_traceIndex);
-      const auto callSize = size - processed;
-      std::uint32_t processedThisPass = 0;
-      m_collector.beginTransaction();
-      m_errorController.beginDataPathCall();
-      const auto response = invokeSessionOperation(
-          [&] { return m_session->pushData(m_traceIndex, callSize, data + processed, processedThisPass); }, callIndex,
-          callSize, &processedThisPass, "OpenCSD aborted decode: ");
-      const auto decision = m_errorController.decide(response);
-      if (decision.action == OpenCsdErrorController::Action::Abort) {
-        abortDecode(decision, callSize, callIndex, processedThisPass, "OpenCSD aborted decode: ");
-      }
-
-      const auto consumed = std::min(processedThisPass, callSize);
-      if (consumed == 0U) {
-        if (retriedWithoutProgress) {
-          m_collector.rollbackTransaction();
-          completeConsumedDataLoss(m_traceIndex);
-          m_collector.appendDecodeError(m_traceIndex, "OpenCSD made no progress after a retry; decode aborted",
-                                        TraceIssueCode::OpenCsdNoProgress, false);
-          throw OpenCsdFatalError("OpenCSD made no progress after a retry", static_cast<std::uint64_t>(m_traceIndex));
-        }
-        retriedWithoutProgress = true;
+    SingleBlockState state;
+    while (state.processed < size) {
+      const auto result = pushSingleData(data + state.processed, size - state.processed);
+      updateSingleProgress(state, result);
+      if (result.decision.action == OpenCsdErrorController::Action::RecoverStream) {
+        recoverSingleStream(state, result);
+      } else if (result.decision.action == OpenCsdErrorController::Action::Wait) {
+        drainSingleWait(state, result);
+      } else if (result.consumed == 0U) {
+        recoverSingleNoProgress();
+      } else if (m_collector.transactionElementCount() == 0U) {
+        consumeSilentSingleData(state, result);
       } else {
-        retriedWithoutProgress = false;
+        commitSingleData(state, result);
       }
-
-      if (decision.action == OpenCsdErrorController::Action::RecoverStream) {
-        const auto sourceOffset = OpenCsdErrorController::errorOffset(decision, callIndex);
-        completeConsumedDataLoss(
-            std::min(sourceOffset, m_collector.transactionFirstSourceOffset().value_or(sourceOffset)));
-        // Callbacks before the bad packet remain valid; callbacks at or
-        // after its offset belong to the failed decode transaction.
-        m_collector.commitTransactionBefore(sourceOffset);
-        appendReportedErrors(decision, callIndex, true);
-        processed += consumed;
-        m_traceIndex += consumed;
-        m_dataLossActive = true;
-        m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
-        m_consumedDataLossBoundaryMarked = true;
-        resetDecoder(static_cast<ocsd_trc_index_t>(sourceOffset));
-        continue;
-      }
-      if (decision.action == OpenCsdErrorController::Action::Wait) {
-        if (m_collector.transactionElementCount() == 0U) {
-          m_collector.rollbackTransaction();
-        } else {
-          completeConsumedDataLoss(m_collector.transactionFirstSourceOffset().value_or(callIndex));
-          m_collector.commitTransaction();
-        }
-        appendReportedErrors(decision, callIndex, false);
-        processed += consumed;
-        m_traceIndex += consumed;
-        flushAfterWait();
-        continue;
-      }
-      if (consumed == 0U) {
-        m_collector.rollbackTransaction();
-        m_collector.appendDecodeError(
-            m_traceIndex,
-            "OpenCSD made no progress while raw data was present; decoder reset and searching "
-            "for next real ITM async sync",
-            TraceIssueCode::OpenCsdNoProgress);
-        m_dataLossActive = true;
-        m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
-        m_consumedDataLossBoundaryMarked = true;
-        resetDecoder(m_traceIndex);
-        continue;
-      }
-      if (m_collector.transactionElementCount() == 0U) {
-        m_collector.rollbackTransaction();
-        appendReportedErrors(decision, callIndex, false);
-        if (!m_dataLossActive) {
-          m_consumedDataLossStart = static_cast<std::uint64_t>(m_traceIndex);
-          m_consumedDataLossBoundaryMarked = false;
-          m_dataLossActive = true;
-        }
-        processed += consumed;
-        m_traceIndex += consumed;
-        continue;
-      }
-      completeConsumedDataLoss(m_collector.transactionFirstSourceOffset().value_or(callIndex));
-      m_collector.commitTransaction();
-      appendReportedErrors(decision, callIndex, false);
-      m_dataLossActive = false;
-      processed += consumed;
-      m_traceIndex += consumed;
     }
   }
 

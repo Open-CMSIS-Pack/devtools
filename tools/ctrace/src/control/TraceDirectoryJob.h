@@ -12,6 +12,8 @@
 #include "DiagnosticSink.h"
 #include "TraceRunConfigReader.h"
 
+#include <filesystem>
+
 /** @brief Discovers and decodes the selected trace-run configurations in a directory. */
 class TraceDirectoryJob {
 public:
@@ -32,6 +34,9 @@ public:
   void run();
 
 private:
+  /** @brief Reads, normalizes, and decodes one selected trace-run configuration. */
+  void processConfigFile(const std::filesystem::path& configFile);
+
   CliOptions m_options;
   DiagnosticSink& m_diagnostics;
   const TraceRunConfigReader& m_configReader;

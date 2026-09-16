@@ -166,8 +166,16 @@ public:
   bool isLegacySingleStreamLayout() const noexcept;
 
 private:
-  /** @brief Validates topology identity, references, and metadata uniqueness. */
+  /** @brief Runs every topology validation group in deterministic error order. */
   void validate() const;
+  /** @brief Validates clock-domain identity and scalar properties. */
+  void validateClockDomains() const;
+  /** @brief Validates stream identities and their clock-domain references. */
+  void validateStreams() const;
+  /** @brief Validates source identities, metadata, and ordering. */
+  void validateSources() const;
+  /** @brief Requires explicit clock UUIDs outside the exact legacy layout. */
+  void validateNonLegacyClockDomains() const;
 
   CtfUuid m_traceUuid;
   CtfMetadataTopology m_topology;

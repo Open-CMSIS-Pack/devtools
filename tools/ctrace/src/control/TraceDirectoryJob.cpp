@@ -102,44 +102,49 @@ void TraceDirectoryJob::run()
   }
 
   for (const auto& configFile : configFiles) {
-    const auto solutionSet = TraceRunDiscovery::solutionSetName(configFile);
-    try {
-      const auto config = m_configReader.read(configFile.string());
+    processConfigFile(configFile);
+  }
+}
+
+void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFile)
+{
+  const auto solutionSet = TraceRunDiscovery::solutionSetName(configFile);
+  try {
+    const auto config = m_configReader.read(configFile.string());
+    m_diagnostics.report({
+        DiagnosticSink::Severity::Info,
+        "selected trace-run configuration",
+        {
+            {"solutionSet", solutionSet},
+            {"path", config.path},
+            {"references", std::to_string(config.references.size())},
+            {"setups", std::to_string(config.setups.size())},
+        },
+    });
+    reportConsumedReferenceDiagnostics(config, m_diagnostics);
+    auto ctraceRunMeta = CtraceRunMeta::fromConfig(config);
+    reportTraceRunWarnings(ctraceRunMeta, m_diagnostics);
+    auto input = TraceRunDiscovery::resolveInput(std::move(ctraceRunMeta), [&](const auto& rawInput) {
       m_diagnostics.report({
-          DiagnosticSink::Severity::Info,
-          "selected trace-run configuration",
+          DiagnosticSink::Severity::Warning,
+          "skipping raw trace channel excluded from active input selection",
           {
               {"solutionSet", solutionSet},
-              {"path", config.path},
-              {"references", std::to_string(config.references.size())},
-              {"setups", std::to_string(config.setups.size())},
+              {"channel", rawInput.channel},
+              {"path", rawInput.path.string()},
           },
       });
-      reportConsumedReferenceDiagnostics(config, m_diagnostics);
-      auto ctraceRunMeta = CtraceRunMeta::fromConfig(config);
-      reportTraceRunWarnings(ctraceRunMeta, m_diagnostics);
-      auto input = TraceRunDiscovery::resolveInput(std::move(ctraceRunMeta), [&](const auto& rawInput) {
-        m_diagnostics.report({
-            DiagnosticSink::Severity::Warning,
-            "skipping raw trace channel excluded from active input selection",
-            {
-                {"solutionSet", solutionSet},
-                {"channel", rawInput.channel},
-                {"path", rawInput.path.string()},
-            },
-        });
-      });
-      FileDecodeJob fileJob(m_options, std::move(input), m_diagnostics);
-      fileJob.run();
-    } catch (const std::exception& error) {
-      m_diagnostics.report({
-          DiagnosticSink::Severity::Error,
-          error.what(),
-          {
-              {"solutionSet", solutionSet},
-              {"config", configFile.string()},
-          },
-      });
-    }
+    });
+    FileDecodeJob fileJob(m_options, std::move(input), m_diagnostics);
+    fileJob.run();
+  } catch (const std::exception& error) {
+    m_diagnostics.report({
+        DiagnosticSink::Severity::Error,
+        error.what(),
+        {
+            {"solutionSet", solutionSet},
+            {"config", configFile.string()},
+        },
+    });
   }
 }

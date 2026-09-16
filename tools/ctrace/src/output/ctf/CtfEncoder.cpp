@@ -129,6 +129,112 @@ static void writeDwtAddress(CtfStreamWriter::Record& record, const std::optional
   }
 }
 
+/** @brief Dispatches semantic payloads to their type-specific CTF encoders. */
+struct CtfEncoder::PayloadVisitor {
+  CtfEncoder& encoder;
+  const TraceEvent& event;
+  bool selected;
+
+  void operator()(const SoftwareTraceEvent& software) const
+  {
+    if (selected) {
+      encoder.writeSoftwareEvent(event, software);
+    }
+  }
+
+  void operator()(const DwtDataTraceEvent& data) const
+  {
+    if (selected) {
+      encoder.writeDwtValueEvent(event, data);
+    }
+  }
+
+  void operator()(const DwtAddressTraceEvent& address) const
+  {
+    if (selected) {
+      encoder.writeDwtAddrEvent(event, address);
+    }
+  }
+
+  void operator()(const DwtMatchTraceEvent& match) const
+  {
+    if (selected) {
+      encoder.writeDwtMatchEvent(event, match);
+    }
+  }
+
+  void operator()(const ExceptionTraceEvent& exception) const
+  {
+    if (exception.action != ExceptionAction::Unknown) {
+      encoder.writeExceptionEvent(event.route, exception);
+    }
+  }
+
+  void operator()(const DwtEventTraceEvent& counters) const
+  {
+    if (selected) {
+      encoder.writeDwtEvent(event, counters);
+    }
+  }
+
+  void operator()(const PmuTraceEvent& counters) const
+  {
+    if (selected) {
+      encoder.writePmuEvent(event, counters);
+    }
+  }
+
+  void operator()(const PcSampleTraceEvent& sample) const
+  {
+    if (selected) {
+      encoder.writePcSampleEvent(event, sample);
+    }
+  }
+
+  void operator()(const LocalTimestampTraceEvent&) const
+  {
+    encoder.streamState(event.route).localTimestampObserved = true;
+  }
+
+  void operator()(const GlobalTimestampTraceEvent& timestamp) const
+  {
+    if (selected) {
+      encoder.writeGlobalTimestampEvent(event, timestamp);
+    }
+  }
+
+  void operator()(const OverflowTraceEvent&) const
+  {
+    auto& routeState = encoder.streamState(event.route);
+    if (event.quality.has_value()) {
+      routeState.overflowCount = std::max(routeState.overflowCount, event.quality->overflowCount);
+    } else {
+      ++routeState.overflowCount;
+    }
+    encoder.writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::Overflow), event.route, selected);
+  }
+
+  void operator()(const SyncTraceEvent&) const
+  {
+    encoder.writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::Resync), event.route,
+                                  encoder.m_config.selection.types.empty());
+  }
+
+  void operator()(const TraceIssueEvent& issue) const
+  {
+    if (issue.code == TraceIssueCode::DataLoss) {
+      encoder.writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss), event.route, selected);
+      return;
+    }
+    if (event.quality.has_value() && event.quality->overflow) {
+      encoder.writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss), event.route, selected);
+    }
+    if (selected) {
+      encoder.writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError), event.route, true);
+    }
+  }
+};
+
 CtfEncoder::CtfEncoder(CtfEncoderConfig config)
   : m_config(std::move(config))
 {
@@ -236,115 +342,6 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
       streamState(event.route).localTimestampObserved = true;
     }
   }
-
-  struct PayloadVisitor {
-    CtfEncoder& encoder;
-    const TraceEvent& event;
-    bool selected;
-
-    void operator()(const SoftwareTraceEvent& software) const
-    {
-      if (selected) {
-        encoder.writeSoftwareEvent(event, software);
-      }
-    }
-
-    void operator()(const DwtDataTraceEvent& data) const
-    {
-      if (selected) {
-        encoder.writeDwtValueEvent(event, data);
-      }
-    }
-
-    void operator()(const DwtAddressTraceEvent& address) const
-    {
-      if (selected) {
-        encoder.writeDwtAddrEvent(event, address);
-      }
-    }
-
-    void operator()(const DwtMatchTraceEvent& match) const
-    {
-      if (selected) {
-        encoder.writeDwtMatchEvent(event, match);
-      }
-    }
-
-    void operator()(const ExceptionTraceEvent& exception) const
-    {
-      if (exception.action != ExceptionAction::Unknown) {
-        encoder.writeExceptionEvent(event.route, exception);
-      }
-    }
-
-    void operator()(const DwtEventTraceEvent& counters) const
-    {
-      if (selected) {
-        encoder.writeDwtEvent(event, counters);
-      }
-    }
-
-    void operator()(const PmuTraceEvent& counters) const
-    {
-      if (selected) {
-        encoder.writePmuEvent(event, counters);
-      }
-    }
-
-    void operator()(const PcSampleTraceEvent& sample) const
-    {
-      if (selected) {
-        encoder.writePcSampleEvent(event, sample);
-      }
-    }
-
-    void operator()(const LocalTimestampTraceEvent&) const
-    {
-      encoder.streamState(event.route).localTimestampObserved = true;
-    }
-
-    void operator()(const GlobalTimestampTraceEvent& timestamp) const
-    {
-      if (selected) {
-        encoder.writeGlobalTimestampEvent(event, timestamp);
-      }
-    }
-
-    void operator()(const OverflowTraceEvent&) const
-    {
-      auto& routeState = encoder.streamState(event.route);
-      if (event.quality.has_value()) {
-        routeState.overflowCount = std::max(routeState.overflowCount, event.quality->overflowCount);
-      } else {
-        ++routeState.overflowCount;
-      }
-      encoder.writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::Overflow), event.route,
-                                    selected);
-    }
-
-    void operator()(const SyncTraceEvent&) const
-    {
-      encoder.writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::Resync), event.route,
-                                    encoder.m_config.selection.types.empty());
-    }
-
-    void operator()(const TraceIssueEvent& issue) const
-    {
-      if (issue.code == TraceIssueCode::DataLoss) {
-        encoder.writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss), event.route,
-                                      selected);
-        return;
-      }
-      if (event.quality.has_value() && event.quality->overflow) {
-        encoder.writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::DataLoss), event.route,
-                                      selected);
-      }
-      if (selected) {
-        encoder.writeTraceStatusEvent(CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError), event.route,
-                                      true);
-      }
-    }
-  };
 
   std::visit(PayloadVisitor{*this, event, selected}, event.payload);
 }

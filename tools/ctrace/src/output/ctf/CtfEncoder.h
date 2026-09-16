@@ -60,6 +60,9 @@ public:
   const CtfMetadataModel* completedMetadata() const noexcept;
 
 private:
+  /** @brief Dispatches one semantic payload without inflating writeEvent's lifecycle logic. */
+  struct PayloadVisitor;
+
   /** @brief Tracks timestamp and trace-quality state for one output stream. */
   struct StreamState {
     std::uint64_t eventTimestamp = 0;

@@ -16,6 +16,7 @@
 #include <filesystem>
 #include <fstream>
 #include <ios>
+#include <ostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -214,67 +215,20 @@ static bool includesView(TraceCompassXmlWriter::ViewMask views, TraceCompassXmlW
   return (views & TraceCompassXmlWriter::viewMask(view)) != 0U;
 }
 
-/** @brief Generates the Trace Compass state-provider definition. */
-static std::string stateProviderXml(bool routePrefixed, TraceCompassXmlWriter::ViewMask views)
+/** @brief Writes one complete state-provider event handler. */
+static void writeStateHandler(std::ostream& xml, CtfSchema::EventId eventId, const std::string& stateChanges)
 {
-  // Numeric time-graph states are exposed as TSP style keys; string states are
-  // serialized without a style and appear as gaps in compatible clients.
-  std::ostringstream xml;
-  xml << R"(    <stateProvider version="__SWO_ANALYSIS_VERSION__" id="arm.cmsis.swo.analysis.v1">
-        <head><label value="SWO Trace Analysis" /></head>
+  xml << R"(        <eventHandler eventName=")" << CtfSchema::eventName(eventId) << R"(">
 )";
-  // Scalar DWT values become per-comparator numeric state entries.
-  if (includesView(views, TraceCompassXmlWriter::View::DwtValue)) {
-    xml << R"(        <eventHandler eventName=")"
-        << CtfSchema::eventName(CtfSchema::EventId::DwtValue) << R"(">
+  xml << stateChanges;
+  xml << R"(        </eventHandler>
 )";
-    xml << valueHandlers(CtfSchema::EventId::DwtValue, "dwt", "cmsis_dwt_comparator", "data", routePrefixed);
-    xml << R"(        </eventHandler>
-)";
-  }
-  // Address samples select the matching CTF variant before updating state.
-  if (includesView(views, TraceCompassXmlWriter::View::DwtAddress)) {
-    xml << R"(        <eventHandler eventName=")"
-        << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(">
-)";
-    xml << dwtAddressHandlers(routePrefixed);
-    xml << R"(        </eventHandler>
-)";
-  }
-  // Match packets are represented as finite pulses so isolated hits stay visible.
-  if (includesView(views, TraceCompassXmlWriter::View::DwtMatch)) {
-    xml << R"(        <eventHandler eventName=")"
-        << CtfSchema::eventName(CtfSchema::EventId::DwtMatch) << R"(">
-)";
-    xml << dwtMatchHandler(routePrefixed);
-    xml << R"(        </eventHandler>
-)";
-  }
-  // DWT and PMU event counters use their schema-defined counter names.
-  if (includesView(views, TraceCompassXmlWriter::View::DwtEvent)) {
-    xml << R"(        <eventHandler eventName=")"
-        << CtfSchema::eventName(CtfSchema::EventId::DwtEvent) << R"(">
-)";
-    xml << eventCounterHandlers(CtfSchema::EventId::DwtEvent, "cmsis_dwt_event_counter", kDwtEventCounters,
-                                CtfSchema::dwtEventCounterName, routePrefixed);
-    xml << R"(        </eventHandler>
-)";
-  }
-  if (includesView(views, TraceCompassXmlWriter::View::PmuEvent)) {
-    xml << R"(        <eventHandler eventName=")"
-        << CtfSchema::eventName(CtfSchema::EventId::PmuEvent) << R"(">
-)";
-    xml << eventCounterHandlers(CtfSchema::EventId::PmuEvent, "cmsis_pmu_event_counter", kPmuEventCounters,
-                                CtfSchema::pmuEventCounterName, routePrefixed);
-    xml << R"(        </eventHandler>
-)";
-  }
-  // Exception state tracks nesting, returns, and explicit exits independently.
-  const auto exceptionView = includesView(views, TraceCompassXmlWriter::View::Exception);
-  if (exceptionView) {
-    xml << R"(        <eventHandler eventName=")"
-        << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(">
-            <stateChange>
+}
+
+/** @brief Writes exception-entry state changes. */
+static void writeExceptionEnteredStateChanges(std::ostream& xml, bool routePrefixed)
+{
+  xml << R"(            <stateChange>
                 <if>
                     <condition>
                         <stateValue type="eventField" value="cmsis_exception_action" />
@@ -305,7 +259,13 @@ static std::string stateProviderXml(bool routePrefixed, TraceCompassXmlWriter::V
                     <stateValue type="null" />
                 </then>
             </stateChange>
-            <stateChange>
+)";
+}
+
+/** @brief Writes exception-exit state changes. */
+static void writeExceptionExitedStateChanges(std::ostream& xml, bool routePrefixed)
+{
+  xml << R"(            <stateChange>
                 <if>
                     <condition>
                         <stateValue type="eventField" value="cmsis_exception_action" />
@@ -342,7 +302,13 @@ static std::string stateProviderXml(bool routePrefixed, TraceCompassXmlWriter::V
                     <stateValue type="eventField" value="cmsis_exception_number_value" forcedType="long" />
                 </then>
             </stateChange>
-            <stateChange>
+)";
+}
+
+/** @brief Writes exception-return state changes. */
+static void writeExceptionReturnedStateChanges(std::ostream& xml, bool routePrefixed)
+{
+  xml << R"(            <stateChange>
                 <if>
                     <condition>
                         <stateValue type="eventField" value="cmsis_exception_action" />
@@ -373,15 +339,24 @@ static std::string stateProviderXml(bool routePrefixed, TraceCompassXmlWriter::V
                     <stateValue type="null" />
                 </then>
             </stateChange>
-        </eventHandler>
 )";
-  }
-  // Processor state currently exposes sleep intervals derived from PC samples.
-  const auto processorStateView = includesView(views, TraceCompassXmlWriter::View::ProcessorState);
-  if (processorStateView) {
-    xml << R"(        <eventHandler eventName=")"
-        << CtfSchema::eventName(CtfSchema::EventId::PcSample) << R"(">
-            <stateChange>
+}
+
+/** @brief Writes state changes that track exception nesting and returns. */
+static void writeExceptionStateHandler(std::ostream& xml, bool routePrefixed)
+{
+  std::ostringstream stateChanges;
+  writeExceptionEnteredStateChanges(stateChanges, routePrefixed);
+  writeExceptionExitedStateChanges(stateChanges, routePrefixed);
+  writeExceptionReturnedStateChanges(stateChanges, routePrefixed);
+  writeStateHandler(xml, CtfSchema::EventId::Exception, stateChanges.str());
+}
+
+/** @brief Writes state changes that expose processor sleep intervals. */
+static void writeProcessorStateHandler(std::ostream& xml, bool routePrefixed)
+{
+  std::ostringstream stateChanges;
+  stateChanges << R"(            <stateChange>
                 <if>
                     <condition>
                         <stateValue type="eventField" value="cmsis_pc_sample_state" />
@@ -414,17 +389,14 @@ static std::string stateProviderXml(bool routePrefixed, TraceCompassXmlWriter::V
                     <stateValue type="null" />
                 </then>
             </stateChange>
-        </eventHandler>
 )";
-  }
-  // Discontinuities close state that cannot safely span lost trace data.
-  if (exceptionView || processorStateView) {
-    xml << R"(        <eventHandler eventName=")"
-        << CtfSchema::eventName(CtfSchema::EventId::TraceStatus) << R"(">
-)";
-  }
-  if (processorStateView) {
-    xml << R"(            <stateChange>
+  writeStateHandler(xml, CtfSchema::EventId::PcSample, stateChanges.str());
+}
+
+/** @brief Writes the processor-state reset performed after discontinuities. */
+static void writeProcessorDiscontinuityStateChange(std::ostream& xml, bool routePrefixed)
+{
+  xml << R"(            <stateChange>
                 <if>
                     <or>
                         <condition>
@@ -446,9 +418,12 @@ static std::string stateProviderXml(bool routePrefixed, TraceCompassXmlWriter::V
                 </then>
             </stateChange>
 )";
-  }
-  if (exceptionView) {
-    xml << R"(            <stateChange>
+}
+
+/** @brief Writes the exception-return reset performed after discontinuities. */
+static void writeExceptionDiscontinuityStateChanges(std::ostream& xml, bool routePrefixed)
+{
+  xml << R"(            <stateChange>
                 <if>
                     <condition>
                         <stateValue type="eventField" value="cmsis_trace_status_reason" />
@@ -479,11 +454,65 @@ static std::string stateProviderXml(bool routePrefixed, TraceCompassXmlWriter::V
                 </then>
             </stateChange>
 )";
+}
+
+/** @brief Writes state resets for trace discontinuities. */
+static void writeDiscontinuityStateHandler(std::ostream& xml, bool routePrefixed, bool exceptionView,
+                                           bool processorStateView)
+{
+  if (!exceptionView && !processorStateView) {
+    return;
   }
-  if (exceptionView || processorStateView) {
-    xml << R"(        </eventHandler>
+
+  std::ostringstream stateChanges;
+  if (processorStateView) {
+    writeProcessorDiscontinuityStateChange(stateChanges, routePrefixed);
+  }
+  if (exceptionView) {
+    writeExceptionDiscontinuityStateChanges(stateChanges, routePrefixed);
+  }
+  writeStateHandler(xml, CtfSchema::EventId::TraceStatus, stateChanges.str());
+}
+
+/** @brief Generates the Trace Compass state-provider definition. */
+static std::string stateProviderXml(bool routePrefixed, TraceCompassXmlWriter::ViewMask views)
+{
+  // Numeric time-graph states are exposed as TSP style keys; string states are
+  // serialized without a style and appear as gaps in compatible clients.
+  std::ostringstream xml;
+  xml << R"(    <stateProvider version="__SWO_ANALYSIS_VERSION__" id="arm.cmsis.swo.analysis.v1">
+        <head><label value="SWO Trace Analysis" /></head>
 )";
+  if (includesView(views, TraceCompassXmlWriter::View::DwtValue)) {
+    writeStateHandler(xml, CtfSchema::EventId::DwtValue,
+                      valueHandlers(CtfSchema::EventId::DwtValue, "dwt", "cmsis_dwt_comparator", "data",
+                                    routePrefixed));
   }
+  if (includesView(views, TraceCompassXmlWriter::View::DwtAddress)) {
+    writeStateHandler(xml, CtfSchema::EventId::DwtAddress, dwtAddressHandlers(routePrefixed));
+  }
+  if (includesView(views, TraceCompassXmlWriter::View::DwtMatch)) {
+    writeStateHandler(xml, CtfSchema::EventId::DwtMatch, dwtMatchHandler(routePrefixed));
+  }
+  if (includesView(views, TraceCompassXmlWriter::View::DwtEvent)) {
+    writeStateHandler(xml, CtfSchema::EventId::DwtEvent,
+                      eventCounterHandlers(CtfSchema::EventId::DwtEvent, "cmsis_dwt_event_counter", kDwtEventCounters,
+                                           CtfSchema::dwtEventCounterName, routePrefixed));
+  }
+  if (includesView(views, TraceCompassXmlWriter::View::PmuEvent)) {
+    writeStateHandler(xml, CtfSchema::EventId::PmuEvent,
+                      eventCounterHandlers(CtfSchema::EventId::PmuEvent, "cmsis_pmu_event_counter", kPmuEventCounters,
+                                           CtfSchema::pmuEventCounterName, routePrefixed));
+  }
+  const auto exceptionView = includesView(views, TraceCompassXmlWriter::View::Exception);
+  if (exceptionView) {
+    writeExceptionStateHandler(xml, routePrefixed);
+  }
+  const auto processorStateView = includesView(views, TraceCompassXmlWriter::View::ProcessorState);
+  if (processorStateView) {
+    writeProcessorStateHandler(xml, routePrefixed);
+  }
+  writeDiscontinuityStateHandler(xml, routePrefixed, exceptionView, processorStateView);
   xml << R"(    </stateProvider>
 )";
   return xml.str();
@@ -540,113 +569,148 @@ static std::string viewPath(std::string_view path, const TraceCompassXmlWriter::
                           : "*/" + std::to_string(route->traceBusId) + '/' + std::string(path);
 }
 
+using ViewRenderer = void (*)(std::ostream&, const TraceCompassXmlWriter::ViewRoute*);
+
+/** @brief Writes one graphical view for each route that emitted its topic. */
+static void writeSelectedViews(std::ostream& xml, bool routePrefixed,
+                               const std::vector<TraceCompassXmlWriter::ViewRoute>& routes,
+                               TraceCompassXmlWriter::ViewMask legacyViews, TraceCompassXmlWriter::View view,
+                               ViewRenderer renderer)
+{
+  if (!routePrefixed) {
+    if (includesView(legacyViews, view)) {
+      renderer(xml, nullptr);
+    }
+    return;
+  }
+  for (const auto& route : routes) {
+    if (includesView(route.views, view)) {
+      renderer(xml, &route);
+    }
+  }
+}
+
+/** @brief Writes one numeric DWT XY view. */
+static void writeDwtXyView(std::ostream& xml, const TraceCompassXmlWriter::ViewRoute* route,
+                           std::string_view id, CtfSchema::EventId eventId, std::string_view display)
+{
+  const auto eventName = CtfSchema::eventName(eventId);
+  xml << "    <xyView id=\"" << viewId(id, route) << "\">\n"
+      << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\""
+      << viewLabel(eventName, route) << "\" /></head>\n"
+      << "        <entry path=\"" << viewPath(std::string(eventName) + "/*", route)
+      << "\"><display type=\"constant\" value=\"" << display << "\" /><name type=\"self\" /></entry>\n"
+      << "    </xyView>\n";
+}
+
+/** @brief Writes the DWT-value XY view. */
+static void writeDwtValueView(std::ostream& xml, const TraceCompassXmlWriter::ViewRoute* route)
+{
+  writeDwtXyView(xml, route, "arm.cmsis.swo.xy.dwt_value", CtfSchema::EventId::DwtValue, "data");
+}
+
+/** @brief Writes the DWT-address XY view. */
+static void writeDwtAddressView(std::ostream& xml, const TraceCompassXmlWriter::ViewRoute* route)
+{
+  writeDwtXyView(xml, route, "arm.cmsis.swo.xy.dwt_addr", CtfSchema::EventId::DwtAddress, "address");
+}
+
+/** @brief Writes the comparator-match pulse view. */
+static void writeDwtMatchView(std::ostream& xml, const TraceCompassXmlWriter::ViewRoute* route)
+{
+  xml << "    <timeGraphView id=\"" << viewId("arm.cmsis.swo.tg.dwt_match", route) << "\">\n"
+      << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\""
+      << viewLabel("DWT Match", route) << "\" /></head>\n"
+      << "        <definedValue name=\"Something happened\" value=\"1\" color=\"#F6BD16\" />\n"
+      << "        <entry path=\""
+      << viewPath(std::string(CtfSchema::eventName(CtfSchema::EventId::DwtMatch)) + "/*", route)
+      << "\" displayText=\"true\"><display type=\"constant\" value=\"1\" /><name type=\"self\" /></entry>\n"
+      << "    </timeGraphView>\n";
+}
+
+/** @brief Writes one event-counter pulse view. */
+template <typename Counter, std::size_t Size>
+static void writeEventCounterView(std::ostream& xml, const TraceCompassXmlWriter::ViewRoute* route,
+                                  std::string_view id, std::string_view label, CtfSchema::EventId eventId,
+                                  const std::array<Counter, Size>& counters)
+{
+  xml << "    <timeGraphView id=\"" << viewId(id, route) << "\">\n"
+      << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\"" << viewLabel(label, route)
+      << "\" /></head>\n";
+  for (const auto counter : counters) {
+    const auto value = static_cast<unsigned>(CtfSchema::value(counter));
+    xml << "        <definedValue name=\"" << value << "\" value=\"" << value
+        << "\" color=\"#F6BD16\" />\n";
+  }
+  xml << "        <entry path=\"" << viewPath(std::string(CtfSchema::eventName(eventId)) + "/*", route)
+      << "\" displayText=\"true\"><display type=\"constant\" value=\"1\" /></entry>\n"
+      << "    </timeGraphView>\n";
+}
+
+/** @brief Writes the DWT event-counter view. */
+static void writeDwtEventView(std::ostream& xml, const TraceCompassXmlWriter::ViewRoute* route)
+{
+  writeEventCounterView(xml, route, "arm.cmsis.swo.tg.dwt_event", "DWT Event Counters",
+                        CtfSchema::EventId::DwtEvent, kDwtEventCounters);
+}
+
+/** @brief Writes the PMU event-counter view. */
+static void writePmuEventView(std::ostream& xml, const TraceCompassXmlWriter::ViewRoute* route)
+{
+  writeEventCounterView(xml, route, "arm.cmsis.swo.tg.pmu_event", "PMU Event Counters",
+                        CtfSchema::EventId::PmuEvent, kPmuEventCounters);
+}
+
+/** @brief Writes the exception timeline view. */
+static void writeExceptionView(std::ostream& xml, const TraceCompassXmlWriter::ViewRoute* route)
+{
+  xml << "    <timeGraphView id=\"" << viewId("arm.cmsis.swo.tg.exception", route) << "\">\n"
+      << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\""
+      << viewLabel(CtfSchema::eventName(CtfSchema::EventId::Exception), route) << "\" /></head>\n"
+      << "        <entry path=\"" << viewPath("EXCEPTION/Thread Mode", route)
+      << "\" displayText=\"false\"><display type=\"constant\" value=\"action\" /><name type=\"self\" /></entry>\n"
+      << "        <entry path=\"" << viewPath("EXCEPTION_RETURN/*", route)
+      << "\" displayText=\"true\"><display type=\"constant\" value=\"action\" /><name type=\"self\" /></entry>\n"
+      << "        <entry path=\"" << viewPath("EXCEPTION/(?!Thread Mode).+", route)
+      << "\" displayText=\"false\"><display type=\"constant\" value=\"action\" /><name type=\"self\" /></entry>\n"
+      << "    </timeGraphView>\n";
+}
+
+/** @brief Writes the processor-state timeline view. */
+static void writeProcessorStateView(std::ostream& xml, const TraceCompassXmlWriter::ViewRoute* route)
+{
+  xml << "    <timeGraphView id=\"" << viewId("arm.cmsis.swo.tg.processor_state", route) << "\">\n"
+      << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\""
+      << viewLabel("Processor State", route) << "\" /></head>\n"
+      << "        <definedValue name=\"Sleep\" value=\""
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::PcSampleState::Sleep))
+      << "\" color=\"#5B8FF9\" />\n"
+      << "        <entry path=\""
+      << viewPath(std::string(CtfSchema::eventName(CtfSchema::EventId::PcSample)) + "/*", route)
+      << "\" displayText=\"true\"><display type=\"self\" /></entry>\n"
+      << "    </timeGraphView>\n";
+}
+
 /** @brief Generates only graphical Trace Compass views, one per route for generalized CTF. */
 static std::string viewsXml(bool routePrefixed,
                             const std::vector<TraceCompassXmlWriter::ViewRoute>& routes,
                             TraceCompassXmlWriter::ViewMask legacyViews)
 {
   std::ostringstream xml;
-  // A legacy trace gets one unscoped view; formatted traces get one view per
-  // route that actually emitted the corresponding graphical topic.
-  const auto forEachRoute = [&](TraceCompassXmlWriter::View view, const auto& emit) {
-    if (!routePrefixed) {
-      if ((legacyViews & TraceCompassXmlWriter::viewMask(view)) != 0U) {
-        const TraceCompassXmlWriter::ViewRoute* legacyRoute = nullptr;
-        emit(legacyRoute);
-      }
-      return;
-    }
-    for (const auto& route : routes) {
-      if ((route.views & TraceCompassXmlWriter::viewMask(view)) != 0U) {
-        emit(&route);
-      }
-    }
-  };
-
-  // Numeric DWT values and addresses are plotted as XY series.
-  forEachRoute(TraceCompassXmlWriter::View::DwtValue, [&](const auto* route) {
-    xml << "    <xyView id=\"" << viewId("arm.cmsis.swo.xy.dwt_value", route) << "\">\n"
-        << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\""
-        << viewLabel(CtfSchema::eventName(CtfSchema::EventId::DwtValue), route) << "\" /></head>\n"
-        << "        <entry path=\""
-        << viewPath(std::string(CtfSchema::eventName(CtfSchema::EventId::DwtValue)) + "/*", route)
-        << "\"><display type=\"constant\" value=\"data\" /><name type=\"self\" /></entry>\n"
-        << "    </xyView>\n";
-  });
-  forEachRoute(TraceCompassXmlWriter::View::DwtAddress, [&](const auto* route) {
-    xml << "    <xyView id=\"" << viewId("arm.cmsis.swo.xy.dwt_addr", route) << "\">\n"
-        << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\""
-        << viewLabel(CtfSchema::eventName(CtfSchema::EventId::DwtAddress), route) << "\" /></head>\n"
-        << "        <entry path=\""
-        << viewPath(std::string(CtfSchema::eventName(CtfSchema::EventId::DwtAddress)) + "/*", route)
-        << "\"><display type=\"constant\" value=\"address\" /><name type=\"self\" /></entry>\n"
-        << "    </xyView>\n";
-  });
-  // Discrete matches and counters are represented as time-graph states.
-  forEachRoute(TraceCompassXmlWriter::View::DwtMatch, [&](const auto* route) {
-    xml << "    <timeGraphView id=\"" << viewId("arm.cmsis.swo.tg.dwt_match", route) << "\">\n"
-        << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\""
-        << viewLabel("DWT Match", route) << "\" /></head>\n"
-        << "        <definedValue name=\"Something happened\" value=\"1\" color=\"#F6BD16\" />\n"
-        << "        <entry path=\""
-        << viewPath(std::string(CtfSchema::eventName(CtfSchema::EventId::DwtMatch)) + "/*", route)
-        << "\" displayText=\"true\"><display type=\"constant\" value=\"1\" /><name type=\"self\" /></entry>\n"
-        << "    </timeGraphView>\n";
-  });
-  forEachRoute(TraceCompassXmlWriter::View::DwtEvent, [&](const auto* route) {
-    xml << "    <timeGraphView id=\"" << viewId("arm.cmsis.swo.tg.dwt_event", route) << "\">\n"
-        << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\""
-        << viewLabel("DWT Event Counters", route) << "\" /></head>\n";
-    for (const auto counter : kDwtEventCounters) {
-      const auto value = static_cast<unsigned>(CtfSchema::value(counter));
-      xml << "        <definedValue name=\"" << value << "\" value=\"" << value
-          << "\" color=\"#F6BD16\" />\n";
-    }
-    xml << "        <entry path=\""
-        << viewPath(std::string(CtfSchema::eventName(CtfSchema::EventId::DwtEvent)) + "/*", route)
-        << "\" displayText=\"true\"><display type=\"constant\" value=\"1\" /></entry>\n"
-        << "    </timeGraphView>\n";
-  });
-  forEachRoute(TraceCompassXmlWriter::View::PmuEvent, [&](const auto* route) {
-    xml << "    <timeGraphView id=\"" << viewId("arm.cmsis.swo.tg.pmu_event", route) << "\">\n"
-        << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\""
-        << viewLabel("PMU Event Counters", route) << "\" /></head>\n";
-    for (const auto counter : kPmuEventCounters) {
-      const auto value = static_cast<unsigned>(CtfSchema::value(counter));
-      xml << "        <definedValue name=\"" << value << "\" value=\"" << value
-          << "\" color=\"#F6BD16\" />\n";
-    }
-    xml << "        <entry path=\""
-        << viewPath(std::string(CtfSchema::eventName(CtfSchema::EventId::PmuEvent)) + "/*", route)
-        << "\" displayText=\"true\"><display type=\"constant\" value=\"1\" /></entry>\n"
-        << "    </timeGraphView>\n";
-  });
-  // Exception and processor-state timelines share the state provider but use
-  // independent route-scoped view definitions.
-  forEachRoute(TraceCompassXmlWriter::View::Exception, [&](const auto* route) {
-    xml << "    <timeGraphView id=\"" << viewId("arm.cmsis.swo.tg.exception", route) << "\">\n"
-        << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\""
-        << viewLabel(CtfSchema::eventName(CtfSchema::EventId::Exception), route) << "\" /></head>\n"
-        << "        <entry path=\"" << viewPath("EXCEPTION/Thread Mode", route)
-        << "\" displayText=\"false\"><display type=\"constant\" value=\"action\" /><name type=\"self\" /></entry>\n"
-        << "        <entry path=\"" << viewPath("EXCEPTION_RETURN/*", route)
-        << "\" displayText=\"true\"><display type=\"constant\" value=\"action\" /><name type=\"self\" /></entry>\n"
-        << "        <entry path=\"" << viewPath("EXCEPTION/(?!Thread Mode).+", route)
-        << "\" displayText=\"false\"><display type=\"constant\" value=\"action\" /><name type=\"self\" /></entry>\n"
-        << "    </timeGraphView>\n";
-  });
-  forEachRoute(TraceCompassXmlWriter::View::ProcessorState, [&](const auto* route) {
-    xml << "    <timeGraphView id=\"" << viewId("arm.cmsis.swo.tg.processor_state", route) << "\">\n"
-        << "        <head><analysis id=\"arm.cmsis.swo.analysis.v1\" /><label value=\""
-        << viewLabel("Processor State", route) << "\" /></head>\n"
-        << "        <definedValue name=\"Sleep\" value=\""
-        << static_cast<unsigned>(CtfSchema::value(CtfSchema::PcSampleState::Sleep))
-        << "\" color=\"#5B8FF9\" />\n"
-        << "        <entry path=\""
-        << viewPath(std::string(CtfSchema::eventName(CtfSchema::EventId::PcSample)) + "/*", route)
-        << "\" displayText=\"true\"><display type=\"self\" /></entry>\n"
-        << "    </timeGraphView>\n";
-  });
+  writeSelectedViews(xml, routePrefixed, routes, legacyViews, TraceCompassXmlWriter::View::DwtValue,
+                     writeDwtValueView);
+  writeSelectedViews(xml, routePrefixed, routes, legacyViews, TraceCompassXmlWriter::View::DwtAddress,
+                     writeDwtAddressView);
+  writeSelectedViews(xml, routePrefixed, routes, legacyViews, TraceCompassXmlWriter::View::DwtMatch,
+                     writeDwtMatchView);
+  writeSelectedViews(xml, routePrefixed, routes, legacyViews, TraceCompassXmlWriter::View::DwtEvent,
+                     writeDwtEventView);
+  writeSelectedViews(xml, routePrefixed, routes, legacyViews, TraceCompassXmlWriter::View::PmuEvent,
+                     writePmuEventView);
+  writeSelectedViews(xml, routePrefixed, routes, legacyViews, TraceCompassXmlWriter::View::Exception,
+                     writeExceptionView);
+  writeSelectedViews(xml, routePrefixed, routes, legacyViews, TraceCompassXmlWriter::View::ProcessorState,
+                     writeProcessorStateView);
   return xml.str();
 }
 
