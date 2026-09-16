@@ -26,6 +26,9 @@ solution:
         quantization:
           enabled: true
           profile: $Model-Extra$
+      empty-string: ""
+      empty-sequence: []
+      empty-map: {}
       unresolved: $Undefined$     # undefined variables resolve to an empty value
     hardware:                     # hardware target for testing
       target: Hardware            # explicit <target-type>[@<set>] (default: first target-type, first set)

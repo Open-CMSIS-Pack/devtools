@@ -87,7 +87,9 @@ void ProjMgrUtils::MergeCustomItems(const CustomItem& src, CustomItem& dst) {
   } else if (!src.vec.empty()) {
     dst.vec = src.vec;
   } else if (!src.map.empty()) {
-    for (const auto& [key, value] : src.map) {
+    for (const auto& customItem : src.map) {
+      const auto& key = customItem.first;
+      const auto& value = customItem.second;
       auto match = find_if(dst.map.begin(), dst.map.end(), [&key](const auto& item) {
         return item.first == key;
       });

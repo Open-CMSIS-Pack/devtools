@@ -37,21 +37,24 @@ void ProjMgrCbuildBase::SetNodeValueUniquely(YAML::Node node, const string& valu
 }
 
 YAML::Node ProjMgrCbuildBase::GetCustomNode(const CustomItem& value) {
-  YAML::Node node;
-  if (!value.scalar.empty()) {
-    node = value.scalar;
+  if (value.type == CustomItemType::Scalar) {
+    return YAML::Node(value.scalar);
   }
-  else if (!value.vec.empty()) {
+  if (value.type == CustomItemType::Sequence) {
+    YAML::Node node(YAML::NodeType::Sequence);
     for (const auto& item : value.vec) {
       node.push_back(GetCustomNode(item));
     }
+    return node;
   }
-  else if (!value.map.empty()) {
+  if (value.type == CustomItemType::Map) {
+    YAML::Node node(YAML::NodeType::Map);
     for (const auto& [key, item] : value.map) {
       node[key] = GetCustomNode(item);
     }
+    return node;
   }
-  return node;
+  return {};
 }
 
 void ProjMgrCbuildBase::SetCustomNodes(YAML::Node node, const CustomItem& custom) {

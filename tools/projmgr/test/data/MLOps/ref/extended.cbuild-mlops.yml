@@ -19,7 +19,12 @@ cbuild-mlops:
       quantization:
         enabled: true
         profile: extra-value
-    unresolved: 
+    empty-string: ""
+    empty-sequence:
+      []
+    empty-map:
+      {}
+    unresolved: ""
   hardware:
     active: Hardware
     cbuild-run: out/extended+Hardware.cbuild-run.yml

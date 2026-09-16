@@ -1225,14 +1225,17 @@ void ProjMgrYamlParser::ParseImages(const YAML::Node& parent, const string& file
 CustomItem ProjMgrYamlParser::GetCustomValue(const YAML::Node& node) {
   CustomItem value;
   if (node.IsScalar()) {
+    value.type = CustomItemType::Scalar;
     value.scalar = node.as<string>();
   }
   else if (node.IsSequence()) {
+    value.type = CustomItemType::Sequence;
     for (const auto& item : node) {
       value.vec.push_back(GetCustomValue(item));
     }
   }
   else if (node.IsMap()) {
+    value.type = CustomItemType::Map;
     for (const auto& item : node) {
       value.map.push_back({ item.first.as<string>(), GetCustomValue(item.second) });
     }
