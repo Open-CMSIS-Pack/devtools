@@ -740,7 +740,7 @@ RpcArgs::Results RpcHandler::ValidateComponents(const string& context) {
       r.id = validation.id;
       if(!validation.aggregates.empty()) {
         auto aggregateIds = key_set(validation.aggregates);
-        r.aggregates = vector<string>(aggrehateIds.begin(), aggrehateIds.end());
+        r.aggregates = vector<string>(aggregateIds.begin(), aggregateIds.end());
       }
       if(!validation.conditions.empty()) {
         RpcArgs::Condition c;
@@ -749,8 +749,8 @@ RpcArgs::Results RpcHandler::ValidateComponents(const string& context) {
           c.expression = condition.expression;
           c.result = RteItem::ConditionResultToString(condition.result);
           if(!condition.aggregates.empty()) {
-            auto aggrehateIds = key_set(condition.aggregates);
-            c.aggregates = vector<string>(aggrehateIds.begin(), aggrehateIds.end());
+            auto aggregateIds = key_set(condition.aggregates);
+            c.aggregates = vector<string>(aggregateIds.begin(), aggregateIds.end());
           }
           r.conditions->push_back(c);
         }
