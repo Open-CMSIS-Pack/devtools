@@ -19,8 +19,9 @@
 #include <utility>
 #include <vector>
 
-CortexMPostDecoder::CortexMPostDecoder(TraceEventSink& eventSink)
-  : m_eventSink(eventSink)
+CortexMPostDecoder::CortexMPostDecoder(TraceRouteIdentity route, TraceEventSink& eventSink)
+  : m_route(std::move(route)),
+    m_eventSink(eventSink)
 {
 }
 
@@ -106,40 +107,29 @@ std::uint64_t CortexMPostDecoder::eventCount() const
 
 void CortexMPostDecoder::appendSync(const OpenCsdTraceElement& element)
 {
-  TraceEvent event{SyncTraceEvent{}};
-  event.index = element.sourceIndex;
-  event.traceBusId = element.traceBusId;
+  auto event = makeEvent(element.sourceIndex, SyncTraceEvent{});
   queueOrEmitWhileAwaitingTimestamp(std::move(event));
 }
 
 void CortexMPostDecoder::appendOverflow(const OpenCsdTraceElement& element)
 {
-  noteOverflow();
-  const auto status = currentTraceStatus();
-  finalizePendingDiscontinuityIssues(std::nullopt);
-  flushPendingDataTrace(status);
-  flushPendingEvents(std::nullopt, status);
-  m_dwtDecoder.reset();
+  const auto status = markDiscontinuity();
 
-  TraceEvent event{OverflowTraceEvent{
+  auto event = makeEvent(element.sourceIndex, OverflowTraceEvent{
       "overflow: new timestamp segment; time across boundary may be unreliable",
-  }};
-  event.index = element.sourceIndex;
-  event.traceBusId = element.traceBusId;
+  });
   event.tcyc = m_timelineKnown ? std::optional<std::uint64_t>(m_currentTcyc) : std::nullopt;
-  event.quality = TraceQuality{true, false, m_overflowCount};
+  event.quality = status;
   emitEvent(event);
 }
 
 void CortexMPostDecoder::appendGlobalTimestamp(const OpenCsdTraceElement& element)
 {
   flushPendingDataTrace(currentTraceStatus());
-  TraceEvent event{GlobalTimestampTraceEvent{
+  auto event = makeEvent(element.sourceIndex, GlobalTimestampTraceEvent{
       element.timestampValue,
       element.clockChange,
-  }};
-  event.index = element.sourceIndex;
-  event.traceBusId = element.traceBusId;
+  });
   m_pendingEvents.push_back(std::move(event));
 }
 
@@ -147,26 +137,24 @@ void CortexMPostDecoder::appendDiscontinuity(const OpenCsdTraceElement& element)
 {
   const auto status = markDiscontinuity();
 
-  queueDiscontinuityIssue(
-      element.sourceIndex, element.traceBusId, status, element.issueCode.value_or(TraceIssueCode::DataLoss),
-      element.errorMessage.empty() ? "data loss/resync boundary; timestamps across this point may not match"
-                                   : element.errorMessage,
-      element.rawBytesConsumed);
+  queueDiscontinuityIssue(element.sourceIndex, status, element.issueCode.value_or(TraceIssueCode::DataLoss),
+                          element.errorMessage.empty()
+                              ? "data loss/resync boundary; timestamps across this point may not match"
+                              : element.errorMessage,
+                          element.rawBytesConsumed);
 }
 
 void CortexMPostDecoder::appendError(const OpenCsdTraceElement& element)
 {
   const auto status = element.discontinuity ? markDiscontinuity() : currentTraceStatus();
 
-  TraceEvent event{TraceIssueEvent{
+  auto event = makeEvent(element.sourceIndex, TraceIssueEvent{
       element.issueCode.value_or(TraceIssueCode::OpenCsdDecodeError),
       element.issueSeverity,
       element.errorMessage,
       element.rawBytesConsumed,
       std::nullopt,
-  }};
-  event.index = element.sourceIndex;
-  event.traceBusId = element.traceBusId;
+  });
   event.tcyc = m_currentTcyc;
   event.quality = status;
   if (element.awaitingResumeTimestamp) {
@@ -180,13 +168,11 @@ void CortexMPostDecoder::appendError(const OpenCsdTraceElement& element)
 void CortexMPostDecoder::appendSoftware(const OpenCsdTraceElement& element)
 {
   flushPendingDataTrace(currentTraceStatus());
-  TraceEvent event{SoftwareTraceEvent{
+  auto event = makeEvent(element.sourceIndex, SoftwareTraceEvent{
       element.channel,
       element.size,
       element.value,
-  }};
-  event.index = element.sourceIndex;
-  event.traceBusId = element.traceBusId;
+  });
   event.tcyc = m_currentTcyc;
   event.quality = currentTraceStatus(element.overflow);
   m_pendingEvents.push_back(std::move(event));
@@ -196,7 +182,7 @@ void CortexMPostDecoder::appendDwt(const OpenCsdTraceElement& element)
 {
   auto events = m_dwtDecoder.decode({
       element.sourceIndex,
-      element.traceBusId,
+      m_route,
       static_cast<std::uint8_t>(element.discriminator),
       element.size,
       element.value,
@@ -216,9 +202,7 @@ void CortexMPostDecoder::appendTimestamp(const OpenCsdTraceElement& element)
   flushPendingDataTrace(status);
   flushPendingEvents(m_currentTcyc, status);
 
-  TraceEvent event{LocalTimestampTraceEvent{}};
-  event.index = element.sourceIndex;
-  event.traceBusId = element.traceBusId;
+  auto event = makeEvent(element.sourceIndex, LocalTimestampTraceEvent{});
   event.tcyc = m_currentTcyc;
   emitEvent(event);
 
@@ -254,20 +238,17 @@ void CortexMPostDecoder::appendPendingEvents(std::vector<TraceEvent> events)
                          std::make_move_iterator(events.end()));
 }
 
-void CortexMPostDecoder::queueDiscontinuityIssue(std::uint64_t sourceIndex, std::uint8_t traceBusId,
-                                                 const TraceQuality& quality, TraceIssueCode issueCode,
-                                                 const std::string& message,
+void CortexMPostDecoder::queueDiscontinuityIssue(std::uint64_t sourceIndex, const TraceQuality& quality,
+                                                 TraceIssueCode issueCode, const std::string& message,
                                                  std::optional<std::uint64_t> rawBytesConsumed)
 {
-  TraceEvent event{TraceIssueEvent{
+  auto event = makeEvent(sourceIndex, TraceIssueEvent{
       issueCode,
       TraceIssueSeverity::Error,
       message,
       rawBytesConsumed,
       m_currentTcyc,
-  }};
-  event.index = sourceIndex;
-  event.traceBusId = traceBusId;
+  });
   event.tcyc = m_currentTcyc;
   event.quality = quality;
   m_pendingEvents.push_back(std::move(event));

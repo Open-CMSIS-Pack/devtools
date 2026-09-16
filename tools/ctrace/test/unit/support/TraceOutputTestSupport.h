@@ -19,7 +19,7 @@
 namespace TraceOutputTestSupport {
 
 /** @brief Selects the lifecycle operation where a test output fails. */
-enum class TestTraceOutputFailure { None, Start, Stop, Abort, Write, NonStandardStart };
+enum class TestTraceOutputFailure { None, Prepare, Start, Stop, Abort, Write, NonStandardStart };
 
 /** @brief Implements a configurable trace output for lifecycle unit tests. */
 class TestTraceOutput final : public TraceOutput {
@@ -37,38 +37,10 @@ public:
   {
   }
 
-  /** @brief Records start and optionally throws the configured failure. */
-  void start() override
+  /** @brief Cleans up an active synthetic output without throwing from destruction. */
+  ~TestTraceOutput() override
   {
-    record("start");
-    if (m_failure == TestTraceOutputFailure::NonStandardStart) {
-      throw 42;
-    }
-    failAt(TestTraceOutputFailure::Start, "intentional start failure");
-    TraceOutput::start();
-  }
-
-  /** @brief Records stop and optionally throws the configured failure. */
-  void stop() override
-  {
-    record("stop");
-    failAt(TestTraceOutputFailure::Stop, "intentional stop failure");
-    TraceOutput::stop();
-  }
-
-  /** @brief Records abort and optionally throws the configured failure. */
-  void abort() override
-  {
-    record("abort");
-    failAt(TestTraceOutputFailure::Abort, "intentional abort cleanup failure");
-    m_aborted = true;
-  }
-
-  /** @brief Records an event write and optionally throws the configured failure. */
-  void writeEvent(const TraceEvent&) override
-  {
-    record("write");
-    failAt(TestTraceOutputFailure::Write, "intentional write failure");
+    abortNoexcept();
   }
 
   /** @brief Returns the configured output target. */
@@ -81,6 +53,51 @@ public:
   bool aborted() const
   {
     return m_aborted;
+  }
+
+  /** @brief Changes the synthetic failure point for retry tests. */
+  void setFailure(TestTraceOutputFailure failure)
+  {
+    m_failure = failure;
+  }
+
+protected:
+  /** @brief Optionally rejects an output before it becomes active. */
+  void prepareOutput() override
+  {
+    failAt(TestTraceOutputFailure::Prepare, "intentional prepare failure");
+  }
+
+  /** @brief Records start and optionally throws the configured failure. */
+  void startOutput() override
+  {
+    record("start");
+    if (m_failure == TestTraceOutputFailure::NonStandardStart) {
+      throw 42;
+    }
+    failAt(TestTraceOutputFailure::Start, "intentional start failure");
+  }
+
+  /** @brief Records stop and optionally throws the configured failure. */
+  void stopOutput() override
+  {
+    record("stop");
+    failAt(TestTraceOutputFailure::Stop, "intentional stop failure");
+  }
+
+  /** @brief Records abort and optionally throws the configured failure. */
+  void abortOutput() override
+  {
+    record("abort");
+    failAt(TestTraceOutputFailure::Abort, "intentional abort cleanup failure");
+    m_aborted = true;
+  }
+
+  /** @brief Records an event write and optionally throws the configured failure. */
+  void writeOutput(const TraceEvent&) override
+  {
+    record("write");
+    failAt(TestTraceOutputFailure::Write, "intentional write failure");
   }
 
 private:

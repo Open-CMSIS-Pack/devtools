@@ -17,6 +17,7 @@
 #include <vector>
 
 struct TraceEvent;
+struct TraceRouteIdentity;
 
 /** @brief Identifies event families exposed by the public output filters. */
 enum class TraceEventType : std::size_t {
@@ -62,6 +63,8 @@ struct TraceSelection {
   bool includesType(const std::string_view& type) const;
   /** @brief Tests whether a Trace Bus ID is included. */
   bool includesStream(std::uint8_t traceBusId) const;
+  /** @brief Tests whether a normalized route passes the public stream selector. */
+  bool includesRoute(const TraceRouteIdentity& route) const;
 };
 
 /** @brief Tests whether an event passes a complete output selection. */

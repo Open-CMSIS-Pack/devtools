@@ -139,6 +139,13 @@ bool TraceSelection::includesStream(std::uint8_t traceBusId) const
   return streams.empty() || std::find(streams.begin(), streams.end(), traceBusId) != streams.end();
 }
 
+bool TraceSelection::includesRoute(const TraceRouteIdentity& route) const
+{
+  // Public stream selector 0 retains the legacy spelling for a route whose
+  // unformatted bytes carry no architectural Trace Bus ID.
+  return includesStream(route.traceBusId.value_or(0U));
+}
+
 bool traceEventSelectedForOutput(const TraceEvent& event, const TraceSelection& selection)
 {
   const auto type = traceEventType(event);
@@ -146,7 +153,7 @@ bool traceEventSelectedForOutput(const TraceEvent& event, const TraceSelection& 
   if (software != nullptr && software->channel == CoreSight::kExcludedItmStimulusPort) {
     return false;
   }
-  if (!selection.includesStream(event.traceBusId)) {
+  if (!selection.includesRoute(event.route)) {
     return false;
   }
   return type.has_value() && selection.includesType(traceEventTypeName(*type));

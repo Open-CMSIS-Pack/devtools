@@ -9,6 +9,7 @@
 #define CTRACE_SRC_DECODE_OPENCSDTRACEELEMENT_H
 
 #include "TraceEvent.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
 #include <optional>
@@ -39,9 +40,8 @@ struct OpenCsdTraceElement {
   Kind kind = Kind::Error;
   std::uint64_t sourceIndex = 0;
 
-  // CoreSight Trace Bus ID reported by OpenCSD. ID 0 identifies input for
-  // which no formatted source ID exists, such as the current SWO path.
-  std::uint8_t traceBusId = 0U;
+  // Route assigned by the collector; OpenCSD channel 0 is not an architectural ID.
+  TraceRouteIdentity route;
   std::uint32_t channel = 0;
   std::uint32_t discriminator = 0;
   std::uint8_t size = 0;

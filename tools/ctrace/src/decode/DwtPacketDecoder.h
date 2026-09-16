@@ -9,6 +9,7 @@
 #define CTRACE_SRC_DECODE_DWTPACKETDECODER_H
 
 #include "TraceEvent.h"
+#include "TraceRoute.h"
 
 #include <array>
 #include <cstddef>
@@ -19,7 +20,7 @@
 /** @brief Stores a decoded DWT hardware payload and its trace metadata. */
 struct DwtPayloadPacket {
   std::uint64_t index = 0;
-  std::uint8_t traceBusId = 0U;
+  TraceRouteIdentity route;
   std::uint8_t discriminator = 0;
   std::uint8_t size = 0;
   std::uint32_t value = 0;
@@ -43,7 +44,7 @@ private:
   /** @brief Accumulates the fragments of one pending DWT data-trace event. */
   struct PendingDataTrace {
     std::uint64_t index = 0;
-    std::uint8_t traceBusId = 0U;
+    TraceRouteIdentity route;
     DwtAddressFragment pc;
     DwtAddressFragment address;
     std::uint32_t value = 0;
@@ -55,8 +56,22 @@ private:
     TraceQuality quality;
   };
 
+  /** @brief Decodes a DWT event-counter packet. */
+  std::vector<TraceEvent> decodeEventCounter(const DwtPayloadPacket& payload);
+  /** @brief Decodes a PMU trace-on-overflow packet. */
+  std::vector<TraceEvent> decodePmuTraceOnOverflow(const DwtPayloadPacket& payload);
+  /** @brief Decodes a DWT exception packet. */
+  std::vector<TraceEvent> decodeExceptionTrace(const DwtPayloadPacket& payload);
+  /** @brief Decodes a periodic PC or sleep sample. */
+  std::vector<TraceEvent> decodePeriodicPcSample(const DwtPayloadPacket& payload);
   /** @brief Accumulates one DWT data-trace packet and emits completed events. */
   void decodeDataTrace(const DwtPayloadPacket& payload, std::vector<TraceEvent>& output);
+  /** @brief Decodes an address, match, or PC fragment for one comparator. */
+  void decodeDataAddressTrace(const DwtPayloadPacket& payload, std::uint32_t comparator, bool secondarySubtype,
+                              PendingDataTrace event, std::vector<TraceEvent>& output);
+  /** @brief Decodes a data-value fragment for one comparator. */
+  void decodeDataValueTrace(const DwtPayloadPacket& payload, std::uint32_t comparator, bool secondarySubtype,
+                            PendingDataTrace event, std::vector<TraceEvent>& output);
   /** @brief Converts one complete pending comparator state into an event. */
   void sendDataTraceEvent(std::uint32_t comparator, const PendingDataTrace& event, const TraceQuality& quality,
                           std::uint64_t tcyc, std::vector<TraceEvent>& output);

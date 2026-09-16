@@ -18,6 +18,12 @@
 #include <string_view>
 #include <vector>
 
+/** @brief Identifies the byte format declared for one trace-run group. */
+enum class TraceRunFormat {
+  Unformatted,
+  Formatted,
+};
+
 namespace TraceRunSchema {
 
 inline constexpr std::array<std::uint32_t, 4> kTimestampPrescalers{{
@@ -29,6 +35,12 @@ inline constexpr std::array<std::uint32_t, 4> kTimestampPrescalers{{
 inline constexpr std::uint32_t kDefaultTimestampPrescaler = 1U;
 inline constexpr std::string_view kDefaultDwtDataType = "unsigned";
 inline constexpr std::uint8_t kDefaultDwtDataSize = 4U;
+
+/** @brief Resolves an absent trace-format declaration to its compatibility default. */
+constexpr TraceRunFormat effectiveTraceFormat(const std::optional<TraceRunFormat>& traceFormat)
+{
+  return traceFormat.value_or(TraceRunFormat::Unformatted);
+}
 
 /** @brief Tests whether a fixed array contains a value. */
 template <typename Value, std::size_t Size>
@@ -69,7 +81,8 @@ constexpr bool supportsSource(const std::string_view& type)
 /** @brief Tests whether ctrace consumes metadata for a reference type. */
 constexpr bool consumesReferenceMetadata(const std::string_view& type)
 {
-  return type == "dwt" || type == "itm" || type == "event" || type == "pmu" || type == "pcsample";
+  return type == "dwt" || type == "event" || type == "exception" || type == "itm" || type == "pmu" ||
+         type == "overflow" || type == "pcsample" || type == "global_ts";
 }
 
 /** @brief Tests whether an ITM stimulus port number is valid. */
@@ -181,21 +194,22 @@ inline bool isProcessorItmReference(const TraceRunReference& reference)
 inline bool contributesStreamBinding(const TraceRunReference& reference)
 {
   return (reference.type == "dwt" || reference.type == "itm") &&
-         (!reference.sources.empty() || isTimestampReference(reference) || isProcessorItmReference(reference));
+         (!reference.sources.empty() || isDwtDataReference(reference) || isTimestampReference(reference) ||
+          isProcessorItmReference(reference));
 }
 
 /** @brief Returns the first structural problem detected in a reference. */
 inline ReferenceProblem referenceProblem(const TraceRunReference& reference)
 {
+  if (reference.stream.has_value() && !CoreSight::isAtbTraceId(*reference.stream)) {
+    return ReferenceProblem::InvalidStream;
+  }
   for (std::size_t left = 0U; left < reference.sources.size(); ++left) {
     for (std::size_t right = left + 1U; right < reference.sources.size(); ++right) {
       if (reference.sources[left] == reference.sources[right]) {
         return ReferenceProblem::DuplicateSource;
       }
     }
-  }
-  if (reference.stream.has_value() && !CoreSight::isAtbTraceId(*reference.stream)) {
-    return ReferenceProblem::InvalidStream;
   }
   if (reference.type == "itm") {
     for (const auto source : reference.sources) {
@@ -227,11 +241,13 @@ struct TraceRunTimestampSetup {
 struct TraceRunDataSetup {
   std::optional<std::uint64_t> size = std::nullopt;
   std::optional<std::string> sizeError = std::nullopt;
+  bool present = true;
 };
 
 /** @brief Stores ITM stimulus-port configuration copied from one trace setup. */
 struct TraceRunItmSetup {
-  std::uint32_t enableMask = 0U;
+  std::optional<std::uint32_t> enableMask;
+  std::optional<std::string> enableError;
 };
 
 /** @brief Stores the ctrace setup metadata consumed by the decoder. */
@@ -240,12 +256,17 @@ struct TraceRunSetup {
   std::optional<TraceRunTimestampSetup> timestamps;
   std::optional<TraceRunItmSetup> itm;
   std::vector<TraceRunDataSetup> data;
+  std::optional<std::string> dataError;
   std::size_t line = 0U;
+  bool disabled = false;
+  std::size_t ordinal = 0U;
+  std::vector<std::string> featurePaths;
 };
 
 /** @brief Stores a parsed `*.ctrace-run.yml` input. */
 struct TraceRunConfig {
   std::string path;
+  std::optional<TraceRunFormat> traceFormat;
   std::vector<TraceRunReference> references;
   std::vector<TraceRunSetup> setups;
 };

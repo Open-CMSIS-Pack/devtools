@@ -10,6 +10,7 @@
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
 #include "TraceIssueReporter.h"
+#include "TraceRoute.h"
 #include <cstddef>
 #include <string>
 
@@ -124,6 +125,39 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsUnknownOverflowTimestamp)
   EXPECT_EQ(diagnostics.events().front().message.find("0 more occurred"), std::string::npos);
 }
 
+TEST(CtraceUnitTests, testTraceIssueReporterPartitionsIssuesAndOverflowByRoute)
+{
+  CollectingDiagnosticSink diagnostics;
+  TraceIssueReporter reporter(diagnostics);
+  const TraceRouteIdentity firstRoute{TraceRouteId{10U}, 1U};
+  const TraceRouteIdentity secondRoute{TraceRouteId{20U}, 111U};
+  const TraceRouteIdentity noBusA{TraceRouteId{30U}, std::nullopt};
+  const TraceRouteIdentity noBusB{TraceRouteId{31U}, std::nullopt};
+
+  reporter.append(onRoute(overflowPacket(10U), firstRoute));
+  reporter.append(onRoute(overflowPacket(100U), secondRoute));
+  reporter.append(onRoute(overflowPacket(20U), firstRoute));
+  reporter.append(onRoute(issuePacket(TraceIssueCode::DecodeError), firstRoute));
+  reporter.append(onRoute(issuePacket(TraceIssueCode::OpenCsdDecodeError, "route warning", TraceIssueSeverity::Warning),
+                          secondRoute));
+  reporter.append(onRoute(overflowPacket(30U), noBusA));
+  reporter.append(onRoute(overflowPacket(31U), noBusB));
+  reporter.finish();
+
+  ASSERT_EQ(diagnostics.events().size(), 6U);
+  EXPECT_EQ(diagnostics.events()[0].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "1"}}));
+  EXPECT_EQ(diagnostics.events()[1].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}}));
+  EXPECT_EQ(diagnostics.events()[2].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "1"}}));
+  EXPECT_NE(diagnostics.events()[2].message.find("cycle timestamp 10; 1 more occurred"), std::string::npos);
+  EXPECT_EQ(diagnostics.events()[3].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}}));
+  EXPECT_NE(diagnostics.events()[3].message.find("cycle timestamp 100"), std::string::npos);
+  EXPECT_TRUE(diagnostics.events()[4].context.empty());
+  EXPECT_TRUE(diagnostics.events()[5].context.empty());
+  EXPECT_NE(diagnostics.events()[4].message.find("cycle timestamp 30"), std::string::npos);
+  EXPECT_NE(diagnostics.events()[5].message.find("cycle timestamp 31"), std::string::npos)
+      << "distinct no-bus route IDs must not collapse into one overflow summary";
+}
+
 TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
 {
   CollectingDiagnosticSink diagnostics;
@@ -138,6 +172,7 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
       {TraceIssueCode::OpenCsdBadPacketSequence, "invalid ITM packet sequence at raw offset 42"},
       {TraceIssueCode::OpenCsdInvalidPacketHeader, "invalid ITM packet header at raw offset 42"},
       {TraceIssueCode::OpenCsdIncompleteTail, "incomplete ITM packet starting at raw offset 42 at end of input"},
+      {TraceIssueCode::OpenCsdFormattedInputError, "formatted input failed at raw input offset 42"},
       {TraceIssueCode::OpenCsdNoProgress, "OpenCSD made no decode progress at raw offset 42"},
       {TraceIssueCode::OpenCsdWaitTimeout, "OpenCSD remained blocked while flushing pending data"},
       {TraceIssueCode::OpenCsdInitializationError, "OpenCSD initialization failed"},
@@ -145,10 +180,16 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
       {static_cast<TraceIssueCode>(255U), "trace decode error at raw offset 42"},
   };
   for (const auto& testCase : cases) {
-    auto event = issuePacket(testCase.code);
+    auto event = issuePacket(testCase.code, testCase.code == TraceIssueCode::OpenCsdFormattedInputError
+                                                ? "formatted input failed at raw input offset 42"
+                                                : "");
     event.index = 42U;
     reporter.append(event);
   }
+
+  auto formattedFallback = issuePacket(TraceIssueCode::OpenCsdFormattedInputError);
+  formattedFallback.index = 44U;
+  reporter.append(formattedFallback);
 
   auto dataLoss = issuePacket(TraceIssueCode::DataLoss);
   dataLoss.index = 43U;
@@ -158,11 +199,12 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
   reporter.append(warningDataLoss);
   reporter.append(issuePacket(TraceIssueCode::DecodeError));
 
-  ASSERT_EQ(diagnostics.events().size(), std::size(cases) + 3U);
+  ASSERT_EQ(diagnostics.events().size(), std::size(cases) + 4U);
   for (std::size_t index = 0U; index < std::size(cases); ++index) {
     EXPECT_EQ(diagnostics.events()[index].message, cases[index].message);
   }
-  EXPECT_NE(diagnostics.events()[std::size(cases)].message.find("raw offset 43"), std::string::npos);
-  EXPECT_EQ(diagnostics.events()[std::size(cases) + 1U].severity, DiagnosticSink::Severity::Warning);
+  EXPECT_EQ(diagnostics.events()[std::size(cases)].message, "formatted trace input error at raw offset 44");
+  EXPECT_NE(diagnostics.events()[std::size(cases) + 1U].message.find("raw offset 43"), std::string::npos);
+  EXPECT_EQ(diagnostics.events()[std::size(cases) + 2U].severity, DiagnosticSink::Severity::Warning);
   EXPECT_EQ(diagnostics.events().back().message, "trace decode error at raw offset 0");
 }

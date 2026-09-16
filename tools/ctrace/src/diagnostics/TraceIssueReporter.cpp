@@ -9,9 +9,20 @@
 
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
+#include "TraceRoute.h"
 
 #include <string>
 #include <utility>
+#include <vector>
+
+/** @brief Builds public stream context when a route has an architectural ID. */
+static std::vector<std::pair<std::string, std::string>> routeContext(const TraceRouteIdentity& route)
+{
+  if (!route.traceBusId.has_value()) {
+    return {};
+  }
+  return {{"stream", std::to_string(*route.traceBusId)}};
+}
 
 /** @brief Appends a raw input offset to a diagnostic when available. */
 static std::string atRawOffset(const std::string& message, const TraceEvent& event)
@@ -36,6 +47,8 @@ static std::string displayErrorMessage(const TraceEvent& event, const TraceIssue
     return atRawOffset("invalid ITM packet header", event);
   case TraceIssueCode::OpenCsdIncompleteTail:
     return "incomplete ITM packet starting at raw offset " + std::to_string(event.index) + " at end of input";
+  case TraceIssueCode::OpenCsdFormattedInputError:
+    return issue.message.empty() ? atRawOffset("formatted trace input error", event) : issue.message;
   case TraceIssueCode::OpenCsdNoProgress:
     return atRawOffset("OpenCSD made no decode progress", event);
   case TraceIssueCode::OpenCsdWaitTimeout:
@@ -76,40 +89,43 @@ void TraceIssueReporter::finish()
     return;
   }
   m_finished = true;
-  if (m_overflowPackets == 0U) {
-    return;
+  for (const auto& [routeId, state] : m_overflowByRoute) {
+    (void)routeId;
+    const auto additionalOverflows = state.packetCount - 1U;
+    const auto firstOverflow = state.firstTimestamp.has_value()
+                                   ? "cycle timestamp " + std::to_string(*state.firstTimestamp)
+                                   : std::string("an unknown cycle timestamp");
+    auto summary = "first overflow occurred at " + firstOverflow;
+    if (additionalOverflows > 0U) {
+      summary += "; " + std::to_string(additionalOverflows) + " more occurred";
+    }
+    report(DiagnosticSink::Severity::Warning, std::move(summary), routeContext(state.route));
   }
-
-  const auto additionalOverflows = m_overflowPackets - 1U;
-  const auto firstOverflow = m_firstOverflowTimestamp.has_value()
-                                 ? "cycle timestamp " + std::to_string(*m_firstOverflowTimestamp)
-                                 : std::string("an unknown cycle timestamp");
-  auto summary = "first overflow occurred at " + firstOverflow;
-  if (additionalOverflows > 0U) {
-    summary += "; " + std::to_string(additionalOverflows) + " more occurred";
-  }
-  report(DiagnosticSink::Severity::Warning, summary);
 }
 
 void TraceIssueReporter::reportOverflow(const TraceEvent& event)
 {
-  if (m_overflowPackets == 0U) {
-    m_firstOverflowTimestamp = event.tcyc;
+  auto& state = m_overflowByRoute[event.route.id];
+  if (state.packetCount == 0U) {
+    state.route = event.route;
+    state.firstTimestamp = event.tcyc;
   }
-  ++m_overflowPackets;
+  ++state.packetCount;
 }
 
 void TraceIssueReporter::reportError(const TraceEvent& event, const TraceIssueEvent& issue)
 {
   report(issue.severity == TraceIssueSeverity::Warning ? DiagnosticSink::Severity::Warning
                                                        : DiagnosticSink::Severity::Error,
-         displayErrorMessage(event, issue));
+         displayErrorMessage(event, issue), routeContext(event.route));
 }
 
-void TraceIssueReporter::report(DiagnosticSink::Severity severity, std::string message)
+void TraceIssueReporter::report(DiagnosticSink::Severity severity, std::string message,
+                                std::vector<std::pair<std::string, std::string>> context)
 {
   m_diagnostics.report({
       severity,
       std::move(message),
+      std::move(context),
   });
 }
