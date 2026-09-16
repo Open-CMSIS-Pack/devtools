@@ -1171,13 +1171,7 @@ void ProjMgrYamlParser::ParseMlops(const YAML::Node& parent, const string& file,
     if (mlopsNode[YAML_MODEL].IsDefined()) {
       const YAML::Node& modelNode = mlopsNode[YAML_MODEL];
       ParsePortablePath(modelNode, file, YAML_CLAYER, mlops.model.clayer);
-      ParseString(modelNode, YAML_NAME, mlops.model.name);
-      for (const auto& item : modelNode) {
-        const string key = item.first.as<string>();
-        if (key != YAML_CLAYER && key != YAML_NAME) {
-          mlops.model.additional[key] = item.second.as<string>();
-        }
-      }
+      ParseCustom(modelNode, { YAML_CLAYER }, mlops.model.custom);
     }
     if (mlopsNode[YAML_HARDWARE].IsDefined()) {
       const YAML::Node& hardwareNode = mlopsNode[YAML_HARDWARE];

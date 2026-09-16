@@ -18,8 +18,14 @@ solution:
       misc: $Vela-Misc$           # additional options for Vela
     model:    
       clayer: $AI-Layer$          # path to layer or variable
-      name: $Model-Name$          # optional model name (default Algorithm), serves as namespace
       extra: $Model-Extra$        # additional model property
+      labels:
+        - image-classification
+        - $Model-Extra$
+      settings:
+        quantization:
+          enabled: true
+          profile: $Model-Extra$
       unresolved: $Undefined$     # undefined variables resolve to an empty value
     hardware:                     # hardware target for testing
       target: Hardware            # explicit <target-type>[@<set>] (default: first target-type, first set)
@@ -36,7 +42,6 @@ solution:
         - Vela-System: System_Config
         - Vela-Memory: Memory_Mode
         - Vela-Misc: --extra-options
-        - Model-Name: ResolvedAlgorithm
         - Model-Extra: extra-value
       target-set:
         - set:

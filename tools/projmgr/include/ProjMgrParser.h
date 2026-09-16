@@ -597,12 +597,11 @@ struct MlopsVelaItem {
 /**
  * @brief mlops model item containing
  *        path to AI clayer,
- *        model name
+ *        custom properties
 */
 struct MlopsModelItem {
   std::string clayer;
-  std::string name;
-  std::map<std::string, std::string> additional;
+  CustomItem custom;
 };
 
 /**

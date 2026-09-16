@@ -94,15 +94,6 @@ string ProjMgrMlops::BuildActive(const string& targetType, const string& targetS
   return targetSet.empty() ? targetType : targetType + "@" + targetSet;
 }
 
-string ProjMgrMlops::GetCustomScalar(const CustomItem& custom, const string& key) const {
-  for (const auto& [customKey, value] : custom.map) {
-    if (customKey == key) {
-      return value.scalar;
-    }
-  }
-  return RteUtils::EMPTY_STRING;
-}
-
 string ProjMgrMlops::BuildVelaOptions(const MlopsNpuType& npu, const MlopsVelaItem& vela) const {
   string options;
   if (!npu.type.empty() && !npu.macs.empty()) {
@@ -334,10 +325,8 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
     }
   }
 
-  // model name and clayer
+  // model clayer
   if (!solutionMlops.model.clayer.empty()) {
-    mlops.model.name = solutionMlops.model.name.empty() ? "Algorithm" : solutionMlops.model.name;
-    expand(mlops.model.name);
     mlops.model.clayer = solutionMlops.model.clayer;
     expand(mlops.model.clayer);
     if (!m_worker->ProcessSequenceRelative(context, mlops.model.clayer, csolution.directory, false)) {
@@ -347,10 +336,19 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
       RteFsUtils::NormalizePath(mlops.model.clayer, context.directories.cprj);
     }    
   }
-  mlops.model.additional = solutionMlops.model.additional;
-  for (auto& [key, value] : mlops.model.additional) {
-    expand(value);
-  }
+  mlops.model.custom = solutionMlops.model.custom;
+  const auto expandCustom = [&expand](CustomItem& custom, const auto& expandCustomRef) -> void {
+    if (!custom.scalar.empty()) {
+      expand(custom.scalar);
+    }
+    for (auto& item : custom.vec) {
+      expandCustomRef(item, expandCustomRef);
+    }
+    for (auto& [key, value] : custom.map) {
+      expandCustomRef(value, expandCustomRef);
+    }
+  };
+  expandCustom(mlops.model.custom, expandCustom);
   
   if (hardwareFound) {
     // set hardware run types
@@ -368,8 +366,8 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
     }
 
     // get debugger model and config-file
-    mlops.simulator.model = GetCustomScalar(simulatorTargetSet.debugger.custom, "model");
-    mlops.simulator.configFile = GetCustomScalar(simulatorTargetSet.debugger.custom, "config-file");
+    mlops.simulator.model = ProjMgrUtils::GetCustomScalar(simulatorTargetSet.debugger.custom, "model");
+    mlops.simulator.configFile = ProjMgrUtils::GetCustomScalar(simulatorTargetSet.debugger.custom, "config-file");
     if (!mlops.simulator.configFile.empty()) {
       if (!m_worker->ProcessSequenceRelative(simulatorContext, mlops.simulator.configFile, csolution.directory, false)) {
         return false;
