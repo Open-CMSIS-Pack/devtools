@@ -281,7 +281,7 @@ struct ContextTypesItem {
 struct ValidationCondition {
   RteItem::ConditionResult result;
   std::string expression;
-  StrSet aggregates;
+  StrMap aggregates;
 };
 
 /**
@@ -295,7 +295,7 @@ struct ValidationCondition {
 struct ValidationResult {
   RteItem::ConditionResult result;
   std::string id;
-  StrSet aggregates;
+  StrMap aggregates;
   std::vector<ValidationCondition> conditions;
 };
 

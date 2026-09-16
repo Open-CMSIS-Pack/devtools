@@ -739,7 +739,8 @@ RpcArgs::Results RpcHandler::ValidateComponents(const string& context) {
       r.result = RteItem::ConditionResultToString(validation.result);
       r.id = validation.id;
       if(!validation.aggregates.empty()) {
-        r.aggregates = vector<string>(validation.aggregates.begin(), validation.aggregates.end());
+        auto aggrehateIds = key_set(validation.aggregates);
+        r.aggregates = vector<string>(aggrehateIds.begin(), aggrehateIds.end());
       }
       if(!validation.conditions.empty()) {
         RpcArgs::Condition c;
@@ -748,7 +749,8 @@ RpcArgs::Results RpcHandler::ValidateComponents(const string& context) {
           c.expression = condition.expression;
           c.result = RteItem::ConditionResultToString(condition.result);
           if(!condition.aggregates.empty()) {
-            c.aggregates = vector<string>(condition.aggregates.begin(), condition.aggregates.end());
+            auto aggrehateIds = key_set(condition.aggregates);
+            c.aggregates = vector<string>(aggrehateIds.begin(), aggrehateIds.end());
           }
           r.conditions->push_back(c);
         }
