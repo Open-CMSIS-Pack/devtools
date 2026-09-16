@@ -11,22 +11,14 @@ constraints](constraints.md) record preserved contracts; the compact [TODO list]
 `ctrace` combines a trace-run configuration with raw CoreSight trace data and converts supported trace channels into
 backend-independent semantic events. Output backends consume these events to create CSV or CTF artifacts.
 
-The first release profile supports unformatted SWO and memory-aligned formatted CoreSight input carrying ITM and DWT
-packets. The command line accepts the stable type names `itm`, `dwt`, `event`, `pmu`, `exception`, `pcsample`,
-`global_ts`, `overflow`, and `error`. Output semantics are implemented for every listed type on every configured ITM
-route. Valid DWT event-counter and PMU trace-on-overflow packets reach CSV as one row containing the hardware mask.
-The CTF backend expands each mask into one timestamped record per set bit so Trace Compass can show exact event-table
-rows and labeled one-microsecond visualization pulses. DWT records use their fixed architectural counter names; PMU
-records provisionally use `Event0` through `Event7` until trace-run configuration can resolve the programmable
-counter assignments. Periodic PC samples reach CSV and CTF as semantic events; the CTF event distinguishes a sampled
-PC from a processor-sleep indication, and Trace Compass shows processor-sleep intervals as a `Processor State`
-timeline. Sampled PCs, ITM payloads, and trace-status records remain in the generic event table instead of being
-misrepresented as states with duration.
+The current profile supports unformatted ITM byte streams from SWO or explicitly declared TB input, and
+memory-aligned formatted CoreSight input carrying ITM and DWT packets. Each configured ITM route supports the public
+event selections `itm`, `dwt`, `event`, `pmu`, `exception`, `pcsample`, `global_ts`, `overflow`, and `error`.
+Backend-specific representations are documented in the [CTF profile](ctf-format.md), not in the decoder contract.
 
-Exactly one raw input is active for each trace-run configuration. Legacy configurations select `*.SWO.raw` as an
-unformatted stream. An explicit provisional `trace-format` declaration can select one SWO, TB, or named-TB file as
-unformatted or formatted input. Formatted input is routed by Trace Bus ID; normal IDs without a configured ITM route
-are diagnosed once and skipped without guessing whether they carry instruction trace or another protocol.
+Exactly one raw input is active for each trace-run configuration. Formatted input distributes bytes to configured
+ITM routes by Trace Bus ID; unformatted input uses one synthetic route. Other protocols require explicit decoder
+integration, not guesses based on observed IDs. Deferred inputs and decoders are tracked in the [TODO list](todo.md).
 
 The architecture separates protocol decoding, semantic interpretation, and output generation. This keeps output
 formats independent of OpenCSD and allows another raw trace channel to reuse the event model and output backends.
@@ -81,16 +73,14 @@ there is deliberately no common base class for all decode stages.
 
 ## Input and compatibility contract
 
-Root-level `trace-format` is a ctrace-private working field, not yet part of the CMSIS-Toolbox specification. Missing
-or null selects the legacy `unformatted` default and SWO-only discovery; an explicit `unformatted` or `formatted`
-value enables selection of exactly one eligible SWO/TB file. The value describes the selected file's effective bytes,
-not the target's formatter capability. Its specification and producer integration remain separate follow-up work.
+Input selection and route binding belong to `tracerun` and complete before decoder or output construction.
+The provisional, ctrace-private `trace-format` declaration describes effective capture bytes rather than target
+capability or file identity. This keeps format selection explicit while preserving legacy SWO-only discovery until
+the producer contract supplies an unambiguous input identity and format. Framing remains an internal decoder contract.
 
-Formatted input currently means complete, 16-byte memory-aligned CoreSight frames. Memory alignment is one internal
-decoder contract, not a stored or user-selectable value; there is no public `trace-framing` YAML field, and FSYNC/HSYNC
-modes remain deferred. Generated `ctrace-refs.stream` values in the architectural range `1..111` bind formatter IDs
-to ITM routes. The legacy unformatted path remains one synthetic route with no architectural ID and preserves its
-existing CSV and CTF shape.
+The [input constraints](constraints.md#input-format-framing-and-discovery) define the accepted declarations, defaults,
+file candidates, and framing limits. The [routing invariants](constraints.md#routing-invariants) define reference
+binding, valid IDs, and the synthetic unformatted route; backends preserve its legacy output representation.
 
 ## Processing state and ownership
 
@@ -105,11 +95,12 @@ configured Trace Bus ID. Ctrace creates and feeds one tree at a time because Ope
 registry use process-global state; the session restores the previously installed logger when it is destroyed.
 
 Ownership is deliberately split by responsibility while preserving one enclosing lifetime: `OpenCsdTreeSession`
-owns the tree and configured decoder components; the format-specific session owns callback adapters, monitors, and
-captured callback errors; and the decoder implementation owns the event collector and error controller. Members are
-ordered so the tree is destroyed first, before any callback target or diagnostic state it can reference. This keeps
-format-specific feed and recovery policy out of the low-level tree wrapper without weakening callback lifetime
-safety.
+owns the tree and configured decoder components. For formatted input, `OpenCsdFormattedItmSession` additionally owns
+the route adapters, packet/frame monitors, and captured callback errors installed in that tree. For SINGLE input,
+the decoder implementation owns the packet collector and error controller that `OpenCsdItmSession` connects
+directly. Members are ordered so the tree is destroyed first, before any callback target or diagnostic state it can
+reference. This keeps format-specific feed and recovery policy out of the low-level tree wrapper without weakening
+callback lifetime safety.
 
 `CortexMStreamDecoder` maintains an independent post-decoder for each normalized route. All post-decoders emit into
 the same `TraceEventSink`, preserving input order while keeping route-specific timestamp and DWT state apart.
@@ -212,29 +203,23 @@ state.
 | `src/output/csv` | Stable CSV schema, row mapping, filtering, and file output |
 | `src/output/ctf` | CTF metadata and stream encoding plus Trace Compass analysis XML |
 
-The generated event IDs, fields, enum values, quality markers, and visualization semantics are specified in the
-[ctrace CTF profile](ctf-format.md).
-
 Output requirements are evaluated per backend and selected route. For example, missing CTF-specific metadata on an
 active route may disable CTF while an independent CSV output remains valid; metadata on a route excluded by the
 stream filter is not required. `--all` therefore does not make the backends share failure state unnecessarily.
 
-CSV remains one combined file in synchronous semantic callback order; formatted rows carry their architectural Trace
-Bus ID and the legacy unformatted stream column stays empty. CTF owns one bundle-local metadata model and lazily
-creates one `stream_<id>` writer per formatted route that emits a selected event. Each stream class references an
-explicit clock domain. Generalized metadata stores the optional processor name in a stream-scoped environment entry
-and exposes the same display identity through a private `ctrace_route` enum. Generated Trace Compass XML creates a
-graphical provider only when the completed stream contains trace data for that topic. Synthetic exception bootstrap
-records alone do not create an exception view. A `Processor State` provider requires an actual sleep indication;
-ordinary PC samples do not create it. Visible provider names append the resolved processor name but never a numeric
-ID; without a resolved name they retain the topic name alone. The provider ID and its state query select the
-architectural `cmsis_trace_bus_id`, so equal display names cannot merge routes. Internally, an unbound `ctrace_route`
-enum label falls back to its decimal CTF stream-class ID to keep the state path unique. The existing
-`uint8_t cmsis_trace_bus_id` field remains unchanged for CMSIS-profile consumers. Distinct processor bindings remain
-distinct domains even when their clock frequencies match.
-Because the supported Trace Compass reader cannot reliably combine multiple clock declarations, ctrace keeps that
-valid CTF bundle but omits any stale/new companion XML and reports one Warning. When selected, the legacy unformatted
-CTF path keeps its eager `stream_0`, `swo_clock`, original event context, and single-clock XML behavior.
+CSV writes one combined file in semantic callback order. `CtfBundleOutput` owns a bundle-local metadata model and
+lazily creates a stream writer for each formatted route that emits selected events. Representation changes stay in
+the backends: for example, CSV retains a DWT/PMU counter mask in one row while CTF expands it into individual records.
+
+CTF finalization retains only emitted streams, then generates Trace Compass XML from their observed graphical topics.
+This avoids empty views and invented durations for point events. Route identity stays separate from display labels,
+so equal processor names cannot merge views. Formatted routes retain distinct clock domains because the input contract
+does not establish cross-route synchronization. Multi-clock data remains valid CTF but cannot safely drive the supported
+reader's combined XML analysis.
+
+The [CTF profile](ctf-format.md) defines event schemas, metadata, clock mappings, legacy layouts, and
+[XML projection](ctf-format.md#generated-trace-compass-analysis). Cross-backend compatibility and failure rules belong
+to the [output constraints](constraints.md#observable-behavior-and-output-safety).
 
 Outputs use an explicit `start`, `writeEvent`, `stop`, and `abort` lifecycle. `TraceOutput` owns the active state and
 failure cleanup; concrete backends implement only the protected prepare, start, write, stop, and abort hooks. A
@@ -274,7 +259,7 @@ A known decoder defect and its proposed upstream fix are recorded in the [OpenCS
 ### Add a raw trace channel
 
 Implement a decoder that produces `TraceEvent` values, add it below `src/decode`, and select it in the control layer
-for the corresponding channel. A new protocol carried by formatted Trace Bus input additionally needs an explicit
+for the corresponding channel. A new protocol carried by formatted CoreSight input additionally needs an explicit
 protocol route from configuration; an observed unknown formatter ID is deliberately not enough to choose a decoder.
 Reuse the input descriptor, diagnostics, event selection, and output backends rather than creating a second raw-input
 architecture.
@@ -300,16 +285,19 @@ Executable-level coverage and fixture ownership are documented next to the
 
 ## Build and CI structure
 
-The source tree has seven static library targets: `model`, `cli`, `trace-run`, `diagnostics`, `decode`, `output`, and
-`control`. The shared `ctracelib` object contains `CtraceMain`; the executable adds only the platform trampoline and
-manifest where required. Dependencies form a directed, cycle-free graph with `control` as the composition root.
+The source tree has seven static library targets: `ctrace-model`, `ctrace-cli`, `ctrace-trace-run`,
+`ctrace-diagnostics`, `ctrace-decode`, `ctrace-output`, and `ctrace-control`. Their `ctrace::` aliases expose the
+shorter module names inside CMake. The shared `ctracelib` object contains `CtraceMain`; the executable adds only the
+platform trampoline and manifest where required. Dependencies form a directed, cycle-free graph with `control` as
+the composition root.
 
-The tool-specific GitHub workflow runs for matching pull requests and pushes to `main`, can be called by another
-workflow, and reacts to published releases. Only its release job is selected by a `tools/ctrace/<version>` release
-tag. The build matrix covers Windows AMD64 and Arm64, Linux AMD64 and Arm64, and macOS Arm64 binaries. Unit and
+The tool-specific GitHub workflow is triggered for matching pull requests and pushes to `main` and reacts to
+published releases. Only its release job is selected by a `tools/ctrace/<version>` release tag. The build matrix
+covers Windows AMD64 and Arm64, Linux AMD64 and Arm64, and macOS Arm64 binaries. Unit and
 integration tests run on Windows AMD64, Linux AMD64, and macOS Arm64; Windows Arm64 and Linux Arm64 remain
-compile-only. Native Linux additionally runs the exact Babeltrace 2.0.5 consumer gate on AMD64. The versioned manual
-Trace Compass Server/TSP acceptance record is documented beside the
+compile-only. Native Linux additionally runs the exact Babeltrace 2.0.5 consumer gate on AMD64. CI enforces 100%
+source-line coverage for `tools/ctrace/src`; branch coverage is retained for review but is not the merge gate. The
+versioned manual Trace Compass Server/TSP acceptance record is documented beside the
 [integration tests](../test/integration/README.md).
 The release version compiled into the executable is derived from the same tag. Archive contents and license material
 are described in the [third-party notices](THIRD_PARTY_NOTICES.md); unfinished release work remains in the

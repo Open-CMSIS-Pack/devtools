@@ -37,7 +37,8 @@ Server `0.17.0`, build `202609101143`, and TSP `0.6.0`. The server bundle
 manifest identifies source commit
 `b626f3c61f8d0dac15451c7663aa36d9bf3db33e`; the relevant installed bundles
 were TMF Core `10.2.0`, CTF Core `5.1.0`, TMF CTF Core `5.0.2`, and XML Core
-`4.3.2`. The identity query was:
+`4.3.2`. This is a dated acceptance record, not a pinned runtime dependency or
+general compatibility matrix. The identity query was:
 
 ```sh
 curl -sS http://127.0.0.1:8080/tsp/api/identifier

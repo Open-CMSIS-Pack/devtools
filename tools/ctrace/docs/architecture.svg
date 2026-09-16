@@ -7,10 +7,10 @@
      aria-labelledby="title description">
   <title id="title">ctrace software architecture</title>
   <desc id="description">
-    Seven library modules and the ITM and DWT data flow from command-line, trace-run YAML, and one selected raw input
-    through normalized routes, mode-specific output planning, a SINGLE or formatted OpenCSD DecodeTree, route-local
-    recovery and Cortex-M state, semantic trace events, diagnostics, CSV, multi-stream CTF, and conditional Trace
-    Compass XML output.
+    ITM and DWT runtime data flow from command-line, trace-run YAML, and one selected raw input through normalized
+    routes, mode-specific output planning, a SINGLE or formatted OpenCSD DecodeTree, route-local recovery and
+    Cortex-M state, semantic trace events, diagnostics, CSV, multi-stream CTF, and conditional Trace Compass XML
+    output.
   </desc>
 
   <defs>
@@ -51,7 +51,7 @@
 
   <rect width="1280" height="1240" fill="#fbfcfe"/>
   <text x="50" y="48" class="title">ctrace architecture</text>
-  <text x="50" y="73" class="subtitle">Seven library boundaries · unformatted and formatted ITM/DWT profile</text>
+  <text x="50" y="73" class="subtitle">Runtime data flow · unformatted and formatted ITM/DWT profile</text>
 
   <text x="50" y="108" class="section">INPUTS</text>
 
@@ -96,7 +96,7 @@
   <rect x="900" y="400" width="280" height="85" class="box support"/>
   <text x="1040" y="428" class="box-title">diagnostics</text>
   <text x="1040" y="451" class="box-detail">severity · context · impact</text>
-  <text x="1040" y="469" class="box-detail">reader · decoder · output events</text>
+  <text x="1040" y="469" class="box-detail">CLI/config · decoder · output failures</text>
 
   <path d="M 155 211 L 160 290" class="flow"/>
   <path d="M 435 211 L 435 280" class="flow"/>
@@ -112,13 +112,13 @@
   <rect x="60" y="595" width="230" height="90" class="box decode"/>
   <text x="175" y="623" class="box-title">DecodePipeline</text>
   <text x="175" y="646" class="box-detail">borrowed RawByteView chunks</text>
-  <text x="175" y="664" class="box-detail">finish flush · cursor ownership</text>
+  <text x="175" y="664" class="box-detail">finish flushes both layers</text>
 
   <rect x="335" y="585" width="290" height="110" class="box decode"/>
-  <text x="480" y="613" class="box-title">OpenCSD DecodeTree</text>
-  <text x="480" y="636" class="box-detail">SINGLE · FRAME_FORMATTED</text>
+  <text x="480" y="613" class="box-title">OpenCSD ITM adapter</text>
+  <text x="480" y="636" class="box-detail">SINGLE / FRAME_FORMATTED tree</text>
   <text x="480" y="654" class="box-detail">one ITM decoder per route</text>
-  <text x="480" y="672" class="box-detail">transactions · resetRoute recovery</text>
+  <text x="480" y="672" class="box-detail">cursor · transactions · route reset</text>
 
   <rect x="670" y="585" width="250" height="110" class="box decode"/>
   <text x="795" y="613" class="box-title">Cortex-M decode</text>
@@ -152,14 +152,14 @@
   <rect x="40" y="885" width="1200" height="250" class="group"/>
 
   <rect x="380" y="905" width="410" height="92" class="box output"/>
-  <text x="585" y="933" class="box-title">output orchestration</text>
-  <text x="585" y="956" class="box-detail">per-backend + selected-route requirements</text>
-  <text x="585" y="974" class="box-detail">start · writeEvent · stop · abort</text>
+  <text x="585" y="933" class="box-title">TraceOutput + TraceOutputLifecycle</text>
+  <text x="585" y="956" class="box-detail">backend state · multi-backend coordination</text>
+  <text x="585" y="974" class="box-detail">prepare · start · write · stop · abort</text>
 
   <rect x="80" y="1035" width="260" height="74" class="box output"/>
   <text x="210" y="1062" class="box-title">CSV backend</text>
   <text x="210" y="1084" class="box-detail">one file · callback order</text>
-  <text x="210" y="1102" class="box-detail">ATB ID on formatted rows</text>
+  <text x="210" y="1102" class="box-detail">Trace Bus ID on formatted rows</text>
 
   <rect x="430" y="1035" width="340" height="74" class="box output"/>
   <text x="600" y="1062" class="box-title">CTF bundle</text>
@@ -169,7 +169,7 @@
   <rect x="860" y="1035" width="330" height="74" class="box output"/>
   <text x="1025" y="1062" class="box-title">Trace Compass XML</text>
   <text x="1025" y="1084" class="box-detail">observed graphical topics only</text>
-  <text x="1025" y="1102" class="box-detail">single clock; omitted for multi-clock</text>
+  <text x="1025" y="1102" class="box-detail">requires one retained clock domain</text>
 
   <path d="M 1090 793 L 1090 855 L 585 855 L 585 905" class="flow"/>
   <path d="M 650 495 L 650 540 L 940 540 L 940 951 L 790 951" class="dependency"/>
@@ -181,7 +181,7 @@
   <line x1="70" y1="1185" x2="120" y2="1185" class="flow"/>
   <text x="135" y="1189" class="legend">runtime data flow</text>
   <line x1="405" y1="1185" x2="455" y2="1185" class="dependency"/>
-  <text x="470" y="1189" class="legend">configuration or service dependency</text>
+  <text x="470" y="1189" class="legend">selected runtime configuration or service use</text>
   <line x1="865" y1="1185" x2="915" y2="1185" class="conditional"/>
   <text x="930" y="1189" class="legend">conditional artifact</text>
 </svg>

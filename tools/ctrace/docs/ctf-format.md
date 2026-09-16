@@ -23,8 +23,8 @@ cmsis_ctf_profile_version = 1
 
 ## Files and common structure
 
-Every CTF bundle contains a `metadata` file and zero or more binary stream files. When selected, unformatted SWO
-preserves the established single-source layout: stream class `0` is written eagerly to `stream_0` and references
+Every CTF bundle contains a `metadata` file and zero or more binary stream files. When selected, unformatted
+single-source input preserves the established layout: stream class `0` is written eagerly to `stream_0` and references
 `swo_clock`. Formatted input uses the generalized layout: each emitted Trace Bus route has its own stream class,
 binary `stream_<id>` file, and explicit clock-domain reference. Formatted streams without emitted records are omitted
 from the final bundle and metadata; a stream filter that selects no route therefore produces a metadata-only bundle.
@@ -43,10 +43,12 @@ Generalized streams add one private display context after `cmsis_trace_bus_id`:
 cmsis_stream_<id>_route_t ctrace_route
 ```
 
-`timestamp` is a cycle count in the clock domain referenced by its stream class. CTF output requires a non-zero
-`timestamps.clock` for every emitted route. Timestamps never decrease within one binary stream; independent routes
-are not clamped against each other. Generalized clock domains have distinct UUIDs even when their configured
-frequencies are equal, because equal frequency alone does not establish synchronization.
+`timestamp` is a cycle count in the clock domain referenced by its stream class. CTF preflight requires a non-zero
+`timestamps.clock` for every configured route selected by the stream filter, before ctrace knows which routes will
+emit records. A stream filter that selects no configured route requires no clock. Timestamps never decrease within
+one binary stream; independent routes are not clamped against each other. Generalized clock domains have distinct
+UUIDs even when their configured frequencies are equal, because equal frequency alone does not establish
+synchronization.
 
 `cmsis_trace_bus_id` identifies the CoreSight Trace Bus route. Value `0` denotes unformatted single-source input;
 formatted IDs use values `1` through `111`. It is routing context, not a CPU identity. `ctrace_route` is a private
@@ -54,14 +56,24 @@ enum carrying the resolved processor name for display, or the numeric stream-cla
 optional processor name is also stored in the generalized environment as
 `cmsis_stream_<id>_processor_name`.
 
-The packet context records packet size, content size, first and last timestamps, a sequence number, and
-`events_discarded`. Trace loss is represented by `TRACE_STATUS` events rather than the CTF
-`events_discarded` counter, which is currently zero.
+The packet context has this exact field order:
+
+```text
+uint32_t packet_size
+uint32_t content_size
+uint64_t timestamp_begin
+uint64_t timestamp_end
+uint32_t events_discarded
+uint32_t packet_seq_num
+```
+
+The timestamp fields use the stream class's clock mapping. Trace loss is represented by `TRACE_STATUS` events rather
+than the CTF `events_discarded` counter, which is currently zero.
 
 The optional `<solution-set>.<channel>.traceanalysis.xml` companion is stored next to the bundle. It is generated
-only when all emitted streams reference one clock domain, because the supported Trace Compass reader cannot safely
-combine the independent clocks. This limitation affects only the generated visualization; the multi-clock CTF
-bundle remains valid.
+only when the completed metadata retains at least one stream and all retained streams reference one clock domain,
+because the supported Trace Compass reader cannot safely combine independent clocks. This limitation affects only
+the generated visualization; a metadata-only or multi-clock CTF bundle remains valid.
 
 ## Event catalogue
 
@@ -164,7 +176,7 @@ uint32_t               cmsis_overflow_count
 
 The configured value size controls the CTF scalar type. If it differs from the SWO payload size, `ctrace` emits a
 warning for that route. Trace Compass provides the standard event table and, when such data was emitted, a generated
-XY view per comparator.
+XY view with one series per comparator.
 
 ### DWT_ADDR (event ID 2)
 
@@ -178,7 +190,7 @@ uint32_t               cmsis_overflow_count
 
 The independent tags state whether a PC fragment, data-address fragment, or both are present and preserve each raw
 fragment's exact width. Trace Compass provides the standard event table and, when a data-address fragment was
-emitted, a generated address XY view per comparator.
+emitted, a generated address XY view with one series per comparator.
 
 ### DWT_MATCH (event ID 9)
 
@@ -315,12 +327,16 @@ events as generated XML tables. The companion XML contains only graphical views 
 
 ITM values, trace-status records, Global Timestamps, and ordinary PC samples stay in the standard event table because
 they do not establish a duration. Each generalized route receives a separate graphical view. Its visible suffix is
-the resolved processor name, if available; numeric Trace Bus IDs remain internal to provider IDs and state queries.
-Routes and topics without corresponding emitted data do not add graphical views.
+the resolved processor name, if available; numeric Trace Bus IDs are omitted from visible labels but remain in the
+public CTF event context and internally in provider IDs and state queries. Routes and topics without corresponding
+emitted data do not add graphical views.
 
-When several emitted streams share one clock domain, a single route-aware XML companion covers them. When they use
-multiple clock domains, ctrace deliberately omits the XML and reports one warning rather than presenting unrelated
-cycle domains as a shared timeline.
+The production output planner conservatively assigns each formatted route a distinct clock domain and UUID, even
+when configured frequencies match. After lazy stream projection, ctrace writes XML only if the completed bundle
+retains at least one stream and exactly one referenced domain; with current planning, this normally means one retained
+formatted route. Multiple retained domains deliberately omit the XML and produce one warning rather than presenting
+unrelated cycle domains as a shared timeline. The underlying CTF model and XML writer retain support for explicitly
+described shared domains once the input contract can establish one.
 
 The state-provider version is a deterministic hash of the generated XML contents. A semantic XML change therefore
 changes the version automatically and prevents a Trace Compass server from reusing stale analysis state.
@@ -340,17 +356,27 @@ changes the version automatically and prevents a Trace Compass server from reusi
 - PMU counter assignments are not resolved to configured architectural event names.
 - CTF records configured fixed clock frequencies but does not reconstruct stopped or changing trace clocks.
 
-The profile remains version `1`. Existing unformatted SWO keeps its stream-0 byte layout and event schema unchanged;
-the generalized layout is used only for the newly supported formatted multi-route input. It adds per-stream metadata
-and the private `ctrace_route` context while retaining `cmsis_trace_bus_id` and all public event IDs, fields, enum
-values, and interpretations. A future incompatible change to those public contracts requires a version review.
+The profile remains version `1`. Existing unformatted single-source input keeps its stream-0 byte layout and event
+schema unchanged; the generalized layout is used only for the newly supported formatted multi-route input. It adds
+per-stream metadata and the private `ctrace_route` context while retaining `cmsis_trace_bus_id` and all public event
+IDs, fields, enum values, and interpretations. A future incompatible change to those public contracts requires a
+version review.
 
 ## Maintaining the profile
 
-The implementation sources are [`CtfSchema.h`](../src/output/ctf/CtfSchema.h),
+The primary implementation sources are [`OutputRequirements.cpp`](../src/output/OutputRequirements.cpp),
+[`CtfSchema.h`](../src/output/ctf/CtfSchema.h),
+[`CtfMetadataModel.cpp`](../src/output/ctf/CtfMetadataModel.cpp),
 [`CtfMetadataWriter.cpp`](../src/output/ctf/CtfMetadataWriter.cpp),
-[`CtfEncoder.cpp`](../src/output/ctf/CtfEncoder.cpp), and
+[`CtfEncoder.cpp`](../src/output/ctf/CtfEncoder.cpp),
+[`CtfStreamWriter.cpp`](../src/output/ctf/CtfStreamWriter.cpp),
+[`CtfBundleOutput.cpp`](../src/output/ctf/CtfBundleOutput.cpp), and
 [`TraceCompassXmlWriter.cpp`](../src/output/ctf/TraceCompassXmlWriter.cpp).
+
+The data-driven XML shape is an approved compatibility refinement of the former eager legacy XML: only graphical
+topics observed in completed output create views. The checked-in legacy XML remains the current golden. Any further
+XML-shape change must update focused XML tests, review and update that golden plus its fixture-manifest hash, and
+re-run the external Trace Compass acceptance.
 
 Changes to an event ID, name, type, field, enum value, or interpretation must update this document and the relevant
 metadata, encoder, Trace Compass, and CTF decoding tests together. Compatibility-impacting changes must also review

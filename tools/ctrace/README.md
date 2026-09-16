@@ -14,7 +14,7 @@ ctrace <trace-dir> [options]
       --ctf                 Generate CTF and Trace Compass XML output
   -a, --all                 Generate all output formats
       --type <type ...>     Select event types
-      --stream <id ...>     Select CoreSight Trace Bus IDs (0 to 111)
+      --stream <id ...>     Select streams (0 for unformatted; ATB IDs 1 to 111)
   -h, --help                Print command-line help
   -V, --version             Print the version
 ```
@@ -32,7 +32,7 @@ Input and output files share a solution-set base name:
 .trace/
   Board.ctrace-run.yml
   Board.SWO.raw
-  Board.TB.raw              # optional Trace Bus input
+  Board.TB.raw              # optional Trace Buffer input
 ```
 
 For `ctrace .trace --target Board --all`, the supported input produces:
@@ -43,16 +43,18 @@ For `ctrace .trace --target Board --all`, the supported input produces:
   Board.ctf/
     metadata
     stream_0
-  Board.SWO.traceanalysis.xml  # only with emitted streams in one clock domain; views are data-driven
+  Board.SWO.traceanalysis.xml  # when retained streams use one clock domain; views are data-driven
 ```
 
 Without an explicit format declaration, ctrace preserves the legacy SWO-only
 selection and decodes `Board.SWO.raw` as unformatted ITM. The ctrace-private
-provisional root field `trace-format: unformatted | formatted` selects exactly
-one eligible SWO, TB, or named-TB input. Formatted input currently requires
-complete 16-byte memory-aligned CoreSight frames; there is no public
-`trace-framing` field yet. See the [constraints](docs/constraints.md) for the
-full discovery, routing, and compatibility contract.
+provisional root field `trace-format: unformatted | formatted` makes SWO, TB,
+and named-TB inputs eligible under the declared byte format; discovery then
+requires exactly one eligible input. The field does not identify a particular
+file. Formatted input currently requires complete 16-byte memory-aligned
+CoreSight frames; there is no public `trace-framing` field yet. See the
+[constraints](docs/constraints.md) for the full discovery, routing, and
+compatibility contract.
 
 ## Build and test
 

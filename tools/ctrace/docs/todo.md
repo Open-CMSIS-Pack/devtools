@@ -2,7 +2,7 @@
 
 ## Cleanup
 
-- [ ] Add explicit parentheses to compound payload-validation expressions where they improve readability.
+- [ ] Clarify the compound DWT/PMU payload-validation expressions in `DwtPacketDecoder` with explicit grouping.
 
 ## DWT
 
@@ -12,13 +12,13 @@
 
 ## Inputs and time correlation
 
-[Implementation plan](multicore-multisource-plan.md)
-
 - [ ] Resolve the cross-tool raw-input contract tracked by
       [vscode-cmsis-debugger #1150](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/1150) and
       [devtools #2573](https://github.com/Open-CMSIS-Pack/devtools/issues/2573): standardize selected raw-input identity
       plus effective byte format/framing in the CMSIS-Toolbox trace specification, then migrate the provisional global
       `trace-format` reader contract and producer output deliberately.
+- [ ] Correct the CMSIS-Toolbox CSV schema from the obsolete seventh-column name `offset` to the implemented
+      `address` name.
 - [ ] Support FSYNC and FSYNC+HSYNC formatted input after a public framing field is specified.
 - [ ] Define cross-stream clock correlation and offsets once a common producer time reference is available.
 - [ ] Add per-clock-domain Trace Compass bundles/experiments for uncorrelated streams when required.
