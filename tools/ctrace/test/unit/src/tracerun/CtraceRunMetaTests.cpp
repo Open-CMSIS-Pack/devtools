@@ -712,6 +712,18 @@ TEST(CtraceUnitTests, testCtraceRunMetaValidatesFormattedRouteBindingsAndIds)
                           "path processor conflicts with pname"));
 }
 
+TEST(CtraceUnitTests, testCtraceRunMetaIgnoresUnrelatedStreamlessFormattedReferences)
+{
+  const auto meta = CtraceRunMeta::fromConfig(formattedConfig({
+      routeReference("itm", "core/itm", "core", 1U),
+      routeReference("event", "unrelated", "core", std::nullopt),
+  }));
+
+  ASSERT_EQ(meta.routes().size(), 1U);
+  EXPECT_EQ(meta.routes().front().identity.traceBusId, std::optional<std::uint8_t>(1U));
+  EXPECT_TRUE(meta.routes().front().sources.empty());
+}
+
 TEST(CtraceUnitTests, testCtraceRunMetaValidatesFormattedSetupInference)
 {
   const std::vector<TraceRunSetup> processors{

@@ -236,8 +236,9 @@ static void writeExceptionEnteredStateChanges(std::ostream& xml, bool routePrefi
                     </condition>
                 </if>
                 <then>
-)"
-      << statePathPrefix(routePrefixed) << R"(                    <stateAttribute type="constant" value=")"
+)";
+  xml << statePathPrefix(routePrefixed);
+  xml << R"(                    <stateAttribute type="constant" value=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(" />
                     <stateAttribute type="eventField" value="cmsis_exception_number" />
                     <stateAttribute type="constant" value="action" />
@@ -273,8 +274,9 @@ static void writeExceptionExitedStateChanges(std::ostream& xml, bool routePrefix
                     </condition>
                 </if>
                 <then>
-)"
-      << statePathPrefix(routePrefixed) << R"(                    <stateAttribute type="constant" value=")"
+)";
+  xml << statePathPrefix(routePrefixed);
+  xml << R"(                    <stateAttribute type="constant" value=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(" />
                     <stateAttribute type="eventField" value="cmsis_exception_number" />
                     <stateAttribute type="constant" value="action" />
@@ -316,8 +318,9 @@ static void writeExceptionReturnedStateChanges(std::ostream& xml, bool routePref
                     </condition>
                 </if>
                 <then>
-)"
-      << statePathPrefix(routePrefixed) << R"(                    <stateAttribute type="constant" value=")"
+)";
+  xml << statePathPrefix(routePrefixed);
+  xml << R"(                    <stateAttribute type="constant" value=")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(" />
                     <stateAttribute type="eventField" value="cmsis_exception_number" />
                     <stateAttribute type="constant" value="action" />
@@ -365,8 +368,9 @@ static void writeProcessorStateHandler(std::ostream& xml, bool routePrefixed)
                     </condition>
                 </if>
                 <then>
-)"
-      << statePathPrefix(routePrefixed) << R"(                    <stateAttribute type="constant" value=")"
+)";
+  stateChanges << statePathPrefix(routePrefixed);
+  stateChanges << R"(                    <stateAttribute type="constant" value=")"
       << CtfSchema::eventName(CtfSchema::EventId::PcSample) << R"(" />
                     <stateAttribute type="constant" value="Sleep" />
                     <stateValue type="int" value=")"
@@ -431,8 +435,9 @@ static void writeExceptionDiscontinuityStateChanges(std::ostream& xml, bool rout
                     </condition>
                 </if>
                 <then>
-)"
-      << statePathPrefix(routePrefixed) << R"(                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
+)";
+  xml << statePathPrefix(routePrefixed);
+  xml << R"(                    <stateAttribute type="constant" value="EXCEPTION_RETURN" />
                     <stateAttribute type="constant" value="Exception Return" />
                     <stateAttribute type="constant" value="action" />
                     <stateValue type="null" />

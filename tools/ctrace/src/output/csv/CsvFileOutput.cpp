@@ -150,9 +150,6 @@ void CsvFileOutput::abortOutput()
 
 void CsvFileOutput::writeOutput(const TraceEvent& event)
 {
-  if (m_stream == nullptr) {
-    return;
-  }
   if (!traceEventSelectedForOutput(event, m_selection)) {
     return;
   }
