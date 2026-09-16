@@ -4805,7 +4805,11 @@ static string FormatAggregates(RteItem::ConditionResult result, const StrMap& ag
   stringstream ss;
   for(const auto& [id, desc] : aggregates) {
     ss << endl << RteUtils::GetIndent(indent);
-    ss << "- component " <<  id << " # "  << RteDependencyResult::GetAggregateExplanationText(result, desc);
+    auto explanation = RteDependencyResult::GetAggregateExplanationText(result, desc);
+    ss << "- component " << id;
+    if (!explanation.empty()) {
+      ss << " # " << explanation;
+    }
   }
   return ss.str();
 }
