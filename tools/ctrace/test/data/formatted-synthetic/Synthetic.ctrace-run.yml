@@ -1,0 +1,94 @@
+ctrace-run:
+  generated-by: ctrace deterministic synthetic formatted test
+  trace-format: formatted
+  ctrace-setup:
+    - pname: anchored
+      timestamps:
+        clock: 240000000
+        itm-prescaler: 1
+      data:
+        - size: 1
+        - size: 2
+        - size: 4
+        - size: 4
+    - pname: fallback
+      timestamps:
+        clock: 480000000
+        itm-prescaler: 4
+      data:
+        - size: 1
+        - size: 2
+        - size: 4
+        - size: 4
+  ctrace-refs:
+    # Authoritative processor-ITM anchor for Trace Bus ID 1.
+    - ctrace-ref: anchored/itm
+      type: itm
+      pname: anchored
+      stream: 1
+      source: [1, 2, 3]
+    - ctrace-ref: anchored/data#0
+      type: dwt
+      pname: anchored
+      stream: 1
+      source: 0
+      size: 1
+      data-type: unsigned
+    - ctrace-ref: anchored/data#1
+      type: dwt
+      pname: anchored
+      stream: 1
+      source: 1
+      size: 2
+      data-type: unsigned
+    - ctrace-ref: anchored/data#2
+      type: dwt
+      pname: anchored
+      stream: 1
+      source: 2
+      size: 4
+      data-type: unsigned
+    - ctrace-ref: anchored/data#3
+      type: dwt
+      pname: anchored
+      stream: 1
+      source: 3
+      size: 4
+      data-type: unsigned
+
+    # No fallback/itm anchor: data#0 is the permitted current-pyTS fallback
+    # that establishes Trace Bus ID 2. The other references describe content
+    # on the already established route.
+    - ctrace-ref: fallback/data#0
+      type: dwt
+      pname: fallback
+      stream: 2
+      source: 0
+      size: 1
+      data-type: unsigned
+    - ctrace-ref: fallback/data#1
+      type: dwt
+      pname: fallback
+      stream: 2
+      source: 1
+      size: 2
+      data-type: unsigned
+    - ctrace-ref: fallback/data#2
+      type: dwt
+      pname: fallback
+      stream: 2
+      source: 2
+      size: 4
+      data-type: unsigned
+    - ctrace-ref: fallback/data#3
+      type: dwt
+      pname: fallback
+      stream: 2
+      source: 3
+      size: 4
+      data-type: unsigned
+    - ctrace-ref: fallback/messages
+      type: itm
+      pname: fallback
+      stream: 2
+      source: [1, 2, 3]

@@ -13,6 +13,7 @@
 #include "opencsd/ocsd_if_types.h"
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -23,6 +24,8 @@ struct OpenCsdErrorRecord {
   ocsd_err_t code = OCSD_OK;
   std::uint64_t index = 0;
   bool hasIndex = false;
+  std::optional<std::uint8_t> channel;
+  std::optional<std::uint64_t> callbackOrder;
   std::string message;
 };
 
@@ -50,6 +53,8 @@ public:
 
   /** @brief Clears errors before invoking one OpenCSD data-path operation. */
   void beginDataPathCall();
+  /** @brief Binds the operation-local order source shared with trace callbacks. */
+  void setCallbackOrderSource(std::function<std::optional<std::uint64_t>()> callbackOrderSource);
   /** @brief Classifies the response and errors from the current data-path operation. */
   Decision decide(ocsd_datapath_resp_t response) const;
 
@@ -74,6 +79,7 @@ private:
   static OpenCsdErrorRecord makeRecord(const ocsdError& error);
 
   std::vector<OpenCsdErrorRecord> m_callErrors;
+  std::function<std::optional<std::uint64_t>()> m_callbackOrderSource;
 };
 
 #endif // CTRACE_SRC_DECODE_OPENCSDERRORCONTROLLER_H

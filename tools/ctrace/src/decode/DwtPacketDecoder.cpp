@@ -80,131 +80,121 @@ static std::string invalidPmuEventCounterMessage(const DwtPayloadPacket& payload
   return message.str();
 }
 
+/** @brief Wraps a DWT payload with its decoded-event metadata. */
+static TraceEvent makeDwtEvent(std::uint64_t index, const TraceRouteIdentity& route, std::uint64_t tcyc,
+                               const TraceQuality& quality, TraceEventPayload payload)
+{
+  TraceEvent event{std::move(payload)};
+  event.index = index;
+  event.route = route;
+  event.tcyc = tcyc;
+  event.quality = quality;
+  return event;
+}
+
+/** @brief Wraps a decoded event with metadata from its source DWT packet. */
+static TraceEvent makeDwtEvent(const DwtPayloadPacket& packet, TraceEventPayload payload)
+{
+  return makeDwtEvent(packet.index, packet.route, packet.tcyc, packet.quality, std::move(payload));
+}
+
 std::vector<TraceEvent> DwtPacketDecoder::decode(const DwtPayloadPacket& payload)
 {
+  switch (static_cast<DwtPacketSource>(payload.discriminator)) {
+  case DwtPacketSource::EventCounter:
+    return decodeEventCounter(payload);
+  case DwtPacketSource::ExceptionTrace:
+    return decodeExceptionTrace(payload);
+  case DwtPacketSource::PeriodicPcSample:
+    return decodePeriodicPcSample(payload);
+  case DwtPacketSource::PmuTraceOnOverflow:
+    return decodePmuTraceOnOverflow(payload);
+  }
+
   std::vector<TraceEvent> output;
-  const auto discriminator = payload.discriminator;
-
-  const auto source = static_cast<DwtPacketSource>(discriminator);
-  if (source == DwtPacketSource::EventCounter) {
-    output = flush(payload.quality, payload.tcyc);
-    const auto validPayload = payload.size == 1U && payload.value != 0U &&
-                              (payload.value & ~static_cast<std::uint32_t>(kDwtEventCounterValidMask)) == 0U;
-    if (!validPayload) {
-      TraceEvent error{TraceIssueEvent{
-          TraceIssueCode::UnsupportedDwtEventCounterPayload,
-          TraceIssueSeverity::Error,
-          invalidEventCounterMessage(payload),
-          std::nullopt,
-          std::nullopt,
-      }};
-      error.index = payload.index;
-      error.traceBusId = payload.traceBusId;
-      error.tcyc = payload.tcyc;
-      error.quality = payload.quality;
-      output.push_back(std::move(error));
-      return output;
-    }
-    TraceEvent packet{DwtEventTraceEvent{static_cast<std::uint8_t>(payload.value)}};
-    packet.index = payload.index;
-    packet.traceBusId = payload.traceBusId;
-    packet.tcyc = payload.tcyc;
-    packet.quality = payload.quality;
-    output.push_back(std::move(packet));
-    return output;
-  }
-
-  if (source == DwtPacketSource::PmuTraceOnOverflow) {
-    output = flush(payload.quality, payload.tcyc);
-    const auto validPayload = payload.size == 1U && payload.value != 0U && (payload.value & ~kPmuOverflowMask) == 0U;
-    if (!validPayload) {
-      TraceEvent error{TraceIssueEvent{
-          TraceIssueCode::UnsupportedPmuEventCounterPayload,
-          TraceIssueSeverity::Error,
-          invalidPmuEventCounterMessage(payload),
-          std::nullopt,
-          std::nullopt,
-      }};
-      error.index = payload.index;
-      error.traceBusId = payload.traceBusId;
-      error.tcyc = payload.tcyc;
-      error.quality = payload.quality;
-      output.push_back(std::move(error));
-      return output;
-    }
-    TraceEvent packet{PmuTraceEvent{static_cast<std::uint8_t>(payload.value)}};
-    packet.index = payload.index;
-    packet.traceBusId = payload.traceBusId;
-    packet.tcyc = payload.tcyc;
-    packet.quality = payload.quality;
-    output.push_back(std::move(packet));
-    return output;
-  }
-
-  if (source == DwtPacketSource::ExceptionTrace) {
-    output = flush(payload.quality, payload.tcyc);
-    const auto exceptionNumber = static_cast<ExceptionNumber>(payload.value & kExceptionNumberMask);
-    const auto action = exceptionAction((payload.value >> kExceptionActionShift) & kExceptionActionMask);
-    if (action == ExceptionAction::Unknown) {
-      TraceEvent error{TraceIssueEvent{
-          TraceIssueCode::InvalidExceptionAction,
-          TraceIssueSeverity::Error,
-          "invalid exception action 0x0 for exception " + std::to_string(exceptionNumber),
-          std::nullopt,
-          std::nullopt,
-      }};
-      error.index = payload.index;
-      error.traceBusId = payload.traceBusId;
-      error.tcyc = payload.tcyc;
-      error.quality = payload.quality;
-      output.push_back(std::move(error));
-      return output;
-    }
-    TraceEvent packet{ExceptionTraceEvent{exceptionNumber, action}};
-    packet.index = payload.index;
-    packet.traceBusId = payload.traceBusId;
-    packet.tcyc = payload.tcyc;
-    packet.quality = payload.quality;
-    output.push_back(std::move(packet));
-    return output;
-  }
-
-  if (source == DwtPacketSource::PeriodicPcSample) {
-    output = flush(payload.quality, payload.tcyc);
-    const auto isPc = payload.size == 4U;
-    const auto isSleeping = payload.size == 1U && payload.value == 0U;
-    if (!isPc && !isSleeping) {
-      TraceEvent error{TraceIssueEvent{
-          TraceIssueCode::UnsupportedDwtPcSamplePayload,
-          TraceIssueSeverity::Error,
-          "unsupported DWT PC-sample payload: size " + std::to_string(payload.size) +
-              ", value " + std::to_string(payload.value) +
-              "; expected a 4-byte PC or a 1-byte zero sleep indication",
-          std::nullopt,
-          std::nullopt,
-      }};
-      error.index = payload.index;
-      error.traceBusId = payload.traceBusId;
-      error.tcyc = payload.tcyc;
-      error.quality = payload.quality;
-      output.push_back(std::move(error));
-      return output;
-    }
-    TraceEvent packet{PcSampleTraceEvent{payload.value, isSleeping}};
-    packet.index = payload.index;
-    packet.traceBusId = payload.traceBusId;
-    packet.tcyc = payload.tcyc;
-    packet.quality = payload.quality;
-    output.push_back(std::move(packet));
-    return output;
-  }
-
-  if (discriminator >= kFirstDataTraceSource && discriminator <= kLastDataTraceSource) {
+  if (payload.discriminator >= kFirstDataTraceSource && payload.discriminator <= kLastDataTraceSource) {
     decodeDataTrace(payload, output);
     return output;
   }
 
   output = flush(payload.quality, payload.tcyc);
+  return output;
+}
+
+std::vector<TraceEvent> DwtPacketDecoder::decodeEventCounter(const DwtPayloadPacket& payload)
+{
+  auto output = flush(payload.quality, payload.tcyc);
+  const auto validPayload = payload.size == 1U && payload.value != 0U &&
+                            (payload.value & ~static_cast<std::uint32_t>(kDwtEventCounterValidMask)) == 0U;
+  if (!validPayload) {
+    output.push_back(makeDwtEvent(payload, TraceIssueEvent{
+        TraceIssueCode::UnsupportedDwtEventCounterPayload,
+        TraceIssueSeverity::Error,
+        invalidEventCounterMessage(payload),
+        std::nullopt,
+        std::nullopt,
+    }));
+    return output;
+  }
+  output.push_back(makeDwtEvent(payload, DwtEventTraceEvent{static_cast<std::uint8_t>(payload.value)}));
+  return output;
+}
+
+std::vector<TraceEvent> DwtPacketDecoder::decodePmuTraceOnOverflow(const DwtPayloadPacket& payload)
+{
+  auto output = flush(payload.quality, payload.tcyc);
+  const auto validPayload = payload.size == 1U && payload.value != 0U && (payload.value & ~kPmuOverflowMask) == 0U;
+  if (!validPayload) {
+    output.push_back(makeDwtEvent(payload, TraceIssueEvent{
+        TraceIssueCode::UnsupportedPmuEventCounterPayload,
+        TraceIssueSeverity::Error,
+        invalidPmuEventCounterMessage(payload),
+        std::nullopt,
+        std::nullopt,
+    }));
+    return output;
+  }
+  output.push_back(makeDwtEvent(payload, PmuTraceEvent{static_cast<std::uint8_t>(payload.value)}));
+  return output;
+}
+
+std::vector<TraceEvent> DwtPacketDecoder::decodeExceptionTrace(const DwtPayloadPacket& payload)
+{
+  auto output = flush(payload.quality, payload.tcyc);
+  const auto exceptionNumber = static_cast<ExceptionNumber>(payload.value & kExceptionNumberMask);
+  const auto action = exceptionAction((payload.value >> kExceptionActionShift) & kExceptionActionMask);
+  if (action == ExceptionAction::Unknown) {
+    output.push_back(makeDwtEvent(payload, TraceIssueEvent{
+        TraceIssueCode::InvalidExceptionAction,
+        TraceIssueSeverity::Error,
+        "invalid exception action 0x0 for exception " + std::to_string(exceptionNumber),
+        std::nullopt,
+        std::nullopt,
+    }));
+    return output;
+  }
+  output.push_back(makeDwtEvent(payload, ExceptionTraceEvent{exceptionNumber, action}));
+  return output;
+}
+
+std::vector<TraceEvent> DwtPacketDecoder::decodePeriodicPcSample(const DwtPayloadPacket& payload)
+{
+  auto output = flush(payload.quality, payload.tcyc);
+  const auto isPc = payload.size == 4U;
+  const auto isSleeping = payload.size == 1U && payload.value == 0U;
+  if (!isPc && !isSleeping) {
+    output.push_back(makeDwtEvent(payload, TraceIssueEvent{
+        TraceIssueCode::UnsupportedDwtPcSamplePayload,
+        TraceIssueSeverity::Error,
+        "unsupported DWT PC-sample payload: size " + std::to_string(payload.size) +
+            ", value " + std::to_string(payload.value) +
+            "; expected a 4-byte PC or a 1-byte zero sleep indication",
+        std::nullopt,
+        std::nullopt,
+    }));
+    return output;
+  }
+  output.push_back(makeDwtEvent(payload, PcSampleTraceEvent{payload.value, isSleeping}));
   return output;
 }
 
@@ -246,57 +236,57 @@ void DwtPacketDecoder::decodeDataTrace(const DwtPayloadPacket& payload, std::vec
 
   PendingDataTrace event;
   event.index = payload.index;
-  event.traceBusId = payload.traceBusId;
+  event.route = payload.route;
   event.quality = payload.quality;
 
   if (packetType == DwtDataPacketType::Address) {
-    const auto isMatch = !secondarySubtype && payload.size == kArmv8MMatchBytes && payload.value == kArmv8MMatchValue;
-    if (isMatch) {
-      auto& pending = m_pendingDataTrace[comparator];
-      if (pending.has_value()) {
-        flushPending(comparator, qualityForPendingFlush(*pending, payload.quality), payload.tcyc, output);
-      }
-      TraceEvent match{DwtMatchTraceEvent{comparator}};
-      match.index = payload.index;
-      match.traceBusId = payload.traceBusId;
-      match.tcyc = payload.tcyc;
-      match.quality = payload.quality;
-      output.push_back(std::move(match));
-      return;
-    }
-    const auto supportedSize = isSupportedAddressFragmentSize(payload.size);
-    if (!supportedSize) {
-      auto flushed = flush(payload.quality, payload.tcyc);
-      output.insert(output.end(), std::make_move_iterator(flushed.begin()), std::make_move_iterator(flushed.end()));
-      TraceEvent error{TraceIssueEvent{
-          TraceIssueCode::UnsupportedDwtAddressPayload,
-          TraceIssueSeverity::Error,
-          "unsupported DWT " + std::string(secondarySubtype ? "data address" : "PC or match") +
-              " payload size " + std::to_string(payload.size) +
-              "; expected 1, 2, or 4 bytes",
-          std::nullopt,
-          std::nullopt,
-      }};
-      error.index = payload.index;
-      error.traceBusId = payload.traceBusId;
-      error.tcyc = payload.tcyc;
-      error.quality = payload.quality;
-      output.push_back(std::move(error));
-      return;
-    }
-    const DwtAddressFragment fragment{payload.size, payload.value};
-    if (secondarySubtype) {
-      event.address = fragment;
-      event.hasAddress = true;
-    } else {
-      event.pc = fragment;
-      event.hasPc = true;
-    }
-    sendDataTraceEvent(comparator, event, payload.quality, payload.tcyc, output);
+    decodeDataAddressTrace(payload, comparator, secondarySubtype, std::move(event), output);
     return;
   }
-  // Discriminators 8..23 encode either an address or a value packet. The
-  // address case returned above, so the remaining packet is a value.
+  decodeDataValueTrace(payload, comparator, secondarySubtype, std::move(event), output);
+}
+
+void DwtPacketDecoder::decodeDataAddressTrace(const DwtPayloadPacket& payload, std::uint32_t comparator,
+                                              bool secondarySubtype, PendingDataTrace event,
+                                              std::vector<TraceEvent>& output)
+{
+  const auto isMatch = !secondarySubtype && payload.size == kArmv8MMatchBytes && payload.value == kArmv8MMatchValue;
+  if (isMatch) {
+    auto& pending = m_pendingDataTrace[comparator];
+    if (pending.has_value()) {
+      flushPending(comparator, qualityForPendingFlush(*pending, payload.quality), payload.tcyc, output);
+    }
+    output.push_back(makeDwtEvent(payload, DwtMatchTraceEvent{comparator}));
+    return;
+  }
+  if (!isSupportedAddressFragmentSize(payload.size)) {
+    auto flushed = flush(payload.quality, payload.tcyc);
+    output.insert(output.end(), std::make_move_iterator(flushed.begin()), std::make_move_iterator(flushed.end()));
+    output.push_back(makeDwtEvent(payload, TraceIssueEvent{
+        TraceIssueCode::UnsupportedDwtAddressPayload,
+        TraceIssueSeverity::Error,
+        "unsupported DWT " + std::string(secondarySubtype ? "data address" : "PC or match") +
+            " payload size " + std::to_string(payload.size) + "; expected 1, 2, or 4 bytes",
+        std::nullopt,
+        std::nullopt,
+    }));
+    return;
+  }
+  const DwtAddressFragment fragment{payload.size, payload.value};
+  if (secondarySubtype) {
+    event.address = fragment;
+    event.hasAddress = true;
+  } else {
+    event.pc = fragment;
+    event.hasPc = true;
+  }
+  sendDataTraceEvent(comparator, event, payload.quality, payload.tcyc, output);
+}
+
+void DwtPacketDecoder::decodeDataValueTrace(const DwtPayloadPacket& payload, std::uint32_t comparator,
+                                            bool secondarySubtype, PendingDataTrace event,
+                                            std::vector<TraceEvent>& output)
+{
   event.value = payload.value;
   event.size = payload.size;
   event.isRead = !secondarySubtype;
@@ -321,7 +311,7 @@ void DwtPacketDecoder::sendDataTraceEvent(std::uint32_t comparator, const Pendin
                                    (pending->hasValue && event.hasValue);
   if (!repeatsFragmentKind) {
     pending->index = event.index;
-    pending->traceBusId = event.traceBusId;
+    pending->route = event.route;
     pending->pc = event.hasPc ? event.pc : pending->pc;
     pending->address = event.hasAddress ? event.address : pending->address;
     pending->value = event.hasValue ? event.value : pending->value;
@@ -348,16 +338,16 @@ void DwtPacketDecoder::flushPending(std::uint32_t comparator, const TraceQuality
 {
   auto& pending = m_pendingDataTrace[comparator];
 
-  const auto makePacket = [&]() -> TraceEvent {
+  const auto makePayload = [&]() -> TraceEventPayload {
     if (pending->hasValue) {
-      return TraceEvent(DwtDataTraceEvent{
+      return DwtDataTraceEvent{
           comparator,
           pending->size,
           pending->value,
           pending->isRead ? AccessType::Read : AccessType::Write,
           pending->hasAddress ? std::optional<DwtAddressFragment>(pending->address) : std::nullopt,
           pending->hasPc ? std::optional<DwtAddressFragment>(pending->pc) : std::nullopt,
-      });
+      };
     }
 
     DwtAddressTraceLocation location = DwtDataAddressTraceLocation{pending->address};
@@ -366,15 +356,10 @@ void DwtPacketDecoder::flushPending(std::uint32_t comparator, const TraceQuality
     } else if (pending->hasPc) {
       location = DwtPcTraceLocation{pending->pc};
     }
-    return TraceEvent(DwtAddressTraceEvent{comparator, location});
+    return DwtAddressTraceEvent{comparator, location};
   };
 
-  TraceEvent packet = makePacket();
-  packet.index = pending->index;
-  packet.traceBusId = pending->traceBusId;
-  packet.tcyc = tcyc;
-  packet.quality = quality;
-  output.push_back(std::move(packet));
+  output.push_back(makeDwtEvent(pending->index, pending->route, tcyc, quality, makePayload()));
   pending.reset();
 }
 

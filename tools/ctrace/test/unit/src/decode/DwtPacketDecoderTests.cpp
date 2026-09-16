@@ -24,7 +24,10 @@
 static DwtPayloadPacket dwtPayload(std::uint8_t discriminator, std::uint8_t size = 0U, std::uint32_t value = 0U,
                                    std::uint64_t index = 0U, std::uint8_t traceBusId = 0U, std::uint64_t tcyc = 0U)
 {
-  return {index, traceBusId, discriminator, size, value, tcyc, {}};
+  const auto route = traceBusId == 0U
+                         ? TraceRouteIdentity{}
+                         : TraceRouteIdentity{TraceRouteId{traceBusId}, std::optional<std::uint8_t>(traceBusId)};
+  return {index, route, discriminator, size, value, tcyc, {}};
 }
 
 TEST(CtraceUnitTests, testDwtPcSampleProducesDedicatedEvent)
@@ -40,7 +43,7 @@ TEST(CtraceUnitTests, testDwtPcSampleProducesDedicatedEvent)
   EXPECT_EQ(sample->pc, 0x08001234U) << "DWT PC sample payload mismatch";
   EXPECT_FALSE(sample->sleeping) << "DWT PC sample payload mismatch";
   EXPECT_EQ(packets.front().index, 19U) << "DWT PC sample identity mismatch";
-  EXPECT_EQ(packets.front().traceBusId, 3U) << "DWT PC sample identity mismatch";
+  EXPECT_EQ(packets.front().route.traceBusId, 3U) << "DWT PC sample identity mismatch";
   EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(949339000U))
       << "DWT PC sample identity mismatch";
   ASSERT_TRUE(packets.front().quality.has_value()) << "DWT PC sample quality mismatch";
@@ -95,7 +98,7 @@ TEST(CtraceUnitTests, testDwtEventCounterPacketIsValidatedAndExposed)
   ASSERT_NE(event, nullptr);
   EXPECT_EQ(event->counterMask, 0x21U);
   EXPECT_EQ(packet.index, 23U);
-  EXPECT_EQ(packet.traceBusId, 4U);
+  EXPECT_EQ(packet.route.traceBusId, 4U);
   EXPECT_EQ(packet.tcyc, std::optional<std::uint64_t>(949339100U));
   ASSERT_TRUE(packet.quality.has_value());
   EXPECT_TRUE(packet.quality->overflow);
@@ -146,7 +149,7 @@ TEST(CtraceUnitTests, testDwtPmuPacketRejectsUnsupportedPayloads)
     EXPECT_EQ(issue->code, TraceIssueCode::UnsupportedPmuEventCounterPayload);
     EXPECT_NE(issue->message.find("expected a non-zero 1-byte mask using bits 0..7"), std::string::npos);
     EXPECT_EQ(packets.front().index, 23U);
-    EXPECT_EQ(packets.front().traceBusId, 4U);
+    EXPECT_EQ(packets.front().route.traceBusId, 4U);
     EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(949339100U));
     EXPECT_TRUE(packets.front().quality.has_value());
     EXPECT_EQ(traceEventType(packets.front()), TraceEventType::Error);
@@ -181,7 +184,7 @@ TEST(CtraceUnitTests, testDwtEventCounterRejectsUnsupportedPayloadsWithoutPartia
     EXPECT_EQ(issue->code, TraceIssueCode::UnsupportedDwtEventCounterPayload);
     EXPECT_NE(issue->message.find("expected a non-zero 1-byte mask using bits 0..5 only"), std::string::npos);
     EXPECT_EQ(packets.front().index, 23U);
-    EXPECT_EQ(packets.front().traceBusId, 4U);
+    EXPECT_EQ(packets.front().route.traceBusId, 4U);
     EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(949339100U));
     EXPECT_TRUE(packets.front().quality.has_value());
     EXPECT_EQ(traceEventType(packets.front()), TraceEventType::Error);
@@ -204,7 +207,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsReservedExceptionAction)
       << "DwtPacketDecoder reserved exception action code mismatch";
   ASSERT_TRUE(issue->message == "invalid exception action 0x0 for exception 11")
       << "DwtPacketDecoder reserved exception action message mismatch";
-  ASSERT_TRUE(packets[0].index == 17U && packets[0].traceBusId == 3U)
+  ASSERT_TRUE(packets[0].index == 17U && packets[0].route.traceBusId == 3U)
       << "DwtPacketDecoder reserved exception action identity mismatch";
   ASSERT_TRUE(packets[0].tcyc.has_value() && *packets[0].tcyc == 1234U)
       << "DwtPacketDecoder reserved exception action timestamp mismatch";
@@ -230,7 +233,8 @@ TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingEventsInRawOrder)
   ASSERT_TRUE(packets.size() == 3U) << "DWT flush must emit all pending comparator events";
   ASSERT_TRUE(packets[0].index == 10U && packets[1].index == 10U && packets[2].index == 20U)
       << "DWT flush must preserve raw-stream order across comparators";
-  ASSERT_TRUE(packets[0].traceBusId == 3U && packets[1].traceBusId == 3U && packets[2].traceBusId == 4U)
+  ASSERT_TRUE(packets[0].route.traceBusId == 3U && packets[1].route.traceBusId == 3U &&
+              packets[2].route.traceBusId == 4U)
       << "DWT flush must preserve the identity of each pending event";
   const auto* first = traceEventPayload<DwtAddressTraceEvent>(packets[0]);
   const auto* second = traceEventPayload<DwtAddressTraceEvent>(packets[1]);
@@ -251,7 +255,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRepeatedAddressFragments)
     auto packets = decoder.decode(dwtPayload(discriminator, size, secondValue, 20U, 4U, 200U));
     ASSERT_TRUE(packets.size() == 1U) << "a repeated DWT address fragment must flush its predecessor";
     const auto* firstAddress = traceEventPayload<DwtAddressTraceEvent>(packets.front());
-    ASSERT_TRUE(firstAddress != nullptr && packets.front().index == 10U && packets.front().traceBusId == 3U)
+    ASSERT_TRUE(firstAddress != nullptr && packets.front().index == 10U && packets.front().route.traceBusId == 3U)
         << "the first repeated DWT address fragment lost its identity";
     const auto firstPc = dwtAddressPc(*firstAddress);
     const auto firstDataAddress = dwtDataAddress(*firstAddress);
@@ -259,7 +263,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRepeatedAddressFragments)
     packets = decoder.flush({}, 300U);
     ASSERT_TRUE(packets.size() == 1U) << "the second DWT address fragment must remain available";
     const auto* secondAddress = traceEventPayload<DwtAddressTraceEvent>(packets.front());
-    ASSERT_TRUE(secondAddress != nullptr && packets.front().index == 20U && packets.front().traceBusId == 4U)
+    ASSERT_TRUE(secondAddress != nullptr && packets.front().index == 20U && packets.front().route.traceBusId == 4U)
         << "the second repeated DWT address fragment lost its identity";
 
     if (discriminator == 8U) {
@@ -291,7 +295,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderEmitsComparatorOnlyMatch)
   ASSERT_NE(match, nullptr);
   EXPECT_EQ(match->comparator, 2U);
   EXPECT_EQ(packets.front().index, 17U);
-  EXPECT_EQ(packets.front().traceBusId, 3U);
+  EXPECT_EQ(packets.front().route.traceBusId, 3U);
   EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(99U));
   ASSERT_TRUE(packets.front().quality.has_value());
   EXPECT_TRUE(packets.front().quality->overflow);
@@ -334,7 +338,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
     ASSERT_TRUE(issue != nullptr && issue->code == TraceIssueCode::UnsupportedDwtAddressPayload &&
                 issue->severity == TraceIssueSeverity::Error)
         << "unsupported DWT address width diagnostic mismatch";
-    ASSERT_TRUE(packets.front().index == 17U && packets.front().traceBusId == 3U &&
+    ASSERT_TRUE(packets.front().index == 17U && packets.front().route.traceBusId == 3U &&
                 packets.front().tcyc == std::optional<std::uint64_t>(99U))
         << "unsupported DWT address width diagnostic lost packet identity";
   };

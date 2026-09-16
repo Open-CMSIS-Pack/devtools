@@ -15,17 +15,30 @@
 #include <limits>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
-DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink)
-  : m_streamDecoder(std::move(timestampPrescalers), eventSink),
-    m_decoder(m_streamDecoder)
+/** @brief Extracts decoder identities while retaining post-decoder route configuration. */
+static std::vector<TraceRouteIdentity> routeIdentities(const std::vector<CortexMDecodeRoute>& routes)
+{
+  std::vector<TraceRouteIdentity> identities;
+  identities.reserve(routes.size());
+  for (const auto& route : routes) {
+    identities.push_back(route.identity);
+  }
+  return identities;
+}
+
+DecodePipeline::DecodePipeline(std::vector<CortexMDecodeRoute> routes, OpenCsdItmInputMode inputMode,
+                               TraceEventSink& eventSink, OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdSink)
+  : m_streamDecoder(routes, eventSink),
+    m_decoder(routeIdentities(routes), inputMode, m_streamDecoder, std::move(unsupportedTraceIdSink))
 {
 }
 
-DecodePipeline::DecodePipeline(ItmTimestampPrescalers timestampPrescalers, TraceEventSink& eventSink,
-                               const OpenCsdItmSessionFactory& sessionFactory)
-  : m_streamDecoder(std::move(timestampPrescalers), eventSink),
-    m_decoder(m_streamDecoder, sessionFactory)
+DecodePipeline::DecodePipeline(std::vector<CortexMDecodeRoute> routes, OpenCsdItmInputMode inputMode,
+                               TraceEventSink& eventSink, const OpenCsdItmSessionFactory& sessionFactory)
+  : m_streamDecoder(routes, eventSink),
+    m_decoder(routeIdentities(routes), inputMode, m_streamDecoder, sessionFactory)
 {
 }
 

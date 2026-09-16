@@ -7,6 +7,7 @@
 
 // Cortex-M post-decoder and end-to-end decode pipeline tests.
 #include "OpenCsdTestSupport.h"
+#include "OpenCsdSessionTestSupport.h"
 #include "TestSupport.h"
 
 #include <gtest/gtest.h>
@@ -15,12 +16,14 @@
 #include "CortexMStreamDecoder.h"
 #include "DecodePipeline.h"
 #include "OpenCsdTraceElement.h"
+#include "SaturatingArithmetic.h"
 #include "TraceEvent.h"
 
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -98,11 +101,25 @@ struct DecodedTrace {
   std::vector<TraceEvent> events;
 };
 
+/** @brief Creates the configured synthetic route for the current SINGLE frontend. */
+static CortexMDecodeRoute singleDecodeRoute(std::uint32_t timestampPrescaler = 1U)
+{
+  return {TraceRouteIdentity{}, timestampPrescaler};
+}
+
+/** @brief Assigns an exact normalized route to an OpenCSD test element. */
+static OpenCsdTraceElement onDecodeRoute(OpenCsdTraceElement element, TraceRouteIdentity route)
+{
+  element.route = route;
+  return element;
+}
+
 /** @brief Decodes test chunks and returns counters and collected events. */
 static DecodedTrace decodeTrace(std::initializer_list<RawByteView> chunks, std::uint32_t timestampPrescaler = 16U)
 {
   CollectingEventSink sink;
-  DecodePipeline pipeline(ItmTimestampPrescalers{timestampPrescaler, {}}, sink);
+  DecodePipeline pipeline(std::vector<CortexMDecodeRoute>{singleDecodeRoute(timestampPrescaler)},
+                          OpenCsdItmInputMode::Single, sink);
   for (const auto chunk : chunks) {
     pipeline.push(chunk);
   }
@@ -112,7 +129,7 @@ static DecodedTrace decodeTrace(std::initializer_list<RawByteView> chunks, std::
 TEST(CtraceUnitTests, testCortexMPostDecoderSoftwareTimestampBoundary)
 {
   CollectingEventSink sink;
-  CortexMPostDecoder decoder(sink);
+  CortexMPostDecoder decoder({}, sink);
 
   decoder.append(openCsdSoftwareElement(0U, 'A', 4U, 1U));
   decoder.append(openCsdTimestampElement(120U, 5U, 1U));
@@ -137,25 +154,31 @@ TEST(CtraceUnitTests, testCortexMPostDecoderSoftwareTimestampBoundary)
 TEST(CtraceUnitTests, testCortexMStreamDecoderAppliesPerStreamPrescalers)
 {
   CollectingEventSink sink;
-  CortexMStreamDecoder decoder(ItmTimestampPrescalers{1U, {{1U, 4U}, {2U, 16U}}}, sink);
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  CortexMStreamDecoder decoder({{route1, 4U}, {route2, 16U}}, sink);
 
-  const auto stream1Software = openCsdSoftwareElement(1U, 0x11U, 0U, 1U);
+  auto stream1Software = openCsdSoftwareElement(1U, 0x11U);
+  stream1Software.route = route1;
   decoder.append(stream1Software);
 
-  const auto stream2Software = openCsdSoftwareElement(1U, 0x22U, 0U, 2U);
+  auto stream2Software = openCsdSoftwareElement(1U, 0x22U);
+  stream2Software.route = route2;
   decoder.append(stream2Software);
 
-  const auto stream1Timestamp = openCsdTimestampElement(10U, 0U, 1U);
+  auto stream1Timestamp = openCsdTimestampElement(10U);
+  stream1Timestamp.route = route1;
   decoder.append(stream1Timestamp);
 
-  const auto stream2Timestamp = openCsdTimestampElement(10U, 0U, 2U);
+  auto stream2Timestamp = openCsdTimestampElement(10U);
+  stream2Timestamp.route = route2;
   decoder.append(stream2Timestamp);
   decoder.finish();
 
   ASSERT_TRUE(sink.events().size() == 4U) << "per-stream timestamp event count mismatch";
-  ASSERT_TRUE(sink.events()[0].traceBusId == 1U && sink.events()[0].tcyc == std::optional<std::uint64_t>(40U))
+  ASSERT_TRUE(sink.events()[0].route == route1 && sink.events()[0].tcyc == std::optional<std::uint64_t>(40U))
       << "stream 1 timestamp prescaler mismatch";
-  ASSERT_TRUE(sink.events()[2].traceBusId == 2U && sink.events()[2].tcyc == std::optional<std::uint64_t>(160U))
+  ASSERT_TRUE(sink.events()[2].route == route2 && sink.events()[2].tcyc == std::optional<std::uint64_t>(160U))
       << "stream 2 timestamp prescaler mismatch";
 }
 
@@ -164,29 +187,180 @@ TEST(CtraceUnitTests, testCortexMStreamDecoderValidatesAndSaturatesPrescalers)
   CollectingEventSink sink;
   auto timestamp = openCsdTimestampElement(std::numeric_limits<std::uint64_t>::max());
 
-  CortexMStreamDecoder saturating(ItmTimestampPrescalers{2U, {}}, sink);
+  CortexMStreamDecoder saturating({singleDecodeRoute(2U)}, sink);
   saturating.append(timestamp);
   saturating.finish();
   ASSERT_EQ(sink.events().size(), 1U);
   EXPECT_EQ(sink.events().front().tcyc, std::numeric_limits<std::uint64_t>::max());
   EXPECT_EQ(saturating.eventCount(), 1U);
 
-  CortexMStreamDecoder zero(ItmTimestampPrescalers{0U, {}}, sink);
-  EXPECT_THROW(zero.append(timestamp), std::invalid_argument);
+  EXPECT_THROW((void)CortexMStreamDecoder({}, sink), std::invalid_argument);
+  EXPECT_THROW((void)CortexMStreamDecoder({singleDecodeRoute(0U)}, sink), std::invalid_argument);
+  EXPECT_THROW((void)SaturatingArithmetic::multiply(1U, 0U), std::invalid_argument);
+  EXPECT_THROW((void)CortexMStreamDecoder({{{TraceRouteId{0U}, 0U}, 1U}}, sink), std::invalid_argument);
+  EXPECT_THROW((void)CortexMStreamDecoder({{{TraceRouteId{0U}, 112U}, 1U}}, sink), std::invalid_argument);
+  EXPECT_THROW((void)CortexMStreamDecoder({{{TraceRouteId{0U}, 1U}, 1U}, {{TraceRouteId{1U}, 1U}, 1U}}, sink),
+               std::invalid_argument);
+  EXPECT_THROW((void)CortexMStreamDecoder({{{TraceRouteId{0U}, 1U}, 1U}, {{TraceRouteId{0U}, 2U}, 1U}}, sink),
+               std::invalid_argument);
 
-  CortexMStreamDecoder unresolved(ItmTimestampPrescalers{std::nullopt, {}}, sink);
-  EXPECT_THROW(unresolved.append(timestamp), std::runtime_error);
-  timestamp.traceBusId = 7U;
-  EXPECT_THROW(unresolved.append(timestamp), std::runtime_error);
+  auto unknown = timestamp;
+  unknown.route = {TraceRouteId{9U}, 9U};
+  EXPECT_THROW(saturating.append(unknown), std::runtime_error);
+  auto mismatched = timestamp;
+  mismatched.route = {TraceRouteId{0U}, 7U};
+  EXPECT_THROW(saturating.append(mismatched), std::runtime_error);
 
   const auto timestampWithoutValue = openCsdElement(OpenCsdTraceElement::Kind::LocalTimestamp);
   EXPECT_NO_THROW(saturating.append(timestampWithoutValue));
 }
 
+TEST(CtraceUnitTests, testCortexMStreamDecoderIsolatesInterleavedDwtAndQualityState)
+{
+  CollectingEventSink sink;
+  const TraceRouteIdentity route1{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{1U}, 2U};
+  CortexMStreamDecoder decoder({{route1, 4U}, {route2, 16U}}, sink);
+
+  decoder.append(onDecodeRoute(openCsdTimestampElement(10U), route1));
+  decoder.append(onDecodeRoute(openCsdTimestampElement(10U), route2));
+
+  auto route1Pc = onDecodeRoute(openCsdElement(OpenCsdTraceElement::Kind::Hardware, 10U), route1);
+  route1Pc.discriminator = 8U;
+  route1Pc.size = 4U;
+  route1Pc.value = 0x08001000U;
+  decoder.append(route1Pc);
+  auto route2Pc = onDecodeRoute(openCsdElement(OpenCsdTraceElement::Kind::Hardware, 11U), route2);
+  route2Pc.discriminator = 8U;
+  route2Pc.size = 4U;
+  route2Pc.value = 0x08002000U;
+  decoder.append(route2Pc);
+
+  auto route1Value = onDecodeRoute(openCsdElement(OpenCsdTraceElement::Kind::Hardware, 12U), route1);
+  route1Value.discriminator = 16U;
+  route1Value.size = 1U;
+  route1Value.value = 0U;
+  decoder.append(route1Value);
+  auto route2Value = onDecodeRoute(openCsdElement(OpenCsdTraceElement::Kind::Hardware, 13U), route2);
+  route2Value.discriminator = 16U;
+  route2Value.size = 2U;
+  route2Value.value = 0U;
+  decoder.append(route2Value);
+
+  decoder.append(onDecodeRoute(openCsdTimestampElement(20U), route1));
+  decoder.append(onDecodeRoute(openCsdElement(OpenCsdTraceElement::Kind::Overflow, 14U), route1));
+  decoder.append(onDecodeRoute(openCsdTimestampElement(20U), route2));
+  decoder.finish();
+
+  std::vector<const TraceEvent*> dataEvents;
+  const TraceEvent* route1Overflow = nullptr;
+  for (const auto& event : sink.events()) {
+    if (isTraceEvent<DwtDataTraceEvent>(event)) {
+      dataEvents.push_back(&event);
+    }
+    if (event.route == route1 && isTraceEvent<OverflowTraceEvent>(event)) {
+      route1Overflow = &event;
+    }
+  }
+  ASSERT_EQ(dataEvents.size(), 2U);
+  const auto* firstData = traceEventPayload<DwtDataTraceEvent>(*dataEvents[0]);
+  const auto* secondData = traceEventPayload<DwtDataTraceEvent>(*dataEvents[1]);
+  ASSERT_NE(firstData, nullptr);
+  ASSERT_NE(secondData, nullptr);
+  EXPECT_EQ(dataEvents[0]->route, route1);
+  EXPECT_EQ(dataEvents[0]->tcyc, 80U);
+  EXPECT_EQ(firstData->size, 1U);
+  EXPECT_EQ(firstData->value, 0U);
+  EXPECT_EQ(firstData->pc, std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001000U}));
+  EXPECT_EQ(dataEvents[1]->route, route2);
+  EXPECT_EQ(dataEvents[1]->tcyc, 320U);
+  EXPECT_EQ(secondData->size, 2U);
+  EXPECT_EQ(secondData->value, 0U);
+  EXPECT_EQ(secondData->pc, std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08002000U}));
+  ASSERT_NE(route1Overflow, nullptr);
+  ASSERT_TRUE(route1Overflow->quality.has_value());
+  EXPECT_EQ(route1Overflow->quality->overflowCount, 1U);
+  ASSERT_TRUE(dataEvents[1]->quality.has_value());
+  EXPECT_EQ(dataEvents[1]->quality->overflowCount, 0U);
+  EXPECT_TRUE(dataEvents[1]->quality->timestampReliable);
+}
+
+TEST(CtraceUnitTests, testCortexMStreamDecoderKeepsTwoNoBusRoutesIndependent)
+{
+  CollectingEventSink sink;
+  const TraceRouteIdentity firstRoute{TraceRouteId{4U}, std::nullopt};
+  const TraceRouteIdentity secondRoute{TraceRouteId{9U}, std::nullopt};
+  CortexMStreamDecoder decoder({{firstRoute, 2U}, {secondRoute, 3U}}, sink);
+
+  decoder.append(onDecodeRoute(openCsdTimestampElement(10U), firstRoute));
+  decoder.append(onDecodeRoute(openCsdTimestampElement(10U), secondRoute));
+
+  auto firstPc = onDecodeRoute(openCsdElement(OpenCsdTraceElement::Kind::Hardware, 10U), firstRoute);
+  firstPc.discriminator = 8U;
+  firstPc.size = 4U;
+  firstPc.value = 0x08001000U;
+  decoder.append(firstPc);
+  auto secondPc = onDecodeRoute(openCsdElement(OpenCsdTraceElement::Kind::Hardware, 11U), secondRoute);
+  secondPc.discriminator = 8U;
+  secondPc.size = 4U;
+  secondPc.value = 0x08002000U;
+  decoder.append(secondPc);
+
+  auto firstValue = onDecodeRoute(openCsdElement(OpenCsdTraceElement::Kind::Hardware, 12U), firstRoute);
+  firstValue.discriminator = 16U;
+  firstValue.size = 1U;
+  firstValue.value = 0x11U;
+  decoder.append(firstValue);
+  auto secondValue = onDecodeRoute(openCsdElement(OpenCsdTraceElement::Kind::Hardware, 13U), secondRoute);
+  secondValue.discriminator = 16U;
+  secondValue.size = 2U;
+  secondValue.value = 0x2222U;
+  decoder.append(secondValue);
+
+  decoder.append(onDecodeRoute(openCsdTimestampElement(20U), firstRoute));
+  decoder.append(onDecodeRoute(openCsdElement(OpenCsdTraceElement::Kind::Overflow, 14U), firstRoute));
+  decoder.append(onDecodeRoute(openCsdTimestampElement(30U), secondRoute));
+  decoder.finish();
+
+  const TraceEvent* firstDataEvent = nullptr;
+  const TraceEvent* secondDataEvent = nullptr;
+  const TraceEvent* firstOverflow = nullptr;
+  for (const auto& event : sink.events()) {
+    if (event.route == firstRoute && isTraceEvent<DwtDataTraceEvent>(event)) {
+      firstDataEvent = &event;
+    } else if (event.route == secondRoute && isTraceEvent<DwtDataTraceEvent>(event)) {
+      secondDataEvent = &event;
+    } else if (event.route == firstRoute && isTraceEvent<OverflowTraceEvent>(event)) {
+      firstOverflow = &event;
+    }
+  }
+
+  ASSERT_NE(firstDataEvent, nullptr);
+  ASSERT_NE(secondDataEvent, nullptr);
+  ASSERT_NE(firstOverflow, nullptr);
+  const auto* firstData = traceEventPayload<DwtDataTraceEvent>(*firstDataEvent);
+  const auto* secondData = traceEventPayload<DwtDataTraceEvent>(*secondDataEvent);
+  ASSERT_NE(firstData, nullptr);
+  ASSERT_NE(secondData, nullptr);
+  EXPECT_EQ(firstDataEvent->tcyc, 40U);
+  EXPECT_EQ(firstData->value, 0x11U);
+  EXPECT_EQ(firstData->pc, std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001000U}));
+  EXPECT_EQ(secondDataEvent->tcyc, 90U);
+  EXPECT_EQ(secondData->value, 0x2222U);
+  EXPECT_EQ(secondData->pc, std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08002000U}));
+  ASSERT_TRUE(firstOverflow->quality.has_value());
+  EXPECT_EQ(firstOverflow->quality->overflowCount, 1U);
+  ASSERT_TRUE(secondDataEvent->quality.has_value());
+  EXPECT_EQ(secondDataEvent->quality->overflowCount, 0U);
+  EXPECT_TRUE(secondDataEvent->quality->timestampReliable);
+  EXPECT_FALSE(firstDataEvent->route.traceBusId.has_value());
+  EXPECT_FALSE(secondDataEvent->route.traceBusId.has_value());
+}
+
 TEST(CtraceUnitTests, testDecodePipelineRejectsInvalidChunkSizes)
 {
   CollectingEventSink sink;
-  DecodePipeline pipeline(ItmTimestampPrescalers{1U, {}}, sink);
+  DecodePipeline pipeline(std::vector<CortexMDecodeRoute>{singleDecodeRoute()}, OpenCsdItmInputMode::Single, sink);
   EXPECT_NO_THROW(pipeline.push({nullptr, 0U}));
   EXPECT_THROW(pipeline.push({nullptr, static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()) + 1U}),
                std::runtime_error);
@@ -195,10 +369,23 @@ TEST(CtraceUnitTests, testDecodePipelineRejectsInvalidChunkSizes)
   EXPECT_EQ(result.eventsOut, 0U);
 }
 
+TEST(CtraceUnitTests, testDecodePipelineUsesInjectedSingleRouteConfiguration)
+{
+  CollectingEventSink sink;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  DecodePipeline pipeline(std::vector<CortexMDecodeRoute>{singleDecodeRoute()}, OpenCsdItmInputMode::Single, sink,
+                          OpenCsdSessionTestSupport::scriptedFactory(script));
+
+  const auto result = pipeline.finish();
+  EXPECT_EQ(result.bytesIn, 0U);
+  EXPECT_EQ(result.eventsOut, 0U);
+  EXPECT_EQ(script->endCalls, 1U);
+}
+
 TEST(CtraceUnitTests, testCortexMPostDecoderReportsDiscontinuityInterval)
 {
   CollectingEventSink sink;
-  CortexMPostDecoder decoder(sink);
+  CortexMPostDecoder decoder({}, sink);
 
   auto discontinuity = openCsdElement(OpenCsdTraceElement::Kind::Discontinuity);
   discontinuity.issueCode = TraceIssueCode::DataLoss;
@@ -227,7 +414,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderReportsDiscontinuityInterval)
 TEST(CtraceUnitTests, testCortexMPostDecoderSeparatesRecoveryCauseAndDataLoss)
 {
   CollectingEventSink sink;
-  CortexMPostDecoder decoder(sink);
+  CortexMPostDecoder decoder({}, sink);
 
   auto cause = openCsdElement(OpenCsdTraceElement::Kind::Error, 8U);
   cause.discontinuity = true;
@@ -266,7 +453,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderSeparatesRecoveryCauseAndDataLoss)
 TEST(CtraceUnitTests, testCortexMPostDecoderOverflowFlushesDwtSegments)
 {
   CollectingEventSink sink;
-  CortexMPostDecoder decoder(sink);
+  CortexMPostDecoder decoder({}, sink);
 
   const auto firstTimestamp = openCsdTimestampElement(100U, 1U, 1U);
   decoder.append(firstTimestamp);
@@ -296,8 +483,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderOverflowFlushesDwtSegments)
       << "overflow segment first packet should be timestamp";
   const auto* address = traceEventPayload<DwtAddressTraceEvent>(packets[1]);
   ASSERT_TRUE(address != nullptr) << "overflow should flush pending DWT fragment as an address event";
-  ASSERT_TRUE(dwtAddressPc(*address) ==
-              std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001234U}))
+  ASSERT_TRUE(dwtAddressPc(*address) == std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001234U}))
       << "flushed DWT PC mismatch";
   ASSERT_TRUE(packets[1].tcyc.has_value() && packets[1].tcyc.value() == 100) << "flushed DWT PC timestamp mismatch";
   ASSERT_TRUE(packets[1].quality.has_value() && packets[1].quality->overflow)
@@ -320,7 +506,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderOverflowFlushesDwtSegments)
 TEST(CtraceUnitTests, testCortexMPostDecoderPreservesDecoderTimestamps)
 {
   CollectingEventSink sink;
-  CortexMPostDecoder decoder(sink);
+  CortexMPostDecoder decoder({}, sink);
 
   const auto firstTimestamp = openCsdTimestampElement(100U, (std::uint64_t{1} << 32U) + 1U);
   decoder.append(firstTimestamp);
@@ -339,7 +525,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderPreservesDecoderTimestamps)
 TEST(CtraceUnitTests, testCortexMPostDecoderPreservesGlobalTimestampOrder)
 {
   CollectingEventSink sink;
-  CortexMPostDecoder decoder(sink);
+  CortexMPostDecoder decoder({}, sink);
 
   const auto software = openCsdSoftwareElement(1U, 'A', 1U);
   decoder.append(software);
@@ -585,9 +771,7 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesDwtEventAndPmuPackets)
 TEST(CtraceUnitTests, testDecodePipelinePreservesPeriodicPcSamples)
 {
   const std::uint8_t trace[] = {
-      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U,
-      0x17U, 0x34U, 0x12U, 0x00U, 0x08U,
-      0x15U, 0x00U,
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x17U, 0x34U, 0x12U, 0x00U, 0x08U, 0x15U, 0x00U,
   };
   const auto decoded = decodeTrace({rawBytes(trace)});
 
@@ -607,10 +791,7 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesPeriodicPcSamples)
 TEST(CtraceUnitTests, testDecodePipelinePreservesCompressedDataTracePcValues)
 {
   const std::uint8_t trace[] = {
-      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U,
-      0x45U, 0x58U,
-      0x46U, 0x58U, 0x78U,
-      0x47U, 0x58U, 0x78U, 0x00U, 0x08U,
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x45U, 0x58U, 0x46U, 0x58U, 0x78U, 0x47U, 0x58U, 0x78U, 0x00U, 0x08U,
   };
   const auto decoded = decodeTrace({rawBytes(trace)});
 

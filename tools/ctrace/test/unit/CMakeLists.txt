@@ -4,6 +4,7 @@
 
 set(CTRACE_TEST_HEADER_FILES
   support/CtfTestSupport.h
+  support/FormattedTraceTestSupport.h
   support/OpenCsdSessionTestSupport.h
   support/OpenCsdTestSupport.h
   support/TestPath.h
@@ -33,8 +34,10 @@ add_executable(CtraceUnitTests
   src/decode/DecodePipelineTests.cpp
   src/decode/DwtPacketDecoderTests.cpp
   src/decode/OpenCsdErrorControllerTests.cpp
+  src/decode/OpenCsdFormattedItmSessionTests.cpp
   src/decode/OpenCsdItmDecoderTests.cpp
   src/decode/OpenCsdPacketCollectorTests.cpp
+  src/decode/OpenCsdTreeSessionTests.cpp
   src/diagnostics/DiagnosticsTests.cpp
   src/model/TraceSelectionTests.cpp
   src/output/OutputRequirementsTests.cpp
@@ -43,9 +46,11 @@ add_executable(CtraceUnitTests
   src/output/csv/CsvRowMapperTests.cpp
   src/output/ctf/CtfBundleOutputTests.cpp
   src/output/ctf/CtfEncoderTests.cpp
+  src/output/ctf/CtfMetadataModelTests.cpp
   src/output/ctf/CtfMetadataWriterTests.cpp
   src/output/ctf/CtfSchemaTests.cpp
   src/output/ctf/CtfStreamWriterTests.cpp
+  src/output/ctf/TraceCompassXmlWriterTests.cpp
   src/tracerun/CtraceRunMetaTests.cpp
   src/tracerun/TraceRunConfigReaderTests.cpp
   src/tracerun/TraceRunDiscoveryTests.cpp

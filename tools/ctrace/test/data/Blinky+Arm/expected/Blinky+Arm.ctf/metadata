@@ -1,0 +1,310 @@
+/* CTF 1.8 */
+trace {
+    major = 1;
+    minor = 8;
+    uuid = "00000000-0000-0000-0000-000000000000";
+    byte_order = le;
+    packet.header := struct {
+        integer { size = 32; align = 8; signed = false; } magic;
+        integer { size = 8; align = 8; signed = false; } uuid[16];
+        integer { size = 32; align = 8; signed = false; } stream_id;
+    };
+};
+
+env {
+    cmsis_ctf_profile = "cmsis.ctf";
+    cmsis_ctf_profile_version = 1;
+    cmsis_dwt0_value_type = "unsigned";
+    cmsis_dwt0_address_start = "0x24000024";
+    cmsis_dwt0_address_end = "0x24000027";
+};
+
+clock {
+    name = swo_clock;
+    precision = 0;
+    offset_s = 0;
+    offset = 0;
+    absolute = false;
+    freq = 480000000;
+};
+
+typealias integer { size = 8; align = 8; signed = false; } := uint8_t;
+typealias integer { size = 16; align = 8; signed = false; byte_order = le; } := uint16_t;
+typealias integer { size = 32; align = 8; signed = false; byte_order = le; } := uint32_t;
+typealias integer { size = 8; align = 8; signed = true; } := int8_t;
+typealias integer { size = 16; align = 8; signed = true; byte_order = le; } := int16_t;
+typealias integer { size = 32; align = 8; signed = true; byte_order = le; } := int32_t;
+typealias floating_point { exp_dig = 8; mant_dig = 24; align = 8; byte_order = le; } := ieee_float32_t;
+typealias integer { size = 64; align = 8; signed = false; byte_order = le; } := uint64_t;
+typealias integer { size = 64; align = 8; signed = false; map = clock.swo_clock.value; } := swo_clock_t;
+
+typealias enum : uint8_t {
+    "read" = 0,
+    "write" = 1
+} := cmsis_dwt_access_t;
+typealias enum : uint8_t {
+    "trace_start" = 0,
+    "resync" = 1,
+    "overflow" = 2,
+    "decode_error" = 3,
+    "data_loss" = 4
+} := cmsis_trace_status_reason_t;
+typealias enum : uint8_t {
+    "entered" = 0,
+    "exited" = 1,
+    "returned" = 2
+} := cmsis_exception_action_t;
+typealias enum : uint8_t {
+    "trace" = 0,
+    "synthetic" = 1
+} := cmsis_exception_origin_t;
+typealias enum : uint8_t {
+    "CPICNT" = 0,
+    "EXCCNT" = 1,
+    "SLEEPCNT" = 2,
+    "LSUCNT" = 3,
+    "FOLDCNT" = 4,
+    "CYCCNT" = 5,
+} := cmsis_dwt_event_counter_t;
+typealias enum : uint8_t {
+    "Event0" = 0,
+    "Event1" = 1,
+    "Event2" = 2,
+    "Event3" = 3,
+    "Event4" = 4,
+    "Event5" = 5,
+    "Event6" = 6,
+    "Event7" = 7,
+} := cmsis_pmu_event_counter_t;
+typealias enum : uint8_t {
+    "ITM1" = 1,
+    "ITM2" = 2,
+    "ITM3" = 3,
+    "ITM4" = 4,
+    "ITM5" = 5,
+    "ITM6" = 6,
+    "ITM7" = 7,
+    "ITM8" = 8,
+    "ITM9" = 9,
+    "ITM10" = 10,
+    "ITM11" = 11,
+    "ITM12" = 12,
+    "ITM13" = 13,
+    "ITM14" = 14,
+    "ITM15" = 15,
+    "ITM16" = 16,
+    "ITM17" = 17,
+    "ITM18" = 18,
+    "ITM19" = 19,
+    "ITM20" = 20,
+    "ITM21" = 21,
+    "ITM22" = 22,
+    "ITM23" = 23,
+    "ITM24" = 24,
+    "ITM25" = 25,
+    "ITM26" = 26,
+    "ITM27" = 27,
+    "ITM28" = 28,
+    "ITM29" = 29,
+    "ITM30" = 30,
+    "ITM31" = 31,
+} := cmsis_itm_channel_t;
+typealias enum : uint8_t {
+    "DWT0" = 0,
+    "DWT1" = 1,
+    "DWT2" = 2,
+    "DWT3" = 3,
+
+} := cmsis_dwt_comparator_t;
+typealias enum : uint16_t {
+    "Thread Mode" = 0,
+    "Reset" = 1,
+    "NMI" = 2,
+    "HardFault" = 3,
+    "MemManage" = 4,
+    "BusFault" = 5,
+    "UsageFault" = 6,
+    "SecureFault" = 7,
+    "SVCall" = 11,
+    "DebugMonitor" = 12,
+    "PendSV" = 14,
+    "SysTick" = 15,
+} := cmsis_exception_number_t;
+
+stream {
+    id = 0;
+    event.header := struct {
+        uint32_t id;
+        swo_clock_t timestamp;
+    };
+    event.context := struct {
+        uint8_t cmsis_trace_bus_id;
+    };
+    packet.context := struct {
+        uint32_t packet_size;
+        uint32_t content_size;
+        swo_clock_t timestamp_begin;
+        swo_clock_t timestamp_end;
+        uint32_t events_discarded;
+        uint32_t packet_seq_num;
+    };
+};
+
+event {
+    id = 0;
+    name = "ITM";
+    stream_id = 0;
+    fields := struct {
+        cmsis_itm_channel_t cmsis_itm_channel;
+        enum : uint8_t { i8 = 0, u8 = 1, i16 = 2, u16 = 3, i32 = 4, u32 = 5, f32 = 6 } m_cmsisitm_value_type;
+        variant <m_cmsisitm_value_type> {
+            int8_t i8;
+            uint8_t u8;
+            int16_t i16;
+            uint16_t u16;
+            int32_t i32;
+            uint32_t u32;
+            ieee_float32_t f32;
+        } m_cmsisitm_value;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+
+event {
+    id = 1;
+    name = "DWT_VALUE";
+    stream_id = 0;
+    fields := struct {
+        cmsis_dwt_comparator_t cmsis_dwt_comparator;
+        cmsis_dwt_access_t cmsis_dwt_access;
+        enum : uint8_t { i8 = 0, u8 = 1, i16 = 2, u16 = 3, i32 = 4, u32 = 5, f32 = 6 } m_cmsisdwt_value_type;
+        variant <m_cmsisdwt_value_type> {
+            int8_t i8;
+            uint8_t u8;
+            int16_t i16;
+            uint16_t u16;
+            int32_t i32;
+            uint32_t u32;
+            ieee_float32_t f32;
+        } m_cmsisdwt_value;
+        enum : uint8_t { none = 0, u8 = 1, u16 = 2, u32 = 4 } cmsis_dwt_pc_type;
+        variant <cmsis_dwt_pc_type> {
+            uint8_t none;
+            uint8_t u8;
+            uint16_t u16;
+            uint32_t u32;
+        } cmsis_dwt_pc;
+        enum : uint8_t { none = 0, u8 = 1, u16 = 2, u32 = 4 } cmsis_dwt_address_type;
+        variant <cmsis_dwt_address_type> {
+            uint8_t none;
+            uint8_t u8;
+            uint16_t u16;
+            uint32_t u32;
+        } cmsis_dwt_address;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+
+event {
+    id = 2;
+    name = "DWT_ADDR";
+    stream_id = 0;
+    fields := struct {
+        cmsis_dwt_comparator_t cmsis_dwt_comparator;
+        enum : uint8_t { none = 0, u8 = 1, u16 = 2, u32 = 4 } cmsis_dwt_pc_type;
+        variant <cmsis_dwt_pc_type> {
+            uint8_t none;
+            uint8_t u8;
+            uint16_t u16;
+            uint32_t u32;
+        } cmsis_dwt_pc;
+        enum : uint8_t { none = 0, u8 = 1, u16 = 2, u32 = 4 } cmsis_dwt_address_type;
+        variant <cmsis_dwt_address_type> {
+            uint8_t none;
+            uint8_t u8;
+            uint16_t u16;
+            uint32_t u32;
+        } cmsis_dwt_address;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+
+event {
+    id = 9;
+    name = "DWT_MATCH";
+    stream_id = 0;
+    fields := struct {
+        cmsis_dwt_comparator_t cmsis_dwt_comparator;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+
+event {
+    id = 7;
+    name = "DWT_EVENT";
+    stream_id = 0;
+    fields := struct {
+        cmsis_dwt_event_counter_t cmsis_dwt_event_counter;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+
+event {
+    id = 8;
+    name = "PMU_EVENT";
+    stream_id = 0;
+    fields := struct {
+        cmsis_pmu_event_counter_t cmsis_pmu_event_counter;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+
+event {
+    id = 3;
+    name = "TRACE_STATUS";
+    stream_id = 0;
+    fields := struct {
+        cmsis_trace_status_reason_t cmsis_trace_status_reason;
+        uint32_t cmsis_overflow_count;
+    };
+};
+
+event {
+    id = 4;
+    name = "EXCEPTION";
+    stream_id = 0;
+    fields := struct {
+        cmsis_exception_number_t cmsis_exception_number;
+        cmsis_exception_action_t cmsis_exception_action;
+        uint16_t cmsis_exception_number_value;
+        cmsis_exception_origin_t cmsis_exception_origin;
+    };
+};
+
+event {
+    id = 5;
+    name = "GLOBAL_TIMESTAMP";
+    stream_id = 0;
+    fields := struct {
+        uint64_t cmsis_global_timestamp;
+        uint8_t cmsis_clock_change;
+    };
+};
+
+event {
+    id = 6;
+    name = "PC_SAMPLE";
+    stream_id = 0;
+    fields := struct {
+        uint8_t cmsis_pc_sample_state;
+        uint32_t cmsis_pc[cmsis_pc_sample_state];
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};

@@ -25,10 +25,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <ios>
 #include <memory>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -44,21 +44,18 @@ public:
     bool eof = false;
   };
 
-  /** @brief Opens a raw trace input for binary reading. */
-  explicit RawFileReader(std::filesystem::path path)
+  /** @brief Reads one already opened and preflighted raw trace input. */
+  RawFileReader(std::filesystem::path path, std::istream& stream)
     : m_path(std::move(path)),
-      m_stream(m_path, std::ios::binary),
+      m_stream(stream),
       m_buffer(64U * 1024U)
   {
-    if (!m_stream) {
-      throw std::runtime_error("failed to open input file: " + m_path.string());
-    }
   }
 
   /** @brief Returns the next raw byte chunk. */
   ReadResult read()
   {
-    if (m_eof || !m_stream.is_open()) {
+    if (m_eof) {
       return {{}, true};
     }
 
@@ -67,22 +64,19 @@ public:
     if (readBytes > 0) {
       if (m_stream.eof()) {
         m_eof = true;
-        m_stream.close();
       }
       return {{m_buffer.data(), static_cast<std::size_t>(readBytes)}, false};
     }
     if (m_stream.bad()) {
       throw std::runtime_error("failed to read input file: " + m_path.string());
     }
-
     m_eof = true;
-    m_stream.close();
     return {{}, true};
   }
 
 private:
   std::filesystem::path m_path;
-  std::ifstream m_stream;
+  std::istream& m_stream;
   std::vector<std::uint8_t> m_buffer;
   bool m_eof = false;
 };
@@ -100,14 +94,44 @@ static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady
   return out.str();
 }
 
-/** @brief Extracts fallback and per-stream timestamp prescalers from metadata. */
-static ItmTimestampPrescalers timestampPrescalers(const CtraceRunMeta& ctraceRunMeta)
+/** @brief Converts normalized trace-run routes into semantic decoder routes. */
+static std::vector<CortexMDecodeRoute> decodeRoutes(const CtraceRunMeta& ctraceRunMeta)
 {
-  auto fallback = ctraceRunMeta.timestampPrescaler();
-  if (!fallback.has_value() && !ctraceRunMeta.hasDistinctProcessorPrescalers()) {
-    fallback = TraceRunSchema::kDefaultTimestampPrescaler;
+  std::vector<CortexMDecodeRoute> result;
+  result.reserve(ctraceRunMeta.routes().size());
+  for (const auto& route : ctraceRunMeta.routes()) {
+    result.push_back({route.identity, route.timestampPrescaler});
   }
-  return {fallback, ctraceRunMeta.timestampPrescalersByTraceBusId()};
+  return result;
+}
+
+/** @brief Maps the preflighted raw-input contract to the decode frontend. */
+static OpenCsdItmInputMode decodeInputMode(const TraceRunInputDescriptor& input)
+{
+  return input.format() == TraceRunFormat::Formatted ? OpenCsdItmInputMode::CoreSightFormatted
+                                                     : OpenCsdItmInputMode::Single;
+}
+
+/** @brief Indexes route-local ITM enable masks without using a transport sentinel. */
+static std::map<TraceRouteId, std::uint32_t> itmEnableMasks(const CtraceRunMeta& ctraceRunMeta)
+{
+  std::map<TraceRouteId, std::uint32_t> result;
+  for (const auto& route : ctraceRunMeta.routes()) {
+    if (route.itmEnableMask.has_value()) {
+      result.emplace(route.identity.id, *route.itmEnableMask);
+    }
+  }
+  return result;
+}
+
+/** @brief Counts source metadata directly from the canonical route catalogue. */
+static std::size_t sourceCount(const CtraceRunMeta& ctraceRunMeta)
+{
+  std::size_t result = 0U;
+  for (const auto& route : ctraceRunMeta.routes()) {
+    result += route.sources.size();
+  }
+  return result;
 }
 
 /** @brief Converts command-line output selection into an output request. */
@@ -139,77 +163,108 @@ static std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const T
   return outputs;
 }
 
-FileDecodeJob::FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
-                             CtraceRunMeta ctraceRunMeta)
+/** @brief Reports the normalized trace-run model selected for one decode job. */
+static void reportTraceRunMeta(const CtraceRunMeta& meta, DiagnosticSink& diagnostics)
+{
+  diagnostics.report({
+      DiagnosticSink::Severity::Info,
+      "applied ctrace-run meta",
+      {
+          {"path", meta.configPath()},
+          {"routes", std::to_string(meta.routes().size())},
+          {"sources", std::to_string(sourceCount(meta))},
+      },
+  });
+}
+
+/** @brief Reports the timestamp prescaler applied to every normalized route. */
+static void reportTimestampPrescalers(const CtraceRunMeta& meta, DiagnosticSink& diagnostics)
+{
+  for (const auto& route : meta.routes()) {
+    std::vector<std::pair<std::string, std::string>> context;
+    context.emplace_back("value", std::to_string(route.timestampPrescaler));
+    if (route.identity.traceBusId.has_value()) {
+      context.emplace_back("stream", std::to_string(*route.identity.traceBusId));
+    }
+    if (route.processorName.has_value()) {
+      context.emplace_back("pname", *route.processorName);
+    }
+    diagnostics.report({DiagnosticSink::Severity::Info, "using timestamp prescaler", std::move(context)});
+  }
+}
+
+/** @brief Creates the production or injected OpenCSD decode pipeline. */
+static std::unique_ptr<DecodePipeline>
+createDecodePipeline(const std::vector<CortexMDecodeRoute>& routes, OpenCsdItmInputMode inputMode,
+                     DecodeConsumers& consumers, const OpenCsdItmSessionFactory& sessionFactory,
+                     DiagnosticSink& diagnostics)
+{
+  if (sessionFactory) {
+    return std::make_unique<DecodePipeline>(routes, inputMode, consumers, sessionFactory);
+  }
+  return std::make_unique<DecodePipeline>(
+      routes, inputMode, consumers, [&diagnostics](std::uint8_t traceBusId, std::uint64_t sourceOffset) {
+        diagnostics.report({
+            DiagnosticSink::Severity::Warning,
+            "skipping unsupported formatted CoreSight trace source",
+            {
+                {"stream", std::to_string(traceBusId)},
+                {"rawOffset", std::to_string(sourceOffset)},
+            },
+        });
+      });
+}
+
+/** @brief Streams one preflighted raw input through its configured decode pipeline. */
+static DecodeResult decodeRawInput(const std::filesystem::path& path, std::istream& stream, DecodePipeline& pipeline)
+{
+  RawFileReader input(path, stream);
+  while (true) {
+    const auto read = input.read();
+    if (read.eof) {
+      break;
+    }
+    pipeline.push(read.bytes);
+  }
+  return pipeline.finish();
+}
+
+FileDecodeJob::FileDecodeJob(CliOptions options, TraceRunInputDescriptor input, DiagnosticSink& diagnostics)
   : m_options(std::move(options)),
-    m_rawInputPath(std::move(rawInputPath)),
-    m_diagnostics(diagnostics),
-    m_ctraceRunMeta(std::move(ctraceRunMeta))
+    m_input(std::move(input)),
+    m_diagnostics(diagnostics)
 {
 }
 
-FileDecodeJob::FileDecodeJob(CliOptions options, std::filesystem::path rawInputPath, DiagnosticSink& diagnostics,
-                             CtraceRunMeta ctraceRunMeta, OpenCsdItmSessionFactory sessionFactory)
+FileDecodeJob::FileDecodeJob(CliOptions options, TraceRunInputDescriptor input, DiagnosticSink& diagnostics,
+                             OpenCsdItmSessionFactory sessionFactory)
   : m_options(std::move(options)),
-    m_rawInputPath(std::move(rawInputPath)),
+    m_input(std::move(input)),
     m_diagnostics(diagnostics),
-    m_ctraceRunMeta(std::move(ctraceRunMeta)),
     m_sessionFactory(std::move(sessionFactory))
 {
 }
 
 void FileDecodeJob::run()
 {
-  const auto prescalers = timestampPrescalers(m_ctraceRunMeta);
-  auto outputPlan = planTraceOutputs(outputRequest(m_options), m_rawInputPath, m_ctraceRunMeta, m_diagnostics);
+  const auto& ctraceRunMeta = m_input.metadata();
+  const auto routes = decodeRoutes(ctraceRunMeta);
+  const auto inputMode = decodeInputMode(m_input);
+  auto outputPlan = planTraceOutputs(outputRequest(m_options), m_input.path(), ctraceRunMeta, m_diagnostics);
   if (outputPlan.hasRequestedOutputs() && !outputPlan.hasEnabledOutputs()) {
     return;
   }
-  m_diagnostics.report({
-      DiagnosticSink::Severity::Info,
-      "applied ctrace-run meta",
-      {
-          {"path", m_ctraceRunMeta.configPath()},
-          {"processors", std::to_string(m_ctraceRunMeta.processorCount())},
-          {"sources", std::to_string(m_ctraceRunMeta.sources().size())},
-      },
-  });
+  reportTraceRunMeta(ctraceRunMeta, m_diagnostics);
   auto outputs = createConfiguredOutputs(outputPlan, m_diagnostics);
-  DecodeConsumers consumers(std::move(outputs), m_diagnostics, m_ctraceRunMeta.itmEnableMask(),
-                            m_ctraceRunMeta.itmEnableMasksByTraceBusId());
+  DecodeConsumers consumers(std::move(outputs), m_diagnostics, itmEnableMasks(ctraceRunMeta));
+  reportTimestampPrescalers(ctraceRunMeta, m_diagnostics);
 
-  if (prescalers.fallback.has_value()) {
-    m_diagnostics.report({
-        DiagnosticSink::Severity::Info,
-        "using timestamp prescaler",
-        {{"value", std::to_string(*prescalers.fallback)}},
-    });
-  } else {
-    m_diagnostics.report({
-        DiagnosticSink::Severity::Info,
-        "using Trace-Bus-ID-specific timestamp prescalers",
-        {{"traceBusIds", std::to_string(prescalers.byTraceBusId.size())}},
-    });
-  }
   const auto decodeStart = std::chrono::steady_clock::now();
   DecodeResult decode;
   bool decoderFatal = false;
   try {
-    RawFileReader input(m_rawInputPath);
-    std::unique_ptr<DecodePipeline> pipeline;
-    if (m_sessionFactory) {
-      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers, m_sessionFactory);
-    } else {
-      pipeline = std::make_unique<DecodePipeline>(prescalers, consumers);
-    }
-    while (true) {
-      const auto read = input.read();
-      if (read.eof) {
-        break;
-      }
-      pipeline->push(read.bytes);
-    }
-    decode = pipeline->finish();
+    auto pipeline = createDecodePipeline(routes, inputMode, consumers, m_sessionFactory, m_diagnostics);
+    decode = decodeRawInput(m_input.path(), m_input.stream(), *pipeline);
   } catch (const OpenCsdFatalError& error) {
     decoderFatal = true;
     decode.bytesIn = error.bytesProcessed();

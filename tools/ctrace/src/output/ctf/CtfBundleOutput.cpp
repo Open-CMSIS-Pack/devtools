@@ -8,18 +8,23 @@
 #include "CtfBundleOutput.h"
 
 #include "CtfEncoder.h"
+#include "CtfUuid.h"
+#include "DiagnosticSink.h"
 #include "TraceCompassXmlWriter.h"
 #include "TraceEvent.h"
 #include "TraceOutputConfig.h"
 
 #include <algorithm>
+#include <cassert>
 #include <filesystem>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 /** @brief Rejects empty and root-like output targets. */
 static void requireOutputTarget(const std::filesystem::path& path, const char* description)
@@ -69,6 +74,22 @@ static bool isAncestorPath(const std::filesystem::path& candidate, const std::fi
   return true;
 }
 
+/** @brief Rejects an output whose nearest existing parent is not a directory. */
+static void validateOutputParent(const std::filesystem::path& path, const char* description)
+{
+  auto parent = normalizedAbsolutePath(path).parent_path();
+  while (!parent.empty()) {
+    const auto status = std::filesystem::status(parent);
+    if (std::filesystem::exists(status)) {
+      if (!std::filesystem::is_directory(status)) {
+        throw std::runtime_error(std::string(description) + " parent is not a directory: " + parent.string());
+      }
+      return;
+    }
+    parent = parent.parent_path();
+  }
+}
+
 /** @brief Rejects CTF and Trace Compass targets that overlap unsafely. */
 static void validateOutputTargets(const std::filesystem::path& ctfDirectory,
                                   const std::filesystem::path& traceCompassXml)
@@ -96,6 +117,9 @@ static void removeOutputDirectory(const std::filesystem::path& path)
 static void validateExistingOutputTypes(const std::filesystem::path& ctfDirectory,
                                         const std::filesystem::path& traceCompassXml)
 {
+  validateOutputParent(ctfDirectory, "CTF output");
+  validateOutputParent(traceCompassXml, "Trace Compass XML output");
+
   std::error_code ctfError;
   const auto ctfStatus = std::filesystem::symlink_status(ctfDirectory, ctfError);
   if (ctfError && ctfError != std::errc::no_such_file_or_directory) {
@@ -164,26 +188,60 @@ static void removeIncompleteOutputs(const std::filesystem::path& ctfDirectory,
   }
 }
 
+/** @brief Selects only graphical views backed by emitted records in one completed stream. */
+static TraceCompassXmlWriter::ViewMask traceCompassViews(const CtfMetadataModel& metadata,
+                                                         CtfStreamClassId streamClassId)
+{
+  auto views = TraceCompassXmlWriter::ViewMask{0U};
+  for (const auto topic : kCtfGraphicalTopics) {
+    if (metadata.observedGraphicalTopic(streamClassId, topic)) {
+      views |= TraceCompassXmlWriter::viewMask(topic);
+    }
+  }
+  return views;
+}
+
+/** @brief Counts the clock domains referenced by completed CTF streams. */
+static std::size_t traceCompassClockDomainCount(const std::vector<CtfStreamDescriptor>& streams)
+{
+  std::set<CtfClockDomainId> clocks;
+  for (const auto& stream : streams) {
+    clocks.insert(stream.clockDomainId);
+  }
+  return clocks.size();
+}
+
+/** @brief Builds the Trace Compass view routes for completed CTF streams. */
+static std::vector<TraceCompassXmlWriter::ViewRoute> traceCompassViewRoutes(const CtfMetadataModel& metadata)
+{
+  std::vector<TraceCompassXmlWriter::ViewRoute> viewRoutes;
+  for (const auto& stream : metadata.topology().streams) {
+    viewRoutes.push_back({
+        stream.route.traceBusId.value_or(0U),
+        stream.processorName.value_or(std::string{}),
+        traceCompassViews(metadata, stream.streamClassId),
+    });
+  }
+  return viewRoutes;
+}
+
 CtfBundleOutput::CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnostics)
   : m_ctfOutputDirectory(std::move(config.outputDirectory)),
     m_traceCompassXmlPath(std::move(config.traceCompassXmlPath)),
     m_encoder(CtfEncoderConfig{
-        config.coreClockHz,
+        std::move(config.metadata),
         std::move(config.selection),
-        std::move(config.sources),
         diagnostics,
-    })
+        std::move(config.routes),
+    }),
+    m_diagnostics(diagnostics)
 {
   validateOutputTargets(m_ctfOutputDirectory, m_traceCompassXmlPath);
 }
 
 CtfBundleOutput::~CtfBundleOutput()
 {
-  try {
-    CtfBundleOutput::abort();
-  } catch (...) {
-    (void)0;
-  }
+  abortNoexcept();
 }
 
 std::string_view CtfBundleOutput::backendName() const noexcept
@@ -196,47 +254,75 @@ std::string CtfBundleOutput::targetPath() const
   return m_ctfOutputDirectory.string();
 }
 
-void CtfBundleOutput::start()
+void CtfBundleOutput::prepareOutput()
 {
-  abort();
   validateExistingOutputTypes(m_ctfOutputDirectory, m_traceCompassXmlPath);
   removeOutputDirectory(m_ctfOutputDirectory);
   removeOutputFile(m_traceCompassXmlPath);
   createOutputDirectory(m_ctfOutputDirectory);
-  m_active = true;
-  try {
-    m_encoder.start(m_ctfOutputDirectory);
-    TraceCompassXmlWriter::writeFile(m_traceCompassXmlPath);
-  } catch (...) {
-    abort();
-    throw;
-  }
 }
 
-void CtfBundleOutput::stop()
+void CtfBundleOutput::startOutput()
 {
-  if (!m_active) {
+  const auto traceUuid = CtfUuid::randomV4();
+  m_encoder.start(m_ctfOutputDirectory, traceUuid);
+}
+
+void CtfBundleOutput::stopOutput()
+{
+  m_encoder.stop();
+  const auto* metadata = m_encoder.completedMetadata();
+  // A successful encoder stop always publishes its completed metadata model.
+  assert(metadata != nullptr);
+  finalizeTraceCompassXml(*metadata);
+}
+
+void CtfBundleOutput::finalizeTraceCompassXml(const CtfMetadataModel& metadata)
+{
+  const auto& streams = metadata.topology().streams;
+  if (streams.empty()) {
+    removeOutputFile(m_traceCompassXmlPath);
     return;
   }
-  try {
-    m_encoder.stop();
-    m_active = false;
-  } catch (...) {
-    abort();
-    throw;
+
+  const auto clockDomainCount = traceCompassClockDomainCount(streams);
+  if (clockDomainCount != 1U) {
+    omitTraceCompassXml(clockDomainCount);
+    return;
   }
+
+  if (metadata.isLegacySingleStreamLayout()) {
+    TraceCompassXmlWriter::writeLegacyFile(m_traceCompassXmlPath,
+                                           traceCompassViews(metadata, streams.front().streamClassId));
+    return;
+  }
+  TraceCompassXmlWriter::writeRoutedFile(m_traceCompassXmlPath, traceCompassViewRoutes(metadata));
 }
 
-void CtfBundleOutput::abort()
+void CtfBundleOutput::omitTraceCompassXml(std::size_t clockDomainCount)
+{
+  removeOutputFile(m_traceCompassXmlPath);
+  if (m_diagnostics == nullptr) {
+    return;
+  }
+  m_diagnostics->report({
+      DiagnosticSink::Severity::Warning,
+      "Trace Compass XML was not generated because emitted CTF streams use multiple clock domains",
+      {
+          {"backend", "ctf"},
+          {"path", m_traceCompassXmlPath.string()},
+          {"clockDomains", std::to_string(clockDomainCount)},
+      },
+  });
+}
+
+void CtfBundleOutput::abortOutput()
 {
   m_encoder.abort();
-  if (m_active) {
-    removeIncompleteOutputs(m_ctfOutputDirectory, m_traceCompassXmlPath);
-    m_active = false;
-  }
+  removeIncompleteOutputs(m_ctfOutputDirectory, m_traceCompassXmlPath);
 }
 
-void CtfBundleOutput::writeEvent(const TraceEvent& event)
+void CtfBundleOutput::writeOutput(const TraceEvent& event)
 {
   m_encoder.writeEvent(event);
 }
