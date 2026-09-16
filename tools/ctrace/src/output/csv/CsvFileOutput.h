@@ -57,28 +57,31 @@ public:
   /** @brief Closes an active stream without throwing. */
   ~CsvFileOutput() override;
 
-  /** @brief Creates the target file and writes its header. */
-  void start() override;
-  /** @brief Flushes and closes the completed CSV file. */
-  void stop() override;
-  /** @brief Closes and removes an incomplete CSV file. */
-  void abort() override;
-  /**
-   * @brief Writes one selected event as a CSV row.
-   * @param event Event evaluated against the configured selection.
-   */
-  void writeEvent(const TraceEvent& event) override;
   /** @brief Returns the CSV backend name. */
   std::string_view backendName() const noexcept override;
   /** @brief Returns the CSV target file path. */
   std::string targetPath() const override;
+
+protected:
+  /** @brief Validates and prepares the CSV target path. */
+  void prepareOutput() override;
+  /** @brief Opens the target file and writes its CSV header. */
+  void startOutput() override;
+  /** @brief Flushes and closes the completed CSV file. */
+  void stopOutput() override;
+  /** @brief Closes and removes an incomplete CSV file. */
+  void abortOutput() override;
+  /**
+   * @brief Writes one selected event as a CSV row.
+   * @param event Event evaluated against the configured selection.
+   */
+  void writeOutput(const TraceEvent& event) override;
 
 private:
   std::filesystem::path m_outputFile;
   TraceSelection m_selection;
   StreamFactory m_streamFactory;
   std::unique_ptr<Stream> m_stream;
-  bool m_active = false;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_CSV_CSVFILEOUTPUT_H

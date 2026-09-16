@@ -241,11 +241,7 @@ CtfBundleOutput::CtfBundleOutput(CtfOutputConfig config, DiagnosticSink* diagnos
 
 CtfBundleOutput::~CtfBundleOutput()
 {
-  try {
-    CtfBundleOutput::abort();
-  } catch (...) {
-    (void)0;
-  }
+  abortNoexcept();
 }
 
 std::string_view CtfBundleOutput::backendName() const noexcept
@@ -258,39 +254,27 @@ std::string CtfBundleOutput::targetPath() const
   return m_ctfOutputDirectory.string();
 }
 
-void CtfBundleOutput::start()
+void CtfBundleOutput::prepareOutput()
 {
-  abort();
   validateExistingOutputTypes(m_ctfOutputDirectory, m_traceCompassXmlPath);
   removeOutputDirectory(m_ctfOutputDirectory);
   removeOutputFile(m_traceCompassXmlPath);
   createOutputDirectory(m_ctfOutputDirectory);
-  m_active = true;
-  try {
-    const auto traceUuid = CtfUuid::randomV4();
-    m_encoder.start(m_ctfOutputDirectory, traceUuid);
-  } catch (...) {
-    abort();
-    throw;
-  }
 }
 
-void CtfBundleOutput::stop()
+void CtfBundleOutput::startOutput()
 {
-  if (!m_active) {
-    return;
-  }
-  try {
-    m_encoder.stop();
-    const auto* metadata = m_encoder.completedMetadata();
-    // A successful encoder stop always publishes its completed metadata model.
-    assert(metadata != nullptr);
-    finalizeTraceCompassXml(*metadata);
-    m_active = false;
-  } catch (...) {
-    abort();
-    throw;
-  }
+  const auto traceUuid = CtfUuid::randomV4();
+  m_encoder.start(m_ctfOutputDirectory, traceUuid);
+}
+
+void CtfBundleOutput::stopOutput()
+{
+  m_encoder.stop();
+  const auto* metadata = m_encoder.completedMetadata();
+  // A successful encoder stop always publishes its completed metadata model.
+  assert(metadata != nullptr);
+  finalizeTraceCompassXml(*metadata);
 }
 
 void CtfBundleOutput::finalizeTraceCompassXml(const CtfMetadataModel& metadata)
@@ -332,21 +316,13 @@ void CtfBundleOutput::omitTraceCompassXml(std::size_t clockDomainCount)
   });
 }
 
-void CtfBundleOutput::abort()
+void CtfBundleOutput::abortOutput()
 {
   m_encoder.abort();
-  if (m_active) {
-    removeIncompleteOutputs(m_ctfOutputDirectory, m_traceCompassXmlPath);
-    m_active = false;
-  }
+  removeIncompleteOutputs(m_ctfOutputDirectory, m_traceCompassXmlPath);
 }
 
-void CtfBundleOutput::writeEvent(const TraceEvent& event)
+void CtfBundleOutput::writeOutput(const TraceEvent& event)
 {
-  try {
-    m_encoder.writeEvent(event);
-  } catch (...) {
-    abort();
-    throw;
-  }
+  m_encoder.writeEvent(event);
 }

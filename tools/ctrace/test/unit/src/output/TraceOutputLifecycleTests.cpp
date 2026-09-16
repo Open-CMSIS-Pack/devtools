@@ -37,6 +37,66 @@ protected:
   }
 };
 
+TEST(CtraceUnitTests, testTraceOutputOwnsBackendTransaction)
+{
+  std::vector<std::string> calls;
+  TestTraceOutput output(calls);
+
+  output.writeEvent(softwarePacket(1U));
+  output.stop();
+  output.abort();
+  output.start();
+  output.writeEvent(softwarePacket(2U));
+  output.start();
+  output.stop();
+  output.stop();
+  output.abort();
+  output.writeEvent(softwarePacket(3U));
+
+  EXPECT_EQ(calls, (std::vector<std::string>{"start", "write", "abort", "start", "stop"}));
+}
+
+TEST(CtraceUnitTests, testTraceOutputCleansUpFailuresAfterActivation)
+{
+  TestTraceOutput prepareFailure(TestTraceOutputFailure::Prepare);
+  EXPECT_THROW(prepareFailure.start(), std::runtime_error);
+  EXPECT_FALSE(prepareFailure.aborted());
+
+  TestTraceOutput startFailure(TestTraceOutputFailure::Start);
+  EXPECT_THROW(startFailure.start(), std::runtime_error);
+  EXPECT_TRUE(startFailure.aborted());
+
+  TestTraceOutput writeFailure(TestTraceOutputFailure::Write);
+  writeFailure.start();
+  EXPECT_THROW(writeFailure.writeEvent(softwarePacket(1U)), std::runtime_error);
+  EXPECT_TRUE(writeFailure.aborted());
+
+  TestTraceOutput stopFailure(TestTraceOutputFailure::Stop);
+  stopFailure.start();
+  EXPECT_THROW(stopFailure.stop(), std::runtime_error);
+  EXPECT_TRUE(stopFailure.aborted());
+}
+
+TEST(CtraceUnitTests, testTraceOutputKeepsFailedAbortRetryable)
+{
+  TestTraceOutput output;
+  output.start();
+  output.setFailure(TestTraceOutputFailure::Abort);
+  EXPECT_THROW(output.abort(), std::runtime_error);
+  EXPECT_FALSE(output.aborted());
+  output.setFailure(TestTraceOutputFailure::None);
+  EXPECT_NO_THROW(output.abort());
+  EXPECT_TRUE(output.aborted());
+
+  std::vector<std::string> destructorCalls;
+  {
+    TestTraceOutput destructorOutput(destructorCalls);
+    destructorOutput.start();
+    destructorOutput.setFailure(TestTraceOutputFailure::Abort);
+  }
+  EXPECT_EQ(destructorCalls, (std::vector<std::string>{"start", "abort"}));
+}
+
 TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesIndependentOutputs)
 {
   const TemporaryTestPath temporaryPath("ctrace-output-lifecycle-test.csv");

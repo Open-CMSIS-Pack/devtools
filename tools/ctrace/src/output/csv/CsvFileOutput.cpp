@@ -97,11 +97,7 @@ CsvFileOutput::CsvFileOutput(std::filesystem::path outputFile, TraceSelection se
 
 CsvFileOutput::~CsvFileOutput()
 {
-  try {
-    CsvFileOutput::abort();
-  } catch (...) {
-    (void)0;
-  }
+  abortNoexcept();
 }
 
 std::string_view CsvFileOutput::backendName() const noexcept
@@ -114,27 +110,27 @@ std::string CsvFileOutput::targetPath() const
   return m_outputFile.string();
 }
 
-void CsvFileOutput::start()
+void CsvFileOutput::prepareOutput()
 {
-  abort();
   const auto& outputPath = m_outputFile;
   removeExistingCsv(outputPath);
   createParentDirectory(outputPath);
-  m_active = true;
-  m_stream = m_streamFactory(outputPath);
+}
+
+void CsvFileOutput::startOutput()
+{
+  m_stream = m_streamFactory(m_outputFile);
   if (m_stream == nullptr || !m_stream->output()) {
-    abort();
-    throw std::runtime_error("Failed to open CSV output " + outputPath.string());
+    throw std::runtime_error("Failed to open CSV output " + m_outputFile.string());
   }
 
   m_stream->output() << CsvRowMapper::header() << "\n";
   if (!m_stream->output()) {
-    abort();
     throw std::runtime_error("Failed to write CSV output " + m_outputFile.string());
   }
 }
 
-void CsvFileOutput::stop()
+void CsvFileOutput::stopOutput()
 {
   if (m_stream != nullptr) {
     m_stream->close();
@@ -142,22 +138,17 @@ void CsvFileOutput::stop()
   const auto failed = m_stream != nullptr && !m_stream->output();
   m_stream.reset();
   if (failed) {
-    abort();
     throw std::runtime_error("Failed to write CSV output " + m_outputFile.string());
   }
-  m_active = false;
 }
 
-void CsvFileOutput::abort()
+void CsvFileOutput::abortOutput()
 {
   m_stream.reset();
-  if (m_active) {
-    removeExistingCsv(m_outputFile);
-    m_active = false;
-  }
+  removeExistingCsv(m_outputFile);
 }
 
-void CsvFileOutput::writeEvent(const TraceEvent& event)
+void CsvFileOutput::writeOutput(const TraceEvent& event)
 {
   if (m_stream == nullptr) {
     return;

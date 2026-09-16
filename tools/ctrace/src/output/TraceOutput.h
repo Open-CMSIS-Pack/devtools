@@ -42,16 +42,93 @@ public:
   }
 
   /** @brief Prepares a new final output target before the first event. */
-  virtual void start() {}
+  void start();
   /** @brief Flushes and completes the active output target after the last event. */
-  virtual void stop() {}
+  void stop();
   /** @brief Discards an incomplete active output without committing partial data. */
-  virtual void abort() = 0;
+  void abort();
   /**
    * @brief Writes one event synchronously in decode order.
    * @param event Decoded event whose lifetime extends through this call.
    */
-  virtual void writeEvent(const TraceEvent& event) = 0;
+  void writeEvent(const TraceEvent& event);
+
+protected:
+  /** @brief Validates and prepares targets before this output owns incomplete artifacts. */
+  virtual void prepareOutput() = 0;
+  /** @brief Opens backend resources after the output becomes active. */
+  virtual void startOutput() = 0;
+  /** @brief Flushes and commits backend resources while the output remains active. */
+  virtual void stopOutput() = 0;
+  /** @brief Releases backend resources and removes incomplete artifacts. */
+  virtual void abortOutput() = 0;
+  /** @brief Writes one event to an active backend. */
+  virtual void writeOutput(const TraceEvent& event) = 0;
+
+  /** @brief Aborts an active output while suppressing every cleanup exception. */
+  void abortNoexcept() noexcept;
+
+private:
+  bool m_active = false;
 };
+
+inline void TraceOutput::start()
+{
+  abort();
+  prepareOutput();
+  m_active = true;
+  try {
+    startOutput();
+  } catch (...) {
+    abort();
+    throw;
+  }
+}
+
+inline void TraceOutput::stop()
+{
+  if (!m_active) {
+    return;
+  }
+  try {
+    stopOutput();
+  } catch (...) {
+    abort();
+    throw;
+  }
+  m_active = false;
+}
+
+inline void TraceOutput::abort()
+{
+  if (!m_active) {
+    return;
+  }
+  abortOutput();
+  m_active = false;
+}
+
+inline void TraceOutput::writeEvent(const TraceEvent& event)
+{
+  if (!m_active) {
+    return;
+  }
+  try {
+    writeOutput(event);
+  } catch (...) {
+    abort();
+    throw;
+  }
+}
+
+inline void TraceOutput::abortNoexcept() noexcept
+{
+  try {
+    abort();
+  } catch (...) {
+    // Destruction cannot report cleanup failures safely.
+    (void)0;
+  }
+}
 
 #endif  // CTRACE_SRC_OUTPUT_TRACEOUTPUT_H

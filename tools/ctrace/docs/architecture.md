@@ -236,8 +236,10 @@ Because the supported Trace Compass reader cannot reliably combine multiple cloc
 valid CTF bundle but omits any stale/new companion XML and reports one Warning. When selected, the legacy unformatted
 CTF path keeps its eager `stream_0`, `swo_clock`, original event context, and single-clock XML behavior.
 
-Outputs use an explicit `start`, `writeEvent`, `stop`, and `abort` lifecycle. A successful backend can finish even if
-another backend fails. Decode or finalization failures trigger cleanup of incomplete artifacts.
+Outputs use an explicit `start`, `writeEvent`, `stop`, and `abort` lifecycle. `TraceOutput` owns the active state and
+failure cleanup; concrete backends implement only the protected prepare, start, write, stop, and abort hooks. A
+successful backend can finish even if another backend fails. Decode or finalization failures trigger cleanup of
+incomplete artifacts.
 
 ## Diagnostics and failure semantics
 
@@ -284,8 +286,9 @@ backend that can represent the event. Tests should cover semantic mapping separa
 
 ### Add an output backend
 
-Implement `TraceOutput`, define backend-specific preflight requirements, and add it to the output plan and lifecycle.
-Do not introduce backend-specific state into the decode pipeline or event model.
+Derive from `TraceOutput`, implement its backend hooks, define backend-specific preflight requirements, and add it to
+the output plan and lifecycle. The concrete destructor must call `abortNoexcept()` while its backend members are still
+alive. Do not introduce backend-specific state into the decode pipeline or event model.
 
 ## Test architecture
 
