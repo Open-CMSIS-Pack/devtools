@@ -33,7 +33,7 @@ public:
   void append(const TraceEvent& event) override;
   /** @brief Reports skipped input payload without assigning a synthetic trace route. */
   void appendByteSkip(const TraceByteSkip& skipped) override;
-  /** @brief Returns the number of events observed during decoding. */
+  /** @brief Returns the number of trace/diagnostic records observed before output filtering. */
   std::uint64_t eventCount() const;
   /** @brief Completes deferred issue reporting. */
   void finishIssues();

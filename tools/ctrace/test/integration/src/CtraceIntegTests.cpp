@@ -722,6 +722,9 @@ TEST_F(CtraceIntegTests, ReportsUnassignedFormatterOnlyInputWithoutInventingRout
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Unassigned", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
+  expectContains(result.stderrText, "[info] processed 16 input bytes in ");
+  expectContains(result.stderrText, "); trace/diagnostic records: 1\n");
+  expectNotContains(result.stderrText, "[info] decoded ");
   expectContains(result.stderrText,
                  "[info] 15 bytes skipped due to missing source ID; first formatter group at raw offset 0");
   expectNotContains(result.stderrText, "no hardware ITM SYNC");
@@ -948,7 +951,8 @@ TEST_F(CtraceIntegTests, ConvertsCapturedDwtEventCountersAcrossOverflow)
   const auto result = run({"ctrace", workDirectory().string(), "--target", "trace-event", "--all"});
   EXPECT_EQ(result.exitCode, 0) << result.stderrText;
   expectContains(result.stderrText, "[warning] first overflow occurred at cycle timestamp 796135");
-  expectContains(result.stderrText, "[info] decoded 8599 events from 19999 bytes");
+  expectContains(result.stderrText, "[info] processed 19999 input bytes in ");
+  expectContains(result.stderrText, "); trace/diagnostic records: 8599\n");
 
   const auto csv = readTestTextFile(workDirectory() / "trace-event.SWO.csv");
   EXPECT_EQ(countOccurrences(csv, ",,event,0,"), 5797U);
@@ -1130,7 +1134,9 @@ TEST_F(CtraceIntegTests, GeneratesRequestedOutputsAfterDecoderError)
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Minimal", "--all"});
   EXPECT_EQ(1, result.exitCode);
-  expectContains(result.stderrText, "[info] decoded 1 events from 2 bytes");
+  expectContains(result.stderrText, "[info] processed 2 input bytes in ");
+  expectContains(result.stderrText, "); trace/diagnostic records: 1\n");
+  expectNotContains(result.stderrText, "[info] decoded ");
 
   const auto csvPath = workDirectory() / "Minimal.SWO.csv";
   expectNonEmptyFile(csvPath);
@@ -1539,7 +1545,8 @@ TEST_F(CtraceIntegTests, RecoversAtHardwareSyncAfterResetDiscontinuity)
   expectContains(result.stderrText, "[error] invalid ITM packet sequence at raw offset 10");
   expectContains(result.stderrText,
                  "[error] 116 raw bytes from raw offset 12 could not be decoded before the next hardware ITM sync");
-  expectContains(result.stderrText, "[info] decoded 52374 events from 131071 bytes");
+  expectContains(result.stderrText, "[info] processed 131071 input bytes in ");
+  expectContains(result.stderrText, "); trace/diagnostic records: 52374\n");
   expectNotContains(result.stderrText, "OpenCSD made no progress");
   expectNotContains(result.stderrText, "OpenCSD made no decode progress");
   expectNotContains(result.stderrText, "decode aborted");

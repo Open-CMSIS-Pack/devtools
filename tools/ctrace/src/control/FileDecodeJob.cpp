@@ -81,7 +81,7 @@ private:
   bool m_eof = false;
 };
 
-/** @brief Formats event count, input size, elapsed time, and throughput. */
+/** @brief Formats input size, elapsed time, throughput, and the trace/diagnostic record count. */
 static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady_clock::duration elapsed)
 {
   const auto seconds = std::chrono::duration<double>(elapsed).count();
@@ -89,8 +89,8 @@ static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady
   const auto mebibytesPerSecond = seconds > 0.0 ? mebibytes / seconds : 0.0;
 
   std::ostringstream out;
-  out << "decoded " << decode.eventsOut << " events from " << decode.bytesIn << " bytes in " << std::fixed
-      << std::setprecision(3) << seconds << " s (" << std::setprecision(2) << mebibytesPerSecond << " MiB/s)";
+  out << "processed " << decode.bytesIn << " input bytes in " << std::fixed << std::setprecision(3) << seconds
+      << " s (" << std::setprecision(2) << mebibytesPerSecond << " MiB/s); trace/diagnostic records: " << decode.eventsOut;
   return out.str();
 }
 
