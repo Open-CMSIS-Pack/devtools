@@ -7,9 +7,9 @@ default:
         - -Wno-pragma-pack
         - -Wno-parentheses-equality
         - -Wno-license-management
-        - -funwind-tables
       C:
         - -std=gnu11
+        - -funwind-tables
       ASM:
         - -masm=auto
       Link:
@@ -38,7 +38,6 @@ default:
         - -fomit-frame-pointer
         - -ffunction-sections
         - -fdata-sections
-        - -funwind-tables
       C:
         - -std=gnu11
       Link:
