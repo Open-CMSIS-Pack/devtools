@@ -788,8 +788,10 @@ set (ELF2BIN --bin --output "${OUT_DIR}/${BIN_FILE}" "${OUT_DIR}/$<TARGET_PROPER
 set (LD_MAP --map --list "${OUT_DIR}/${LD_MAP_FILE}")
 
 # Set CMake variables for toolchain initialization
-set(CMAKE_C_FLAGS_INIT "${CC_CPU}")
-set(CMAKE_CXX_FLAGS_INIT "${CXX_CPU}")
+list(JOIN CPP_OPTIONS_C " " CPP_OPTIONS_C_STR)
+list(JOIN CPP_OPTIONS_CXX " " CPP_OPTIONS_CXX_STR)
+set(CMAKE_C_FLAGS_INIT "${CC_CPU} ${CPP_OPTIONS_C_STR}")
+set(CMAKE_CXX_FLAGS_INIT "${CXX_CPU} ${CPP_OPTIONS_CXX_STR}")
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_CROSSCOMPILING TRUE)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
@@ -803,10 +805,6 @@ set(CMAKE_LINKER "${LD}")
 set(CMAKE_AR "${AR}")
 set(CMAKE_OBJCOPY "${OC}")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeASM")
-
-# Set CMake flags for compiler identification
-set(CMAKE_C_FLAGS_INIT ${CC_CPU})
-set(CMAKE_CXX_FLAGS_INIT ${CXX_CPU})
 
 # Set CMake ASM flags for dependency rules generation
 set(CMAKE_DEPFILE_FLAGS_ASM "-MD -MT <DEP_TARGET> -MF <DEP_FILE>")
