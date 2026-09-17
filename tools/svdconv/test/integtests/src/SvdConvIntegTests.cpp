@@ -7,6 +7,7 @@
 #include "SvdConvTestUtils.h"
 
 #include "SVDConv.h"
+#include "SfrccInterface.h"
 #include "ErrLog.h"
 
 #include <map>
@@ -113,6 +114,50 @@ TEST_F(SvdConvIntegTests, CheckOption_n) {
   outNameTest += ".sfd";
   ASSERT_TRUE(RteFsUtils::Exists(outNameTest));
 }
+
+TEST_F(SvdConvIntegTests, CheckSfdGeneration) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/sfdGeneration";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=sfd", "--create-folder" });
+
+  SvdConv svdConv;
+  ASSERT_EQ(0, svdConv.Check(args, args, nullptr));
+
+  string sfd;
+  ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/option_n.sfd", sfd));
+  EXPECT_FALSE(sfd.empty());
+}
+
+#ifndef _WIN32
+TEST_F(SvdConvIntegTests, CheckSfrUnsupportedPlatform) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/sfrUnsupportedPlatform";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=sfr", "--create-folder" });
+
+  SvdConv svdConv;
+  EXPECT_EQ(2, svdConv.Check(args, args, nullptr));
+
+  string messages;
+  for(const auto& msg : ErrLog::Get()->GetLogMessages()) {
+    messages += msg;
+  }
+  EXPECT_NE(string::npos, messages.find("M133"));
+  EXPECT_NE(string::npos, messages.find("SFR generation is only supported on Windows (requires SfrCC2.exe)."));
+  EXPECT_FALSE(RteFsUtils::Exists(testOut + "/option_n.sfr"));
+}
+
+TEST_F(SvdConvIntegTests, CheckSfrCompileUnsupportedPlatform) {
+  SvdConv svdConv; // Initialize the diagnostic message table.
+  SfrccInterface sfrcc;
+  EXPECT_FALSE(sfrcc.Compile("unused.sfd"));
+}
+#endif
 
 TEST_F(SvdConvIntegTests, CheckSauNumRegions_Ok) {
   const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/sauConfig/SSE300_ok.svd";
