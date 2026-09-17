@@ -41,6 +41,7 @@
   CPUTYPE(CA15             , "CA15"     )
   CPUTYPE(CA17             , "CA17"     )
   CPUTYPE(CA53             , "CA53"     )
+  CPUTYPE(CA55             , "CA55"     )
   CPUTYPE(CA57             , "CA57"     )
   CPUTYPE(CA72             , "CA72"     )
   CPUTYPE(OTHER            , "OTHER"    )
