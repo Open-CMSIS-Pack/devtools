@@ -76,6 +76,8 @@ protected:
    * @param event Event evaluated against the configured selection.
    */
   void writeOutput(const TraceEvent& event) override;
+  /** @brief Retains skipped-byte accounting regardless of event or stream filters. */
+  void writeByteSkipOutput(const TraceByteSkip& skipped) override;
 
 private:
   std::filesystem::path m_outputFile;

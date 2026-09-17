@@ -99,7 +99,8 @@ The expected row counts, excluding the CSV header, are `stream 01: 213 semantic 
 `stream 02: 312 semantic rows`. These counterchecks inspect the generated output; the checked-in reconstructed capture
 remains the canonical test artifact.
 
-The executable integration test also decodes the canonical combined capture directly. It requires 213 CSV rows on
-Trace Bus ID 1 and 312 on ID 2, no row or CTF file for ID-0 padding, one CTF stream per active ID, and two independent
-clock declarations for the 240 MHz CM4 and 480 MHz CM7 routes. Because those clock domains have no specified common
-origin, the valid CTF bundle deliberately has no companion Trace Compass XML and reports that limitation once.
+The executable integration test also decodes the canonical combined capture directly. It requires 213 payload CSV
+rows on Trace Bus ID 1 and 312 on ID 2. ID-0 padding is recorded as skipped-byte CSV Info without creating a decoded
+route or CTF file. The output has one CTF stream per active ID and two independent clock declarations for the 240 MHz
+CM4 and 480 MHz CM7 routes. Because those clock domains have no specified common origin, the valid CTF bundle
+deliberately has no companion Trace Compass XML and reports that limitation once.

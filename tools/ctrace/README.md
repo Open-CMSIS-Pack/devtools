@@ -32,7 +32,6 @@ Input and output files share a solution-set base name:
 .trace/
   Board.ctrace-run.yml
   Board.SWO.raw
-  Board.TB.raw              # optional Trace Buffer input
 ```
 
 For `ctrace .trace --target Board --all`, the supported input produces:
@@ -46,15 +45,43 @@ For `ctrace .trace --target Board --all`, the supported input produces:
   Board.SWO.traceanalysis.xml  # when retained streams use one clock domain; views are data-driven
 ```
 
-Without an explicit format declaration, ctrace preserves the legacy SWO-only
-selection and decodes `Board.SWO.raw` as unformatted ITM. The ctrace-private
-provisional root field `trace-format: unformatted | formatted` makes SWO, TB,
-and named-TB inputs eligible under the declared byte format; discovery then
-requires exactly one eligible input. The field does not identify a particular
-file. Formatted input currently requires complete 16-byte memory-aligned
-CoreSight frames; there is no public `trace-framing` field yet. See the
+Discovery requires exactly one `Board.SWO.raw`, `Board.TB.raw`, or
+`Board.TB_<name>.raw` input. Without a format declaration, SWO defaults to
+unformatted ITM and TB or named-TB defaults to formatted CoreSight input.
+Missing or null `trace-format` uses this channel-based default; an explicit
+value overrides it for the selected input:
+
+```yaml
+ctrace-run:
+  trace-format: formatted  # formatted or unformatted
+  # ctrace-setup and ctrace-refs follow here
+```
+
+This optional, ctrace-private provisional field does not select a file or
+resolve multiple candidates. The channel-based default is a heuristic, not
+byte-content detection. Formatted input currently requires complete 16-byte
+memory-aligned CoreSight frames; there is no public `trace-framing` field yet. See the
 [constraints](docs/constraints.md) for the full discovery, routing, and
 compatibility contract.
+
+## Incomplete captures
+
+Formatted input accounts for payload skipped because its source ID is missing, NULL, reserved, or unconfigured,
+and for initial protocol bytes skipped while seeking hardware synchronization. Each accounting record is CLI Info and a
+CSV `info` row, retained regardless of type or stream filters. `info` is an input annotation, not a new `--type`
+selector. The row has no time; `stream` contains the observed formatter ID, including `0` or `127`, or is empty when
+no ID is known. These observations do not create decoded routes.
+
+The note counts **deformatted payload bytes**, not formatter control bytes or differences between raw offsets. Its
+offset identifies the first formatter output group. No raw bytes are rewritten and no synchronization is invented.
+Before synchronization, the skipped bytes cannot be classified as ITM software packets or DWT hardware packets
+(including exception trace), so the note uses the neutral wording `bytes skipped due to missing SYNC`.
+This accounting covers formatter skips and initial ITM synchronization, not every possible decoder-recovery loss.
+
+If a configured formatted route receives bytes but never reaches a real ITM hardware synchronization, ctrace reports
+an Error at end of input and exits non-zero. Completed diagnostic and decoded outputs are retained, including data
+from healthy routes. Continuing past an unassigned prefix therefore does not guarantee decodable payload. Genuine
+framing errors still abort the input and remove incomplete outputs.
 
 ## Build and test
 

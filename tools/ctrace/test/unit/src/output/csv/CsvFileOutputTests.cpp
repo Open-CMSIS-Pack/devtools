@@ -116,6 +116,35 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
       << "the error selector must include warning-severity decoder issue packets";
 }
 
+TEST(CtraceUnitTests, testCsvFileOutputRetainsAllByteSkipReasonsOutsideSelection)
+{
+  const TemporaryTestPath temporaryPath("ctrace-csv-byte-skip-test.csv");
+  CsvFileOutput output(temporaryPath.path(), TraceSelection{{"itm"}, {7U}});
+  output.writeByteSkip({0U, 9U});
+  EXPECT_FALSE(std::filesystem::exists(temporaryPath.path()));
+  output.start();
+  output.writeByteSkip({16U, 5U});
+  output.writeByteSkip({32U, 6U, TraceByteSkipReason::NullSourceId, 0U});
+  output.writeByteSkip({48U, 7U, TraceByteSkipReason::ReservedSourceId, 127U});
+  output.writeByteSkip({64U, 8U, TraceByteSkipReason::UnconfiguredSourceId, 42U});
+  output.writeByteSkip({80U, 9U, TraceByteSkipReason::MissingSync, 1U});
+  output.writeEvent(onStream(softwarePacket(1U, 1U, 'A'), 7U));
+  output.writeEvent(onStream(softwarePacket(1U, 1U, 'B'), 1U));
+  output.stop();
+  output.writeByteSkip({96U, 2U});
+
+  const auto lines = readTestLines(temporaryPath.path());
+  ASSERT_EQ(lines.size(), 7U);
+  EXPECT_EQ(lines[1], ",,info,,,,,5 bytes skipped due to missing source ID; first formatter group at raw offset 16");
+  EXPECT_EQ(lines[2], ",0,info,,,,,6 bytes skipped for null source ID 0; first formatter group at raw offset 32");
+  EXPECT_EQ(lines[3], ",127,info,,,,,7 bytes skipped for reserved source ID 127; "
+                      "first formatter group at raw offset 48");
+  EXPECT_EQ(lines[4], ",42,info,,,,,8 bytes skipped for unconfigured source ID 42; "
+                      "first formatter group at raw offset 64");
+  EXPECT_EQ(lines[5], ",1,info,,,,,9 bytes skipped due to missing SYNC; first formatter group at raw offset 80");
+  EXPECT_EQ(lines[6], ",7,itm,1,0x41,,,");
+}
+
 TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
 {
   const TemporaryTestPath temporaryPath("ctrace-csv-test.csv");

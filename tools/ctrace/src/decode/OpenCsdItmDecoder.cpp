@@ -37,9 +37,10 @@ public:
   /** @brief Creates a decoder implementation around the selected frontend and optional session factory. */
   OpenCsdItmDecoderImpl(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
                         OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory,
-                        OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdObserver)
+                        OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdObserver,
+                        OpenCsdSkippedBytesObserver skippedBytesObserver)
     : m_inputMode(inputMode),
-      m_collector(createCollector(routes, inputMode, elementSink))
+      m_collector(createCollector(routes, inputMode, elementSink, skippedBytesObserver))
   {
     m_errorController.setCallbackOrderSource([this] { return m_collector.reserveTransactionOrder(); });
     try {
@@ -54,7 +55,8 @@ public:
           };
         }
         m_session = std::make_unique<OpenCsdFormattedItmSession>(std::move(routes), m_collector, m_errorController,
-                                                                 m_collector, std::move(unsupportedTraceIdSink));
+                                                                 m_collector, std::move(unsupportedTraceIdSink),
+                                                                 std::move(skippedBytesObserver));
       } else {
         m_session = std::make_unique<OpenCsdItmSession>(m_collector, m_errorController);
       }
@@ -194,7 +196,8 @@ private:
 
   /** @brief Creates a fixed-route or channel-routed collector for the selected transport. */
   static OpenCsdPacketCollector createCollector(const std::vector<TraceRouteIdentity>& routes,
-                                                OpenCsdItmInputMode inputMode, OpenCsdTraceElementSink& elementSink)
+                                                OpenCsdItmInputMode inputMode, OpenCsdTraceElementSink& elementSink,
+                                                OpenCsdSkippedBytesObserver skippedBytesObserver)
   {
     if (routes.empty()) {
       throw std::invalid_argument("OpenCSD ITM decoding requires at least one normalized route");
@@ -205,7 +208,7 @@ private:
       }
       return OpenCsdPacketCollector(routes.front(), elementSink);
     }
-    return OpenCsdPacketCollector(routes, elementSink);
+    return OpenCsdPacketCollector(routes, elementSink, std::move(skippedBytesObserver));
   }
 
   /** @brief Reports whether the frontend is a CoreSight frame deformatter. */
@@ -726,6 +729,7 @@ private:
       drainFormattedPending();
     }
     closeUnresolvedFormattedRecoveries();
+    m_collector.reportUnsynchronizedFormattedRoutes();
     m_finished = true;
     m_result.bytesIn = static_cast<std::uint64_t>(m_traceIndex);
     return m_result;
@@ -964,9 +968,11 @@ private:
 
 OpenCsdItmDecoder::OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
                                      OpenCsdTraceElementSink& elementSink,
-                                     OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdObserver)
+                                     OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdObserver,
+                                     OpenCsdSkippedBytesObserver skippedBytesObserver)
   : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(std::move(routes), inputMode, elementSink,
-                                                   OpenCsdItmSessionFactory{}, std::move(unsupportedTraceIdObserver)))
+                                                   OpenCsdItmSessionFactory{}, std::move(unsupportedTraceIdObserver),
+                                                   std::move(skippedBytesObserver)))
 {
 }
 
@@ -974,7 +980,7 @@ OpenCsdItmDecoder::OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, Ope
                                      OpenCsdTraceElementSink& elementSink,
                                      const OpenCsdItmSessionFactory& sessionFactory)
   : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(std::move(routes), inputMode, elementSink, sessionFactory,
-                                                   OpenCsdUnsupportedTraceIdObserver{}))
+                                                   OpenCsdUnsupportedTraceIdObserver{}, OpenCsdSkippedBytesObserver{}))
 {
 }
 

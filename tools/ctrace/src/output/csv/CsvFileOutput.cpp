@@ -156,3 +156,8 @@ void CsvFileOutput::writeOutput(const TraceEvent& event)
 
   m_stream->output() << CsvRowMapper::row(event) << "\n";
 }
+
+void CsvFileOutput::writeByteSkipOutput(const TraceByteSkip& skipped)
+{
+  m_stream->output() << CsvRowMapper::byteSkipRow(skipped) << "\n";
+}

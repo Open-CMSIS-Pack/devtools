@@ -67,8 +67,11 @@ uint32_t events_discarded
 uint32_t packet_seq_num
 ```
 
-The timestamp fields use the stream class's clock mapping. Trace loss is represented by `TRACE_STATUS` events rather
-than the CTF `events_discarded` counter, which is currently zero.
+The timestamp fields use the stream class's clock mapping. Route-bound trace loss is represented by `TRACE_STATUS`
+events rather than the CTF `events_discarded` counter, which is currently zero. Formatter skips and initial ITM
+synchronization skips are separate byte-accounting Info annotations in CLI/CSV only. Their optional formatter ID
+identifies observed input, not a decoded CTF route or clock; this includes NULL and reserved IDs. Ctrace does not
+invent a CTF stream, timestamp, or `resync` event for these annotations.
 
 The optional `<solution-set>.<channel>.traceanalysis.xml` companion is stored next to the bundle. It is generated
 only when the completed metadata retains at least one stream and all retained streams reference one clock domain,
@@ -226,6 +229,11 @@ The status reason is:
 An overflow or data-loss boundary closes active exception and sleep visualization state. The unknown interval is
 therefore visible as a gap instead of being attributed to the previously active state. Status records remain point
 events in the standard CTF event table; the generated XML does not create a status timeline.
+
+A configured formatted route that receives payload but never commits a real ITM hardware sync reports a decoder
+Error at end of input. When selected for output, it follows the normal route-bound `decode_error` status path; it
+does not generate a `resync`. The command fails, but valid CTF output from healthy routes and selected diagnostic
+records is retained. A configured route with no received payload does not produce this error.
 
 ## Execution-state events
 

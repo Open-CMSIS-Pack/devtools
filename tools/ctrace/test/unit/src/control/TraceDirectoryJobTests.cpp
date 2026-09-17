@@ -67,7 +67,7 @@ static TraceRunInputDescriptor testInput(const std::filesystem::path& path, Trac
   const auto solutionSet = filename.substr(0U, channelSeparator);
   const auto configFile = path.parent_path() / (solutionSet + ".ctrace-run.yml");
   config.path = configFile.string();
-  return TraceRunDiscovery::resolveInput(CtraceRunMeta::fromConfig(config));
+  return TraceRunDiscovery::resolveInput(std::move(config));
 }
 
 /** @brief Supplies deterministic trace-run configurations to directory-job tests. */
@@ -130,7 +130,7 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
   const auto& root = temporaryPath.path();
   const auto traceDir = root / ".trace";
   writeTraceInputs(traceDir, {"Alpha", "Beta"});
-  writeTestFile(traceDir / "Alpha.TB_MTB.raw", "unsupported");
+  writeTestFile(traceDir / "Beta.TB_MTB.raw", "unselected");
   writeTestFile(traceDir / "Alpha.ER.raw", "unsupported");
 
   CliOptions options;
@@ -156,9 +156,9 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
       << "TraceDirectoryJob XML output name mismatch";
   ASSERT_TRUE(!std::filesystem::exists(traceDir / "Beta.SWO.csv"))
       << "TraceDirectoryJob should not process unselected target";
-  EXPECT_TRUE(diagnostics.containsContext("channel", "TB_MTB"));
+  EXPECT_FALSE(diagnostics.containsContext("channel", "TB_MTB"));
   EXPECT_TRUE(diagnostics.containsContext("channel", "ER"));
-  EXPECT_FALSE(std::filesystem::exists(traceDir / "Alpha.TB_MTB.csv"));
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Beta.TB_MTB.csv"));
   EXPECT_FALSE(std::filesystem::exists(traceDir / "Alpha.ER.csv"));
 }
 
@@ -459,7 +459,7 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   EXPECT_TRUE(diagnostics.containsMessage("second producer error"));
   EXPECT_TRUE(diagnostics.containsMessage("channel zero diagnostic"));
   EXPECT_TRUE(diagnostics.containsMessage("trace generation setup failed without a diagnostic message"));
-  EXPECT_TRUE(diagnostics.containsMessage("does not match ctrace-setup pname"));
+  EXPECT_FALSE(diagnostics.containsMessage("does not match ctrace-setup pname"));
   EXPECT_TRUE(diagnostics.containsMessage("skipping raw trace channel"));
   EXPECT_TRUE(diagnostics.containsContext("channel", "ER"));
   EXPECT_TRUE(diagnostics.containsMessage("no eligible raw trace input found"));
@@ -638,7 +638,7 @@ TEST(CtraceUnitTests, testInputSelectionAndPreflightNeverConstructDecoder)
   options.outputFormat = OutputFormat::All;
   const auto run = [&](const std::filesystem::path& configFile, TraceRunConfig config) {
     config.path = configFile.string();
-    auto input = TraceRunDiscovery::resolveInput(CtraceRunMeta::fromConfig(config));
+    auto input = TraceRunDiscovery::resolveInput(std::move(config));
     FileDecodeJob(options, std::move(input), diagnostics, factory).run();
   };
 

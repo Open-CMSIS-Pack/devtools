@@ -31,7 +31,9 @@ public:
 
   /** @brief Forwards one decoded event to all configured consumers. */
   void append(const TraceEvent& event) override;
-  /** @brief Returns the number of events observed during decoding. */
+  /** @brief Reports skipped input payload without assigning a synthetic trace route. */
+  void appendByteSkip(const TraceByteSkip& skipped) override;
+  /** @brief Returns the number of trace/diagnostic records observed before output filtering. */
   std::uint64_t eventCount() const;
   /** @brief Completes deferred issue reporting. */
   void finishIssues();

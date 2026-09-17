@@ -65,6 +65,11 @@ The `TraceEvent` boundary is the central design point. Before it, code handles b
 recovery, and Cortex-M state. After it, code sees backend-independent events in decode order and does not depend on
 OpenCSD types.
 
+Formatter-skipped payload and initial ITM synchronization skips follow a separate `TraceByteSkip` path from the
+OpenCSD adapter through `DecodePipeline` directly to `TraceEventSink::appendByteSkip` and `DecodeConsumers`. These
+input annotations bypass route-local Cortex-M interpretation: they carry an observed ID, if known, but no decoded
+event or timestamp. Consumers retain CSV `info` rows and report CLI Info; CTF does not encode these annotations.
+
 The similarly named decode types are consecutive pipeline stages, not interchangeable implementations of one decoder
 contract. `OpenCsdItmDecoder` decodes transport bytes, `CortexMStreamDecoder` routes normalized elements, and each
 `CortexMPostDecoder` reconstructs semantic events with help from `DwtPacketDecoder`. Common interfaces exist only at
@@ -75,8 +80,11 @@ there is deliberately no common base class for all decode stages.
 
 Input selection and route binding belong to `tracerun` and complete before decoder or output construction.
 The provisional, ctrace-private `trace-format` declaration describes effective capture bytes rather than target
-capability or file identity. This keeps format selection explicit while preserving legacy SWO-only discovery until
-the producer contract supplies an unambiguous input identity and format. Framing remains an internal decoder contract.
+capability or file identity. Discovery first selects exactly one SWO, TB, or named-TB input, independently of whether
+the format is declared. An explicit format wins; otherwise SWO defaults to `unformatted` and TB or named-TB to
+`formatted`. The selected format is resolved before `CtraceRunMeta` normalizes routes, so the decoder and route model
+use the same effective format. This channel-based heuristic does not inspect capture bytes or resolve ambiguous input
+selection. Framing remains an internal decoder contract.
 
 The [input constraints](constraints.md#input-format-framing-and-discovery) define the accepted declarations, defaults,
 file candidates, and framing limits. The [routing invariants](constraints.md#routing-invariants) define reference
@@ -110,6 +118,20 @@ lifecycle and issue reporter.
 
 ## Recovery after damaged trace
 
+For formatted input, the frame monitor counts skipped payload without a known source ID and payload assigned to
+NULL, reserved, or unconfigured IDs. Bounded accounting produces input annotations with the reason, observed ID
+when known, byte count, and first formatter output group's raw offset. Counts are deformatted payload bytes,
+excluding formatter control bytes; the offset is not the position of each discarded byte. The unassigned prefix
+is reported after an assigned group appears or at end of input; skipped-ID totals are reported at end of input.
+These Info records do not make the input fatal. No capture bytes are removed or rewritten by ctrace.
+
+An already identified formatted route can also discard initial ITM bytes while seeking its first hardware sync.
+The packet collector counts the deformatted bytes reported as `NOTSYNC`, rather than subtracting raw offsets across
+interleaved formatter groups. If the route later reaches a committed real sync, it emits one `MissingSync` byte-skip
+Info immediately before that sync, not a semantic warning or a manufactured sync. An existing route error/recovery
+interval suppresses duplicate initial-loss accounting. The input annotation retains the observed ID and bypasses
+output filters. This path covers initial formatted synchronization, not general SWO or malformed-packet recovery.
+
 Recoverable OpenCSD packet errors establish a discontinuity on the affected route at the reported raw-file offset.
 Callbacks before that offset are retained. Route-aware transaction buffering discards callbacks from the failing
 route at or after it while retaining callbacks from other routes in their original order. Error callbacks only
@@ -127,8 +149,14 @@ the stream supplies enough timing information again. A route that does not resyn
 unresolved at end of input. The issue remains part of the ordered `TraceEvent` stream, so diagnostics and enabled
 output backends observe the same recovery boundary.
 
-An error without a usable route, a deformatter error, failure to reset the route, repeated lack of decoder progress,
-or an unsuccessful bounded wait/flush operation aborts the current raw-file job and every active output.
+Initial ITM synchronization is tracked independently per formatted route. At end of input, a configured route that
+received payload but has no committed real hardware sync emits a route-bound `OpenCsdMissingSync` Error. A sync from
+a rolled-back transaction does not satisfy this check. The error retains healthy route output and completed
+diagnostic artifacts but makes the invocation fail. Routes with no received payload are not diagnosed as missing sync.
+
+Loss of a source ID after the initial prefix, an error without a usable route, a deformatter error, failure to reset
+the route, repeated lack of decoder progress, or an unsuccessful bounded wait/flush operation aborts the current
+raw-file job and every active output.
 
 ## Suggested code-reading path
 
@@ -195,6 +223,10 @@ and quality state. The private route ID distinguishes even routes without an ATB
 stream number. This allows diagnostics and backends to make independent decisions without reconstructing decoder
 state.
 
+`TraceByteSkip` is deliberately separate from `TraceEvent`: it carries a formatter-group offset, skipped payload-byte
+count, reason, and optional observed ID. An observed ID may be NULL or reserved; it must not be turned into a decoded
+route or assigned an invented clock for output convenience.
+
 ### Output
 
 | Module | Responsibility |
@@ -207,7 +239,7 @@ Output requirements are evaluated per backend and selected route. For example, m
 active route may disable CTF while an independent CSV output remains valid; metadata on a route excluded by the
 stream filter is not required. `--all` therefore does not make the backends share failure state unnecessarily.
 
-CSV writes one combined file in semantic callback order. `CtfBundleOutput` owns a bundle-local metadata model and
+CSV writes one combined file in decode callback order. `CtfBundleOutput` owns a bundle-local metadata model and
 lazily creates a stream writer for each formatted route that emits selected events. Representation changes stay in
 the backends: for example, CSV retains a DWT/PMU counter mask in one row while CTF expands it into individual records.
 
@@ -221,10 +253,11 @@ The [CTF profile](ctf-format.md) defines event schemas, metadata, clock mappings
 [XML projection](ctf-format.md#generated-trace-compass-analysis). Cross-backend compatibility and failure rules belong
 to the [output constraints](constraints.md#observable-behavior-and-output-safety).
 
-Outputs use an explicit `start`, `writeEvent`, `stop`, and `abort` lifecycle. `TraceOutput` owns the active state and
-failure cleanup; concrete backends implement only the protected prepare, start, write, stop, and abort hooks. A
-successful backend can finish even if another backend fails. Decode or finalization failures trigger cleanup of
-incomplete artifacts.
+Outputs use an explicit `start`, `writeEvent` / `writeByteSkip`, `stop`, and `abort` lifecycle. `TraceOutput`
+owns the active state and common write-failure cleanup; concrete backends implement the protected lifecycle hooks.
+The byte-skip hook defaults to no output, as required by CTF; CSV implements it independently of event filters.
+A successful backend can finish even if another backend fails. Fatal decode or finalization failures trigger cleanup
+of incomplete artifacts.
 
 ## Diagnostics and failure semantics
 
@@ -235,6 +268,13 @@ without necessarily preventing the decoding of otherwise valid trace input.
 Decoder issue packets remain part of the event stream. `DecodeConsumers` reports every issue to stderr independently
 of output filters and forwards all events to the backends. The backends apply stream and type selection internally;
 selected issues become CSV error rows or CTF trace-status events. Repeated issues are not silently collapsed.
+
+Byte-skip annotations are non-failing Info, not synchronization events. CSV uses `type=info`, a descriptive note,
+the observed formatter ID in `stream` when known, and empty `cycles`, `source`, `value`, `pc`, and `address` fields.
+These rows bypass both type and stream filters; `info` is not a new selectable event type. CTF ignores them instead
+of creating routes or clocks, and CLI Info remains visible in CTF-only mode. The existing once-per-ID unsupported
+source warning remains separate from byte accounting. A route-bound missing-sync Error follows ordinary output
+selection but always contributes to command failure; its text does not repeat the byte count already reported as Info.
 
 An invocation-wide diagnostic sink aggregates failures while other solution sets continue where possible, then
 determines the final process status. Errors are rendered as `error` even when their impact causes a non-zero exit

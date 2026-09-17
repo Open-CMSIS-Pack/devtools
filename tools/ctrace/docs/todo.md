@@ -16,7 +16,7 @@
       [vscode-cmsis-debugger #1150](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/1150) and
       [devtools #2573](https://github.com/Open-CMSIS-Pack/devtools/issues/2573): standardize selected raw-input identity
       plus effective byte format/framing in the CMSIS-Toolbox trace specification, then migrate the provisional global
-      `trace-format` reader contract and producer output deliberately.
+      `trace-format` reader contract, channel-based format defaults, and producer output deliberately.
 - [ ] Correct the CMSIS-Toolbox CSV schema from the obsolete seventh-column name `offset` to the implemented
       `address` name.
 - [ ] Support FSYNC and FSYNC+HSYNC formatted input after a public framing field is specified.

@@ -39,7 +39,7 @@ set(fixture_entries
   "Blinky+Arm/expected/Blinky+Arm.ctf/stream_0|2054d43163cf1ff8e921be92b397469e2eb75fb55f4f81c08c20382f38918ef6|65536"
   "TB-Trace/Blinky+Arm.TB.raw|aab49e56a07783b984fa7c6faeea101a51141423e66ba043dbd8d30702012639|4096"
   "TB-Trace/Blinky+Arm.ctrace-run.yml|19efd6f35a647f1e5fb73f71ffafa867278d693a7114e3861a43309ebf8f8c4a|3080"
-  "TB-Trace/README.md|740249499f9cb5f9ef71a82357a6189b9274150775f16c0e9748f555abdab0d1|5739"
+  "TB-Trace/README.md|0309fe69fc34ce9d855516690af65a1eec269e2c4b064a399a7c059a1b89ec2d|5820"
   "TB-Trace/regenerate_tb_trace.py|8ce6ca54cedc216c04a03587b8388003a8ab0563e6c79c39ebf436d9bfcd0050|10687"
   "TB-Trace/split_tb_trace.py|0ce65b99a2c51b2978cf0b790c653f5172715a1fa86521da8088fbd851ef9347|5361"
   "formatted-synthetic/README.md|c881be35e8159b96036ba63171b644b503d10765ccfe8b4ef7cee312dfe571fb|3055"
