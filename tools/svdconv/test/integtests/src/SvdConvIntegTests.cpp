@@ -347,3 +347,98 @@ TEST_F(SvdConvIntegTests, CheckEnumComboWidthLimit) {
   EXPECT_NE(string::npos, sevenBitEdit);
   EXPECT_EQ(string::npos, buf.find("//    <combo>", sevenBitField));
 }
+
+struct VtorHeaderCase {
+  const char* name;
+  const char* cpu;
+  const char* xmlValue;
+  const char* expectedValue;
+};
+
+class SvdConvVtorHeaderTests : public SvdConvIntegTests, public WithParamInterface<VtorHeaderCase> {
+};
+
+TEST_P(SvdConvVtorHeaderTests, CheckVtorPresent) {
+  const auto& param = GetParam();
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/vtorPresent/" + param.name;
+  const string inFile = testOut + "/VtorPresence.svd";
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(testOut));
+
+  const string xmlValue = param.xmlValue;
+  const string vtorElement = xmlValue.empty() ? "" : "<vtorPresent>" + xmlValue + "</vtorPresent>";
+  const string svd = string(R"(<?xml version="1.0" encoding="utf-8"?>
+<device schemaVersion="1.3">
+  <name>VtorPresence</name>
+  <version>1.0</version>
+  <description>VTOR header configuration test.</description>
+  <cpu>
+    <name>)") + param.cpu + R"(</name>
+    <revision>r0p0</revision>
+    <endian>little</endian>
+    <mpuPresent>false</mpuPresent>
+    <fpuPresent>false</fpuPresent>
+    )" + vtorElement + R"(
+    <nvicPrioBits>2</nvicPrioBits>
+    <vendorSystickConfig>false</vendorSystickConfig>
+  </cpu>
+  <addressUnitBits>8</addressUnitBits>
+  <width>32</width>
+  <size>32</size>
+  <access>read-write</access>
+  <resetValue>0</resetValue>
+  <resetMask>0xFFFFFFFF</resetMask>
+  <peripherals>
+    <peripheral>
+      <name>TEST</name>
+      <description>Test peripheral.</description>
+      <baseAddress>0x40000000</baseAddress>
+      <addressBlock><offset>0</offset><size>4</size><usage>registers</usage></addressBlock>
+      <interrupt><name>TEST</name><description>Test interrupt.</description><value>0</value></interrupt>
+      <registers>
+        <register><name>DATA</name><description>Test data.</description><addressOffset>0</addressOffset></register>
+      </registers>
+    </peripheral>
+  </peripherals>
+</device>
+)";
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(inFile, svd));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=header" });
+  SvdConv svdConv;
+  ASSERT_EQ(0, svdConv.Check(args, args, nullptr));
+
+  string header;
+  ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/VtorPresence.h", header));
+  ASSERT_FALSE(header.empty());
+  const string expectedValue = param.expectedValue;
+  if(expectedValue.empty()) {
+    EXPECT_EQ(string::npos, header.find("__VTOR_PRESENT"));
+  }
+  else {
+    const regex pattern(R"(#define[ \t]+__VTOR_PRESENT[ \t]+([0-9]+)\b)");
+    const auto matches = SvdConvTestUtils::FindRegex(header, pattern);
+    ASSERT_EQ(1U, matches.size());
+    EXPECT_EQ(expectedValue, matches.front()[1].str());
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(VtorPresent, SvdConvVtorHeaderTests,
+  Values(
+    VtorHeaderCase{ "CM33Default",    "CM33",    "",      "1" },
+    VtorHeaderCase{ "CM0PLUSDefault", "CM0PLUS", "",      "1" },
+    VtorHeaderCase{ "CM23Default",    "CM23",    "",      "1" },
+    VtorHeaderCase{ "CM33True",       "CM33",    "true",  "1" },
+    VtorHeaderCase{ "CM33False",      "CM33",    "false", "0" },
+    VtorHeaderCase{ "CM33One",        "CM33",    "1",     "1" },
+    VtorHeaderCase{ "CM33Zero",       "CM33",    "0",     "0" },
+    VtorHeaderCase{ "CM0PLUSTrue",    "CM0PLUS", "true",  "1" },
+    VtorHeaderCase{ "CM0PLUSFalse",   "CM0PLUS", "false", "0" },
+    VtorHeaderCase{ "CM0PLUSOne",     "CM0PLUS", "1",     "1" },
+    VtorHeaderCase{ "CM0PLUSZero",    "CM0PLUS", "0",     "0" },
+    VtorHeaderCase{ "CM0NoMacro",     "CM0",     "",      ""  },
+    VtorHeaderCase{ "CM1NoMacro",     "CM1",     "",      ""  },
+    VtorHeaderCase{ "CM3NoMacro",     "CM3",     "",      ""  }
+  ),
+  [](const TestParamInfo<VtorHeaderCase>& info) { return info.param.name; }
+);
