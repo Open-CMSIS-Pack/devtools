@@ -19,7 +19,8 @@ due to backward compatibility reasons. All newly developed/updated SVD files sho
   svdconv.exe [OPTION...] positional parameters
 
   -o, --outdir arg            Output directory
-      --generate arg          Generate header, partition or SDF/SFR file
+      --generate arg          Generate header, partition or SFD/SFR file
+                              (SFR: Windows only)
       --fields arg            Specify field generation:
                               enum/macro/struct/struct-ansic
       --suppress-path         Suppress inFile path on check output
@@ -43,6 +44,11 @@ due to backward compatibility reasons. All newly developed/updated SVD files sho
   -h, --help                  Print usage
 ```
 
+`--generate=sfr` is supported only on Windows and requires `SfrCC2.exe` from Keil MDK/uVision
+in the same directory as `svdconv.exe`. On Linux and macOS, SVDConv reports error M133 and
+returns exit code 2. The intermediate `.sfd` file may still be generated.
+Use `--generate=sfd` to generate SFD output on any supported platform.
+
 ## Return Codes
 
 SVDConv returns the following codes:
@@ -51,7 +57,7 @@ SVDConv returns the following codes:
 |------|--------------|---------|
 | 0 |  OK |  No action required. Validation and conversion performed without errors. |
 | 1 |  WARNINGS |  Warnings should be checked an possibly removed. The header file is created and could be used. |
-| 2 |  ERRORS |  Errors in the SVD description file. Important elements are missing and must be corrected. |
+| 2 |  ERRORS |  Errors during validation or output generation. Check the diagnostics and correct the input or output options. |
 | 3 |  Error in command line |  Check and correct the command line arguments. |
 
 ## Usage Examples
@@ -232,6 +238,7 @@ The following table shows the errors and warnings issued by svdconv.
 | M129 |  ERROR |  Option unknown: 'OPT' |  Check given option 'OPT'.|
 | M130 |  ERROR |  Cannot create file 'NAME' |  Check user rights.|
 | M132 |  ERROR |  SfrCC2 report: 'MSG' SfrCC2 report end." |  |
+| M133 |  ERROR |  SFR generation is only supported on Windows (requires SfrCC2.exe). | Generate SFR output on Windows with SfrCC2.exe installed alongside SVDConv, or use `--generate=sfd` for SFD output. |
 
 ### Validation errors
 

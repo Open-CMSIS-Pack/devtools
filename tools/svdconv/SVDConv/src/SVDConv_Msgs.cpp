@@ -60,6 +60,7 @@ const MsgTable SvdConv::msgTable = {
   { "M130", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "Cannot create file '%NAME%'"                                                 } },
   { "M131", { MsgLevel::LEVEL_ERROR,    CRLF_B,   ""                                                                            } },
   { "M132", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "SfrCC2 report:\n%MSG%\nSfrCC2 report end.\n"                                 } },
+  { "M133", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "SFR generation is only supported on Windows (requires SfrCC2.exe)."           } },
 
 
 // 200... Validation Errors
