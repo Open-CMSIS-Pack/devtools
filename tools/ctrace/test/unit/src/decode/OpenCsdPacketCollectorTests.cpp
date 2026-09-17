@@ -557,3 +557,129 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorDefersOutputFailures)
   EXPECT_EQ(sink.elements().size(), 4U);
   EXPECT_THROW(collector.rethrowOutputError(), std::runtime_error);
 }
+
+TEST(CtraceUnitTests, testFormattedInputAccountingRequiresCommittedSynchronization)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  std::vector<TraceByteSkip> discarded;
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{route}, sink,
+                                  [&](const TraceByteSkip& skipped) {
+                                    EXPECT_TRUE(sink.elements().empty());
+                                    discarded.push_back(skipped);
+                                  });
+  EXPECT_THROW(collector.formattedDataForRoute({TraceRouteId{2U}, 1U}, 0U, 1U), std::invalid_argument);
+  EXPECT_THROW(collector.formattedDataForRoute({TraceRouteId{0U}, 2U}, 0U, 1U), std::invalid_argument);
+  collector.formattedDataForRoute(route, 0U, 0U);
+  collector.formattedDataForRoute(route, 32U, 3U);
+  collector.formattedDataForRoute(route, 32U, 3U); // A repeated delivery attempt is not new input.
+  collector.formattedDataForRoute(route, 48U, 5U);
+
+  ItmTrcPacket sync;
+  sync.setPktType(ITM_PKT_ASYNC);
+  collector.beginTransaction();
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 48U, &sync, 6U, nullptr);
+  collector.rollbackTransaction();
+  collector.reportUnsynchronizedFormattedRoutes();
+  collector.reportUnsynchronizedFormattedRoutes();
+
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().route, route);
+  EXPECT_EQ(sink.elements().front().sourceIndex, 32U);
+  EXPECT_EQ(sink.elements().front().issueCode, TraceIssueCode::OpenCsdMissingSync);
+  EXPECT_EQ(sink.elements().front().errorMessage,
+            "no hardware ITM SYNC before end of input; "
+            "first formatter group at raw offset 32");
+  ASSERT_EQ(discarded.size(), 1U);
+  EXPECT_EQ(discarded.front().reason, TraceByteSkipReason::MissingSync);
+  EXPECT_EQ(discarded.front().formatterOffset, 32U);
+  EXPECT_EQ(discarded.front().byteCount, 8U);
+  EXPECT_EQ(discarded.front().traceId, 1U);
+}
+
+TEST(CtraceUnitTests, testFormattedInputAccountingPreservesExistingErrorsAndCommittedSync)
+{
+  const TraceRouteIdentity healthy{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity failed{TraceRouteId{1U}, 2U};
+  const TraceRouteIdentity empty{TraceRouteId{2U}, 3U};
+  CollectingOpenCsdElementSink sink;
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{healthy, failed, empty}, sink);
+  collector.formattedDataForRoute(healthy, 0U, 8U);
+  collector.formattedDataForRoute(failed, 16U, 4U);
+  ItmTrcPacket sync;
+  sync.setPktType(ITM_PKT_ASYNC);
+  collector.beginTransaction();
+  collector.rawPacketForRoute(healthy, OCSD_OP_DATA, 0U, &sync, 6U, nullptr);
+  collector.appendDecodeError(failed, 16U, "existing route failure");
+  collector.commitTransaction();
+  collector.formattedDataForRoute(healthy, 32U, 8U);
+  collector.reportUnsynchronizedFormattedRoutes();
+
+  EXPECT_EQ(sink.elements().size(), 2U);
+  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdMissingSync));
+}
+
+TEST(CtraceUnitTests, testFormattedUnsynchronizedPrefixIsReportedOnceBeforeCommittedSync)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  std::vector<TraceByteSkip> discarded;
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{route}, sink,
+                                  [&](const TraceByteSkip& skipped) {
+                                    EXPECT_TRUE(sink.elements().empty());
+                                    discarded.push_back(skipped);
+                                  });
+  collector.formattedDataForRoute(route, 32U, 14U);
+  collector.formattedDataForRoute(route, 48U, 14U);
+  ItmTrcPacket notSync;
+  notSync.setPktType(ITM_PKT_NOTSYNC);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 32U, &notSync, 0U, nullptr);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 32U, &notSync, 8U, nullptr);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 32U, &notSync, 8U, nullptr);
+  ItmTrcPacket sync;
+  sync.setPktType(ITM_PKT_ASYNC);
+  collector.beginTransaction();
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 48U, &sync, 6U, nullptr);
+  collector.rollbackTransaction();
+  EXPECT_TRUE(sink.elements().empty());
+  EXPECT_TRUE(discarded.empty());
+
+  collector.beginTransaction();
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 64U, &sync, 6U, nullptr);
+  collector.commitTransaction();
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().kind, OpenCsdTraceElement::Kind::Sync);
+  ASSERT_EQ(discarded.size(), 1U);
+  EXPECT_EQ(discarded.front().reason, TraceByteSkipReason::MissingSync);
+  EXPECT_EQ(discarded.front().formatterOffset, 32U);
+  EXPECT_EQ(discarded.front().byteCount, 16U);
+  EXPECT_EQ(discarded.front().traceId, 1U);
+
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 80U, &notSync, 8U, nullptr);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 96U, &sync, 6U, nullptr);
+  collector.reportUnsynchronizedFormattedRoutes();
+  EXPECT_EQ(sink.elements().size(), 2U); // Only another real sync, no duplicate skipped-byte record.
+  EXPECT_EQ(discarded.size(), 1U);
+}
+
+TEST(CtraceUnitTests, testFormattedUnsynchronizedPrefixDoesNotDuplicateExistingRouteFailure)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  std::vector<TraceByteSkip> discarded;
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{route}, sink,
+                                  [&](const TraceByteSkip& skipped) { discarded.push_back(skipped); });
+  collector.formattedDataForRoute(route, 0U, 14U);
+  ItmTrcPacket notSync;
+  notSync.setPktType(ITM_PKT_NOTSYNC);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 0U, &notSync, 8U, nullptr);
+  collector.appendDecodeError(route, 8U, "existing route recovery failure");
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 16U, &notSync, 8U, nullptr);
+  ItmTrcPacket sync;
+  sync.setPktType(ITM_PKT_ASYNC);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 32U, &sync, 6U, nullptr);
+  collector.reportUnsynchronizedFormattedRoutes();
+  EXPECT_EQ(sink.elements().size(), 2U);
+  EXPECT_TRUE(discarded.empty());
+  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdMissingSync));
+}

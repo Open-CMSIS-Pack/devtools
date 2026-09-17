@@ -50,6 +50,7 @@ enum class TraceIssueCode {
   OpenCsdBadPacketSequence,
   OpenCsdInvalidPacketHeader,
   OpenCsdIncompleteTail,
+  OpenCsdMissingSync,
   OpenCsdNoProgress,
   OpenCsdWaitTimeout,
   OpenCsdInitializationError,
@@ -249,6 +250,52 @@ struct TraceIssueEvent {
   std::optional<std::uint64_t> lastValidTcyc = std::nullopt;
 };
 
+/** @brief Identifies why formatter or initial ITM payload was skipped. */
+enum class TraceByteSkipReason {
+  NoSourceId,
+  NullSourceId,
+  ReservedSourceId,
+  UnconfiguredSourceId,
+  MissingSync,
+};
+
+/** @brief Accounts for skipped payload without inventing a semantic route or clock. */
+struct TraceByteSkip {
+  // Start of the first formatter output group, not the exact discarded raw byte.
+  std::uint64_t formatterOffset = 0;
+  // Deformatted payload bytes, excluding formatter control bytes.
+  std::uint64_t byteCount = 0;
+  TraceByteSkipReason reason = TraceByteSkipReason::NoSourceId;
+  // An observed formatter ID, including NULL/reserved IDs; not a decoded route.
+  std::optional<std::uint8_t> traceId = std::nullopt;
+};
+
+/** @brief Describes skipped input bytes consistently for CLI and CSV. */
+inline std::string traceByteSkipMessage(const TraceByteSkip& skipped)
+{
+  auto message = std::to_string(skipped.byteCount);
+  const auto traceId = skipped.traceId.has_value() ? std::to_string(*skipped.traceId) : "unknown";
+  switch (skipped.reason) {
+  case TraceByteSkipReason::NoSourceId:
+    message += " bytes skipped due to missing source ID";
+    break;
+  case TraceByteSkipReason::NullSourceId:
+    message += " bytes skipped for null source ID 0";
+    break;
+  case TraceByteSkipReason::ReservedSourceId:
+    message += " bytes skipped for reserved source ID " + traceId;
+    break;
+  case TraceByteSkipReason::UnconfiguredSourceId:
+    message += " bytes skipped for unconfigured source ID " + traceId;
+    break;
+  case TraceByteSkipReason::MissingSync:
+    // Synchronization is missing, so no software or hardware packet type is established yet.
+    message += " bytes skipped due to missing SYNC";
+    break;
+  }
+  return message + "; first formatter group at raw offset " + std::to_string(skipped.formatterOffset);
+}
+
 /** @brief Stores the semantic payload of a decoded trace event. */
 using TraceEventPayload =
     std::variant<SoftwareTraceEvent, DwtDataTraceEvent, DwtAddressTraceEvent, DwtMatchTraceEvent, ExceptionTraceEvent,
@@ -308,6 +355,8 @@ public:
   virtual ~TraceEventSink() = default;
   /** @brief Appends one decoded event to the sink. */
   virtual void append(const TraceEvent& event) = 0;
+  /** @brief Reports skipped-byte accounting when this sink supports input annotations. */
+  virtual void appendByteSkip(const TraceByteSkip&) {}
 };
 
 #endif // CTRACE_SRC_MODEL_TRACEEVENT_H

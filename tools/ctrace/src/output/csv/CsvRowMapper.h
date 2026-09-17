@@ -11,6 +11,7 @@
 #include <string>
 
 struct TraceEvent;
+struct TraceByteSkip;
 
 /** @brief Maps semantic trace events to the stable CSV representation. */
 class CsvRowMapper final {
@@ -19,6 +20,8 @@ public:
   static std::string header();
   /** @brief Returns one CSV row for a semantic trace event. */
   static std::string row(const TraceEvent& event);
+  /** @brief Returns a skipped-byte info row with the observed ID, if any, and no timestamp. */
+  static std::string byteSkipRow(const TraceByteSkip& skipped);
 
 private:
   /** @brief Prevents construction of this stateless mapping utility. */

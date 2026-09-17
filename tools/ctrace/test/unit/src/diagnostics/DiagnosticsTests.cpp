@@ -172,6 +172,7 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
       {TraceIssueCode::OpenCsdBadPacketSequence, "invalid ITM packet sequence at raw offset 42"},
       {TraceIssueCode::OpenCsdInvalidPacketHeader, "invalid ITM packet header at raw offset 42"},
       {TraceIssueCode::OpenCsdIncompleteTail, "incomplete ITM packet starting at raw offset 42 at end of input"},
+      {TraceIssueCode::OpenCsdMissingSync, "no hardware ITM SYNC before end of input"},
       {TraceIssueCode::OpenCsdFormattedInputError, "formatted input failed at raw input offset 42"},
       {TraceIssueCode::OpenCsdNoProgress, "OpenCSD made no decode progress at raw offset 42"},
       {TraceIssueCode::OpenCsdWaitTimeout, "OpenCSD remained blocked while flushing pending data"},
@@ -207,4 +208,20 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
   EXPECT_NE(diagnostics.events()[std::size(cases) + 1U].message.find("raw offset 43"), std::string::npos);
   EXPECT_EQ(diagnostics.events()[std::size(cases) + 2U].severity, DiagnosticSink::Severity::Warning);
   EXPECT_EQ(diagnostics.events().back().message, "trace decode error at raw offset 0");
+}
+
+TEST(CtraceUnitTests, testTraceIssueReporterPreservesMissingSyncDetailsAndFailure)
+{
+  CollectingDiagnosticSink diagnostics;
+  TraceIssueReporter reporter(diagnostics);
+  const std::string message = "no hardware ITM SYNC before end of input; "
+                              "first formatter group at raw offset 32";
+  reporter.append(onStream(issuePacket(TraceIssueCode::OpenCsdMissingSync, message), 1U));
+
+  ASSERT_EQ(diagnostics.events().size(), 1U);
+  EXPECT_EQ(diagnostics.events().front().message, message);
+  EXPECT_EQ(diagnostics.events().front().severity, DiagnosticSink::Severity::Error);
+  EXPECT_EQ(diagnostics.events().front().impact, DiagnosticSink::Impact::Failing);
+  EXPECT_TRUE(diagnostics.containsContext("stream", "1"));
+  EXPECT_EQ(diagnostics.failureCount(), 1U);
 }

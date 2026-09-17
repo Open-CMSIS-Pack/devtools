@@ -31,7 +31,11 @@ static std::vector<TraceRouteIdentity> routeIdentities(const std::vector<CortexM
 DecodePipeline::DecodePipeline(std::vector<CortexMDecodeRoute> routes, OpenCsdItmInputMode inputMode,
                                TraceEventSink& eventSink, OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdSink)
   : m_streamDecoder(routes, eventSink),
-    m_decoder(routeIdentities(routes), inputMode, m_streamDecoder, std::move(unsupportedTraceIdSink))
+    m_decoder(routeIdentities(routes), inputMode, m_streamDecoder, std::move(unsupportedTraceIdSink),
+              [this, &eventSink](const TraceByteSkip& skipped) {
+                ++m_byteSkipCount;
+                eventSink.appendByteSkip(skipped);
+              })
 {
 }
 
@@ -59,6 +63,6 @@ DecodeResult DecodePipeline::finish()
   m_streamDecoder.finish();
   return {
       result.bytesIn,
-      m_streamDecoder.eventCount(),
+      m_streamDecoder.eventCount() + m_byteSkipCount,
   };
 }

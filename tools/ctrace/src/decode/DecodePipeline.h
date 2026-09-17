@@ -71,6 +71,7 @@ public:
 
 private:
   CortexMStreamDecoder m_streamDecoder;
+  std::uint64_t m_byteSkipCount = 0U;
   OpenCsdItmDecoder m_decoder;
 };
 

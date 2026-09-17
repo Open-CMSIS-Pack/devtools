@@ -47,6 +47,8 @@ static std::string displayErrorMessage(const TraceEvent& event, const TraceIssue
     return atRawOffset("invalid ITM packet header", event);
   case TraceIssueCode::OpenCsdIncompleteTail:
     return "incomplete ITM packet starting at raw offset " + std::to_string(event.index) + " at end of input";
+  case TraceIssueCode::OpenCsdMissingSync:
+    return issue.message.empty() ? "no hardware ITM SYNC before end of input" : issue.message;
   case TraceIssueCode::OpenCsdFormattedInputError:
     return issue.message.empty() ? atRawOffset("formatted trace input error", event) : issue.message;
   case TraceIssueCode::OpenCsdNoProgress:

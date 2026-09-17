@@ -35,8 +35,10 @@ OpenCsdPacketCollector::OpenCsdPacketCollector(TraceRouteIdentity route, OpenCsd
 }
 
 OpenCsdPacketCollector::OpenCsdPacketCollector(std::vector<TraceRouteIdentity> routes,
-                                               OpenCsdTraceElementSink& elementSink)
-  : m_elementSink(elementSink)
+                                               OpenCsdTraceElementSink& elementSink,
+                                               OpenCsdSkippedBytesSink skippedBytesSink)
+  : m_elementSink(elementSink),
+    m_skippedBytesSink(std::move(skippedBytesSink))
 {
   if (routes.empty()) {
     throw std::invalid_argument("formatted OpenCSD packet collection requires at least one normalized route");
@@ -51,9 +53,10 @@ OpenCsdPacketCollector::OpenCsdPacketCollector(std::vector<TraceRouteIdentity> r
     if (duplicateRouteId) {
       throw std::invalid_argument("duplicate normalized route ID in formatted OpenCSD packet routes");
     }
-    if (!m_routesByChannel.emplace(channel, std::move(route)).second) {
+    if (!m_routesByChannel.emplace(channel, route).second) {
       throw std::invalid_argument("duplicate Trace Bus ID in formatted OpenCSD packet routes");
     }
+    m_formattedDataByRoute.emplace(route.id, FormattedRouteData{std::move(route), {}, {}});
   }
 }
 
@@ -403,17 +406,53 @@ void OpenCsdPacketCollector::RawPacketDataMon(const ocsd_datapath_op_t op, const
 
 void OpenCsdPacketCollector::rawPacketForRoute(const TraceRouteIdentity& route, const ocsd_datapath_op_t op,
                                                const ocsd_trc_index_t index_sop, const ItmTrcPacket* pkt,
-                                               const std::uint32_t, const std::uint8_t*)
+                                               const std::uint32_t size, const std::uint8_t*)
 {
   try {
     if (!containsRoute(route)) {
       throw std::invalid_argument("raw OpenCSD packet references an unknown normalized route");
     }
-    appendRawPacket(route, op, index_sop, pkt);
+    appendRawPacket(route, op, index_sop, pkt, size);
   } catch (...) {
     if (!m_outputError) {
       m_outputError = std::current_exception();
     }
+  }
+}
+
+void OpenCsdPacketCollector::formattedDataForRoute(const TraceRouteIdentity& route, ocsd_trc_index_t index,
+                                                   std::uint32_t size)
+{
+  const auto found = m_formattedDataByRoute.find(route.id);
+  if (found == m_formattedDataByRoute.end() || found->second.route != route) {
+    throw std::invalid_argument("formatted data references an unknown normalized route");
+  }
+  auto& state = found->second;
+  if (size == 0U || state.synchronized || state.lastFormatterOffset == index) {
+    return;
+  }
+  if (!state.firstFormatterOffset.has_value()) {
+    state.firstFormatterOffset = index;
+  }
+  state.lastFormatterOffset = index;
+  state.byteCount += size;
+}
+
+void OpenCsdPacketCollector::reportUnsynchronizedFormattedRoutes()
+{
+  for (auto& [routeId, state] : m_formattedDataByRoute) {
+    (void)routeId;
+    if (!state.firstFormatterOffset.has_value() || state.synchronized || state.diagnosed) {
+      continue;
+    }
+    state.diagnosed = true;
+    if (m_skippedBytesSink) {
+      m_skippedBytesSink({*state.firstFormatterOffset, state.byteCount, TraceByteSkipReason::MissingSync,
+                          state.route.traceBusId});
+    }
+    const auto message = "no hardware ITM SYNC before end of input; "
+                         "first formatter group at raw offset " + std::to_string(*state.firstFormatterOffset);
+    appendDecodeError(state.route, *state.firstFormatterOffset, message, TraceIssueCode::OpenCsdMissingSync, true);
   }
 }
 
@@ -460,7 +499,8 @@ bool OpenCsdPacketCollector::containsRoute(const TraceRouteIdentity& route) cons
 }
 
 void OpenCsdPacketCollector::appendRawPacket(const TraceRouteIdentity& route, const ocsd_datapath_op_t op,
-                                             const ocsd_trc_index_t index_sop, const ItmTrcPacket* pkt)
+                                             const ocsd_trc_index_t index_sop, const ItmTrcPacket* pkt,
+                                             std::uint32_t size)
 {
   if (pkt == nullptr) {
     return;
@@ -484,6 +524,9 @@ void OpenCsdPacketCollector::appendRawPacket(const TraceRouteIdentity& route, co
   }
 
   switch (pkt->getPktType()) {
+  case ITM_PKT_NOTSYNC:
+    recordUnsynchronizedBytes(route, size);
+    break;
   case ITM_PKT_ASYNC:
     appendSync(index_sop, route);
     break;
@@ -502,6 +545,16 @@ void OpenCsdPacketCollector::appendRawPacket(const TraceRouteIdentity& route, co
     break;
   default:
     break;
+  }
+}
+
+void OpenCsdPacketCollector::recordUnsynchronizedBytes(const TraceRouteIdentity& route, std::uint32_t size)
+{
+  const auto found = m_formattedDataByRoute.find(route.id);
+  if (found != m_formattedDataByRoute.end() && !found->second.synchronized && !found->second.diagnosed) {
+    // Packet monitor sizes count discarded protocol bytes, not formatter bytes or sync packets.
+    // The same packet index can occur on several flushes, so it cannot be used for deduplication.
+    found->second.unsynchronizedByteCount += size;
   }
 }
 
@@ -611,5 +664,29 @@ void OpenCsdPacketCollector::appendElement(OpenCsdTraceElement element, const Tr
 
 void OpenCsdPacketCollector::appendCommitted(OpenCsdTraceElement element)
 {
+  accountFormattedCommit(element);
   m_elementSink.append(std::move(element));
+}
+
+void OpenCsdPacketCollector::accountFormattedCommit(const OpenCsdTraceElement& element)
+{
+  const auto found = m_formattedDataByRoute.find(element.route.id);
+  if (found == m_formattedDataByRoute.end()) {
+    return;
+  }
+  auto& state = found->second;
+  if (element.kind == OpenCsdTraceElement::Kind::Error && element.issueSeverity == TraceIssueSeverity::Error) {
+    state.diagnosed = true;
+  }
+  if (element.kind != OpenCsdTraceElement::Kind::Sync || state.synchronized) {
+    return;
+  }
+  state.synchronized = true;
+  if (state.unsynchronizedByteCount == 0U || state.diagnosed || !state.firstFormatterOffset.has_value() ||
+      !m_skippedBytesSink) {
+    return;
+  }
+  // Already committing: the input annotation bypasses the transaction being iterated.
+  m_skippedBytesSink({*state.firstFormatterOffset, state.unsynchronizedByteCount, TraceByteSkipReason::MissingSync,
+                      state.route.traceBusId});
 }

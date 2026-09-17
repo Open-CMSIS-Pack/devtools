@@ -88,13 +88,13 @@ public:
    */
   static std::string solutionSetName(const std::filesystem::path& configFile);
   /**
-   * @brief Discovers, selects, and preflights exactly one eligible raw input.
-   * @param metadata Normalized trace-run metadata, routes, format declaration, and source path.
+   * @brief Selects and preflights one raw input, resolves its format, and normalizes its routes.
+   * @param config Parsed trace-run configuration with its source path and optional format override.
    * @param skippedInputSink Optional observer for recognized inputs excluded from selection.
    * @return Fully normalized input descriptor safe to pass to a decode job.
-   * @throws std::runtime_error If the source path, selection, file access, or formatted alignment is invalid.
+   * @throws std::runtime_error If selection, file access, formatted alignment, or route metadata is invalid.
    */
-  static TraceRunInputDescriptor resolveInput(CtraceRunMeta metadata,
+  static TraceRunInputDescriptor resolveInput(TraceRunConfig config,
                                               const SkippedTraceRunInputSink& skippedInputSink = {});
 
 private:

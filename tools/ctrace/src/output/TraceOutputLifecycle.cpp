@@ -54,19 +54,29 @@ TraceOutputLifecycle::~TraceOutputLifecycle() noexcept
   abortActiveNoexcept();
 }
 
-void TraceOutputLifecycle::append(const TraceEvent& event)
+template <typename Write> void TraceOutputLifecycle::writeActiveOutputs(const Write& write)
 {
   for (std::size_t index = 0; index < m_outputs.size(); ++index) {
     if (m_states[index] != State::Active) {
       continue;
     }
     try {
-      m_outputs[index]->writeEvent(event);
+      write(*m_outputs[index]);
     } catch (...) {
       fail(index, "write", std::current_exception());
       abortNoexcept(index);
     }
   }
+}
+
+void TraceOutputLifecycle::append(const TraceEvent& event)
+{
+  writeActiveOutputs([&](TraceOutput& output) { output.writeEvent(event); });
+}
+
+void TraceOutputLifecycle::appendByteSkip(const TraceByteSkip& skipped)
+{
+  writeActiveOutputs([&](TraceOutput& output) { output.writeByteSkip(skipped); });
 }
 
 void TraceOutputLifecycle::abort() noexcept

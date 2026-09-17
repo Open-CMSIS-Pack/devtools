@@ -52,6 +52,8 @@ public:
    * @param event Decoded event whose lifetime extends through this call.
    */
   void writeEvent(const TraceEvent& event);
+  /** @brief Writes skipped-byte accounting without an associated timestamp. */
+  void writeByteSkip(const TraceByteSkip& skipped);
 
 protected:
   /** @brief Validates and prepares targets before this output owns incomplete artifacts. */
@@ -64,11 +66,16 @@ protected:
   virtual void abortOutput() = 0;
   /** @brief Writes one event to an active backend. */
   virtual void writeOutput(const TraceEvent& event) = 0;
+  /** @brief Optionally retains skipped-byte accounting in an active backend. */
+  virtual void writeByteSkipOutput(const TraceByteSkip&) {}
 
   /** @brief Aborts an active output while suppressing every cleanup exception. */
   void abortNoexcept() noexcept;
 
 private:
+  /** @brief Applies the active-output guard and cleanup to either kind of write. */
+  template <typename Write> void writeActive(const Write& write);
+
   bool m_active = false;
 };
 
@@ -110,11 +117,21 @@ inline void TraceOutput::abort()
 
 inline void TraceOutput::writeEvent(const TraceEvent& event)
 {
+  writeActive([&] { writeOutput(event); });
+}
+
+inline void TraceOutput::writeByteSkip(const TraceByteSkip& skipped)
+{
+  writeActive([&] { writeByteSkipOutput(skipped); });
+}
+
+template <typename Write> inline void TraceOutput::writeActive(const Write& write)
+{
   if (!m_active) {
     return;
   }
   try {
-    writeOutput(event);
+    write();
   } catch (...) {
     abort();
     throw;
