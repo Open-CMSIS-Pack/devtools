@@ -57,7 +57,7 @@ SVDConv returns the following codes:
 |------|--------------|---------|
 | 0 |  OK |  No action required. Validation and conversion performed without errors. |
 | 1 |  WARNINGS |  Warnings should be checked an possibly removed. The header file is created and could be used. |
-| 2 |  ERRORS |  Errors during validation or output generation. Check the diagnostics and correct the input or output options. |
+| 2 |  ERRORS |  Errors during validation or output generation. Check diagnostics and correct input or output options. |
 | 3 |  Error in command line |  Check and correct the command line arguments. |
 
 ## Usage Examples
