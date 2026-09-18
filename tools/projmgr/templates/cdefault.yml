@@ -9,7 +9,6 @@ default:
         - -Wno-license-management
       C:
         - -std=gnu11
-        - -funwind-tables
       ASM:
         - -masm=auto
       Link:
