@@ -34,7 +34,9 @@ build-gen:
     - type: comp-db
       file: compile_commands.json
     - type: comp-db
-      file: compile_macros.h
+      file: compile_macros_c.h
+    - type: comp-db
+      file: compile_macros_cxx.h
   components:
     - component: ARM::RteTestGenerator:Check Global Generator@0.9.0
       from-pack: ARM::RteTestGenerator@0.1.0

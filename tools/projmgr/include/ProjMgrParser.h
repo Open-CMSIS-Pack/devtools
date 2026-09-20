@@ -163,11 +163,20 @@ struct SystemViewItem {
 
 /**
  * @brief custom item containing
+ *        value type
  *        scalar
  *        array
  *        map
 */
+enum class CustomItemType {
+  Undefined,
+  Scalar,
+  Sequence,
+  Map
+};
+
 struct CustomItem {
+  CustomItemType type = CustomItemType::Undefined;
   std::string scalar;
   std::vector<CustomItem> vec;
   std::vector<std::pair<std::string, CustomItem>> map;
@@ -597,12 +606,11 @@ struct MlopsVelaItem {
 /**
  * @brief mlops model item containing
  *        path to AI clayer,
- *        model name
+ *        custom properties
 */
 struct MlopsModelItem {
   std::string clayer;
-  std::string name;
-  std::map<std::string, std::string> additional;
+  CustomItem custom;
 };
 
 /**

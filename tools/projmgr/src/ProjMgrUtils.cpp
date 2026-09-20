@@ -81,6 +81,30 @@ static string StripCComments(const string& input) {
   return output;
 }
 
+void ProjMgrUtils::MergeCustomItems(const CustomItem& src, CustomItem& dst) {
+  for (const auto& customItem : src.map) {
+    const auto& key = customItem.first;
+    const auto& value = customItem.second;
+    auto match = find_if(dst.map.begin(), dst.map.end(), [&key](const auto& item) {
+      return item.first == key;
+    });
+    if (match == dst.map.end()) {
+      dst.map.push_back({ key, value });
+    } else {
+      match->second = value;
+    }
+  }
+}
+
+string ProjMgrUtils::GetCustomScalar(const CustomItem& custom, const string& key) {
+  for (const auto& [customKey, value] : custom.map) {
+    if (customKey == key) {
+      return value.scalar;
+    }
+  }
+  return RteUtils::EMPTY_STRING;
+}
+
 RtePackage* ProjMgrUtils::ReadGpdscFile(const string& gpdsc, bool& valid) {
   fs::path path(gpdsc);
   error_code ec;

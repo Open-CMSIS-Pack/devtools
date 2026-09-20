@@ -1171,13 +1171,7 @@ void ProjMgrYamlParser::ParseMlops(const YAML::Node& parent, const string& file,
     if (mlopsNode[YAML_MODEL].IsDefined()) {
       const YAML::Node& modelNode = mlopsNode[YAML_MODEL];
       ParsePortablePath(modelNode, file, YAML_CLAYER, mlops.model.clayer);
-      ParseString(modelNode, YAML_NAME, mlops.model.name);
-      for (const auto& item : modelNode) {
-        const string key = item.first.as<string>();
-        if (key != YAML_CLAYER && key != YAML_NAME) {
-          mlops.model.additional[key] = item.second.as<string>();
-        }
-      }
+      ParseCustom(modelNode, { YAML_CLAYER }, mlops.model.custom);
     }
     if (mlopsNode[YAML_HARDWARE].IsDefined()) {
       const YAML::Node& hardwareNode = mlopsNode[YAML_HARDWARE];
@@ -1231,14 +1225,17 @@ void ProjMgrYamlParser::ParseImages(const YAML::Node& parent, const string& file
 CustomItem ProjMgrYamlParser::GetCustomValue(const YAML::Node& node) {
   CustomItem value;
   if (node.IsScalar()) {
+    value.type = CustomItemType::Scalar;
     value.scalar = node.as<string>();
   }
   else if (node.IsSequence()) {
+    value.type = CustomItemType::Sequence;
     for (const auto& item : node) {
       value.vec.push_back(GetCustomValue(item));
     }
   }
   else if (node.IsMap()) {
+    value.type = CustomItemType::Map;
     for (const auto& item : node) {
       value.map.push_back({ item.first.as<string>(), GetCustomValue(item.second) });
     }
