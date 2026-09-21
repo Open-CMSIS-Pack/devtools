@@ -31,8 +31,6 @@ public:
   void appendByteSkip(const TraceByteSkip& skipped) override;
   /** @brief Completes active outputs, optionally applying their fatal-input policy. */
   void finish(const TraceDecodeAbort* decodeAbort = nullptr) noexcept;
-  /** @brief Aborts all active outputs without propagating failures. */
-  void abort() noexcept;
 
   /** @brief Disables copying because the lifecycle owns output backends. */
   TraceOutputLifecycle(const TraceOutputLifecycle&) = delete;

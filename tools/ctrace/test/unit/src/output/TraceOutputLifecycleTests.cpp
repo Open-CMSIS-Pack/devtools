@@ -201,13 +201,14 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesCtfAfterRealCsvStartFailu
   EXPECT_TRUE(diagnostics.containsContext("phase", "start"));
 }
 
-TEST(CtraceUnitTests, testTraceOutputLifecycleReportsAbortFailures)
+TEST(CtraceUnitTests, testTraceOutputLifecycleReportsDestructorAbortFailures)
 {
   std::vector<std::unique_ptr<TraceOutput>> outputs;
   outputs.push_back(std::make_unique<TestTraceOutput>(TestTraceOutputFailure::Abort));
   CollectingDiagnosticSink diagnostics;
-  TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
-  lifecycle.abort();
+  {
+    TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
+  }
 
   ASSERT_TRUE(diagnostics.failureCount() == 1U && diagnostics.containsContext("phase", "abort"))
       << "output lifecycle must report a failed direct-output cleanup";

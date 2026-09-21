@@ -39,8 +39,6 @@ public:
   void finishIssues();
   /** @brief Completes output artifacts using each backend's optional fatal-input policy. */
   void finishOutputs(const TraceDecodeAbort* decodeAbort = nullptr) noexcept;
-  /** @brief Aborts and removes partial output artifacts without throwing. */
-  void abortOutputs() noexcept;
 
 private:
   /** @brief Reports an ITM event that contradicts the configured enable mask. */

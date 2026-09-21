@@ -79,11 +79,6 @@ void TraceOutputLifecycle::appendByteSkip(const TraceByteSkip& skipped)
   writeActiveOutputs([&](TraceOutput& output) { output.writeByteSkip(skipped); });
 }
 
-void TraceOutputLifecycle::abort() noexcept
-{
-  abortActiveNoexcept();
-}
-
 void TraceOutputLifecycle::finish(const TraceDecodeAbort* decodeAbort) noexcept
 {
   if (m_finished) {

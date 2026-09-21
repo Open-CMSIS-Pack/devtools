@@ -103,8 +103,3 @@ void DecodeConsumers::finishOutputs(const TraceDecodeAbort* decodeAbort) noexcep
 {
   m_outputLifecycle.finish(decodeAbort);
 }
-
-void DecodeConsumers::abortOutputs() noexcept
-{
-  m_outputLifecycle.abort();
-}

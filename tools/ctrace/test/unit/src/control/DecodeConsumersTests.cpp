@@ -67,7 +67,8 @@ TEST(CtraceUnitTests, testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOut
   EXPECT_EQ(2U, consumers.eventCount());
   EXPECT_EQ(1U, diagnostics.failureCount());
 
-  consumers.abortOutputs();
+  const TraceDecodeAbort decodeAbort{16U, "fatal decode error"};
+  consumers.finishOutputs(&decodeAbort);
   EXPECT_EQ((std::vector<std::string>{"start", "write", "diagnostic", "write", "diagnostic", "abort"}), calls);
 }
 
