@@ -633,7 +633,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputAbortRemovesPartialBundle)
       << "CTF abort must remove the incomplete direct output";
 }
 
-TEST(CtraceUnitTests, testCtfBundleOutputGeneratesDataDrivenLegacyTraceCompassViews)
+TEST(CtraceUnitTests, testCtfBundleOutputOmitsXmlWithoutGraphicalEvents)
 {
   const TemporaryTestPath root("ctrace-ctf-legacy-xml-completion-test");
   const auto outputDirectory = root.path() / "output.ctf";
@@ -645,16 +645,12 @@ TEST(CtraceUnitTests, testCtfBundleOutputGeneratesDataDrivenLegacyTraceCompassVi
   output.writeEvent(atCycle(softwarePacket(1U, 1U, 'A'), 10U));
   output.stop();
 
-  ASSERT_TRUE(std::filesystem::is_regular_file(xmlPath));
+  EXPECT_FALSE(std::filesystem::exists(xmlPath))
+      << "software events and synthetic exception bootstrap records must not create empty XML";
   const auto records = readCtfRecords(outputDirectory / "stream_0");
   ASSERT_FALSE(records.empty());
   EXPECT_FALSE(records.front().routeLabelId.has_value());
   EXPECT_EQ(readTestTextFile(outputDirectory / "metadata").find("ctrace_route"), std::string::npos);
-  const auto xml = readTestTextFile(xmlPath);
-  EXPECT_EQ(readTestTextFile(xmlPath).find("<xyView"), std::string::npos);
-  EXPECT_EQ(xml.find("id=\"arm.cmsis.swo.tg.exception.v1\""), std::string::npos)
-      << "synthetic exception bootstrap records must not create an empty exception view";
-  EXPECT_EQ(xml.find("arm.cmsis.swo.xy.dwt_addr"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputGeneratesProcessorStateViewOnlyForSleep)
@@ -663,18 +659,26 @@ TEST(CtraceUnitTests, testCtfBundleOutputGeneratesProcessorStateViewOnlyForSleep
   const auto pcOutputDirectory = root.path() / "pc.ctf";
   CtfBundleOutput pcOutput(makeCtfBundleConfig(pcOutputDirectory, 1000000U));
   pcOutput.start();
-  pcOutput.writeEvent(atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U, false}}, 10U));
+  pcOutput.writeEvent(atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U, PcSampleKind::Pc}}, 10U));
   pcOutput.stop();
-  const auto pcXml = readTestTextFile(testTraceCompassXmlPath(pcOutputDirectory));
-  EXPECT_EQ(pcXml.find("arm.cmsis.swo.tg.processor_state"), std::string::npos);
+  EXPECT_FALSE(std::filesystem::exists(testTraceCompassXmlPath(pcOutputDirectory)));
+
+  const auto prohibitedOutputDirectory = root.path() / "prohibited.ctf";
+  CtfBundleOutput prohibitedOutput(makeCtfBundleConfig(prohibitedOutputDirectory, 1000000U));
+  prohibitedOutput.start();
+  prohibitedOutput.writeEvent(atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::TraceProhibited}}, 15U));
+  prohibitedOutput.stop();
+  EXPECT_FALSE(std::filesystem::exists(testTraceCompassXmlPath(prohibitedOutputDirectory)));
 
   const auto sleepOutputDirectory = root.path() / "sleep.ctf";
   CtfBundleOutput sleepOutput(makeCtfBundleConfig(sleepOutputDirectory, 1000000U));
   sleepOutput.start();
-  sleepOutput.writeEvent(atCycle(TraceEvent{PcSampleTraceEvent{0U, true}}, 20U));
+  sleepOutput.writeEvent(atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::Sleep}}, 20U));
+  sleepOutput.writeEvent(atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::TraceProhibited}}, 21U));
   sleepOutput.stop();
   const auto sleepXml = readTestTextFile(testTraceCompassXmlPath(sleepOutputDirectory));
   EXPECT_NE(sleepXml.find("id=\"arm.cmsis.swo.tg.processor_state.v1\""), std::string::npos);
+  EXPECT_NE(sleepXml.find("eventName=\"PC_SAMPLE_PROHIBITED\""), std::string::npos);
   EXPECT_EQ(sleepXml.find("<xyView"), std::string::npos);
   EXPECT_EQ(sleepXml.find("arm.cmsis.swo.tg.exception"), std::string::npos)
       << "synthetic exception-context records must not create an exception view";
@@ -683,22 +687,72 @@ TEST(CtraceUnitTests, testCtfBundleOutputGeneratesProcessorStateViewOnlyForSleep
 TEST(CtraceUnitTests, testCtfBundleOutputGeneratesDwtAddressViewOnlyForDataAddresses)
 {
   const TemporaryTestPath root("ctrace-ctf-dwt-address-view-test");
-  const auto writeAndReadXml = [&](const std::string& name, const DwtAddressTraceLocation& location) {
+  const auto writeAndGetXmlPath = [&](const std::string& name, const DwtAddressTraceLocation& location) {
     const auto outputDirectory = root.path() / name;
     CtfBundleOutput output(makeCtfBundleConfig(outputDirectory, 1000000U));
     output.start();
     output.writeEvent(atCycle(TraceEvent{DwtAddressTraceEvent{0U, location}}, 10U));
     output.stop();
-    return readTestTextFile(testTraceCompassXmlPath(outputDirectory));
+    return testTraceCompassXmlPath(outputDirectory);
   };
 
-  const auto pcOnly = writeAndReadXml("pc-only.ctf", DwtPcTraceLocation{{4U, 0x08001234U}});
-  EXPECT_EQ(pcOnly.find("arm.cmsis.swo.xy.dwt_addr"), std::string::npos);
-  const auto dataOnly = writeAndReadXml("data-only.ctf", DwtDataAddressTraceLocation{{4U, 0x20000000U}});
+  const auto pcOnly = writeAndGetXmlPath("pc-only.ctf", DwtPcTraceLocation{{4U, 0x08001234U}});
+  EXPECT_FALSE(std::filesystem::exists(pcOnly));
+  const auto dataOnly =
+      readTestTextFile(writeAndGetXmlPath("data-only.ctf", DwtDataAddressTraceLocation{{4U, 0x20000000U}}));
   EXPECT_NE(dataOnly.find("id=\"arm.cmsis.swo.xy.dwt_addr.v1\""), std::string::npos);
-  const auto pcAndData = writeAndReadXml("pc-and-data.ctf",
-                                         DwtPcAndDataAddressTraceLocation{{4U, 0x08001234U}, {4U, 0x20000000U}});
+  const auto pcAndData = readTestTextFile(writeAndGetXmlPath(
+      "pc-and-data.ctf", DwtPcAndDataAddressTraceLocation{{4U, 0x08001234U}, {4U, 0x20000000U}}));
   EXPECT_NE(pcAndData.find("id=\"arm.cmsis.swo.xy.dwt_addr.v1\""), std::string::npos);
+}
+
+TEST(CtraceUnitTests, testCtfBundleOutputOmitsStaleXmlForMarkerOnlyLegacyAndRoutedTraces)
+{
+  const TemporaryTestPath root("ctrace-ctf-marker-only-no-xml-test");
+  for (const auto routed : {false, true}) {
+    const auto outputDirectory = root.path() / (routed ? "routed.ctf" : "legacy.ctf");
+    const auto xmlPath = testTraceCompassXmlPath(outputDirectory);
+    const TraceRouteIdentity first{TraceRouteId{10U}, 1U};
+    const TraceRouteIdentity second{TraceRouteId{20U}, 111U};
+    auto config = makeCtfBundleConfig(outputDirectory, 1000000U);
+    if (routed) {
+      config = makeFormattedCtfBundleConfig(outputDirectory, CtfMetadataTopology{
+          {{CtfClockDomainId{7U}, "shared_clock", CtfTestSupport::testUuid(7U), 1000000U, false}},
+          {
+              {CtfStreamClassId{1U}, first, "core-one", CtfClockDomainId{7U}},
+              {CtfStreamClassId{111U}, second, "core-two", CtfClockDomainId{7U}},
+          },
+          {},
+      });
+    }
+    CollectingDiagnosticSink diagnostics;
+    CtfBundleOutput output(std::move(config), &diagnostics);
+    writeTestFile(xmlPath, "old-xml");
+    output.start();
+    EXPECT_FALSE(std::filesystem::exists(xmlPath));
+    const auto marker = atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::TraceProhibited}}, 15U);
+    output.writeEvent(routed ? onRoute(marker, first) : marker);
+    if (routed) {
+      output.writeEvent(onRoute(marker, second));
+    }
+    writeTestFile(xmlPath, "stale-xml-before-completion");
+    output.stop();
+
+    EXPECT_TRUE(std::filesystem::is_regular_file(outputDirectory / "metadata"));
+    EXPECT_FALSE(std::filesystem::exists(xmlPath));
+    EXPECT_TRUE(diagnostics.events().empty()) << "missing graphical events must not produce a warning";
+    const auto contextLayout = routed ? CtfStreamWriter::EventContextLayout::RouteLabeled
+                                      : CtfStreamWriter::EventContextLayout::Legacy;
+    const auto streamNames = routed ? std::vector<std::string>{"stream_1", "stream_111"}
+                                    : std::vector<std::string>{"stream_0"};
+    for (const auto& name : streamNames) {
+      const auto records = readCtfRecords(outputDirectory / name, contextLayout);
+      EXPECT_EQ(std::count_if(records.begin(), records.end(), [](const auto& record) {
+                  return record.id == CtfSchema::value(CtfSchema::EventId::PcSampleProhibited);
+                }),
+                1);
+    }
+  }
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputGeneratesRoutePrefixedXmlForSharedClockStreams)
@@ -976,7 +1030,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputReplacesExistingBundleAtStart)
               !std::filesystem::exists(outputDir / "metadata") && !std::filesystem::exists(xmlPath))
       << "CTF start must replace existing output before decoding begins";
 
-  output.writeEvent(atCycle(softwarePacket(1U, 1U, 'A'), 10U));
+  output.writeEvent(atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::Sleep}}, 10U));
   output.stop();
   ASSERT_TRUE(std::filesystem::is_regular_file(outputDir / "metadata") &&
               std::filesystem::file_size(outputDir / "stream_0") > 0U && std::filesystem::is_regular_file(xmlPath))
@@ -1028,8 +1082,8 @@ TEST(CtraceUnitTests, testCtfBundleOutputOwnsDirectLifecycle)
   auto config = makeCtfBundleConfig(ctfDirectory, 1000000U);
   CtfBundleOutput output(std::move(config));
   output.start();
-  const auto software = atCycle(softwarePacket(1U, 1U, 'A'), 10U);
-  output.writeEvent(software);
+  const auto sleep = atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::Sleep}}, 10U);
+  output.writeEvent(sleep);
   output.stop();
 
   requireCompleteCtfBundle(ctfDirectory, xmlPath, "CTF bundle must support Unicode output paths");
@@ -1041,7 +1095,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputOwnsDirectLifecycle)
   ASSERT_TRUE(!std::filesystem::exists(ctfDirectory / "stale-marker") &&
               !std::filesystem::exists(ctfDirectory / "metadata") && !std::filesystem::exists(xmlPath))
       << "restarting CTF output must delete the previous bundle before writing";
-  output.writeEvent(software);
+  output.writeEvent(sleep);
   output.stop();
   requireCompleteCtfBundle(ctfDirectory, xmlPath, "restarted CTF bundle must complete normally");
 
@@ -1051,7 +1105,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputOwnsDirectLifecycle)
   const auto relativeCtf = relativeRoot / "Relative.ctf";
   CtfBundleOutput relativeOutput(makeCtfBundleConfig(relativeCtf, 1000000U));
   relativeOutput.start();
-  relativeOutput.writeEvent(software);
+  relativeOutput.writeEvent(sleep);
   relativeOutput.stop();
   ASSERT_TRUE(std::filesystem::is_regular_file(testRoot / "captures" / "Relative.ctf" / "metadata") &&
               std::filesystem::is_regular_file(testRoot / "captures" / "Relative.SWO.traceanalysis.xml"))
@@ -1103,6 +1157,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputRejectsInvalidExistingXmlAndLongPaths)
     failedAtStart = true;
   }
   if (!failedAtStart) {
+    longXml.writeEvent(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::Sleep}});
     EXPECT_THROW(longXml.stop(), std::runtime_error);
   }
   EXPECT_FALSE(std::filesystem::exists(temporaryPath.path() / "long-xml.ctf"));
@@ -1145,6 +1200,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputReportsPseudoFilesystemFinishFailure)
   CtfBundleOutput output(
       makeCtfBundleConfig(outputDirectory, TestPlatform::creationFailurePath("ctrace-coverage-output.xml"), 1000000U));
   output.start();
+  output.writeEvent(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::Sleep}});
   EXPECT_THROW(output.stop(), std::runtime_error);
   EXPECT_FALSE(std::filesystem::exists(outputDirectory));
 }
@@ -1194,6 +1250,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputReportsPermissionFailures)
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
   CtfBundleOutput finishCleanupFailure(makeCtfBundleConfig(cleanupCtf, blockedParent / "new.xml", 1000000U));
   finishCleanupFailure.start();
+  finishCleanupFailure.writeEvent(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::Sleep}});
   EXPECT_THROW(finishCleanupFailure.stop(), std::runtime_error);
   EXPECT_FALSE(std::filesystem::exists(cleanupCtf));
   std::filesystem::permissions(blockedParent, std::filesystem::perms::owner_all);

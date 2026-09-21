@@ -563,6 +563,25 @@ event {
 )";
 }
 
+/** @brief Writes the trace-prohibited PC-sampling marker declaration. */
+static void writePcSampleProhibitedEvent(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId)
+{
+  out << R"(
+event {
+    id = )"
+      << CtfSchema::value(CtfSchema::EventId::PcSampleProhibited) << R"(;
+    name = ")"
+      << CtfSchema::eventName(CtfSchema::EventId::PcSampleProhibited) << R"(";
+    stream_id = )"
+      << streamClassId << R"(;
+    fields := struct {
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+)";
+}
+
 /** @brief Writes status, exception, and global timestamp declarations. */
 static void writeStatusEvents(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId,
                               std::string_view exceptionType = "cmsis_exception_number_t")
@@ -756,6 +775,7 @@ static void writeGeneralStreamSchemas(std::ostream& out, const CtfMetadataModel&
     writePmuEvent(out, streamClassId);
     writeStatusEvents(out, streamClassId, prefix + "_exception_number_t");
     writePcSampleEvent(out, streamClassId);
+    writePcSampleProhibitedEvent(out, streamClassId);
   }
 }
 
@@ -781,6 +801,7 @@ void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const CtfM
     writePmuEvent(out);
     writeStatusEvents(out);
     writePcSampleEvent(out);
+    writePcSampleProhibitedEvent(out);
   } else {
     writeGeneralTraceEnvironment(out, model);
     writeGeneralCommonTypes(out, model);

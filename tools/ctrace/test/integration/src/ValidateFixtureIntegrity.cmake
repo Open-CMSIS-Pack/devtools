@@ -35,7 +35,7 @@ set(fixture_entries
   "Blinky+Arm/Blinky+Arm.TB.raw|b0fccabe1a326ffe9fadf12d5c3a205d87628985e5e75a99da23c97d7f33d13b|4096"
   "Blinky+Arm/Blinky+Arm.ctrace-run.yml|c9816183dde98ded93e57afd44312fb3026e3efdd1681f745bc03f7426713563|1171"
   "Blinky+Arm/expected/Blinky+Arm.SWO.traceanalysis.xml|2ef7a28b11497494f8c8d8aa7b96252bd92ee17b144dc4f344b5780cf526da4f|5450"
-  "Blinky+Arm/expected/Blinky+Arm.ctf/metadata|5179a4768c9faa9c9ce8ffb0639f373748c1d961195fb46af65c9a67c21739c6|7863"
+  "Blinky+Arm/expected/Blinky+Arm.ctf/metadata|4fc390221c3d3df0dcfa15f4aa41168b1964e0828bab940fde7dec558ca01785|8047"
   "Blinky+Arm/expected/Blinky+Arm.ctf/stream_0|2054d43163cf1ff8e921be92b397469e2eb75fb55f4f81c08c20382f38918ef6|65536"
   "TB-Trace/Blinky+Arm.TB.raw|aab49e56a07783b984fa7c6faeea101a51141423e66ba043dbd8d30702012639|4096"
   "TB-Trace/Blinky+Arm.ctrace-run.yml|19efd6f35a647f1e5fb73f71ffafa867278d693a7114e3861a43309ebf8f8c4a|3080"
@@ -48,6 +48,9 @@ set(fixture_entries
   "trace-event/trace-event.raw|97807dad2f69b1274df8960d3459426d1da4a6892d05e7623f3e16f06c5d85c8|19999"
   "trace-match/trace-match.ctrace-run.yml|b40c10634b8ba335b14b75f0026758ad84dd68aaf68f0a1bbfd2a5745756c5e8|1132"
   "trace-match/trace-match.raw|5cffb5803675dc02ecd5ed4939a42c660ad7cabd3542b8ca1506230e20d14a50|18"
+  "trace-pc-sample/README.md|cd7172d0275ff749a86063772a14233e9fca68c1efc7cff47db81f3e199f6dfd|1588"
+  "trace-pc-sample/trace-pc-sample.ctrace-run.yml|e8875a9c5ec034ad4fae9ac823a3d442bbb4246af1ddd8d62093496bb8c52e1b|173"
+  "trace-pc-sample/trace-pc-sample.raw|4e75b75e27be0dab3bdfdecb6331d7bfc1d51337d2fcad8ea2adfe5026992ad4|24"
   "trace-run/Board.ctrace-run.yml|a6ef0f40757b94840cfbb93d35490e9b3cb0d68471e66a5ea09cc1d55c84f2f7|447"
   "trace-run/Minimal.ctrace-run.yml|12af0fdf3d19abfda197253fc60897f212e13f8c649d1d93ca9798019333b696|89"
 )
@@ -74,8 +77,8 @@ if(NOT actual_fixture_paths STREQUAL expected_fixture_paths)
 endif()
 
 list(LENGTH expected_fixture_paths expected_fixture_count)
-if(NOT expected_fixture_count EQUAL 22)
-  message(FATAL_ERROR "fixture manifest must contain exactly 22 checked-in fixture files")
+if(NOT expected_fixture_count EQUAL 25)
+  message(FATAL_ERROR "fixture manifest must contain exactly 25 checked-in fixture files")
 endif()
 
 # The reconstructed Trace Bus input is exactly 256 memory-aligned frames. The

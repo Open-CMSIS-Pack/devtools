@@ -103,6 +103,10 @@ and producer integration remain tracked as unfinished work.
   reporting. Ctrace deliberately names the seventh CSV column `address`; the currently published CMSIS-Toolbox trace
   specification still says `offset`, and must be corrected to match this intended schema before the difference is
   treated as standardized.
+- PC sampling distinguishes four-byte PC values from the one-byte `0x00` (`CPU Sleeping`) and Armv8-M `0xff`
+  (`Trace prohibited`) status markers. CSV leaves `pc` empty for both markers and writes their meaning in `note`;
+  all three remain selectable as `pcsample`. Markers preserve route, timestamp, and quality without creating an error
+  or data-loss boundary. Unsupported payloads remain errors; arbitrary raw `0xff` bytes are not PC-sampling markers.
 - Formatted CTF stream files are created lazily as `stream_<id>` only for routes with selected semantic output. Every
   emitted stream class references an explicit clock domain. When selected, the legacy unformatted path retains eager
   `stream_0`, its UUID-optional `swo_clock` metadata form, and companion XML compatibility.
@@ -117,8 +121,10 @@ and producer integration remain tracked as unfinished work.
   DWT/PMU overflow events, and processor sleep state as time graphs. Each block is emitted only if the completed stream
   contains matching trace data; synthetic exception bootstrap records alone do not enable an exception block, and
   `Processor State` specifically requires a sleep indication. ITM payloads, ordinary sampled
-  PCs, and trace-status records stay available through the CTF event table. Trace Compass XML has no data-driven
-  table-view type, so ctrace does not model these point records as artificial timelines.
+  PCs, trace-prohibited markers, and trace-status records stay available through the CTF event table. Trace Compass XML
+  has no data-driven table-view type, so ctrace does not model these point records as artificial timelines.
+  If no graphical topic remains after output filtering, no companion XML is generated and stale XML is removed;
+  an empty analysis is not a valid Trace Compass configuration. The CTF bundle remains available.
 - `timestamps.clock` has no ctrace fallback. For every route selected for CTF, missing, null, invalid, zero, or
   conflicting frequency is accepted for validation-only and CSV operation but prevents CTF generation with an Error.
   A filter selecting no configured route requires no clock because it can emit no CTF stream. With `--all`, valid CSV

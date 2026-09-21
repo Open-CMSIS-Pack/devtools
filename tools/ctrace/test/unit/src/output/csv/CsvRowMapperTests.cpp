@@ -79,12 +79,17 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 4U, 0U, AccessType::Write}}), ",,dwt,0,0x00000000,,,");
   ASSERT_TRUE(CsvRowMapper::row(TraceEvent{DwtMatchTraceEvent{2U}}) == ",,dwt,2,,,,")
       << "CSV must expose a match only through its DWT comparator source";
-  ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U, false}}, 949339000U)) ==
+  ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U}}, 949339000U)) ==
               "949339000,,pcsample,,,0x08001234,,")
       << "CSV PC-sample row mismatch";
-  ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0U, true}}, 949339100U)) ==
-              "949339100,,pcsample,,,,,")
+  ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::Sleep}}, 949339100U)) ==
+              "949339100,,pcsample,,,,,CPU Sleeping")
       << "CSV PC-sample sleep row mismatch";
+  EXPECT_EQ(CsvRowMapper::row(onStream(
+                atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::TraceProhibited}}, 949339200U), 4U)),
+            "949339200,4,pcsample,,,,,Trace prohibited");
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{PcSampleTraceEvent{0xffU}}), ",,pcsample,,,0x000000ff,,")
+      << "a four-byte PC value must not be rendered as a status marker";
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperCoversAddressAndExceptionVariants)

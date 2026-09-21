@@ -212,7 +212,8 @@ lazily creates a stream writer for each formatted route that emits selected even
 the backends: for example, CSV retains a DWT/PMU counter mask in one row while CTF expands it into individual records.
 
 CTF finalization retains only emitted streams, then generates Trace Compass XML from their observed graphical topics.
-This avoids empty views and invented durations for point events. Route identity stays separate from display labels,
+Without graphical topics, it omits the XML entirely; point events remain in the CTF event table. This avoids invalid
+empty analyses and invented durations. Route identity stays separate from display labels,
 so equal processor names cannot merge views. Formatted routes retain distinct clock domains because the input contract
 does not establish cross-route synchronization. Multi-clock data remains valid CTF but cannot safely drive the supported
 reader's combined XML analysis.

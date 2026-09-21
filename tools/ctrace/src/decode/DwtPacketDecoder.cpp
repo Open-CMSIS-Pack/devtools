@@ -62,6 +62,23 @@ static bool isSupportedAddressFragmentSize(std::uint8_t size)
   return size == 1U || size == 2U || size == 4U;
 }
 
+/** @brief Classifies PC-sample payloads without confusing a four-byte PC with a one-byte marker. */
+static std::optional<PcSampleKind> pcSampleKind(const DwtPayloadPacket& payload)
+{
+  if (payload.size == 4U) {
+    return PcSampleKind::Pc;
+  }
+  if (payload.size == 1U) {
+    if (payload.value == 0U) {
+      return PcSampleKind::Sleep;
+    }
+    if (payload.value == 0xffU) {
+      return PcSampleKind::TraceProhibited;
+    }
+  }
+  return std::nullopt;
+}
+
 /** @brief Describes an invalid DWT event-counter payload. */
 static std::string invalidEventCounterMessage(const DwtPayloadPacket& payload)
 {
@@ -180,21 +197,21 @@ std::vector<TraceEvent> DwtPacketDecoder::decodeExceptionTrace(const DwtPayloadP
 std::vector<TraceEvent> DwtPacketDecoder::decodePeriodicPcSample(const DwtPayloadPacket& payload)
 {
   auto output = flush(payload.quality, payload.tcyc);
-  const auto isPc = payload.size == 4U;
-  const auto isSleeping = payload.size == 1U && payload.value == 0U;
-  if (!isPc && !isSleeping) {
+  const auto kind = pcSampleKind(payload);
+  if (!kind.has_value()) {
     output.push_back(makeDwtEvent(payload, TraceIssueEvent{
         TraceIssueCode::UnsupportedDwtPcSamplePayload,
         TraceIssueSeverity::Error,
         "unsupported DWT PC-sample payload: size " + std::to_string(payload.size) +
             ", value " + std::to_string(payload.value) +
-            "; expected a 4-byte PC or a 1-byte zero sleep indication",
+            "; expected a 4-byte PC or a 1-byte marker (0x00: CPU Sleeping, 0xff: Trace prohibited)",
         std::nullopt,
         std::nullopt,
     }));
     return output;
   }
-  output.push_back(makeDwtEvent(payload, PcSampleTraceEvent{payload.value, isSleeping}));
+  const auto pc = kind.value() == PcSampleKind::Pc ? payload.value : 0U;
+  output.push_back(makeDwtEvent(payload, PcSampleTraceEvent{pc, kind.value()}));
   return output;
 }
 

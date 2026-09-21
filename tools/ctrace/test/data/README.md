@@ -106,6 +106,11 @@ packet for each comparator 0 through 3 and local timestamps. The integration
 test verifies the generated CSV rows, CTF records, labels, and Trace Compass
 timeline configuration.
 
+[trace-pc-sample](trace-pc-sample/README.md) is a synthetic PC/sleep/trace-prohibited/PC
+sequence with local timestamps. Tests exercise unformatted SWO and two-route
+formatted TB input, output modes, filtering and an independent Babeltrace
+consumer. The marker is valid status information, not a decoder error.
+
 ## Reader and entry-point inputs
 
 `trace-run` contains only the small current-schema inputs needed by executable

@@ -186,6 +186,9 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
             "CTF test parser encountered an invalid PC-sample state");
     return 1U + (state == CtfSchema::value(CtfSchema::PcSampleState::Pc) ? 4U : 0U) + 5U;
   }
+  if (eventId == CtfSchema::value(CtfSchema::EventId::PcSampleProhibited)) {
+    return 5U;
+  }
   if (eventId == CtfSchema::value(CtfSchema::EventId::DwtEvent)) {
     return 6U;
   }

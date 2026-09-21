@@ -291,12 +291,20 @@ void CtfBundleOutput::finalizeTraceCompassXml(const CtfMetadataModel& metadata)
     return;
   }
 
-  if (metadata.isLegacySingleStreamLayout()) {
-    TraceCompassXmlWriter::writeLegacyFile(m_traceCompassXmlPath,
-                                           traceCompassViews(metadata, streams.front().streamClassId));
+  const auto viewRoutes = traceCompassViewRoutes(metadata);
+  const auto hasViews = std::any_of(viewRoutes.begin(), viewRoutes.end(), [](const auto& route) {
+    return route.views != 0U;
+  });
+  if (!hasViews) {
+    removeOutputFile(m_traceCompassXmlPath);
     return;
   }
-  TraceCompassXmlWriter::writeRoutedFile(m_traceCompassXmlPath, traceCompassViewRoutes(metadata));
+
+  if (metadata.isLegacySingleStreamLayout()) {
+    TraceCompassXmlWriter::writeLegacyFile(m_traceCompassXmlPath, viewRoutes.front().views);
+    return;
+  }
+  TraceCompassXmlWriter::writeRoutedFile(m_traceCompassXmlPath, viewRoutes);
 }
 
 void CtfBundleOutput::omitTraceCompassXml(std::size_t clockDomainCount)

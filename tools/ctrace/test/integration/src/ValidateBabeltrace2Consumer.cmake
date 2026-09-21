@@ -193,3 +193,56 @@ if(NOT bundle_output_lower MATCHES "different (uuid|identity)")
     "Babeltrace rejected the multi-clock bundle for an unexpected reason "
     "(${bundle_result}):\n${bundle_output}")
 endif()
+
+# The status marker uses an additive event, not a new PC_SAMPLE array-length
+# value. A real consumer must decode the following PC record without drift.
+get_filename_component(fixture_root "${FIXTURE_DIRECTORY}" DIRECTORY)
+set(marker_fixture_directory "${fixture_root}/trace-pc-sample")
+set(marker_work_directory "${test_work_directory}/pc-sampling-markers")
+require_nonempty_file("${marker_fixture_directory}/trace-pc-sample.ctrace-run.yml"
+  "PC sampling marker configuration fixture")
+require_nonempty_file("${marker_fixture_directory}/trace-pc-sample.raw"
+  "PC sampling marker raw fixture")
+file(MAKE_DIRECTORY "${marker_work_directory}")
+file(COPY
+  "${marker_fixture_directory}/trace-pc-sample.ctrace-run.yml"
+  "${marker_fixture_directory}/trace-pc-sample.raw"
+  DESTINATION "${marker_work_directory}")
+file(RENAME
+  "${marker_work_directory}/trace-pc-sample.raw"
+  "${marker_work_directory}/trace-pc-sample.SWO.raw")
+execute_process(
+  COMMAND "${CTRACE_EXECUTABLE}" "${marker_work_directory}" --target trace-pc-sample --ctf --type pcsample
+  WORKING_DIRECTORY "${marker_work_directory}"
+  RESULT_VARIABLE marker_ctrace_result
+  OUTPUT_VARIABLE marker_ctrace_stdout
+  ERROR_VARIABLE marker_ctrace_stderr
+)
+if(NOT "${marker_ctrace_result}" STREQUAL "0")
+  message(FATAL_ERROR
+    "ctrace failed to generate the PC sampling marker consumer fixture (${marker_ctrace_result}):\n"
+    "${marker_ctrace_stdout}${marker_ctrace_stderr}")
+endif()
+
+run_babeltrace("${marker_work_directory}/trace-pc-sample.ctf" marker_output)
+string(STRIP "${marker_output}" marker_output)
+string(REPLACE "\n" ";" marker_records "${marker_output}")
+list(LENGTH marker_records marker_record_count)
+if(NOT marker_record_count EQUAL 4)
+  message(FATAL_ERROR "Expected exactly four PC sampling records, got ${marker_record_count}:\n${marker_output}")
+endif()
+
+set(expected_marker_records
+  "[0.000001000] PC_SAMPLE: { cmsis_trace_bus_id = 0 }, { cmsis_pc_sample_state = 1, cmsis_pc = [ [0] = 134222388 ], cmsis_sample_flags = 2, cmsis_overflow_count = 0 }"
+  "[0.000003000] PC_SAMPLE: { cmsis_trace_bus_id = 0 }, { cmsis_pc_sample_state = 0, cmsis_pc = [ ], cmsis_sample_flags = 2, cmsis_overflow_count = 0 }"
+  "[0.000006000] PC_SAMPLE_PROHIBITED: { cmsis_trace_bus_id = 0 }, { cmsis_sample_flags = 2, cmsis_overflow_count = 0 }"
+  "[0.000010000] PC_SAMPLE: { cmsis_trace_bus_id = 0 }, { cmsis_pc_sample_state = 1, cmsis_pc = [ [0] = 134239864 ], cmsis_sample_flags = 2, cmsis_overflow_count = 0 }"
+)
+foreach(index RANGE 0 3)
+  list(GET marker_records ${index} actual_record)
+  list(GET expected_marker_records ${index} expected_record)
+  if(NOT actual_record STREQUAL expected_record)
+    message(FATAL_ERROR
+      "Babeltrace PC sampling record ${index} differs:\nexpected: ${expected_record}\nactual: ${actual_record}")
+  endif()
+endforeach()
