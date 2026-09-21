@@ -16,8 +16,6 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <stdexcept>
-#include <string>
 #include <vector>
 
 class ITraceErrorLog;
@@ -59,30 +57,6 @@ using OpenCsdUnsupportedTraceIdSink = std::function<void(std::uint8_t, ocsd_trc_
 
 /** @brief Reports skipped deformatted bytes with their reason and first formatter-group offset. */
 using OpenCsdSkippedBytesSink = std::function<void(const TraceByteSkip&)>;
-
-/** @brief Reports malformed formatted input detected outside OpenCSD's error callback API. */
-class OpenCsdFormattedInputError final : public std::runtime_error {
-public:
-  /**
-   * @brief Creates an input error at an exact raw formatter offset.
-   * @param message Human-readable failure description without an offset suffix.
-   * @param sourceOffset Raw formatted-input offset at which the failure was detected.
-   */
-  OpenCsdFormattedInputError(const std::string& message, std::uint64_t sourceOffset)
-    : std::runtime_error(message + " at raw input offset " + std::to_string(sourceOffset)),
-      m_sourceOffset(sourceOffset)
-  {
-  }
-
-  /** @brief Returns the raw formatted-input offset associated with the failure. */
-  std::uint64_t sourceOffset() const noexcept
-  {
-    return m_sourceOffset;
-  }
-
-private:
-  std::uint64_t m_sourceOffset = 0U;
-};
 
 /**
  * @brief Owns one memory-aligned formatted OpenCSD tree with routed ITM decoders.

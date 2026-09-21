@@ -19,10 +19,10 @@
 #include "opencsd/itm/trc_pkt_types_itm.h"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <optional>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -137,7 +137,8 @@ public:
       return OCSD_OK;
     }
     if (traceId == OCSD_BAD_CS_SRC_ID) {
-      recordUnassignedData(index, static_cast<std::uint32_t>(dataSize));
+      // No frontend reset or reset-on-FSYNC: an unknown ID can only precede the first assigned ID.
+      m_prefix.record(index, static_cast<std::uint32_t>(dataSize));
       return OCSD_OK;
     }
     m_hasAssignedData = true;
@@ -160,14 +161,10 @@ public:
     return OCSD_OK;
   }
 
-  /** @brief Publishes observations outside OpenCSD and rejects source-ID loss after the initial prefix. */
+  /** @brief Publishes observations outside OpenCSD after each operation. */
   void completeOperation(const OpenCsdUnsupportedTraceIdSink& unsupportedTraceIdSink,
                            const OpenCsdSkippedBytesSink& skippedBytesSink, bool endOfTrace)
   {
-    if (m_unassignedIndex.has_value()) {
-      const auto index = *std::exchange(m_unassignedIndex, std::nullopt);
-      throw OpenCsdFormattedInputError("formatted trace data has no source ID", static_cast<std::uint64_t>(index));
-    }
     if (m_hasAssignedData || endOfTrace) {
       m_prefix.publish(TraceByteSkipReason::NoSourceId, std::nullopt, skippedBytesSink);
     }
@@ -178,22 +175,17 @@ public:
   }
 
 private:
-  /** @brief Retains bounded, replay-safe accounting without storing protocol bytes. */
+  /** @brief Retains bounded accounting without storing protocol bytes. */
   struct SkippedDataCounter {
     std::optional<ocsd_trc_index_t> firstFormatterOffset;
-    std::optional<ocsd_trc_index_t> lastFormatterOffset;
     std::uint64_t byteCount = 0U;
 
-    /** @brief Counts one deformatter output group once, including across repeated delivery attempts. */
+    /** @brief Counts a skipped group; OpenCSD advances these unconnected groups without retrying them. */
     void record(ocsd_trc_index_t index, std::uint32_t size) noexcept
     {
-      if (lastFormatterOffset == index) {
-        return;
-      }
       if (!firstFormatterOffset.has_value()) {
         firstFormatterOffset = index;
       }
-      lastFormatterOffset = index;
       byteCount += size;
     }
 
@@ -239,24 +231,12 @@ private:
   /** @brief Reports every observed skipped source once at end-of-input. */
   void publishSkippedSources(const OpenCsdSkippedBytesSink& sink)
   {
-    for (std::uint8_t traceId = 0U; traceId < m_skippedById.size(); ++traceId) {
+    for (std::size_t traceId = 0U; traceId < m_skippedById.size(); ++traceId) {
       const auto reason = traceId == 0U ? TraceByteSkipReason::NullSourceId
                           : OCSD_IS_VALID_CS_SRC_ID(traceId) ? TraceByteSkipReason::UnconfiguredSourceId
                                                            : TraceByteSkipReason::ReservedSourceId;
-      m_skippedById[traceId].publish(reason, traceId, sink);
+      m_skippedById[traceId].publish(reason, static_cast<std::uint8_t>(traceId), sink);
     }
-  }
-
-  /** @brief Aggregates initial unassigned data without confusing formatter and protocol byte counts. */
-  void recordUnassignedData(ocsd_trc_index_t index, std::uint32_t size) noexcept
-  {
-    if (m_hasAssignedData) {
-      if (!m_unassignedIndex.has_value()) {
-        m_unassignedIndex = index;
-      }
-      return;
-    }
-    m_prefix.record(index, size);
   }
 
   OpenCsdFormattedItmPacketSink& m_sink;
@@ -266,7 +246,6 @@ private:
   std::array<std::optional<ocsd_trc_index_t>, 128U> m_pendingIndex{};
   std::array<SkippedDataCounter, 128U> m_skippedById{};
   SkippedDataCounter m_prefix;
-  std::optional<ocsd_trc_index_t> m_unassignedIndex;
   bool m_hasAssignedData = false;
 };
 

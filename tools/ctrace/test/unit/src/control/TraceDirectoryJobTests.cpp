@@ -412,6 +412,53 @@ TEST(CtraceUnitTests, testTraceDirectoryRejectsAmbiguousExplicitInputsWithoutTou
             3U);
 }
 
+TEST(CtraceUnitTests, testTraceDirectoryReportsNormalizedSetupWarningWithContext)
+{
+  const TemporaryTestPath temporaryPath("ctrace-trace-directory-setup-warning-test");
+  const auto traceDir = temporaryPath.path() / ".trace";
+  const auto configPath = traceDir / "Conflicting.ctrace-run.yml";
+  writeTestFile(configPath, "ctrace-run:\n");
+  auto itm = FormattedTraceTestSupport::itmHardwareSync();
+  for (const auto channel : {1U, 2U}) {
+    const auto software = FormattedTraceTestSupport::itmSoftwarePacket(channel, 'A');
+    itm.insert(itm.end(), software.begin(), software.end());
+  }
+  const auto raw = FormattedTraceTestSupport::memoryAlignedFrames({{1U, std::move(itm)}});
+  writeTestFile(traceDir / "Conflicting.TB.raw", std::string(raw.begin(), raw.end()));
+
+  TraceRunConfig config;
+  config.traceFormat = TraceRunFormat::Formatted;
+  config.references.push_back(TraceRunTestSupport::makeReference("itm", "core", 1U, {}, "core/itm"));
+  config.setups = {
+      TraceRunTestSupport::makeTimestampSetup("core", 100000000U, 1U, 3U),
+      TraceRunTestSupport::makeTimestampSetup("core", 100000000U, 1U, 5U),
+  };
+  config.setups.back().line = 12U;
+
+  CliOptions options;
+  options.traceDir = traceDir.string();
+  options.targetName = "Conflicting";
+  options.outputFormat = OutputFormat::Csv;
+
+  CollectingDiagnosticSink diagnostics;
+  TestTraceRunConfigReader reader(config);
+  TraceDirectoryJob(options, diagnostics, reader).run();
+
+  const auto* warning = findDiagnostic(
+      diagnostics, "ignoring conflicting ctrace-setup itm.enable assignment for one formatted ITM route");
+  ASSERT_NE(warning, nullptr);
+  EXPECT_EQ(warning->severity, DiagnosticSink::Severity::Warning);
+  EXPECT_EQ(warning->impact, DiagnosticSink::Impact::NonFailing);
+  const std::vector<std::pair<std::string, std::string>> expectedContext{
+      {"config", configPath.string()}, {"pname", "core"}, {"line", "12"}};
+  EXPECT_EQ(warning->context, expectedContext);
+  EXPECT_EQ(diagnostics.failureCount(), 0U);
+  EXPECT_FALSE(diagnostics.containsMessage("ITM data was received on a channel not enabled"));
+  const auto csv = readTestTextFile(traceDir / "Conflicting.TB.csv");
+  EXPECT_NE(csv.find(",1,itm,1,0x41,,,"), std::string::npos);
+  EXPECT_NE(csv.find(",1,itm,2,0x41,,,"), std::string::npos);
+}
+
 TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSwo)
 {
   const TemporaryTestPath temporaryPath("ctrace-trace-directory-diagnostics-test");

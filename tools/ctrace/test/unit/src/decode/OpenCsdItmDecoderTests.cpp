@@ -393,7 +393,6 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderPreservesContinuousFormatter
   EXPECT_EQ(protocolErrors.front()->sourceIndex, 17U);
   ASSERT_EQ(losses.size(), 1U);
   EXPECT_EQ(losses.front()->route, route2);
-  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdFormattedInputError));
 }
 
 TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRecoversSeveralRoutesOnceAtTheirEarliestFailure)
@@ -837,7 +836,6 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderSkipsInitialUnassignedDataAn
               }),
               1);
     EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdMissingSync));
-    EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdFormattedInputError));
     EXPECT_EQ(std::count_if(sink.elements().begin(), sink.elements().end(), [&](const auto& element) {
                 return element.route == route && element.kind == OpenCsdTraceElement::Kind::Software &&
                        element.value == 'A';

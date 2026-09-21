@@ -83,8 +83,8 @@ and producer integration remain tracked as unfinished work.
   resumes only at synchronization present in the input.
 - Payload skipped before a source ID is known or assigned to NULL, reserved, or unconfigured IDs is accounted as
   non-failing Info. Bounded accounting counts deformatted payload bytes, not raw/control bytes, and records the first
-  formatter output group's raw offset, not an exact discarded-byte position. Only the initial unassigned prefix is
-  tolerated; losing the source ID after assigned data is input-fatal.
+  formatter output group's raw offset, not an exact discarded-byte position. The source ID is unknown only before
+  its first assignment: formatted decoding neither resets the frontend nor enables reset-on-FSYNC.
 - On a known formatted route, initial `NOTSYNC` payload is counted in deformatted ITM bytes, never inferred from
   differences between raw offsets. If real synchronization is later committed, a byte-skip Info annotation precedes
   that first sync. An existing route error/recovery interval suppresses duplicate initial-loss accounting. If no

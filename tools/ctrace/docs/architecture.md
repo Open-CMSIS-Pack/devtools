@@ -154,9 +154,8 @@ received payload but has no committed real hardware sync emits a route-bound `Op
 a rolled-back transaction does not satisfy this check. The error retains healthy route output and completed
 diagnostic artifacts but makes the invocation fail. Routes with no received payload are not diagnosed as missing sync.
 
-Loss of a source ID after the initial prefix, an error without a usable route, a deformatter error, failure to reset
-the route, repeated lack of decoder progress, or an unsuccessful bounded wait/flush operation aborts the current
-raw-file job and every active output.
+An error without a usable route, a deformatter error, failure to reset the route, repeated lack of decoder progress,
+or an unsuccessful bounded wait/flush operation aborts the current raw-file job and every active output.
 
 ## Suggested code-reading path
 

@@ -434,9 +434,6 @@ private:
       const auto response = operation();
       m_collector.rethrowOutputError();
       return response;
-    } catch (const OpenCsdFormattedInputError& error) {
-      abortFormattedException(error.what(), error.sourceOffset(), processedOffset(baseOffset, size, bytesConsumed),
-                              fatalPrefix, TraceIssueCode::OpenCsdFormattedInputError, preserveIncompleteTail);
     } catch (const std::exception& error) {
       const auto sourceOffset = m_collector.transactionFirstSourceOffset().value_or(baseOffset);
       abortFormattedException(std::string("formatted OpenCSD session operation failed: ") + error.what() +

@@ -173,7 +173,6 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
       {TraceIssueCode::OpenCsdInvalidPacketHeader, "invalid ITM packet header at raw offset 42"},
       {TraceIssueCode::OpenCsdIncompleteTail, "incomplete ITM packet starting at raw offset 42 at end of input"},
       {TraceIssueCode::OpenCsdMissingSync, "no hardware ITM SYNC before end of input"},
-      {TraceIssueCode::OpenCsdFormattedInputError, "formatted input failed at raw input offset 42"},
       {TraceIssueCode::OpenCsdNoProgress, "OpenCSD made no decode progress at raw offset 42"},
       {TraceIssueCode::OpenCsdWaitTimeout, "OpenCSD remained blocked while flushing pending data"},
       {TraceIssueCode::OpenCsdInitializationError, "OpenCSD initialization failed"},
@@ -181,16 +180,10 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
       {static_cast<TraceIssueCode>(255U), "trace decode error at raw offset 42"},
   };
   for (const auto& testCase : cases) {
-    auto event = issuePacket(testCase.code, testCase.code == TraceIssueCode::OpenCsdFormattedInputError
-                                                ? "formatted input failed at raw input offset 42"
-                                                : "");
+    auto event = issuePacket(testCase.code);
     event.index = 42U;
     reporter.append(event);
   }
-
-  auto formattedFallback = issuePacket(TraceIssueCode::OpenCsdFormattedInputError);
-  formattedFallback.index = 44U;
-  reporter.append(formattedFallback);
 
   auto dataLoss = issuePacket(TraceIssueCode::DataLoss);
   dataLoss.index = 43U;
@@ -200,13 +193,12 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
   reporter.append(warningDataLoss);
   reporter.append(issuePacket(TraceIssueCode::DecodeError));
 
-  ASSERT_EQ(diagnostics.events().size(), std::size(cases) + 4U);
+  ASSERT_EQ(diagnostics.events().size(), std::size(cases) + 3U);
   for (std::size_t index = 0U; index < std::size(cases); ++index) {
     EXPECT_EQ(diagnostics.events()[index].message, cases[index].message);
   }
-  EXPECT_EQ(diagnostics.events()[std::size(cases)].message, "formatted trace input error at raw offset 44");
-  EXPECT_NE(diagnostics.events()[std::size(cases) + 1U].message.find("raw offset 43"), std::string::npos);
-  EXPECT_EQ(diagnostics.events()[std::size(cases) + 2U].severity, DiagnosticSink::Severity::Warning);
+  EXPECT_NE(diagnostics.events()[std::size(cases)].message.find("raw offset 43"), std::string::npos);
+  EXPECT_EQ(diagnostics.events()[std::size(cases) + 1U].severity, DiagnosticSink::Severity::Warning);
   EXPECT_EQ(diagnostics.events().back().message, "trace decode error at raw offset 0");
 }
 

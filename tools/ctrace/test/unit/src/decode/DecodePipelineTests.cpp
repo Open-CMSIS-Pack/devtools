@@ -369,6 +369,53 @@ TEST(CtraceUnitTests, testDecodePipelineRejectsInvalidChunkSizes)
   EXPECT_EQ(result.eventsOut, 0U);
 }
 
+TEST(CtraceUnitTests, testDecodePipelineCountsFormattedSkipsWithSemanticOnlySink)
+{
+  // CollectingEventSink overrides append only, retaining the optional skip callback's default no-op.
+  CollectingEventSink sink;
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  DecodePipeline pipeline({{route, 1U}}, OpenCsdItmInputMode::CoreSightFormatted, sink);
+  // Two formatter frames contain 30 payload bytes without an assigned source ID.
+  const std::uint8_t unassignedFrames[32U]{};
+
+  pipeline.push(rawBytes(unassignedFrames));
+  const auto result = pipeline.finish();
+  EXPECT_EQ(result.bytesIn, sizeof(unassignedFrames));
+  EXPECT_EQ(result.eventsOut, 1U) << "the single skip annotation must be counted even when the sink ignores it";
+  EXPECT_TRUE(sink.events().empty()) << "skipped input must not create semantic trace events";
+
+  const auto repeatedResult = pipeline.finish();
+  EXPECT_EQ(repeatedResult.bytesIn, result.bytesIn);
+  EXPECT_EQ(repeatedResult.eventsOut, result.eventsOut);
+  EXPECT_TRUE(sink.events().empty());
+}
+
+TEST(CtraceUnitTests, testDecodePipelineRejectsFormattedRouteWithoutTraceBusId)
+{
+  CollectingEventSink sink;
+  try {
+    DecodePipeline pipeline({singleDecodeRoute()}, OpenCsdItmInputMode::CoreSightFormatted, sink);
+    FAIL() << "formatted input accepted a route without a Trace Bus ID";
+  } catch (const std::invalid_argument& error) {
+    EXPECT_STREQ(error.what(), "formatted OpenCSD packet route requires a Trace Bus ID between 1 and 111");
+  }
+  EXPECT_TRUE(sink.events().empty()) << "invalid input configuration must not emit decoded events";
+}
+
+TEST(CtraceUnitTests, testDecodePipelineRejectsMultipleSingleInputRoutes)
+{
+  CollectingEventSink sink;
+  const TraceRouteIdentity first{TraceRouteId{0U}, std::nullopt};
+  const TraceRouteIdentity second{TraceRouteId{1U}, std::nullopt};
+  try {
+    DecodePipeline pipeline({{first, 1U}, {second, 1U}}, OpenCsdItmInputMode::Single, sink);
+    FAIL() << "unformatted input accepted multiple normalized routes";
+  } catch (const std::invalid_argument& error) {
+    EXPECT_STREQ(error.what(), "OpenCSD SINGLE decoding requires exactly one normalized route");
+  }
+  EXPECT_TRUE(sink.events().empty()) << "invalid input configuration must not emit decoded events";
+}
+
 TEST(CtraceUnitTests, testDecodePipelineUsesInjectedSingleRouteConfiguration)
 {
   CollectingEventSink sink;

@@ -836,3 +836,46 @@ TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionResetsOnlySelectedRoute)
   EXPECT_THROW(session.resetRoute(112U, 42U), OpenCsdTreeSessionError);
   EXPECT_EQ(packets.resets().size(), 1U);
 }
+
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionPreservesSourceIdAcrossFrameBoundaryAndRouteReset)
+{
+  const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+  RecordingElementOutput elements;
+  RecordingPacketSink packets;
+  OpenCsdErrorController errors;
+  std::vector<TraceByteSkip> skipped;
+  OpenCsdFormattedItmSession session({route}, elements, errors, packets, {},
+                                     [&](const TraceByteSkip& item) { skipped.push_back(item); });
+  auto protocol = itmHardwareSync();
+  for (const auto value : {'A', 'B', 'C', 'D'}) {
+    const auto packet = itmSoftwarePacket(1U, static_cast<std::uint8_t>(value));
+    protocol.insert(protocol.end(), packet.begin(), packet.end());
+  }
+  ASSERT_EQ(protocol.size(), 14U); // The first frame has one ID marker and fourteen protocol bytes.
+  const auto synchronization = itmHardwareSync();
+  protocol.insert(protocol.end(), synchronization.begin(), synchronization.end());
+  const auto lastPacket = itmSoftwarePacket(1U, 'Z');
+  protocol.insert(protocol.end(), lastPacket.begin(), lastPacket.end());
+  const auto capture = memoryAlignedFrames({{1U, protocol}});
+  ASSERT_EQ(capture.size(), 32U);
+  for (std::size_t slot = 16U; slot < 24U; slot += 2U) {
+    ASSERT_EQ(capture[slot] & 1U, 0U) << "the second frame must not repeat the source ID before its payload";
+  }
+
+  feedCapture(session, {capture.begin(), capture.begin() + 16U});
+  ASSERT_EQ(elements.software().size(), 4U);
+  EXPECT_EQ(session.flush(), OCSD_RESP_CONT);
+  EXPECT_EQ(session.resetRoute(1U, 16U), OCSD_RESP_CONT);
+  feedCapture(session, {capture.begin() + 16U, capture.end()}, 16U);
+  EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+  ASSERT_EQ(elements.software().size(), 5U);
+  EXPECT_EQ(elements.software().back().traceId, 1U);
+  EXPECT_EQ(elements.software().back().value, static_cast<std::uint32_t>('Z'));
+  ASSERT_EQ(packets.data().size(), 2U);
+  EXPECT_EQ(packets.data()[1U].route, route);
+  EXPECT_EQ(packets.data()[1U].formatterOffset, 16U);
+  EXPECT_EQ(packets.data()[1U].byteCount, 8U);
+  ASSERT_EQ(skipped.size(), 1U);
+  EXPECT_EQ(skipped.front().reason, TraceByteSkipReason::NullSourceId);
+  EXPECT_EQ(skipped.front().byteCount, 6U);
+}
