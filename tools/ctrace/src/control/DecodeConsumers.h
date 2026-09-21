@@ -37,8 +37,8 @@ public:
   std::uint64_t eventCount() const;
   /** @brief Completes deferred issue reporting. */
   void finishIssues();
-  /** @brief Completes all output artifacts without throwing. */
-  void finishOutputs() noexcept;
+  /** @brief Completes output artifacts using each backend's optional fatal-input policy. */
+  void finishOutputs(const TraceDecodeAbort* decodeAbort = nullptr) noexcept;
   /** @brief Aborts and removes partial output artifacts without throwing. */
   void abortOutputs() noexcept;
 

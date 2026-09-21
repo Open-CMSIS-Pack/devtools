@@ -84,7 +84,7 @@ void TraceOutputLifecycle::abort() noexcept
   abortActiveNoexcept();
 }
 
-void TraceOutputLifecycle::finish() noexcept
+void TraceOutputLifecycle::finish(const TraceDecodeAbort* decodeAbort) noexcept
 {
   if (m_finished) {
     return;
@@ -96,10 +96,10 @@ void TraceOutputLifecycle::finish() noexcept
       continue;
     }
     try {
-      m_outputs[outputIndex]->stop();
+      m_outputs[outputIndex]->stop(decodeAbort);
       m_states[outputIndex] = State::Completed;
     } catch (...) {
-      fail(outputIndex, "stop", std::current_exception());
+      fail(outputIndex, decodeAbort == nullptr ? "stop" : "decode-abort", std::current_exception());
       abortNoexcept(outputIndex);
     }
   }

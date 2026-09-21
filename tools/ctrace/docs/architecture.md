@@ -3,6 +3,8 @@
 This document describes the internal structure of `ctrace`, the runtime data flow, and the intended extension points.
 For command-line usage and build instructions, see the [project README](../README.md). The [verified
 constraints](constraints.md) record preserved contracts; the compact [TODO list](todo.md) tracks remaining work.
+The [multi-source design record](multi-source-design.md) explains the migration from single-source SWO to routed
+CoreSight input and the decisions behind the current structure.
 
 ![ctrace architecture](architecture.svg)
 
@@ -15,6 +17,8 @@ The current profile supports unformatted ITM byte streams from SWO or explicitly
 memory-aligned formatted CoreSight input carrying ITM and DWT packets. Each configured ITM route supports the public
 event selections `itm`, `dwt`, `event`, `pmu`, `exception`, `pcsample`, `global_ts`, `overflow`, and `error`.
 Backend-specific representations are documented in the [CTF profile](ctf-format.md), not in the decoder contract.
+PC sampling currently accepts a four-byte PC or a one-byte `0x00` sleep marker. The specified Armv8-M `0xFF`
+(`Trace prohibited`) marker is not implemented yet and produces an unsupported-payload Error.
 
 Exactly one raw input is active for each trace-run configuration. Formatted input distributes bytes to configured
 ITM routes by Trace Bus ID; unformatted input uses one synthetic route. Other protocols require explicit decoder
@@ -155,7 +159,46 @@ a rolled-back transaction does not satisfy this check. The error retains healthy
 diagnostic artifacts but makes the invocation fail. Routes with no received payload are not diagnosed as missing sync.
 
 An error without a usable route, a deformatter error, failure to reset the route, repeated lack of decoder progress,
-or an unsuccessful bounded wait/flush operation aborts the current raw-file job and every active output.
+or an unsuccessful bounded wait/flush operation aborts the current raw-file job. The fatal-input output policy
+retains committed CSV rows with a global abort record, but removes incomplete CTF and XML artifacts.
+
+## OpenCSD diagnostic callbacks
+
+The callbacks remain complementary; no single callback reports every damaged-input condition.
+
+| Input | Use in ctrace |
+| --- | --- |
+| `LogError` | Native code, severity, message, optional index and source ID. |
+| `RawPacketDataMon` | Hardware SYNC, overflow, NOTSYNC, malformed packets, and incomplete EOT packets. |
+| `TraceElemIn` | ITM software, DWT, and timestamp semantics. |
+| `TraceRawFrameIn` | Route attribution and accounting for unassigned, NULL, reserved, or unconfigured source IDs. |
+| Root response and consumed count | Continue/wait/fatal handling, progress validation, and warning fallback. |
+
+Recovery is decided after the root operation returns. Packet previews copy at most 16 bytes. A warning response
+without a warning/error callback emits one non-discontinuous warning; generic no-sync/EOT elements do not duplicate
+the packet-monitor diagnostics.
+
+OpenCSD logs an ITM packet error before invoking the raw-packet monitor. Ctrace
+therefore joins their observations after the operation using the normalized route
+and exact OpenCSD packet index. The copied context survives transaction rollback
+until that operation's logger diagnostics have been emitted; a new operation
+clears it. No pointer into the producer's buffer is retained. CLI and CSV preserve
+the native message and bounded packet preview instead of replacing them with a
+generic error label.
+
+The current ITM decoder and formatter do not emit `LogMessage` diagnostics or
+warning-only root responses themselves. The latter are handled defensively.
+`LogMessage` is not promoted into protocol errors: it has no packet index or
+source-ID contract and cannot justify resetting a decoder. Unsupported generic
+trace families remain outside this ITM-only profile. Existing SYNC, overflow,
+NOTSYNC, and EOT reporting is not duplicated by extra callback hooks.
+
+Formatted recovery diagnostics report OpenCSD's next hardware-SYNC index, or
+explicitly state that no later SYNC was found before EOT. Their raw interval is a
+source-position span, including formatter control and interleaved streams, not an
+exact count of discarded protocol bytes. A formatted packet index can identify a
+deformatter output group rather than the exact physical position of its first
+byte. Packet rollback remains separate from the fatal-input output policy described above.
 
 ## Suggested code-reading path
 
@@ -255,8 +298,10 @@ to the [output constraints](constraints.md#observable-behavior-and-output-safety
 Outputs use an explicit `start`, `writeEvent` / `writeByteSkip`, `stop`, and `abort` lifecycle. `TraceOutput`
 owns the active state and common write-failure cleanup; concrete backends implement the protected lifecycle hooks.
 The byte-skip hook defaults to no output, as required by CTF; CSV implements it independently of event filters.
-A successful backend can finish even if another backend fails. Fatal decode or finalization failures trigger cleanup
-of incomplete artifacts.
+A successful backend can finish even if another backend fails. When `FileDecodeJob` catches `OpenCsdFatalError`, it
+passes a `TraceDecodeAbort` to output finalization. The default backend policy removes incomplete artifacts, as
+required for CTF and XML. CSV instead appends a global abort record and closes the already committed rows. Failed
+CSV writes or finalization still remove the unreliable file; failures before output startup do not create one.
 
 ## Diagnostics and failure semantics
 
@@ -267,6 +312,15 @@ without necessarily preventing the decoding of otherwise valid trace input.
 Decoder issue packets remain part of the event stream. `DecodeConsumers` reports every issue to stderr independently
 of output filters and forwards all events to the backends. The backends apply stream and type selection internally;
 selected issues become CSV error rows or CTF trace-status events. Repeated issues are not silently collapsed.
+Ordinary route-bound CSV warnings and errors both use the `error` selector: an explicit type filter must include
+`error`, and the route must pass the stream filter. The published CSV schema has neither a `warning` type nor a
+severity column; diagnostic severity remains available in CLI output.
+
+A fatal decode abort adds an input-wide CSV `type=error` record regardless of type or stream selection. Only `type`
+and `note` are populated: `decode aborted after processing N input bytes; trace is incomplete: reason`. The empty
+cycle and stream fields avoid inventing a timestamp or assigning the input-wide termination to one route. This is
+a ctrace output contract beyond the published specification, which does not define partial-file retention or
+global abort records. It does not turn ordinary route-bound diagnostics into unfiltered CSV rows.
 
 Byte-skip annotations are non-failing Info, not synchronization events. CSV uses `type=info`, a descriptive note,
 the observed formatter ID in `stream` when known, and empty `cycles`, `source`, `value`, `pc`, and `address` fields.
@@ -326,7 +380,7 @@ Executable-level coverage and fixture ownership are documented next to the
 
 The source tree has seven static library targets: `ctrace-model`, `ctrace-cli`, `ctrace-trace-run`,
 `ctrace-diagnostics`, `ctrace-decode`, `ctrace-output`, and `ctrace-control`. Their `ctrace::` aliases expose the
-shorter module names inside CMake. The shared `ctracelib` object contains `CtraceMain`; the executable adds only the
+shorter module names inside CMake. The common `ctracelib` OBJECT target contains `CtraceMain`; the executable adds only the
 platform trampoline and manifest where required. Dependencies form a directed, cycle-free graph with `control` as
 the composition root.
 
@@ -341,3 +395,11 @@ versioned manual Trace Compass Server/TSP acceptance record is documented beside
 The release version compiled into the executable is derived from the same tag. Archive contents and license material
 are described in the [third-party notices](THIRD_PARTY_NOTICES.md); unfinished release work remains in the
 [TODO list](todo.md).
+
+## Design history
+
+The [initial ctrace import](https://github.com/Open-CMSIS-Pack/devtools/commit/772c7911e61b8066f09c5cfbfe03fe4fc0ee021e)
+introduced the pre-TB architecture and constraints on 2026-07-30. The [multi-source design record](multi-source-design.md)
+describes the subsequent migration to a shared DecodeTree, route-local recovery, and multi-stream output. It links
+the original planning history and distinguishes later contract changes; the live architecture, constraints, and CTF
+profile remain the current implementation references.

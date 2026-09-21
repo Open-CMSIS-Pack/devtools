@@ -249,6 +249,19 @@ struct TraceIssueEvent {
   std::optional<std::uint64_t> lastValidTcyc = std::nullopt;
 };
 
+/** @brief Describes a fatal end to the entire raw input, independently of any trace route. */
+struct TraceDecodeAbort {
+  std::uint64_t bytesProcessed = 0;
+  std::string reason;
+};
+
+/** @brief Describes an incomplete trace consistently in CLI and retained CSV output. */
+inline std::string traceDecodeAbortMessage(const TraceDecodeAbort& failure)
+{
+  return "decode aborted after processing " + std::to_string(failure.bytesProcessed) +
+         " input bytes; trace is incomplete: " + failure.reason;
+}
+
 /** @brief Identifies why formatter or initial ITM payload was skipped. */
 enum class TraceByteSkipReason {
   NoSourceId,

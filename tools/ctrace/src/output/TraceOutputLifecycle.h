@@ -29,8 +29,8 @@ public:
   void append(const TraceEvent& event) override;
   /** @brief Writes skipped-byte accounting to every active output that supports it. */
   void appendByteSkip(const TraceByteSkip& skipped) override;
-  /** @brief Completes all active outputs without propagating failures. */
-  void finish() noexcept;
+  /** @brief Completes active outputs, optionally applying their fatal-input policy. */
+  void finish(const TraceDecodeAbort* decodeAbort = nullptr) noexcept;
   /** @brief Aborts all active outputs without propagating failures. */
   void abort() noexcept;
 

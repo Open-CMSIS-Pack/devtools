@@ -18,6 +18,7 @@
 #include "opencsd/trc_gen_elem_types.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -65,6 +66,7 @@ void OpenCsdPacketCollector::beginTransaction()
   m_transactionActive = true;
   m_nextTransactionOrder = 1U;
   m_transactionElements.clear();
+  m_packetErrorContexts.clear();
 }
 
 std::optional<std::uint64_t> OpenCsdPacketCollector::reserveTransactionOrder() noexcept
@@ -156,6 +158,22 @@ void OpenCsdPacketCollector::rethrowOutputError()
   auto error = m_outputError;
   m_outputError = nullptr;
   std::rethrow_exception(error);
+}
+
+std::string OpenCsdPacketCollector::packetErrorContext(std::optional<std::uint8_t> channel,
+                                                        std::uint64_t index) const
+{
+  const auto* route = channel.has_value() ? routeForChannel(*channel) : singleRoute();
+  if (route == nullptr) {
+    return {};
+  }
+  const auto found = m_packetErrorContexts.find({route->id, index});
+  return found == m_packetErrorContexts.end() ? std::string{} : found->second;
+}
+
+void OpenCsdPacketCollector::clearPacketErrorContexts() noexcept
+{
+  m_packetErrorContexts.clear();
 }
 
 std::size_t OpenCsdPacketCollector::transactionElementCount() const
@@ -406,13 +424,13 @@ void OpenCsdPacketCollector::RawPacketDataMon(const ocsd_datapath_op_t op, const
 
 void OpenCsdPacketCollector::rawPacketForRoute(const TraceRouteIdentity& route, const ocsd_datapath_op_t op,
                                                const ocsd_trc_index_t index_sop, const ItmTrcPacket* pkt,
-                                               const std::uint32_t size, const std::uint8_t*)
+                                               const std::uint32_t size, const std::uint8_t* data)
 {
   try {
     if (!containsRoute(route)) {
       throw std::invalid_argument("raw OpenCSD packet references an unknown normalized route");
     }
-    appendRawPacket(route, op, index_sop, pkt, size);
+    appendRawPacket(route, op, index_sop, pkt, size, data);
   } catch (...) {
     if (!m_outputError) {
       m_outputError = std::current_exception();
@@ -500,7 +518,7 @@ bool OpenCsdPacketCollector::containsRoute(const TraceRouteIdentity& route) cons
 
 void OpenCsdPacketCollector::appendRawPacket(const TraceRouteIdentity& route, const ocsd_datapath_op_t op,
                                              const ocsd_trc_index_t index_sop, const ItmTrcPacket* pkt,
-                                             std::uint32_t size)
+                                             std::uint32_t size, const std::uint8_t* data)
 {
   if (pkt == nullptr) {
     return;
@@ -515,7 +533,8 @@ void OpenCsdPacketCollector::appendRawPacket(const TraceRouteIdentity& route, co
     element.discontinuity = true;
     element.issueCode = TraceIssueCode::OpenCsdIncompleteTail;
     element.issueSeverity = TraceIssueSeverity::Error;
-    element.errorMessage = "incomplete ITM packet at end of input";
+    element.errorMessage = "incomplete ITM packet at end of input at raw offset " + std::to_string(index_sop) +
+                             "; " + capturePacketErrorContext(route, index_sop, *pkt, size, data);
     appendElement(std::move(element), route);
     return;
   }
@@ -541,11 +560,51 @@ void OpenCsdPacketCollector::appendRawPacket(const TraceRouteIdentity& route, co
     break;
   case ITM_PKT_BAD_SEQUENCE:
   case ITM_PKT_RESERVED:
-    appendError(index_sop, *pkt, route);
+    appendError(index_sop, *pkt, route, capturePacketErrorContext(route, index_sop, *pkt, size, data));
     break;
   default:
     break;
   }
+}
+
+std::string OpenCsdPacketCollector::capturePacketErrorContext(const TraceRouteIdentity& route, ocsd_trc_index_t index,
+                                                               const ItmTrcPacket& packet, std::uint32_t size,
+                                                               const std::uint8_t* data)
+{
+  const auto type = packet.getPktType();
+  std::string name = type == ITM_PKT_RESERVED ? "RESERVED"
+                    : type == ITM_PKT_INCOMPLETE_EOT ? "INCOMPLETE_EOT"
+                                                   : "BAD_SEQUENCE";
+  if (type != ITM_PKT_RESERVED && packet.err_type >= ITM_PKT_ASYNC && packet.err_type <= ITM_PKT_EXTENSION) {
+    // OpenCSD's valid packet types form this contiguous range. Error packets
+    // retain their original type in err_type, independently of payload fields.
+    constexpr std::array<const char*, 8U> names{
+        "ASYNC", "OVERFLOW", "SWIT", "DWT", "TS_LOCAL", "TS_GLOBAL_1", "TS_GLOBAL_2", "EXTENSION"};
+    name = names[static_cast<std::size_t>(packet.err_type - ITM_PKT_ASYNC)];
+  }
+  std::string context = "packet=" + name + ", size=" + std::to_string(size) +
+                        (size == 1U ? " byte, bytes=" : " bytes, bytes=");
+  if (data == nullptr && size != 0U) {
+    context += "unavailable";
+  } else {
+    constexpr std::uint32_t maxPrefixBytes = 16U;
+    constexpr char hexDigits[] = "0123456789abcdef";
+    context += '[';
+    const auto shown = std::min(size, maxPrefixBytes);
+    for (std::uint32_t offset = 0U; offset < shown; ++offset) {
+      if (offset != 0U) {
+        context += ' ';
+      }
+      context += hexDigits[data[offset] >> 4U];
+      context += hexDigits[data[offset] & 0x0fU];
+    }
+    if (shown < size) {
+      context += " ... (truncated)";
+    }
+    context += ']';
+  }
+  m_packetErrorContexts.insert_or_assign({route.id, static_cast<std::uint64_t>(index)}, context);
+  return context;
 }
 
 void OpenCsdPacketCollector::recordUnsynchronizedBytes(const TraceRouteIdentity& route, std::uint32_t size)
@@ -586,13 +645,14 @@ void OpenCsdPacketCollector::appendGlobalTimestamp(ocsd_trc_index_t index, const
 }
 
 void OpenCsdPacketCollector::appendError(ocsd_trc_index_t index, const ItmTrcPacket& pkt,
-                                         const TraceRouteIdentity& route)
+                                         const TraceRouteIdentity& route, const std::string& context)
 {
   OpenCsdTraceElement element;
   element.kind = OpenCsdTraceElement::Kind::Error;
   element.sourceIndex = static_cast<std::uint64_t>(index);
   element.issueCode = TraceIssueCode::OpenCsdDecodeError;
   element.errorMessage = pkt.getPktType() == ITM_PKT_RESERVED ? "Reserved ITM packet" : "Bad ITM packet sequence";
+  element.errorMessage += "; " + context;
   appendElement(std::move(element), route);
 }
 

@@ -15,6 +15,23 @@ Fixture provenance and the scenarios covered by each checked-in capture and
 inline-generated formatted input are documented in the
 [test-data README](../data/README.md).
 
+## Decode errors and retained output
+
+The formatted recovery tests verify that a damaged route can resynchronize
+without resetting the formatter or another route. Native decoder error names,
+descriptions, packet types, and bounded byte previews appear in CLI and CSV
+diagnostics. Recoverable errors leave completed CSV/CTF output available while
+the command returns a failing exit status.
+
+`RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTail` covers a fatal
+end-of-input decode failure after a valid payload. It requires selected CSV
+rows to remain, followed by exactly one input-wide `error` row containing the
+processed-byte count and abort reason, with no cycle timestamp, stream, or
+source. That final row bypasses type and stream filters; the preceding
+route-local error follows those filters. Incomplete CTF and XML output must be
+removed. The cases cover unfiltered output, `--type itm`, and `--stream 2` when
+the input uses route 1.
+
 ## Babeltrace consumer gate
 
 `CtraceBabeltrace2Consumer` is a separately labelled native-Linux CTest. The CI
@@ -28,7 +45,9 @@ an isolated metadata-plus-one-stream directory. It verifies that Babeltrace
 scales a 25,729-tick stream-1 sample at 240 MHz to `0.000107204` seconds and a
 7,603-tick stream-2 sample at 480 MHz to `0.000015839` seconds. It then verifies
 that Babeltrace's default whole-bundle mux rejects the two distinct clock UUIDs
-instead of inventing a global event order.
+instead of inventing a global event order. A separate one-route configuration
+without a processor name verifies the numeric stream-class fallback label in
+the private `ctrace_route` context.
 
 ## Trace Compass acceptance
 

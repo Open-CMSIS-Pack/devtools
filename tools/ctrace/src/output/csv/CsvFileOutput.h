@@ -69,6 +69,8 @@ protected:
   void startOutput() override;
   /** @brief Flushes and closes the completed CSV file. */
   void stopOutput() override;
+  /** @brief Appends an unfiltered global abort record and retains successfully written rows. */
+  void stopAfterDecodeAbortOutput(const TraceDecodeAbort& failure) override;
   /** @brief Closes and removes an incomplete CSV file. */
   void abortOutput() override;
   /**

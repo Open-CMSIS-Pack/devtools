@@ -630,9 +630,13 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversAtRealSync)
   ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('A')))
       << "recovery should preserve packets before the damaged section";
   const auto* error = findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence, 8U);
-  ASSERT_TRUE(
-      (error != nullptr && error->message == "OpenCSD detected an invalid ITM packet sequence at raw offset 8."))
-      << "recovery should report the exact OpenCSD error offset";
+  ASSERT_NE(error, nullptr) << "recovery should retain the exact OpenCSD error offset";
+  EXPECT_NE(error->message.find("OpenCSD detected an invalid ITM packet sequence at raw offset 8."),
+            std::string::npos);
+  EXPECT_NE(error->message.find("OCSD_ERR_BAD_PACKET_SEQ"), std::string::npos);
+  EXPECT_NE(error->message.find("Async Packet: unexpected none zero value"), std::string::npos);
+  EXPECT_NE(error->message.find("packet=ASYNC"), std::string::npos);
+  EXPECT_NE(error->message.find("bytes=[00 fe]"), std::string::npos);
   ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
       << "recovery should resume after the next real ITM sync";
 }
@@ -737,8 +741,12 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversFromReservedHeader)
   const auto decoded = decodeTrace({rawBytes(trace)});
 
   const auto* error = findIssue(decoded.events, TraceIssueCode::OpenCsdInvalidPacketHeader, 8U);
-  ASSERT_TRUE(error != nullptr && error->message == "OpenCSD detected an invalid ITM packet header at raw offset 8.")
-      << "reserved header should report its exact OpenCSD error";
+  ASSERT_NE(error, nullptr) << "reserved header should retain its exact OpenCSD error";
+  EXPECT_NE(error->message.find("OpenCSD detected an invalid ITM packet header at raw offset 8."),
+            std::string::npos);
+  EXPECT_NE(error->message.find("OCSD_ERR_INVALID_PCKT_HDR"), std::string::npos);
+  EXPECT_NE(error->message.find("packet=RESERVED"), std::string::npos);
+  EXPECT_NE(error->message.find("bytes=[04]"), std::string::npos);
   ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
       << "recovery should resume after a reserved header";
 }

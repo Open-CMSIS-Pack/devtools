@@ -80,8 +80,40 @@ This accounting covers formatter skips and initial ITM synchronization, not ever
 
 If a configured formatted route receives bytes but never reaches a real ITM hardware synchronization, ctrace reports
 an Error at end of input and exits non-zero. Completed diagnostic and decoded outputs are retained, including data
-from healthy routes. Continuing past an unassigned prefix therefore does not guarantee decodable payload. Genuine
-framing errors still abort the input and remove incomplete outputs.
+from healthy routes. Continuing past an unassigned prefix therefore does not guarantee decodable payload.
+
+A fatal OpenCSD error, including a framing error, aborts decoding and returns a non-zero status. A CSV output that
+has already started retains the previously committed rows and ends with a global `type=error` row. Its `note` is
+`decode aborted after processing N input bytes; trace is incomplete: reason`; all other fields are empty. This final
+record describes the entire input, so it bypasses both `--type` and `--stream`. Partial CTF and Trace Compass XML
+artifacts are still removed. A failure before CSV starts creates no CSV, and a CSV write or close failure still
+removes the unreliable file. Preserving partial CSV with this global marker is an explicit ctrace contract; the
+published CSV specification does not define fatal-abort handling.
+
+## Packet diagnostics
+
+CLI diagnostics are always unfiltered. Ordinary route-bound error and warning rows in CSV follow `--stream` and
+`--type`: their output type is `error`, so `--type dwt error` retains both DWT data and selected-stream diagnostics,
+whereas `--type dwt` omits those diagnostic rows. The global fatal-abort record described above is the exception.
+The [published CSV specification](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#csv-format)
+defines `error` and its free-text `note`, but no `warning` type or severity column; ctrace adds neither.
+
+CLI errors and CSV `note` fields retain the native OpenCSD error code and message.
+CLI trace issues also carry a structured `raw_offset` and, for formatted input,
+the source `stream` when available.
+When the raw-packet callback identifies the failing packet, the diagnostic also
+includes its original ITM packet type, total byte count, and up to 16 hexadecimal
+bytes. Longer packets have an explicitly truncated preview. Incomplete packets
+at end of input receive the same context even when OpenCSD reports them only
+through the packet monitor, without a logger error.
+
+For formatted input, the reported raw index can identify a deformatter output
+group rather than the exact physical position of the failing byte. A recovery
+message distinguishes a later hardware SYNC (with its raw index) from reaching
+end of input without resynchronization. The affected raw interval includes
+formatter control and potentially other routes: its length is not a count of
+zero bytes or discarded ITM payload bytes. Errors still make the invocation
+fail even when decoding resumes and completed outputs are retained.
 
 ## Build and test
 
@@ -120,6 +152,8 @@ Editors using `clangd` should open the devtools repository root and configure in
 - [CTF profile](docs/ctf-format.md): generated CTF structure, event groups, field semantics, and Trace Compass
   representation.
 - [Constraints](docs/constraints.md): contracts that implementation changes must preserve.
+- [Multi-source design](docs/multi-source-design.md): rationale and migration from single-source SWO to routed
+  CoreSight input, with later contract changes identified separately.
 - [TODO](docs/todo.md): planned work and pull-request boundaries.
 - [OpenCSD issues](docs/opencsd-issues.md): known issues in the pinned decoder revision.
 - [Third-party notices](docs/THIRD_PARTY_NOTICES.md): dependency versions, licenses, and build configuration.

@@ -370,3 +370,47 @@ TEST(CtraceUnitTests, testCsvFileOutputReportsPermissionFailures)
   EXPECT_THROW(createFailure.start(), std::runtime_error);
   std::filesystem::permissions(root, std::filesystem::perms::owner_all);
 }
+
+TEST(CtraceUnitTests, testCsvFileOutputRetainsFilteredPrefixAndGlobalDecodeAbortOnce)
+{
+  for (const bool selectErrors : {false, true}) {
+    const TemporaryTestPath outputPath("ctrace-partial-output.csv");
+    const TraceDecodeAbort failure{0x100000001ULL, "bad \"header\", trace stopped"};
+    CsvFileOutput output(outputPath.path(), TraceSelection{{selectErrors ? "error" : "itm"}, {7U}});
+    output.stop(&failure);
+    EXPECT_FALSE(std::filesystem::exists(outputPath.path()));
+    output.start();
+    output.writeEvent(onStream(softwarePacket(1U, 1U, 'A'), 7U));
+    output.writeEvent(onStream(issuePacket(TraceIssueCode::DecodeError, "selected stream error"), 7U));
+    output.writeEvent(onStream(issuePacket(TraceIssueCode::DecodeError, "excluded stream error"), 8U));
+    output.stop(&failure);
+    output.stop(&failure);
+    output.abort();
+
+    const auto lines = readTestLines(outputPath.path());
+    ASSERT_EQ(lines.size(), 3U);
+    EXPECT_EQ(lines[1], selectErrors ? ",7,error,,,,,selected stream error" : ",7,itm,1,0x41,,,");
+    EXPECT_EQ(lines[2], R"(,,error,,,,,"decode aborted after processing 4294967297 input bytes; trace is incomplete: bad ""header"", trace stopped")");
+  }
+}
+
+TEST(CtraceUnitTests, testCsvFileOutputReportsFailureWritingOrClosingDecodeAbort)
+{
+  const TraceDecodeAbort failure{16U, "fatal decoder error"};
+  for (const bool failWrite : {false, true}) {
+    const TemporaryTestPath outputPath("ctrace-partial-output-failure.csv");
+    FailingCsvStream* stream = nullptr;
+    CsvFileOutput output(outputPath.path(), {}, [&](const std::filesystem::path&) {
+      auto result = std::make_unique<FailingCsvStream>(CsvStreamFailure::Flush);
+      stream = result.get();
+      return result;
+    });
+    output.start();
+    if (failWrite) {
+      stream->output().setstate(std::ios::badbit);
+    }
+    EXPECT_THROW(output.stop(&failure), std::runtime_error);
+    EXPECT_FALSE(std::filesystem::exists(outputPath.path()));
+    EXPECT_NO_THROW(output.stop(&failure));
+  }
+}

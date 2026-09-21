@@ -309,3 +309,25 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleContainsDiagnosticAndNonStandardFa
   passive.finish();
   EXPECT_EQ(passiveDiagnostics.failureCount(), 0U);
 }
+
+TEST(CtraceUnitTests, testTraceOutputLifecycleRetainsCsvDespiteFatalCleanupFailure)
+{
+  const TemporaryTestPath outputPath("ctrace-partial-lifecycle.csv");
+  std::vector<std::unique_ptr<TraceOutput>> outputs;
+  outputs.push_back(std::make_unique<TestTraceOutput>(TestTraceOutputFailure::Abort));
+  outputs.push_back(std::make_unique<CsvFileOutput>(outputPath.path()));
+  CollectingDiagnosticSink diagnostics;
+  TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
+  lifecycle.append(softwarePacket(1U, 1U, 'A'));
+  const TraceDecodeAbort failure{16U, "synthetic fatal error"};
+  lifecycle.finish(&failure);
+  lifecycle.finish(&failure);
+
+  EXPECT_TRUE(diagnostics.containsContext("phase", "decode-abort"));
+  EXPECT_TRUE(diagnostics.containsMessage("intentional abort cleanup failure"));
+  const auto lines = readTestLines(outputPath.path());
+  ASSERT_EQ(lines.size(), 3U);
+  EXPECT_EQ(lines[1], ",,itm,1,0x41,,,");
+  EXPECT_EQ(lines[2], ",,error,,,,,decode aborted after processing 16 input bytes; "
+                      "trace is incomplete: synthetic fatal error");
+}

@@ -39,11 +39,13 @@ CSV rows without decoder errors:
 | 2 / CM7 | 121 | 165 | 26 | 312 |
 
 `Blinky+Arm.ctrace-run.yml` follows the current per-processor setup and generated-reference structure. The
-ctrace-private provisional root-level `trace-format: formatted` field selects CoreSight frame decoding. Ctrace
-internally defaults formatted input to 16-byte memory-aligned framing; no public `trace-framing` field is assumed or
-emitted. The declared processor clocks are fixture metadata and are not encoded in the raw trace. Normative format,
-framing, and explicit file-association metadata remain to be specified by CMSIS-Toolbox and emitted by the producer
-that knows the effective capture configuration.
+ctrace-private provisional `ctrace-run.trace-format: formatted` field explicitly selects CoreSight frame decoding.
+If this field is absent or null, the selected `.TB.raw` filename also selects formatted decoding; `.TB_<suffix>.raw`
+uses the same fallback. Ctrace internally defaults formatted input to 16-byte memory-aligned framing; no public
+`trace-framing` field is assumed or emitted. The declared processor clocks are fixture metadata and are not encoded
+in the raw trace. These format and filename rules are ctrace compatibility behavior; normative format, framing, and
+explicit file-association metadata remain to be specified by CMSIS-Toolbox and emitted by the producer that knows the
+effective capture configuration.
 
 `regenerate_tb_trace.py` performs the documented reconstruction without reading the canonical output. It validates the
 source hash and structure, removes the terminal CM7 synchronization bytes even though formatter interleaving separates

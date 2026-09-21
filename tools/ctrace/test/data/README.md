@@ -79,6 +79,15 @@ pyOCD producer output:
   reserved header, continues into the next frame without a repeated formatter
   ID marker, then resynchronizes; it proves that reset and rollback stay local
   while ID 1 and the deformatter retain state.
+- `Malformed.TB.raw` is a synthetic ID-1 stream with hardware sync, malformed
+  ASYNC bytes `00 08`, an intervening packet, then a real sync and valid payload.
+  It verifies native CLI/CSV error details, the bounded packet preview, recovery
+  without replay, retained output, and a failing exit status.
+- `Incomplete.TB.raw` has complete formatter frames but ends route 1 with an
+  incomplete DWT packet after valid ITM payload and a local timestamp. It
+  verifies fatal end-of-input handling: selected CSV rows remain and one final
+  input-wide `error` row bypasses type/stream filters, while the route-local
+  error obeys them. CTF/XML output is removed and the command fails.
 - `Unassigned.TB.raw` is one all-zero frame with payload before any formatter
   source ID; it proves CLI Info and one CSV `info` row for 15 skipped
   payload bytes, with no invented route, CTF stream, or missing-sync error.
@@ -91,6 +100,10 @@ pyOCD producer output:
   route, and eight bytes without a hardware sync on the other route. It
   requires skipped-byte Info, a separate route-bound end-of-input Error, and
   non-zero exit while preserving healthy output and diagnostic rows.
+- A routed-prefix variant places three unsynchronized bytes before ID 1's real
+  hardware sync and includes valid ID-2 payload. It verifies route-specific
+  skipped-byte Info and continued decoding of both routes without a decoder
+  Error.
 
 These generated files exist only in each test's build-tree working directory.
 Their canonical representation and expected semantics are the reviewed source

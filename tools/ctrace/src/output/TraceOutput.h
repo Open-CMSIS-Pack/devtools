@@ -43,8 +43,11 @@ public:
 
   /** @brief Prepares a new final output target before the first event. */
   void start();
-  /** @brief Flushes and completes the active output target after the last event. */
-  void stop();
+  /**
+   * @brief Completes output, or applies the backend's policy for a fatal decode abort.
+   * @param decodeAbort Optional input failure, consumed synchronously without retaining its address.
+   */
+  void stop(const TraceDecodeAbort* decodeAbort = nullptr);
   /** @brief Discards an incomplete active output without committing partial data. */
   void abort();
   /**
@@ -62,6 +65,8 @@ protected:
   virtual void startOutput() = 0;
   /** @brief Flushes and commits backend resources while the output remains active. */
   virtual void stopOutput() = 0;
+  /** @brief Discards partial artifacts unless a backend can explicitly mark and retain them. */
+  virtual void stopAfterDecodeAbortOutput(const TraceDecodeAbort&) { abortOutput(); }
   /** @brief Releases backend resources and removes incomplete artifacts. */
   virtual void abortOutput() = 0;
   /** @brief Writes one event to an active backend. */
@@ -92,13 +97,17 @@ inline void TraceOutput::start()
   }
 }
 
-inline void TraceOutput::stop()
+inline void TraceOutput::stop(const TraceDecodeAbort* decodeAbort)
 {
   if (!m_active) {
     return;
   }
   try {
-    stopOutput();
+    if (decodeAbort == nullptr) {
+      stopOutput();
+    } else {
+      stopAfterDecodeAbortOutput(*decodeAbort);
+    }
   } catch (...) {
     abort();
     throw;

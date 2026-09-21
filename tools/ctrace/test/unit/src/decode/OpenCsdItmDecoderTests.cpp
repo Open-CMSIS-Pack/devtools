@@ -509,7 +509,7 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderClosesUnresolvedRouteLossAtE
   EXPECT_EQ(losses.front()->route, route2);
   EXPECT_EQ(losses.front()->sourceIndex, 5U);
   EXPECT_EQ(losses.front()->rawBytesConsumed, 11U);
-  EXPECT_NE(losses.front()->errorMessage.find("no later hardware sync"), std::string::npos);
+  EXPECT_NE(losses.front()->errorMessage.find("no later hardware SYNC"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRejectsFatalResponseAndInvalidRootProgress)
@@ -786,6 +786,8 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderPreservesRoutedIncompleteTai
     FAIL() << "incomplete formatted ITM packet did not fail the input";
   } catch (const OpenCsdFatalError& error) {
     EXPECT_EQ(error.bytesProcessed(), capture.size());
+    EXPECT_NE(std::string(error.what()).find("incomplete ITM packet at end of input"), std::string::npos);
+    EXPECT_EQ(std::string(error.what()).find("OCSD_RESP_CONT"), std::string::npos);
   }
 
   std::vector<const OpenCsdTraceElement*> issues;
@@ -1536,4 +1538,82 @@ TEST(CtraceUnitTests, testOpenCsdSessionValidationRejectsInvalidApiResults)
   ASSERT_TRUE(message.has_value());
   EXPECT_NE(message->find("OCSD_ERR_MEM"), std::string::npos);
   EXPECT_NE(message->find("decoder setup failed"), std::string::npos);
+}
+
+TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsWarningResponsesWithoutDuplicatingCallbacks)
+{
+  for (const auto inputMode : {OpenCsdItmInputMode::Single, OpenCsdItmInputMode::CoreSightFormatted}) {
+    for (const auto response : {OCSD_RESP_WARN_CONT, OCSD_RESP_WARN_WAIT}) {
+      for (const auto severity : {OCSD_ERR_SEV_NONE, OCSD_ERR_SEV_INFO, OCSD_ERR_SEV_WARN}) {
+        const TraceRouteIdentity route{TraceRouteId{0U}, inputMode == OpenCsdItmInputMode::Single
+                                                           ? std::nullopt
+                                                           : std::optional<std::uint8_t>{1U}};
+        const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+        std::vector<OpenCsdSessionTestSupport::ScriptedObservation> observations{syncCallback(route, 0U)};
+        if (severity != OCSD_ERR_SEV_NONE) {
+          observations.push_back(errorObservation(OCSD_ERR_BAD_PACKET_SEQ, 2U, route.traceBusId.value_or(0U),
+                                                  "native callback detail", severity));
+        }
+        observations.push_back(softwareCallback(route, 8U, 1U, 'A'));
+        script->pushes.emplace_back(response, 16U, std::move(observations));
+        CollectingOpenCsdElementSink sink;
+        OpenCsdItmDecoder decoder({route}, inputMode, sink, OpenCsdSessionTestSupport::scriptedFactory(script));
+        const std::array<std::uint8_t, 16U> input{};
+
+        EXPECT_NO_THROW(decoder.push(input.data(), input.size()));
+        EXPECT_EQ(decoder.finish().bytesIn, input.size());
+        EXPECT_TRUE(script->routeResetCalls.empty()) << "a warning must not reset a decoder";
+        EXPECT_EQ(script->flushCalls, response == OCSD_RESP_WARN_WAIT ? 1U : 0U);
+        std::size_t warnings = 0U;
+        std::size_t software = 0U;
+        for (const auto& element : sink.elements()) {
+          if (element.kind == OpenCsdTraceElement::Kind::Error) {
+            ++warnings;
+            EXPECT_EQ(element.issueSeverity, TraceIssueSeverity::Warning);
+            EXPECT_FALSE(element.discontinuity);
+            EXPECT_NE(element.errorMessage.find(severity == OCSD_ERR_SEV_WARN ? "native callback detail"
+                                                                            : "OCSD_RESP_WARN_"),
+                      std::string::npos);
+          }
+          if (element.kind == OpenCsdTraceElement::Kind::Software && element.value == 'A') {
+            ++software;
+          }
+        }
+        EXPECT_EQ(warnings, 1U) << "each warning response must produce exactly one diagnostic";
+        EXPECT_EQ(software, 1U) << "warning reporting must retain the normal payload";
+      }
+    }
+  }
+}
+
+TEST(CtraceUnitTests, testFormattedIncompleteTailAbortReasonSurvivesAdvisoryCallbacks)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  for (const auto response : {OCSD_RESP_CONT, OCSD_RESP_WARN_CONT, OCSD_RESP_WARN_WAIT, OCSD_RESP_WAIT,
+                             OCSD_RESP_ERR_CONT, OCSD_RESP_FATAL_SYS_ERR}) {
+    for (const auto severity : {OCSD_ERR_SEV_INFO, OCSD_ERR_SEV_WARN, OCSD_ERR_SEV_ERROR}) {
+      CollectingOpenCsdElementSink sink;
+      const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+      script->ends.emplace_back(response, 0U, std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+          errorObservation(OCSD_ERR_MEM, 5U, 1U, "native callback detail", severity),
+          OpenCsdSessionTestSupport::rawPacketCallback(route, 6U, ITM_PKT_INCOMPLETE_EOT, OCSD_OP_EOT)});
+      OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                                OpenCsdSessionTestSupport::scriptedFactory(script));
+      try {
+        (void)decoder.finish();
+        FAIL() << "an incomplete formatted tail must remain fatal";
+      } catch (const OpenCsdFatalError& error) {
+        const bool nativeError = severity == OCSD_ERR_SEV_ERROR ||
+                                 OpenCsdErrorController::responseReportsError(response);
+        const auto expected = response == OCSD_RESP_FATAL_SYS_ERR && severity != OCSD_ERR_SEV_ERROR
+                                  ? "OCSD_RESP_FATAL_SYS_ERR"
+                                  : nativeError ? "OCSD_ERR_MEM" : "incomplete ITM packet at end of input";
+        EXPECT_NE(std::string(error.what()).find(expected), std::string::npos)
+            << "response=" << response << ", severity=" << severity << ": " << error.what();
+      }
+      EXPECT_TRUE(sink.hasIssue(TraceIssueCode::OpenCsdIncompleteTail));
+      EXPECT_EQ(script->flushCalls, 0U);
+      EXPECT_TRUE(script->routeResetCalls.empty());
+    }
+  }
 }

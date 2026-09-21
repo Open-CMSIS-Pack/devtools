@@ -11,7 +11,9 @@
     format default or explicit override, normalized routes, mode-specific output planning, a SINGLE or formatted
     OpenCSD DecodeTree, route-local recovery and
     Cortex-M state, semantic trace events, diagnostics, CSV, multi-stream CTF, and conditional Trace Compass XML
-    output. Formatter and initial synchronization skips follow a separate Info path to diagnostics and CSV.
+    output. Native errors, bounded packet previews, and recovery details reach diagnostics and CSV. Formatter and
+    initial synchronization skips follow a separate Info path. Fatal decode retains committed CSV rows with a global
+    abort record and removes incomplete CTF and XML artifacts.
   </desc>
 
   <defs>
@@ -94,10 +96,11 @@
   <text x="475" y="461" class="box-detail">TraceDirectoryJob · FileDecodeJob</text>
   <text x="475" y="479" class="box-detail">descriptor · output plan · 64 KiB reads</text>
 
-  <rect x="900" y="400" width="280" height="85" class="box support"/>
+  <rect x="900" y="400" width="280" height="103" class="box support"/>
   <text x="1040" y="428" class="box-title">diagnostics</text>
   <text x="1040" y="451" class="box-detail">severity · context · impact</text>
   <text x="1040" y="469" class="box-detail">CLI/config · decoder · output failures</text>
+  <text x="1040" y="487" class="box-detail">native errors · packet preview · recovery</text>
 
   <path d="M 155 211 L 160 290" class="flow"/>
   <path d="M 435 211 L 435 280" class="flow"/>
@@ -177,6 +180,8 @@
   <text x="1025" y="1062" class="box-title">Trace Compass XML</text>
   <text x="1025" y="1084" class="box-detail">observed graphical topics only</text>
   <text x="1025" y="1102" class="box-detail">requires one retained clock domain</text>
+
+  <text x="640" y="1127" class="box-detail">Fatal decode: CSV retains committed rows + global abort record; incomplete CTF / XML artifacts are removed.</text>
 
   <path d="M 1090 793 L 1090 855 L 585 855 L 585 905" class="flow"/>
   <path d="M 650 495 L 650 540 L 940 540 L 940 951 L 790 951" class="dependency"/>

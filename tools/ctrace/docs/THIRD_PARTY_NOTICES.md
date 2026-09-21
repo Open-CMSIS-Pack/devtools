@@ -5,6 +5,11 @@ release archive contains the unmodified license text for each component under
 `THIRD_PARTY_LICENSES`. OpenCSD's retained source-file copyright notices are
 provided in `THIRD_PARTY_LICENSES/OpenCSD-NOTICE.txt`.
 
+`scripts/package-release.sh` packages the five platform binaries, the devtools
+license, these notices, and the dependency licenses into `ctrace.zip`. Its
+`SHA256SUMS` file covers the packaged binaries and license/notice files; it is
+not a checksum of the zip archive itself or a signing/notarization statement.
+
 | Component | Version | License      | Source                                 |
 | --------- | ------: | ------------ | -------------------------------------- |
 | cxxopts   |   3.0.0 | MIT          | <https://github.com/jarro2783/cxxopts> |

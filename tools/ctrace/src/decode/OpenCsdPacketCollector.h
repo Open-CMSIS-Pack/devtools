@@ -25,6 +25,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 /** @brief Collects OpenCSD callbacks into transactional ctrace elements. */
@@ -84,6 +85,17 @@ public:
   void rollbackTransaction();
   /** @brief Rethrows an exception captured from the downstream sink. */
   void rethrowOutputError();
+  /**
+   * @brief Returns bounded packet diagnostics from the most recent operation.
+   * @param channel OpenCSD channel; absent or zero selects the bound SINGLE route.
+   * @param index Exact OpenCSD packet index associated with the logger error.
+   *
+   * Context survives commit or rollback until the next beginTransaction(), so
+   * logger errors can be enriched after unsafe trace elements are discarded.
+   */
+  std::string packetErrorContext(std::optional<std::uint8_t> channel, std::uint64_t index) const;
+  /** @brief Clears packet observations before an operation without a new transaction. */
+  void clearPacketErrorContexts() noexcept;
   /** @brief Returns the number of currently buffered elements. */
   std::size_t transactionElementCount() const;
   /**
@@ -222,7 +234,10 @@ private:
   bool containsRoute(const TraceRouteIdentity& route) const noexcept;
   /** @brief Converts one raw packet callback after its route has been resolved. */
   void appendRawPacket(const TraceRouteIdentity& route, ocsd_datapath_op_t op, ocsd_trc_index_t index_sop,
-                       const ItmTrcPacket* pkt, std::uint32_t size);
+                       const ItmTrcPacket* pkt, std::uint32_t size, const std::uint8_t* data);
+  /** @brief Copies bounded error-packet context without retaining OpenCSD-owned bytes. */
+  std::string capturePacketErrorContext(const TraceRouteIdentity& route, ocsd_trc_index_t index,
+                                         const ItmTrcPacket& packet, std::uint32_t size, const std::uint8_t* data);
   /** @brief Counts only bytes explicitly discarded during initial formatted-route synchronization. */
   void recordUnsynchronizedBytes(const TraceRouteIdentity& route, std::uint32_t size);
   /** @brief Accounts for committed sync/errors and reports initial skipped bytes before a retained sync. */
@@ -234,7 +249,8 @@ private:
   /** @brief Converts an OpenCSD global timestamp callback. */
   void appendGlobalTimestamp(ocsd_trc_index_t index, const OcsdTraceElement& elem, const TraceRouteIdentity& route);
   /** @brief Converts an OpenCSD error packet callback. */
-  void appendError(ocsd_trc_index_t index, const ItmTrcPacket& pkt, const TraceRouteIdentity& route);
+  void appendError(ocsd_trc_index_t index, const ItmTrcPacket& pkt, const TraceRouteIdentity& route,
+                     const std::string& context);
   /** @brief Converts an ITM software packet callback. */
   void appendSoftware(ocsd_trc_index_t index, const OcsdTraceElement& elem, const TraceRouteIdentity& route);
   /** @brief Converts a DWT hardware packet callback. */
@@ -278,6 +294,7 @@ private:
   bool m_transactionActive = false;
   std::uint64_t m_nextTransactionOrder = 1U;
   std::vector<BufferedElement> m_transactionElements;
+  std::map<std::pair<TraceRouteId, std::uint64_t>, std::string> m_packetErrorContexts;
   std::exception_ptr m_outputError;
 };
 

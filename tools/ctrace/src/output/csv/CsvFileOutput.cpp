@@ -142,6 +142,12 @@ void CsvFileOutput::stopOutput()
   }
 }
 
+void CsvFileOutput::stopAfterDecodeAbortOutput(const TraceDecodeAbort& failure)
+{
+  m_stream->output() << CsvRowMapper::decodeAbortRow(failure) << "\n";
+  stopOutput();
+}
+
 void CsvFileOutput::abortOutput()
 {
   m_stream.reset();

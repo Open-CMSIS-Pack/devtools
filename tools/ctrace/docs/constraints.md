@@ -11,7 +11,8 @@ and producer integration remain tracked as unfinished work.
 ## Boundaries
 
 - OpenCSD types remain inside the decode layer. Other modules and output backends consume semantic `TraceEvent`
-  values or `TraceByteSkip` input annotations without a decoded route or clock.
+  values, `TraceByteSkip` input annotations without a decoded route or clock, and input-wide `TraceDecodeAbort`
+  finalization context.
 - An OpenCSD API migration must retain access to typed ITM configuration and packet data and must preserve every
   structured decoder error from each data-path operation; falling back to only the last error or formatted log text
   would change recovery behavior.
@@ -104,7 +105,8 @@ and producer integration remain tracked as unfinished work.
   configured routes without received bytes are not errors. This failure returns non-zero while retaining completed
   outputs and healthy routes, instead of silently producing an apparently successful empty conversion.
 - A channel-less or deformatter error, failed route reset, incomplete formatted framing/input, unrecoverable response,
-  exhausted wait, or repeated lack of progress is input-fatal and aborts every active output. An incomplete packet at
+  exhausted wait, or repeated lack of progress is input-fatal and stops decoding. Outputs follow the fatal-abort policy
+  below: CSV retains committed rows with an abort marker; incomplete CTF and XML are removed. An incomplete packet at
   the end of an unformatted ITM stream retains the legacy recoverable behavior: it is published as a decoder issue and
   does not by itself abort otherwise valid output.
 - Discontinuities flush or clear pending route-local DWT state and invalidate timestamp quality before decoding
@@ -115,15 +117,15 @@ and producer integration remain tracked as unfinished work.
 
 - CSV remains one combined file in decode callback order. The unformatted route has an empty `stream` field;
   formatted routes expose their architectural IDs. Type and stream filters affect output, not decoding or diagnostic
-  reporting. Ctrace deliberately names the seventh CSV column `address`; the currently published CMSIS-Toolbox trace
-  specification still says `offset`, and must be corrected to match this intended schema before the difference is
-  treated as standardized.
+  reporting. The seventh CSV column is `address`, matching the published CMSIS-Toolbox
+  [CSV schema](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#csv-format).
 - Byte-skip annotations are retained in CSV regardless of `--type` or `--stream`: `type` is `info`, `note` describes
   the reason, byte count, and formatter-group offset, and `stream` is the observed formatter ID when known, including
   `0` or `127`. All other fields are empty. `info` is an input annotation, not a new CLI type selector. No annotation
   may be represented as a hardware `SYNC`, assigned to a synthetic route, or given an invented time. CTF ignores
   these annotations, so the accounting is CLI/CSV-only. Missing sync at end of input remains a separate route-bound
-  Error regardless of filters; it does not repeat the counted bytes as another loss record.
+  Error that always reaches CLI and contributes to command failure, while its CSV row follows ordinary output
+  filters; it does not repeat the counted bytes as another loss record.
 - Formatted CTF stream files are created lazily as `stream_<id>` only for routes with selected semantic output. Every
   emitted stream class references an explicit clock domain. When selected, the legacy unformatted path retains eager
   `stream_0`, its UUID-optional `swo_clock` metadata form, and companion XML compatibility.
@@ -144,17 +146,26 @@ and producer integration remain tracked as unfinished work.
   conflicting frequency is accepted for validation-only and CSV operation but prevents CTF generation with an Error.
   A filter selecting no configured route requires no clock because it can emit no CTF stream. With `--all`, valid CSV
   still completes while the invocation returns non-zero.
-- Different processor bindings are independent CTF clock domains even when their frequencies match. A multi-clock
-  CTF bundle remains valid, but ctrace emits one Warning, removes any stale companion XML, and creates no new Trace
-  Compass XML because the supported reader cannot establish a correct combined order. Cross-domain time correlation
+- Each formatted route has an independent CTF clock domain, even when processor labels or frequencies match.
+  A multi-clock CTF bundle remains valid, but ctrace emits one Warning, removes any stale companion XML, and creates
+  no new Trace Compass XML because the supported reader cannot establish a correct combined order. Cross-domain time correlation
   is not inferred.
-- Decoder warnings and errors remain observable regardless of payload filtering. A recoverable protocol error may be
-  published with route-bound error/data-loss events even though its Error diagnostic makes the invocation fail.
+- CLI decoder warnings and errors remain observable regardless of output filtering. Ordinary route-bound CSV
+  diagnostics follow the stream filter and use the `error` type selector, including warning-severity issues. The
+  published CSV schema defines no `warning` type or severity column. A recoverable protocol error may be published
+  with selected route-bound error/data-loss events even though its Error diagnostic makes the invocation fail.
+- A fatal OpenCSD decode abort preserves already committed CSV rows and appends one input-wide `type=error` record
+  with `note` set to `decode aborted after processing N input bytes; trace is incomplete: reason`. All other fields
+  are empty. This global marker bypasses both type and stream filters; ordinary route-bound errors do not. Partial
+  CTF and XML artifacts are removed. This retention and global-marker policy is an explicit ctrace contract, not a
+  requirement of the published CSV specification. Failures before CSV startup create no CSV; CSV write or close
+  failures still remove the unreliable file.
 - Structured diagnostic impact determines command failure; formatted stderr text does not.
 - CTF timestamps never regress, and a global timestamp does not by itself establish local timestamp quality.
 - Validation-only mode creates no output. Unsupported trace channels are diagnosed and skipped.
-- Cleanup of incomplete output artifacts is attempted after failure, and cleanup failures are reported. Incompatible
-  existing output filesystem types and overlapping CTF/XML paths are rejected before replacement.
+- Apart from the explicitly retained CSV after a fatal decode abort, cleanup of incomplete output artifacts is
+  attempted after failure, and cleanup failures are reported. Incompatible existing output filesystem types and
+  overlapping CTF/XML paths are rejected before replacement.
 
 ## Build and CI constraints
 

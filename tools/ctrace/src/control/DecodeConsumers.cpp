@@ -99,9 +99,9 @@ void DecodeConsumers::finishIssues()
   m_issueReporter.finish();
 }
 
-void DecodeConsumers::finishOutputs() noexcept
+void DecodeConsumers::finishOutputs(const TraceDecodeAbort* decodeAbort) noexcept
 {
-  m_outputLifecycle.finish();
+  m_outputLifecycle.finish(decodeAbort);
 }
 
 void DecodeConsumers::abortOutputs() noexcept

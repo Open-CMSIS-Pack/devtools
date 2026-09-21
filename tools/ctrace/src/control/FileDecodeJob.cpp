@@ -29,6 +29,7 @@
 #include <ios>
 #include <memory>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -261,24 +262,24 @@ void FileDecodeJob::run()
 
   const auto decodeStart = std::chrono::steady_clock::now();
   DecodeResult decode;
-  bool decoderFatal = false;
+  std::optional<TraceDecodeAbort> decodeAbort;
   try {
     auto pipeline = createDecodePipeline(routes, inputMode, consumers, m_sessionFactory, m_diagnostics);
     decode = decodeRawInput(m_input.path(), m_input.stream(), *pipeline);
   } catch (const OpenCsdFatalError& error) {
-    decoderFatal = true;
+    decodeAbort = TraceDecodeAbort{error.bytesProcessed(), error.what()};
     decode.bytesIn = error.bytesProcessed();
-    decode.eventsOut = consumers.eventCount();
+    decode.eventsOut = consumers.eventCount() + 1U; // Includes the final input-wide abort record.
   }
   consumers.finishIssues();
+  if (decodeAbort.has_value()) {
+    m_diagnostics.report({DiagnosticSink::Severity::Error, traceDecodeAbortMessage(*decodeAbort),
+                          {{"bytesProcessed", std::to_string(decodeAbort->bytesProcessed)}}});
+  }
   const auto decodeEnd = std::chrono::steady_clock::now();
   m_diagnostics.report({
       DiagnosticSink::Severity::Info,
       decodeSummary(decode, decodeEnd - decodeStart),
   });
-  if (decoderFatal) {
-    consumers.abortOutputs();
-  } else {
-    consumers.finishOutputs();
-  }
+  consumers.finishOutputs(decodeAbort.has_value() ? &*decodeAbort : nullptr);
 }
