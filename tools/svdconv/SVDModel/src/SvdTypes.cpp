@@ -135,16 +135,21 @@ const map <SvdTypes::CpuType, CpuTypeFeature> SvdTypes::cpuTypeName = {
   { SvdTypes::CpuType::SMC3     , {"SMC3"               , "ARM China Star-MC3",  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } },
 
   // SVDConv not supported
-  { SvdTypes::CpuType::CA5      , {"CA5"                , "ARM Cortex-A5"     ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
-  { SvdTypes::CpuType::CA7      , {"CA7"                , "ARM Cortex-A7"     ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
-  { SvdTypes::CpuType::CA8      , {"CA8"                , "ARM Cortex-A8"     ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
-  { SvdTypes::CpuType::CA9      , {"CA9"                , "ARM Cortex-A9"     ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
-  { SvdTypes::CpuType::CA15     , {"CA15"               , "ARM Cortex-A15"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
-  { SvdTypes::CpuType::CA17     , {"CA17"               , "ARM Cortex-A17"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
-  { SvdTypes::CpuType::CA53     , {"CA53"               , "ARM Cortex-A53"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
-  { SvdTypes::CpuType::CA57     , {"CA57"               , "ARM Cortex-A57"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
-  { SvdTypes::CpuType::CA72     , {"CA72"               , "ARM Cortex-A72"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
-  { SvdTypes::CpuType::OTHER    , {"other"              , "other"             ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 240 } },
+  // CA5/CA7/CA9/CA15 limits cover the integrated MPCore GIC's INTID space, not external controllers.
+  // CA5/CA9/CA15: 224 SPIs at IDs 32..255; CA7: 480 SPIs at IDs 32..511.
+  // References: DDI 0434B 10.2.2, DDI 0464F 8.2.2, ARM 100486_0401_10_en 3.3.3, DDI 0438I 8.3.2.
+  // The remaining entries have no CPU-based IRQ limit (0); the external controller determines it.
+  { SvdTypes::CpuType::CA5      , {"CA5"                , "ARM Cortex-A5"     ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 256 } },
+  { SvdTypes::CpuType::CA7      , {"CA7"                , "ARM Cortex-A7"     ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 512 } },
+  { SvdTypes::CpuType::CA8      , {"CA8"                , "ARM Cortex-A8"     ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0 } },
+  { SvdTypes::CpuType::CA9      , {"CA9"                , "ARM Cortex-A9"     ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 256 } },
+  { SvdTypes::CpuType::CA15     , {"CA15"               , "ARM Cortex-A15"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 256 } },
+  { SvdTypes::CpuType::CA17     , {"CA17"               , "ARM Cortex-A17"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0 } },
+  { SvdTypes::CpuType::CA53     , {"CA53"               , "ARM Cortex-A53"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0 } },
+  { SvdTypes::CpuType::CA55     , {"CA55"               , "ARM Cortex-A55"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0 } },
+  { SvdTypes::CpuType::CA57     , {"CA57"               , "ARM Cortex-A57"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0 } },
+  { SvdTypes::CpuType::CA72     , {"CA72"               , "ARM Cortex-A72"    ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0 } },
+  { SvdTypes::CpuType::OTHER    , {"other"              , "other"             ,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0 } },
 };
 
 
