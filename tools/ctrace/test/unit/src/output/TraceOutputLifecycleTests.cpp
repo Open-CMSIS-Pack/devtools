@@ -191,6 +191,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesCtfAfterRealCsvStartFailu
   outputs.push_back(std::make_unique<CsvFileOutput>(csvPath));
   TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
   lifecycle.append(softwarePacket(1U, 1U, 'A'));
+  lifecycle.append(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::Sleep}});
   lifecycle.finish();
 
   EXPECT_TRUE(std::filesystem::is_regular_file(ctfDirectory / "metadata"));

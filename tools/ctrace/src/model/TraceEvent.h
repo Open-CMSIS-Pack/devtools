@@ -217,10 +217,17 @@ struct PmuTraceEvent {
   std::uint8_t overflowMask = 0;
 };
 
-/** @brief Contains a periodic DWT PC sample or its processor-sleep indication. */
+/** @brief Distinguishes a sampled PC from the status markers carried by the same DWT packet. */
+enum class PcSampleKind {
+  Pc,
+  Sleep,
+  TraceProhibited,
+};
+
+/** @brief Contains a periodic DWT PC sample or status marker; pc is meaningful only for kind Pc. */
 struct PcSampleTraceEvent {
   std::uint32_t pc = 0;
-  bool sleeping = false;
+  PcSampleKind kind = PcSampleKind::Pc;
 };
 
 /** @brief Marks a decoded local timestamp packet. */

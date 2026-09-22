@@ -5,9 +5,6 @@
 - [ ] Preserve logical DWT reference and setup identities when expanding comparator source arrays.
 - [ ] Complete Armv7-M linked-comparator, range, and value-match decoding.
 - [ ] Resolve programmable PMU event-counter names from trace-run configuration.
-- [ ] Decode the Armv8-M one-byte PC-sampling marker `0xFF` as `Trace prohibited`, as defined by the
-      [CSV specification](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#pc-sampling-markers).
-      The current decoder accepts a four-byte PC or the one-byte `0x00` sleep marker and reports other forms as errors.
 
 ## Inputs and time correlation
 

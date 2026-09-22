@@ -194,7 +194,7 @@ void expectSyntheticCsvRoute(std::string_view csv, std::uint8_t stream, std::uin
            prefix + "dwt,0,0x00,,,\n",
            prefix + "dwt,1,0x0000,,,\n",
            prefix + "dwt,2,0x00000000,,,\n",
-           prefix + "pcsample,,,,,\n",
+           prefix + "pcsample,,,,,CPU Sleeping\n",
            prefix + "event,0,0x21,,,\n",
            prefix + "pmu,3,0x81,,,\n",
            std::to_string(globalTimestamp) + "," + std::to_string(stream) + ",global_ts,,,,,\n",
@@ -334,6 +334,90 @@ std::size_t countCsvStreamRows(std::string_view csv, std::string_view stream)
   return count;
 }
 
+/** @brief Uses the same marker payload as raw SWO or on two formatted Trace Bus routes. */
+void writePcSamplingFixture(const std::filesystem::path& directory, const std::filesystem::path& fixtureDirectory,
+                            bool formatted)
+{
+  std::error_code error;
+  std::filesystem::create_directories(directory, error);
+  ASSERT_FALSE(error) << directory << ": " << error.message();
+  auto traceRun = readTestTextFile(fixtureDirectory / "trace-pc-sample.ctrace-run.yml");
+  auto raw = readTestBinaryFile(fixtureDirectory / "trace-pc-sample.raw");
+  ASSERT_EQ(raw.size(), 24U);
+  if (formatted) {
+    replaceFixtureText(traceRun, "ctrace-run:\n", "ctrace-run:\n  trace-format: formatted\n");
+    replaceFixtureText(traceRun, "    - timestamps:\n", R"yml(    - pname: first
+      timestamps:
+        clock: 1000000
+        itm-prescaler: 1
+    - pname: second
+      timestamps:
+)yml");
+    replaceFixtureText(traceRun, "  ctrace-refs: []\n", R"yml(  ctrace-refs:
+    - ctrace-ref: first/itm
+      type: itm
+      stream: 1
+    - ctrace-ref: second/itm
+      type: itm
+      stream: 2
+)yml");
+    raw = FormattedTraceTestSupport::memoryAlignedFrames({{1U, raw}, {2U, raw}});
+  }
+  writeTestFile(directory / "trace-pc-sample.ctrace-run.yml", traceRun);
+  writeTestFile(directory / (formatted ? "trace-pc-sample.TB.raw" : "trace-pc-sample.SWO.raw"),
+                {reinterpret_cast<const char*>(raw.data()), raw.size()});
+}
+
+/** @brief Verifies marker notes without mistaking their payloads for sampled PC addresses. */
+void expectPcSamplingCsv(std::string_view csv, std::string_view stream)
+{
+  const auto prefix = "," + std::string(stream) + ",pcsample,";
+  expectContains(csv, "1" + prefix + ",,0x08001234,,\n");
+  expectContains(csv, "3" + prefix + ",,,,CPU Sleeping\n");
+  expectContains(csv, "6" + prefix + ",,,,Trace prohibited\n");
+  expectContains(csv, "10" + prefix + ",,0x08005678,,\n");
+  EXPECT_EQ(countCsvStreamRows(csv, stream), 4U);
+  expectNotContains(csv, ",error,");
+  expectNotContains(csv, ",overflow,");
+}
+
+/** @brief Checks the additive marker record and the unchanged PC/sleep binary layouts. */
+void expectPcSamplingCtf(const std::filesystem::path& streamPath, std::uint8_t stream, bool samplesOnly = false)
+{
+  const auto layout = stream == 0U ? CtfStreamWriter::EventContextLayout::Legacy
+                                  : CtfStreamWriter::EventContextLayout::RouteLabeled;
+  const auto records = CtfTestSupport::readCtfRecords(streamPath, layout);
+  std::vector<CtfTestSupport::CtfRecord> samples;
+  for (const auto& record : records) {
+    EXPECT_EQ(record.traceBusId, stream);
+    if (record.id == CtfSchema::value(CtfSchema::EventId::PcSample) ||
+        record.id == CtfSchema::value(CtfSchema::EventId::PcSampleProhibited)) {
+      samples.push_back(record);
+    }
+    if (record.id == CtfSchema::value(CtfSchema::EventId::TraceStatus)) {
+      EXPECT_LT(record.payload.front(), CtfSchema::value(CtfSchema::TraceStatusReason::Overflow));
+    }
+  }
+  if (samplesOnly) {
+    EXPECT_EQ(records.size(), samples.size());
+  }
+  ASSERT_EQ(samples.size(), 4U);
+  constexpr std::array<std::uint64_t, 4U> timestamps{{1U, 3U, 6U, 10U}};
+  constexpr std::array<std::size_t, 4U> payloadSizes{{10U, 6U, 5U, 10U}};
+  for (std::size_t index = 0U; index < samples.size(); ++index) {
+    EXPECT_EQ(samples[index].timestamp, timestamps[index]);
+    ASSERT_EQ(samples[index].payload.size(), payloadSizes[index]);
+    EXPECT_EQ(samples[index].payload[payloadSizes[index] - 5U], CtfSchema::SampleFlagTimestampReliable);
+    EXPECT_EQ(CtfTestSupport::readLe32(samples[index].payload, payloadSizes[index] - 4U), 0U);
+  }
+  EXPECT_EQ(samples[0U].payload.front(), CtfSchema::value(CtfSchema::PcSampleState::Pc));
+  EXPECT_EQ(CtfTestSupport::readLe32(samples[0U].payload, 1U), 0x08001234U);
+  EXPECT_EQ(samples[1U].payload.front(), CtfSchema::value(CtfSchema::PcSampleState::Sleep));
+  EXPECT_EQ(samples[2U].id, CtfSchema::value(CtfSchema::EventId::PcSampleProhibited));
+  EXPECT_EQ(samples[3U].payload.front(), CtfSchema::value(CtfSchema::PcSampleState::Pc));
+  EXPECT_EQ(CtfTestSupport::readLe32(samples[3U].payload, 1U), 0x08005678U);
+}
+
 std::string normalizeGeneratedTextLineEndings(std::string text, std::string_view artifact)
 {
   std::string normalized;
@@ -451,7 +535,7 @@ void expectMatchesGolden(const Container& expected, const Container& actual, std
                 << expectedByte << ", actual 0x" << actualByte;
 }
 
-TEST_F(CtraceIntegTests, GeneratesAllOutputs)
+TEST_F(CtraceIntegTests, GeneratesCsvAndCtfWithoutEmptyGraphicalConfiguration)
 {
   writeTestFile(workDirectory() / "Minimal.ctrace-run.yml", R"yml(ctrace-run:
   ctrace-setup:
@@ -471,7 +555,7 @@ TEST_F(CtraceIntegTests, GeneratesAllOutputs)
             readTestTextFile(workDirectory() / "Minimal.SWO.csv"));
   expectNonEmptyFile(workDirectory() / "Minimal.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Minimal.ctf" / "stream_0");
-  expectNonEmptyFile(workDirectory() / "Minimal.SWO.traceanalysis.xml");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Minimal.SWO.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, DecodesExplicitUnformattedNamedTraceBuffer)
@@ -495,7 +579,7 @@ TEST_F(CtraceIntegTests, DecodesExplicitUnformattedNamedTraceBuffer)
             readTestTextFile(workDirectory() / "Named.TB_MTB.csv"));
   expectNonEmptyFile(workDirectory() / "Named.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Named.ctf" / "stream_0");
-  expectNonEmptyFile(workDirectory() / "Named.TB_MTB.traceanalysis.xml");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Named.TB_MTB.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, DefaultsNullTraceFormatToUnformattedForSwo)
@@ -604,7 +688,7 @@ TEST_F(CtraceIntegTests, SkipsUnsupportedFormattedSourceOnceAndKeepsConfiguredRo
                  ",42,info,,,,,4 bytes skipped for unconfigured source ID 42;");
   expectNonEmptyFile(workDirectory() / "Mixed.ctf" / "stream_1");
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Mixed.ctf" / "stream_42"));
-  expectNonEmptyFile(workDirectory() / "Mixed.TB.traceanalysis.xml");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Mixed.TB.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, PublishesOutputsWithUnresolvedFormattedRouteRecovery)
@@ -656,7 +740,7 @@ TEST_F(CtraceIntegTests, PublishesOutputsWithUnresolvedFormattedRouteRecovery)
             traceCsvRows(readTestTextFile(workDirectory() / "Invalid.TB.csv")));
   expectNonEmptyFile(workDirectory() / "Invalid.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Invalid.ctf" / "stream_1");
-  expectNonEmptyFile(workDirectory() / "Invalid.TB.traceanalysis.xml");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Invalid.TB.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, RecoversOneFormattedRouteWithoutLosingInterleavedOutput)
@@ -936,6 +1020,132 @@ TEST_F(CtraceIntegTests, ConvertsDwtMatchAcrossCsvAndCtf)
   expectContains(xml, "<definedValue name=\"Something happened\" value=\"1\"");
 }
 
+TEST_F(CtraceIntegTests, ConvertsPcSamplingMarkersFromSwoAndFormattedTbInEveryOutputMode)
+{
+  struct Mode {
+    std::string_view name;
+    std::string_view option;
+    bool csv;
+    bool ctf;
+  };
+  constexpr std::array<Mode, 4U> modes{{
+      {"check", {}, false, false},
+      {"csv", "--csv", true, false},
+      {"ctf", "--ctf", false, true},
+      {"all", "--all", true, true},
+  }};
+  for (const bool formatted : {false, true}) {
+    const auto channel = formatted ? "TB" : "SWO";
+    for (const auto& mode : modes) {
+      SCOPED_TRACE(std::string(channel) + "/" + std::string(mode.name));
+      const auto directory = workDirectory() / channel / mode.name;
+      writePcSamplingFixture(directory, testDataDirectory() / "trace-pc-sample", formatted);
+      std::vector<std::string> arguments{"ctrace", directory.string(), "--target", "trace-pc-sample"};
+      if (!mode.option.empty()) {
+        arguments.emplace_back(mode.option);
+      }
+      const auto result = run(std::move(arguments));
+      EXPECT_EQ(result.exitCode, 0) << result.stderrText;
+      expectNotContains(result.stderrText, "[error]");
+      const auto csvPath = directory / (std::string("trace-pc-sample.") + channel + ".csv");
+      const auto xmlPath = directory / (std::string("trace-pc-sample.") + channel + ".traceanalysis.xml");
+      EXPECT_EQ(std::filesystem::exists(csvPath), mode.csv);
+      EXPECT_EQ(std::filesystem::exists(directory / "trace-pc-sample.ctf"), mode.ctf);
+      EXPECT_EQ(std::filesystem::exists(xmlPath), mode.ctf && !formatted);
+      for (const auto stream : formatted ? std::vector<std::uint8_t>{1U, 2U} : std::vector<std::uint8_t>{0U}) {
+        if (mode.csv) {
+          expectPcSamplingCsv(readTestTextFile(csvPath), formatted ? std::to_string(stream) : "");
+        }
+        if (mode.ctf) {
+          expectPcSamplingCtf(directory / "trace-pc-sample.ctf" / ("stream_" + std::to_string(stream)), stream);
+        }
+      }
+      if (mode.ctf && !formatted) {
+        expectContains(readTestTextFile(xmlPath), "eventName=\"PC_SAMPLE_PROHIBITED\"");
+      }
+    }
+  }
+}
+
+TEST_F(CtraceIntegTests, FiltersPcSamplingMarkersByTypeAndFormattedStream)
+{
+  writePcSamplingFixture(workDirectory(), testDataDirectory() / "trace-pc-sample", true);
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "trace-pc-sample", "--all",
+                           "--type", "pcsample", "--stream", "2"});
+  EXPECT_EQ(result.exitCode, 0) << result.stderrText;
+  expectNotContains(result.stderrText, "[error]");
+  const auto csv = readTestTextFile(workDirectory() / "trace-pc-sample.TB.csv");
+  expectPcSamplingCsv(csv, "2");
+  EXPECT_EQ(countCsvStreamRows(csv, "1"), 0U);
+  expectPcSamplingCtf(workDirectory() / "trace-pc-sample.ctf" / "stream_2", 2U, true);
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "trace-pc-sample.ctf" / "stream_1"));
+  expectContains(readTestTextFile(workDirectory() / "trace-pc-sample.TB.traceanalysis.xml"),
+                 "eventName=\"PC_SAMPLE_PROHIBITED\"");
+}
+
+TEST_F(CtraceIntegTests, DoesNotSelectPcSamplingMarkersAsErrors)
+{
+  writePcSamplingFixture(workDirectory(), testDataDirectory() / "trace-pc-sample", false);
+  const auto result = run({"ctrace", workDirectory().string(), "--target", "trace-pc-sample", "--all",
+                           "--type", "error"});
+  EXPECT_EQ(result.exitCode, 0) << result.stderrText;
+  expectNotContains(result.stderrText, "[error]");
+  EXPECT_EQ(readTestTextFile(workDirectory() / "trace-pc-sample.SWO.csv"),
+            "cycles,stream,type,source,value,pc,address,note\n");
+  EXPECT_TRUE(CtfTestSupport::readCtfRecords(workDirectory() / "trace-pc-sample.ctf" / "stream_0").empty());
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "trace-pc-sample.SWO.traceanalysis.xml"));
+}
+
+TEST_F(CtraceIntegTests, RetainsProhibitedOnlyTraceDataWithoutGeneratingEmptyXml)
+{
+  for (const bool formatted : {false, true}) {
+    const auto channel = formatted ? "TB" : "SWO";
+    SCOPED_TRACE(channel);
+    const auto directory = workDirectory() / channel;
+    ASSERT_TRUE(std::filesystem::create_directory(directory));
+    auto traceRun = readTestTextFile(testDataDirectory() / "trace-pc-sample" / "trace-pc-sample.ctrace-run.yml");
+    std::vector<std::uint8_t> raw{0U, 0U, 0U, 0U, 0U, 0x80U, 0x15U, 0xffU, 0x60U};
+    if (formatted) {
+      replaceFixtureText(traceRun, "ctrace-run:\n", "ctrace-run:\n  trace-format: formatted\n");
+      replaceFixtureText(traceRun, "  ctrace-refs: []\n", R"yml(  ctrace-refs:
+    - ctrace-ref: itm
+      type: itm
+      stream: 1
+)yml");
+      raw = FormattedTraceTestSupport::memoryAlignedFrames({{1U, raw}});
+    }
+    const auto baseName = std::string("trace-pc-sample.") + channel;
+    writeTestFile(directory / "trace-pc-sample.ctrace-run.yml", traceRun);
+    writeTestFile(directory / (baseName + ".raw"), {reinterpret_cast<const char*>(raw.data()), raw.size()});
+    const auto xmlPath = directory / (baseName + ".traceanalysis.xml");
+    writeTestFile(xmlPath, "stale XML from an earlier capture\n");
+
+    const auto result = run({"ctrace", directory.string(), "--target", "trace-pc-sample", "--all",
+                             "--type", "pcsample"});
+    EXPECT_EQ(result.exitCode, 0) << result.stderrText;
+    expectNotContains(result.stderrText, "[error]");
+    auto expectedCsv = std::string("cycles,stream,type,source,value,pc,address,note\n6,") +
+                       (formatted ? "1" : "") + ",pcsample,,,,,Trace prohibited\n";
+    if (formatted) {
+      expectedCsv += ",0,info,,,,,4 bytes skipped for null source ID 0; first formatter group at raw offset 10\n";
+      expectContains(result.stderrText, "4 bytes skipped for null source ID 0");
+    }
+    EXPECT_EQ(readTestTextFile(directory / (baseName + ".csv")), expectedCsv);
+    const auto layout = formatted ? CtfStreamWriter::EventContextLayout::RouteLabeled
+                                  : CtfStreamWriter::EventContextLayout::Legacy;
+    const auto records = CtfTestSupport::readCtfRecords(
+        directory / "trace-pc-sample.ctf" / (formatted ? "stream_1" : "stream_0"), layout);
+    ASSERT_EQ(records.size(), 1U);
+    EXPECT_EQ(records.front().id, CtfSchema::value(CtfSchema::EventId::PcSampleProhibited));
+    EXPECT_EQ(records.front().timestamp, 6U);
+    EXPECT_EQ(records.front().traceBusId, formatted ? 1U : 0U);
+    EXPECT_EQ(records.front().payload,
+              (std::vector<unsigned char>{CtfSchema::SampleFlagTimestampReliable, 0U, 0U, 0U, 0U}));
+    expectContains(readTestTextFile(directory / "trace-pc-sample.ctf" / "metadata"), "PC_SAMPLE_PROHIBITED");
+    EXPECT_FALSE(std::filesystem::exists(xmlPath));
+  }
+}
+
 TEST_F(CtraceIntegTests, ConvertsCapturedDwtEventCountersAcrossOverflow)
 {
   const auto fixtureDirectory = testDataDirectory() / "trace-event";
@@ -1127,7 +1337,7 @@ TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
   expectNonEmptyFile(workDirectory() / "Diagnostics.SWO.csv");
   expectNonEmptyFile(workDirectory() / "Diagnostics.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Diagnostics.ctf" / "stream_0");
-  expectNonEmptyFile(workDirectory() / "Diagnostics.SWO.traceanalysis.xml");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Diagnostics.SWO.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, GeneratesRequestedOutputsAfterDecoderError)
@@ -1147,7 +1357,7 @@ TEST_F(CtraceIntegTests, GeneratesRequestedOutputsAfterDecoderError)
   expectContains(readTestTextFile(csvPath), ",error,");
   expectNonEmptyFile(workDirectory() / "Minimal.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Minimal.ctf" / "stream_0");
-  expectNonEmptyFile(workDirectory() / "Minimal.SWO.traceanalysis.xml");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Minimal.SWO.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, ConvertsLegacyUnformattedSwoFixtureToGoldenOutputs)

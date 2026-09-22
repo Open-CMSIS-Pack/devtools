@@ -49,6 +49,11 @@ instead of inventing a global event order. A separate one-route configuration
 without a processor name verifies the numeric stream-class fallback label in
 the private `ctrace_route` context.
 
+A second fixture exercises PC sampling at 1 MHz: PC, sleep marker, trace-prohibited
+marker, then PC. Babeltrace must read exactly those four records at 1, 3, 6 and
+10 microseconds. This independently checks the unchanged `PC_SAMPLE` layout and
+the additive `PC_SAMPLE_PROHIBITED` event, including the record following it.
+
 ## Trace Compass acceptance
 
 The data-driven XML output was accepted on 2026-09-11 against Trace Compass
@@ -144,3 +149,24 @@ No companion `Blinky+Arm.TB.traceanalysis.xml` existed, the server's XML
 configuration list was empty, and its output list contained no
 `arm.cmsis.swo.*` provider. Trace Compass therefore imported all event-table
 data without constructing an invalid cross-clock graphical timeline.
+
+### PC-sampling markers (2026-09-21)
+
+The release build's [synthetic marker fixture](../data/trace-pc-sample/README.md)
+was converted with `--all --type pcsample` and imported into an isolated
+instance of the same server version, with its own configuration and workspace.
+The event table exposed exactly four records: PC at 1,000 ns, sleep at 3,000 ns,
+`PC_SAMPLE_PROHIBITED` at 6,000 ns, and the following PC at 10,000 ns. Both PC
+addresses, the empty sleep PC array, sample flags `2`, and overflow count `0`
+were preserved.
+
+The `arm.cmsis.swo.tg.processor_state.v1` provider exposed a `Sleep` interval
+from 3,000 to 6,000 ns and gaps before and after it. The prohibited marker closed
+sleep without creating a running or prohibited-duration state. The existing
+legacy XML golden remains unchanged because its capture contains no sleep
+indications and therefore emits no processor-state handler.
+
+A marker-only capture produced one `PC_SAMPLE_PROHIBITED` table record, no
+companion XML, and no `Processor State` graph. An XML file left from an earlier
+capture was removed. This also prevents empty analyses for other point-only
+or fully filtered captures: Trace Compass rejects an empty `stateProvider`.

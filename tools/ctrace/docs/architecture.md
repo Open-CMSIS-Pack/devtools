@@ -17,8 +17,8 @@ The current profile supports unformatted ITM byte streams from SWO or explicitly
 memory-aligned formatted CoreSight input carrying ITM and DWT packets. Each configured ITM route supports the public
 event selections `itm`, `dwt`, `event`, `pmu`, `exception`, `pcsample`, `global_ts`, `overflow`, and `error`.
 Backend-specific representations are documented in the [CTF profile](ctf-format.md), not in the decoder contract.
-PC sampling currently accepts a four-byte PC or a one-byte `0x00` sleep marker. The specified Armv8-M `0xFF`
-(`Trace prohibited`) marker is not implemented yet and produces an unsupported-payload Error.
+PC sampling accepts a four-byte PC or the one-byte status markers `0x00` (`CPU Sleeping`) and Armv8-M `0xff`
+(`Trace prohibited`). Status markers preserve route, timestamp, and sample quality without a PC address.
 
 Exactly one raw input is active for each trace-run configuration. Formatted input distributes bytes to configured
 ITM routes by Trace Bus ID; unformatted input uses one synthetic route. Other protocols require explicit decoder
@@ -286,7 +286,8 @@ lazily creates a stream writer for each formatted route that emits selected even
 the backends: for example, CSV retains a DWT/PMU counter mask in one row while CTF expands it into individual records.
 
 CTF finalization retains only emitted streams, then generates Trace Compass XML from their observed graphical topics.
-This avoids empty views and invented durations for point events. Route identity stays separate from display labels,
+Without graphical topics, it omits the XML entirely; point events remain in the CTF event table. This avoids invalid
+empty analyses and invented durations. Route identity stays separate from display labels,
 so equal processor names cannot merge views. Formatted routes retain distinct clock domains because the input contract
 does not establish cross-route synchronization. Multi-clock data remains valid CTF but cannot safely drive the supported
 reader's combined XML analysis.

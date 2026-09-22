@@ -395,6 +395,17 @@ static void writeProcessorStateHandler(std::ostream& xml, bool routePrefixed)
             </stateChange>
 )";
   writeStateHandler(xml, CtfSchema::EventId::PcSample, stateChanges.str());
+
+  std::ostringstream prohibitedStateChange;
+  prohibitedStateChange << R"(            <stateChange>
+)"
+      << statePathPrefix(routePrefixed) << R"(                <stateAttribute type="constant" value=")"
+      << CtfSchema::eventName(CtfSchema::EventId::PcSample) << R"(" />
+                <stateAttribute type="constant" value="Sleep" />
+                <stateValue type="null" />
+            </stateChange>
+)";
+  writeStateHandler(xml, CtfSchema::EventId::PcSampleProhibited, prohibitedStateChange.str());
 }
 
 /** @brief Writes the processor-state reset performed after discontinuities. */

@@ -10,7 +10,8 @@ authoritative for trace input and `*.ctrace-run.yml` configuration.
 - DWT data trace: [`DWT_VALUE`](#dwt_value-event-id-1), [`DWT_ADDR`](#dwt_addr-event-id-2), and
   [`DWT_MATCH`](#dwt_match-event-id-9)
 - Trace integrity: [`TRACE_STATUS`](#trace_status-event-id-3)
-- Execution state: [`EXCEPTION`](#exception-event-id-4) and [`PC_SAMPLE`](#pc_sample-event-id-6)
+- Execution state: [`EXCEPTION`](#exception-event-id-4), [`PC_SAMPLE`](#pc_sample-event-id-6), and
+  [`PC_SAMPLE_PROHIBITED`](#pc_sample_prohibited-event-id-10)
 - Time correlation: [`GLOBAL_TIMESTAMP`](#global_timestamp-event-id-5)
 - Profiling: [`DWT_EVENT`](#dwt_event-event-id-7) and [`PMU_EVENT`](#pmu_event-event-id-8)
 
@@ -74,9 +75,9 @@ identifies observed input, not a decoded CTF route or clock; this includes NULL 
 invent a CTF stream, timestamp, or `resync` event for these annotations.
 
 The optional `<solution-set>.<channel>.traceanalysis.xml` companion is stored next to the bundle. It is generated
-only when the completed metadata retains at least one stream and all retained streams reference one clock domain,
-because the supported Trace Compass reader cannot safely combine independent clocks. This limitation affects only
-the generated visualization; a metadata-only or multi-clock CTF bundle remains valid.
+only when at least one retained stream has graphical data and all retained streams reference one clock domain.
+Trace Compass rejects empty analyses and cannot safely combine independent clocks. These restrictions affect only
+the generated visualization; a metadata-only, point-event-only, or multi-clock CTF bundle remains valid.
 
 A fatal OpenCSD decode abort removes the incomplete CTF bundle and its XML companion, including data already written
 for healthy routes. If CSV output remains healthy, ctrace retains its selected rows and appends one input-wide `error`
@@ -98,6 +99,7 @@ under [`TRACE_STATUS`](#trace_status-event-id-3). Both kinds of Error produce a 
 | Profiling | 7 | `DWT_EVENT` | Architectural DWT event-counter overflow |
 | Profiling | 8 | `PMU_EVENT` | Programmable PMU counter overflow |
 | DWT data trace | 9 | `DWT_MATCH` | Comparator match without additional data |
+| Execution state | 10 | `PC_SAMPLE_PROHIBITED` | PC sampling reports that trace is prohibited |
 
 ## Common sample fields
 
@@ -283,13 +285,33 @@ uint32_t cmsis_overflow_count
 State `0` denotes processor sleep and leaves the PC array empty. State `1` denotes a periodic PC sample and stores one
 32-bit PC. The state therefore doubles as the zero-or-one array length.
 
-The decoder currently accepts only a four-byte PC or a one-byte zero sleep indication. Other payloads, including
-one-byte `0xff`, produce a decoder Error and have no `PC_SAMPLE` representation in this profile.
+Four-byte PC values and one-byte `0x00` sleep indications use this event. The Armv8-M one-byte `0xff`
+trace-prohibited marker uses [`PC_SAMPLE_PROHIBITED`](#pc_sample_prohibited-event-id-10); other payloads produce
+a decoder Error.
 
 PC samples are point observations and are available in the CTF event table. Trace Compass does not invent execution
 duration between sampled PCs. If a sleep indication was emitted, the generated `Processor State` view opens a
-`Sleep` interval; the next PC sample, overflow, or data loss closes it. Ordinary PC samples alone do not create this
-view.
+`Sleep` interval; the next PC sample, trace-prohibited marker, overflow, or data loss closes it. Ordinary PC samples
+alone do not create this view.
+
+### PC_SAMPLE_PROHIBITED (event ID 10)
+
+```text
+uint8_t  cmsis_sample_flags
+uint32_t cmsis_overflow_count
+```
+
+The Armv8-M one-byte DWT PC-sampling payload `0xff` reports `Trace prohibited`. It is a valid point observation,
+not a PC address, decoder error, or data-loss boundary. Its timestamp and sample quality are preserved; the marker
+does not increment the overflow count or reset exception state.
+
+This additive event keeps the existing `PC_SAMPLE` binary layout and profile version unchanged. Adding another
+`cmsis_pc_sample_state` value instead would change the PC array length and misalign consumers. Both event kinds remain
+part of the `pcsample` output selection.
+
+The event is visible in the CTF event table. If a `Processor State` view exists, it closes any open `Sleep` interval
+for that route, leaving the state unknown. It neither establishes running state nor creates a trace-prohibited
+duration or a graphical view by itself.
 
 ## Time-correlation events
 
@@ -349,11 +371,13 @@ events as generated XML tables. The companion XML contains only graphical views 
 - XY views for DWT values and data-address fragments.
 - Time graphs for DWT matches, DWT and PMU counter pulses, decoded exception activity, and processor sleep.
 
-ITM values, trace-status records, Global Timestamps, and ordinary PC samples stay in the standard event table because
-they do not establish a duration. Each generalized route receives a separate graphical view. Its visible suffix is
-the resolved processor name, if available; numeric Trace Bus IDs are omitted from visible labels but remain in the
+ITM values, trace-status records, Global Timestamps, ordinary PC samples, and trace-prohibited markers stay in the
+standard event table because they do not establish a duration. Each generalized route receives a separate graphical
+view. Its visible suffix is the resolved processor name, if available; numeric Trace Bus IDs are omitted from visible
+labels but remain in the
 public CTF event context and internally in provider IDs and state queries. Routes and topics without corresponding
-emitted data do not add graphical views.
+emitted data do not add graphical views. When no graphical topic remains, ctrace omits the XML entirely and removes
+any stale companion file; importing only the CTF bundle still provides the event table.
 
 The production output planner conservatively assigns each formatted route a distinct clock domain and UUID, even
 when configured frequencies match. After lazy stream projection, ctrace writes XML only if the completed bundle
