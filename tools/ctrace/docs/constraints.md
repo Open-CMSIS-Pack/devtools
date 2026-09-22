@@ -5,8 +5,9 @@ profile belong in the [architecture description](architecture.md), working instr
 and unfinished work in the [TODO list](todo.md). The CMSIS-Toolbox [trace
 specification](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#trace) remains authoritative for
 standardized `*.ctrace-run.yml` fields. The `ctrace-run.trace-format` field described below is a ctrace-private,
-provisional extension, not a normative CMSIS-Toolbox field or a producer-emission requirement. Its standardization
-and producer integration remain tracked as unfinished work.
+temporary override, not a normative CMSIS-Toolbox field or a producer-emission requirement. Its standardization is
+not assumed: the current [trace proposal](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/pull/699) keeps formatter
+configuration with trace communication, separate from trace-source setup.
 
 ## Boundaries
 
@@ -43,9 +44,9 @@ and producer integration remain tracked as unfinished work.
   over coexisting TB input. The selected input must be a regular, readable file and is opened during preflight,
   before decoder or output construction. Event Recorder input remains diagnosed and excluded from the active candidate count.
 - The standardized `trace-buffer` selection belongs to solution/build-run producer configuration, not to the
-  `*.ctrace-run.yml` file consumed by ctrace. Until the producer passes an unambiguous selected-file identity and its
-  effective format/framing, ctrace's single-input discovery and channel-based defaults remain a transitional input
-  policy.
+  `*.ctrace-run.yml` file consumed by ctrace. The caller-facing selection and format/framing contract remains
+  follow-up work; this does not imply adding fields to `*.ctrace-run.yml`. Current discovery still requires one
+  unambiguous input and applies the channel-based defaults above.
 - Formatted input globally uses 16-byte memory-aligned CoreSight frames. Its length must be a multiple of 16, and it
   contains neither FSYNC nor HSYNC framing. Ctrace does not parse or emit a `trace-framing` YAML field; supporting
   another framing mode requires a public trace contract first.

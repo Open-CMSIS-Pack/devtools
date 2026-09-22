@@ -392,8 +392,12 @@ compile-only. Native Linux additionally runs the exact Babeltrace 2.0.5 consumer
 source-line coverage for `tools/ctrace/src`; branch coverage is retained for review but is not the merge gate. The
 versioned manual Trace Compass Server/TSP acceptance record is documented beside the
 [integration tests](../test/integration/README.md).
-The release version compiled into the executable is derived from the same tag. Archive contents and license material
-are described in the [third-party notices](THIRD_PARTY_NOTICES.md); unfinished release work remains in the
+The release version compiled into the executable is derived from the same tag.
+
+`scripts/package-release.sh` packages the five platform binaries, the devtools license, third-party notices, and
+dependency licenses into `ctrace.zip`. Its `SHA256SUMS` file covers the packaged binaries and license/notice files;
+it is not a checksum of the zip archive itself or a signing/notarization statement. Dependency licensing is documented
+in the [third-party notices](THIRD_PARTY_NOTICES.md); unfinished release work remains in the
 [TODO list](todo.md).
 
 ## Design history

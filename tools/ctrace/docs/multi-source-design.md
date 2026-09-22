@@ -70,9 +70,12 @@ one raw file + normalized trace-run metadata
 ## Input and route identity
 
 Input format describes the effective capture bytes. A single source can be formatted, and a sink's name does not
-prove how its formatter was configured. The migration introduced the provisional `ctrace-run.trace-format` field
-and an internal 16-byte memory-aligned framing contract. It did not introduce byte-pattern detection or a public
-`trace-framing` field. The discovery defaults were subsequently revised, as recorded below.
+prove how its formatter was configured. The migration introduced the provisional, ctrace-private
+`ctrace-run.trace-format` field and an internal 16-byte memory-aligned framing contract. It did not introduce
+byte-pattern detection or a public `trace-framing` field. The discovery defaults were subsequently revised, as recorded
+below. The format field remains a temporary override, not a field awaiting standardization. The current
+[trace proposal](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/pull/699) keeps formatter configuration with trace
+communication rather than trace-source setup.
 
 Generated `ctrace-refs.stream` assignments are the routing authority. Copied target setup, including an optional
 `itm.atbid`, cannot replace effective generated routing information. Processor-ITM references are the preferred route
