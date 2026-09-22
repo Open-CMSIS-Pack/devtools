@@ -39,11 +39,13 @@ CSV rows without decoder errors:
 | 2 / CM7 | 121 | 165 | 26 | 312 |
 
 `Blinky+Arm.ctrace-run.yml` follows the current per-processor setup and generated-reference structure. The
-ctrace-private provisional root-level `trace-format: formatted` field selects CoreSight frame decoding. Ctrace
-internally defaults formatted input to 16-byte memory-aligned framing; no public `trace-framing` field is assumed or
-emitted. The declared processor clocks are fixture metadata and are not encoded in the raw trace. Normative format,
-framing, and explicit file-association metadata remain to be specified by CMSIS-Toolbox and emitted by the producer
-that knows the effective capture configuration.
+ctrace-private provisional `ctrace-run.trace-format: formatted` field explicitly selects CoreSight frame decoding.
+If this field is absent or null, the selected `.TB.raw` filename also selects formatted decoding; `.TB_<suffix>.raw`
+uses the same fallback. Ctrace internally defaults formatted input to 16-byte memory-aligned framing; no public
+`trace-framing` field is assumed or emitted. The declared processor clocks are fixture metadata and are not encoded
+in the raw trace. These format and filename rules are ctrace compatibility behavior; normative format, framing, and
+explicit file-association metadata remain to be specified by CMSIS-Toolbox and emitted by the producer that knows the
+effective capture configuration.
 
 `regenerate_tb_trace.py` performs the documented reconstruction without reading the canonical output. It validates the
 source hash and structure, removes the terminal CM7 synchronization bytes even though formatter interleaving separates
@@ -99,7 +101,8 @@ The expected row counts, excluding the CSV header, are `stream 01: 213 semantic 
 `stream 02: 312 semantic rows`. These counterchecks inspect the generated output; the checked-in reconstructed capture
 remains the canonical test artifact.
 
-The executable integration test also decodes the canonical combined capture directly. It requires 213 CSV rows on
-Trace Bus ID 1 and 312 on ID 2, no row or CTF file for ID-0 padding, one CTF stream per active ID, and two independent
-clock declarations for the 240 MHz CM4 and 480 MHz CM7 routes. Because those clock domains have no specified common
-origin, the valid CTF bundle deliberately has no companion Trace Compass XML and reports that limitation once.
+The executable integration test also decodes the canonical combined capture directly. It requires 213 payload CSV
+rows on Trace Bus ID 1 and 312 on ID 2. ID-0 padding is recorded as skipped-byte CSV Info without creating a decoded
+route or CTF file. The output has one CTF stream per active ID and two independent clock declarations for the 240 MHz
+CM4 and 480 MHz CM7 routes. Because those clock domains have no specified common origin, the valid CTF bundle
+deliberately has no companion Trace Compass XML and reports that limitation once.

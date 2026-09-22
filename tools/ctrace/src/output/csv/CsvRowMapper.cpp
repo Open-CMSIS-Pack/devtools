@@ -258,3 +258,22 @@ std::string CsvRowMapper::row(const TraceEvent& event)
 {
   return renderCsvRow(eventToCsvRow(event));
 }
+
+std::string CsvRowMapper::byteSkipRow(const TraceByteSkip& skipped)
+{
+  CsvRow row{};
+  if (skipped.traceId.has_value()) {
+    row[column(CsvColumn::Stream)] = std::to_string(*skipped.traceId);
+  }
+  row[column(CsvColumn::Type)] = "info";
+  row[column(CsvColumn::Note)] = traceByteSkipMessage(skipped);
+  return renderCsvRow(row);
+}
+
+std::string CsvRowMapper::decodeAbortRow(const TraceDecodeAbort& failure)
+{
+  CsvRow row{};
+  row[column(CsvColumn::Type)] = "error";
+  row[column(CsvColumn::Note)] = traceDecodeAbortMessage(failure);
+  return renderCsvRow(row);
+}

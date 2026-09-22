@@ -4,14 +4,16 @@ This document records contracts that implementation changes must preserve. Runti
 profile belong in the [architecture description](architecture.md), working instructions in the [README](../README.md),
 and unfinished work in the [TODO list](todo.md). The CMSIS-Toolbox [trace
 specification](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#trace) remains authoritative for
-standardized `*.ctrace-run.yml` fields. The root `trace-format` field described below is a ctrace-private,
-provisional extension, not a normative CMSIS-Toolbox field or a producer-emission requirement. Its standardization
-and producer integration remain tracked as unfinished work.
+standardized `*.ctrace-run.yml` fields. The `ctrace-run.trace-format` field described below is a ctrace-private,
+temporary override, not a normative CMSIS-Toolbox field or a producer-emission requirement. Its standardization is
+not assumed: the current [trace proposal](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/pull/699) keeps formatter
+configuration with trace communication, separate from trace-source setup.
 
 ## Boundaries
 
 - OpenCSD types remain inside the decode layer. Other modules and output backends consume semantic `TraceEvent`
-  values.
+  values, `TraceByteSkip` input annotations without a decoded route or clock, and input-wide `TraceDecodeAbort`
+  finalization context.
 - An OpenCSD API migration must retain access to typed ITM configuration and packet data and must preserve every
   structured decoder error from each data-path operation; falling back to only the last error or formatted log text
   would change recovery behavior.
@@ -34,22 +36,23 @@ and producer integration remain tracked as unfinished work.
 
 ## Input format, framing, and discovery
 
-- Root-level `trace-format` accepts only `unformatted` or `formatted`. Missing or null selects `unformatted` without
-  an Error and remains an undeclared value for discovery compatibility. An explicit non-null declaration opts the
-  eligible SWO, TB, and named-TB candidates into the new selection rule.
-- A legacy undeclared configuration activates only `<set>.SWO.raw`; coexisting TB files retain their non-failing
-  excluded-input Warning. With an explicit format, exactly one existing `<set>.SWO.raw`, `<set>.TB.raw`, or
-  `<set>.TB_<name>.raw` must be selected. Zero or multiple candidates fail before decoder or output construction.
-  In either case, the selected input must be a regular, readable file and is opened during preflight, before decoder
-  or output construction. Event Recorder input remains diagnosed and excluded from the active candidate count.
+- Optional `ctrace-run.trace-format` accepts only `unformatted` or `formatted`. An explicit value overrides the
+  channel-based default. Missing or null selects `unformatted` for SWO and `formatted` for TB or named-TB without an
+  Error. Discovery resolves this effective format before route normalization.
+- Exactly one existing `<set>.SWO.raw`, `<set>.TB.raw`, or `<set>.TB_<name>.raw` must be selected, independently of a
+  format declaration. Zero or multiple candidates fail before decoder or output construction; SWO has no priority
+  over coexisting TB input. The selected input must be a regular, readable file and is opened during preflight,
+  before decoder or output construction. Event Recorder input remains diagnosed and excluded from the active candidate count.
 - The standardized `trace-buffer` selection belongs to solution/build-run producer configuration, not to the
-  `*.ctrace-run.yml` file consumed by ctrace. Until the producer passes an unambiguous selected-file identity and its
-  effective format/framing, ctrace's explicit-format discovery rule remains a transitional input policy.
+  `*.ctrace-run.yml` file consumed by ctrace. The caller-facing selection and format/framing contract remains
+  follow-up work; this does not imply adding fields to `*.ctrace-run.yml`. Current discovery still requires one
+  unambiguous input and applies the channel-based defaults above.
 - Formatted input globally uses 16-byte memory-aligned CoreSight frames. Its length must be a multiple of 16, and it
   contains neither FSYNC nor HSYNC framing. Ctrace does not parse or emit a `trace-framing` YAML field; supporting
   another framing mode requires a public trace contract first.
-- Format describes the effective bytes in the selected capture, not target capability. Ctrace does not infer it from
-  filenames, synchronization patterns, configured route count, or target setup.
+- Format describes the effective bytes in the selected capture, not target capability. The channel-based default is
+  a heuristic, not byte-content detection: ctrace does not infer format from synchronization patterns, configured
+  route count, or target setup. An explicit declaration is required when the bytes differ from the channel default.
 
 ## Routing invariants
 
@@ -67,6 +70,7 @@ and producer integration remain tracked as unfinished work.
   selector `0`, and CTF stream-class ID `0` are compatibility representations of that route, not configured ATB ID 0.
 - Formatted ID `0` is NULL/padding and creates no route, semantic event, CTF stream, or Trace Compass lane. A normal
   observed ID without a configured ITM route is diagnosed once and skipped without guessing its protocol.
+  Skipped-byte Info may still expose the observed ID, including NULL/reserved IDs, without creating a decoded route.
 - Normalized route identity, processor binding, timestamp prescaler, source metadata, errors, synchronization,
   overflow, and data-loss state remain route-local. ITM stimulus ports are restricted to `0` through `31`; port `0`
   is decoded for stream integrity but excluded from payload output.
@@ -79,6 +83,15 @@ and producer integration remain tracked as unfinished work.
   tree before releasing callback state, and restores the previously installed logger on every exit path.
 - Raw trace bytes are passed to the decoder unchanged; ctrace never injects synthetic synchronization. Recovery
   resumes only at synchronization present in the input.
+- Payload skipped before a source ID is known or assigned to NULL, reserved, or unconfigured IDs is accounted as
+  non-failing Info. Bounded accounting counts deformatted payload bytes, not raw/control bytes, and records the first
+  formatter output group's raw offset, not an exact discarded-byte position. The source ID is unknown only before
+  its first assignment: formatted decoding neither resets the frontend nor enables reset-on-FSYNC.
+- On a known formatted route, initial `NOTSYNC` payload is counted in deformatted ITM bytes, never inferred from
+  differences between raw offsets. If real synchronization is later committed, a byte-skip Info annotation precedes
+  that first sync. An existing route error/recovery interval suppresses duplicate initial-loss accounting. If no
+  real sync is committed by end of input, the skipped-byte Info and the separate missing-sync Error below apply.
+  These annotations do not replace the existing accounting for general SWO or malformed-packet recovery.
 - File-read chunks are not packet boundaries. Decoder state must survive arbitrary read boundaries.
 - Error callbacks collect complete stable batches; they do not reset, roll back, emit output, or throw through
   OpenCSD. Classification and recovery happen only after the current synchronous data-path operation returns.
@@ -88,8 +101,13 @@ and producer integration remain tracked as unfinished work.
 - The DecodeTree-reported processed-byte count is the only formatted-input cursor. Bytes reported as consumed are
   never re-fed. Only the affected route remains in data loss until a real hardware sync; unresolved loss is closed at
   end of input.
+- At formatted end of input, each configured route with received ITM payload but no committed real hardware sync
+  reports one route-bound `OpenCsdMissingSync` Error. Rolled-back sync callbacks do not establish synchronization;
+  configured routes without received bytes are not errors. This failure returns non-zero while retaining completed
+  outputs and healthy routes, instead of silently producing an apparently successful empty conversion.
 - A channel-less or deformatter error, failed route reset, incomplete formatted framing/input, unrecoverable response,
-  exhausted wait, or repeated lack of progress is input-fatal and aborts every active output. An incomplete packet at
+  exhausted wait, or repeated lack of progress is input-fatal and stops decoding. Outputs follow the fatal-abort policy
+  below: CSV retains committed rows with an abort marker; incomplete CTF and XML are removed. An incomplete packet at
   the end of an unformatted ITM stream retains the legacy recoverable behavior: it is published as a decoder issue and
   does not by itself abort otherwise valid output.
 - Discontinuities flush or clear pending route-local DWT state and invalidate timestamp quality before decoding
@@ -98,9 +116,17 @@ and producer integration remain tracked as unfinished work.
 
 ## Observable behavior and output safety
 
-- CSV remains one combined file in semantic callback order. The unformatted route has an empty `stream` field;
+- CSV remains one combined file in decode callback order. The unformatted route has an empty `stream` field;
   formatted routes expose their architectural IDs. Type and stream filters affect output, not decoding or diagnostic
-  reporting. The seventh CSV column is `address`, as defined by the CMSIS-Toolbox trace specification.
+  reporting. The seventh CSV column is `address`, matching the published CMSIS-Toolbox
+  [CSV schema](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#csv-format).
+- Byte-skip annotations are retained in CSV regardless of `--type` or `--stream`: `type` is `info`, `note` describes
+  the reason, byte count, and formatter-group offset, and `stream` is the observed formatter ID when known, including
+  `0` or `127`. All other fields are empty. `info` is an input annotation, not a new CLI type selector. No annotation
+  may be represented as a hardware `SYNC`, assigned to a synthetic route, or given an invented time. CTF ignores
+  these annotations, so the accounting is CLI/CSV-only. Missing sync at end of input remains a separate route-bound
+  Error that always reaches CLI and contributes to command failure, while its CSV row follows ordinary output
+  filters; it does not repeat the counted bytes as another loss record.
 - PC sampling distinguishes four-byte PC values from the one-byte `0x00` (`CPU Sleeping`) and Armv8-M `0xff`
   (`Trace prohibited`) status markers. CSV leaves `pc` empty for both markers and writes their meaning in `note`;
   all three remain selectable as `pcsample`. Markers preserve route, timestamp, and quality without creating an error
@@ -127,17 +153,26 @@ and producer integration remain tracked as unfinished work.
   conflicting frequency is accepted for validation-only and CSV operation but prevents CTF generation with an Error.
   A filter selecting no configured route requires no clock because it can emit no CTF stream. With `--all`, valid CSV
   still completes while the invocation returns non-zero.
-- Different processor bindings are independent CTF clock domains even when their frequencies match. A multi-clock
-  CTF bundle remains valid, but ctrace emits one Warning, removes any stale companion XML, and creates no new Trace
-  Compass XML because the supported reader cannot establish a correct combined order. Cross-domain time correlation
+- Each formatted route has an independent CTF clock domain, even when processor labels or frequencies match.
+  A multi-clock CTF bundle remains valid, but ctrace emits one Warning, removes any stale companion XML, and creates
+  no new Trace Compass XML because the supported reader cannot establish a correct combined order. Cross-domain time correlation
   is not inferred.
-- Decoder warnings and errors remain observable regardless of payload filtering. A recoverable protocol error may be
-  published with route-bound error/data-loss events even though its Error diagnostic makes the invocation fail.
+- CLI decoder warnings and errors remain observable regardless of output filtering. Ordinary route-bound CSV
+  diagnostics follow the stream filter and use the `error` type selector, including warning-severity issues. The
+  published CSV schema defines no `warning` type or severity column. A recoverable protocol error may be published
+  with selected route-bound error/data-loss events even though its Error diagnostic makes the invocation fail.
+- A fatal OpenCSD decode abort preserves already committed CSV rows and appends one input-wide `type=error` record
+  with `note` set to `decode aborted after processing N input bytes; trace is incomplete: reason`. All other fields
+  are empty. This global marker bypasses both type and stream filters; ordinary route-bound errors do not. Partial
+  CTF and XML artifacts are removed. This retention and global-marker policy is an explicit ctrace contract, not a
+  requirement of the published CSV specification. Failures before CSV startup create no CSV; CSV write or close
+  failures still remove the unreliable file.
 - Structured diagnostic impact determines command failure; formatted stderr text does not.
 - CTF timestamps never regress, and a global timestamp does not by itself establish local timestamp quality.
 - Validation-only mode creates no output. Unsupported trace channels are diagnosed and skipped.
-- Cleanup of incomplete output artifacts is attempted after failure, and cleanup failures are reported. Incompatible
-  existing output filesystem types and overlapping CTF/XML paths are rejected before replacement.
+- Apart from the explicitly retained CSV after a fatal decode abort, cleanup of incomplete output artifacts is
+  attempted after failure, and cleanup failures are reported. Incompatible existing output filesystem types and
+  overlapping CTF/XML paths are rejected before replacement.
 
 ## Build and CI constraints
 

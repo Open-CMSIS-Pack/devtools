@@ -7,10 +7,13 @@
      aria-labelledby="title description">
   <title id="title">ctrace software architecture</title>
   <desc id="description">
-    ITM and DWT runtime data flow from command-line, trace-run YAML, and one selected raw input through normalized
-    routes, mode-specific output planning, a SINGLE or formatted OpenCSD DecodeTree, route-local recovery and
+    ITM and DWT runtime data flow from command-line, trace-run YAML, and one selected raw input through a channel-based
+    format default or explicit override, normalized routes, mode-specific output planning, a SINGLE or formatted
+    OpenCSD DecodeTree, route-local recovery and
     Cortex-M state, semantic trace events, diagnostics, CSV, multi-stream CTF, and conditional Trace Compass XML
-    output.
+    output. Native errors, bounded packet previews, and recovery details reach diagnostics and CSV. Formatter and
+    initial synchronization skips follow a separate Info path. Fatal decode retains committed CSV rows with a global
+    abort record and removes incomplete CTF and XML artifacts.
   </desc>
 
   <defs>
@@ -62,18 +65,18 @@
 
   <rect x="310" y="125" width="250" height="86" class="box input"/>
   <text x="435" y="153" class="box-title">*.ctrace-run.yml</text>
-  <text x="435" y="176" class="box-detail">trace-format · ctrace-setup</text>
+  <text x="435" y="176" class="box-detail">optional trace-format · ctrace-setup</text>
   <text x="435" y="194" class="box-detail">ctrace-refs · optional metadata</text>
 
   <rect x="610" y="125" width="220" height="86" class="box input"/>
   <text x="720" y="153" class="box-title">*.SWO.raw</text>
-  <text x="720" y="176" class="box-detail">legacy or explicit candidate</text>
-  <text x="720" y="194" class="box-detail">effective global format</text>
+  <text x="720" y="176" class="box-detail">default: unformatted</text>
+  <text x="720" y="194" class="box-detail">explicit format overrides</text>
 
   <rect x="880" y="125" width="300" height="86" class="box input"/>
   <text x="1030" y="153" class="box-title">*.TB[_name].raw</text>
-  <text x="1030" y="176" class="box-detail">explicit candidate</text>
-  <text x="1030" y="194" class="box-detail">same effective global format</text>
+  <text x="1030" y="176" class="box-detail">default: formatted</text>
+  <text x="1030" y="194" class="box-detail">explicit format overrides</text>
 
   <text x="50" y="250" class="section">ORCHESTRATION</text>
   <rect x="40" y="265" width="1200" height="250" class="group"/>
@@ -84,19 +87,20 @@
 
   <rect x="310" y="280" width="320" height="100" class="box control"/>
   <text x="470" y="308" class="box-title">tracerun</text>
-  <text x="470" y="331" class="box-detail">YAML reader · CtraceRunMeta</text>
-  <text x="470" y="349" class="box-detail">canonical routes · deferred values</text>
-  <text x="470" y="367" class="box-detail">discover · preflight one input</text>
+  <text x="470" y="331" class="box-detail">read YAML · select exactly one input</text>
+  <text x="470" y="349" class="box-detail">resolve format · normalize routes</text>
+  <text x="470" y="367" class="box-detail">preflight · deferred output values</text>
 
   <rect x="280" y="410" width="390" height="85" class="box control"/>
   <text x="475" y="438" class="box-title">control</text>
   <text x="475" y="461" class="box-detail">TraceDirectoryJob · FileDecodeJob</text>
   <text x="475" y="479" class="box-detail">descriptor · output plan · 64 KiB reads</text>
 
-  <rect x="900" y="400" width="280" height="85" class="box support"/>
+  <rect x="900" y="400" width="280" height="103" class="box support"/>
   <text x="1040" y="428" class="box-title">diagnostics</text>
   <text x="1040" y="451" class="box-detail">severity · context · impact</text>
   <text x="1040" y="469" class="box-detail">CLI/config · decoder · output failures</text>
+  <text x="1040" y="487" class="box-detail">native errors · packet preview · recovery</text>
 
   <path d="M 155 211 L 160 290" class="flow"/>
   <path d="M 435 211 L 435 280" class="flow"/>
@@ -136,6 +140,10 @@
   <text x="480" y="759" class="box-title">OpenCSD 1.8.3</text>
   <text x="480" y="779" class="box-detail">pinned external library</text>
 
+  <rect x="665" y="735" width="270" height="58" class="box model"/>
+  <text x="800" y="759" class="box-title">TraceByteSkip</text>
+  <text x="800" y="779" class="box-detail">Info · observed ID · no time</text>
+
   <rect x="965" y="735" width="250" height="58" class="box control"/>
   <text x="1090" y="759" class="box-title">DecodeConsumers</text>
   <text x="1090" y="779" class="box-detail">synchronous output / issue fan-out</text>
@@ -145,6 +153,8 @@
   <path d="M 625 640 L 670 640" class="flow"/>
   <path d="M 920 640 L 965 640" class="flow"/>
   <path d="M 480 695 L 480 735" class="dependency"/>
+  <path d="M 600 695 L 640 720 L 640 764 L 665 764" class="flow"/>
+  <path d="M 935 764 L 965 764" class="flow"/>
   <path d="M 1090 695 L 1090 735" class="flow"/>
   <path d="M 1215 764 L 1230 764 L 1230 442 L 1180 442" class="flow"/>
 
@@ -159,7 +169,7 @@
   <rect x="80" y="1035" width="260" height="74" class="box output"/>
   <text x="210" y="1062" class="box-title">CSV backend</text>
   <text x="210" y="1084" class="box-detail">one file · callback order</text>
-  <text x="210" y="1102" class="box-detail">Trace Bus ID on formatted rows</text>
+  <text x="210" y="1102" class="box-detail">events + skipped-byte Info</text>
 
   <rect x="430" y="1035" width="340" height="74" class="box output"/>
   <text x="600" y="1062" class="box-title">CTF bundle</text>
@@ -170,6 +180,8 @@
   <text x="1025" y="1062" class="box-title">Trace Compass XML</text>
   <text x="1025" y="1084" class="box-detail">observed graphical topics only</text>
   <text x="1025" y="1102" class="box-detail">requires one retained clock domain</text>
+
+  <text x="640" y="1127" class="box-detail">Fatal decode: CSV retains committed rows + global abort record; incomplete CTF / XML artifacts are removed.</text>
 
   <path d="M 1090 793 L 1090 855 L 585 855 L 585 905" class="flow"/>
   <path d="M 650 495 L 650 540 L 940 540 L 940 951 L 790 951" class="dependency"/>

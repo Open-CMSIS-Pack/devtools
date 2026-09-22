@@ -37,9 +37,10 @@ public:
   /** @brief Creates a decoder implementation around the selected frontend and optional session factory. */
   OpenCsdItmDecoderImpl(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
                         OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory,
-                        OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdObserver)
+                        OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdObserver,
+                        OpenCsdSkippedBytesObserver skippedBytesObserver)
     : m_inputMode(inputMode),
-      m_collector(createCollector(routes, inputMode, elementSink))
+      m_collector(createCollector(routes, inputMode, elementSink, skippedBytesObserver))
   {
     m_errorController.setCallbackOrderSource([this] { return m_collector.reserveTransactionOrder(); });
     try {
@@ -54,7 +55,8 @@ public:
           };
         }
         m_session = std::make_unique<OpenCsdFormattedItmSession>(std::move(routes), m_collector, m_errorController,
-                                                                 m_collector, std::move(unsupportedTraceIdSink));
+                                                                 m_collector, std::move(unsupportedTraceIdSink),
+                                                                 std::move(skippedBytesObserver));
       } else {
         m_session = std::make_unique<OpenCsdItmSession>(m_collector, m_errorController);
       }
@@ -194,7 +196,8 @@ private:
 
   /** @brief Creates a fixed-route or channel-routed collector for the selected transport. */
   static OpenCsdPacketCollector createCollector(const std::vector<TraceRouteIdentity>& routes,
-                                                OpenCsdItmInputMode inputMode, OpenCsdTraceElementSink& elementSink)
+                                                OpenCsdItmInputMode inputMode, OpenCsdTraceElementSink& elementSink,
+                                                OpenCsdSkippedBytesObserver skippedBytesObserver)
   {
     if (routes.empty()) {
       throw std::invalid_argument("OpenCSD ITM decoding requires at least one normalized route");
@@ -205,7 +208,7 @@ private:
       }
       return OpenCsdPacketCollector(routes.front(), elementSink);
     }
-    return OpenCsdPacketCollector(routes, elementSink);
+    return OpenCsdPacketCollector(routes, elementSink, std::move(skippedBytesObserver));
   }
 
   /** @brief Reports whether the frontend is a CoreSight frame deformatter. */
@@ -315,6 +318,34 @@ private:
     return state;
   }
 
+  /** @brief Joins the logger error with a matching packet observed later in the same operation. */
+  std::string reportedMessage(const OpenCsdErrorController::Decision& decision) const
+  {
+    auto message = OpenCsdErrorController::describeSummary(decision);
+    if (decision.error.has_value() && decision.error->hasIndex) {
+      const auto context = m_collector.packetErrorContext(decision.error->channel, decision.error->index);
+      if (!context.empty()) {
+        message += (message.back() == ';' ? " " : "; ") + context;
+      }
+    }
+    return message;
+  }
+
+  /** @brief Preserves warning-only responses when no warning/error callback explains them. */
+  void appendUnreportedWarning(const OpenCsdErrorController::Decision& decision, std::uint64_t baseOffset)
+  {
+    const auto hasDiagnostic = std::any_of(decision.errors.begin(), decision.errors.end(), [](const auto& error) {
+      return error.severity == OCSD_ERR_SEV_ERROR || error.severity == OCSD_ERR_SEV_WARN;
+    });
+    if (OCSD_DATA_RESP_IS_WARN(decision.response) && !hasDiagnostic) {
+      OpenCsdErrorController::Decision warning;
+      warning.response = decision.response;
+      m_collector.appendDecodeError(static_cast<ocsd_trc_index_t>(baseOffset),
+                                    OpenCsdErrorController::describeSummary(warning),
+                                    TraceIssueCode::OpenCsdDecodeError, false, TraceIssueSeverity::Warning);
+    }
+  }
+
   /** @brief Appends one formatted warning or error with its route-local discontinuity state. */
   void appendFormattedReportedError(const OpenCsdErrorController::Decision& decision,
                                     const OpenCsdErrorRecord& error, std::uint64_t baseOffset,
@@ -338,11 +369,11 @@ private:
     const auto severity = isError ? TraceIssueSeverity::Error : TraceIssueSeverity::Warning;
     if (route != nullptr) {
       m_collector.appendReportedDecodeError(*route, static_cast<ocsd_trc_index_t>(sourceOffset),
-                                            OpenCsdErrorController::describeSummary(item), error.callbackOrder,
+                                            reportedMessage(item), error.callbackOrder,
                                             OpenCsdErrorController::issueCode(item), discontinuity, severity);
     } else {
       m_collector.appendReportedDecodeError(static_cast<ocsd_trc_index_t>(sourceOffset),
-                                            OpenCsdErrorController::describeSummary(item), error.callbackOrder,
+                                            reportedMessage(item), error.callbackOrder,
                                             OpenCsdErrorController::issueCode(item), discontinuity, severity);
     }
   }
@@ -363,6 +394,9 @@ private:
           OpenCsdErrorController::describeSummary(decision), OpenCsdErrorController::issueCode(decision), true,
           TraceIssueSeverity::Error);
     }
+    if (!force) {
+      appendUnreportedWarning(decision, baseOffset);
+    }
   }
 
   /** @brief Inserts completed data-loss intervals immediately before each route's recovered sync. */
@@ -382,8 +416,9 @@ private:
 
       const auto startOffset = recovery->second.sourceOffset;
       const auto rawBytesConsumed = *syncOffset > startOffset ? *syncOffset - startOffset : 0U;
-      const auto message = "OpenCSD discarded " + std::to_string(rawBytesConsumed) +
-                           " raw bytes for this ITM route while searching for the next hardware sync";
+      const auto message = "ITM decoding resumed at hardware SYNC at raw offset " + std::to_string(*syncOffset) +
+                           "; affected raw interval [" + std::to_string(startOffset) + ", " +
+                           std::to_string(*syncOffset) + ") spans " + std::to_string(rawBytesConsumed) + " bytes";
       static_cast<void>(m_collector.insertDataLossBeforeSync(
           recovery->second.route, static_cast<ocsd_trc_index_t>(startOffset), message, rawBytesConsumed, beforeOffset));
       recovery = m_formattedRecoveries.erase(recovery);
@@ -431,9 +466,6 @@ private:
       const auto response = operation();
       m_collector.rethrowOutputError();
       return response;
-    } catch (const OpenCsdFormattedInputError& error) {
-      abortFormattedException(error.what(), error.sourceOffset(), processedOffset(baseOffset, size, bytesConsumed),
-                              fatalPrefix, TraceIssueCode::OpenCsdFormattedInputError, preserveIncompleteTail);
     } catch (const std::exception& error) {
       const auto sourceOffset = m_collector.transactionFirstSourceOffset().value_or(baseOffset);
       abortFormattedException(std::string("formatted OpenCSD session operation failed: ") + error.what() +
@@ -478,7 +510,13 @@ private:
     }
     appendFormattedReportedErrors(decision, baseOffset, retainedErrors == 0U);
     const auto processed = baseOffset + std::min<std::uint64_t>(bytesConsumed, size);
-    throw OpenCsdFatalError(prefix + OpenCsdErrorController::describeSummary(decision), processed);
+    // The raw monitor can report an incomplete tail while OpenCSD returns CONT without a logger error.
+    const auto incompleteTailOnly = retainedErrors != 0U &&
+                                    !OpenCsdErrorController::responseReportsError(decision.response) &&
+                                    (!decision.error.has_value() || decision.error->severity != OCSD_ERR_SEV_ERROR);
+    const auto reason = incompleteTailOnly ? std::string("incomplete ITM packet at end of input")
+                                          : OpenCsdErrorController::describeSummary(decision);
+    throw OpenCsdFatalError(prefix + reason, processed);
   }
 
   /** @brief Aborts on an invalid formatted root-consumption result. */
@@ -506,7 +544,7 @@ private:
       const auto sourceOffset = OpenCsdErrorController::errorOffset(item, baseOffset);
       const auto isError = error.severity == OCSD_ERR_SEV_ERROR;
       m_collector.appendDecodeError(static_cast<ocsd_trc_index_t>(sourceOffset),
-                                    OpenCsdErrorController::describeSummary(item),
+                                    reportedMessage(item),
                                     OpenCsdErrorController::issueCode(item), nextDiscontinuity && isError,
                                     isError ? TraceIssueSeverity::Error : TraceIssueSeverity::Warning);
       if (isError) {
@@ -519,6 +557,9 @@ private:
           static_cast<ocsd_trc_index_t>(OpenCsdErrorController::errorOffset(decision, baseOffset)),
           OpenCsdErrorController::describeSummary(decision), OpenCsdErrorController::issueCode(decision), discontinuity,
           TraceIssueSeverity::Error);
+    }
+    if (!force) {
+      appendUnreportedWarning(decision, baseOffset);
     }
   }
 
@@ -693,8 +734,10 @@ private:
       static_cast<void>(routeId);
       const auto rawBytesConsumed =
           m_traceIndex > recovery.sourceOffset ? static_cast<std::uint64_t>(m_traceIndex) - recovery.sourceOffset : 0U;
-      const auto message = "OpenCSD discarded " + std::to_string(rawBytesConsumed) +
-                           " raw bytes for this ITM route; no later hardware sync before end of input";
+      const auto message = "ITM decoding did not resume before end of input at raw offset " +
+                           std::to_string(m_traceIndex) + "; no later hardware SYNC; affected raw interval [" +
+                           std::to_string(recovery.sourceOffset) + ", " + std::to_string(m_traceIndex) +
+                           ") spans " + std::to_string(rawBytesConsumed) + " bytes";
       m_collector.appendDataLossError(recovery.route, static_cast<ocsd_trc_index_t>(recovery.sourceOffset), message,
                                       rawBytesConsumed);
     }
@@ -726,6 +769,7 @@ private:
       drainFormattedPending();
     }
     closeUnresolvedFormattedRecoveries();
+    m_collector.reportUnsynchronizedFormattedRoutes();
     m_finished = true;
     m_result.bytesIn = static_cast<std::uint64_t>(m_traceIndex);
     return m_result;
@@ -929,6 +973,7 @@ private:
   /** @brief Resets the channel-zero SINGLE decoder at the reported recovery boundary. */
   void resetDecoder(ocsd_trc_index_t index)
   {
+    m_collector.clearPacketErrorContexts();
     m_errorController.beginDataPathCall();
     const auto response = m_session->resetRoute(0U, index);
     m_collector.rethrowOutputError();
@@ -964,9 +1009,11 @@ private:
 
 OpenCsdItmDecoder::OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
                                      OpenCsdTraceElementSink& elementSink,
-                                     OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdObserver)
+                                     OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdObserver,
+                                     OpenCsdSkippedBytesObserver skippedBytesObserver)
   : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(std::move(routes), inputMode, elementSink,
-                                                   OpenCsdItmSessionFactory{}, std::move(unsupportedTraceIdObserver)))
+                                                   OpenCsdItmSessionFactory{}, std::move(unsupportedTraceIdObserver),
+                                                   std::move(skippedBytesObserver)))
 {
 }
 
@@ -974,7 +1021,7 @@ OpenCsdItmDecoder::OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, Ope
                                      OpenCsdTraceElementSink& elementSink,
                                      const OpenCsdItmSessionFactory& sessionFactory)
   : m_impl(std::make_unique<OpenCsdItmDecoderImpl>(std::move(routes), inputMode, elementSink, sessionFactory,
-                                                   OpenCsdUnsupportedTraceIdObserver{}))
+                                                   OpenCsdUnsupportedTraceIdObserver{}, OpenCsdSkippedBytesObserver{}))
 {
 }
 

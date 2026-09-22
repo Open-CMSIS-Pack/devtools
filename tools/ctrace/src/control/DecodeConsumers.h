@@ -31,14 +31,14 @@ public:
 
   /** @brief Forwards one decoded event to all configured consumers. */
   void append(const TraceEvent& event) override;
-  /** @brief Returns the number of events observed during decoding. */
+  /** @brief Reports skipped input payload without assigning a synthetic trace route. */
+  void appendByteSkip(const TraceByteSkip& skipped) override;
+  /** @brief Returns the number of trace/diagnostic records observed before output filtering. */
   std::uint64_t eventCount() const;
   /** @brief Completes deferred issue reporting. */
   void finishIssues();
-  /** @brief Completes all output artifacts without throwing. */
-  void finishOutputs() noexcept;
-  /** @brief Aborts and removes partial output artifacts without throwing. */
-  void abortOutputs() noexcept;
+  /** @brief Completes output artifacts using each backend's optional fatal-input policy. */
+  void finishOutputs(const TraceDecodeAbort* decodeAbort = nullptr) noexcept;
 
 private:
   /** @brief Reports an ITM event that contradicts the configured enable mask. */

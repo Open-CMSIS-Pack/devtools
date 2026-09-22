@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <utility>
@@ -66,8 +67,52 @@ TEST(CtraceUnitTests, testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOut
   EXPECT_EQ(2U, consumers.eventCount());
   EXPECT_EQ(1U, diagnostics.failureCount());
 
-  consumers.abortOutputs();
+  const TraceDecodeAbort decodeAbort{16U, "fatal decode error"};
+  consumers.finishOutputs(&decodeAbort);
   EXPECT_EQ((std::vector<std::string>{"start", "write", "diagnostic", "write", "diagnostic", "abort"}), calls);
+}
+
+TEST(CtraceUnitTests, testDecodeConsumersRetainsSkippedBytesAsNonFailingInfo)
+{
+  std::vector<std::string> calls;
+  std::vector<std::unique_ptr<TraceOutput>> outputs;
+  outputs.push_back(std::make_unique<TestTraceOutput>(calls));
+  CollectingDiagnosticSink diagnostics;
+  DecodeConsumers consumers(std::move(outputs), diagnostics);
+
+  const std::vector<TraceByteSkip> skipped{
+      {0U, 1U},
+      {16U, 5U, TraceByteSkipReason::NullSourceId, 0U},
+      {32U, 3U, TraceByteSkipReason::ReservedSourceId, 127U},
+      {48U, 2U, TraceByteSkipReason::UnconfiguredSourceId, 42U},
+      {64U, 8U, TraceByteSkipReason::MissingSync, 1U},
+  };
+  for (const auto& item : skipped) {
+    consumers.appendByteSkip(item);
+  }
+  consumers.append(softwarePacket(1U));
+  consumers.finishIssues();
+  consumers.finishOutputs();
+
+  EXPECT_EQ((std::vector<std::string>{"start", "write-byte-skip", "write-byte-skip", "write-byte-skip",
+                                     "write-byte-skip", "write-byte-skip", "write", "stop"}), calls);
+  EXPECT_EQ(consumers.eventCount(), 6U);
+  ASSERT_EQ(diagnostics.events().size(), skipped.size());
+  for (std::size_t index = 0U; index < skipped.size(); ++index) {
+    const auto& diagnostic = diagnostics.events()[index];
+    EXPECT_EQ(diagnostic.message, traceByteSkipMessage(skipped[index]));
+    EXPECT_EQ(diagnostic.severity, DiagnosticSink::Severity::Info);
+    EXPECT_EQ(diagnostic.impact, DiagnosticSink::Impact::NonFailing);
+    if (skipped[index].traceId.has_value()) {
+      const std::vector<std::pair<std::string, std::string>> expectedContext{
+          {"stream", std::to_string(*skipped[index].traceId)},
+      };
+      EXPECT_EQ(diagnostic.context, expectedContext);
+    } else {
+      EXPECT_TRUE(diagnostic.context.empty());
+    }
+  }
+  EXPECT_EQ(diagnostics.failureCount(), 0U);
 }
 
 TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)

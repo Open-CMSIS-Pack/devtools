@@ -142,6 +142,12 @@ void CsvFileOutput::stopOutput()
   }
 }
 
+void CsvFileOutput::stopAfterDecodeAbortOutput(const TraceDecodeAbort& failure)
+{
+  m_stream->output() << CsvRowMapper::decodeAbortRow(failure) << "\n";
+  stopOutput();
+}
+
 void CsvFileOutput::abortOutput()
 {
   m_stream.reset();
@@ -155,4 +161,9 @@ void CsvFileOutput::writeOutput(const TraceEvent& event)
   }
 
   m_stream->output() << CsvRowMapper::row(event) << "\n";
+}
+
+void CsvFileOutput::writeByteSkipOutput(const TraceByteSkip& skipped)
+{
+  m_stream->output() << CsvRowMapper::byteSkipRow(skipped) << "\n";
 }

@@ -68,13 +68,22 @@ uint32_t events_discarded
 uint32_t packet_seq_num
 ```
 
-The timestamp fields use the stream class's clock mapping. Trace loss is represented by `TRACE_STATUS` events rather
-than the CTF `events_discarded` counter, which is currently zero.
+The timestamp fields use the stream class's clock mapping. Route-bound trace loss is represented by `TRACE_STATUS`
+events rather than the CTF `events_discarded` counter, which is currently zero. Formatter skips and initial ITM
+synchronization skips are separate byte-accounting Info annotations in CLI/CSV only. Their optional formatter ID
+identifies observed input, not a decoded CTF route or clock; this includes NULL and reserved IDs. Ctrace does not
+invent a CTF stream, timestamp, or `resync` event for these annotations.
 
 The optional `<solution-set>.<channel>.traceanalysis.xml` companion is stored next to the bundle. It is generated
 only when at least one retained stream has graphical data and all retained streams reference one clock domain.
 Trace Compass rejects empty analyses and cannot safely combine independent clocks. These restrictions affect only
 the generated visualization; a metadata-only, point-event-only, or multi-clock CTF bundle remains valid.
+
+A fatal OpenCSD decode abort removes the incomplete CTF bundle and its XML companion, including data already written
+for healthy routes. If CSV output remains healthy, ctrace retains its selected rows and appends one input-wide `error`
+row with the processed-byte count and abort reason. That final row has no cycle timestamp, stream, or source and
+bypasses type and stream filters. A recoverable route-local error instead allows normal output completion, as described
+under [`TRACE_STATUS`](#trace_status-event-id-3). Both kinds of Error produce a failing command exit status.
 
 ## Event catalogue
 
@@ -176,9 +185,9 @@ uint32_t               cmsis_overflow_count
 `cmsis_dwt_access` is `read` (`0`) or `write` (`1`). DWT comparator labels and data types are resolved from
 `ctrace-run.yml`; fallback labels are `DWT0` through `DWT3`.
 
-The configured value size controls the CTF scalar type. If it differs from the SWO payload size, `ctrace` emits a
-warning for that route. Trace Compass provides the standard event table and, when such data was emitted, a generated
-XY view with one series per comparator.
+The configured value size controls the CTF scalar type. If it differs from the decoded payload size, `ctrace` emits
+one warning per affected comparator and route. Trace Compass provides the standard event table and, when such data
+was emitted, a generated XY view with one series per comparator.
 
 ### DWT_ADDR (event ID 2)
 
@@ -229,6 +238,18 @@ An overflow or data-loss boundary closes active exception and sleep visualizatio
 therefore visible as a gap instead of being attributed to the previously active state. Status records remain point
 events in the standard CTF event table; the generated XML does not create a status timeline.
 
+Route-local decoder errors and data-loss records follow the normal `error` type and stream filters in CSV and CTF.
+CLI diagnostics remain visible independently of those filters. Native decoder error names, descriptions, packet types,
+and bounded byte previews are CLI/CSV diagnostic details; the CTF profile stores the status reason and overflow epoch,
+without those strings or raw bytes. Successful formatted-route recovery emits a separate data-loss diagnostic and a
+`resync` when a real hardware ITM sync is committed. An unresolved interval at end of input emits data loss without a
+`resync`.
+
+A configured formatted route that receives payload but never commits a real ITM hardware sync reports a decoder
+Error at end of input. When selected for output, it follows the normal route-bound `decode_error` status path; it
+does not generate a `resync`. The command fails, but valid CTF output from healthy routes and selected diagnostic
+records is retained. A configured route with no received payload does not produce this error.
+
 ## Execution-state events
 
 ### EXCEPTION (event ID 4)
@@ -263,6 +284,10 @@ uint32_t cmsis_overflow_count
 
 State `0` denotes processor sleep and leaves the PC array empty. State `1` denotes a periodic PC sample and stores one
 32-bit PC. The state therefore doubles as the zero-or-one array length.
+
+Four-byte PC values and one-byte `0x00` sleep indications use this event. The Armv8-M one-byte `0xff`
+trace-prohibited marker uses [`PC_SAMPLE_PROHIBITED`](#pc_sample_prohibited-event-id-10); other payloads produce
+a decoder Error.
 
 PC samples are point observations and are available in the CTF event table. Trace Compass does not invent execution
 duration between sampled PCs. If a sleep indication was emitted, the generated `Processor State` view opens a
