@@ -13,12 +13,14 @@ comparison test.
 ## Fixture integrity
 
 The [fixture manifest](../integration/src/ValidateFixtureIntegrity.cmake) is
-the canonical SHA-256 and size inventory for checked-in fixtures, including
-fixture-local provenance documents. `CtraceFixtureIntegrity` checks that the
-inventory is complete and the reconstructed TB capture contains 256 frames.
-Update the manifest in the same review as a fixture change. Inputs generated
-at test runtime are defined and checked by the integration tests, not listed
-in this manifest.
+the canonical SHA-256 and size inventory for checked-in test inputs, reference
+outputs and fixture scripts. Markdown documentation is excluded.
+`CtraceFixtureIntegrity` checks that the inventory is complete and the
+reconstructed TB capture contains 256 frames. Update the manifest in the same
+review as a fixture change. Tests work on copies in the build tree; the manifest
+guards against unintended changes to the versioned fixtures, not test-time
+mutation. Inputs generated at test runtime are defined and checked by the
+integration tests, not listed in this manifest.
 
 ## Blinky reference outputs
 

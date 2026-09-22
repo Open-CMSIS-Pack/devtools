@@ -52,7 +52,7 @@ TEST(CtraceUnitTests, testDwtPcSampleProducesDedicatedEvent)
       << "DWT PC sample selector mapping mismatch";
 }
 
-TEST(CtraceUnitTests, testDwtPcSamplePreservesProcessorSleep)
+TEST(CtraceUnitTests, testDwtPcSampleDistinguishesZeroPcFromProcessorSleep)
 {
   DwtPacketDecoder decoder;
   const auto packets = decoder.decode(dwtPayload(2U, 1U, 0U, 20U, 4U, 949339100U));
@@ -61,6 +61,15 @@ TEST(CtraceUnitTests, testDwtPcSamplePreservesProcessorSleep)
   ASSERT_NE(sample, nullptr);
   EXPECT_EQ(sample->pc, 0U) << "DWT PC sleep indication mismatch";
   EXPECT_EQ(sample->kind, PcSampleKind::Sleep) << "DWT PC sleep indication mismatch";
+  EXPECT_EQ(CsvRowMapper::row(packets.front()), "949339100,4,pcsample,,,,,CPU Sleeping");
+
+  const auto following = decoder.decode(dwtPayload(2U, 4U, 0U, 21U, 4U, 949339200U));
+  ASSERT_EQ(following.size(), 1U);
+  const auto* pc = traceEventPayload<PcSampleTraceEvent>(following.front());
+  ASSERT_NE(pc, nullptr);
+  EXPECT_EQ(pc->kind, PcSampleKind::Pc) << "a four-byte zero is a PC, not a sleep marker";
+  EXPECT_EQ(pc->pc, 0U);
+  EXPECT_EQ(CsvRowMapper::row(following.front()), "949339200,4,pcsample,,,0x00000000,,");
 }
 
 TEST(CtraceUnitTests, testDwtPcSamplePreservesTraceProhibitedWithoutDataLoss)

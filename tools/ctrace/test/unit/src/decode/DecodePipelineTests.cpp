@@ -776,6 +776,7 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesPeriodicPcSamples)
       0x15U, 0x00U, 0x20U,
       0x15U, 0xffU, 0x30U,
       0x17U, 0xffU, 0x00U, 0x00U, 0x00U, 0x40U,
+      0x17U, 0x00U, 0x00U, 0x00U, 0x00U, 0x50U,
   };
   const auto decoded = decodeTrace({rawBytes(trace)}, 1U);
 
@@ -793,7 +794,7 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesPeriodicPcSamples)
       EXPECT_EQ(event.quality->overflowCount, 0U);
     }
   }
-  ASSERT_EQ(samples.size(), 4U) << "OpenCSD periodic PC-sample packet count mismatch";
+  ASSERT_EQ(samples.size(), 5U) << "OpenCSD periodic PC-sample packet count mismatch";
   EXPECT_EQ(samples[0].pc, 0x08001234U) << "OpenCSD periodic PC sample payload mismatch";
   EXPECT_EQ(samples[0].kind, PcSampleKind::Pc);
   EXPECT_EQ(samples[1].pc, 0U) << "OpenCSD periodic PC sleep indication mismatch";
@@ -802,7 +803,9 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesPeriodicPcSamples)
   EXPECT_EQ(samples[2].pc, 0U);
   EXPECT_EQ(samples[3].kind, PcSampleKind::Pc);
   EXPECT_EQ(samples[3].pc, 0xffU);
-  EXPECT_EQ(cycles, (std::vector<std::uint64_t>{1U, 3U, 6U, 10U}));
+  EXPECT_EQ(samples[4].kind, PcSampleKind::Pc);
+  EXPECT_EQ(samples[4].pc, 0U);
+  EXPECT_EQ(cycles, (std::vector<std::uint64_t>{1U, 3U, 6U, 10U, 15U}));
 }
 
 TEST(CtraceUnitTests, testDecodePipelinePreservesCompressedDataTracePcValues)

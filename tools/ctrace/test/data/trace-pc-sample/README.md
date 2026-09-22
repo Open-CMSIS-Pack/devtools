@@ -22,14 +22,7 @@ The complete 24-byte `trace-pc-sample.raw` consists of:
 | `15 FF 30` | Trace prohibited, local increment 3 | 6 |
 | `17 78 56 00 08 40` | PC `0x08005678`, local increment 4 | 10 |
 
-The YAML declares a 1 MHz clock and prescaler 1. Integration tests use the
-bytes directly as an unformatted SWO capture and wrap two copies in
-memory-aligned formatter frames under IDs 1 and 2. They exercise check, CSV,
-CTF and combined output, and verify type and stream selection. The marker
-does not reset timestamps, increment the overflow count or prevent decoding
-the final PC sample.
-
-The native Linux consumer test also reads the unformatted capture through
-Babeltrace 2.0.5. It checks the legacy `PC_SAMPLE` layout for PC/sleep records,
-the additive `PC_SAMPLE_PROHIBITED` event and the subsequent PC sample at
-10 microseconds.
+The YAML declares a 1 MHz clock and prescaler 1. See the
+[test-data overview](../README.md#other-decoder-fixtures) for test coverage and
+the [integration-test documentation](../../integration/README.md) for Babeltrace
+and Trace Compass validation.

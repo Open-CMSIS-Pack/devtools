@@ -100,9 +100,7 @@ and producer integration remain tracked as unfinished work.
 
 - CSV remains one combined file in semantic callback order. The unformatted route has an empty `stream` field;
   formatted routes expose their architectural IDs. Type and stream filters affect output, not decoding or diagnostic
-  reporting. Ctrace deliberately names the seventh CSV column `address`; the currently published CMSIS-Toolbox trace
-  specification still says `offset`, and must be corrected to match this intended schema before the difference is
-  treated as standardized.
+  reporting. The seventh CSV column is `address`, as defined by the CMSIS-Toolbox trace specification.
 - PC sampling distinguishes four-byte PC values from the one-byte `0x00` (`CPU Sleeping`) and Armv8-M `0xff`
   (`Trace prohibited`) status markers. CSV leaves `pc` empty for both markers and writes their meaning in `note`;
   all three remain selectable as `pcsample`. Markers preserve route, timestamp, and quality without creating an error

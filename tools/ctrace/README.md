@@ -24,12 +24,6 @@ If the directory follows them, terminate option parsing explicitly, for example
 `ctrace --type itm dwt -- .trace`. With no output option, `ctrace` validates and decodes the capture without writing
 output files. Run `ctrace --help` for the current option details.
 
-The `pcsample` selection includes PC values and the
-[PC-sampling status markers](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#pc-sampling-markers).
-For a one-byte `0x00` or Armv8-M `0xff` payload, CSV leaves `pc` empty and writes `CPU Sleeping` or `Trace prohibited`
-in `note`. These are valid samples, not decoding errors. See the [CTF profile](docs/ctf-format.md#execution-state-events)
-for their CTF and Trace Compass representation.
-
 ## Trace directory
 
 Input and output files share a solution-set base name:
