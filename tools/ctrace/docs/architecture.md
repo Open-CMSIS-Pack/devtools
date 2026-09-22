@@ -20,17 +20,19 @@ Backend-specific representations are documented in the [CTF profile](ctf-format.
 PC sampling accepts a four-byte PC or the one-byte status markers `0x00` (`CPU Sleeping`) and Armv8-M `0xff`
 (`Trace prohibited`). Status markers preserve route, timestamp, and sample quality without a PC address.
 
-Exactly one raw input is active for each trace-run configuration. Formatted input distributes bytes to configured
-ITM routes by Trace Bus ID; unformatted input uses one synthetic route. Other protocols require explicit decoder
-integration, not guesses based on observed IDs. Deferred inputs and decoders are tracked in the [TODO list](todo.md).
+Every matching SWO, TB, and named-TB raw input is processed independently and sequentially for each selected trace-run
+configuration. Formatted input distributes bytes to configured ITM routes by Trace Bus ID; unformatted input uses
+one synthetic route. Other protocols require explicit decoder integration, not guesses based on observed IDs.
+Deferred inputs and decoders are tracked in the [TODO list](todo.md).
 
 The architecture separates protocol decoding, semantic interpretation, and output generation. This keeps output
 formats independent of OpenCSD and allows another raw trace channel to reuse the event model and output backends.
 
 ## How it works at a glance
 
-`ctrace` processes one solution set at a time. The [README](../README.md#trace-directory) describes how configuration,
-raw input, and generated output files are grouped by their common base name.
+`ctrace` processes one solution set at a time and runs a separate file job for each supported raw input in that set.
+The [README](../README.md#trace-directory) describes how configuration, raw inputs, and generated outputs are grouped
+by solution-set and channel names. The following path runs once per input, with fresh decoder and output state.
 
 The main in-memory path is:
 
@@ -84,11 +86,11 @@ there is deliberately no common base class for all decode stages.
 
 Input selection and route binding belong to `tracerun` and complete before decoder or output construction.
 The provisional, ctrace-private `trace-format` declaration describes effective capture bytes rather than target
-capability or file identity. Discovery first selects exactly one SWO, TB, or named-TB input, independently of whether
-the format is declared. An explicit format wins; otherwise SWO defaults to `unformatted` and TB or named-TB to
-`formatted`. The selected format is resolved before `CtraceRunMeta` normalizes routes, so the decoder and route model
-use the same effective format. This channel-based heuristic does not inspect capture bytes or resolve ambiguous input
-selection. Framing remains an internal decoder contract.
+capability or file identity. Discovery collects every matching SWO, TB, and named-TB input, independently of whether
+the format is declared. Each input is preflighted and normalized separately. An explicit format applies to every input;
+otherwise SWO defaults to `unformatted` and TB or named-TB to `formatted`. The format is resolved before
+`CtraceRunMeta` normalizes that input's routes, so the decoder and route model use the same effective format. This
+channel-based heuristic does not inspect capture bytes. Framing remains an internal decoder contract.
 
 The [input constraints](constraints.md#input-format-framing-and-discovery) define the accepted declarations, defaults,
 file candidates, and framing limits. The [routing invariants](constraints.md#routing-invariants) define reference
@@ -96,7 +98,7 @@ binding, valid IDs, and the synthetic unformatted route; backends preserve its l
 
 ## Processing state and ownership
 
-One `DecodePipeline` is created for the selected raw file. It owns the OpenCSD adapter and Cortex-M stream decoder, so
+One `DecodePipeline` is created for each raw file. It owns the OpenCSD adapter and Cortex-M stream decoder, so
 protocol, formatter, timestamp, and DWT state survive arbitrary file-read boundaries. `RawFileReader` owns a single
 64 KiB buffer; each `RawByteView` borrows that buffer only for the synchronous `DecodePipeline::push` call. Calling
 `DecodePipeline::finish` flushes both the OpenCSD and Cortex-M layers before the pipeline is destroyed.
@@ -104,7 +106,9 @@ protocol, formatter, timestamp, and DWT state survive arbitrary file-read bounda
 Both input formats use the same `OpenCSD DecodeTree` ownership boundary. `SINGLE` connects one synthetic, no-ATB-ID
 route to one ITM decoder. `FRAME_FORMATTED` owns the frame deformatter and one route-bound ITM decoder for each
 configured Trace Bus ID. Ctrace creates and feeds one tree at a time because OpenCSD's alternate logger and live-tree
-registry use process-global state; the session restores the previously installed logger when it is destroyed.
+registry use process-global state; the session restores the previously installed logger when it is destroyed. Each
+file job finishes and releases its decoder before the next input starts. Route IDs and clocks remain local to that
+input, so files can reuse Trace Bus IDs without sharing decoder state or output streams.
 
 Ownership is deliberately split by responsibility while preserving one enclosing lifetime: `OpenCsdTreeSession`
 owns the tree and configured decoder components. For formatted input, `OpenCsdFormattedItmSession` additionally owns
@@ -204,8 +208,8 @@ byte. Packet rollback remains separate from the fatal-input output policy descri
 
 1. Start at [`CtraceMain.cpp`](../src/CtraceMain.cpp) for command-line handling and top-level error policy.
 2. Follow [`TraceDirectoryJob.cpp`](../src/control/TraceDirectoryJob.cpp) and
-   [`TraceRunDiscovery.cpp`](../src/tracerun/TraceRunDiscovery.cpp) to see how a solution set, YAML, and exactly one
-   SWO/TB input become a preflighted descriptor.
+   [`TraceRunDiscovery.cpp`](../src/tracerun/TraceRunDiscovery.cpp) to see how a solution set and YAML select all
+   matching SWO/TB inputs, each with its own preflighted descriptor and file job.
 3. Read [`FileDecodeJob.cpp`](../src/control/FileDecodeJob.cpp) for output preflight, chunked input, pipeline
    construction, and finalization.
 4. Continue through [`DecodePipeline.cpp`](../src/decode/DecodePipeline.cpp),
@@ -281,7 +285,12 @@ Output requirements are evaluated per backend and selected route. For example, m
 active route may disable CTF while an independent CSV output remains valid; metadata on a route excluded by the
 stream filter is not required. `--all` therefore does not make the backends share failure state unnecessarily.
 
-CSV writes one combined file in decode callback order. `CtfBundleOutput` owns a bundle-local metadata model and
+Each input writes separate `<set>.<channel>.csv`, `<set>.<channel>.ctf`, and optional
+`<set>.<channel>.traceanalysis.xml` artifacts. CTF always uses the channel-qualified path, including single-input
+runs; existing `<set>.ctf` bundles are not migrated or removed. The [CTF profile](ctf-format.md#files-and-common-structure)
+records this intentional difference from the published bundle path.
+
+CSV writes one combined file per input in decode callback order. `CtfBundleOutput` owns a bundle-local metadata model and
 lazily creates a stream writer for each formatted route that emits selected events. Representation changes stay in
 the backends: for example, CSV retains a DWT/PMU counter mask in one row while CTF expands it into individual records.
 
@@ -330,9 +339,11 @@ of creating routes or clocks, and CLI Info remains visible in CTF-only mode. The
 source warning remains separate from byte accounting. A route-bound missing-sync Error follows ordinary output
 selection but always contributes to command failure; its text does not repeat the byte count already reported as Info.
 
-An invocation-wide diagnostic sink aggregates failures while other solution sets continue where possible, then
-determines the final process status. Errors are rendered as `error` even when their impact causes a non-zero exit
-status. Unhandled internal ctrace failures also terminate the command after an error diagnostic.
+An invocation-wide diagnostic sink aggregates failures while remaining inputs in the same set and other solution
+sets continue, then determines the final process status. Errors are rendered as `error` even when their impact causes
+a non-zero exit status. Unhandled internal ctrace failures also terminate the command after an error diagnostic.
+An input-scoped forwarding sink adds `inputChannel` and `input` context to every file-job diagnostic while preserving
+its severity and failure impact. Producer reference annotations are reported once per configuration, before file jobs.
 
 ## External dependencies
 

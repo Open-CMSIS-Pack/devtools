@@ -39,17 +39,21 @@ For `ctrace .trace --target Board --all`, the supported input produces:
 ```text
 .trace/
   Board.SWO.csv
-  Board.ctf/
+  Board.SWO.ctf/
     metadata
     stream_0
   Board.SWO.traceanalysis.xml  # only with graphical data and one retained clock domain
 ```
 
-Discovery requires exactly one `Board.SWO.raw`, `Board.TB.raw`, or
-`Board.TB_<name>.raw` input. Without a format declaration, SWO defaults to
-unformatted ITM and TB or named-TB defaults to formatted CoreSight input.
-Missing or null `trace-format` uses this channel-based default; an explicit
-value overrides it for the selected input:
+Discovery processes every existing `Board.SWO.raw`, `Board.TB.raw`, and `Board.TB_<name>.raw` input independently,
+one after another. `--target Board` selects the solution set and all its supported inputs. Each input gets its own
+CSV, CTF bundle, and optional XML companion, using `<solution-set>.<channel>` as their common base name. CTF uses
+this channel-qualified name even for a single input; older `Board.ctf` bundles are neither reused nor removed.
+The [CTF profile](docs/ctf-format.md#files-and-common-structure) records the required specification alignment.
+
+Without a format declaration, each SWO input defaults to unformatted ITM and each TB or named-TB input defaults to
+formatted CoreSight. Missing or null `trace-format` uses these channel-based defaults; an explicit value overrides
+the format for every supported input in that trace-run:
 
 ```yaml
 ctrace-run:
@@ -57,12 +61,15 @@ ctrace-run:
   # ctrace-setup and ctrace-refs follow here
 ```
 
-This optional, ctrace-private provisional field does not select a file or
-resolve multiple candidates. The channel-based default is a heuristic, not
+This optional, ctrace-private provisional field does not select a file. The channel-based default is a heuristic, not
 byte-content detection. Formatted input currently requires complete 16-byte
 memory-aligned CoreSight frames; there is no public `trace-framing` field yet. See the
 [constraints](docs/constraints.md) for the full discovery, routing, and
 compatibility contract.
+
+Event Recorder (`Board.ER.raw`) remains unsupported and is skipped with a warning. A solution set without a supported
+input reports an error. A failure in one input leaves the remaining inputs and solution sets available for processing;
+the command returns non-zero if any input fails. This also applies when validating without output options.
 
 ## Incomplete captures
 

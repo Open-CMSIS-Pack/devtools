@@ -24,6 +24,13 @@ cmsis_ctf_profile_version = 1
 
 ## Files and common structure
 
+Each raw input writes an independent `<solution-set>.<channel>.ctf` bundle, where `<channel>` is `SWO`, `TB`, or
+`TB_<name>`. The channel is always included, even when only one input exists. Inputs are processed sequentially;
+their metadata, stream IDs, clocks, and output cleanup are independent. Existing `<solution-set>.ctf` directories
+are not reused, migrated, or removed. This intentional pathname change differs from the published
+[file layout](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#directory-and-file-structure),
+which still names `<solution-set>.ctf`; specification alignment remains outstanding.
+
 Every CTF bundle contains a `metadata` file and zero or more binary stream files. When selected, unformatted
 single-source input preserves the established layout: stream class `0` is written eagerly to `stream_0` and references
 `swo_clock`. Formatted input uses the generalized layout: each emitted Trace Bus route has its own stream class,
@@ -83,7 +90,8 @@ A fatal OpenCSD decode abort removes the incomplete CTF bundle and its XML compa
 for healthy routes. If CSV output remains healthy, ctrace retains its selected rows and appends one input-wide `error`
 row with the processed-byte count and abort reason. That final row has no cycle timestamp, stream, or source and
 bypasses type and stream filters. A recoverable route-local error instead allows normal output completion, as described
-under [`TRACE_STATUS`](#trace_status-event-id-3). Both kinds of Error produce a failing command exit status.
+under [`TRACE_STATUS`](#trace_status-event-id-3). Both kinds of Error produce a failing command exit status. Remaining
+raw inputs are still processed, and their completed bundles are unaffected by another input's failure.
 
 ## Event catalogue
 
@@ -388,6 +396,10 @@ described shared domains once the input contract can establish one.
 
 The state-provider version is a deterministic hash of the generated XML contents. A semantic XML change therefore
 changes the version automatically and prevents a Trace Compass server from reusing stale analysis state.
+
+Each XML companion describes its own CTF bundle. Generated XML files still share fixed analysis and view identifiers;
+their simultaneous registration in one viewer is not guaranteed to be collision-free. Channel-qualified file names
+do not provide a viewer namespace. Supporting concurrent registration is tracked as follow-up work.
 
 ## Current profile boundaries
 

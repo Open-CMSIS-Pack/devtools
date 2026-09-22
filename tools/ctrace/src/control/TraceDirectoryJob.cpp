@@ -23,6 +23,30 @@
 #include <utility>
 #include <vector>
 
+/** @brief Adds raw-input identity to every diagnostic without changing its severity or failure impact. */
+class InputDiagnosticSink final : public DiagnosticSink {
+public:
+  /** @brief Binds diagnostics to one independently processed capture. */
+  InputDiagnosticSink(DiagnosticSink& target, const TraceRunRawInput& input)
+    : m_target(target),
+      m_context{{"inputChannel", input.channel}, {"input", input.path.string()}}
+  {
+  }
+
+protected:
+  /** @brief Forwards the original diagnostic with the capture context prepended. */
+  void write(const Event& event) override
+  {
+    auto contextual = event;
+    contextual.context.insert(contextual.context.begin(), m_context.begin(), m_context.end());
+    m_target.report(contextual);
+  }
+
+private:
+  DiagnosticSink& m_target;
+  std::vector<std::pair<std::string, std::string>> m_context;
+};
+
 /** @brief Builds diagnostic context for one trace-run reference. */
 static std::vector<std::pair<std::string, std::string>> referenceContext(const TraceRunConfig& config,
                                                                          const TraceRunReference& reference)
@@ -122,7 +146,7 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
         },
     });
     reportConsumedReferenceDiagnostics(config, m_diagnostics);
-    auto input = TraceRunDiscovery::resolveInput(std::move(config), [&](const auto& rawInput) {
+    const auto inputs = TraceRunDiscovery::selectInputs(config, [&](const auto& rawInput) {
       m_diagnostics.report({
           DiagnosticSink::Severity::Warning,
           "skipping raw trace channel excluded from active input selection",
@@ -133,9 +157,9 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
           },
       });
     });
-    reportTraceRunWarnings(input.metadata(), m_diagnostics);
-    FileDecodeJob fileJob(m_options, std::move(input), m_diagnostics);
-    fileJob.run();
+    for (const auto& rawInput : inputs) {
+      processInput(config, rawInput);
+    }
   } catch (const std::exception& error) {
     m_diagnostics.report({
         DiagnosticSink::Severity::Error,
@@ -145,5 +169,18 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
             {"config", configFile.string()},
         },
     });
+  }
+}
+
+void TraceDirectoryJob::processInput(const TraceRunConfig& config, const TraceRunRawInput& rawInput)
+{
+  InputDiagnosticSink diagnostics(m_diagnostics, rawInput);
+  try {
+    auto input = TraceRunDiscovery::resolveInput(config, rawInput);
+    reportTraceRunWarnings(input.metadata(), diagnostics);
+    FileDecodeJob fileJob(m_options, std::move(input), diagnostics);
+    fileJob.run();
+  } catch (const std::exception& error) {
+    diagnostics.report({DiagnosticSink::Severity::Error, error.what(), {{"config", config.path}}});
   }
 }

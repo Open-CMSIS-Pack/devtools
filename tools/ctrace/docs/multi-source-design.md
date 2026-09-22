@@ -97,8 +97,9 @@ legacy CTF stream-class ID `0`. These representations do not turn it into CoreSi
 
 An observed formatter ID without a configured ITM route is diagnosed and skipped. Its presence cannot establish
 whether its bytes contain ITM or an instruction-trace protocol. This keeps unsupported sources from corrupting
-supported routes. If simultaneous raw inputs are added later, route identity must also distinguish inputs because
-different formatter domains can reuse the same Trace Bus ID.
+supported routes. The original plan deferred simultaneous raw inputs and anticipated extending route identity with
+input identity because different formatter domains can reuse the same Trace Bus ID. The later independent-file
+processing described below keeps these domains separate through per-input jobs and outputs.
 
 ## Semantic state, output, and clocks
 
@@ -189,8 +190,16 @@ Reproducible commands and supported consumer versions belong to the current
 
 The following changes supersede assumptions in the original plan:
 
-- Discovery now considers SWO, TB, and named-TB together and requires exactly one input. An absent or null format
-  defaults by channel: SWO is unformatted, TB is formatted. Originally, omission selected only the legacy SWO path.
+- Discovery initially expanded eligibility to SWO, TB, and named-TB while retaining the one-input limit. It now
+  processes all matching supported inputs independently and sequentially. Each input is normalized separately:
+  absent or null format defaults by channel, with SWO unformatted and TB formatted; an explicit override applies
+  to every input in the trace-run. Originally, omission selected only the legacy SWO path.
+- Input failures contribute to command failure while remaining inputs and solution sets continue. Each file has
+  independent decoder state and outputs, with only one OpenCSD tree live at a time. `--target` still selects a
+  solution set, including all its supported inputs.
+- CTF bundles now always use `<solution-set>.<channel>.ctf`, also for single-input runs. CSV and XML retain their
+  channel-qualified paths. Existing `<solution-set>.ctf` bundles are not migrated or removed; the published CTF path
+  still needs alignment as recorded in the [CTF profile](ctf-format.md#files-and-common-structure).
 - Formatter skips and initial unsynchronized ITM bytes now produce non-failing byte-count Info annotations. They
   carry no invented route or time; a route receiving payload without a committed hardware sync reports an Error.
 - A fatal decoder abort retains committed CSV rows with an unfiltered input-wide abort record. Incomplete CTF/XML

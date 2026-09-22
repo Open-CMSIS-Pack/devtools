@@ -38,15 +38,19 @@ configuration with trace communication, separate from trace-source setup.
 
 - Optional `ctrace-run.trace-format` accepts only `unformatted` or `formatted`. An explicit value overrides the
   channel-based default. Missing or null selects `unformatted` for SWO and `formatted` for TB or named-TB without an
-  Error. Discovery resolves this effective format before route normalization.
-- Exactly one existing `<set>.SWO.raw`, `<set>.TB.raw`, or `<set>.TB_<name>.raw` must be selected, independently of a
-  format declaration. Zero or multiple candidates fail before decoder or output construction; SWO has no priority
-  over coexisting TB input. The selected input must be a regular, readable file and is opened during preflight,
-  before decoder or output construction. Event Recorder input remains diagnosed and excluded from the active candidate count.
+  Error. Discovery resolves this effective format separately for each input before route normalization. An explicit
+  override applies to every supported input associated with that trace-run configuration.
+- Every existing `<set>.SWO.raw`, `<set>.TB.raw`, and `<set>.TB_<name>.raw` is processed independently and sequentially.
+  `--target` selects a solution set, including all its supported inputs. A set without an eligible input reports an error.
+  Each input must be a regular, readable file and is opened during its own preflight, before decoder or output
+  construction. Event Recorder input remains diagnosed and excluded from processing.
+- Input preflight, route normalization, decoding, and output failures do not prevent processing the remaining inputs
+  or solution sets. Each input has independent decoder and output state; any failing input contributes to a non-zero
+  command exit status. A configuration read failure prevents processing that set but does not stop later sets.
 - The standardized `trace-buffer` selection belongs to solution/build-run producer configuration, not to the
   `*.ctrace-run.yml` file consumed by ctrace. The caller-facing selection and format/framing contract remains
-  follow-up work; this does not imply adding fields to `*.ctrace-run.yml`. Current discovery still requires one
-  unambiguous input and applies the channel-based defaults above.
+  follow-up work; this does not imply adding fields to `*.ctrace-run.yml`. Current discovery processes all supported
+  matching files and applies the channel-based defaults above.
 - Formatted input globally uses 16-byte memory-aligned CoreSight frames. Its length must be a multiple of 16, and it
   contains neither FSYNC nor HSYNC framing. Ctrace does not parse or emit a `trace-framing` YAML field; supporting
   another framing mode requires a public trace contract first.
@@ -116,7 +120,11 @@ configuration with trace communication, separate from trace-source setup.
 
 ## Observable behavior and output safety
 
-- CSV remains one combined file in decode callback order. The unformatted route has an empty `stream` field;
+- Each raw input has separate `<set>.<channel>.csv`, `<set>.<channel>.ctf`, and optional
+  `<set>.<channel>.traceanalysis.xml` outputs. The channel-qualified CTF path applies even with one input; legacy
+  `<set>.ctf` bundles are not reused, migrated, or removed. Aligning this intentional path change with the published
+  CTF specification remains [follow-up work](todo.md#inputs-and-time-correlation).
+- CSV remains one combined file per input in decode callback order. The unformatted route has an empty `stream` field;
   formatted routes expose their architectural IDs. Type and stream filters affect output, not decoding or diagnostic
   reporting. The seventh CSV column is `address`, matching the published CMSIS-Toolbox
   [CSV schema](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#csv-format).

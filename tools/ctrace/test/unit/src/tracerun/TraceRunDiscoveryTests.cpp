@@ -22,7 +22,7 @@ static_assert(!std::is_aggregate_v<TraceRunInputDescriptor>);
 static_assert(!std::is_default_constructible_v<TraceRunInputDescriptor>);
 static_assert(!std::is_copy_constructible_v<TraceRunInputDescriptor>);
 static_assert(!std::is_default_constructible_v<CtraceRunMeta>);
-using ResolveInputSignature = TraceRunInputDescriptor (*)(TraceRunConfig, const SkippedTraceRunInputSink&);
+using ResolveInputSignature = TraceRunInputDescriptor (*)(TraceRunConfig, const TraceRunRawInput&);
 static_assert(std::is_same_v<decltype(&TraceRunDiscovery::resolveInput), ResolveInputSignature>);
 
 /** @brief Creates parsed configuration carrying the requested declaration state. */
@@ -39,6 +39,14 @@ static TraceRunConfig inputConfig(const std::filesystem::path& configFile,
   route.stream = 1U;
   config.references.push_back(std::move(route));
   return config;
+}
+
+/** @brief Selects and preflights the sole input belonging to a single-file test fixture. */
+static TraceRunInputDescriptor resolveOnlyInput(const TraceRunConfig& config)
+{
+  const auto inputs = TraceRunDiscovery::selectInputs(config);
+  EXPECT_EQ(inputs.size(), 1U);
+  return TraceRunDiscovery::resolveInput(config, inputs.at(0U));
 }
 
 TEST(CtraceUnitTests, testTraceRunDiscovery)
@@ -78,17 +86,13 @@ TEST(CtraceUnitTests, testTraceRunDiscovery)
   for (const auto& format : {std::optional<TraceRunFormat>{}, {TraceRunFormat::Unformatted},
                             {TraceRunFormat::Formatted}}) {
     std::vector<std::string> skippedChannels;
-    const auto message = captureExceptionMessage([&] {
-      (void)TraceRunDiscovery::resolveInput(inputConfig(selected[0], format),
-                                            [&](const auto& input) { skippedChannels.push_back(input.channel); });
-    });
-    ASSERT_TRUE(message.has_value());
-    EXPECT_NE(message->find("multiple eligible raw trace inputs"), std::string::npos);
-    for (const auto* channel : {"SWO", "TB", "TB_ETB-0", "TB_ETB_0", "TB_MTB"}) {
-      EXPECT_NE(message->find("Alpha." + std::string(channel) + ".raw"), std::string::npos);
-    }
-    for (const auto* channel : {"swo", "custom", "TB_", "TBish", "TB_bad.name", "TB_bad name", "TB_\xC3\x84"}) {
-      EXPECT_EQ(message->find("Alpha." + std::string(channel) + ".raw"), std::string::npos);
+    const auto inputs = TraceRunDiscovery::selectInputs(
+        inputConfig(selected[0], format), [&](const auto& input) { skippedChannels.push_back(input.channel); });
+    const std::vector<std::string> expected{"SWO", "TB", "TB_ETB-0", "TB_ETB_0", "TB_MTB"};
+    ASSERT_EQ(inputs.size(), expected.size());
+    for (std::size_t index = 0U; index < inputs.size(); ++index) {
+      EXPECT_EQ(inputs[index].channel, expected[index]);
+      EXPECT_EQ(inputs[index].path, traceDir / ("Alpha." + expected[index] + ".raw"));
     }
     EXPECT_EQ(skippedChannels, (std::vector<std::string>{"ER"}));
   }
@@ -146,7 +150,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesOnePreflightedInput)
   writeTestFile(swo);
 
   {
-    auto legacy = TraceRunDiscovery::resolveInput(inputConfig(legacyConfig));
+    auto legacy = resolveOnlyInput(inputConfig(legacyConfig));
     EXPECT_EQ(legacy.path(), swo);
     EXPECT_EQ(legacy.format(), TraceRunFormat::Unformatted);
     EXPECT_EQ(legacy.metadata().traceFormat(), TraceRunFormat::Unformatted);
@@ -159,7 +163,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesOnePreflightedInput)
   for (const auto size : {0U, 13U}) {
     writeTestFile(tb, std::string(size, 'u'));
     auto explicitUnformatted =
-        TraceRunDiscovery::resolveInput(inputConfig(explicitConfig, TraceRunFormat::Unformatted));
+        resolveOnlyInput(inputConfig(explicitConfig, TraceRunFormat::Unformatted));
     EXPECT_EQ(explicitUnformatted.path(), tb);
     EXPECT_EQ(explicitUnformatted.format(), TraceRunFormat::Unformatted);
     EXPECT_EQ(explicitUnformatted.metadata().traceFormat(), TraceRunFormat::Unformatted);
@@ -169,7 +173,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesOnePreflightedInput)
   const auto formatted = root / "Formatted.TB.raw";
   for (const auto size : {0U, 16U, 32U}) {
     writeTestFile(formatted, std::string(size, 'f'));
-    auto descriptor = TraceRunDiscovery::resolveInput(inputConfig(formattedConfig, TraceRunFormat::Formatted));
+    auto descriptor = resolveOnlyInput(inputConfig(formattedConfig, TraceRunFormat::Formatted));
     EXPECT_EQ(descriptor.path(), formatted);
     EXPECT_EQ(descriptor.format(), TraceRunFormat::Formatted);
     EXPECT_EQ(descriptor.metadata().traceFormat(), TraceRunFormat::Formatted);
@@ -179,7 +183,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesOnePreflightedInput)
   for (const auto size : {1U, 15U, 17U, 31U}) {
     writeTestFile(formatted, std::string(size, 'f'));
     EXPECT_TRUE(throwsWithMessage(
-        [&] { (void)TraceRunDiscovery::resolveInput(inputConfig(formattedConfig, TraceRunFormat::Formatted)); },
+        [&] { (void)resolveOnlyInput(inputConfig(formattedConfig, TraceRunFormat::Formatted)); },
         "multiple of 16 bytes"));
   }
 }
@@ -189,18 +193,19 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesChannelDefaultsAndExplicitOve
   const TemporaryTestPath temporaryPath("ctrace-trace-run-format-default-test");
   const auto& root = temporaryPath.createDirectory();
   for (const auto* channel : {"SWO", "TB", "TB_ETB-0"}) {
-    const auto solutionSet = std::string("Default-") + channel;
-    const auto configFile = root / (solutionSet + ".ctrace-run.yml");
-    const auto rawFile = root / (solutionSet + "." + channel + ".raw");
-    for (const auto& overrideFormat : {std::optional<TraceRunFormat>{}, {TraceRunFormat::Unformatted},
-                                      {TraceRunFormat::Formatted}}) {
-      SCOPED_TRACE(rawFile.string());
-      const auto expected = overrideFormat.value_or(std::string(channel) == "SWO" ? TraceRunFormat::Unformatted
-                                                                                 : TraceRunFormat::Formatted);
-      writeTestFile(rawFile, std::string(expected == TraceRunFormat::Formatted ? 16U : 13U, '\0'));
-      const auto config = inputConfig(configFile, overrideFormat);
-      const auto descriptor = TraceRunDiscovery::resolveInput(config);
-      EXPECT_EQ(descriptor.path(), rawFile);
+    writeTestFile(root / (std::string("Default.") + channel + ".raw"), std::string(16U, '\0'));
+  }
+  for (const auto& overrideFormat : {std::optional<TraceRunFormat>{}, {TraceRunFormat::Unformatted},
+                                    {TraceRunFormat::Formatted}}) {
+    const auto config = inputConfig(root / "Default.ctrace-run.yml", overrideFormat);
+    const auto inputs = TraceRunDiscovery::selectInputs(config);
+    ASSERT_EQ(inputs.size(), 3U);
+    for (const auto& input : inputs) {
+      SCOPED_TRACE(input.path.string());
+      const auto expected = overrideFormat.value_or(input.channel == "SWO" ? TraceRunFormat::Unformatted
+                                                                         : TraceRunFormat::Formatted);
+      const auto descriptor = TraceRunDiscovery::resolveInput(config, input);
+      EXPECT_EQ(descriptor.path(), input.path);
       EXPECT_EQ(descriptor.format(), expected);
       EXPECT_EQ(descriptor.metadata().traceFormat(), expected);
       ASSERT_EQ(descriptor.metadata().routes().size(), 1U);
@@ -224,7 +229,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesFormatBeforeMulticoreRouteNor
   secondRoute.stream = 2U;
   config.references.push_back(std::move(secondRoute));
 
-  const auto descriptor = TraceRunDiscovery::resolveInput(config);
+  const auto descriptor = resolveOnlyInput(config);
   EXPECT_EQ(descriptor.format(), TraceRunFormat::Formatted);
   ASSERT_EQ(descriptor.metadata().routes().size(), 2U);
   EXPECT_EQ(descriptor.metadata().routes()[0].identity.traceBusId, 1U);
@@ -237,11 +242,11 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryRejectsInvalidInputSelectionBeforePre
 {
   const TemporaryTestPath temporaryPath("ctrace-trace-run-input-selection-test");
   const auto& root = temporaryPath.createDirectory();
-  EXPECT_TRUE(throwsWithMessage([&] { (void)TraceRunDiscovery::resolveInput({}); },
+  EXPECT_TRUE(throwsWithMessage([&] { (void)TraceRunDiscovery::selectInputs({}); },
                                 "configuration has no source path"));
 
   const auto missingConfig = root / "Missing.ctrace-run.yml";
-  EXPECT_TRUE(throwsWithMessage([&] { (void)TraceRunDiscovery::resolveInput(inputConfig(missingConfig)); },
+  EXPECT_TRUE(throwsWithMessage([&] { (void)TraceRunDiscovery::selectInputs(inputConfig(missingConfig)); },
                                 "no eligible raw trace input"));
 
   const auto eventRecorderConfig = root / "ErOnly.ctrace-run.yml";
@@ -250,41 +255,16 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryRejectsInvalidInputSelectionBeforePre
   std::vector<std::string> skippedChannels;
   EXPECT_TRUE(throwsWithMessage(
       [&] {
-        (void)TraceRunDiscovery::resolveInput(inputConfig(eventRecorderConfig, TraceRunFormat::Formatted),
-                                              [&](const auto& input) { skippedChannels.push_back(input.channel); });
+        (void)TraceRunDiscovery::selectInputs(inputConfig(eventRecorderConfig, TraceRunFormat::Formatted),
+                                               [&](const auto& input) { skippedChannels.push_back(input.channel); });
       },
       "no eligible raw trace input"));
   EXPECT_EQ(skippedChannels, (std::vector<std::string>{"ER"}));
 
-  const auto swoTbConfig = root / "SwoTb.ctrace-run.yml";
-  const auto directoryInput = root / "SwoTb.SWO.raw";
-  std::filesystem::create_directory(directoryInput);
-  const auto regularInput = root / "SwoTb.TB.raw";
-  writeTestFile(regularInput);
-  EXPECT_TRUE(throwsWithMessage(
-      [&] { (void)TraceRunDiscovery::resolveInput(inputConfig(swoTbConfig, TraceRunFormat::Unformatted)); },
-      "multiple eligible raw trace inputs"));
-
-  const auto tbNamedConfig = root / "TbNamed.ctrace-run.yml";
-  writeTestFile(root / "TbNamed.TB.raw");
-  writeTestFile(root / "TbNamed.TB_MTB.raw");
-  EXPECT_TRUE(throwsWithMessage(
-      [&] { (void)TraceRunDiscovery::resolveInput(inputConfig(tbNamedConfig, TraceRunFormat::Unformatted)); },
-      "multiple eligible raw trace inputs"));
-
-  const auto namedPairConfig = root / "NamedPair.ctrace-run.yml";
-  const auto namedInput = root / "NamedPair.TB_MTB.raw";
-  const auto otherNamedInput = root / "NamedPair.TB_ETB.raw";
-  writeTestFile(namedInput);
-  writeTestFile(otherNamedInput);
-  EXPECT_TRUE(throwsWithMessage(
-      [&] { (void)TraceRunDiscovery::resolveInput(inputConfig(namedPairConfig, TraceRunFormat::Formatted)); },
-      "multiple eligible raw trace inputs"));
-
   const auto nonRegularConfig = root / "NonRegular.ctrace-run.yml";
   const auto nonRegular = root / "NonRegular.SWO.raw";
   std::filesystem::create_directory(nonRegular);
-  EXPECT_TRUE(throwsWithMessage([&] { (void)TraceRunDiscovery::resolveInput(inputConfig(nonRegularConfig)); },
+  EXPECT_TRUE(throwsWithMessage([&] { (void)resolveOnlyInput(inputConfig(nonRegularConfig)); },
                                 "not a regular file"));
 }
 
@@ -301,14 +281,14 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryAcceptsRegularSymlinkAndRejectsDangli
     GTEST_SKIP() << error.message();
   }
   {
-    auto descriptor = TraceRunDiscovery::resolveInput(inputConfig(root / "Linked.ctrace-run.yml"));
+    auto descriptor = resolveOnlyInput(inputConfig(root / "Linked.ctrace-run.yml"));
     EXPECT_EQ(descriptor.path(), regularLink);
   }
 
   const auto danglingLink = root / "Dangling.SWO.raw";
   std::filesystem::create_symlink("missing.raw", danglingLink);
   EXPECT_TRUE(
-      throwsWithMessage([&] { (void)TraceRunDiscovery::resolveInput(inputConfig(root / "Dangling.ctrace-run.yml")); },
+      throwsWithMessage([&] { (void)resolveOnlyInput(inputConfig(root / "Dangling.ctrace-run.yml")); },
                         "not a regular file"));
 }
 
@@ -325,7 +305,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryRejectsUnreadableInput)
   writeTestFile(rawInput, "trace");
   std::filesystem::permissions(rawInput, std::filesystem::perms::owner_write, std::filesystem::perm_options::replace);
   const auto message =
-      captureExceptionMessage([&] { (void)TraceRunDiscovery::resolveInput(inputConfig(configFile)); });
+      captureExceptionMessage([&] { (void)resolveOnlyInput(inputConfig(configFile)); });
   std::filesystem::permissions(rawInput, std::filesystem::perms::owner_all, std::filesystem::perm_options::replace);
 
   ASSERT_TRUE(message.has_value());

@@ -15,6 +15,15 @@ Fixture provenance and the scenarios covered by each checked-in capture and
 inline-generated formatted input are documented in the
 [test-data README](../data/README.md).
 
+## Multiple input channels
+
+Inline-generated SWO, TB, and named-TB captures share one trace-run configuration
+but carry distinct values and timestamps. Tests verify independent CSV, CTF, and
+XML artifacts in every output mode, target selection, batch processing, and
+type/stream filters. A failed channel must not prevent sibling channels or other
+solution sets from completing. Preflight failures preserve existing artifacts;
+legacy target-only CTF directories are not deleted.
+
 ## Decode errors and retained output
 
 The formatted recovery tests verify that a damaged route can resynchronize
@@ -75,8 +84,8 @@ analysis requests were repeated until their response status was `COMPLETED`.
 
 ### Single-clock DWT match
 
-The generated `trace-match.ctf` and `trace-match.SWO.traceanalysis.xml` from
-`ConvertsDwtMatchAcrossCsvAndCtf` were registered through:
+The generated CTF and XML from `ConvertsDwtMatchAcrossCsvAndCtf` were registered through the following endpoints.
+Their current output names are `trace-match.SWO.ctf` and `trace-match.SWO.traceanalysis.xml`:
 
 ```http
 POST /tsp/api/config/types/org.eclipse.tracecompass.tmf.core.config.xmlsourcetype/configs

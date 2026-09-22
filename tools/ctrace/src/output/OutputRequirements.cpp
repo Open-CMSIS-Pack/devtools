@@ -46,7 +46,7 @@ static OutputPaths outputPaths(const std::filesystem::path& rawInputPath)
   const auto outputDirectory = rawInputPath.parent_path();
   auto csvPath = outputDirectory / captureName;
   csvPath += ".csv";
-  auto ctfPath = outputDirectory / solutionSetName;
+  auto ctfPath = outputDirectory / captureName;
   ctfPath += ".ctf";
   auto traceCompassXmlPath = outputDirectory / captureName;
   traceCompassXmlPath += ".traceanalysis.xml";

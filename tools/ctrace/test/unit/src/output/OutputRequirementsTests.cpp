@@ -89,6 +89,29 @@ static TraceRunConfig backendRequirementsConfig()
   return config;
 }
 
+TEST(CtraceUnitTests, testOutputPathsRetainChannelAndCompleteSolutionSetName)
+{
+  auto config = backendRequirementsConfig();
+  config.references.front().dataType.reset();
+  for (const auto* solutionSet : {"Board", "Blinky.v2+Board.Debug"}) {
+    for (const auto* channel : {"SWO", "TB", "TB_ETB"}) {
+      const auto capture = std::string(solutionSet) + "." + channel;
+      SCOPED_TRACE(capture);
+      CollectingDiagnosticSink diagnostics;
+      const auto plan =
+          planOutputs(outputRequest(true, true), std::filesystem::path("captures") / (capture + ".raw"), config,
+                      diagnostics);
+      ASSERT_TRUE(plan.csv.has_value());
+      ASSERT_TRUE(plan.ctf.has_value());
+      EXPECT_EQ(plan.csv->outputPath, std::filesystem::path("captures") / (capture + ".csv"));
+      EXPECT_EQ(plan.ctf->outputDirectory, std::filesystem::path("captures") / (capture + ".ctf"));
+      EXPECT_EQ(plan.ctf->traceCompassXmlPath,
+                std::filesystem::path("captures") / (capture + ".traceanalysis.xml"));
+      EXPECT_TRUE(diagnostics.events().empty());
+    }
+  }
+}
+
 TEST(CtraceUnitTests, testBackendRequirementsUsePerStreamMetadata)
 {
   TraceRunConfig multicore;
@@ -323,7 +346,7 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
       << "missing data-type must use the CTF default and leave CSV enabled";
   ASSERT_TRUE(
       (missingType.csv->outputPath == std::filesystem::path("BackendRequirements.SWO.csv") &&
-       missingType.ctf->outputDirectory == std::filesystem::path("BackendRequirements.ctf") &&
+       missingType.ctf->outputDirectory == std::filesystem::path("BackendRequirements.SWO.ctf") &&
        missingType.ctf->traceCompassXmlPath == std::filesystem::path("BackendRequirements.SWO.traceanalysis.xml") &&
        missingType.ctf->metadata.clockDomains.size() == 1U &&
        missingType.ctf->metadata.clockDomains[0].frequencyHz == 400000000U &&

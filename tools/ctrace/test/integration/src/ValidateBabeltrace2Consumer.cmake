@@ -110,7 +110,7 @@ if(NOT "${ctrace_result}" STREQUAL "0")
     "${ctrace_stdout}${ctrace_stderr}")
 endif()
 
-set(ctf_directory "${test_work_directory}/Blinky+Arm.ctf")
+set(ctf_directory "${test_work_directory}/Blinky+Arm.TB.ctf")
 set(metadata_file "${ctf_directory}/metadata")
 set(stream_1_file "${ctf_directory}/stream_1")
 set(stream_2_file "${ctf_directory}/stream_2")
@@ -164,7 +164,7 @@ if(NOT "${unbound_ctrace_result}" STREQUAL "0")
     "ctrace failed to generate the unbound-route consumer fixture (${unbound_ctrace_result}):\n"
     "${unbound_ctrace_stdout}${unbound_ctrace_stderr}")
 endif()
-run_babeltrace("${unbound_work_directory}/Unbound.ctf" unbound_output)
+run_babeltrace("${unbound_work_directory}/Unbound.TB.ctf" unbound_output)
 require_variable_contains(unbound_output
   "[0.000107204] PC_SAMPLE: { cmsis_trace_bus_id = 1, ctrace_route = ( \"1\" : container = 1 ) }, { cmsis_pc_sample_state = 1, cmsis_pc = [ [0] = 135269288 ]"
   "the numeric CTF stream-class fallback label for an unbound route")
@@ -224,7 +224,7 @@ if(NOT "${marker_ctrace_result}" STREQUAL "0")
     "${marker_ctrace_stdout}${marker_ctrace_stderr}")
 endif()
 
-run_babeltrace("${marker_work_directory}/trace-pc-sample.ctf" marker_output)
+run_babeltrace("${marker_work_directory}/trace-pc-sample.SWO.ctf" marker_output)
 string(STRIP "${marker_output}" marker_output)
 string(REPLACE "\n" ";" marker_records "${marker_output}")
 list(LENGTH marker_records marker_record_count)

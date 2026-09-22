@@ -328,13 +328,13 @@ TEST(CtraceUnitTests, testCtfOutputPlanningKeepsUnknownFilterWithoutLegacyBootst
   EXPECT_TRUE(plan.ctf->metadata.streams.empty())
       << "an unmatched formatted stream filter must not invent a CTF topology";
   EXPECT_TRUE(unknownDiagnostics.events().empty());
-  EXPECT_FALSE(std::filesystem::exists(outputDir));
+  EXPECT_FALSE(std::filesystem::exists(plan.ctf->outputDirectory));
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputOmitsExcludedLegacyStream)
 {
   const TemporaryCtfOutput temporaryOutput("ctrace-ctf-excluded-legacy-stream-test");
-  const auto& outputDir = temporaryOutput.outputDirectory();
+  const auto rawPath = temporaryOutput.outputDirectory().parent_path() / "output.SWO.raw";
   TraceRunConfig traceRun;
   traceRun.path = "Legacy.ctrace-run.yml";
   traceRun.setups.push_back(TraceRunTestSupport::makeTimestampSetup(std::nullopt, 1000000U));
@@ -343,12 +343,13 @@ TEST(CtraceUnitTests, testCtfBundleOutputOmitsExcludedLegacyStream)
   TraceSelection selection;
   selection.streams = {1U};
   CollectingDiagnosticSink diagnostics;
-  auto plan = planTraceOutputs({false, true, selection}, outputDir.parent_path() / "output.SWO.raw",
-                               CtraceRunMeta::fromConfig(traceRun), diagnostics);
+  auto plan = planTraceOutputs({false, true, selection}, rawPath, CtraceRunMeta::fromConfig(traceRun), diagnostics);
 
   ASSERT_TRUE(plan.ctf.has_value() && diagnostics.events().empty());
   EXPECT_TRUE(plan.ctf->metadata.streams.empty());
   EXPECT_TRUE(plan.ctf->metadata.clockDomains.empty());
+  const auto outputDir = plan.ctf->outputDirectory;
+  const auto xmlPath = plan.ctf->traceCompassXmlPath;
   CtfBundleOutput output(std::move(*plan.ctf));
   output.start();
   output.stop();
@@ -358,7 +359,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputOmitsExcludedLegacyStream)
   EXPECT_EQ(metadata.find("\nclock {"), std::string::npos);
   EXPECT_EQ(metadata.find("\nstream {"), std::string::npos);
   EXPECT_EQ(metadata.find("\nevent {"), std::string::npos);
-  EXPECT_FALSE(std::filesystem::exists(testTraceCompassXmlPath(outputDir)));
+  EXPECT_FALSE(std::filesystem::exists(xmlPath));
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
@@ -574,7 +575,7 @@ TEST(CtraceUnitTests, testCtfGlobalTimestampEvent)
 TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
 {
   const TemporaryCtfOutput temporaryOutput("ctrace-ctf-channel-zero-test");
-  const auto& outputDir = temporaryOutput.outputDirectory();
+  const auto rawPath = temporaryOutput.outputDirectory().parent_path() / "output.SWO.raw";
   TraceRunConfig traceRun;
   traceRun.setups.push_back(TraceRunTestSupport::makeTimestampSetup(std::nullopt, 1000000U));
   auto channelZero = TraceRunTestSupport::makeReference("itm", std::nullopt, std::nullopt, {0U}, "opaque/channel-zero");
@@ -582,11 +583,12 @@ TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
   traceRun.references.push_back(std::move(channelZero));
   TraceSelection selection{{"itm", "error"}, {}};
   CollectingDiagnosticSink preflightDiagnostics;
-  auto outputPlan = planTraceOutputs({false, true, selection}, outputDir.parent_path() / "output.SWO.raw",
+  auto outputPlan = planTraceOutputs({false, true, selection}, rawPath,
                                      CtraceRunMeta::fromConfig(traceRun), preflightDiagnostics);
   ASSERT_TRUE(outputPlan.ctf.has_value() && outputPlan.ctf->metadata.sources.empty() &&
               preflightDiagnostics.events().empty())
       << "CTF preflight must exclude software channel zero metadata";
+  const auto outputDir = outputPlan.ctf->outputDirectory;
   auto options = std::move(*outputPlan.ctf);
   CtfBundleOutput output(std::move(options));
   output.start();
