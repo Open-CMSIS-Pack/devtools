@@ -91,13 +91,15 @@ Recorder capture. A `TB_MTB` filename does not imply support for MTB instruction
 decoding. If several recordings were explicitly requested, process them in
 separate jobs and keep their identities and results separate.
 
-Let `ctrace` enforce the input-selection contract. A configuration named
-`<set>.ctrace-run.yml` selects raw candidates with the same `<set>` basename in
-the same directory. Legacy input selects `<set>.SWO.raw`; an explicit trace
-format permits exactly one eligible `SWO`, `TB`, or `TB_<name>` raw input. This
-is the current implementation's compatibility rule, not an instruction to add
-private format fields. Preserve any provided format declaration; do not infer
-it from a filename or edit it to make a file eligible.
+Let the selected `ctrace` executable enforce its input-selection contract. A
+configuration named `<set>.ctrace-run.yml` selects raw candidates with the same
+`<set>` basename in the same directory. Legacy versions select only SWO without
+an explicit format declaration; builds with TB channel defaults also accept
+`TB` and `TB_<name>` without one. Do not reject a TB capture solely because the
+private `trace-format` field is absent. Preserve any provided declaration and
+let the decoder resolve the format; do not add or edit fields to make a file
+eligible. If the executable rejects the selected recording, report its version
+and diagnostic instead of silently selecting another file.
 
 ## Translate the question into filters
 
@@ -112,9 +114,12 @@ defines the option semantics; the selected executable must support them:
   111; `0` selects the synthetic unformatted route, not formatted padding.
 
 Values within `--type` and within `--stream` are unions; the type and stream
-dimensions are intersected. `dwt` does not implicitly include `event`, `pmu`,
-or `pcsample`. `--all` means CSV plus CTF, not all event types; use `--csv`
-without a type filter when the user requests every event in CSV.
+dimensions are intersected. Use space-separated values, such as
+`--type exception pcsample` and `--stream 1 2`, not comma-separated lists.
+Place the trace directory before these multi-value options. `dwt` does not
+implicitly include `event`, `pmu`, or `pcsample`. `--all` means CSV plus CTF,
+not all event types; use `--csv` without a type filter when the user requests
+every event in CSV.
 
 Translate exceptions/interrupt transitions to `--type exception`, data trace to
 `--type dwt`, and PC sampling to `--type pcsample`. Clarify a vague request for
