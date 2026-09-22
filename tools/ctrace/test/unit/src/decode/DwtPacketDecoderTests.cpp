@@ -41,7 +41,7 @@ TEST(CtraceUnitTests, testDwtPcSampleProducesDedicatedEvent)
   const auto* sample = traceEventPayload<PcSampleTraceEvent>(packets.front());
   ASSERT_NE(sample, nullptr);
   EXPECT_EQ(sample->pc, 0x08001234U) << "DWT PC sample payload mismatch";
-  EXPECT_FALSE(sample->sleeping) << "DWT PC sample payload mismatch";
+  EXPECT_EQ(sample->kind, PcSampleKind::Pc) << "DWT PC sample payload mismatch";
   EXPECT_EQ(packets.front().index, 19U) << "DWT PC sample identity mismatch";
   EXPECT_EQ(packets.front().route.traceBusId, 3U) << "DWT PC sample identity mismatch";
   EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(949339000U))
@@ -52,7 +52,7 @@ TEST(CtraceUnitTests, testDwtPcSampleProducesDedicatedEvent)
       << "DWT PC sample selector mapping mismatch";
 }
 
-TEST(CtraceUnitTests, testDwtPcSamplePreservesProcessorSleep)
+TEST(CtraceUnitTests, testDwtPcSampleDistinguishesZeroPcFromProcessorSleep)
 {
   DwtPacketDecoder decoder;
   const auto packets = decoder.decode(dwtPayload(2U, 1U, 0U, 20U, 4U, 949339100U));
@@ -60,7 +60,47 @@ TEST(CtraceUnitTests, testDwtPcSamplePreservesProcessorSleep)
   const auto* sample = traceEventPayload<PcSampleTraceEvent>(packets.front());
   ASSERT_NE(sample, nullptr);
   EXPECT_EQ(sample->pc, 0U) << "DWT PC sleep indication mismatch";
-  EXPECT_TRUE(sample->sleeping) << "DWT PC sleep indication mismatch";
+  EXPECT_EQ(sample->kind, PcSampleKind::Sleep) << "DWT PC sleep indication mismatch";
+  EXPECT_EQ(CsvRowMapper::row(packets.front()), "949339100,4,pcsample,,,,,CPU Sleeping");
+
+  const auto following = decoder.decode(dwtPayload(2U, 4U, 0U, 21U, 4U, 949339200U));
+  ASSERT_EQ(following.size(), 1U);
+  const auto* pc = traceEventPayload<PcSampleTraceEvent>(following.front());
+  ASSERT_NE(pc, nullptr);
+  EXPECT_EQ(pc->kind, PcSampleKind::Pc) << "a four-byte zero is a PC, not a sleep marker";
+  EXPECT_EQ(pc->pc, 0U);
+  EXPECT_EQ(CsvRowMapper::row(following.front()), "949339200,4,pcsample,,,0x00000000,,");
+}
+
+TEST(CtraceUnitTests, testDwtPcSamplePreservesTraceProhibitedWithoutDataLoss)
+{
+  DwtPacketDecoder decoder;
+  auto payload = dwtPayload(2U, 1U, 0xffU, 21U, 4U, 949339200U);
+  payload.quality.timestampReliable = true;
+  payload.quality.overflowCount = 3U;
+  const auto packets = decoder.decode(payload);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto& event = packets.front();
+  const auto* sample = traceEventPayload<PcSampleTraceEvent>(event);
+  ASSERT_NE(sample, nullptr);
+  EXPECT_EQ(sample->kind, PcSampleKind::TraceProhibited);
+  EXPECT_EQ(sample->pc, 0U) << "a status marker must not fabricate a PC address";
+  EXPECT_EQ(event.index, payload.index);
+  EXPECT_EQ(event.route.id, payload.route.id);
+  EXPECT_EQ(event.route.traceBusId, payload.route.traceBusId);
+  EXPECT_EQ(event.tcyc, payload.tcyc);
+  ASSERT_TRUE(event.quality.has_value());
+  EXPECT_TRUE(event.quality->timestampReliable);
+  EXPECT_FALSE(event.quality->overflow);
+  EXPECT_EQ(event.quality->overflowCount, 3U);
+  EXPECT_EQ(traceEventType(event), TraceEventType::PcSample);
+
+  const auto following = decoder.decode(dwtPayload(2U, 4U, 0xffU));
+  ASSERT_EQ(following.size(), 1U);
+  const auto* pc = traceEventPayload<PcSampleTraceEvent>(following.front());
+  ASSERT_NE(pc, nullptr);
+  EXPECT_EQ(pc->kind, PcSampleKind::Pc);
+  EXPECT_EQ(pc->pc, 0xffU) << "a four-byte 0xff is a PC, not a trace-prohibited marker";
 }
 
 TEST(CtraceUnitTests, testDwtPcSampleRejectsUnsupportedPayloads)
@@ -77,10 +117,11 @@ TEST(CtraceUnitTests, testDwtPcSampleRejectsUnsupportedPayloads)
   };
 
   verify(dwtPayload(2U, 1U, 1U),
-         "unsupported DWT PC-sample payload: size 1, value 1; expected a 4-byte PC or a 1-byte zero sleep indication");
+         "unsupported DWT PC-sample payload: size 1, value 1; expected a 4-byte PC or a 1-byte marker "
+         "(0x00: CPU Sleeping, 0xff: Trace prohibited)");
   verify(dwtPayload(2U, 2U, 0x1234U),
-         "unsupported DWT PC-sample payload: size 2, value 4660; expected a 4-byte PC or a 1-byte zero sleep "
-         "indication");
+         "unsupported DWT PC-sample payload: size 2, value 4660; expected a 4-byte PC or a 1-byte marker "
+         "(0x00: CPU Sleeping, 0xff: Trace prohibited)");
 }
 
 TEST(CtraceUnitTests, testDwtEventCounterPacketIsValidatedAndExposed)

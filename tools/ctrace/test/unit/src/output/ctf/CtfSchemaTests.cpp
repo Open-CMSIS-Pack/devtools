@@ -21,13 +21,14 @@
 
 TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
 {
-  constexpr std::array<std::uint32_t, 10U> eventIds{
+  constexpr std::array<std::uint32_t, 11U> eventIds{
       CtfSchema::value(CtfSchema::EventId::Itm),        CtfSchema::value(CtfSchema::EventId::DwtValue),
       CtfSchema::value(CtfSchema::EventId::DwtAddress), CtfSchema::value(CtfSchema::EventId::TraceStatus),
       CtfSchema::value(CtfSchema::EventId::Exception),  CtfSchema::value(CtfSchema::EventId::GlobalTimestamp),
       CtfSchema::value(CtfSchema::EventId::PcSample),   CtfSchema::value(CtfSchema::EventId::DwtEvent),
       CtfSchema::value(CtfSchema::EventId::PmuEvent),
       CtfSchema::value(CtfSchema::EventId::DwtMatch),
+      CtfSchema::value(CtfSchema::EventId::PcSampleProhibited),
   };
   constexpr std::array<std::uint8_t, 5U> statusReasons{
       CtfSchema::value(CtfSchema::TraceStatusReason::TraceStart),
@@ -101,6 +102,7 @@ TEST(CtraceUnitTests, testCtfSchemaUsesDenseIdentifiers)
 
 TEST(CtraceUnitTests, testCtfValueTypes)
 {
+  EXPECT_EQ(CtfSchema::eventName(CtfSchema::EventId::PcSampleProhibited), "PC_SAMPLE_PROHIBITED");
   EXPECT_EQ(CtfSchema::eventName(static_cast<CtfSchema::EventId>(255U)), "UNKNOWN");
   /** @brief Describes one supported CTF value representation. */
   struct SupportedType {

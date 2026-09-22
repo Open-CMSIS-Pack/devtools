@@ -308,3 +308,13 @@ event {
         uint32_t cmsis_overflow_count;
     };
 };
+
+event {
+    id = 10;
+    name = "PC_SAMPLE_PROHIBITED";
+    stream_id = 0;
+    fields := struct {
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};

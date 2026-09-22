@@ -18,7 +18,7 @@
 
 class DiagnosticSink;
 
-/** @brief Owns a CTF directory and its companion Trace Compass XML file. */
+/** @brief Owns a CTF directory and its optional companion Trace Compass XML file. */
 class CtfBundleOutput final : public TraceOutput {
 public:
   /**
@@ -40,7 +40,7 @@ protected:
   void prepareOutput() override;
   /** @brief Starts the CTF encoder for the prepared target. */
   void startOutput() override;
-  /** @brief Completes metadata and streams, then writes XML when their clocks permit it. */
+  /** @brief Completes the bundle and writes XML only for observed views sharing one clock. */
   void stopOutput() override;
   /** @brief Aborts the encoder and removes incomplete CTF and XML targets. */
   void abortOutput() override;

@@ -187,8 +187,16 @@ static void writePayloadColumns(CsvRow& row, const PmuTraceEvent& event)
 /** @brief Writes one periodic PC sample to the CSV event columns. */
 static void writePayloadColumns(CsvRow& row, const PcSampleTraceEvent& event)
 {
-  if (!event.sleeping) {
+  switch (event.kind) {
+  case PcSampleKind::Pc:
     row[column(CsvColumn::Pc)] = hexValue(event.pc, 4U);
+    break;
+  case PcSampleKind::Sleep:
+    row[column(CsvColumn::Note)] = "CPU Sleeping";
+    break;
+  case PcSampleKind::TraceProhibited:
+    row[column(CsvColumn::Note)] = "Trace prohibited";
+    break;
   }
 }
 

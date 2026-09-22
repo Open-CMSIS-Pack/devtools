@@ -94,9 +94,21 @@ TEST(CtraceUnitTests, testTraceSelection)
   ASSERT_TRUE(traceEventSelectedForOutput(exception, TraceSelection{{"exception"}, {}}))
       << "TraceSelection exception type mismatch";
 
-  TraceEvent pcSample{PcSampleTraceEvent{0x08001234U, false}};
+  TraceEvent pcSample{PcSampleTraceEvent{0x08001234U}};
   ASSERT_TRUE(traceEventSelectedForOutput(pcSample, TraceSelection{{"pcsample"}, {}}))
       << "TraceSelection PC-sample type mismatch";
   ASSERT_FALSE(traceEventSelectedForOutput(pcSample, TraceSelection{{"dwt"}, {}}))
       << "TraceSelection must keep PC samples separate from DWT data trace";
+}
+
+TEST(CtraceUnitTests, testTraceSelectionTreatsPcSampleMarkersAsSamplesNotErrors)
+{
+  for (const auto kind : {PcSampleKind::Sleep, PcSampleKind::TraceProhibited}) {
+    TraceEvent marker{PcSampleTraceEvent{0U, kind}};
+    marker.route = {TraceRouteId{5U}, 7U};
+    EXPECT_TRUE(traceEventSelectedForOutput(marker, TraceSelection{}));
+    EXPECT_TRUE(traceEventSelectedForOutput(marker, TraceSelection{{"pcsample"}, {7U}}));
+    EXPECT_FALSE(traceEventSelectedForOutput(marker, TraceSelection{{"pcsample"}, {5U}}));
+    EXPECT_FALSE(traceEventSelectedForOutput(marker, TraceSelection{{"error"}, {7U}}));
+  }
 }

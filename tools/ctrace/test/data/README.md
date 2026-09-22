@@ -13,12 +13,14 @@ comparison test.
 ## Fixture integrity
 
 The [fixture manifest](../integration/src/ValidateFixtureIntegrity.cmake) is
-the canonical SHA-256 and size inventory for checked-in fixtures, including
-fixture-local provenance documents. `CtraceFixtureIntegrity` checks that the
-inventory is complete and the reconstructed TB capture contains 256 frames.
-Update the manifest in the same review as a fixture change. Inputs generated
-at test runtime are defined and checked by the integration tests, not listed
-in this manifest.
+the canonical SHA-256 and size inventory for checked-in test inputs, reference
+outputs and fixture scripts. Markdown documentation is excluded.
+`CtraceFixtureIntegrity` checks that the inventory is complete and the
+reconstructed TB capture contains 256 frames. Update the manifest in the same
+review as a fixture change. Tests work on copies in the build tree; the manifest
+guards against unintended changes to the versioned fixtures, not test-time
+mutation. Inputs generated at test runtime are defined and checked by the
+integration tests, not listed in this manifest.
 
 ## Blinky reference outputs
 
@@ -105,6 +107,11 @@ It contains a hardware synchronization packet followed by one Data Trace Match
 packet for each comparator 0 through 3 and local timestamps. The integration
 test verifies the generated CSV rows, CTF records, labels, and Trace Compass
 timeline configuration.
+
+[trace-pc-sample](trace-pc-sample/README.md) is a synthetic PC/sleep/trace-prohibited/PC
+sequence with local timestamps. Tests exercise unformatted SWO and two-route
+formatted TB input, output modes, filtering and an independent Babeltrace
+consumer. The marker is valid status information, not a decoder error.
 
 ## Reader and entry-point inputs
 

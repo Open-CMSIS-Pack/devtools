@@ -130,6 +130,7 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
   const auto& root = temporaryPath.path();
   const auto traceDir = root / ".trace";
   writeTraceInputs(traceDir, {"Alpha", "Beta"});
+  writeTestFile(traceDir / "Alpha.SWO.raw", std::string{"\0\0\0\0\0\x80\x15\0", 8U});
   writeTestFile(traceDir / "Alpha.TB_MTB.raw", "unsupported");
   writeTestFile(traceDir / "Alpha.ER.raw", "unsupported");
 
@@ -231,7 +232,7 @@ TEST(CtraceUnitTests, testTraceDirectoryDecodesFormattedInputThroughRawFrontend)
   EXPECT_NE(readTestTextFile(traceDir / "Formatted.TB.csv").find(",1,itm,1,0x41,,,"), std::string::npos);
   EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Formatted.ctf" / "stream_1"));
   EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.ctf" / "stream_0"));
-  EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Formatted.TB.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.TB.traceanalysis.xml"));
 }
 
 TEST(CtraceUnitTests, testTraceDirectoryPreflightsFormattedAlignmentBeforeDecoderAndArtifacts)

@@ -43,7 +43,7 @@ For `ctrace .trace --target Board --all`, the supported input produces:
   Board.ctf/
     metadata
     stream_0
-  Board.SWO.traceanalysis.xml  # when retained streams use one clock domain; views are data-driven
+  Board.SWO.traceanalysis.xml  # only with graphical data and one retained clock domain
 ```
 
 Without an explicit format declaration, ctrace preserves the legacy SWO-only

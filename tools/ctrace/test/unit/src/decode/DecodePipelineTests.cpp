@@ -771,21 +771,41 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesDwtEventAndPmuPackets)
 TEST(CtraceUnitTests, testDecodePipelinePreservesPeriodicPcSamples)
 {
   const std::uint8_t trace[] = {
-      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x17U, 0x34U, 0x12U, 0x00U, 0x08U, 0x15U, 0x00U,
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U,
+      0x17U, 0x34U, 0x12U, 0x00U, 0x08U, 0x10U,
+      0x15U, 0x00U, 0x20U,
+      0x15U, 0xffU, 0x30U,
+      0x17U, 0xffU, 0x00U, 0x00U, 0x00U, 0x40U,
+      0x17U, 0x00U, 0x00U, 0x00U, 0x00U, 0x50U,
   };
-  const auto decoded = decodeTrace({rawBytes(trace)});
+  const auto decoded = decodeTrace({rawBytes(trace)}, 1U);
 
   std::vector<PcSampleTraceEvent> samples;
+  std::vector<std::uint64_t> cycles;
   for (const auto& event : decoded.events) {
+    EXPECT_FALSE(isTraceEvent<TraceIssueEvent>(event)) << "valid PC-sample markers must not be errors";
     if (const auto* sample = traceEventPayload<PcSampleTraceEvent>(event)) {
       samples.push_back(*sample);
+      ASSERT_TRUE(event.tcyc.has_value());
+      cycles.push_back(event.tcyc.value());
+      ASSERT_TRUE(event.quality.has_value());
+      EXPECT_TRUE(event.quality->timestampReliable);
+      EXPECT_FALSE(event.quality->overflow);
+      EXPECT_EQ(event.quality->overflowCount, 0U);
     }
   }
-  ASSERT_EQ(samples.size(), 2U) << "OpenCSD periodic PC-sample packet count mismatch";
+  ASSERT_EQ(samples.size(), 5U) << "OpenCSD periodic PC-sample packet count mismatch";
   EXPECT_EQ(samples[0].pc, 0x08001234U) << "OpenCSD periodic PC sample payload mismatch";
-  EXPECT_FALSE(samples[0].sleeping) << "OpenCSD periodic PC sample payload mismatch";
+  EXPECT_EQ(samples[0].kind, PcSampleKind::Pc);
   EXPECT_EQ(samples[1].pc, 0U) << "OpenCSD periodic PC sleep indication mismatch";
-  EXPECT_TRUE(samples[1].sleeping) << "OpenCSD periodic PC sleep indication mismatch";
+  EXPECT_EQ(samples[1].kind, PcSampleKind::Sleep);
+  EXPECT_EQ(samples[2].kind, PcSampleKind::TraceProhibited);
+  EXPECT_EQ(samples[2].pc, 0U);
+  EXPECT_EQ(samples[3].kind, PcSampleKind::Pc);
+  EXPECT_EQ(samples[3].pc, 0xffU);
+  EXPECT_EQ(samples[4].kind, PcSampleKind::Pc);
+  EXPECT_EQ(samples[4].pc, 0U);
+  EXPECT_EQ(cycles, (std::vector<std::uint64_t>{1U, 3U, 6U, 10U, 15U}));
 }
 
 TEST(CtraceUnitTests, testDecodePipelinePreservesCompressedDataTracePcValues)
