@@ -25,6 +25,11 @@ solution sets from completing. Preflight failures preserve existing per-input
 artifacts, but those old CTF bundles do not contribute to the new target XML.
 Legacy target-only CTF directories and per-channel XML files are not deleted.
 
+`GeneratesAllChannelOutputsForAllTargets` runs `--all` without a target or filters
+on two healthy three-channel targets. It checks successful completion and exactly
+six CSV files, six CTF bundles and two target XML files by name and file type;
+output contents are covered by the other tests.
+
 ## Decode errors and retained output
 
 The formatted recovery tests verify that a damaged route can resynchronize

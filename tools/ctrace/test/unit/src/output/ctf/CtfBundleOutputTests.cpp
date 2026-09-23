@@ -984,7 +984,8 @@ TEST(CtraceUnitTests, testCtfBundleOutputRejectsLongPaths)
   CtfBundleOutput output(makeCtfBundleConfig(temporaryPath.path() / std::string(1024U, 'x'), 1000000U));
   EXPECT_THROW(output.start(), std::runtime_error);
   temporaryPath.createDirectory();
-  EXPECT_TRUE(throwsWithMessage([&] { output.start(); }, "Failed to inspect existing CTF output"));
+  // The filesystem may reject an overlong name during lookup or only during creation.
+  EXPECT_THROW(output.start(), std::runtime_error);
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputCleansUpAfterMetadataFailure)

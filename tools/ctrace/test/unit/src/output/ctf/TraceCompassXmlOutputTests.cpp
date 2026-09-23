@@ -226,7 +226,13 @@ TEST(CtraceUnitTests, testTraceCompassXmlOutputPreservesWrongTargetTypes)
   EXPECT_EQ(readTestTextFile(parent), "keep-parent");
 
   TraceCompassXmlOutput longPath(root.path() / std::string(1024U, 'x'), diagnostics);
-  EXPECT_THROW(longPath.prepare(), std::runtime_error);
+  // Windows may accept the missing path during prepare() and reject it only when writing.
+  const auto generateXml = [&] {
+    longPath.prepare();
+    longPath.add("SWO", xmlMetadata(1U));
+    longPath.finish();
+  };
+  EXPECT_THROW(generateXml(), std::runtime_error);
 }
 
 TEST(CtraceUnitTests, testTraceCompassXmlOutputReplacesSymlinksWithoutFollowingThem)

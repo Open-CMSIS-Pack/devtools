@@ -1661,6 +1661,40 @@ TEST_F(CtraceIntegTests, ProcessesEveryChannelOfSelectedTargetInEachOutputMode)
   }
 }
 
+TEST_F(CtraceIntegTests, GeneratesAllChannelOutputsForAllTargets)
+{
+  writeMultipleChannelFixture(workDirectory(), "Alpha");
+  writeMultipleChannelFixture(workDirectory(), "Beta");
+  std::set<std::string> inputs;
+  for (const auto& entry : std::filesystem::directory_iterator(workDirectory())) {
+    inputs.insert(entry.path().filename().string());
+  }
+
+  const auto result = run({"ctrace", workDirectory().string(), "--all"});
+  ASSERT_EQ(result.exitCode, 0) << result.stderrText;
+
+  const std::set<std::string> expectedOutputs{
+      "Alpha.SWO.csv", "Alpha.SWO.ctf", "Alpha.TB.csv", "Alpha.TB.ctf", "Alpha.TB_ETB.csv", "Alpha.TB_ETB.ctf",
+      "Alpha.traceanalysis.xml",
+      "Beta.SWO.csv", "Beta.SWO.ctf", "Beta.TB.csv", "Beta.TB.ctf", "Beta.TB_ETB.csv", "Beta.TB_ETB.ctf",
+      "Beta.traceanalysis.xml",
+  };
+  std::set<std::string> outputs;
+  for (const auto& entry : std::filesystem::directory_iterator(workDirectory())) {
+    const auto name = entry.path().filename().string();
+    if (inputs.count(name) != 0U) {
+      continue;
+    }
+    outputs.insert(name);
+    if (entry.path().extension() == ".ctf") {
+      EXPECT_TRUE(entry.is_directory()) << entry.path();
+    } else {
+      EXPECT_TRUE(entry.is_regular_file()) << entry.path();
+    }
+  }
+  EXPECT_EQ(outputs, expectedOutputs);
+}
+
 TEST_F(CtraceIntegTests, ContinuesOtherChannelsAndTargetsAfterChannelPreflightFailure)
 {
   writeMultipleChannelFixture(workDirectory(), "Alpha");
