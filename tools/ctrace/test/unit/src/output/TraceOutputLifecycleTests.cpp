@@ -135,7 +135,6 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesCsvAfterLaterCtfStreamFai
   const TemporaryTestPath temporaryPath("ctrace-output-lifecycle-real-ctf-failure-test");
   const auto& root = temporaryPath.createDirectory();
   const auto ctfDirectory = root / "output.ctf";
-  const auto xmlPath = root / "output.SWO.traceanalysis.xml";
   const auto csvPath = root / "output.csv";
   const TraceRouteIdentity firstRoute{TraceRouteId{10U}, 1U};
   const TraceRouteIdentity lastRoute{TraceRouteId{20U}, 111U};
@@ -151,7 +150,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesCsvAfterLaterCtfStreamFai
   CollectingDiagnosticSink diagnostics;
   std::vector<std::unique_ptr<TraceOutput>> outputs;
   outputs.push_back(
-      std::make_unique<CtfBundleOutput>(CtfOutputConfig(ctfDirectory, xmlPath, {}, std::move(topology),
+      std::make_unique<CtfBundleOutput>(CtfOutputConfig(ctfDirectory, {}, std::move(topology),
                                                         std::vector<TraceRouteIdentity>{firstRoute, lastRoute}),
                                         &diagnostics));
   outputs.push_back(std::make_unique<CsvFileOutput>(csvPath));
@@ -164,7 +163,6 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesCsvAfterLaterCtfStreamFai
   lifecycle.finish();
 
   EXPECT_FALSE(std::filesystem::exists(ctfDirectory));
-  EXPECT_FALSE(std::filesystem::exists(xmlPath));
   EXPECT_EQ(diagnostics.failureCount(), 1U);
   EXPECT_TRUE(diagnostics.containsContext("backend", "ctf"));
   EXPECT_TRUE(diagnostics.containsContext("phase", "write"));
@@ -180,14 +178,13 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesCtfAfterRealCsvStartFailu
   const TemporaryTestPath temporaryPath("ctrace-output-lifecycle-real-csv-failure-test");
   const auto& root = temporaryPath.createDirectory();
   const auto ctfDirectory = root / "output.ctf";
-  const auto xmlPath = root / "output.SWO.traceanalysis.xml";
   const auto csvPath = root / "blocked.csv";
   std::filesystem::create_directory(csvPath);
 
   CollectingDiagnosticSink diagnostics;
   std::vector<std::unique_ptr<TraceOutput>> outputs;
   outputs.push_back(std::make_unique<CtfBundleOutput>(
-      CtfOutputConfig(ctfDirectory, xmlPath, {}, CtfTestSupport::legacyTopology(1000000U))));
+      CtfOutputConfig(ctfDirectory, {}, CtfTestSupport::legacyTopology(1000000U))));
   outputs.push_back(std::make_unique<CsvFileOutput>(csvPath));
   TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
   lifecycle.append(softwarePacket(1U, 1U, 'A'));
@@ -196,7 +193,6 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleCompletesCtfAfterRealCsvStartFailu
 
   EXPECT_TRUE(std::filesystem::is_regular_file(ctfDirectory / "metadata"));
   EXPECT_TRUE(std::filesystem::is_regular_file(ctfDirectory / "stream_0"));
-  EXPECT_TRUE(std::filesystem::is_regular_file(xmlPath));
   EXPECT_EQ(diagnostics.failureCount(), 1U);
   EXPECT_TRUE(diagnostics.containsContext("backend", "csv"));
   EXPECT_TRUE(diagnostics.containsContext("phase", "start"));
@@ -269,7 +265,6 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleDoesNotInventCtfStreamForSkippedBy
   const TemporaryTestPath temporaryPath("ctrace-output-lifecycle-unrouteable-ctf-test");
   const auto& root = temporaryPath.createDirectory();
   const auto ctfDirectory = root / "output.ctf";
-  const auto xmlPath = root / "output.traceanalysis.xml";
   const TraceRouteIdentity route{TraceRouteId{10U}, 7U};
   CtfMetadataTopology topology{
       {{CtfClockDomainId{1U}, "core_clock", CtfTestSupport::testUuid(1U), 1000000U, false}},
@@ -279,7 +274,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleDoesNotInventCtfStreamForSkippedBy
   CollectingDiagnosticSink diagnostics;
   std::vector<std::unique_ptr<TraceOutput>> outputs;
   outputs.push_back(std::make_unique<CtfBundleOutput>(
-      CtfOutputConfig(ctfDirectory, xmlPath, {}, std::move(topology), {route}), &diagnostics));
+      CtfOutputConfig(ctfDirectory, {}, std::move(topology), {route}), &diagnostics));
   TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
 
   lifecycle.appendByteSkip({0U, 1U});
@@ -293,7 +288,6 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleDoesNotInventCtfStreamForSkippedBy
   EXPECT_TRUE(std::filesystem::is_regular_file(ctfDirectory / "metadata"));
   EXPECT_FALSE(std::filesystem::exists(ctfDirectory / "stream_0"));
   EXPECT_FALSE(std::filesystem::exists(ctfDirectory / "stream_7"));
-  EXPECT_FALSE(std::filesystem::exists(xmlPath));
 }
 
 TEST(CtraceUnitTests, testTraceOutputLifecycleContainsDiagnosticAndNonStandardFailures)

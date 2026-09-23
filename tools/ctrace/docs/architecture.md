@@ -20,17 +20,19 @@ Backend-specific representations are documented in the [CTF profile](ctf-format.
 PC sampling accepts a four-byte PC or the one-byte status markers `0x00` (`CPU Sleeping`) and Armv8-M `0xff`
 (`Trace prohibited`). Status markers preserve route, timestamp, and sample quality without a PC address.
 
-Exactly one raw input is active for each trace-run configuration. Formatted input distributes bytes to configured
-ITM routes by Trace Bus ID; unformatted input uses one synthetic route. Other protocols require explicit decoder
-integration, not guesses based on observed IDs. Deferred inputs and decoders are tracked in the [TODO list](todo.md).
+Every matching SWO, TB, and named-TB raw input is processed independently and sequentially for each selected trace-run
+configuration. Formatted input distributes bytes to configured ITM routes by Trace Bus ID; unformatted input uses
+one synthetic route. Other protocols require explicit decoder integration, not guesses based on observed IDs.
+Deferred inputs and decoders are tracked in the [TODO list](todo.md).
 
 The architecture separates protocol decoding, semantic interpretation, and output generation. This keeps output
 formats independent of OpenCSD and allows another raw trace channel to reuse the event model and output backends.
 
 ## How it works at a glance
 
-`ctrace` processes one solution set at a time. The [README](../README.md#trace-directory) describes how configuration,
-raw input, and generated output files are grouped by their common base name.
+`ctrace` processes one solution set at a time and runs a separate file job for each supported raw input in that set.
+The [README](../README.md#trace-directory) describes how configuration, raw inputs, and generated outputs are grouped
+by solution-set and channel names. The following path runs once per input, with fresh decoder and output state.
 
 The main in-memory path is:
 
@@ -66,8 +68,8 @@ command line + trace-run YAML + selected SWO/TB raw file
 ```
 
 The `TraceEvent` boundary is the central design point. Before it, code handles byte offsets, OpenCSD packets, decoder
-recovery, and Cortex-M state. After it, code sees backend-independent events in decode order and does not depend on
-OpenCSD types.
+recovery, and Cortex-M state. After it, code sees backend-independent events in semantic callback order,
+without depending on OpenCSD types.
 
 Formatter-skipped payload and initial ITM synchronization skips follow a separate `TraceByteSkip` path from the
 OpenCSD adapter through `DecodePipeline` directly to `TraceEventSink::appendByteSkip` and `DecodeConsumers`. These
@@ -82,13 +84,14 @@ there is deliberately no common base class for all decode stages.
 
 ## Input and compatibility contract
 
-Input selection and route binding belong to `tracerun` and complete before decoder or output construction.
+Input selection and route binding belong to `tracerun` and complete before each input's decoder and output backends
+are constructed. Target-level XML preparation precedes these per-input jobs.
 The provisional, ctrace-private `trace-format` declaration describes effective capture bytes rather than target
-capability or file identity. Discovery first selects exactly one SWO, TB, or named-TB input, independently of whether
-the format is declared. An explicit format wins; otherwise SWO defaults to `unformatted` and TB or named-TB to
-`formatted`. The selected format is resolved before `CtraceRunMeta` normalizes routes, so the decoder and route model
-use the same effective format. This channel-based heuristic does not inspect capture bytes or resolve ambiguous input
-selection. Framing remains an internal decoder contract.
+capability or file identity. Discovery collects every matching SWO, TB, and named-TB input, independently of whether
+the format is declared. Each input is preflighted and normalized separately. An explicit format applies to every input;
+otherwise SWO defaults to `unformatted` and TB or named-TB to `formatted`. The format is resolved before
+`CtraceRunMeta` normalizes that input's routes, so the decoder and route model use the same effective format. This
+channel-based heuristic does not inspect capture bytes. Framing remains an internal decoder contract.
 
 The [input constraints](constraints.md#input-format-framing-and-discovery) define the accepted declarations, defaults,
 file candidates, and framing limits. The [routing invariants](constraints.md#routing-invariants) define reference
@@ -96,7 +99,7 @@ binding, valid IDs, and the synthetic unformatted route; backends preserve its l
 
 ## Processing state and ownership
 
-One `DecodePipeline` is created for the selected raw file. It owns the OpenCSD adapter and Cortex-M stream decoder, so
+One `DecodePipeline` is created for each raw file. It owns the OpenCSD adapter and Cortex-M stream decoder, so
 protocol, formatter, timestamp, and DWT state survive arbitrary file-read boundaries. `RawFileReader` owns a single
 64 KiB buffer; each `RawByteView` borrows that buffer only for the synchronous `DecodePipeline::push` call. Calling
 `DecodePipeline::finish` flushes both the OpenCSD and Cortex-M layers before the pipeline is destroyed.
@@ -104,7 +107,9 @@ protocol, formatter, timestamp, and DWT state survive arbitrary file-read bounda
 Both input formats use the same `OpenCSD DecodeTree` ownership boundary. `SINGLE` connects one synthetic, no-ATB-ID
 route to one ITM decoder. `FRAME_FORMATTED` owns the frame deformatter and one route-bound ITM decoder for each
 configured Trace Bus ID. Ctrace creates and feeds one tree at a time because OpenCSD's alternate logger and live-tree
-registry use process-global state; the session restores the previously installed logger when it is destroyed.
+registry use process-global state; the session restores the previously installed logger when it is destroyed. Each
+file job finishes and releases its decoder before the next input starts. Route IDs and clocks remain local to that
+input, so files can reuse Trace Bus IDs without sharing decoder state or output streams.
 
 Ownership is deliberately split by responsibility while preserving one enclosing lifetime: `OpenCsdTreeSession`
 owns the tree and configured decoder components. For formatted input, `OpenCsdFormattedItmSession` additionally owns
@@ -115,7 +120,9 @@ reference. This keeps format-specific feed and recovery policy out of the low-le
 callback lifetime safety.
 
 `CortexMStreamDecoder` maintains an independent post-decoder for each normalized route. All post-decoders emit into
-the same `TraceEventSink`, preserving input order while keeping route-specific timestamp and DWT state apart.
+the same `TraceEventSink` while keeping route-specific timestamp and DWT state apart. Events buffered for timestamp
+resolution are emitted independently per route. The sink observes semantic emission order, not a global raw-input or
+chronological order across routes.
 
 There is no application-wide event queue. `DecodeConsumers` forwards each event synchronously to the output
 lifecycle and issue reporter.
@@ -160,7 +167,8 @@ diagnostic artifacts but makes the invocation fail. Routes with no received payl
 
 An error without a usable route, a deformatter error, failure to reset the route, repeated lack of decoder progress,
 or an unsuccessful bounded wait/flush operation aborts the current raw-file job. The fatal-input output policy
-retains committed CSV rows with a global abort record, but removes incomplete CTF and XML artifacts.
+retains committed CSV rows with a global abort record, but removes the incomplete CTF bundle. Only completed bundles
+contribute to target-level XML.
 
 ## OpenCSD diagnostic callbacks
 
@@ -204,8 +212,8 @@ byte. Packet rollback remains separate from the fatal-input output policy descri
 
 1. Start at [`CtraceMain.cpp`](../src/CtraceMain.cpp) for command-line handling and top-level error policy.
 2. Follow [`TraceDirectoryJob.cpp`](../src/control/TraceDirectoryJob.cpp) and
-   [`TraceRunDiscovery.cpp`](../src/tracerun/TraceRunDiscovery.cpp) to see how a solution set, YAML, and exactly one
-   SWO/TB input become a preflighted descriptor.
+   [`TraceRunDiscovery.cpp`](../src/tracerun/TraceRunDiscovery.cpp) to see how a solution set and YAML select all
+   matching SWO/TB inputs, each with its own preflighted descriptor and file job.
 3. Read [`FileDecodeJob.cpp`](../src/control/FileDecodeJob.cpp) for output preflight, chunked input, pipeline
    construction, and finalization.
 4. Continue through [`DecodePipeline.cpp`](../src/decode/DecodePipeline.cpp),
@@ -281,16 +289,29 @@ Output requirements are evaluated per backend and selected route. For example, m
 active route may disable CTF while an independent CSV output remains valid; metadata on a route excluded by the
 stream filter is not required. `--all` therefore does not make the backends share failure state unnecessarily.
 
-CSV writes one combined file in decode callback order. `CtfBundleOutput` owns a bundle-local metadata model and
+Each input writes separate `<set>.<channel>.csv` and `<set>.<channel>.ctf` artifacts. One optional
+`<set>.traceanalysis.xml` describes the target's eligible completed bundles. CTF always uses the channel-qualified
+path, including single-input runs; existing `<set>.ctf` bundles and old per-channel XML files are not migrated or
+removed. The [CTF profile](ctf-format.md#files-and-common-structure)
+records this intentional difference from the published bundle path.
+
+CSV writes one combined file per input in sink callback order. `CtfBundleOutput` owns a bundle-local metadata model and
 lazily creates a stream writer for each formatted route that emits selected events. Representation changes stay in
 the backends: for example, CSV retains a DWT/PMU counter mask in one row while CTF expands it into individual records.
 
-CTF finalization retains only emitted streams, then generates Trace Compass XML from their observed graphical topics.
-Without graphical topics, it omits the XML entirely; point events remain in the CTF event table. This avoids invalid
-empty analyses and invented durations. Route identity stays separate from display labels,
-so equal processor names cannot merge views. Formatted routes retain distinct clock domains because the input contract
-does not establish cross-route synchronization. Multi-clock data remains valid CTF but cannot safely drive the supported
-reader's combined XML analysis.
+CTF finalization retains only emitted streams and exposes the completed metadata. `TraceDirectoryJob` gives these
+results to a target-scoped `TraceCompassXmlOutput`; it does not discover contributions by scanning existing CTF files.
+The collector prepares the target XML before the input jobs and writes it after all inputs have been attempted.
+Only observed graphical topics in freshly completed bundles contribute views. Without graphical topics, it leaves no
+XML; point events remain in the CTF event table.
+
+Each contributing bundle must retain exactly one clock domain. Multi-clock bundles remain valid CTF but are excluded
+with a warning because the supported reader cannot safely order their independent streams. Separate single-clock
+bundles can contribute to one XML without clock correlation or timestamp rebasing. Every clock, including legacy
+`swo_clock`, has a UUID; the XML scopes state by the reader's `hostId` (that UUID), public `cmsis_trace_bus_id`, and
+topic. Channel/processor labels are display-only, and the private CTF `ctrace_route` context is no longer needed by
+the XML. A deterministic namespace derived from the contributing clock identities prevents analysis/view collisions
+between target XML files. The legacy binary event layout is unchanged.
 
 The [CTF profile](ctf-format.md) defines event schemas, metadata, clock mappings, legacy layouts, and
 [XML projection](ctf-format.md#generated-trace-compass-analysis). Cross-backend compatibility and failure rules belong
@@ -301,8 +322,11 @@ owns the active state and common write-failure cleanup; concrete backends implem
 The byte-skip hook defaults to no output, as required by CTF; CSV implements it independently of event filters.
 A successful backend can finish even if another backend fails. When `FileDecodeJob` catches `OpenCsdFatalError`, it
 passes a `TraceDecodeAbort` to output finalization. The default backend policy removes incomplete artifacts, as
-required for CTF and XML. CSV instead appends a global abort record and closes the already committed rows. Failed
+required for CTF. CSV instead appends a global abort record and closes the already committed rows. Failed
 CSV writes or finalization still remove the unreliable file; failures before output startup do not create one.
+Target XML has an independent lifecycle: a failed input cannot remove another input's completed bundle or views,
+and an XML preparation/write failure leaves completed CTF and CSV outputs intact. Preparing target XML never migrates
+or removes historical per-channel XML files.
 
 ## Diagnostics and failure semantics
 
@@ -330,9 +354,11 @@ of creating routes or clocks, and CLI Info remains visible in CTF-only mode. The
 source warning remains separate from byte accounting. A route-bound missing-sync Error follows ordinary output
 selection but always contributes to command failure; its text does not repeat the byte count already reported as Info.
 
-An invocation-wide diagnostic sink aggregates failures while other solution sets continue where possible, then
-determines the final process status. Errors are rendered as `error` even when their impact causes a non-zero exit
-status. Unhandled internal ctrace failures also terminate the command after an error diagnostic.
+An invocation-wide diagnostic sink aggregates failures while remaining inputs in the same set and other solution
+sets continue, then determines the final process status. Errors are rendered as `error` even when their impact causes
+a non-zero exit status. Unhandled internal ctrace failures also terminate the command after an error diagnostic.
+An input-scoped forwarding sink adds `inputChannel` and `input` context to every file-job diagnostic while preserving
+its severity and failure impact. Producer reference annotations are reported once per configuration, before file jobs.
 
 ## External dependencies
 

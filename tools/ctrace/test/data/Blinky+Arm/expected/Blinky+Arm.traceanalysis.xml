@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tmfxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="xmlDefinition.xsd">
-    <stateProvider version="1191691736" id="arm.cmsis.swo.analysis.v1">
-        <head><label value="SWO Trace Analysis" /></head>
+    <stateProvider version="0" id="arm.cmsis.ctrace.analysis.0000000000000000.v1">
+        <head><label value="CMSIS Trace Analysis" /></head>
         <eventHandler eventName="DWT_VALUE">
             <stateChange>
                 <if>
@@ -12,6 +12,8 @@
                     </condition>
                 </if>
                 <then>
+                    <stateAttribute type="eventField" value="hostId" />
+                    <stateAttribute type="eventField" value="context.cmsis_trace_bus_id" />
                     <stateAttribute type="constant" value="DWT_VALUE" />
                     <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
                     <stateAttribute type="constant" value="data" />
@@ -26,6 +28,8 @@
                     </condition>
                 </if>
                 <then>
+                    <stateAttribute type="eventField" value="hostId" />
+                    <stateAttribute type="eventField" value="context.cmsis_trace_bus_id" />
                     <stateAttribute type="constant" value="DWT_VALUE" />
                     <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
                     <stateAttribute type="constant" value="data" />
@@ -40,6 +44,8 @@
                     </condition>
                 </if>
                 <then>
+                    <stateAttribute type="eventField" value="hostId" />
+                    <stateAttribute type="eventField" value="context.cmsis_trace_bus_id" />
                     <stateAttribute type="constant" value="DWT_VALUE" />
                     <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
                     <stateAttribute type="constant" value="data" />
@@ -54,6 +60,8 @@
                     </condition>
                 </if>
                 <then>
+                    <stateAttribute type="eventField" value="hostId" />
+                    <stateAttribute type="eventField" value="context.cmsis_trace_bus_id" />
                     <stateAttribute type="constant" value="DWT_VALUE" />
                     <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
                     <stateAttribute type="constant" value="data" />
@@ -68,6 +76,8 @@
                     </condition>
                 </if>
                 <then>
+                    <stateAttribute type="eventField" value="hostId" />
+                    <stateAttribute type="eventField" value="context.cmsis_trace_bus_id" />
                     <stateAttribute type="constant" value="DWT_VALUE" />
                     <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
                     <stateAttribute type="constant" value="data" />
@@ -82,6 +92,8 @@
                     </condition>
                 </if>
                 <then>
+                    <stateAttribute type="eventField" value="hostId" />
+                    <stateAttribute type="eventField" value="context.cmsis_trace_bus_id" />
                     <stateAttribute type="constant" value="DWT_VALUE" />
                     <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
                     <stateAttribute type="constant" value="data" />
@@ -96,6 +108,8 @@
                     </condition>
                 </if>
                 <then>
+                    <stateAttribute type="eventField" value="hostId" />
+                    <stateAttribute type="eventField" value="context.cmsis_trace_bus_id" />
                     <stateAttribute type="constant" value="DWT_VALUE" />
                     <stateAttribute type="eventField" value="cmsis_dwt_comparator" />
                     <stateAttribute type="constant" value="data" />
@@ -104,8 +118,8 @@
             </stateChange>
         </eventHandler>
     </stateProvider>
-    <xyView id="arm.cmsis.swo.xy.dwt_value.v1">
-        <head><analysis id="arm.cmsis.swo.analysis.v1" /><label value="DWT_VALUE" /></head>
-        <entry path="DWT_VALUE/*"><display type="constant" value="data" /><name type="self" /></entry>
+    <xyView id="arm.cmsis.swo.xy.dwt_value.0000000000000000.clock00000000-0000-4000-8000-000000000001.stream0.v1">
+        <head><analysis id="arm.cmsis.ctrace.analysis.0000000000000000.v1" /><label value="DWT_VALUE - SWO - CM7" /></head>
+        <entry path="(?:00000000-0000-4000-8000-000000000001|&quot;00000000-0000-4000-8000-000000000001&quot;)/0/DWT_VALUE/*"><display type="constant" value="data" /><name type="self" /></entry>
     </xyView>
 </tmfxml>

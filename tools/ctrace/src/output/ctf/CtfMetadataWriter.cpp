@@ -229,7 +229,7 @@ static MetadataSymbols collectMetadataSymbols(const std::vector<CtfSourceDescrip
 }
 
 /** @brief Writes the TSDL trace, environment, and clock declarations. */
-static void writeTraceEnvironment(std::ostream& out, const std::string& uuidString, std::uint64_t coreClockHz,
+static void writeTraceEnvironment(std::ostream& out, const std::string& uuidString, const CtfClockDomainDescriptor& clock,
                                   const MetadataSymbols& symbols)
 {
   out << R"(/* CTF 1.8 */
@@ -263,12 +263,16 @@ env {
 
 clock {
     name = swo_clock;
-    precision = 0;
+)";
+  if (clock.uuid.has_value()) {
+    out << "    uuid = \"" << clock.uuid->toString() << "\";\n";
+  }
+  out << R"(    precision = 0;
     offset_s = 0;
     offset = 0;
     absolute = false;
     freq = )"
-      << coreClockHz << R"(;
+      << clock.frequencyHz << R"(;
 };
 )";
 }
@@ -790,7 +794,7 @@ void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const CtfM
   const auto& topology = model.topology();
   if (model.isLegacySingleStreamLayout()) {
     const auto symbols = collectMetadataSymbols(topology.sources);
-    writeTraceEnvironment(out, model.traceUuid().toString(), topology.clockDomains.front().frequencyHz, symbols);
+    writeTraceEnvironment(out, model.traceUuid().toString(), topology.clockDomains.front(), symbols);
     writeTypeDefinitions(out, symbols, model.observedExceptions(topology.streams.front().streamClassId));
     writeStreamDefinition(out);
     writeItmEvent(out);

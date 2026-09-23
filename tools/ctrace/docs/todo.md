@@ -14,13 +14,13 @@
       [devtools #2573](https://github.com/Open-CMSIS-Pack/devtools/issues/2573). Keep trace communication separate from
       trace-source setup and decide how to replace the temporary `trace-format` override without assuming its
       standardization.
+- [ ] Align the published CTF bundle path with ctrace's `<solution-set>.<channel>.ctf` naming, including single-input runs.
 - [ ] Support FSYNC and FSYNC+HSYNC formatted input after a public framing contract is specified.
 - [ ] Define cross-stream clock correlation and offsets once a common producer time reference is available.
 - [ ] Add per-clock-domain Trace Compass bundles/experiments for uncorrelated streams when required.
 
 ## Additional decoders
 
-- [ ] Support multiple simultaneous named trace-buffer inputs after explicit file association is specified.
 - [ ] Add ETM/ETE/PTM instruction trace decoding and output in its own PR.
 - [ ] Add MTB instruction trace decoding and output in its own PR.
 - [ ] Add Event Recorder decoding and output when it enters the implementation scope.

@@ -38,15 +38,20 @@ configuration with trace communication, separate from trace-source setup.
 
 - Optional `ctrace-run.trace-format` accepts only `unformatted` or `formatted`. An explicit value overrides the
   channel-based default. Missing or null selects `unformatted` for SWO and `formatted` for TB or named-TB without an
-  Error. Discovery resolves this effective format before route normalization.
-- Exactly one existing `<set>.SWO.raw`, `<set>.TB.raw`, or `<set>.TB_<name>.raw` must be selected, independently of a
-  format declaration. Zero or multiple candidates fail before decoder or output construction; SWO has no priority
-  over coexisting TB input. The selected input must be a regular, readable file and is opened during preflight,
-  before decoder or output construction. Event Recorder input remains diagnosed and excluded from the active candidate count.
+  Error. Discovery resolves this effective format separately for each input before route normalization. An explicit
+  override applies to every supported input associated with that trace-run configuration.
+- Every existing `<set>.SWO.raw`, `<set>.TB.raw`, and `<set>.TB_<name>.raw` is processed independently and sequentially.
+  `--target` selects a solution set, including all its supported inputs. A set without an eligible input reports an error.
+  Each input must be a regular, readable file and is opened during its own preflight, before that input's decoder and
+  output backends are constructed. Target XML preparation precedes these per-input jobs. Event Recorder input remains
+  diagnosed and excluded from processing.
+- Input preflight, route normalization, decoding, and output failures do not prevent processing the remaining inputs
+  or solution sets. Each input has independent decoder and output state; any failing input contributes to a non-zero
+  command exit status. A configuration read failure prevents processing that set but does not stop later sets.
 - The standardized `trace-buffer` selection belongs to solution/build-run producer configuration, not to the
   `*.ctrace-run.yml` file consumed by ctrace. The caller-facing selection and format/framing contract remains
-  follow-up work; this does not imply adding fields to `*.ctrace-run.yml`. Current discovery still requires one
-  unambiguous input and applies the channel-based defaults above.
+  follow-up work; this does not imply adding fields to `*.ctrace-run.yml`. Current discovery processes all supported
+  matching files and applies the channel-based defaults above.
 - Formatted input globally uses 16-byte memory-aligned CoreSight frames. Its length must be a multiple of 16, and it
   contains neither FSYNC nor HSYNC framing. Ctrace does not parse or emit a `trace-framing` YAML field; supporting
   another framing mode requires a public trace contract first.
@@ -107,7 +112,8 @@ configuration with trace communication, separate from trace-source setup.
   outputs and healthy routes, instead of silently producing an apparently successful empty conversion.
 - A channel-less or deformatter error, failed route reset, incomplete formatted framing/input, unrecoverable response,
   exhausted wait, or repeated lack of progress is input-fatal and stops decoding. Outputs follow the fatal-abort policy
-  below: CSV retains committed rows with an abort marker; incomplete CTF and XML are removed. An incomplete packet at
+  below: CSV retains committed rows with an abort marker; incomplete CTF is removed and excluded from target XML.
+  An incomplete packet at
   the end of an unformatted ITM stream retains the legacy recoverable behavior: it is published as a decoder issue and
   does not by itself abort otherwise valid output.
 - Discontinuities flush or clear pending route-local DWT state and invalidate timestamp quality before decoding
@@ -116,9 +122,15 @@ configuration with trace communication, separate from trace-source setup.
 
 ## Observable behavior and output safety
 
-- CSV remains one combined file in decode callback order. The unformatted route has an empty `stream` field;
-  formatted routes expose their architectural IDs. Type and stream filters affect output, not decoding or diagnostic
-  reporting. The seventh CSV column is `address`, matching the published CMSIS-Toolbox
+- Each raw input has separate `<set>.<channel>.csv` and `<set>.<channel>.ctf` outputs. One optional
+  `<set>.traceanalysis.xml` collects the target's eligible completed CTF views. The channel-qualified CTF path applies
+  even with one input; legacy `<set>.ctf` bundles and old per-channel XML files are not reused, migrated, or removed.
+  Aligning the intentional CTF path change with the published
+  CTF specification remains [follow-up work](todo.md#inputs-and-time-correlation).
+- CSV remains one combined file per input in sink callback order, not a global raw-input or chronological order across
+  routes. The unformatted route has an empty `stream` field; formatted routes expose their architectural IDs.
+  Type and stream filters affect output, not decoding or diagnostic reporting. The seventh CSV column is `address`,
+  matching the published CMSIS-Toolbox
   [CSV schema](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#csv-format).
 - Byte-skip annotations are retained in CSV regardless of `--type` or `--stream`: `type` is `info`, `note` describes
   the reason, byte count, and formatter-group offset, and `stream` is the observed formatter ID when known, including
@@ -133,30 +145,31 @@ configuration with trace communication, separate from trace-source setup.
   or data-loss boundary. Unsupported payloads remain errors; arbitrary raw `0xff` bytes are not PC-sampling markers.
 - Formatted CTF stream files are created lazily as `stream_<id>` only for routes with selected semantic output. Every
   emitted stream class references an explicit clock domain. When selected, the legacy unformatted path retains eager
-  `stream_0`, its UUID-optional `swo_clock` metadata form, and companion XML compatibility.
+  `stream_0` and its binary event layout. Its `swo_clock` now has an explicit random UUID, like generalized clocks.
 - Generalized CTF metadata records a bound processor name in the corresponding stream-scoped environment entry.
   Its event context preserves the CMSIS-profile `uint8_t cmsis_trace_bus_id` field and adds the ctrace-private
-  `ctrace_route` enum used by generated Trace Compass XML. The enum label is the processor name when bound and the
-  decimal CTF stream-class ID otherwise. Generalized XML prefixes every state path with that label and then the
-  architectural `cmsis_trace_bus_id`; it exposes a separate graphical provider per emitted route and topic, named
-  with the resolved processor label when available but never with its numeric ID. The exact legacy CTF event context
-  remains unchanged.
+  `ctrace_route` enum for display. The enum label is the processor name when bound and the decimal CTF stream-class ID
+  otherwise; XML does not depend on this private field. XML state paths use `hostId` (the bundle's sole clock UUID),
+  architectural `cmsis_trace_bus_id`, and topic. View paths bind those identities explicitly, including ID `0` for
+  legacy input. Labels use the input channel and optional processor name, never the numeric ID. Analysis/view IDs
+  share a namespace derived from contributing clock UUIDs, preventing cross-target registration collisions.
 - XML declares only graphical outputs: DWT values and addresses as XY series; trace-origin exceptions, DWT matches,
   DWT/PMU overflow events, and processor sleep state as time graphs. Each block is emitted only if the completed stream
   contains matching trace data; synthetic exception bootstrap records alone do not enable an exception block, and
   `Processor State` specifically requires a sleep indication. ITM payloads, ordinary sampled
   PCs, trace-prohibited markers, and trace-status records stay available through the CTF event table. Trace Compass XML
   has no data-driven table-view type, so ctrace does not model these point records as artificial timelines.
-  If no graphical topic remains after output filtering, no companion XML is generated and stale XML is removed;
+  If no graphical topic remains after output filtering, no target XML is generated and stale target XML is removed;
   an empty analysis is not a valid Trace Compass configuration. The CTF bundle remains available.
 - `timestamps.clock` has no ctrace fallback. For every route selected for CTF, missing, null, invalid, zero, or
   conflicting frequency is accepted for validation-only and CSV operation but prevents CTF generation with an Error.
   A filter selecting no configured route requires no clock because it can emit no CTF stream. With `--all`, valid CSV
   still completes while the invocation returns non-zero.
 - Each formatted route has an independent CTF clock domain, even when processor labels or frequencies match.
-  A multi-clock CTF bundle remains valid, but ctrace emits one Warning, removes any stale companion XML, and creates
-  no new Trace Compass XML because the supported reader cannot establish a correct combined order. Cross-domain time correlation
-  is not inferred.
+  A multi-clock CTF bundle remains valid, but ctrace emits one Warning and excludes that bundle from target XML
+  because the supported reader cannot establish its combined event order. Separate single-clock bundles can all
+  contribute to one XML; their UUID-scoped states remain separate. Neither correlation nor timestamp rebasing is
+  inferred between those bundles, even when frequencies or processor labels match.
 - CLI decoder warnings and errors remain observable regardless of output filtering. Ordinary route-bound CSV
   diagnostics follow the stream filter and use the `error` type selector, including warning-severity issues. The
   published CSV schema defines no `warning` type or severity column. A recoverable protocol error may be published
@@ -164,15 +177,21 @@ configuration with trace communication, separate from trace-source setup.
 - A fatal OpenCSD decode abort preserves already committed CSV rows and appends one input-wide `type=error` record
   with `note` set to `decode aborted after processing N input bytes; trace is incomplete: reason`. All other fields
   are empty. This global marker bypasses both type and stream filters; ordinary route-bound errors do not. Partial
-  CTF and XML artifacts are removed. This retention and global-marker policy is an explicit ctrace contract, not a
+  CTF artifacts are removed and contribute no XML views. This retention and global-marker policy is an explicit
+  ctrace contract, not a
   requirement of the published CSV specification. Failures before CSV startup create no CSV; CSV write or close
   failures still remove the unreliable file.
 - Structured diagnostic impact determines command failure; formatted stderr text does not.
+- Target XML is prepared before processing the target's inputs and finalized after all have been attempted. It uses
+  only CTF metadata successfully finalized in that invocation, never stale bundles discovered on disk. Recoverable
+  decoder errors do not exclude an otherwise completed bundle. An XML failure does not remove completed CTF or CSV;
+  an input failure does not remove other inputs' contributions. No per-channel XML is generated or cleaned up.
 - CTF timestamps never regress, and a global timestamp does not by itself establish local timestamp quality.
 - Validation-only mode creates no output. Unsupported trace channels are diagnosed and skipped.
 - Apart from the explicitly retained CSV after a fatal decode abort, cleanup of incomplete output artifacts is
-  attempted after failure, and cleanup failures are reported. Incompatible existing output filesystem types and
-  overlapping CTF/XML paths are rejected before replacement.
+  attempted after failure, and cleanup failures are reported. Incompatible existing output filesystem types are
+  rejected before replacement. CTF bundles and target XML use distinct sibling paths derived from the trace-run
+  and input names.
 
 ## Build and CI constraints
 

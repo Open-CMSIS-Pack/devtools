@@ -43,7 +43,7 @@ public:
 
   /** @brief Returns the selected raw-input path used for diagnostics and output naming. */
   const std::filesystem::path& path() const noexcept;
-  /** @brief Returns the effective global byte format. */
+  /** @brief Returns the effective byte format of this input. */
   TraceRunFormat format() const noexcept;
   /** @brief Returns the normalized trace-run metadata and routes. */
   const CtraceRunMeta& metadata() const noexcept;
@@ -88,14 +88,22 @@ public:
    */
   static std::string solutionSetName(const std::filesystem::path& configFile);
   /**
-   * @brief Selects and preflights one raw input, resolves its format, and normalizes its routes.
+   * @brief Selects every supported raw input associated with one trace-run configuration.
    * @param config Parsed trace-run configuration with its source path and optional format override.
    * @param skippedInputSink Optional observer for recognized inputs excluded from selection.
-   * @return Fully normalized input descriptor safe to pass to a decode job.
-   * @throws std::runtime_error If selection, file access, formatted alignment, or route metadata is invalid.
+   * @return Deterministically ordered inputs for independent preflight and decoding.
+   * @throws std::runtime_error If the source path is missing or no eligible input exists.
    */
-  static TraceRunInputDescriptor resolveInput(TraceRunConfig config,
-                                              const SkippedTraceRunInputSink& skippedInputSink = {});
+  static std::vector<TraceRunRawInput> selectInputs(const TraceRunConfig& config,
+                                                   const SkippedTraceRunInputSink& skippedInputSink = {});
+  /**
+   * @brief Preflights one selected raw input, resolves its format, and normalizes its routes.
+   * @param config Configuration copied so each input resolves its own effective format and routes.
+   * @param selected Input returned by selectInputs().
+   * @return Fully normalized input descriptor safe to pass to a decode job.
+   * @throws std::runtime_error If file access, formatted alignment, or route metadata is invalid.
+   */
+  static TraceRunInputDescriptor resolveInput(TraceRunConfig config, const TraceRunRawInput& selected);
 
 private:
   /** @brief Discovers recognized raw inputs associated with one trace-run file. */

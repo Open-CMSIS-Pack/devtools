@@ -97,8 +97,9 @@ legacy CTF stream-class ID `0`. These representations do not turn it into CoreSi
 
 An observed formatter ID without a configured ITM route is diagnosed and skipped. Its presence cannot establish
 whether its bytes contain ITM or an instruction-trace protocol. This keeps unsupported sources from corrupting
-supported routes. If simultaneous raw inputs are added later, route identity must also distinguish inputs because
-different formatter domains can reuse the same Trace Bus ID.
+supported routes. The original plan deferred simultaneous raw inputs and anticipated extending route identity with
+input identity because different formatter domains can reuse the same Trace Bus ID. The later independent-file
+processing described below keeps these domains separate through per-input jobs and outputs.
 
 ## Semantic state, output, and clocks
 
@@ -124,11 +125,14 @@ not establish a shared origin. Global Timestamp records alone do not establish c
 
 CTF requires a valid configured frequency for each selected route. A missing or invalid clock disables CTF with an
 Error while CSV or validation-only decoding can continue. Backend-specific requirements and failures remain
-independent. Within CTF, metadata, all stream files, and companion XML form one completion and cleanup unit.
+independent. The original implementation treated CTF metadata, stream files, and companion XML as one completion
+and cleanup unit. Target-level XML now has an independent lifecycle, as recorded under
+[revised decisions](#decisions-revised-after-the-migration).
 
 The supported Trace Compass reader cannot safely combine independent clock declarations. Ctrace therefore emits
-companion XML only when retained streams use one clock domain. Multi-clock CTF remains valid, but produces a warning
-and no XML. This preserves correct per-stream timing without presenting unrelated cycle counters as one timeline.
+views for a bundle only when retained streams use one clock domain. Multi-clock CTF remains valid, but produces a
+warning and contributes no XML views. Separate single-clock captures can now share a target XML while retaining
+UUID-scoped identities; their clocks are not correlated or rebased.
 
 ## Recovery without losing another source
 
@@ -189,14 +193,28 @@ Reproducible commands and supported consumer versions belong to the current
 
 The following changes supersede assumptions in the original plan:
 
-- Discovery now considers SWO, TB, and named-TB together and requires exactly one input. An absent or null format
-  defaults by channel: SWO is unformatted, TB is formatted. Originally, omission selected only the legacy SWO path.
+- Discovery initially expanded eligibility to SWO, TB, and named-TB while retaining the one-input limit. It now
+  processes all matching supported inputs independently and sequentially. Each input is normalized separately:
+  absent or null format defaults by channel, with SWO unformatted and TB formatted; an explicit override applies
+  to every input in the trace-run. Originally, omission selected only the legacy SWO path.
+- Input failures contribute to command failure while remaining inputs and solution sets continue. Each file has
+  independent decoder state and outputs, with only one OpenCSD tree live at a time. `--target` still selects a
+  solution set, including all its supported inputs.
+- CTF bundles now always use `<solution-set>.<channel>.ctf`, also for single-input runs. CSV retains its
+  channel-qualified path. Existing `<solution-set>.ctf` bundles are not migrated or removed; the published CTF path
+  still needs alignment as recorded in the [CTF profile](ctf-format.md#files-and-common-structure).
 - Formatter skips and initial unsynchronized ITM bytes now produce non-failing byte-count Info annotations. They
   carry no invented route or time; a route receiving payload without a committed hardware sync reports an Error.
-- A fatal decoder abort retains committed CSV rows with an unfiltered input-wide abort record. Incomplete CTF/XML
-  are still removed. This replaces the original all-output cleanup policy for an otherwise healthy CSV writer.
+- A fatal decoder abort retains committed CSV rows with an unfiltered input-wide abort record. Incomplete CTF
+  is still removed and excluded from XML. This replaces the original all-output cleanup policy for a healthy CSV writer.
 - Trace Compass XML now creates graphical views only for topics observed in completed output, refining the original
   eager legacy XML compatibility rule.
+- One `<solution-set>.traceanalysis.xml` now collects eligible, freshly completed CTF bundles for the target. Its
+  lifecycle is independent of CSV/CTF, and old per-channel XML files are not migrated or deleted. Each contributing
+  bundle has one clock domain; multi-clock bundles are excluded with a warning. XML paths use clock UUID plus public
+  Trace Bus ID, not processor labels or private `ctrace_route` context. Clock-derived namespaces prevent view-ID
+  collisions across targets. Legacy `swo_clock` also gets a UUID without a binary layout change; independent captures
+  are neither synchronized nor rebased.
 - CSV uses the published `address` column. The plan's outstanding rename from `offset` is no longer applicable.
 
 These are current contracts, not deferred phases of the migration. Detailed behavior and output-selection exceptions

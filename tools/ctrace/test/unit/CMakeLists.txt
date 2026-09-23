@@ -51,6 +51,7 @@ add_executable(CtraceUnitTests
   src/output/ctf/CtfSchemaTests.cpp
   src/output/ctf/CtfStreamWriterTests.cpp
   src/output/ctf/TraceCompassXmlWriterTests.cpp
+  src/output/ctf/TraceCompassXmlOutputTests.cpp
   src/tracerun/CtraceRunMetaTests.cpp
   src/tracerun/TraceRunConfigReaderTests.cpp
   src/tracerun/TraceRunDiscoveryTests.cpp

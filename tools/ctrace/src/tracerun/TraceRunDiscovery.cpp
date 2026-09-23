@@ -204,18 +204,18 @@ std::vector<TraceRunRawInput> TraceRunDiscovery::rawInputs(const std::filesystem
   return inputs;
 }
 
-TraceRunInputDescriptor TraceRunDiscovery::resolveInput(TraceRunConfig config,
-                                                        const SkippedTraceRunInputSink& skippedInputSink)
+std::vector<TraceRunRawInput> TraceRunDiscovery::selectInputs(const TraceRunConfig& config,
+                                                             const SkippedTraceRunInputSink& skippedInputSink)
 {
   if (config.path.empty()) {
     throw std::runtime_error("trace-run configuration has no source path");
   }
   const std::filesystem::path configFile(config.path);
   const auto rawInputs = TraceRunDiscovery::rawInputs(configFile);
-  std::vector<const TraceRunRawInput*> eligible;
+  std::vector<TraceRunRawInput> eligible;
   for (const auto& rawInput : rawInputs) {
     if (isEligibleTraceChannel(rawInput.channel)) {
-      eligible.push_back(&rawInput);
+      eligible.push_back(rawInput);
     } else if (skippedInputSink) {
       skippedInputSink(rawInput);
     }
@@ -225,15 +225,11 @@ TraceRunInputDescriptor TraceRunDiscovery::resolveInput(TraceRunConfig config,
   if (eligible.empty()) {
     throw std::runtime_error("no eligible raw trace input found for solution-set " + solutionSet);
   }
-  if (eligible.size() > 1U) {
-    std::string message = "multiple eligible raw trace inputs found for solution-set " + solutionSet + ":";
-    for (const auto* rawInput : eligible) {
-      message += " " + rawInput->path.string();
-    }
-    throw std::runtime_error(message);
-  }
+  return eligible;
+}
 
-  const auto& selected = *eligible.front();
+TraceRunInputDescriptor TraceRunDiscovery::resolveInput(TraceRunConfig config, const TraceRunRawInput& selected)
+{
   if (!std::filesystem::is_regular_file(selected.path)) {
     throw std::runtime_error("raw trace input is not a regular file: " + selected.path.string());
   }

@@ -37,17 +37,16 @@ public:
   /** @brief Enables every supported graphical analysis block. */
   static constexpr ViewMask AllViews = (ViewMask{1U} << static_cast<ViewMask>(View::Count)) - 1U;
 
-  /** @brief Identifies one visible route without exposing its architectural ID in the label. */
+  /** @brief Identifies one visible route within a capture's independent clock domain. */
   struct ViewRoute {
     std::uint8_t traceBusId = 0U;
     std::string label;
     ViewMask views = AllViews;
+    std::string clockUuid;
   };
 
-  /** @brief Writes a legacy single-stream analysis definition to a file. */
-  static void writeLegacyFile(const std::filesystem::path& path, ViewMask views = AllViews);
-  /** @brief Writes a route-prefixed multi-stream analysis definition to a file. */
-  static void writeRoutedFile(const std::filesystem::path& path, const std::vector<ViewRoute>& routes);
+  /** @brief Writes one analysis for routes identified by canonical lower-case clock UUIDs and Trace Bus IDs. */
+  static void writeFile(const std::filesystem::path& path, const std::vector<ViewRoute>& routes);
 
 private:
   /** @brief Prevents construction of this stateless XML utility. */

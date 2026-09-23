@@ -24,9 +24,17 @@ cmsis_ctf_profile_version = 1
 
 ## Files and common structure
 
+Each raw input writes an independent `<solution-set>.<channel>.ctf` bundle, where `<channel>` is `SWO`, `TB`, or
+`TB_<name>`. The channel is always included, even when only one input exists. Inputs are processed sequentially;
+their metadata, stream IDs, clocks, and output cleanup are independent. Existing `<solution-set>.ctf` directories
+are not reused, migrated, or removed. This intentional pathname change differs from the published
+[file layout](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#directory-and-file-structure),
+which still names `<solution-set>.ctf`; specification alignment remains outstanding.
+
 Every CTF bundle contains a `metadata` file and zero or more binary stream files. When selected, unformatted
 single-source input preserves the established layout: stream class `0` is written eagerly to `stream_0` and references
-`swo_clock`. Formatted input uses the generalized layout: each emitted Trace Bus route has its own stream class,
+`swo_clock`. That clock now has an explicit UUID without changing the legacy binary layout. Formatted input uses
+the generalized layout: each emitted Trace Bus route has its own stream class,
 binary `stream_<id>` file, and explicit clock-domain reference. Formatted streams without emitted records are omitted
 from the final bundle and metadata; a stream filter that selects no route therefore produces a metadata-only bundle.
 
@@ -47,15 +55,16 @@ cmsis_stream_<id>_route_t ctrace_route
 `timestamp` is a cycle count in the clock domain referenced by its stream class. CTF preflight requires a non-zero
 `timestamps.clock` for every configured route selected by the stream filter, before ctrace knows which routes will
 emit records. A stream filter that selects no configured route requires no clock. Timestamps never decrease within
-one binary stream; independent routes are not clamped against each other. Generalized clock domains have distinct
-UUIDs even when their configured frequencies are equal, because equal frequency alone does not establish
-synchronization.
+one binary stream; independent routes are not clamped against each other. All clock domains receive random UUIDs,
+including legacy `swo_clock`. Independent captures and routes have distinct identities even when their configured
+frequencies are equal, because equal frequency alone does not establish synchronization.
 
 `cmsis_trace_bus_id` identifies the CoreSight Trace Bus route. Value `0` denotes unformatted single-source input;
 formatted IDs use values `1` through `111`. It is routing context, not a CPU identity. `ctrace_route` is a private
 enum carrying the resolved processor name for display, or the numeric stream-class ID as an internal fallback. The
 optional processor name is also stored in the generalized environment as
-`cmsis_stream_<id>_processor_name`.
+`cmsis_stream_<id>_processor_name`. Generated XML uses the public Trace Bus ID and clock identity, not the private
+`ctrace_route` display enum.
 
 The packet context has this exact field order:
 
@@ -74,16 +83,21 @@ synchronization skips are separate byte-accounting Info annotations in CLI/CSV o
 identifies observed input, not a decoded CTF route or clock; this includes NULL and reserved IDs. Ctrace does not
 invent a CTF stream, timestamp, or `resync` event for these annotations.
 
-The optional `<solution-set>.<channel>.traceanalysis.xml` companion is stored next to the bundle. It is generated
-only when at least one retained stream has graphical data and all retained streams reference one clock domain.
-Trace Compass rejects empty analyses and cannot safely combine independent clocks. These restrictions affect only
-the generated visualization; a metadata-only, point-event-only, or multi-clock CTF bundle remains valid.
+One optional `<solution-set>.traceanalysis.xml` is stored beside the target's bundles. It collects graphical views
+from eligible bundles completed in the current invocation, not from existing CTF files found on disk. Each bundle
+must retain graphical data and exactly one clock domain. A multi-clock bundle is excluded with a warning; eligible
+single-clock bundles still contribute. These restrictions affect only visualization; metadata-only, point-event-only,
+and multi-clock CTF bundles remain valid. Historical per-channel XML files are neither migrated nor deleted.
 
-A fatal OpenCSD decode abort removes the incomplete CTF bundle and its XML companion, including data already written
-for healthy routes. If CSV output remains healthy, ctrace retains its selected rows and appends one input-wide `error`
+A fatal OpenCSD decode abort removes the incomplete CTF bundle, including data already written for healthy routes,
+and excludes it from target XML. If CSV output remains healthy, ctrace retains its selected rows and appends one
+input-wide `error`
 row with the processed-byte count and abort reason. That final row has no cycle timestamp, stream, or source and
 bypasses type and stream filters. A recoverable route-local error instead allows normal output completion, as described
-under [`TRACE_STATUS`](#trace_status-event-id-3). Both kinds of Error produce a failing command exit status.
+under [`TRACE_STATUS`](#trace_status-event-id-3). Both kinds of Error produce a failing command exit status. Remaining
+raw inputs are still processed, and their completed bundles and XML contributions are unaffected by another input's
+failure. Target XML preparation and finalization have their own lifecycle; an XML failure leaves completed CTF and
+CSV outputs intact.
 
 ## Event catalogue
 
@@ -372,22 +386,37 @@ events as generated XML tables. The companion XML contains only graphical views 
 - Time graphs for DWT matches, DWT and PMU counter pulses, decoded exception activity, and processor sleep.
 
 ITM values, trace-status records, Global Timestamps, ordinary PC samples, and trace-prohibited markers stay in the
-standard event table because they do not establish a duration. Each generalized route receives a separate graphical
-view. Its visible suffix is the resolved processor name, if available; numeric Trace Bus IDs are omitted from visible
-labels but remain in the
+standard event table because they do not establish a duration. Each contributing route receives a separate graphical
+view. Its visible suffix is the input channel followed by the resolved processor name, if available; numeric Trace Bus
+IDs are omitted from visible labels but remain in the
 public CTF event context and internally in provider IDs and state queries. Routes and topics without corresponding
 emitted data do not add graphical views. When no graphical topic remains, ctrace omits the XML entirely and removes
-any stale companion file; importing only the CTF bundle still provides the event table.
+any stale target file; importing only the CTF bundle still provides the event table.
 
 The production output planner conservatively assigns each formatted route a distinct clock domain and UUID, even
-when configured frequencies match. After lazy stream projection, ctrace writes XML only if the completed bundle
-retains at least one stream and exactly one referenced domain; with current planning, this normally means one retained
-formatted route. Multiple retained domains deliberately omit the XML and produce one warning rather than presenting
-unrelated cycle domains as a shared timeline. The underlying CTF model and XML writer retain support for explicitly
-described shared domains once the input contract can establish one.
+when configured frequencies match. After lazy stream projection, a completed bundle contributes XML views only if
+it retains at least one stream and exactly one referenced domain; with current planning, this normally means one
+retained formatted route. Multiple retained domains exclude that bundle and produce one warning, since the supported
+reader cannot establish a combined event order within it. Separate single-clock CTF bundles can contribute to the
+same target XML without correlating clocks or rebasing timestamps.
+
+Every state path begins with `hostId` (the reader's sole clock UUID for that bundle), then
+`context.cmsis_trace_bus_id`, then the topic. View entries select the concrete `<clock-uuid>/<trace-bus-id>/<topic>`
+path. This includes legacy ID `0` and separates captures that reuse formatted ID `1` or the same processor label.
+View queries accept only that concrete UUID, either bare or quoted, because supported readers can expose the TSDL
+quotes as part of `hostId`; they do not wildcard the capture identity.
+Separate bundles must not reuse a clock UUID: if future inputs establish shared clocks across captures, this
+capture-identity contract must be revised explicitly.
+Only metadata from successfully finalized bundles in the current run contributes: a preserved old bundle after an
+input preflight failure is not eligible. Completed output after recoverable decoding errors remains eligible.
 
 The state-provider version is a deterministic hash of the generated XML contents. A semantic XML change therefore
 changes the version automatically and prevents a Trace Compass server from reusing stale analysis state.
+
+Analysis and view identifiers share a deterministic namespace derived from the contributing clock identities.
+Random clock UUIDs distinguish independent captures; the namespace prevents XML definitions for different targets
+from colliding in one viewer. Display labels are not used as identity. Preparing or writing the target XML cannot
+delete completed CSV/CTF output, and it never removes historical per-channel XML files.
 
 ## Current profile boundaries
 
@@ -395,7 +424,8 @@ changes the version automatically and prevents a Trace Compass server from reusi
 - The optional resolved processor name is encoded as stream-scoped environment metadata and private display context;
   `cmsis_trace_bus_id` remains the stable public routing field.
 - Separate trace clock domains are represented, but Global Timestamp packets do not yet establish cross-stream
-  synchronization and the generated Trace Compass XML therefore requires one shared domain.
+  synchronization. Each bundle contributing to XML must have one domain; different contributing bundles remain
+  independent and their timestamps are not rebased.
 - ETM and MTB instruction trace have no CTF event definitions yet.
 - Event Recorder input has no CTF event definitions yet.
 - Formatted input with FSYNC/HSYNC transport framing is not decoded; the current input contract requires complete,
@@ -418,12 +448,14 @@ The primary implementation sources are [`OutputRequirements.cpp`](../src/output/
 [`CtfMetadataWriter.cpp`](../src/output/ctf/CtfMetadataWriter.cpp),
 [`CtfEncoder.cpp`](../src/output/ctf/CtfEncoder.cpp),
 [`CtfStreamWriter.cpp`](../src/output/ctf/CtfStreamWriter.cpp),
-[`CtfBundleOutput.cpp`](../src/output/ctf/CtfBundleOutput.cpp), and
+[`CtfBundleOutput.cpp`](../src/output/ctf/CtfBundleOutput.cpp),
+[`TraceCompassXmlOutput.cpp`](../src/output/ctf/TraceCompassXmlOutput.cpp), and
 [`TraceCompassXmlWriter.cpp`](../src/output/ctf/TraceCompassXmlWriter.cpp).
 
 The data-driven XML shape is an approved compatibility refinement of the former eager legacy XML: only graphical
-topics observed in completed output create views. The checked-in legacy XML remains the current golden. Any further
-XML-shape change must update focused XML tests, review and update that golden plus its fixture-manifest hash, and
+topics observed in completed output create views. Target-level aggregation additionally scopes views by clock UUID
+and Trace Bus ID. XML-shape changes must update focused XML tests, review and update the golden plus its
+fixture-manifest hash, and
 re-run the external Trace Compass acceptance.
 
 Changes to an event ID, name, type, field, enum value, or interpretation must update this document and the relevant

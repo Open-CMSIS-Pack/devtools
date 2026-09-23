@@ -39,17 +39,27 @@ For `ctrace .trace --target Board --all`, the supported input produces:
 ```text
 .trace/
   Board.SWO.csv
-  Board.ctf/
+  Board.SWO.ctf/
     metadata
     stream_0
-  Board.SWO.traceanalysis.xml  # only with graphical data and one retained clock domain
+  Board.traceanalysis.xml     # graphical views from eligible completed CTF bundles
 ```
 
-Discovery requires exactly one `Board.SWO.raw`, `Board.TB.raw`, or
-`Board.TB_<name>.raw` input. Without a format declaration, SWO defaults to
-unformatted ITM and TB or named-TB defaults to formatted CoreSight input.
-Missing or null `trace-format` uses this channel-based default; an explicit
-value overrides it for the selected input:
+Discovery processes every existing `Board.SWO.raw`, `Board.TB.raw`, and `Board.TB_<name>.raw` input independently,
+one after another. `--target Board` selects the solution set and all its supported inputs. Each input gets its own
+CSV and CTF bundle, using `<solution-set>.<channel>` as their common base name. CTF uses
+this channel-qualified name even for a single input; older `Board.ctf` bundles are neither reused nor removed.
+The [CTF profile](docs/ctf-format.md#files-and-common-structure) records the required specification alignment.
+
+One optional `Board.traceanalysis.xml` collects graphical views from all eligible CTF bundles completed for that
+target in the current invocation. Each contributing bundle must retain exactly one clock domain. A multi-clock bundle
+remains valid CTF but is omitted from the XML with a warning. Independent single-clock bundles can contribute together;
+their clock UUIDs keep sources separate without synchronizing or rebasing their timestamps. No old per-channel XML
+files are migrated or deleted. An XML failure leaves completed CSV and CTF outputs intact.
+
+Without a format declaration, each SWO input defaults to unformatted ITM and each TB or named-TB input defaults to
+formatted CoreSight. Missing or null `trace-format` uses these channel-based defaults; an explicit value overrides
+the format for every supported input in that trace-run:
 
 ```yaml
 ctrace-run:
@@ -57,12 +67,15 @@ ctrace-run:
   # ctrace-setup and ctrace-refs follow here
 ```
 
-This optional, ctrace-private provisional field does not select a file or
-resolve multiple candidates. The channel-based default is a heuristic, not
+This optional, ctrace-private provisional field does not select a file. The channel-based default is a heuristic, not
 byte-content detection. Formatted input currently requires complete 16-byte
 memory-aligned CoreSight frames; there is no public `trace-framing` field yet. See the
 [constraints](docs/constraints.md) for the full discovery, routing, and
 compatibility contract.
+
+Event Recorder (`Board.ER.raw`) remains unsupported and is skipped with a warning. A solution set without a supported
+input reports an error. A failure in one input leaves the remaining inputs and solution sets available for processing;
+the command returns non-zero if any input fails. This also applies when validating without output options.
 
 ## Incomplete captures
 
@@ -85,8 +98,9 @@ from healthy routes. Continuing past an unassigned prefix therefore does not gua
 A fatal OpenCSD error, including a framing error, aborts decoding and returns a non-zero status. A CSV output that
 has already started retains the previously committed rows and ends with a global `type=error` row. Its `note` is
 `decode aborted after processing N input bytes; trace is incomplete: reason`; all other fields are empty. This final
-record describes the entire input, so it bypasses both `--type` and `--stream`. Partial CTF and Trace Compass XML
-artifacts are still removed. A failure before CSV starts creates no CSV, and a CSV write or close failure still
+record describes the entire input, so it bypasses both `--type` and `--stream`. The incomplete CTF bundle is removed
+and contributes no views to the target XML; completed bundles from other inputs remain eligible. A failure before
+CSV starts creates no CSV, and a CSV write or close failure still
 removes the unreliable file. Preserving partial CSV with this global marker is an explicit ctrace contract; the
 published CSV specification does not define fatal-abort handling.
 

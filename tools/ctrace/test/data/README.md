@@ -28,20 +28,22 @@ The Blinky fixture is stored under the generic `Blinky+Arm` target name. It was
 captured from a CMSIS project with CMSIS-Debugger 1.4.0 and pyTS 0.1.0, as
 recorded in the accompanying `ctrace-run` file. It contains SWO and TB input.
 The integration test isolates the SWO input and compares its generated CSV
-byte-for-byte with the reference. Coexisting SWO and TB candidates are
-ambiguous and must be rejected, even without a format declaration.
+byte-for-byte with the reference. Coexisting SWO and TB inputs are decoded
+independently; the generated multi-channel fixtures below cover that case.
 
 The Blinky YAML, SWO capture, and TB capture are approved ctrace test assets and
 may be redistributed as part of Open-CMSIS-Pack/devtools. The reference CSV is
 derived from the SWO capture and is covered by the same approval and the
 repository-wide Apache-2.0 license terms.
 
-The `Blinky+Arm/expected` directory freezes the legacy SWO CTF and Trace Compass
-output. The integration test adds the captured CM7 clock of 480 MHz to its
+The `Blinky+Arm/expected` directory freezes the legacy SWO CTF output and current
+target-level Trace Compass XML. The integration test adds the captured CM7 clock of 480 MHz to its
 working copy of the legacy YAML, normalizes platform-dependent generated CRLF
 line endings to LF while rejecting bare carriage returns, validates the
-generated RFC 4122 UUID, and normalizes only that trace UUID to zero in the
-metadata and packet headers before the byte-for-byte comparison.
+generated RFC 4122 UUIDs, and normalizes trace/clock identities before the
+byte-for-byte comparison. Packet headers retain the same binary layout. The
+complete XML comparison normalizes only the generated UUID, identity-derived
+namespace, and analysis version; labels, handlers and view paths remain covered.
 
 ## Formatted multi-source inputs
 
@@ -60,6 +62,32 @@ processor-ITM anchor and one constrained current-pyTS fallback. The integration
 test generates its 128-byte raw input; only the YAML and documentation are
 checked in. The local README records the exact routes, packet sequence,
 generated raw hash, and test matrix.
+
+## Generated multi-channel inputs
+
+`writeMultipleChannelFixture` in
+[CtraceIntegTests.cpp](../integration/src/CtraceIntegTests.cpp) creates one
+trace-run configuration per target with SWO, TB and TB_ETB captures. Distinct
+ITM values and timestamps verify independent decoding, default formats,
+type/stream filters, target selection, and continuation after channel errors.
+CSV and CTF retain channel-qualified names; graphical views are collected in
+one `<target>.traceanalysis.xml` without per-channel XML files.
+
+`writeSwoAndTbTopicFixture` creates exactly three input files: one
+`<target>.ctrace-run.yml`, `<target>.SWO.raw`, and `<target>.TB.raw`. SWO contains
+a DWT value and TB a processor-sleep event. A second variant explicitly formats
+both captures on Trace Bus ID 1. The tests verify that each topic remains bound
+to its own CTF clock UUID, even when the stream ID and processor name match.
+They also check unique provider/view IDs across targets and remove stale XML
+when filters leave no graphical events.
+
+Failure variants first generate valid outputs, then replace TB input with an
+unaligned frame, an incomplete final packet, or a recoverable malformed packet.
+Only freshly finalized CTF bundles contribute views: preserved old output from
+a preflight failure and removed output from a fatal decode are excluded;
+successfully finalized output after recovery is included despite a failing
+command status. The healthy SWO contribution remains present in every case.
+These fixtures are generated only in the build tree and add no binary assets.
 
 ## Generated negative and recovery inputs
 
@@ -89,7 +117,8 @@ pyOCD producer output:
   incomplete DWT packet after valid ITM payload and a local timestamp. It
   verifies fatal end-of-input handling: selected CSV rows remain and one final
   input-wide `error` row bypasses type/stream filters, while the route-local
-  error obeys them. CTF/XML output is removed and the command fails.
+  error obeys them. The incomplete CTF bundle is removed, contributes no target
+  XML views, and the command fails.
 - `Unassigned.TB.raw` is one all-zero frame with payload before any formatter
   source ID; it proves CLI Info and one CSV `info` row for 15 skipped
   payload bytes, with no invented route, CTF stream, or missing-sync error.
