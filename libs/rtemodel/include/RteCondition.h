@@ -540,9 +540,10 @@ public:
   /**
    * @brief gets explanation text for available/incompatible selection
    * @param res RteItem::ConditionResult
+   * @param description aggregate description
    * @return explanation text or empty string
   */
-  static std::string GetAggregateExplanationText(RteItem::ConditionResult res);
+  static std::string GetAggregateExplanationText(RteItem::ConditionResult res, const std::string& description);
 
 public:
   /**
