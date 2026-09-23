@@ -88,7 +88,6 @@ protected:
       element.SetText(value);
       ASSERT_TRUE(reg.ProcessXmlElement(&element));
     }
-    ASSERT_NE(nullptr, reg.GetDimension());
   }
 
   vector<string> m_messages;
@@ -244,6 +243,7 @@ TEST_F(SvdModelValidationTest, ExplicitDimensionIndicesGenerateNames) {
   SvdRegister reg(nullptr);
   ASSERT_NO_FATAL_FAILURE(ConfigureDimension(reg, "3", "LEFT, CENTER, RIGHT"));
   const auto dim = reg.GetDimension();
+  ASSERT_NE(nullptr, dim);
   ASSERT_TRUE(dim->CalculateDim());
 
   const list<string> expected{"LEFT", "CENTER", "RIGHT"};
@@ -258,6 +258,7 @@ TEST_F(SvdModelValidationTest, AlphabeticDimensionRangeExpandsInOrder) {
   SvdRegister reg(nullptr);
   ASSERT_NO_FATAL_FAILURE(ConfigureDimension(reg, "3", "A-C"));
   const auto dim = reg.GetDimension();
+  ASSERT_NE(nullptr, dim);
   ASSERT_TRUE(dim->CalculateDim());
 
   const list<string> expected{"A", "B", "C"};
@@ -273,6 +274,7 @@ TEST_F(SvdModelValidationTest, InvalidDimensionRangesDoNotProduceIndices) {
     SvdRegister reg(nullptr);
     ASSERT_NO_FATAL_FAILURE(ConfigureDimension(reg, "3", indices));
     const auto dim = reg.GetDimension();
+    ASSERT_NE(nullptr, dim);
     EXPECT_FALSE(dim->CalculateDimIndex());
     EXPECT_TRUE(dim->GetDimIndexList().empty());
   }
@@ -284,7 +286,9 @@ TEST_F(SvdModelValidationTest, DimensionListsDiagnoseCountMismatchAndDuplicateIn
     m_messages.clear();
     SvdRegister reg(nullptr);
     ASSERT_NO_FATAL_FAILURE(ConfigureDimension(reg, "3", indices));
-    ASSERT_TRUE(reg.GetDimension()->CalculateDim());
+    const auto dim = reg.GetDimension();
+    ASSERT_NE(nullptr, dim);
+    ASSERT_TRUE(dim->CalculateDim());
     EXPECT_TRUE(HasMessage(diagnostic));
   }
 }
