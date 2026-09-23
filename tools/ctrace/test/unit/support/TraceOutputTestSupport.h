@@ -19,7 +19,7 @@
 namespace TraceOutputTestSupport {
 
 /** @brief Selects the lifecycle operation where a test output fails. */
-enum class TestTraceOutputFailure { None, Prepare, Start, Stop, Abort, Write, NonStandardStart };
+enum class TestTraceOutputFailure { None, Prepare, Start, Stop, Abort, Write, ByteSkipWrite, NonStandardStart };
 
 /** @brief Implements a configurable trace output for lifecycle unit tests. */
 class TestTraceOutput final : public TraceOutput {
@@ -98,6 +98,13 @@ protected:
   {
     record("write");
     failAt(TestTraceOutputFailure::Write, "intentional write failure");
+  }
+
+  /** @brief Records skipped-byte accounting and optionally throws the configured failure. */
+  void writeByteSkipOutput(const TraceByteSkip&) override
+  {
+    record("write-byte-skip");
+    failAt(TestTraceOutputFailure::ByteSkipWrite, "intentional byte-skip write failure");
   }
 
 private:

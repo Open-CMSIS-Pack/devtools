@@ -42,10 +42,11 @@ TEST(CtraceUnitTests, testTraceCompassXmlUsesCurrentCtfEvents)
   const TemporaryTestPath path("ctrace-trace-compass-schema.xml");
   TraceCompassXmlWriter::writeLegacyFile(path.path());
   const auto xml = readTestTextFile(path.path());
-  constexpr std::array<CtfSchema::EventId, 8U> stateDrivenEvents{
+  constexpr std::array<CtfSchema::EventId, 9U> stateDrivenEvents{
       CtfSchema::EventId::DwtValue,    CtfSchema::EventId::DwtAddress, CtfSchema::EventId::Exception,
       CtfSchema::EventId::TraceStatus, CtfSchema::EventId::PcSample,   CtfSchema::EventId::DwtEvent,
       CtfSchema::EventId::PmuEvent,    CtfSchema::EventId::DwtMatch,
+      CtfSchema::EventId::PcSampleProhibited,
   };
 
   for (const auto eventId : stateDrivenEvents) {
@@ -145,6 +146,37 @@ TEST(CtraceUnitTests, testTraceCompassXmlScopesGraphicalViewsPerRoute)
   EXPECT_EQ(xml.find("<entry path=\"*/*/"), std::string::npos);
 }
 
+TEST(CtraceUnitTests, testTraceCompassXmlClosesSleepOnPcSampleProhibited)
+{
+  const TemporaryTestPath root("ctrace-trace-compass-pc-sample-prohibited-test");
+  root.createDirectory();
+  const auto views = TraceCompassXmlWriter::viewMask(TraceCompassXmlWriter::View::ProcessorState);
+  for (const auto routePrefixed : {false, true}) {
+    const auto path = root.path() / (routePrefixed ? "routed.xml" : "legacy.xml");
+    if (routePrefixed) {
+      TraceCompassXmlWriter::writeRoutedFile(path, {{1U, "CM4", views}, {2U, "CM7", views}});
+    } else {
+      TraceCompassXmlWriter::writeLegacyFile(path, views);
+    }
+    const auto xml = readTestTextFile(path);
+    const auto handlerStart = xml.find("<eventHandler eventName=\"PC_SAMPLE_PROHIBITED\">");
+    ASSERT_NE(handlerStart, std::string::npos);
+    const auto handlerEnd = xml.find("</eventHandler>", handlerStart);
+    ASSERT_NE(handlerEnd, std::string::npos);
+    const auto handler = xml.substr(handlerStart, handlerEnd - handlerStart);
+    EXPECT_NE(handler.find("<stateAttribute type=\"constant\" value=\"PC_SAMPLE\" />"), std::string::npos);
+    EXPECT_NE(handler.find("<stateAttribute type=\"constant\" value=\"Sleep\" />"), std::string::npos);
+    EXPECT_NE(handler.find("<stateValue type=\"null\" />"), std::string::npos);
+    EXPECT_EQ(handler.find("value=\"context.ctrace_route\"") != std::string::npos, routePrefixed);
+    EXPECT_EQ(handler.find("value=\"context.cmsis_trace_bus_id\"") != std::string::npos, routePrefixed);
+    EXPECT_EQ(handler.find("cmsis_pc_sample_state"), std::string::npos);
+    EXPECT_EQ(handler.find("<futureTime"), std::string::npos);
+    EXPECT_EQ(handler.find("stack="), std::string::npos);
+    EXPECT_EQ(handler.find("<stateValue type=\"int\""), std::string::npos);
+    EXPECT_EQ(xml.find("<definedValue name=\"Trace prohibited\""), std::string::npos);
+  }
+}
+
 TEST(CtraceUnitTests, testTraceCompassXmlEmitsOnlySelectedGraphicalViews)
 {
   const TemporaryTestPath path("ctrace-trace-compass-selected-route-views.xml");
@@ -171,6 +203,7 @@ TEST(CtraceUnitTests, testTraceCompassXmlEmitsOnlySelectedGraphicalViews)
   EXPECT_EQ(xml.find("eventName=\"DWT_EVENT\""), std::string::npos);
   EXPECT_EQ(xml.find("eventName=\"PMU_EVENT\""), std::string::npos);
   EXPECT_EQ(xml.find("eventName=\"PC_SAMPLE\""), std::string::npos);
+  EXPECT_EQ(xml.find("eventName=\"PC_SAMPLE_PROHIBITED\""), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testTraceCompassXmlEmitsOnlyHandlersRequiredBySelectedViews)
@@ -187,6 +220,7 @@ TEST(CtraceUnitTests, testTraceCompassXmlEmitsOnlyHandlersRequiredBySelectedView
   EXPECT_EQ(valueXml.find("eventName=\"PMU_EVENT\""), std::string::npos);
   EXPECT_EQ(valueXml.find("eventName=\"EXCEPTION\""), std::string::npos);
   EXPECT_EQ(valueXml.find("eventName=\"PC_SAMPLE\""), std::string::npos);
+  EXPECT_EQ(valueXml.find("eventName=\"PC_SAMPLE_PROHIBITED\""), std::string::npos);
   EXPECT_EQ(valueXml.find("eventName=\"TRACE_STATUS\""), std::string::npos);
 
   const TemporaryTestPath exceptionPath("ctrace-trace-compass-exception-handler.xml");
@@ -196,6 +230,7 @@ TEST(CtraceUnitTests, testTraceCompassXmlEmitsOnlyHandlersRequiredBySelectedView
   EXPECT_NE(exceptionXml.find("eventName=\"EXCEPTION\""), std::string::npos);
   EXPECT_NE(exceptionXml.find("eventName=\"TRACE_STATUS\""), std::string::npos);
   EXPECT_EQ(exceptionXml.find("eventName=\"PC_SAMPLE\""), std::string::npos);
+  EXPECT_EQ(exceptionXml.find("eventName=\"PC_SAMPLE_PROHIBITED\""), std::string::npos);
   EXPECT_EQ(exceptionXml.find("value=\"PC_SAMPLE\""), std::string::npos);
 
   const TemporaryTestPath processorPath("ctrace-trace-compass-processor-handler.xml");
@@ -204,6 +239,7 @@ TEST(CtraceUnitTests, testTraceCompassXmlEmitsOnlyHandlersRequiredBySelectedView
   const auto processorXml = readTestTextFile(processorPath.path());
 
   EXPECT_NE(processorXml.find("eventName=\"PC_SAMPLE\""), std::string::npos);
+  EXPECT_NE(processorXml.find("eventName=\"PC_SAMPLE_PROHIBITED\""), std::string::npos);
   EXPECT_NE(processorXml.find("eventName=\"TRACE_STATUS\""), std::string::npos);
   EXPECT_EQ(processorXml.find("eventName=\"EXCEPTION\""), std::string::npos);
   EXPECT_EQ(processorXml.find("value=\"EXCEPTION_RETURN\""), std::string::npos);

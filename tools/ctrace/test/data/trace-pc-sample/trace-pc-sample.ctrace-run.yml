@@ -1,0 +1,7 @@
+ctrace-run:
+  generated-by: synthetic Armv8-M PC sampling marker fixture
+  ctrace-setup:
+    - timestamps:
+        clock: 1000000
+        itm-prescaler: 1
+  ctrace-refs: []

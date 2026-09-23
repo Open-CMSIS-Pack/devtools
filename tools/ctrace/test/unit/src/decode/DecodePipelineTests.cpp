@@ -369,6 +369,53 @@ TEST(CtraceUnitTests, testDecodePipelineRejectsInvalidChunkSizes)
   EXPECT_EQ(result.eventsOut, 0U);
 }
 
+TEST(CtraceUnitTests, testDecodePipelineCountsFormattedSkipsWithSemanticOnlySink)
+{
+  // CollectingEventSink overrides append only, retaining the optional skip callback's default no-op.
+  CollectingEventSink sink;
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  DecodePipeline pipeline({{route, 1U}}, OpenCsdItmInputMode::CoreSightFormatted, sink);
+  // Two formatter frames contain 30 payload bytes without an assigned source ID.
+  const std::uint8_t unassignedFrames[32U]{};
+
+  pipeline.push(rawBytes(unassignedFrames));
+  const auto result = pipeline.finish();
+  EXPECT_EQ(result.bytesIn, sizeof(unassignedFrames));
+  EXPECT_EQ(result.eventsOut, 1U) << "the single skip annotation must be counted even when the sink ignores it";
+  EXPECT_TRUE(sink.events().empty()) << "skipped input must not create semantic trace events";
+
+  const auto repeatedResult = pipeline.finish();
+  EXPECT_EQ(repeatedResult.bytesIn, result.bytesIn);
+  EXPECT_EQ(repeatedResult.eventsOut, result.eventsOut);
+  EXPECT_TRUE(sink.events().empty());
+}
+
+TEST(CtraceUnitTests, testDecodePipelineRejectsFormattedRouteWithoutTraceBusId)
+{
+  CollectingEventSink sink;
+  try {
+    DecodePipeline pipeline({singleDecodeRoute()}, OpenCsdItmInputMode::CoreSightFormatted, sink);
+    FAIL() << "formatted input accepted a route without a Trace Bus ID";
+  } catch (const std::invalid_argument& error) {
+    EXPECT_STREQ(error.what(), "formatted OpenCSD packet route requires a Trace Bus ID between 1 and 111");
+  }
+  EXPECT_TRUE(sink.events().empty()) << "invalid input configuration must not emit decoded events";
+}
+
+TEST(CtraceUnitTests, testDecodePipelineRejectsMultipleSingleInputRoutes)
+{
+  CollectingEventSink sink;
+  const TraceRouteIdentity first{TraceRouteId{0U}, std::nullopt};
+  const TraceRouteIdentity second{TraceRouteId{1U}, std::nullopt};
+  try {
+    DecodePipeline pipeline({{first, 1U}, {second, 1U}}, OpenCsdItmInputMode::Single, sink);
+    FAIL() << "unformatted input accepted multiple normalized routes";
+  } catch (const std::invalid_argument& error) {
+    EXPECT_STREQ(error.what(), "OpenCSD SINGLE decoding requires exactly one normalized route");
+  }
+  EXPECT_TRUE(sink.events().empty()) << "invalid input configuration must not emit decoded events";
+}
+
 TEST(CtraceUnitTests, testDecodePipelineUsesInjectedSingleRouteConfiguration)
 {
   CollectingEventSink sink;
@@ -583,9 +630,13 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversAtRealSync)
   ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('A')))
       << "recovery should preserve packets before the damaged section";
   const auto* error = findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence, 8U);
-  ASSERT_TRUE(
-      (error != nullptr && error->message == "OpenCSD detected an invalid ITM packet sequence at raw offset 8."))
-      << "recovery should report the exact OpenCSD error offset";
+  ASSERT_NE(error, nullptr) << "recovery should retain the exact OpenCSD error offset";
+  EXPECT_NE(error->message.find("OpenCSD detected an invalid ITM packet sequence at raw offset 8."),
+            std::string::npos);
+  EXPECT_NE(error->message.find("OCSD_ERR_BAD_PACKET_SEQ"), std::string::npos);
+  EXPECT_NE(error->message.find("Async Packet: unexpected none zero value"), std::string::npos);
+  EXPECT_NE(error->message.find("packet=ASYNC"), std::string::npos);
+  EXPECT_NE(error->message.find("bytes=[00 fe]"), std::string::npos);
   ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
       << "recovery should resume after the next real ITM sync";
 }
@@ -690,8 +741,12 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversFromReservedHeader)
   const auto decoded = decodeTrace({rawBytes(trace)});
 
   const auto* error = findIssue(decoded.events, TraceIssueCode::OpenCsdInvalidPacketHeader, 8U);
-  ASSERT_TRUE(error != nullptr && error->message == "OpenCSD detected an invalid ITM packet header at raw offset 8.")
-      << "reserved header should report its exact OpenCSD error";
+  ASSERT_NE(error, nullptr) << "reserved header should retain its exact OpenCSD error";
+  EXPECT_NE(error->message.find("OpenCSD detected an invalid ITM packet header at raw offset 8."),
+            std::string::npos);
+  EXPECT_NE(error->message.find("OCSD_ERR_INVALID_PCKT_HDR"), std::string::npos);
+  EXPECT_NE(error->message.find("packet=RESERVED"), std::string::npos);
+  EXPECT_NE(error->message.find("bytes=[04]"), std::string::npos);
   ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
       << "recovery should resume after a reserved header";
 }
@@ -771,21 +826,41 @@ TEST(CtraceUnitTests, testDecodePipelinePreservesDwtEventAndPmuPackets)
 TEST(CtraceUnitTests, testDecodePipelinePreservesPeriodicPcSamples)
 {
   const std::uint8_t trace[] = {
-      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x17U, 0x34U, 0x12U, 0x00U, 0x08U, 0x15U, 0x00U,
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x80U,
+      0x17U, 0x34U, 0x12U, 0x00U, 0x08U, 0x10U,
+      0x15U, 0x00U, 0x20U,
+      0x15U, 0xffU, 0x30U,
+      0x17U, 0xffU, 0x00U, 0x00U, 0x00U, 0x40U,
+      0x17U, 0x00U, 0x00U, 0x00U, 0x00U, 0x50U,
   };
-  const auto decoded = decodeTrace({rawBytes(trace)});
+  const auto decoded = decodeTrace({rawBytes(trace)}, 1U);
 
   std::vector<PcSampleTraceEvent> samples;
+  std::vector<std::uint64_t> cycles;
   for (const auto& event : decoded.events) {
+    EXPECT_FALSE(isTraceEvent<TraceIssueEvent>(event)) << "valid PC-sample markers must not be errors";
     if (const auto* sample = traceEventPayload<PcSampleTraceEvent>(event)) {
       samples.push_back(*sample);
+      ASSERT_TRUE(event.tcyc.has_value());
+      cycles.push_back(event.tcyc.value());
+      ASSERT_TRUE(event.quality.has_value());
+      EXPECT_TRUE(event.quality->timestampReliable);
+      EXPECT_FALSE(event.quality->overflow);
+      EXPECT_EQ(event.quality->overflowCount, 0U);
     }
   }
-  ASSERT_EQ(samples.size(), 2U) << "OpenCSD periodic PC-sample packet count mismatch";
+  ASSERT_EQ(samples.size(), 5U) << "OpenCSD periodic PC-sample packet count mismatch";
   EXPECT_EQ(samples[0].pc, 0x08001234U) << "OpenCSD periodic PC sample payload mismatch";
-  EXPECT_FALSE(samples[0].sleeping) << "OpenCSD periodic PC sample payload mismatch";
+  EXPECT_EQ(samples[0].kind, PcSampleKind::Pc);
   EXPECT_EQ(samples[1].pc, 0U) << "OpenCSD periodic PC sleep indication mismatch";
-  EXPECT_TRUE(samples[1].sleeping) << "OpenCSD periodic PC sleep indication mismatch";
+  EXPECT_EQ(samples[1].kind, PcSampleKind::Sleep);
+  EXPECT_EQ(samples[2].kind, PcSampleKind::TraceProhibited);
+  EXPECT_EQ(samples[2].pc, 0U);
+  EXPECT_EQ(samples[3].kind, PcSampleKind::Pc);
+  EXPECT_EQ(samples[3].pc, 0xffU);
+  EXPECT_EQ(samples[4].kind, PcSampleKind::Pc);
+  EXPECT_EQ(samples[4].pc, 0U);
+  EXPECT_EQ(cycles, (std::vector<std::uint64_t>{1U, 3U, 6U, 10U, 15U}));
 }
 
 TEST(CtraceUnitTests, testDecodePipelinePreservesCompressedDataTracePcValues)

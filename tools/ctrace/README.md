@@ -32,7 +32,6 @@ Input and output files share a solution-set base name:
 .trace/
   Board.ctrace-run.yml
   Board.SWO.raw
-  Board.TB.raw              # optional Trace Buffer input
 ```
 
 For `ctrace .trace --target Board --all`, the supported input produces:
@@ -43,18 +42,78 @@ For `ctrace .trace --target Board --all`, the supported input produces:
   Board.ctf/
     metadata
     stream_0
-  Board.SWO.traceanalysis.xml  # when retained streams use one clock domain; views are data-driven
+  Board.SWO.traceanalysis.xml  # only with graphical data and one retained clock domain
 ```
 
-Without an explicit format declaration, ctrace preserves the legacy SWO-only
-selection and decodes `Board.SWO.raw` as unformatted ITM. The ctrace-private
-provisional root field `trace-format: unformatted | formatted` makes SWO, TB,
-and named-TB inputs eligible under the declared byte format; discovery then
-requires exactly one eligible input. The field does not identify a particular
-file. Formatted input currently requires complete 16-byte memory-aligned
-CoreSight frames; there is no public `trace-framing` field yet. See the
+Discovery requires exactly one `Board.SWO.raw`, `Board.TB.raw`, or
+`Board.TB_<name>.raw` input. Without a format declaration, SWO defaults to
+unformatted ITM and TB or named-TB defaults to formatted CoreSight input.
+Missing or null `trace-format` uses this channel-based default; an explicit
+value overrides it for the selected input:
+
+```yaml
+ctrace-run:
+  trace-format: formatted  # formatted or unformatted
+  # ctrace-setup and ctrace-refs follow here
+```
+
+This optional, ctrace-private provisional field does not select a file or
+resolve multiple candidates. The channel-based default is a heuristic, not
+byte-content detection. Formatted input currently requires complete 16-byte
+memory-aligned CoreSight frames; there is no public `trace-framing` field yet. See the
 [constraints](docs/constraints.md) for the full discovery, routing, and
 compatibility contract.
+
+## Incomplete captures
+
+Formatted input accounts for payload skipped because its source ID is missing, NULL, reserved, or unconfigured,
+and for initial protocol bytes skipped while seeking hardware synchronization. Each accounting record is CLI Info and a
+CSV `info` row, retained regardless of type or stream filters. `info` is an input annotation, not a new `--type`
+selector. The row has no time; `stream` contains the observed formatter ID, including `0` or `127`, or is empty when
+no ID is known. These observations do not create decoded routes.
+
+The note counts **deformatted payload bytes**, not formatter control bytes or differences between raw offsets. Its
+offset identifies the first formatter output group. No raw bytes are rewritten and no synchronization is invented.
+Before synchronization, the skipped bytes cannot be classified as ITM software packets or DWT hardware packets
+(including exception trace), so the note uses the neutral wording `bytes skipped due to missing SYNC`.
+This accounting covers formatter skips and initial ITM synchronization, not every possible decoder-recovery loss.
+
+If a configured formatted route receives bytes but never reaches a real ITM hardware synchronization, ctrace reports
+an Error at end of input and exits non-zero. Completed diagnostic and decoded outputs are retained, including data
+from healthy routes. Continuing past an unassigned prefix therefore does not guarantee decodable payload.
+
+A fatal OpenCSD error, including a framing error, aborts decoding and returns a non-zero status. A CSV output that
+has already started retains the previously committed rows and ends with a global `type=error` row. Its `note` is
+`decode aborted after processing N input bytes; trace is incomplete: reason`; all other fields are empty. This final
+record describes the entire input, so it bypasses both `--type` and `--stream`. Partial CTF and Trace Compass XML
+artifacts are still removed. A failure before CSV starts creates no CSV, and a CSV write or close failure still
+removes the unreliable file. Preserving partial CSV with this global marker is an explicit ctrace contract; the
+published CSV specification does not define fatal-abort handling.
+
+## Packet diagnostics
+
+CLI diagnostics are always unfiltered. Ordinary route-bound error and warning rows in CSV follow `--stream` and
+`--type`: their output type is `error`, so `--type dwt error` retains both DWT data and selected-stream diagnostics,
+whereas `--type dwt` omits those diagnostic rows. The global fatal-abort record described above is the exception.
+The [published CSV specification](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#csv-format)
+defines `error` and its free-text `note`, but no `warning` type or severity column; ctrace adds neither.
+
+CLI errors and CSV `note` fields retain the native OpenCSD error code and message.
+CLI trace issues also carry a structured `raw_offset` and, for formatted input,
+the source `stream` when available.
+When the raw-packet callback identifies the failing packet, the diagnostic also
+includes its original ITM packet type, total byte count, and up to 16 hexadecimal
+bytes. Longer packets have an explicitly truncated preview. Incomplete packets
+at end of input receive the same context even when OpenCSD reports them only
+through the packet monitor, without a logger error.
+
+For formatted input, the reported raw index can identify a deformatter output
+group rather than the exact physical position of the failing byte. A recovery
+message distinguishes a later hardware SYNC (with its raw index) from reaching
+end of input without resynchronization. The affected raw interval includes
+formatter control and potentially other routes: its length is not a count of
+zero bytes or discarded ITM payload bytes. Errors still make the invocation
+fail even when decoding resumes and completed outputs are retained.
 
 ## Build and test
 
@@ -93,6 +152,8 @@ Editors using `clangd` should open the devtools repository root and configure in
 - [CTF profile](docs/ctf-format.md): generated CTF structure, event groups, field semantics, and Trace Compass
   representation.
 - [Constraints](docs/constraints.md): contracts that implementation changes must preserve.
+- [Multi-source design](docs/multi-source-design.md): rationale and migration from single-source SWO to routed
+  CoreSight input, with later contract changes identified separately.
 - [TODO](docs/todo.md): planned work and pull-request boundaries.
 - [OpenCSD issues](docs/opencsd-issues.md): known issues in the pinned decoder revision.
 - [Third-party notices](docs/THIRD_PARTY_NOTICES.md): dependency versions, licenses, and build configuration.

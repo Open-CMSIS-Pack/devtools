@@ -19,10 +19,10 @@
 #include "opencsd/itm/trc_pkt_types_itm.h"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <optional>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -114,18 +114,21 @@ private:
   CallbackErrorState& m_errors;
 };
 
-/** @brief Observes deformatter IDs that have no configured protocol decoder. */
+/** @brief Accounts for routed input and payload skipped by the formatter. */
 class OpenCsdFormattedItmSession::RawFrameMonitor final : public ITrcRawFrameIn {
 public:
   /** @brief Indexes all configured normal source IDs. */
-  explicit RawFrameMonitor(const std::vector<TraceRouteIdentity>& routes)
+  RawFrameMonitor(const std::vector<TraceRouteIdentity>& routes, OpenCsdFormattedItmPacketSink& sink,
+                    CallbackErrorState& errors)
+    : m_sink(sink),
+      m_errors(errors)
   {
     for (const auto& route : routes) {
-      m_configured[*route.traceBusId] = true;
+      m_routes[*route.traceBusId] = &route;
     }
   }
 
-  /** @brief Records unsupported or unassigned deformatter output without external calls. */
+  /** @brief Observes deformatter output without allowing callback exceptions to escape into OpenCSD. */
   ocsd_err_t TraceRawFrameIn(ocsd_datapath_op_t operation, ocsd_trc_index_t index,
                              ocsd_rawframe_elem_t frameElement, int dataSize, const std::uint8_t*,
                              std::uint8_t traceId) noexcept override
@@ -134,43 +137,116 @@ public:
       return OCSD_OK;
     }
     if (traceId == OCSD_BAD_CS_SRC_ID) {
-      if (!m_unassignedIndex.has_value()) {
-        m_unassignedIndex = index;
+      // No frontend reset or reset-on-FSYNC: an unknown ID can only precede the first assigned ID.
+      m_prefix.record(index, static_cast<std::uint32_t>(dataSize));
+      return OCSD_OK;
+    }
+    m_hasAssignedData = true;
+    if (!OCSD_IS_VALID_CS_SRC_ID(traceId)) {
+      recordSkippedSource(traceId, index, static_cast<std::uint32_t>(dataSize));
+      return OCSD_OK;
+    }
+    if (m_routes[traceId] != nullptr) {
+      try {
+        m_sink.formattedDataForRoute(*m_routes[traceId], index, static_cast<std::uint32_t>(dataSize));
+      } catch (...) {
+        m_errors.captureCurrent();
       }
-      return OCSD_OK;
+    } else {
+      recordSkippedSource(traceId, index, static_cast<std::uint32_t>(dataSize));
+      if (!m_reported[traceId] && !m_pendingIndex[traceId].has_value()) {
+        m_pendingIndex[traceId] = index;
+      }
     }
-    if (!OCSD_IS_VALID_CS_SRC_ID(traceId) || m_configured[traceId] || m_reported[traceId] ||
-        m_pendingIndex[traceId].has_value()) {
-      return OCSD_OK;
-    }
-    m_pendingIndex[traceId] = index;
     return OCSD_OK;
   }
 
-  /** @brief Publishes new unsupported IDs and rejects data with no preceding source ID. */
-  void completeOperation(const OpenCsdUnsupportedTraceIdSink& unsupportedTraceIdSink)
+  /** @brief Publishes observations outside OpenCSD after each operation. */
+  void completeOperation(const OpenCsdUnsupportedTraceIdSink& unsupportedTraceIdSink,
+                           const OpenCsdSkippedBytesSink& skippedBytesSink, bool endOfTrace)
   {
-    if (m_unassignedIndex.has_value()) {
-      const auto index = *std::exchange(m_unassignedIndex, std::nullopt);
-      throw OpenCsdFormattedInputError("formatted trace data has no source ID", static_cast<std::uint64_t>(index));
+    if (m_hasAssignedData || endOfTrace) {
+      m_prefix.publish(TraceByteSkipReason::NoSourceId, std::nullopt, skippedBytesSink);
     }
+    publishUnsupportedIds(unsupportedTraceIdSink);
+    if (endOfTrace) {
+      publishSkippedSources(skippedBytesSink);
+    }
+  }
+
+private:
+  /** @brief Retains bounded accounting without storing protocol bytes. */
+  struct SkippedDataCounter {
+    std::optional<ocsd_trc_index_t> firstFormatterOffset;
+    std::uint64_t byteCount = 0U;
+
+    /** @brief Counts a skipped group; OpenCSD advances these unconnected groups without retrying them. */
+    void record(ocsd_trc_index_t index, std::uint32_t size) noexcept
+    {
+      if (!firstFormatterOffset.has_value()) {
+        firstFormatterOffset = index;
+      }
+      byteCount += size;
+    }
+
+    /** @brief Publishes one aggregate without repeating it if the observer throws or EOT repeats. */
+    void publish(TraceByteSkipReason reason, std::optional<std::uint8_t> traceId,
+                   const OpenCsdSkippedBytesSink& sink)
+    {
+      if (!firstFormatterOffset.has_value()) {
+        return;
+      }
+      const TraceByteSkip skipped{static_cast<std::uint64_t>(*firstFormatterOffset), byteCount, reason, traceId};
+      firstFormatterOffset.reset();
+      byteCount = 0U;
+      if (sink) {
+        sink(skipped);
+      }
+    }
+  };
+
+  /** @brief Publishes the existing once-per-ID compatibility warning outside the OpenCSD call stack. */
+  void publishUnsupportedIds(const OpenCsdUnsupportedTraceIdSink& sink)
+  {
     for (std::uint8_t traceId = CoreSight::kMinAtbTraceId; traceId <= CoreSight::kMaxAtbTraceId; ++traceId) {
       if (!m_pendingIndex[traceId].has_value()) {
         continue;
       }
       const auto index = *std::exchange(m_pendingIndex[traceId], std::nullopt);
       m_reported[traceId] = true;
-      if (unsupportedTraceIdSink) {
-        unsupportedTraceIdSink(traceId, index);
+      if (sink) {
+        sink(traceId, index);
       }
     }
   }
 
-private:
-  std::array<bool, 128U> m_configured{};
+  /** @brief Counts NULL, reserved, or unconfigured source payload without formatter-control bytes. */
+  void recordSkippedSource(std::uint8_t traceId, ocsd_trc_index_t index, std::uint32_t size) noexcept
+  {
+    if (traceId < m_skippedById.size()) {
+      m_skippedById[traceId].record(index, size);
+    }
+  }
+
+  /** @brief Reports every observed skipped source once at end-of-input. */
+  void publishSkippedSources(const OpenCsdSkippedBytesSink& sink)
+  {
+    for (std::size_t traceId = 0U; traceId < m_skippedById.size(); ++traceId) {
+      const auto reason = traceId == 0U ? TraceByteSkipReason::NullSourceId
+                          : OCSD_IS_VALID_CS_SRC_ID(traceId) ? TraceByteSkipReason::UnconfiguredSourceId
+                                                           : TraceByteSkipReason::ReservedSourceId;
+      m_skippedById[traceId].publish(reason, static_cast<std::uint8_t>(traceId), sink);
+    }
+  }
+
+  OpenCsdFormattedItmPacketSink& m_sink;
+  CallbackErrorState& m_errors;
+  std::array<const TraceRouteIdentity*, 128U> m_routes{};
   std::array<bool, 128U> m_reported{};
   std::array<std::optional<ocsd_trc_index_t>, 128U> m_pendingIndex{};
-  std::optional<ocsd_trc_index_t> m_unassignedIndex;
+  std::array<SkippedDataCounter, 128U> m_skippedById{};
+  SkippedDataCounter m_prefix;
+  bool m_hasAssignedData = false;
 };
 
 std::vector<TraceRouteIdentity>
@@ -195,12 +271,14 @@ OpenCsdFormattedItmSession::validateRoutes(std::vector<TraceRouteIdentity>&& rou
 OpenCsdFormattedItmSession::OpenCsdFormattedItmSession(std::vector<TraceRouteIdentity> routes,
                                                        ITrcGenElemIn& elementOutput, ITraceErrorLog& errorLogger,
                                                        OpenCsdFormattedItmPacketSink& packetSink,
-                                                       OpenCsdUnsupportedTraceIdSink unsupportedTraceIdSink)
+                                                       OpenCsdUnsupportedTraceIdSink unsupportedTraceIdSink,
+                                                       OpenCsdSkippedBytesSink skippedBytesSink)
   : m_routes(validateRoutes(std::move(routes))),
     m_unsupportedTraceIdSink(std::move(unsupportedTraceIdSink)),
+    m_skippedBytesSink(std::move(skippedBytesSink)),
     m_callbackErrors(std::make_unique<CallbackErrorState>()),
     m_elementAdapter(std::make_unique<GenericElementAdapter>(elementOutput, *m_callbackErrors)),
-    m_rawFrameMonitor(std::make_unique<RawFrameMonitor>(m_routes)),
+    m_rawFrameMonitor(std::make_unique<RawFrameMonitor>(m_routes, packetSink, *m_callbackErrors)),
     m_treeSession(OCSD_TRC_SRC_FRAME_FORMATTED, kFormattedTreeFlags, errorLogger, *m_elementAdapter)
 {
   // OpenCSD reaches these overrides only through interfaces implemented in the
@@ -226,9 +304,9 @@ OpenCsdFormattedItmSession::~OpenCsdFormattedItmSession() noexcept = default;
 ocsd_datapath_resp_t OpenCsdFormattedItmSession::pushData(ocsd_trc_index_t index, std::uint32_t size,
                                                           const std::uint8_t* data, std::uint32_t& processed)
 {
-  const auto response = completeOperation(m_treeSession.traceDataIn(OCSD_OP_DATA, index, size, data, &processed));
+  const auto response = m_treeSession.traceDataIn(OCSD_OP_DATA, index, size, data, &processed);
   m_receivedInput = m_receivedInput || processed > 0U;
-  return response;
+  return completeOperation(response);
 }
 
 ocsd_datapath_resp_t OpenCsdFormattedItmSession::flush()
@@ -248,12 +326,12 @@ ocsd_datapath_resp_t OpenCsdFormattedItmSession::resetRoute(std::uint8_t channel
 
 ocsd_datapath_resp_t OpenCsdFormattedItmSession::endOfTrace()
 {
-  return completeOperation(m_treeSession.traceDataIn(OCSD_OP_EOT, 0, 0, nullptr, nullptr));
+  return completeOperation(m_treeSession.traceDataIn(OCSD_OP_EOT, 0, 0, nullptr, nullptr), true);
 }
 
-ocsd_datapath_resp_t OpenCsdFormattedItmSession::completeOperation(ocsd_datapath_resp_t response)
+ocsd_datapath_resp_t OpenCsdFormattedItmSession::completeOperation(ocsd_datapath_resp_t response, bool endOfTrace)
 {
   m_callbackErrors->rethrow();
-  m_rawFrameMonitor->completeOperation(m_unsupportedTraceIdSink);
+  m_rawFrameMonitor->completeOperation(m_unsupportedTraceIdSink, m_skippedBytesSink, endOfTrace);
   return response;
 }

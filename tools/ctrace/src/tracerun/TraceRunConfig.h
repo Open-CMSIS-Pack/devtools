@@ -36,7 +36,7 @@ inline constexpr std::uint32_t kDefaultTimestampPrescaler = 1U;
 inline constexpr std::string_view kDefaultDwtDataType = "unsigned";
 inline constexpr std::uint8_t kDefaultDwtDataSize = 4U;
 
-/** @brief Resolves an absent trace-format declaration to its compatibility default. */
+/** @brief Supplies the unformatted compatibility default when no input channel has been resolved yet. */
 constexpr TraceRunFormat effectiveTraceFormat(const std::optional<TraceRunFormat>& traceFormat)
 {
   return traceFormat.value_or(TraceRunFormat::Unformatted);

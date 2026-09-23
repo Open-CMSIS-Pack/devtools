@@ -32,6 +32,7 @@ enum class EventId : std::uint32_t {
   DwtEvent = 7U,
   PmuEvent = 8U,
   DwtMatch = 9U,
+  PcSampleProhibited = 10U,
 };
 
 /** @brief Classifies CTF trace-status records. */
@@ -62,7 +63,7 @@ enum class ExceptionOrigin : std::uint8_t {
   Synthetic = 1U,
 };
 
-/** @brief Identifies whether a periodic PC sample carries a PC or reports processor sleep. */
+/** @brief Encodes the zero-or-one PC sequence length in PC_SAMPLE records. */
 enum class PcSampleState : std::uint8_t {
   Sleep = 0U,
   Pc = 1U,
@@ -297,6 +298,8 @@ constexpr std::string_view eventName(EventId id)
     return "PMU_EVENT";
   case EventId::DwtMatch:
     return "DWT_MATCH";
+  case EventId::PcSampleProhibited:
+    return "PC_SAMPLE_PROHIBITED";
   }
   return "UNKNOWN";
 }

@@ -353,25 +353,31 @@ const CtfMetadataModel* CtfEncoder::completedMetadata() const noexcept
 
 void CtfEncoder::writePcSampleEvent(const TraceEvent& event, const PcSampleTraceEvent& sample)
 {
-  const auto pcSize = sample.sleeping ? 0U : 4U;
-  const auto payloadSize = 1U + pcSize + 1U + 4U;
+  const auto isPc = sample.kind == PcSampleKind::Pc;
+  const auto isSleeping = sample.kind == PcSampleKind::Sleep;
+  const auto isProhibited = sample.kind == PcSampleKind::TraceProhibited;
+  // A separate event preserves PC_SAMPLE's zero-or-one PC sequence length.
+  const auto pcSize = isPc ? 4U : 0U;
+  const auto payloadSize = (isProhibited ? 0U : 1U) + pcSize + 1U + 4U;
   const auto eventTimestamp = allocateEventTimestamp(event.route);
   const auto traceBusId = legacyCtfTraceBusId(event.route);
   const auto quality = computeSampleQuality(event);
-  const auto state = CtfSchema::value(sample.sleeping ? CtfSchema::PcSampleState::Sleep
-                                                       : CtfSchema::PcSampleState::Pc);
+  const auto eventId = isProhibited ? CtfSchema::EventId::PcSampleProhibited : CtfSchema::EventId::PcSample;
   streamWriter(event.route)
-      .writeRecord(CtfSchema::value(CtfSchema::EventId::PcSample), eventTimestamp, traceBusId, payloadSize,
+      .writeRecord(CtfSchema::value(eventId), eventTimestamp, traceBusId, payloadSize,
                    [&](CtfStreamWriter::Record& record) {
-                     record.writeU8(state);
-                     if (!sample.sleeping) {
+                     if (!isProhibited) {
+                       record.writeU8(CtfSchema::value(isSleeping ? CtfSchema::PcSampleState::Sleep
+                                                                 : CtfSchema::PcSampleState::Pc));
+                     }
+                     if (isPc) {
                        record.writeU32(sample.pc);
                      }
                      record.writeU8(quality.first);
                      record.writeU32(quality.second);
                    });
   const auto streamClassId = streamDescriptor(event.route).streamClassId;
-  if (sample.sleeping) {
+  if (isSleeping) {
     m_metadata->observeGraphicalTopic(streamClassId, CtfGraphicalTopic::ProcessorState);
   }
 }

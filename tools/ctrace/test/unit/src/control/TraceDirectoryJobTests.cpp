@@ -67,7 +67,7 @@ static TraceRunInputDescriptor testInput(const std::filesystem::path& path, Trac
   const auto solutionSet = filename.substr(0U, channelSeparator);
   const auto configFile = path.parent_path() / (solutionSet + ".ctrace-run.yml");
   config.path = configFile.string();
-  return TraceRunDiscovery::resolveInput(CtraceRunMeta::fromConfig(config));
+  return TraceRunDiscovery::resolveInput(std::move(config));
 }
 
 /** @brief Supplies deterministic trace-run configurations to directory-job tests. */
@@ -130,7 +130,8 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
   const auto& root = temporaryPath.path();
   const auto traceDir = root / ".trace";
   writeTraceInputs(traceDir, {"Alpha", "Beta"});
-  writeTestFile(traceDir / "Alpha.TB_MTB.raw", "unsupported");
+  writeTestFile(traceDir / "Alpha.SWO.raw", std::string{"\0\0\0\0\0\x80\x15\0", 8U});
+  writeTestFile(traceDir / "Beta.TB_MTB.raw", "unselected");
   writeTestFile(traceDir / "Alpha.ER.raw", "unsupported");
 
   CliOptions options;
@@ -156,9 +157,9 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
       << "TraceDirectoryJob XML output name mismatch";
   ASSERT_TRUE(!std::filesystem::exists(traceDir / "Beta.SWO.csv"))
       << "TraceDirectoryJob should not process unselected target";
-  EXPECT_TRUE(diagnostics.containsContext("channel", "TB_MTB"));
+  EXPECT_FALSE(diagnostics.containsContext("channel", "TB_MTB"));
   EXPECT_TRUE(diagnostics.containsContext("channel", "ER"));
-  EXPECT_FALSE(std::filesystem::exists(traceDir / "Alpha.TB_MTB.csv"));
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Beta.TB_MTB.csv"));
   EXPECT_FALSE(std::filesystem::exists(traceDir / "Alpha.ER.csv"));
 }
 
@@ -231,7 +232,7 @@ TEST(CtraceUnitTests, testTraceDirectoryDecodesFormattedInputThroughRawFrontend)
   EXPECT_NE(readTestTextFile(traceDir / "Formatted.TB.csv").find(",1,itm,1,0x41,,,"), std::string::npos);
   EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Formatted.ctf" / "stream_1"));
   EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.ctf" / "stream_0"));
-  EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Formatted.TB.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.TB.traceanalysis.xml"));
 }
 
 TEST(CtraceUnitTests, testTraceDirectoryPreflightsFormattedAlignmentBeforeDecoderAndArtifacts)
@@ -412,6 +413,53 @@ TEST(CtraceUnitTests, testTraceDirectoryRejectsAmbiguousExplicitInputsWithoutTou
             3U);
 }
 
+TEST(CtraceUnitTests, testTraceDirectoryReportsNormalizedSetupWarningWithContext)
+{
+  const TemporaryTestPath temporaryPath("ctrace-trace-directory-setup-warning-test");
+  const auto traceDir = temporaryPath.path() / ".trace";
+  const auto configPath = traceDir / "Conflicting.ctrace-run.yml";
+  writeTestFile(configPath, "ctrace-run:\n");
+  auto itm = FormattedTraceTestSupport::itmHardwareSync();
+  for (const auto channel : {1U, 2U}) {
+    const auto software = FormattedTraceTestSupport::itmSoftwarePacket(channel, 'A');
+    itm.insert(itm.end(), software.begin(), software.end());
+  }
+  const auto raw = FormattedTraceTestSupport::memoryAlignedFrames({{1U, std::move(itm)}});
+  writeTestFile(traceDir / "Conflicting.TB.raw", std::string(raw.begin(), raw.end()));
+
+  TraceRunConfig config;
+  config.traceFormat = TraceRunFormat::Formatted;
+  config.references.push_back(TraceRunTestSupport::makeReference("itm", "core", 1U, {}, "core/itm"));
+  config.setups = {
+      TraceRunTestSupport::makeTimestampSetup("core", 100000000U, 1U, 3U),
+      TraceRunTestSupport::makeTimestampSetup("core", 100000000U, 1U, 5U),
+  };
+  config.setups.back().line = 12U;
+
+  CliOptions options;
+  options.traceDir = traceDir.string();
+  options.targetName = "Conflicting";
+  options.outputFormat = OutputFormat::Csv;
+
+  CollectingDiagnosticSink diagnostics;
+  TestTraceRunConfigReader reader(config);
+  TraceDirectoryJob(options, diagnostics, reader).run();
+
+  const auto* warning = findDiagnostic(
+      diagnostics, "ignoring conflicting ctrace-setup itm.enable assignment for one formatted ITM route");
+  ASSERT_NE(warning, nullptr);
+  EXPECT_EQ(warning->severity, DiagnosticSink::Severity::Warning);
+  EXPECT_EQ(warning->impact, DiagnosticSink::Impact::NonFailing);
+  const std::vector<std::pair<std::string, std::string>> expectedContext{
+      {"config", configPath.string()}, {"pname", "core"}, {"line", "12"}};
+  EXPECT_EQ(warning->context, expectedContext);
+  EXPECT_EQ(diagnostics.failureCount(), 0U);
+  EXPECT_FALSE(diagnostics.containsMessage("ITM data was received on a channel not enabled"));
+  const auto csv = readTestTextFile(traceDir / "Conflicting.TB.csv");
+  EXPECT_NE(csv.find(",1,itm,1,0x41,,,"), std::string::npos);
+  EXPECT_NE(csv.find(",1,itm,2,0x41,,,"), std::string::npos);
+}
+
 TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSwo)
 {
   const TemporaryTestPath temporaryPath("ctrace-trace-directory-diagnostics-test");
@@ -459,7 +507,7 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   EXPECT_TRUE(diagnostics.containsMessage("second producer error"));
   EXPECT_TRUE(diagnostics.containsMessage("channel zero diagnostic"));
   EXPECT_TRUE(diagnostics.containsMessage("trace generation setup failed without a diagnostic message"));
-  EXPECT_TRUE(diagnostics.containsMessage("does not match ctrace-setup pname"));
+  EXPECT_FALSE(diagnostics.containsMessage("does not match ctrace-setup pname"));
   EXPECT_TRUE(diagnostics.containsMessage("skipping raw trace channel"));
   EXPECT_TRUE(diagnostics.containsContext("channel", "ER"));
   EXPECT_TRUE(diagnostics.containsMessage("no eligible raw trace input found"));
@@ -638,7 +686,7 @@ TEST(CtraceUnitTests, testInputSelectionAndPreflightNeverConstructDecoder)
   options.outputFormat = OutputFormat::All;
   const auto run = [&](const std::filesystem::path& configFile, TraceRunConfig config) {
     config.path = configFile.string();
-    auto input = TraceRunDiscovery::resolveInput(CtraceRunMeta::fromConfig(config));
+    auto input = TraceRunDiscovery::resolveInput(std::move(config));
     FileDecodeJob(options, std::move(input), diagnostics, factory).run();
   };
 
@@ -657,13 +705,59 @@ TEST(CtraceUnitTests, testInputSelectionAndPreflightNeverConstructDecoder)
   EXPECT_FALSE(std::filesystem::exists(root / "Partial.ctf"));
 }
 
-TEST(CtraceUnitTests, testFileDecodeJobAbortsOutputsAfterFatalDecoderError)
+/** @brief Checks the unfiltered final CSV row and matching route-independent CLI diagnostic. */
+static void expectGlobalDecodeAbort(const std::filesystem::path& csvPath, const CollectingDiagnosticSink& diagnostics,
+                                    std::uint64_t processed, std::string_view reason)
+{
+  const auto lines = readTestLines(csvPath);
+  ASSERT_GE(lines.size(), 2U);
+  EXPECT_EQ(lines.front(), "cycles,stream,type,source,value,pc,address,note");
+  EXPECT_EQ(lines.back().find(",,error,,,,,"), 0U) << "abort must have no timestamp, stream, or source";
+  const auto prefix = "decode aborted after processing " + std::to_string(processed) +
+                      " input bytes; trace is incomplete: ";
+  EXPECT_NE(lines.back().find(prefix), std::string::npos);
+  EXPECT_NE(lines.back().find(reason), std::string::npos);
+  EXPECT_EQ(std::count_if(lines.begin(), lines.end(), [](const auto& line) {
+              return line.find("decode aborted after processing ") != std::string::npos;
+            }), 1);
+  std::size_t globalErrors = 0U;
+  for (const auto& event : diagnostics.events()) {
+    if (event.message.find(prefix) != 0U) {
+      continue;
+    }
+    ++globalErrors;
+    EXPECT_EQ(event.severity, DiagnosticSink::Severity::Error);
+    EXPECT_NE(event.message.find(reason), std::string::npos);
+    EXPECT_TRUE(std::none_of(event.context.begin(), event.context.end(), [](const auto& item) {
+      return item.first == "stream";
+    }));
+  }
+  EXPECT_EQ(globalErrors, 1U);
+}
+
+/** @brief Emits one valid payload and resolves its timestamp before the next root operation. */
+static std::vector<OpenCsdSessionTestSupport::ScriptedObservation>
+committedSoftwareObservations(const TraceRouteIdentity& route)
+{
+  OcsdTraceElement timestamp;
+  timestamp.setType(OCSD_GEN_TRC_ELEM_ITMTRACE);
+  swt_itm_info info{};
+  info.pkt_type = TS_SYNC;
+  timestamp.setSWT_ITMInfo(info);
+  timestamp.setTS(42U, false);
+  return {OpenCsdSessionTestSupport::syncCallback(route, 0U),
+          OpenCsdSessionTestSupport::softwareCallback(route, 6U, 1U, 'A'),
+          OpenCsdSessionTestSupport::genericCallback(route.traceBusId.value_or(0U), 8U, timestamp)};
+}
+
+TEST(CtraceUnitTests, testFileDecodeJobRetainsCsvAfterFatalDecoderError)
 {
   const TemporaryTestPath temporaryPath("ctrace-file-decode-fatal-test");
   const auto rawPath = temporaryPath.path() / "fatal.SWO.raw";
   writeTestFile(rawPath, "x");
   CliOptions options;
   options.outputFormat = OutputFormat::Csv;
+  options.selection = TraceSelection{{"itm"}, {7U}};
   CollectingDiagnosticSink diagnostics;
   const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
   script->pushes = {{OCSD_RESP_FATAL_SYS_ERR, 1U}};
@@ -671,7 +765,99 @@ TEST(CtraceUnitTests, testFileDecodeJobAbortsOutputsAfterFatalDecoderError)
   FileDecodeJob job(options, testInput(rawPath), diagnostics, OpenCsdSessionTestSupport::scriptedFactory(script));
   EXPECT_NO_THROW(job.run());
   EXPECT_GT(diagnostics.failureCount(), 0U);
-  EXPECT_FALSE(std::filesystem::exists(temporaryPath.path() / "fatal.SWO.csv"));
+  const auto csvPath = temporaryPath.path() / "fatal.SWO.csv";
+  expectGlobalDecodeAbort(csvPath, diagnostics, 1U, "OpenCSD aborted decode: OpenCSD reported a system error");
+  EXPECT_EQ(readTestLines(csvPath).size(), 2U) << "the excluded route error must remain filtered";
+}
+
+TEST(CtraceUnitTests, testFileDecodeJobRetainsCsvForDecoderInitializationFailure)
+{
+  const TemporaryTestPath temporaryPath("ctrace-file-decode-initialization-fatal-test");
+  const auto rawPath = temporaryPath.path() / "startup.SWO.raw";
+  writeTestFile(rawPath);
+  CliOptions options;
+  options.outputFormat = OutputFormat::Csv;
+  options.selection.types = {"itm"};
+  CollectingDiagnosticSink diagnostics;
+  OpenCsdItmSessionFactory factory = [](OpenCsdPacketCollector&, OpenCsdErrorController&)
+      -> std::unique_ptr<OpenCsdItmSessionInterface> {
+    throw OpenCsdItmSessionError("synthetic decoder initialization failure");
+  };
+
+  FileDecodeJob job(options, testInput(rawPath), diagnostics, std::move(factory));
+  EXPECT_NO_THROW(job.run());
+  const auto csvPath = temporaryPath.path() / "startup.SWO.csv";
+  expectGlobalDecodeAbort(csvPath, diagnostics, 0U, "synthetic decoder initialization failure");
+  EXPECT_EQ(readTestLines(csvPath).size(), 2U);
+}
+
+TEST(CtraceUnitTests, testFileDecodeJobKeepsSafePrefixAndRejectsFatalBatchForAllOutputs)
+{
+  const TemporaryTestPath temporaryPath("ctrace-file-decode-fatal-prefix-test");
+  const auto rawPath = temporaryPath.path() / "prefix.TB.raw";
+  writeTestFile(rawPath, std::string(2U * CoreSightFormatter::kMemoryAlignedFrameSize, 'f'));
+  TraceRunConfig config;
+  config.traceFormat = TraceRunFormat::Formatted;
+  config.setups.push_back(TraceRunTestSupport::makeTimestampSetup("core", 400000000U));
+  config.references.push_back(TraceRunTestSupport::makeReference("itm", "core", 1U, {}, "core/itm"));
+  CliOptions options;
+  options.outputFormat = OutputFormat::All;
+  options.selection.types = {"itm"};
+  CollectingDiagnosticSink diagnostics;
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes.emplace_back(OCSD_RESP_CONT, 16U, committedSoftwareObservations(route));
+  script->pushes.emplace_back(
+      OCSD_RESP_FATAL_SYS_ERR, 16U,
+      std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+          OpenCsdSessionTestSupport::softwareCallback(route, 16U, 1U, 'X'),
+          OpenCsdSessionTestSupport::errorObservation(OCSD_ERR_MEM, 20U, 1U, "synthetic fatal tail")});
+
+  FileDecodeJob job(options, testInput(rawPath, config), diagnostics,
+                    OpenCsdSessionTestSupport::scriptedFactory(script));
+  EXPECT_NO_THROW(job.run());
+  EXPECT_EQ(script->pushCalls, 2U);
+  EXPECT_EQ(script->endCalls, 0U);
+  const auto csvPath = temporaryPath.path() / "prefix.TB.csv";
+  expectGlobalDecodeAbort(csvPath, diagnostics, 32U, "synthetic fatal tail");
+  const auto lines = readTestLines(csvPath);
+  ASSERT_EQ(lines.size(), 3U);
+  EXPECT_EQ(lines[1], "42,1,itm,1,0x41,,,");
+  EXPECT_EQ(readTestTextFile(csvPath).find("0x58"), std::string::npos)
+      << "callbacks from the fatal root operation must never reach the retained CSV";
+  EXPECT_TRUE(diagnostics.containsMessage("synthetic fatal tail"));
+  EXPECT_FALSE(std::filesystem::exists(temporaryPath.path() / "prefix.ctf"));
+  EXPECT_FALSE(std::filesystem::exists(temporaryPath.path() / "prefix.TB.traceanalysis.xml"));
+}
+
+TEST(CtraceUnitTests, testFileDecodeJobRetainsCsvAfterFatalEndOfTrace)
+{
+  const TemporaryTestPath temporaryPath("ctrace-file-decode-fatal-eot-test");
+  const auto rawPath = temporaryPath.path() / "end.SWO.raw";
+  writeTestFile(rawPath, std::string(16U, 't'));
+  CliOptions options;
+  options.outputFormat = OutputFormat::Csv;
+  options.selection.types = {"itm"};
+  CollectingDiagnosticSink diagnostics;
+  const TraceRouteIdentity route{};
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  script->pushes.emplace_back(OCSD_RESP_CONT, 16U, committedSoftwareObservations(route));
+  script->ends.emplace_back(
+      OCSD_RESP_FATAL_SYS_ERR, std::nullopt,
+      std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+          OpenCsdSessionTestSupport::softwareCallback(route, 14U, 1U, 'X'),
+          OpenCsdSessionTestSupport::errorObservation(OCSD_ERR_FAIL, 14U, 0U, "synthetic end-of-trace failure")});
+
+  FileDecodeJob job(options, testInput(rawPath), diagnostics, OpenCsdSessionTestSupport::scriptedFactory(script));
+  EXPECT_NO_THROW(job.run());
+  EXPECT_EQ(script->endCalls, 1U);
+  const auto csvPath = temporaryPath.path() / "end.SWO.csv";
+  expectGlobalDecodeAbort(csvPath, diagnostics, 16U, "OpenCSD aborted end-of-trace processing");
+  EXPECT_TRUE(diagnostics.containsMessage("synthetic end-of-trace failure"));
+  const auto lines = readTestLines(csvPath);
+  ASSERT_EQ(lines.size(), 3U);
+  EXPECT_EQ(lines[1], "42,,itm,1,0x41,,,");
+  EXPECT_EQ(readTestTextFile(csvPath).find("0x58"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testFileDecodeJobReportsRawInputReadFailuresWithPath)

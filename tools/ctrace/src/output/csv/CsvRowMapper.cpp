@@ -187,8 +187,16 @@ static void writePayloadColumns(CsvRow& row, const PmuTraceEvent& event)
 /** @brief Writes one periodic PC sample to the CSV event columns. */
 static void writePayloadColumns(CsvRow& row, const PcSampleTraceEvent& event)
 {
-  if (!event.sleeping) {
+  switch (event.kind) {
+  case PcSampleKind::Pc:
     row[column(CsvColumn::Pc)] = hexValue(event.pc, 4U);
+    break;
+  case PcSampleKind::Sleep:
+    row[column(CsvColumn::Note)] = "CPU Sleeping";
+    break;
+  case PcSampleKind::TraceProhibited:
+    row[column(CsvColumn::Note)] = "Trace prohibited";
+    break;
   }
 }
 
@@ -249,4 +257,23 @@ std::string CsvRowMapper::header()
 std::string CsvRowMapper::row(const TraceEvent& event)
 {
   return renderCsvRow(eventToCsvRow(event));
+}
+
+std::string CsvRowMapper::byteSkipRow(const TraceByteSkip& skipped)
+{
+  CsvRow row{};
+  if (skipped.traceId.has_value()) {
+    row[column(CsvColumn::Stream)] = std::to_string(*skipped.traceId);
+  }
+  row[column(CsvColumn::Type)] = "info";
+  row[column(CsvColumn::Note)] = traceByteSkipMessage(skipped);
+  return renderCsvRow(row);
+}
+
+std::string CsvRowMapper::decodeAbortRow(const TraceDecodeAbort& failure)
+{
+  CsvRow row{};
+  row[column(CsvColumn::Type)] = "error";
+  row[column(CsvColumn::Note)] = traceDecodeAbortMessage(failure);
+  return renderCsvRow(row);
 }

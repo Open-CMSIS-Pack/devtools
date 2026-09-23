@@ -110,7 +110,7 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
 {
   const auto solutionSet = TraceRunDiscovery::solutionSetName(configFile);
   try {
-    const auto config = m_configReader.read(configFile.string());
+    auto config = m_configReader.read(configFile.string());
     m_diagnostics.report({
         DiagnosticSink::Severity::Info,
         "selected trace-run configuration",
@@ -122,9 +122,7 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
         },
     });
     reportConsumedReferenceDiagnostics(config, m_diagnostics);
-    auto ctraceRunMeta = CtraceRunMeta::fromConfig(config);
-    reportTraceRunWarnings(ctraceRunMeta, m_diagnostics);
-    auto input = TraceRunDiscovery::resolveInput(std::move(ctraceRunMeta), [&](const auto& rawInput) {
+    auto input = TraceRunDiscovery::resolveInput(std::move(config), [&](const auto& rawInput) {
       m_diagnostics.report({
           DiagnosticSink::Severity::Warning,
           "skipping raw trace channel excluded from active input selection",
@@ -135,6 +133,7 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
           },
       });
     });
+    reportTraceRunWarnings(input.metadata(), m_diagnostics);
     FileDecodeJob fileJob(m_options, std::move(input), m_diagnostics);
     fileJob.run();
   } catch (const std::exception& error) {
