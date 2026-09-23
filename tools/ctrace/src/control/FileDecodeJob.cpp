@@ -145,21 +145,23 @@ static TraceOutputRequest outputRequest(const CliOptions& options)
   };
 }
 
-/** @brief Creates the output backends enabled by a validated plan. */
-static std::vector<std::unique_ptr<TraceOutput>> createConfiguredOutputs(const TraceOutputPlan& outputPlan,
-                                                                         DiagnosticSink& diagnostics)
+/** @brief Owns configured backends and borrows access to CTF completion metadata. */
+struct ConfiguredOutputs {
+  std::vector<std::unique_ptr<TraceOutput>> backends;
+  CtfBundleOutput* ctf = nullptr;
+};
+
+/** @brief Creates backends and retains non-owning access to completed CTF metadata. */
+static ConfiguredOutputs createConfiguredOutputs(const TraceOutputPlan& outputPlan, DiagnosticSink& diagnostics)
 {
-  std::vector<std::unique_ptr<TraceOutput>> outputs;
+  ConfiguredOutputs outputs;
   if (outputPlan.ctf.has_value()) {
-    outputs.push_back(std::make_unique<CtfBundleOutput>(*outputPlan.ctf, &diagnostics));
-    diagnostics.report({
-        DiagnosticSink::Severity::Info,
-        "configured Trace Compass XML",
-        {{"path", outputPlan.ctf->traceCompassXmlPath.string()}},
-    });
+    auto ctf = std::make_unique<CtfBundleOutput>(*outputPlan.ctf, &diagnostics);
+    outputs.ctf = ctf.get();
+    outputs.backends.push_back(std::move(ctf));
   }
   if (outputPlan.csv.has_value()) {
-    outputs.push_back(std::make_unique<CsvFileOutput>(outputPlan.csv->outputPath, outputPlan.csv->selection));
+    outputs.backends.push_back(std::make_unique<CsvFileOutput>(outputPlan.csv->outputPath, outputPlan.csv->selection));
   }
   return outputs;
 }
@@ -246,18 +248,18 @@ FileDecodeJob::FileDecodeJob(CliOptions options, TraceRunInputDescriptor input, 
 {
 }
 
-void FileDecodeJob::run()
+std::optional<CtfMetadataModel> FileDecodeJob::run()
 {
   const auto& ctraceRunMeta = m_input.metadata();
   const auto routes = decodeRoutes(ctraceRunMeta);
   const auto inputMode = decodeInputMode(m_input);
   auto outputPlan = planTraceOutputs(outputRequest(m_options), m_input.path(), ctraceRunMeta, m_diagnostics);
   if (outputPlan.hasRequestedOutputs() && !outputPlan.hasEnabledOutputs()) {
-    return;
+    return std::nullopt;
   }
   reportTraceRunMeta(ctraceRunMeta, m_diagnostics);
   auto outputs = createConfiguredOutputs(outputPlan, m_diagnostics);
-  DecodeConsumers consumers(std::move(outputs), m_diagnostics, itmEnableMasks(ctraceRunMeta));
+  DecodeConsumers consumers(std::move(outputs.backends), m_diagnostics, itmEnableMasks(ctraceRunMeta));
   reportTimestampPrescalers(ctraceRunMeta, m_diagnostics);
 
   const auto decodeStart = std::chrono::steady_clock::now();
@@ -282,4 +284,6 @@ void FileDecodeJob::run()
       decodeSummary(decode, decodeEnd - decodeStart),
   });
   consumers.finishOutputs(decodeAbort.has_value() ? &*decodeAbort : nullptr);
+  const auto* metadata = outputs.ctf == nullptr ? nullptr : outputs.ctf->completedMetadata();
+  return metadata == nullptr ? std::nullopt : std::optional<CtfMetadataModel>{*metadata};
 }

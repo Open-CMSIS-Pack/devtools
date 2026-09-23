@@ -155,7 +155,7 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
       << "TraceDirectoryJob CSV output name mismatch";
   ASSERT_TRUE(std::filesystem::is_regular_file(traceDir / "Alpha.SWO.ctf" / "metadata"))
       << "TraceDirectoryJob CTF output name mismatch";
-  ASSERT_TRUE(std::filesystem::is_regular_file(traceDir / "Alpha.SWO.traceanalysis.xml"))
+  ASSERT_TRUE(std::filesystem::is_regular_file(traceDir / "Alpha.traceanalysis.xml"))
       << "TraceDirectoryJob XML output name mismatch";
   ASSERT_TRUE(!std::filesystem::exists(traceDir / "Beta.SWO.csv"))
       << "TraceDirectoryJob should not process unselected target";
@@ -199,6 +199,60 @@ TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
   brokenJob.run();
   ASSERT_TRUE(diagnostics.failureCount() > brokenCheckpoint)
       << "check-only trace directory should fail on decoder error packets";
+}
+
+TEST(CtraceUnitTests, testTraceDirectoryKeepsCaptureOutputsAfterSharedXmlFailure)
+{
+  /** @brief Injects a conflicting XML target either before preparation or just before completion. */
+  class XmlFailureSink final : public DiagnosticSink {
+  public:
+    XmlFailureSink(std::filesystem::path path, bool duringDecode)
+      : m_path(std::move(path)), m_duringDecode(duringDecode)
+    {
+      if (!m_duringDecode) {
+        std::filesystem::create_directory(m_path);
+      }
+    }
+
+    CollectingDiagnosticSink recorded;
+
+  protected:
+    void write(const Event& event) override
+    {
+      recorded.report(event);
+      if (m_duringDecode && event.message.find("processed ") == 0U) {
+        std::filesystem::create_directory(m_path);
+        m_duringDecode = false;
+      }
+    }
+
+  private:
+    std::filesystem::path m_path;
+    bool m_duringDecode;
+  };
+
+  for (const auto duringDecode : {false, true}) {
+    SCOPED_TRACE(duringDecode);
+    const TemporaryTestPath directory("ctrace-shared-xml-failure");
+    writeTraceInputs(directory.path(), {"Alpha", "Beta"});
+    for (const auto* target : {"Alpha", "Beta"}) {
+      writeTestFile(directory.path() / (std::string(target) + ".SWO.raw"),
+                    std::string{"\0\0\0\0\0\x80\x15\0", 8U});
+    }
+    CliOptions options;
+    options.traceDir = directory.path().string();
+    options.outputFormat = OutputFormat::All;
+    XmlFailureSink diagnostics(directory.path() / "Alpha.traceanalysis.xml", duringDecode);
+    TestTraceRunConfigReader reader;
+    TraceDirectoryJob(options, diagnostics, reader).run();
+    EXPECT_GT(diagnostics.failureCount(), 0U);
+    EXPECT_TRUE(diagnostics.recorded.containsContext("backend", "trace-compass"));
+    for (const auto* target : {"Alpha", "Beta"}) {
+      EXPECT_TRUE(std::filesystem::is_regular_file(directory.path() / (std::string(target) + ".SWO.csv")));
+      EXPECT_TRUE(std::filesystem::is_regular_file(directory.path() / (std::string(target) + ".SWO.ctf") / "metadata"));
+    }
+    EXPECT_TRUE(std::filesystem::is_regular_file(directory.path() / "Beta.traceanalysis.xml"));
+  }
 }
 
 TEST(CtraceUnitTests, testTraceDirectoryDecodesFormattedInputThroughRawFrontend)
@@ -358,6 +412,7 @@ TEST(CtraceUnitTests, testTraceDirectoryDecodesAllExplicitInputsWithoutReplacing
   const auto traceDir = temporaryPath.path() / ".trace";
   writeTestFile(traceDir / "Multiple.ctrace-run.yml", "ctrace-run:\n");
   writeTestFile(traceDir / "Multiple.ctf" / "sentinel", "legacy bundle");
+  writeTestFile(traceDir / "Multiple.traceanalysis.xml", "old target XML");
   const std::vector<std::string> channels{"SWO", "TB", "TB_ETB", "TB_MTB"};
   for (const auto& channel : channels) {
     const auto capture = "Multiple." + channel;
@@ -386,10 +441,11 @@ TEST(CtraceUnitTests, testTraceDirectoryDecodesAllExplicitInputsWithoutReplacing
     EXPECT_EQ(readTestTextFile(traceDir / (capture + ".csv")), "cycles,stream,type,source,value,pc,address,note\n");
     EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / (capture + ".ctf") / "metadata"));
     EXPECT_FALSE(std::filesystem::exists(traceDir / (capture + ".ctf") / "sentinel"));
-    EXPECT_FALSE(std::filesystem::exists(traceDir / (capture + ".traceanalysis.xml")));
+    EXPECT_EQ(readTestTextFile(traceDir / (capture + ".traceanalysis.xml")), "xml sentinel");
     EXPECT_TRUE(diagnostics.containsContext("inputChannel", channel));
     EXPECT_TRUE(diagnostics.containsContext("input", (traceDir / (capture + ".raw")).string()));
   }
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Multiple.traceanalysis.xml"));
   EXPECT_EQ(std::count_if(diagnostics.events().begin(), diagnostics.events().end(),
                           [](const auto& event) {
                             return event.message == "applied ctrace-run meta";
@@ -843,7 +899,7 @@ TEST(CtraceUnitTests, testFileDecodeJobKeepsSafePrefixAndRejectsFatalBatchForAll
 
   FileDecodeJob job(options, testInput(rawPath, config), diagnostics,
                     OpenCsdSessionTestSupport::scriptedFactory(script));
-  EXPECT_NO_THROW(job.run());
+  EXPECT_FALSE(job.run().has_value());
   EXPECT_EQ(script->pushCalls, 2U);
   EXPECT_EQ(script->endCalls, 0U);
   const auto csvPath = temporaryPath.path() / "prefix.TB.csv";

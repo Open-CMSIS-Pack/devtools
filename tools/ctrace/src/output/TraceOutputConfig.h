@@ -32,13 +32,12 @@ struct CsvOutputConfig {
   TraceSelection selection;
 };
 
-/** @brief Configures one CTF bundle and its Trace Compass analysis file. */
+/** @brief Configures one independently decoded CTF bundle. */
 struct CtfOutputConfig {
   /** @brief Creates a complete CTF output configuration. */
-  CtfOutputConfig(std::filesystem::path outputDirectory, std::filesystem::path traceCompassXmlPath,
-                  TraceSelection selection, CtfMetadataTopology metadata, std::vector<TraceRouteIdentity> routes = {})
+  CtfOutputConfig(std::filesystem::path outputDirectory, TraceSelection selection, CtfMetadataTopology metadata,
+                  std::vector<TraceRouteIdentity> routes = {})
     : outputDirectory(std::move(outputDirectory)),
-      traceCompassXmlPath(std::move(traceCompassXmlPath)),
       selection(std::move(selection)),
       metadata(std::move(metadata)),
       routes(std::move(routes))
@@ -46,7 +45,6 @@ struct CtfOutputConfig {
   }
 
   std::filesystem::path outputDirectory;
-  std::filesystem::path traceCompassXmlPath;
   TraceSelection selection;
   CtfMetadataTopology metadata;
   std::vector<TraceRouteIdentity> routes;

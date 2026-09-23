@@ -13,12 +13,11 @@
 #include "TraceOutput.h"
 #include "TraceOutputConfig.h"
 
-#include <cstddef>
 #include <filesystem>
 
 class DiagnosticSink;
 
-/** @brief Owns a CTF directory and its optional companion Trace Compass XML file. */
+/** @brief Owns the lifecycle of one independently completed CTF directory. */
 class CtfBundleOutput final : public TraceOutput {
 public:
   /**
@@ -34,15 +33,17 @@ public:
   std::string_view backendName() const noexcept override;
   /** @brief Returns the CTF output directory path. */
   std::string targetPath() const override;
+  /** @brief Returns emitted metadata after a successful stop, or nullptr otherwise. */
+  const CtfMetadataModel* completedMetadata() const noexcept;
 
 protected:
-  /** @brief Prepares an empty CTF target and removes stale companion XML. */
+  /** @brief Prepares an empty CTF target. */
   void prepareOutput() override;
   /** @brief Starts the CTF encoder for the prepared target. */
   void startOutput() override;
-  /** @brief Completes the bundle and writes XML only for observed views sharing one clock. */
+  /** @brief Completes the CTF bundle and publishes its emitted metadata. */
   void stopOutput() override;
-  /** @brief Aborts the encoder and removes incomplete CTF and XML targets. */
+  /** @brief Aborts the encoder and removes the incomplete CTF target. */
   void abortOutput() override;
   /**
    * @brief Encodes one selected semantic event.
@@ -51,15 +52,8 @@ protected:
   void writeOutput(const TraceEvent& event) override;
 
 private:
-  /** @brief Finalizes or omits the companion Trace Compass XML for completed CTF metadata. */
-  void finalizeTraceCompassXml(const CtfMetadataModel& metadata);
-  /** @brief Removes Trace Compass XML and reports incompatible emitted clock domains. */
-  void omitTraceCompassXml(std::size_t clockDomainCount);
-
   std::filesystem::path m_ctfOutputDirectory;
-  std::filesystem::path m_traceCompassXmlPath;
   CtfEncoder m_encoder;
-  DiagnosticSink* m_diagnostics = nullptr;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_CTF_CTFBUNDLEOUTPUT_H

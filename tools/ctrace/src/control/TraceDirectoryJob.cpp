@@ -14,9 +14,11 @@
 #include "TraceRunConfigReader.h"
 #include "TraceRunDiscovery.h"
 #include "CtraceRunMeta.h"
+#include "ctf/TraceCompassXmlOutput.h"
 
 #include <exception>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -108,6 +110,32 @@ static void reportTraceRunWarnings(const CtraceRunMeta& meta, DiagnosticSink& di
   }
 }
 
+/** @brief Reports a target-level XML failure without invalidating completed capture outputs. */
+static void reportXmlFailure(DiagnosticSink& diagnostics, const std::filesystem::path& path,
+                              const std::exception& error)
+{
+  diagnostics.report({DiagnosticSink::Severity::Error, error.what(),
+                       {{"backend", "trace-compass"}, {"path", path.string()}}});
+}
+
+/** @brief Prepares the shared XML independently of all per-capture output backends. */
+static std::unique_ptr<TraceCompassXmlOutput> prepareTraceCompassXml(OutputFormat format,
+                                                                    const std::filesystem::path& path,
+                                                                    DiagnosticSink& diagnostics)
+{
+  if (format != OutputFormat::Ctf && format != OutputFormat::All) {
+    return nullptr;
+  }
+  try {
+    auto xml = std::make_unique<TraceCompassXmlOutput>(path, diagnostics);
+    xml->prepare();
+    return xml;
+  } catch (const std::exception& error) {
+    reportXmlFailure(diagnostics, path, error);
+    return nullptr;
+  }
+}
+
 TraceDirectoryJob::TraceDirectoryJob(CliOptions options, DiagnosticSink& diagnostics,
                                      const TraceRunConfigReader& configReader)
   : m_options(std::move(options)),
@@ -157,9 +185,7 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
           },
       });
     });
-    for (const auto& rawInput : inputs) {
-      processInput(config, rawInput);
-    }
+    processInputs(config, inputs, configFile.parent_path() / (solutionSet + ".traceanalysis.xml"));
   } catch (const std::exception& error) {
     m_diagnostics.report({
         DiagnosticSink::Severity::Error,
@@ -172,15 +198,40 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
   }
 }
 
-void TraceDirectoryJob::processInput(const TraceRunConfig& config, const TraceRunRawInput& rawInput)
+void TraceDirectoryJob::processInputs(const TraceRunConfig& config, const std::vector<TraceRunRawInput>& inputs,
+                                       const std::filesystem::path& xmlPath)
+{
+  auto xml = prepareTraceCompassXml(m_options.outputFormat, xmlPath, m_diagnostics);
+  std::vector<std::pair<std::string, CtfMetadataModel>> completed;
+  for (const auto& rawInput : inputs) {
+    auto metadata = processInput(config, rawInput);
+    if (xml != nullptr && metadata.has_value()) {
+      completed.emplace_back(rawInput.channel, std::move(*metadata));
+    }
+  }
+  if (xml != nullptr) {
+    try {
+      for (const auto& [channel, metadata] : completed) {
+        xml->add(channel, metadata);
+      }
+      xml->finish();
+    } catch (const std::exception& error) {
+      reportXmlFailure(m_diagnostics, xmlPath, error);
+    }
+  }
+}
+
+std::optional<CtfMetadataModel> TraceDirectoryJob::processInput(const TraceRunConfig& config,
+                                                               const TraceRunRawInput& rawInput)
 {
   InputDiagnosticSink diagnostics(m_diagnostics, rawInput);
   try {
     auto input = TraceRunDiscovery::resolveInput(config, rawInput);
     reportTraceRunWarnings(input.metadata(), diagnostics);
     FileDecodeJob fileJob(m_options, std::move(input), diagnostics);
-    fileJob.run();
+    return fileJob.run();
   } catch (const std::exception& error) {
     diagnostics.report({DiagnosticSink::Severity::Error, error.what(), {{"config", config.path}}});
   }
+  return std::nullopt;
 }

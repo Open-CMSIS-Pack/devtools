@@ -21,6 +21,7 @@ env {
 
 clock {
     name = swo_clock;
+    uuid = "00000000-0000-4000-8000-000000000001";
     precision = 0;
     offset_s = 0;
     offset = 0;

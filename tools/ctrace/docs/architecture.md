@@ -164,7 +164,8 @@ diagnostic artifacts but makes the invocation fail. Routes with no received payl
 
 An error without a usable route, a deformatter error, failure to reset the route, repeated lack of decoder progress,
 or an unsuccessful bounded wait/flush operation aborts the current raw-file job. The fatal-input output policy
-retains committed CSV rows with a global abort record, but removes incomplete CTF and XML artifacts.
+retains committed CSV rows with a global abort record, but removes the incomplete CTF bundle. Only completed bundles
+contribute to target-level XML.
 
 ## OpenCSD diagnostic callbacks
 
@@ -285,21 +286,29 @@ Output requirements are evaluated per backend and selected route. For example, m
 active route may disable CTF while an independent CSV output remains valid; metadata on a route excluded by the
 stream filter is not required. `--all` therefore does not make the backends share failure state unnecessarily.
 
-Each input writes separate `<set>.<channel>.csv`, `<set>.<channel>.ctf`, and optional
-`<set>.<channel>.traceanalysis.xml` artifacts. CTF always uses the channel-qualified path, including single-input
-runs; existing `<set>.ctf` bundles are not migrated or removed. The [CTF profile](ctf-format.md#files-and-common-structure)
+Each input writes separate `<set>.<channel>.csv` and `<set>.<channel>.ctf` artifacts. One optional
+`<set>.traceanalysis.xml` describes the target's eligible completed bundles. CTF always uses the channel-qualified
+path, including single-input runs; existing `<set>.ctf` bundles and old per-channel XML files are not migrated or
+removed. The [CTF profile](ctf-format.md#files-and-common-structure)
 records this intentional difference from the published bundle path.
 
 CSV writes one combined file per input in decode callback order. `CtfBundleOutput` owns a bundle-local metadata model and
 lazily creates a stream writer for each formatted route that emits selected events. Representation changes stay in
 the backends: for example, CSV retains a DWT/PMU counter mask in one row while CTF expands it into individual records.
 
-CTF finalization retains only emitted streams, then generates Trace Compass XML from their observed graphical topics.
-Without graphical topics, it omits the XML entirely; point events remain in the CTF event table. This avoids invalid
-empty analyses and invented durations. Route identity stays separate from display labels,
-so equal processor names cannot merge views. Formatted routes retain distinct clock domains because the input contract
-does not establish cross-route synchronization. Multi-clock data remains valid CTF but cannot safely drive the supported
-reader's combined XML analysis.
+CTF finalization retains only emitted streams and exposes the completed metadata. `TraceDirectoryJob` gives these
+results to a target-scoped `TraceCompassXmlOutput`; it does not discover contributions by scanning existing CTF files.
+The collector prepares the target XML before the input jobs and writes it after all inputs have been attempted.
+Only observed graphical topics in freshly completed bundles contribute views. Without graphical topics, it leaves no
+XML; point events remain in the CTF event table.
+
+Each contributing bundle must retain exactly one clock domain. Multi-clock bundles remain valid CTF but are excluded
+with a warning because the supported reader cannot safely order their independent streams. Separate single-clock
+bundles can contribute to one XML without clock correlation or timestamp rebasing. Every clock, including legacy
+`swo_clock`, has a UUID; the XML scopes state by the reader's `hostId` (that UUID), public `cmsis_trace_bus_id`, and
+topic. Channel/processor labels are display-only, and the private CTF `ctrace_route` context is no longer needed by
+the XML. A deterministic namespace derived from the contributing clock identities prevents analysis/view collisions
+between target XML files. The legacy binary event layout is unchanged.
 
 The [CTF profile](ctf-format.md) defines event schemas, metadata, clock mappings, legacy layouts, and
 [XML projection](ctf-format.md#generated-trace-compass-analysis). Cross-backend compatibility and failure rules belong
@@ -310,8 +319,11 @@ owns the active state and common write-failure cleanup; concrete backends implem
 The byte-skip hook defaults to no output, as required by CTF; CSV implements it independently of event filters.
 A successful backend can finish even if another backend fails. When `FileDecodeJob` catches `OpenCsdFatalError`, it
 passes a `TraceDecodeAbort` to output finalization. The default backend policy removes incomplete artifacts, as
-required for CTF and XML. CSV instead appends a global abort record and closes the already committed rows. Failed
+required for CTF. CSV instead appends a global abort record and closes the already committed rows. Failed
 CSV writes or finalization still remove the unreliable file; failures before output startup do not create one.
+Target XML has an independent lifecycle: a failed input cannot remove another input's completed bundle or views,
+and an XML preparation/write failure leaves completed CTF and CSV outputs intact. Preparing target XML never migrates
+or removes historical per-channel XML files.
 
 ## Diagnostics and failure semantics
 

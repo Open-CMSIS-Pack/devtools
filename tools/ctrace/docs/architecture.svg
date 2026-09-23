@@ -14,8 +14,10 @@
     Cortex-M state, semantic trace events, diagnostics, CSV, multi-stream CTF, and conditional Trace Compass XML
     output. Native errors, bounded packet previews, and recovery details reach diagnostics and CSV. Formatter and
     initial synchronization skips follow a separate Info path. Fatal decode retains committed CSV rows with a global
-    abort record and removes incomplete CTF and XML artifacts for that input. Remaining inputs continue. CSV and CTF
-    outputs always include the channel in their names, also for single-input runs. Only one OpenCSD tree is live at a time.
+    abort record and removes incomplete CTF for that input. Remaining inputs continue. CSV and CTF outputs always
+    include the channel in their names, also for single-input runs. One target XML collects graphical views from
+    freshly completed single-clock bundles, scoped by clock UUID and Trace Bus ID without time correlation.
+    XML failures preserve CSV and CTF. Only one OpenCSD tree is live at a time.
   </desc>
 
   <defs>
@@ -161,7 +163,7 @@
   <path d="M 1215 764 L 1230 764 L 1230 442 L 1180 442" class="flow"/>
 
   <text x="50" y="870" class="section">OUTPUTS</text>
-  <rect x="40" y="885" width="1200" height="250" class="group"/>
+  <rect x="40" y="885" width="1200" height="270" class="group"/>
 
   <rect x="380" y="905" width="410" height="92" class="box output"/>
   <text x="585" y="933" class="box-title">TraceOutput + TraceOutputLifecycle</text>
@@ -178,12 +180,13 @@
   <text x="600" y="1084" class="box-detail">legacy stream_0 eager · formatted lazy</text>
   <text x="600" y="1102" class="box-detail">explicit route clocks · no fallback</text>
 
-  <rect x="860" y="1035" width="330" height="74" class="box output"/>
-  <text x="1025" y="1062" class="box-title">Trace Compass XML</text>
-  <text x="1025" y="1084" class="box-detail">observed graphical topics only</text>
-  <text x="1025" y="1102" class="box-detail">requires one retained clock domain</text>
+  <rect x="860" y="1035" width="330" height="92" class="box output"/>
+  <text x="1025" y="1062" class="box-title">&lt;set&gt;.traceanalysis.xml</text>
+  <text x="1025" y="1084" class="box-detail">TraceCompassXmlOutput · completed bundles</text>
+  <text x="1025" y="1102" class="box-detail">one clock / bundle · UUID + route scopes</text>
+  <text x="1025" y="1120" class="box-detail">no clock correlation or timestamp rebasing</text>
 
-  <text x="640" y="1127" class="box-detail">Per input: retain aborted CSV rows + error record; remove incomplete CTF / XML. Remaining inputs continue.</text>
+  <text x="640" y="1147" class="box-detail">Abort: retain CSV + error; remove incomplete CTF. XML uses fresh completed bundles; XML failures preserve CSV / CTF.</text>
 
   <path d="M 1090 793 L 1090 855 L 585 855 L 585 905" class="flow"/>
   <path d="M 650 495 L 650 540 L 940 540 L 940 951 L 790 951" class="dependency"/>

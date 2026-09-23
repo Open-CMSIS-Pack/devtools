@@ -78,6 +78,22 @@ TEST(CtraceUnitTests, testCtfMetadataWriterRejectsMissingOutputDirectory)
   EXPECT_THROW(CtfMetadataWriter::write(path.path(), model), std::runtime_error);
 }
 
+TEST(CtraceUnitTests, testCtfMetadataWriterIdentifiesLegacyClockWithoutChangingEventLayout)
+{
+  const TemporaryTestPath path("ctrace-legacy-clock-uuid");
+  path.createDirectory();
+  auto topology = CtfTestSupport::legacyTopology(1000000U);
+  topology.clockDomains.front().uuid = CtfTestSupport::testUuid(1U);
+  const CtfMetadataModel model(CtfTestSupport::testUuid(), std::move(topology));
+  ASSERT_TRUE(model.isLegacySingleStreamLayout());
+  CtfMetadataWriter::write(path.path(), model);
+  const auto metadata = readTestTextFile(path.path() / "metadata");
+  EXPECT_NE(metadata.find("name = swo_clock;\n    uuid = \"" + CtfTestSupport::testUuid(1U).toString() + "\";"),
+            std::string::npos);
+  EXPECT_NE(metadata.find("uint8_t cmsis_trace_bus_id;"), std::string::npos);
+  EXPECT_EQ(metadata.find("ctrace_route"), std::string::npos);
+}
+
 TEST(CtraceUnitTests, testCtfMetadataWriterSerializesRouteScopedMultiStreamTopology)
 {
   const TemporaryTestPath path("ctrace-multistream-metadata-writer");

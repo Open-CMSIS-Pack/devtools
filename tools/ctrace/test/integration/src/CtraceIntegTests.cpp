@@ -20,6 +20,7 @@
 #include <filesystem>
 #include <iomanip>
 #include <initializer_list>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -291,7 +292,7 @@ void expectSyntheticArtifacts(const std::filesystem::path& directory, bool csvEx
 {
   EXPECT_EQ(std::filesystem::is_regular_file(directory / "Synthetic.TB.csv"), csvExpected);
   EXPECT_EQ(std::filesystem::is_directory(directory / "Synthetic.TB.ctf"), ctfExpected);
-  EXPECT_FALSE(std::filesystem::exists(directory / "Synthetic.TB.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(directory / "Synthetic.traceanalysis.xml"));
   if (!ctfExpected) {
     return;
   }
@@ -313,6 +314,83 @@ std::size_t countOccurrences(std::string_view text, std::string_view value)
     ++count;
   }
   return count;
+}
+
+/** @brief Reads the single emitted clock identity used to scope one bundle in Trace Compass. */
+std::string singleCtfClockUuid(const std::filesystem::path& ctfDirectory)
+{
+  const auto metadata = readTestTextFile(ctfDirectory / "metadata");
+  constexpr std::string_view marker{"    uuid = \""};
+  const auto clock = metadata.find("\nclock {");
+  const auto end = metadata.find("\n};", clock);
+  const auto uuid = metadata.find(marker, clock);
+  if (countOccurrences(metadata, "\nclock {") != 1U || end == std::string::npos || uuid >= end) {
+    throw std::runtime_error("expected one emitted CTF clock with a UUID: " + ctfDirectory.string());
+  }
+  const auto start = uuid + marker.size();
+  const auto result = metadata.substr(start, metadata.find('"', start) - start);
+  if (result.size() != 36U) {
+    throw std::runtime_error("expected a canonical CTF clock UUID: " + ctfDirectory.string());
+  }
+  return result;
+}
+
+/** @brief Masks only capture-specific identities and the dependent version in the complete XML golden. */
+std::string normalizeTraceCompassIdentity(std::string xml, const std::string& clockUuid)
+{
+  constexpr std::string_view providerPrefix{"arm.cmsis.ctrace.analysis."};
+  const auto provider = xml.find(providerPrefix);
+  const auto namespaceEnd = xml.find(".v1\"", provider);
+  constexpr std::string_view versionPrefix{"<stateProvider version=\""};
+  const auto version = xml.find(versionPrefix);
+  if (provider == std::string::npos || namespaceEnd == std::string::npos || version == std::string::npos) {
+    throw std::runtime_error("expected capture-scoped Trace Compass provider");
+  }
+  const auto namespaceStart = provider + providerPrefix.size();
+  const auto captureNamespace = xml.substr(namespaceStart, namespaceEnd - namespaceStart);
+  const auto versionStart = version + versionPrefix.size();
+  xml.replace(versionStart, xml.find('"', versionStart) - versionStart, "0");
+  const auto replaceAll = [&](const std::string& from, std::string_view to) {
+    for (auto at = xml.find(from); at != std::string::npos; at = xml.find(from, at + to.size())) {
+      xml.replace(at, from.size(), to);
+    }
+  };
+  replaceAll(captureNamespace, "0000000000000000");
+  replaceAll(clockUuid, "00000000-0000-4000-8000-000000000001");
+  return xml;
+}
+
+/** @brief Collects provider/view definitions, detecting IDs that would collide on XML import. */
+std::set<std::string> traceCompassDefinitionIds(std::string_view xml)
+{
+  std::set<std::string> ids;
+  for (const auto tag : {"<stateProvider ", "<xyView ", "<timeGraphView "}) {
+    for (auto position = xml.find(tag); position != std::string_view::npos; position = xml.find(tag, position + 1U)) {
+      const auto end = xml.find('>', position);
+      const auto id = xml.find(" id=\"", position);
+      if (end == std::string_view::npos || id >= end) {
+        throw std::runtime_error("Trace Compass definition has no ID");
+      }
+      const auto start = id + 5U;
+      const auto value = std::string(xml.substr(start, xml.find('"', start) - start));
+      EXPECT_TRUE(ids.insert(value).second) << "duplicate Trace Compass definition: " << value;
+    }
+  }
+  EXPECT_FALSE(ids.empty());
+  return ids;
+}
+
+/** @brief Checks a graphical view against its capture identity instead of a reused Trace Bus ID alone. */
+void expectCaptureView(std::string_view xml, const std::string& clockUuid, std::uint8_t stream,
+                       std::string_view topic, bool present = true)
+{
+  const auto entry = "<entry path=\"(?:" + clockUuid + "|&quot;" + clockUuid + "&quot;)/" +
+                     std::to_string(stream) + '/' + std::string(topic) + "/";
+  if (present) {
+    expectContains(xml, entry);
+  } else {
+    expectNotContains(xml, entry);
+  }
 }
 
 std::size_t countCsvStreamRows(std::string_view csv, std::string_view stream)
@@ -416,7 +494,7 @@ void expectChannelArtifacts(const std::filesystem::path& directory, std::string_
   const auto xmlPath = directory / (base + ".traceanalysis.xml");
   EXPECT_EQ(std::filesystem::exists(csvPath), csv);
   EXPECT_EQ(std::filesystem::exists(ctfPath), ctf);
-  EXPECT_EQ(std::filesystem::exists(xmlPath), ctf);
+  EXPECT_FALSE(std::filesystem::exists(xmlPath));
   if (csv) {
     const auto prefix = std::to_string(fixture.cycles) + (fixture.channel == "SWO" ? ",," : ",1,");
     std::ostringstream value;
@@ -428,7 +506,40 @@ void expectChannelArtifacts(const std::filesystem::path& directory, std::string_
   if (ctf) {
     expectNonEmptyFile(ctfPath / "metadata");
     expectChannelCtf(ctfPath, fixture);
-    expectContains(readTestTextFile(xmlPath), "eventName=\"PC_SAMPLE\"");
+  }
+}
+
+/** @brief Creates exactly one trace-run and SWO/TB inputs with disjoint graphical topics. */
+void writeSwoAndTbTopicFixture(const std::filesystem::path& directory, std::string_view target,
+                               bool formattedSwo = false)
+{
+  auto traceRun = std::string("ctrace-run:\n");
+  if (formattedSwo) {
+    traceRun += "  trace-format: formatted\n";
+  }
+  traceRun += R"yml(  ctrace-setup:
+    - pname: core
+      timestamps:
+        clock: 1000000
+        itm-prescaler: 1
+      data:
+        - size: 1
+  ctrace-refs:
+    - { ctrace-ref: core/itm, type: itm, pname: core, stream: 1 }
+    - { ctrace-ref: core/data#0, type: dwt, pname: core, stream: 1, source: 0, size: 1, data-type: unsigned }
+)yml";
+  writeTestFile(directory / (std::string(target) + ".ctrace-run.yml"), traceRun);
+  for (const auto channel : {"SWO", "TB"}) {
+    const bool swo = std::string_view(channel) == "SWO";
+    auto raw = FormattedTraceTestSupport::itmHardwareSync();
+    appendBytes(raw, FormattedTraceTestSupport::itmSoftwarePacket(1U, swo ? 0x41U : 0x42U));
+    appendBytes(raw, FormattedTraceTestSupport::itmHardwarePacket(swo ? 16U : 2U, 1U, swo ? 0x2aU : 0U));
+    appendBytes(raw, FormattedTraceTestSupport::itmLocalTimestampPacket(swo ? 10U : 20U));
+    if (!swo || formattedSwo) {
+      raw = FormattedTraceTestSupport::memoryAlignedFrames({{1U, raw}});
+    }
+    writeTestFile(directory / (std::string(target) + '.' + channel + ".raw"),
+                  {reinterpret_cast<const char*>(raw.data()), raw.size()});
   }
 }
 
@@ -653,7 +764,7 @@ TEST_F(CtraceIntegTests, GeneratesCsvAndCtfWithoutEmptyGraphicalConfiguration)
             readTestTextFile(workDirectory() / "Minimal.SWO.csv"));
   expectNonEmptyFile(workDirectory() / "Minimal.SWO.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Minimal.SWO.ctf" / "stream_0");
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Minimal.SWO.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Minimal.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, DecodesExplicitUnformattedNamedTraceBuffer)
@@ -677,7 +788,7 @@ TEST_F(CtraceIntegTests, DecodesExplicitUnformattedNamedTraceBuffer)
             readTestTextFile(workDirectory() / "Named.TB_MTB.csv"));
   expectNonEmptyFile(workDirectory() / "Named.TB_MTB.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Named.TB_MTB.ctf" / "stream_0");
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Named.TB_MTB.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Named.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, DefaultsNullTraceFormatToUnformattedForSwo)
@@ -720,7 +831,7 @@ TEST_F(CtraceIntegTests, ExcludesUnformattedRawSwoWithoutRequiringClock)
   expectNotContains(metadata, "\nstream {");
   expectNotContains(metadata, "\nevent {");
   EXPECT_FALSE(std::filesystem::exists(ctfDirectory / "stream_0"));
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Filtered.SWO.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Filtered.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, RejectsPartialFormattedFrameBeforeCreatingArtifacts)
@@ -748,7 +859,7 @@ TEST_F(CtraceIntegTests, RejectsPartialFormattedFrameBeforeCreatingArtifacts)
     expectContains(result.stderrText, "formatted raw trace input size must be a multiple of 16 bytes");
     EXPECT_FALSE(std::filesystem::exists(directory / "Partial.TB.csv"));
     EXPECT_FALSE(std::filesystem::exists(directory / "Partial.TB.ctf"));
-    EXPECT_FALSE(std::filesystem::exists(directory / "Partial.TB.traceanalysis.xml"));
+    EXPECT_FALSE(std::filesystem::exists(directory / "Partial.traceanalysis.xml"));
   }
 }
 
@@ -786,7 +897,7 @@ TEST_F(CtraceIntegTests, SkipsUnsupportedFormattedSourceOnceAndKeepsConfiguredRo
                  ",42,info,,,,,4 bytes skipped for unconfigured source ID 42;");
   expectNonEmptyFile(workDirectory() / "Mixed.TB.ctf" / "stream_1");
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Mixed.TB.ctf" / "stream_42"));
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Mixed.TB.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Mixed.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, PublishesOutputsWithUnresolvedFormattedRouteRecovery)
@@ -838,7 +949,7 @@ TEST_F(CtraceIntegTests, PublishesOutputsWithUnresolvedFormattedRouteRecovery)
             traceCsvRows(readTestTextFile(workDirectory() / "Invalid.TB.csv")));
   expectNonEmptyFile(workDirectory() / "Invalid.TB.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Invalid.TB.ctf" / "stream_1");
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Invalid.TB.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Invalid.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, RecoversOneFormattedRouteWithoutLosingInterleavedOutput)
@@ -885,7 +996,7 @@ TEST_F(CtraceIntegTests, RecoversOneFormattedRouteWithoutLosingInterleavedOutput
   expectNonEmptyFile(workDirectory() / "Recovery.TB.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Recovery.TB.ctf" / "stream_1");
   expectNonEmptyFile(workDirectory() / "Recovery.TB.ctf" / "stream_2");
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Recovery.TB.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Recovery.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, ReportsUnassignedFormatterOnlyInputWithoutInventingRouteData)
@@ -918,7 +1029,7 @@ TEST_F(CtraceIntegTests, ReportsUnassignedFormatterOnlyInputWithoutInventingRout
             "first formatter group at raw offset 0\n",
             readTestTextFile(workDirectory() / "Unassigned.TB.csv"));
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Unassigned.TB.ctf" / "stream_1"));
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Unassigned.TB.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Unassigned.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, DecodesFormattedCaptureAfterUnassignedPrefixAndRetainsInfoUnderFilters)
@@ -1052,8 +1163,8 @@ TEST_F(CtraceIntegTests, ExpandsDwtEventCountersAcrossCsvAndCtf)
             readTestTextFile(workDirectory() / "Events.SWO.csv"));
   expectContains(readTestTextFile(workDirectory() / "Events.SWO.ctf" / "metadata"), "name = \"DWT_EVENT\"");
   expectNonEmptyFile(workDirectory() / "Events.SWO.ctf" / "stream_0");
-  expectContains(readTestTextFile(workDirectory() / "Events.SWO.traceanalysis.xml"),
-                 "<label value=\"DWT Event Counters\" />");
+  expectContains(readTestTextFile(workDirectory() / "Events.traceanalysis.xml"),
+                 "<label value=\"DWT Event Counters - SWO\" />");
 }
 
 TEST_F(CtraceIntegTests, ConvertsDwtMatchAcrossCsvAndCtf)
@@ -1113,8 +1224,8 @@ TEST_F(CtraceIntegTests, ConvertsDwtMatchAcrossCsvAndCtf)
   const auto metadata = readTestTextFile(workDirectory() / "trace-match.SWO.ctf" / "metadata");
   expectContains(metadata, "name = \"DWT_MATCH\"");
   expectContains(metadata, "\"Match Comparator 3\" = 3");
-  const auto xml = readTestTextFile(workDirectory() / "trace-match.SWO.traceanalysis.xml");
-  expectContains(xml, "<label value=\"DWT Match\" />");
+  const auto xml = readTestTextFile(workDirectory() / "trace-match.traceanalysis.xml");
+  expectContains(xml, "<label value=\"DWT Match - SWO\" />");
   expectContains(xml, "<definedValue name=\"Something happened\" value=\"1\"");
 }
 
@@ -1147,7 +1258,7 @@ TEST_F(CtraceIntegTests, ConvertsPcSamplingMarkersFromSwoAndFormattedTbInEveryOu
       expectNotContains(result.stderrText, "[error]");
       const auto csvPath = directory / (std::string("trace-pc-sample.") + channel + ".csv");
       const auto ctfDirectory = directory / (std::string("trace-pc-sample.") + channel + ".ctf");
-      const auto xmlPath = directory / (std::string("trace-pc-sample.") + channel + ".traceanalysis.xml");
+      const auto xmlPath = directory / "trace-pc-sample.traceanalysis.xml";
       EXPECT_EQ(std::filesystem::exists(csvPath), mode.csv);
       EXPECT_EQ(std::filesystem::exists(ctfDirectory), mode.ctf);
       EXPECT_EQ(std::filesystem::exists(xmlPath), mode.ctf && !formatted);
@@ -1178,7 +1289,7 @@ TEST_F(CtraceIntegTests, FiltersPcSamplingMarkersByTypeAndFormattedStream)
   EXPECT_EQ(countCsvStreamRows(csv, "1"), 0U);
   expectPcSamplingCtf(workDirectory() / "trace-pc-sample.TB.ctf" / "stream_2", 2U, true);
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "trace-pc-sample.TB.ctf" / "stream_1"));
-  expectContains(readTestTextFile(workDirectory() / "trace-pc-sample.TB.traceanalysis.xml"),
+  expectContains(readTestTextFile(workDirectory() / "trace-pc-sample.traceanalysis.xml"),
                  "eventName=\"PC_SAMPLE_PROHIBITED\"");
 }
 
@@ -1192,7 +1303,7 @@ TEST_F(CtraceIntegTests, DoesNotSelectPcSamplingMarkersAsErrors)
   EXPECT_EQ(readTestTextFile(workDirectory() / "trace-pc-sample.SWO.csv"),
             "cycles,stream,type,source,value,pc,address,note\n");
   EXPECT_TRUE(CtfTestSupport::readCtfRecords(workDirectory() / "trace-pc-sample.SWO.ctf" / "stream_0").empty());
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "trace-pc-sample.SWO.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "trace-pc-sample.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, RetainsProhibitedOnlyTraceDataWithoutGeneratingEmptyXml)
@@ -1216,7 +1327,7 @@ TEST_F(CtraceIntegTests, RetainsProhibitedOnlyTraceDataWithoutGeneratingEmptyXml
     const auto baseName = std::string("trace-pc-sample.") + channel;
     writeTestFile(directory / "trace-pc-sample.ctrace-run.yml", traceRun);
     writeTestFile(directory / (baseName + ".raw"), {reinterpret_cast<const char*>(raw.data()), raw.size()});
-    const auto xmlPath = directory / (baseName + ".traceanalysis.xml");
+    const auto xmlPath = directory / "trace-pc-sample.traceanalysis.xml";
     writeTestFile(xmlPath, "stale XML from an earlier capture\n");
 
     const auto result = run({"ctrace", directory.string(), "--target", "trace-pc-sample", "--all",
@@ -1293,8 +1404,8 @@ TEST_F(CtraceIntegTests, ConvertsCapturedDwtEventCountersAcrossOverflow)
   EXPECT_EQ(eventCounters, expectedCounters);
 
   expectContains(readTestTextFile(workDirectory() / "trace-event.SWO.ctf" / "metadata"), "name = \"DWT_EVENT\"");
-  expectContains(readTestTextFile(workDirectory() / "trace-event.SWO.traceanalysis.xml"),
-                 "<label value=\"DWT Event Counters\" />");
+  expectContains(readTestTextFile(workDirectory() / "trace-event.traceanalysis.xml"),
+                 "<label value=\"DWT Event Counters - SWO\" />");
 }
 
 TEST_F(CtraceIntegTests, ReportsInvalidDwtEventCounterWithoutPartialDecode)
@@ -1340,8 +1451,8 @@ TEST_F(CtraceIntegTests, ExpandsPmuEventCountersAcrossCsvAndCtf)
             readTestTextFile(workDirectory() / "Pmu.SWO.csv"));
   expectContains(readTestTextFile(workDirectory() / "Pmu.SWO.ctf" / "metadata"), "name = \"PMU_EVENT\"");
   expectNonEmptyFile(workDirectory() / "Pmu.SWO.ctf" / "stream_0");
-  expectContains(readTestTextFile(workDirectory() / "Pmu.SWO.traceanalysis.xml"),
-                 "<label value=\"PMU Event Counters\" />");
+  expectContains(readTestTextFile(workDirectory() / "Pmu.traceanalysis.xml"),
+                 "<label value=\"PMU Event Counters - SWO\" />");
 }
 
 TEST_F(CtraceIntegTests, ReportsInvalidPmuEventCounterWithoutPartialDecode)
@@ -1436,7 +1547,7 @@ TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
   expectNonEmptyFile(workDirectory() / "Diagnostics.SWO.csv");
   expectNonEmptyFile(workDirectory() / "Diagnostics.SWO.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Diagnostics.SWO.ctf" / "stream_0");
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Diagnostics.SWO.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Diagnostics.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, GeneratesRequestedOutputsAfterDecoderError)
@@ -1456,7 +1567,7 @@ TEST_F(CtraceIntegTests, GeneratesRequestedOutputsAfterDecoderError)
   expectContains(readTestTextFile(csvPath), ",error,");
   expectNonEmptyFile(workDirectory() / "Minimal.SWO.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Minimal.SWO.ctf" / "stream_0");
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Minimal.SWO.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Minimal.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, ConvertsLegacyUnformattedSwoFixtureToGoldenOutputs)
@@ -1484,16 +1595,22 @@ TEST_F(CtraceIntegTests, ConvertsLegacyUnformattedSwoFixtureToGoldenOutputs)
   auto metadata = normalizeGeneratedTextLineEndings(
       readTestTextFile(workDirectory() / "Blinky+Arm.SWO.ctf" / "metadata"), "CTF metadata");
   const auto traceUuid = normalizeCtfMetadataTraceUuid(metadata);
+  const auto clockUuid = singleCtfClockUuid(workDirectory() / "Blinky+Arm.SWO.ctf");
+  metadata.replace(metadata.find(clockUuid), clockUuid.size(), "00000000-0000-4000-8000-000000000001");
   auto stream = readTestBinaryFile(workDirectory() / "Blinky+Arm.SWO.ctf" / "stream_0");
   normalizeCtfStreamTraceUuid(stream, traceUuid);
   expectMatchesGolden(readTestTextFile(goldenDirectory / "Blinky+Arm.ctf" / "metadata"), metadata, "CTF metadata");
   expectMatchesGolden(readTestBinaryFile(goldenDirectory / "Blinky+Arm.ctf" / "stream_0"), stream, "CTF binary stream");
-  expectMatchesGolden(readTestTextFile(goldenDirectory / "Blinky+Arm.SWO.traceanalysis.xml"),
-                      normalizeGeneratedTextLineEndings(
-                          readTestTextFile(workDirectory() / "Blinky+Arm.SWO.traceanalysis.xml"), "Trace Compass XML"),
-                      "Trace Compass XML");
+  const auto xml = normalizeGeneratedTextLineEndings(
+      readTestTextFile(workDirectory() / "Blinky+Arm.traceanalysis.xml"), "Trace Compass XML");
+  expectCaptureView(xml, clockUuid, 0U, "DWT_VALUE");
+  expectContains(xml, "<label value=\"DWT_VALUE - SWO - CM7\" />");
+  traceCompassDefinitionIds(xml);
+  expectMatchesGolden(readTestTextFile(goldenDirectory / "Blinky+Arm.traceanalysis.xml"),
+                       normalizeTraceCompassIdentity(xml, clockUuid), "Trace Compass XML");
 
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.TB.csv"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.SWO.traceanalysis.xml"));
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.TB.traceanalysis.xml"));
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.TB.ctf"));
 }
@@ -1527,6 +1644,18 @@ TEST_F(CtraceIntegTests, ProcessesEveryChannelOfSelectedTargetInEachOutputMode)
         expectChannelArtifacts(directory, "Selected", fixture, mode.csv, mode.ctf);
         expectChannelArtifacts(directory, "Other", fixture, false, false);
       }
+      const auto xmlPath = directory / "Selected.traceanalysis.xml";
+      EXPECT_EQ(std::filesystem::exists(xmlPath), mode.ctf);
+      EXPECT_FALSE(std::filesystem::exists(directory / "Other.traceanalysis.xml"));
+      if (mode.ctf) {
+        const auto xml = readTestTextFile(xmlPath);
+        for (const auto& fixture : kChannelFixtures) {
+          const auto capture = "Selected." + std::string(fixture.channel) + ".ctf";
+          expectCaptureView(xml, singleCtfClockUuid(directory / capture), fixture.channel == "SWO" ? 0U : 1U,
+                            "PC_SAMPLE");
+        }
+        traceCompassDefinitionIds(xml);
+      }
       EXPECT_FALSE(std::filesystem::exists(directory / "Selected.ctf"));
     }
   }
@@ -1539,7 +1668,7 @@ TEST_F(CtraceIntegTests, ContinuesOtherChannelsAndTargetsAfterChannelPreflightFa
   writeTestFile(workDirectory() / "Alpha.TB.raw", "partial frame");
   writeTestFile(workDirectory() / "Alpha.TB.csv", "csv sentinel");
   writeTestFile(workDirectory() / "Alpha.TB.ctf" / "sentinel", "ctf sentinel");
-  writeTestFile(workDirectory() / "Alpha.TB.traceanalysis.xml", "xml sentinel");
+  writeTestFile(workDirectory() / "Alpha.traceanalysis.xml", "xml sentinel");
   writeTestFile(workDirectory() / "Alpha.ctf" / "sentinel", "legacy bundle sentinel");
 
   const auto result = run({"ctrace", workDirectory().string(), "--all"});
@@ -1554,8 +1683,165 @@ TEST_F(CtraceIntegTests, ContinuesOtherChannelsAndTargetsAfterChannelPreflightFa
   }
   EXPECT_EQ(readTestTextFile(workDirectory() / "Alpha.TB.csv"), "csv sentinel");
   EXPECT_EQ(readTestTextFile(workDirectory() / "Alpha.TB.ctf" / "sentinel"), "ctf sentinel");
-  EXPECT_EQ(readTestTextFile(workDirectory() / "Alpha.TB.traceanalysis.xml"), "xml sentinel");
+  EXPECT_NE(readTestTextFile(workDirectory() / "Alpha.traceanalysis.xml"), "xml sentinel");
+  expectNonEmptyFile(workDirectory() / "Beta.traceanalysis.xml");
   EXPECT_EQ(readTestTextFile(workDirectory() / "Alpha.ctf" / "sentinel"), "legacy bundle sentinel");
+}
+
+TEST_F(CtraceIntegTests, CombinesSwoAndTbViewsWithoutMergingReusedStreamIds)
+{
+  for (const bool formattedSwo : {false, true}) {
+    const auto directory = workDirectory() / (formattedSwo ? "same-stream-id" : "default-formats");
+    SCOPED_TRACE(directory.string());
+    writeSwoAndTbTopicFixture(directory, "Combined", formattedSwo);
+    std::vector<std::string> inputs;
+    for (const auto& input : std::filesystem::directory_iterator(directory)) {
+      inputs.push_back(input.path().filename().string());
+    }
+    std::sort(inputs.begin(), inputs.end());
+    EXPECT_EQ(inputs, (std::vector<std::string>{"Combined.SWO.raw", "Combined.TB.raw", "Combined.ctrace-run.yml"}));
+
+    const auto result = run({"ctrace", directory.string(), "--target", "Combined", "--all"});
+    EXPECT_EQ(result.exitCode, 0) << result.stderrText;
+    expectNotContains(result.stderrText, "[error]");
+    const auto swoClock = singleCtfClockUuid(directory / "Combined.SWO.ctf");
+    const auto tbClock = singleCtfClockUuid(directory / "Combined.TB.ctf");
+    EXPECT_NE(swoClock, tbClock);
+    const auto xml = readTestTextFile(directory / "Combined.traceanalysis.xml");
+    const auto swoStream = static_cast<std::uint8_t>(formattedSwo ? 1U : 0U);
+    expectCaptureView(xml, swoClock, swoStream, "DWT_VALUE");
+    expectCaptureView(xml, swoClock, swoStream, "PC_SAMPLE", false);
+    expectCaptureView(xml, tbClock, 1U, "PC_SAMPLE");
+    expectCaptureView(xml, tbClock, 1U, "DWT_VALUE", false);
+    expectContains(xml, "<label value=\"DWT_VALUE - SWO - core\" />");
+    expectContains(xml, "<label value=\"Processor State - TB - core\" />");
+    EXPECT_EQ(traceCompassDefinitionIds(xml).size(), 3U);
+    EXPECT_EQ(countOccurrences(xml, "<stateProvider "), 1U);
+    for (const auto channel : {"SWO", "TB"}) {
+      EXPECT_FALSE(std::filesystem::exists(directory / (std::string("Combined.") + channel + ".traceanalysis.xml")));
+    }
+
+    const auto swoCsv = readTestTextFile(directory / "Combined.SWO.csv");
+    expectContains(swoCsv, std::string("10,") + (formattedSwo ? "1" : "") + ",dwt,0,0x2a,,,\n");
+    expectNotContains(swoCsv, ",pcsample,");
+    const auto tbCsv = readTestTextFile(directory / "Combined.TB.csv");
+    expectContains(tbCsv, "20,1,pcsample,,,,,CPU Sleeping\n");
+    expectNotContains(tbCsv, ",dwt,");
+    for (const auto channel : {"SWO", "TB"}) {
+      const bool swo = std::string_view(channel) == "SWO";
+      const auto stream = swo ? swoStream : 1U;
+      const auto layout = swo && !formattedSwo ? CtfStreamWriter::EventContextLayout::Legacy
+                                              : CtfStreamWriter::EventContextLayout::RouteLabeled;
+      const auto records = CtfTestSupport::readCtfRecords(
+          directory / (std::string("Combined.") + channel + ".ctf") / ("stream_" + std::to_string(stream)), layout);
+      const auto expected = swo ? CtfSchema::EventId::DwtValue : CtfSchema::EventId::PcSample;
+      std::size_t graphicalRecords = 0U;
+      for (const auto& record : records) {
+        if (record.id == CtfSchema::value(expected)) {
+          ++graphicalRecords;
+          EXPECT_EQ(record.traceBusId, stream);
+          EXPECT_EQ(record.timestamp, swo ? 10U : 20U);
+        }
+      }
+      EXPECT_EQ(graphicalRecords, 1U);
+    }
+  }
+}
+
+TEST_F(CtraceIntegTests, RestrictsCombinedXmlToSelectedTargetAndEmittedTopics)
+{
+  for (const auto type : {"dwt", "pcsample", "itm"}) {
+    const auto directory = workDirectory() / type;
+    SCOPED_TRACE(type);
+    writeSwoAndTbTopicFixture(directory, "Selected");
+    writeSwoAndTbTopicFixture(directory, "Other");
+    writeTestFile(directory / "Selected.traceanalysis.xml", "stale XML\n");
+    const auto result = run({"ctrace", directory.string(), "--target", "Selected", "--all", "--type", type});
+    EXPECT_EQ(result.exitCode, 0) << result.stderrText;
+    EXPECT_FALSE(std::filesystem::exists(directory / "Other.traceanalysis.xml"));
+    for (const auto channel : {"SWO", "TB"}) {
+      const auto base = std::string("Other.") + channel;
+      EXPECT_FALSE(std::filesystem::exists(directory / (base + ".csv")));
+      EXPECT_FALSE(std::filesystem::exists(directory / (base + ".ctf")));
+    }
+    const auto xmlPath = directory / "Selected.traceanalysis.xml";
+    if (std::string_view(type) == "itm") {
+      EXPECT_FALSE(std::filesystem::exists(xmlPath));
+      continue;
+    }
+    const bool dwt = std::string_view(type) == "dwt";
+    const auto ctf = directory / (dwt ? "Selected.SWO.ctf" : "Selected.TB.ctf");
+    const auto xml = readTestTextFile(xmlPath);
+    expectCaptureView(xml, singleCtfClockUuid(ctf), dwt ? 0U : 1U, dwt ? "DWT_VALUE" : "PC_SAMPLE");
+    expectNotContains(xml, dwt ? "PC_SAMPLE" : "DWT_VALUE");
+    EXPECT_EQ(traceCompassDefinitionIds(xml).size(), 2U);
+  }
+}
+
+TEST_F(CtraceIntegTests, GivesDifferentTargetsNoncollidingXmlDefinitions)
+{
+  writeSwoAndTbTopicFixture(workDirectory(), "Alpha", true);
+  writeSwoAndTbTopicFixture(workDirectory(), "Beta", true);
+  const auto result = run({"ctrace", workDirectory().string(), "--ctf"});
+  EXPECT_EQ(result.exitCode, 0) << result.stderrText;
+  const auto alpha = traceCompassDefinitionIds(readTestTextFile(workDirectory() / "Alpha.traceanalysis.xml"));
+  const auto beta = traceCompassDefinitionIds(readTestTextFile(workDirectory() / "Beta.traceanalysis.xml"));
+  EXPECT_EQ(alpha.size(), 3U);
+  EXPECT_EQ(beta.size(), 3U);
+  for (const auto& id : alpha) {
+    EXPECT_EQ(beta.count(id), 0U) << "Target XML definitions collide: " << id;
+  }
+}
+
+TEST_F(CtraceIntegTests, BuildsCombinedXmlOnlyFromFreshlyCompletedBundles)
+{
+  for (const auto failure : {"preflight", "fatal-tail", "recovered-packet"}) {
+    const auto directory = workDirectory() / failure;
+    SCOPED_TRACE(failure);
+    writeSwoAndTbTopicFixture(directory, "Combined");
+    auto result = run({"ctrace", directory.string(), "--target", "Combined", "--all"});
+    ASSERT_EQ(result.exitCode, 0) << result.stderrText;
+    const auto previousTbClock = singleCtfClockUuid(directory / "Combined.TB.ctf");
+    const auto previousTbMetadata = readTestTextFile(directory / "Combined.TB.ctf" / "metadata");
+    const bool preflight = std::string_view(failure) == "preflight";
+    const bool fatal = std::string_view(failure) == "fatal-tail";
+    if (preflight) {
+      writeTestFile(directory / "Combined.TB.raw", "partial frame");
+    } else {
+      auto payload = FormattedTraceTestSupport::itmHardwareSync();
+      appendBytes(payload, FormattedTraceTestSupport::itmHardwarePacket(2U, 1U, 0U));
+      appendBytes(payload, FormattedTraceTestSupport::itmLocalTimestampPacket(20U));
+      if (fatal) {
+        payload.insert(payload.end(), {0x17U, 0xf2U});
+      } else {
+        payload.insert(payload.end(), {0x00U, 0x08U});
+        appendBytes(payload, FormattedTraceTestSupport::itmHardwareSync());
+        appendBytes(payload, FormattedTraceTestSupport::itmSoftwarePacket(1U, 0x42U));
+      }
+      const auto raw = FormattedTraceTestSupport::memoryAlignedFrames({{1U, payload}});
+      writeTestFile(directory / "Combined.TB.raw", {reinterpret_cast<const char*>(raw.data()), raw.size()});
+    }
+
+    result = run({"ctrace", directory.string(), "--target", "Combined", "--all"});
+    EXPECT_EQ(result.exitCode, 1) << result.stderrText;
+    expectContains(result.stderrText, "inputChannel=TB");
+    expectContains(result.stderrText, preflight ? "multiple of 16 bytes" : fatal ? "incomplete ITM packet"
+                                                                                 : "OCSD_ERR_BAD_PACKET_SEQ");
+    const auto xml = readTestTextFile(directory / "Combined.traceanalysis.xml");
+    expectCaptureView(xml, singleCtfClockUuid(directory / "Combined.SWO.ctf"), 0U, "DWT_VALUE");
+    expectNotContains(xml, previousTbClock);
+    if (preflight) {
+      EXPECT_EQ(readTestTextFile(directory / "Combined.TB.ctf" / "metadata"), previousTbMetadata);
+    } else if (fatal) {
+      EXPECT_FALSE(std::filesystem::exists(directory / "Combined.TB.ctf"));
+    } else {
+      expectCaptureView(xml, singleCtfClockUuid(directory / "Combined.TB.ctf"), 1U, "PC_SAMPLE");
+    }
+    if (preflight || fatal) {
+      expectNotContains(xml, "PC_SAMPLE");
+    }
+    EXPECT_EQ(traceCompassDefinitionIds(xml).size(), preflight || fatal ? 2U : 3U);
+  }
 }
 
 TEST_F(CtraceIntegTests, AppliesTypeAndStreamFiltersIndependentlyToEveryChannel)
@@ -1564,6 +1850,7 @@ TEST_F(CtraceIntegTests, AppliesTypeAndStreamFiltersIndependentlyToEveryChannel)
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Selected", "--all",
                            "--type", "itm", "--stream", "1"});
   EXPECT_EQ(result.exitCode, 0) << result.stderrText;
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Selected.traceanalysis.xml"));
   for (const auto& fixture : kChannelFixtures) {
     SCOPED_TRACE(fixture.channel);
     const auto base = std::string("Selected.") + std::string(fixture.channel);
@@ -1604,6 +1891,7 @@ TEST_F(CtraceIntegTests, CompletesSiblingChannelsAfterMissingSynchronization)
       expectChannelArtifacts(workDirectory(), "Selected", fixture, true, true);
     }
   }
+  expectNonEmptyFile(workDirectory() / "Selected.traceanalysis.xml");
 }
 
 TEST_F(CtraceIntegTests, ConvertsReconstructedFormattedTraceBusFixture)
@@ -1633,10 +1921,10 @@ TEST_F(CtraceIntegTests, ConvertsReconstructedFormattedTraceBusFixture)
   EXPECT_FALSE(std::filesystem::exists(ctfDirectory / "stream_0"));
   EXPECT_EQ(countOccurrences(readTestTextFile(ctfDirectory / "metadata"), "clock {"), 2U);
 
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.TB.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Blinky+Arm.traceanalysis.xml"));
   EXPECT_EQ(countOccurrences(result.stderrText,
-                             "Trace Compass XML was not generated because emitted CTF streams use multiple clock "
-                             "domains"),
+                             "Trace Compass XML views were not generated for this input because emitted CTF streams "
+                             "use multiple clock domains"),
             1U);
 }
 
@@ -1658,10 +1946,10 @@ TEST_F(CtraceIntegTests, DecodesDeterministicSyntheticFormattedPacketFamiliesOnA
   const auto metadata = readTestTextFile(ctfDirectory / "metadata");
   expectContains(metadata, "freq = 240000000;");
   expectContains(metadata, "freq = 480000000;");
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Synthetic.TB.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Synthetic.traceanalysis.xml"));
   EXPECT_EQ(countOccurrences(result.stderrText,
-                             "Trace Compass XML was not generated because emitted CTF streams use multiple clock "
-                             "domains"),
+                             "Trace Compass XML views were not generated for this input because emitted CTF streams "
+                             "use multiple clock domains"),
             1U);
 }
 
@@ -1776,7 +2064,7 @@ TEST_F(CtraceIntegTests, AppliesMultiValueTypeAndStreamUnionsAndTheirIntersectio
                         {CtfSchema::EventId::DwtValue, CtfSchema::EventId::DwtAddress, CtfSchema::EventId::DwtMatch,
                          CtfSchema::EventId::PmuEvent});
   EXPECT_FALSE(std::filesystem::exists(intersectionDirectory / "Synthetic.TB.ctf" / "stream_1"));
-  expectNonEmptyFile(intersectionDirectory / "Synthetic.TB.traceanalysis.xml");
+  expectNonEmptyFile(intersectionDirectory / "Synthetic.traceanalysis.xml");
 }
 
 TEST_F(CtraceIntegTests, DefersAbsentAndNullFormattedClocksToCtfOutputValidation)
@@ -1869,7 +2157,7 @@ TEST_F(CtraceIntegTests, RoutesExplicitlyFormattedSwoNamedInputToNonzeroStreams)
   expectNonEmptyFile(workDirectory() / "Synthetic.SWO.ctf" / "stream_1");
   expectNonEmptyFile(workDirectory() / "Synthetic.SWO.ctf" / "stream_2");
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Synthetic.SWO.ctf" / "stream_0"));
-  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Synthetic.SWO.traceanalysis.xml"));
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Synthetic.traceanalysis.xml"));
 }
 
 TEST_F(CtraceIntegTests, CompletesHealthyBackendWhenOtherOutputTargetHasWrongType)
@@ -1903,7 +2191,7 @@ TEST_F(CtraceIntegTests, ReplacesStaleArtifactsAcrossMultiSingleMultiClockConver
   const auto traceRun = readTestTextFile(testDataDirectory() / "formatted-synthetic" / "Synthetic.ctrace-run.yml");
   writeSyntheticFormattedFixture(workDirectory(), traceRun);
   const auto ctfDirectory = workDirectory() / "Synthetic.TB.ctf";
-  const auto xmlPath = workDirectory() / "Synthetic.TB.traceanalysis.xml";
+  const auto xmlPath = workDirectory() / "Synthetic.traceanalysis.xml";
 
   auto result = run({"ctrace", workDirectory().string(), "--target", "Synthetic", "--ctf"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
@@ -2082,7 +2370,7 @@ TEST_F(CtraceIntegTests, RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTai
     }
     expectNotContains(csv, ",pcsample,");
     EXPECT_FALSE(std::filesystem::exists(directory / "Incomplete.TB.ctf"));
-    EXPECT_FALSE(std::filesystem::exists(directory / "Incomplete.TB.traceanalysis.xml"));
+    EXPECT_FALSE(std::filesystem::exists(directory / "Incomplete.traceanalysis.xml"));
   }
 }
 

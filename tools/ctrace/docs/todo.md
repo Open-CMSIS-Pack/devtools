@@ -18,7 +18,6 @@
 - [ ] Support FSYNC and FSYNC+HSYNC formatted input after a public framing contract is specified.
 - [ ] Define cross-stream clock correlation and offsets once a common producer time reference is available.
 - [ ] Add per-clock-domain Trace Compass bundles/experiments for uncorrelated streams when required.
-- [ ] Namespace generated Trace Compass analysis/view identifiers for simultaneous registration of multiple XML files.
 
 ## Additional decoders
 

@@ -105,8 +105,8 @@ TEST(CtraceUnitTests, testOutputPathsRetainChannelAndCompleteSolutionSetName)
       ASSERT_TRUE(plan.ctf.has_value());
       EXPECT_EQ(plan.csv->outputPath, std::filesystem::path("captures") / (capture + ".csv"));
       EXPECT_EQ(plan.ctf->outputDirectory, std::filesystem::path("captures") / (capture + ".ctf"));
-      EXPECT_EQ(plan.ctf->traceCompassXmlPath,
-                std::filesystem::path("captures") / (capture + ".traceanalysis.xml"));
+      ASSERT_EQ(plan.ctf->metadata.clockDomains.size(), 1U);
+      EXPECT_TRUE(plan.ctf->metadata.clockDomains.front().uuid.has_value());
       EXPECT_TRUE(diagnostics.events().empty());
     }
   }
@@ -347,7 +347,6 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
   ASSERT_TRUE(
       (missingType.csv->outputPath == std::filesystem::path("BackendRequirements.SWO.csv") &&
        missingType.ctf->outputDirectory == std::filesystem::path("BackendRequirements.SWO.ctf") &&
-       missingType.ctf->traceCompassXmlPath == std::filesystem::path("BackendRequirements.SWO.traceanalysis.xml") &&
        missingType.ctf->metadata.clockDomains.size() == 1U &&
        missingType.ctf->metadata.clockDomains[0].frequencyHz == 400000000U &&
        missingType.ctf->metadata.sources.size() == 1U && missingType.ctf->metadata.sources[0].dataType == "unsigned" &&
