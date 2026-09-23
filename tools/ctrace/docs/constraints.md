@@ -189,8 +189,9 @@ configuration with trace communication, separate from trace-source setup.
 - CTF timestamps never regress, and a global timestamp does not by itself establish local timestamp quality.
 - Validation-only mode creates no output. Unsupported trace channels are diagnosed and skipped.
 - Apart from the explicitly retained CSV after a fatal decode abort, cleanup of incomplete output artifacts is
-  attempted after failure, and cleanup failures are reported. Incompatible existing output filesystem types and
-  overlapping CTF/XML paths are rejected before replacement.
+  attempted after failure, and cleanup failures are reported. Incompatible existing output filesystem types are
+  rejected before replacement. CTF bundles and target XML use distinct sibling paths derived from the trace-run
+  and input names.
 
 ## Build and CI constraints
 
