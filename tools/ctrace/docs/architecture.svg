@@ -132,7 +132,7 @@
   <text x="795" y="613" class="box-title">Cortex-M decode</text>
   <text x="795" y="636" class="box-detail">timestamps · DWT pairing</text>
   <text x="795" y="654" class="box-detail">quality state per route</text>
-  <text x="795" y="672" class="box-detail">ordered semantic mapping</text>
+  <text x="795" y="672" class="box-detail">route-local event buffering</text>
 
   <rect x="965" y="585" width="250" height="110" class="box model"/>
   <text x="1090" y="613" class="box-title">TraceEvent model</text>
@@ -172,7 +172,7 @@
 
   <rect x="80" y="1035" width="260" height="74" class="box output"/>
   <text x="210" y="1062" class="box-title">CSV backend</text>
-  <text x="210" y="1084" class="box-detail">&lt;set&gt;.&lt;channel&gt;.csv · callback order</text>
+  <text x="210" y="1084" class="box-detail">&lt;set&gt;.&lt;channel&gt;.csv · emission order</text>
   <text x="210" y="1102" class="box-detail">events + skipped-byte Info</text>
 
   <rect x="430" y="1035" width="340" height="74" class="box output"/>

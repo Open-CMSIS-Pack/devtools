@@ -68,8 +68,8 @@ command line + trace-run YAML + selected SWO/TB raw file
 ```
 
 The `TraceEvent` boundary is the central design point. Before it, code handles byte offsets, OpenCSD packets, decoder
-recovery, and Cortex-M state. After it, code sees backend-independent events in decode order and does not depend on
-OpenCSD types.
+recovery, and Cortex-M state. After it, code sees backend-independent events in semantic callback order,
+without depending on OpenCSD types.
 
 Formatter-skipped payload and initial ITM synchronization skips follow a separate `TraceByteSkip` path from the
 OpenCSD adapter through `DecodePipeline` directly to `TraceEventSink::appendByteSkip` and `DecodeConsumers`. These
@@ -84,7 +84,8 @@ there is deliberately no common base class for all decode stages.
 
 ## Input and compatibility contract
 
-Input selection and route binding belong to `tracerun` and complete before decoder or output construction.
+Input selection and route binding belong to `tracerun` and complete before each input's decoder and output backends
+are constructed. Target-level XML preparation precedes these per-input jobs.
 The provisional, ctrace-private `trace-format` declaration describes effective capture bytes rather than target
 capability or file identity. Discovery collects every matching SWO, TB, and named-TB input, independently of whether
 the format is declared. Each input is preflighted and normalized separately. An explicit format applies to every input;
@@ -119,7 +120,9 @@ reference. This keeps format-specific feed and recovery policy out of the low-le
 callback lifetime safety.
 
 `CortexMStreamDecoder` maintains an independent post-decoder for each normalized route. All post-decoders emit into
-the same `TraceEventSink`, preserving input order while keeping route-specific timestamp and DWT state apart.
+the same `TraceEventSink` while keeping route-specific timestamp and DWT state apart. Events buffered for timestamp
+resolution are emitted independently per route. The sink observes semantic emission order, not a global raw-input or
+chronological order across routes.
 
 There is no application-wide event queue. `DecodeConsumers` forwards each event synchronously to the output
 lifecycle and issue reporter.
@@ -292,7 +295,7 @@ path, including single-input runs; existing `<set>.ctf` bundles and old per-chan
 removed. The [CTF profile](ctf-format.md#files-and-common-structure)
 records this intentional difference from the published bundle path.
 
-CSV writes one combined file per input in decode callback order. `CtfBundleOutput` owns a bundle-local metadata model and
+CSV writes one combined file per input in sink callback order. `CtfBundleOutput` owns a bundle-local metadata model and
 lazily creates a stream writer for each formatted route that emits selected events. Representation changes stay in
 the backends: for example, CSV retains a DWT/PMU counter mask in one row while CTF expands it into individual records.
 

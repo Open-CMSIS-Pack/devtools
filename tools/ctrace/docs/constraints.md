@@ -42,8 +42,9 @@ configuration with trace communication, separate from trace-source setup.
   override applies to every supported input associated with that trace-run configuration.
 - Every existing `<set>.SWO.raw`, `<set>.TB.raw`, and `<set>.TB_<name>.raw` is processed independently and sequentially.
   `--target` selects a solution set, including all its supported inputs. A set without an eligible input reports an error.
-  Each input must be a regular, readable file and is opened during its own preflight, before decoder or output
-  construction. Event Recorder input remains diagnosed and excluded from processing.
+  Each input must be a regular, readable file and is opened during its own preflight, before that input's decoder and
+  output backends are constructed. Target XML preparation precedes these per-input jobs. Event Recorder input remains
+  diagnosed and excluded from processing.
 - Input preflight, route normalization, decoding, and output failures do not prevent processing the remaining inputs
   or solution sets. Each input has independent decoder and output state; any failing input contributes to a non-zero
   command exit status. A configuration read failure prevents processing that set but does not stop later sets.
@@ -126,9 +127,10 @@ configuration with trace communication, separate from trace-source setup.
   even with one input; legacy `<set>.ctf` bundles and old per-channel XML files are not reused, migrated, or removed.
   Aligning the intentional CTF path change with the published
   CTF specification remains [follow-up work](todo.md#inputs-and-time-correlation).
-- CSV remains one combined file per input in decode callback order. The unformatted route has an empty `stream` field;
-  formatted routes expose their architectural IDs. Type and stream filters affect output, not decoding or diagnostic
-  reporting. The seventh CSV column is `address`, matching the published CMSIS-Toolbox
+- CSV remains one combined file per input in sink callback order, not a global raw-input or chronological order across
+  routes. The unformatted route has an empty `stream` field; formatted routes expose their architectural IDs.
+  Type and stream filters affect output, not decoding or diagnostic reporting. The seventh CSV column is `address`,
+  matching the published CMSIS-Toolbox
   [CSV schema](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#csv-format).
 - Byte-skip annotations are retained in CSV regardless of `--type` or `--stream`: `type` is `info`, `note` describes
   the reason, byte count, and formatter-group offset, and `stream` is the observed formatter ID when known, including
