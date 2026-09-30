@@ -41,6 +41,7 @@ add_executable(CtraceUnitTests
   src/diagnostics/DiagnosticsTests.cpp
   src/model/TraceSelectionTests.cpp
   src/model/DiagnosticMessagesTests.cpp
+  src/model/MessagesTests.cpp
   src/model/TraceMessagesTests.cpp
   src/output/OutputRequirementsTests.cpp
   src/output/TraceOutputLifecycleTests.cpp

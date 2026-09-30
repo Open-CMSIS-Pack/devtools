@@ -48,7 +48,7 @@ static void removeExistingCsv(const std::filesystem::path& path)
   const auto normalized = path.lexically_normal();
   if (path.empty() || normalized == normalized.root_path() || normalized.filename().empty() ||
       normalized.filename() == "." || normalized.filename() == "..") {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CsvFilePathRequired));
+    throw std::invalid_argument(formatMessage(MessageId::CsvFilePathRequired));
   }
   std::error_code error;
   const auto status = std::filesystem::symlink_status(path, error);
@@ -93,7 +93,7 @@ CsvFileOutput::CsvFileOutput(std::filesystem::path outputFile, TraceSelection se
     m_streamFactory(std::move(streamFactory))
 {
   if (!m_streamFactory) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CsvStreamFactoryRequired));
+    throw std::invalid_argument(formatMessage(MessageId::CsvStreamFactoryRequired));
   }
 }
 

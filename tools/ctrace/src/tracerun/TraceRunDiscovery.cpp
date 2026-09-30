@@ -208,7 +208,7 @@ std::vector<TraceRunRawInput> TraceRunDiscovery::selectInputs(const TraceRunConf
                                                              const SkippedTraceRunInputSink& skippedInputSink)
 {
   if (config.path.empty()) {
-    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::TraceConfigurationSourcePathMissing));
+    throw std::runtime_error(formatMessage(MessageId::TraceConfigurationSourcePathMissing));
   }
   const std::filesystem::path configFile(config.path);
   const auto rawInputs = TraceRunDiscovery::rawInputs(configFile);

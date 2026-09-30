@@ -26,26 +26,26 @@
 CortexMStreamDecoder::CortexMStreamDecoder(const std::vector<CortexMDecodeRoute>& routes, TraceEventSink& eventSink)
 {
   if (routes.empty()) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CortexRoutesRequired));
+    throw std::invalid_argument(formatMessage(MessageId::CortexRoutesRequired));
   }
 
   std::set<std::uint8_t> traceBusIds;
   for (const auto& route : routes) {
     if (route.timestampPrescaler == 0U) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::TimestampPrescalerPositive));
+      throw std::invalid_argument(formatMessage(MessageId::TimestampPrescalerPositive));
     }
     if (route.identity.traceBusId.has_value() && !CoreSight::isAtbTraceId(*route.identity.traceBusId)) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CortexTraceBusIdRange));
+      throw std::invalid_argument(formatMessage(MessageId::CortexTraceBusIdRange));
     }
     if (route.identity.traceBusId.has_value() && !traceBusIds.insert(*route.identity.traceBusId).second) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CortexDuplicateTraceBusId));
+      throw std::invalid_argument(formatMessage(MessageId::CortexDuplicateTraceBusId));
     }
     RouteDecoder state;
     state.identity = route.identity;
     state.timestampPrescaler = route.timestampPrescaler;
     state.decoder = std::make_unique<CortexMPostDecoder>(route.identity, eventSink);
     if (!m_decoders.emplace(route.identity.id, std::move(state)).second) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CortexDuplicateRouteId));
+      throw std::invalid_argument(formatMessage(MessageId::CortexDuplicateRouteId));
     }
   }
 }
@@ -60,7 +60,7 @@ void CortexMStreamDecoder::append(OpenCsdTraceElement element)
   }
   auto& route = found->second;
   if (element.route != route.identity) {
-    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CortexRouteIdentityMismatch));
+    throw std::runtime_error(formatMessage(MessageId::CortexRouteIdentityMismatch));
   }
   if (element.kind == OpenCsdTraceElement::Kind::LocalTimestamp && element.tcyc.has_value()) {
     element.tcyc = SaturatingArithmetic::multiply(*element.tcyc, route.timestampPrescaler);

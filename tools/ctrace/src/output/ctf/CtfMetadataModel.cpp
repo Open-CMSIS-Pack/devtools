@@ -97,7 +97,7 @@ void CtfMetadataModel::observeException(CtfStreamClassId streamClassId, Exceptio
       std::find_if(m_topology.streams.begin(), m_topology.streams.end(),
                    [&](const CtfStreamDescriptor& candidate) { return candidate.streamClassId == streamClassId; });
   if (stream == m_topology.streams.end()) {
-    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfExceptionStreamUnknown));
+    throw std::runtime_error(formatMessage(MessageId::CtfExceptionStreamUnknown));
   }
   m_observedExceptions[streamClassId].insert(number);
 }
@@ -114,7 +114,7 @@ void CtfMetadataModel::observeGraphicalTopic(CtfStreamClassId streamClassId, Ctf
   if (std::none_of(m_topology.streams.begin(), m_topology.streams.end(), [&](const auto& stream) {
         return stream.streamClassId == streamClassId;
       })) {
-    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfGraphicalStreamUnknown));
+    throw std::runtime_error(formatMessage(MessageId::CtfGraphicalStreamUnknown));
   }
   m_observedGraphicalTopics[streamClassId].insert(topic);
 }
@@ -194,16 +194,16 @@ void CtfMetadataModel::validateClockDomains() const
   std::set<CtfUuid> clockUuids;
   for (const auto& clock : m_topology.clockDomains) {
     if (!clockIds.insert(clock.id).second) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfDuplicateClockId));
+      throw std::invalid_argument(formatMessage(MessageId::CtfDuplicateClockId));
     }
     if (!isTsdlIdentifier(clock.name) || !clockNames.insert(clock.name).second) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfClockNamesInvalid));
+      throw std::invalid_argument(formatMessage(MessageId::CtfClockNamesInvalid));
     }
     if (clock.frequencyHz == 0U) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfClockFrequencyNonzero));
+      throw std::invalid_argument(formatMessage(MessageId::CtfClockFrequencyNonzero));
     }
     if (clock.uuid.has_value() && (*clock.uuid == m_traceUuid || !clockUuids.insert(*clock.uuid).second)) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfClockUuidsDistinct));
+      throw std::invalid_argument(formatMessage(MessageId::CtfClockUuidsDistinct));
     }
   }
 }
@@ -217,28 +217,28 @@ void CtfMetadataModel::validateStreams() const
     const auto [route, inserted] = routeIdentities.emplace(stream.route.id, stream.route);
     if (!inserted) {
       throw std::invalid_argument(route->second == stream.route
-                                      ? diagnosticMessage(DiagnosticMessageCode::CtfDuplicateRoute)
-                                      : diagnosticMessage(DiagnosticMessageCode::CtfInconsistentRoutes));
+                                      ? formatMessage(MessageId::CtfDuplicateRoute)
+                                      : formatMessage(MessageId::CtfInconsistentRoutes));
     }
     if (!streamIds.insert(stream.streamClassId).second) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfDuplicateStreamId));
+      throw std::invalid_argument(formatMessage(MessageId::CtfDuplicateStreamId));
     }
     if (clockDomain(stream.clockDomainId) == nullptr) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfStreamClockUnknown));
+      throw std::invalid_argument(formatMessage(MessageId::CtfStreamClockUnknown));
     }
     referencedClockIds.insert(stream.clockDomainId);
     if (stream.route.traceBusId.has_value() && !CoreSight::isAtbTraceId(*stream.route.traceBusId)) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfRouteBusIdRange));
+      throw std::invalid_argument(formatMessage(MessageId::CtfRouteBusIdRange));
     }
     const auto expectedStreamClassId = CtfStreamClassId{stream.route.traceBusId.value_or(0U)};
     if (stream.streamClassId != expectedStreamClassId) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfStreamRouteMismatch));
+      throw std::invalid_argument(formatMessage(MessageId::CtfStreamRouteMismatch));
     }
   }
 
   for (const auto& clock : m_topology.clockDomains) {
     if (referencedClockIds.find(clock.id) == referencedClockIds.end()) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfUnreferencedClock));
+      throw std::invalid_argument(formatMessage(MessageId::CtfUnreferencedClock));
     }
   }
 }
@@ -248,25 +248,25 @@ void CtfMetadataModel::validateSources() const
   for (std::size_t index = 0U; index < m_topology.sources.size(); ++index) {
     const auto& source = m_topology.sources[index];
     if (streamForRoute(source.route) == nullptr) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfSourceRouteUnknown));
+      throw std::invalid_argument(formatMessage(MessageId::CtfSourceRouteUnknown));
     }
     if (source.type == "itm") {
       if (source.source == CoreSight::kExcludedItmStimulusPort || !CoreSight::isItmStimulusPort(source.source)) {
-        throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfItmChannelRange));
+        throw std::invalid_argument(formatMessage(MessageId::CtfItmChannelRange));
       }
     } else if (source.type == "dwt") {
       if (source.source > 3U) {
-        throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfDwtComparatorRange));
+        throw std::invalid_argument(formatMessage(MessageId::CtfDwtComparatorRange));
       }
       if (CtfSchema::valueVariantForTraceRunType(source.dataType, source.dataSize) == nullptr) {
-        throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfDataTypeSizeInvalid));
+        throw std::invalid_argument(formatMessage(MessageId::CtfDataTypeSizeInvalid));
       }
       const auto extent = static_cast<std::uint64_t>(source.dataSize - 1U);
       if (source.address.has_value() && *source.address > std::numeric_limits<std::uint64_t>::max() - extent) {
-        throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfSourceAddressOverflow));
+        throw std::invalid_argument(formatMessage(MessageId::CtfSourceAddressOverflow));
       }
     } else {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfSourceTypeInvalid));
+      throw std::invalid_argument(formatMessage(MessageId::CtfSourceTypeInvalid));
     }
     if (index > 0U) {
       const auto& previous = m_topology.sources[index - 1U];
@@ -274,8 +274,8 @@ void CtfMetadataModel::validateSources() const
           previous.route.id == source.route.id && previous.type == source.type && previous.source == source.source;
       if (sameKey) {
         throw std::invalid_argument(equivalentSource(previous, source)
-                                        ? diagnosticMessage(DiagnosticMessageCode::CtfDuplicateSource)
-                                        : diagnosticMessage(DiagnosticMessageCode::CtfConflictingSource));
+                                        ? formatMessage(MessageId::CtfDuplicateSource)
+                                        : formatMessage(MessageId::CtfConflictingSource));
       }
     }
   }
@@ -286,7 +286,7 @@ void CtfMetadataModel::validateNonLegacyClockDomains() const
   if (!isLegacySingleStreamLayout()) {
     for (const auto& clock : m_topology.clockDomains) {
       if (!clock.uuid.has_value()) {
-        throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfExplicitClockUuidRequired));
+        throw std::invalid_argument(formatMessage(MessageId::CtfExplicitClockUuidRequired));
       }
     }
   }

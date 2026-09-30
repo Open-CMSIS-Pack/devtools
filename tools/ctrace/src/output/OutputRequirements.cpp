@@ -138,7 +138,7 @@ static bool validateCtfSourceIdentity(const CtraceRunMeta& ctraceRunMeta, const 
       context.emplace_back("firstProcessor", first.processorName.value_or("<unspecified>"));
       context.emplace_back("otherProcessor", source.processorName.value_or("<unspecified>"));
       reportRequirementError(diagnostics,
-                             diagnosticMessage(DiagnosticMessageCode::CtfConflictingSourceMetadata),
+                             formatMessage(MessageId::CtfConflictingSourceMetadata),
                              std::move(context));
     }
   }
@@ -177,15 +177,15 @@ resolveCtfTopology(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& sel
     if (route->timestampClockError.has_value()) {
       valid = false;
       context.emplace_back("error", *route->timestampClockError);
-      reportRequirementError(diagnostics, diagnosticMessage(DiagnosticMessageCode::CtfConfiguredClockInvalid),
+      reportRequirementError(diagnostics, formatMessage(MessageId::CtfConfiguredClockInvalid),
                              std::move(context));
     } else if (!route->timestampClockHz.has_value()) {
       valid = false;
-      reportRequirementError(diagnostics, diagnosticMessage(DiagnosticMessageCode::CtfClockRequired),
+      reportRequirementError(diagnostics, formatMessage(MessageId::CtfClockRequired),
                              std::move(context));
     } else if (*route->timestampClockHz == 0U) {
       valid = false;
-      reportRequirementError(diagnostics, diagnosticMessage(DiagnosticMessageCode::CtfClockPositive),
+      reportRequirementError(diagnostics, formatMessage(MessageId::CtfClockPositive),
                              std::move(context));
     }
   }
@@ -232,15 +232,15 @@ static bool validateCtfDwtParsedMetadata(const CtraceRunMeta& ctraceRunMeta, con
 {
   bool valid = true;
   if (reportCtfDwtFieldError(ctraceRunMeta, source, source.addressError,
-                             diagnosticMessage(DiagnosticMessageCode::CtfConfiguredAddressInvalid), diagnostics)) {
+                             formatMessage(MessageId::CtfConfiguredAddressInvalid), diagnostics)) {
     valid = false;
   }
   if (reportCtfDwtFieldError(ctraceRunMeta, source, source.dataTypeError,
-                             diagnosticMessage(DiagnosticMessageCode::CtfConfiguredDataTypeInvalid), diagnostics)) {
+                             formatMessage(MessageId::CtfConfiguredDataTypeInvalid), diagnostics)) {
     valid = false;
   }
   if (reportCtfDwtFieldError(ctraceRunMeta, source, source.dataSizeError,
-                             diagnosticMessage(DiagnosticMessageCode::CtfConfiguredSizeInvalid), diagnostics)) {
+                             formatMessage(MessageId::CtfConfiguredSizeInvalid), diagnostics)) {
     valid = false;
   }
   return valid;
@@ -253,7 +253,7 @@ static bool validateCtfDwtShape(const CtraceRunMeta& ctraceRunMeta, const Ctrace
   bool valid = true;
   if (source.source > 3U) {
     valid = false;
-    reportRequirementError(diagnostics, diagnosticMessage(DiagnosticMessageCode::CtfComparatorRange),
+    reportRequirementError(diagnostics, formatMessage(MessageId::CtfComparatorRange),
                            routeContext("ctf", ctraceRunMeta, source));
   }
 
@@ -295,7 +295,7 @@ static bool validateCtfDwtAddressRange(const CtraceRunMeta& ctraceRunMeta, const
   auto context = routeContext("ctf", ctraceRunMeta, source);
   context.emplace_back("address", std::to_string(*source.address));
   context.emplace_back("dataSize", std::to_string(source.dataSize));
-  reportRequirementError(diagnostics, diagnosticMessage(DiagnosticMessageCode::CtfAddressRangeInvalid),
+  reportRequirementError(diagnostics, formatMessage(MessageId::CtfAddressRangeInvalid),
                          std::move(context));
   return false;
 }

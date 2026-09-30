@@ -43,20 +43,20 @@ OpenCsdPacketCollector::OpenCsdPacketCollector(std::vector<TraceRouteIdentity> r
     m_skippedBytesSink(std::move(skippedBytesSink))
 {
   if (routes.empty()) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::PacketRoutesRequired));
+    throw std::invalid_argument(formatMessage(MessageId::PacketRoutesRequired));
   }
   for (auto& route : routes) {
     if (!route.traceBusId.has_value() || !CoreSight::isAtbTraceId(*route.traceBusId)) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::PacketTraceBusIdRange));
+      throw std::invalid_argument(formatMessage(MessageId::PacketTraceBusIdRange));
     }
     const auto channel = *route.traceBusId;
     const auto duplicateRouteId = std::any_of(m_routesByChannel.begin(), m_routesByChannel.end(),
                                               [&](const auto& item) { return item.second.id == route.id; });
     if (duplicateRouteId) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::PacketDuplicateRouteId));
+      throw std::invalid_argument(formatMessage(MessageId::PacketDuplicateRouteId));
     }
     if (!m_routesByChannel.emplace(channel, route).second) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::PacketDuplicateTraceBusId));
+      throw std::invalid_argument(formatMessage(MessageId::PacketDuplicateTraceBusId));
     }
     m_formattedDataByRoute.emplace(route.id, FormattedRouteData{std::move(route), {}, {}});
   }
@@ -96,7 +96,7 @@ void OpenCsdPacketCollector::commitTransactionForRouteFailures(
                                       std::any_of(m_routesByChannel.begin(), m_routesByChannel.end(),
                                                   [routeId](const auto& item) { return item.second.id == routeId; });
     if (!knownConfiguredRoute) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::PacketUnknownCutoffRoute));
+      throw std::invalid_argument(formatMessage(MessageId::PacketUnknownCutoffRoute));
     }
   }
 
@@ -262,7 +262,7 @@ void OpenCsdPacketCollector::appendDecodeErrorImpl(const TraceRouteIdentity& rou
                                                    std::optional<std::uint64_t> callbackOrder, bool reportedDiagnostic)
 {
   if (!containsRoute(route)) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::PacketUnknownDiagnosticRoute));
+    throw std::invalid_argument(formatMessage(MessageId::PacketUnknownDiagnosticRoute));
   }
   OpenCsdTraceElement element;
   element.kind = OpenCsdTraceElement::Kind::Error;
@@ -331,7 +331,7 @@ void OpenCsdPacketCollector::appendDataLossError(const TraceRouteIdentity& route
                                                  const TraceMessage& message, std::uint64_t rawBytesConsumed)
 {
   if (!containsRoute(route)) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::PacketUnknownDataLossRoute));
+    throw std::invalid_argument(formatMessage(MessageId::PacketUnknownDataLossRoute));
   }
   OpenCsdTraceElement element;
   element.kind = OpenCsdTraceElement::Kind::Error;
@@ -348,7 +348,7 @@ bool OpenCsdPacketCollector::insertDataLossBeforeSync(const TraceRouteIdentity& 
                                                       std::optional<std::uint64_t> beforeOffset)
 {
   if (!containsRoute(route)) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::PacketUnknownDataLossRoute));
+    throw std::invalid_argument(formatMessage(MessageId::PacketUnknownDataLossRoute));
   }
   if (!m_transactionActive) {
     return false;
@@ -429,7 +429,7 @@ void OpenCsdPacketCollector::rawPacketForRoute(const TraceRouteIdentity& route, 
 {
   try {
     if (!containsRoute(route)) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::PacketUnknownRawRoute));
+      throw std::invalid_argument(formatMessage(MessageId::PacketUnknownRawRoute));
     }
     appendRawPacket(route, op, index_sop, pkt, size, data);
   } catch (...) {
@@ -444,7 +444,7 @@ void OpenCsdPacketCollector::formattedDataForRoute(const TraceRouteIdentity& rou
 {
   const auto found = m_formattedDataByRoute.find(route.id);
   if (found == m_formattedDataByRoute.end() || found->second.route != route) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::PacketUnknownFormattedRoute));
+    throw std::invalid_argument(formatMessage(MessageId::PacketUnknownFormattedRoute));
   }
   auto& state = found->second;
   if (size == 0U || state.synchronized || state.lastFormatterOffset == index) {

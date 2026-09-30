@@ -106,7 +106,7 @@ void TraceCompassXmlOutput::add(std::string_view channel, const CtfMetadataModel
   if (clocks.size() != 1U) {
     m_diagnostics.report({
         DiagnosticSink::Severity::Warning,
-        diagnosticMessage(DiagnosticMessageCode::XmlMultipleClockDomains),
+        formatMessage(MessageId::XmlMultipleClockDomains),
         {{"backend", "ctf"}, {"path", m_path.string()}, {"inputChannel", std::string(channel)},
          {"clockDomains", std::to_string(clocks.size())}},
     });

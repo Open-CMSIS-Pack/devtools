@@ -5,6 +5,8 @@
 set(CTRACE_MODEL_HEADER_FILES
   model/CoreSightFormatter.h
   model/DiagnosticMessages.h
+  model/MessageCatalog.inc
+  model/Messages.h
   model/TraceEvent.h
   model/TraceMessages.h
   model/TraceRoute.h
@@ -46,6 +48,7 @@ set(CTRACE_OUTPUT_HEADER_FILES
   output/TraceOutput.h
   output/TraceOutputConfig.h
   output/TraceOutputLifecycle.h
+  output/csv/CsvField.h
   output/csv/CsvFileOutput.h
   output/csv/CsvRowMapper.h
   output/ctf/CtfBundleOutput.h
@@ -80,6 +83,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
 
 add_library(ctrace-model STATIC
   model/DiagnosticMessages.cpp
+  model/Messages.cpp
   model/TraceMessages.cpp
   model/TraceSelection.cpp
   ${CTRACE_MODEL_HEADER_FILES}

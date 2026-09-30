@@ -28,7 +28,7 @@ public:
   static constexpr std::uint64_t multiply(std::uint64_t value, std::uint32_t factor)
   {
     if (factor == 0U) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::TimestampPrescalerNonzero));
+      throw std::invalid_argument(formatMessage(MessageId::TimestampPrescalerNonzero));
     }
     const auto maximum = std::numeric_limits<std::uint64_t>::max();
     return value > maximum / factor ? maximum : value * factor;

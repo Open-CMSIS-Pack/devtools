@@ -208,7 +208,7 @@ static void validateCliOptions(const CliOptions& options)
     return;
   }
   if (!options.traceDir.has_value()) {
-    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::SpecifyTraceDirectory));
+    throw std::runtime_error(formatMessage(MessageId::SpecifyTraceDirectory));
   }
 }
 

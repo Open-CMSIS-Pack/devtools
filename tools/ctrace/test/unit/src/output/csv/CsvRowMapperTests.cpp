@@ -11,6 +11,7 @@
 #include "TraceMessages.h"
 #include "TraceRoute.h"
 #include "TraceSelection.h"
+#include "csv/CsvField.h"
 #include "csv/CsvRowMapper.h"
 #include <array>
 #include <optional>
@@ -18,6 +19,24 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+
+TEST(CtraceUnitTests, testCsvFieldEscapesDelimitersAndPreservesContents)
+{
+  const std::array<std::pair<std::string_view, std::string_view>, 9> cases{{
+      {"", ""},
+      {"plain text", "plain text"},
+      {"comma, separated", "\"comma, separated\""},
+      {"\"", "\"\"\"\""},
+      {"\"quoted\"", "\"\"\"quoted\"\"\""},
+      {"carriage\rreturn", "\"carriage\rreturn\""},
+      {"line\nbreak", "\"line\nbreak\""},
+      {"both\r\nlines", "\"both\r\nlines\""},
+      {"comma, \"quote\"\r\nnext", "\"comma, \"\"quote\"\"\r\nnext\""},
+  }};
+  for (const auto& [value, expected] : cases) {
+    EXPECT_EQ(Csv::escapeField(value), expected);
+  }
+}
 
 TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
 {

@@ -86,7 +86,7 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
   context.emplace_back("enable", hexMask(streamMask->second));
   m_diagnostics.report({
       DiagnosticSink::Severity::Warning,
-      diagnosticMessage(DiagnosticMessageCode::ItmDisabledChannel),
+      formatMessage(MessageId::ItmDisabledChannel),
       std::move(context),
   });
 }

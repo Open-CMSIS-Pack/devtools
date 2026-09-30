@@ -7,6 +7,7 @@
 
 #include "CsvRowMapper.h"
 
+#include "CsvField.h"
 #include "TraceEvent.h"
 #include "TraceMessages.h"
 #include "TraceSelection.h"
@@ -65,24 +66,6 @@ static std::size_t column(CsvColumn value)
   return static_cast<std::size_t>(value);
 }
 
-/** @brief Applies RFC-style quoting to one CSV field when required. */
-static std::string escapeCsvField(const std::string& value)
-{
-  if (value.find_first_of("\",\r\n") == std::string::npos) {
-    return value;
-  }
-  std::string escaped = "\"";
-  for (const auto ch : value) {
-    if (ch == '"') {
-      escaped += "\"\"";
-    } else {
-      escaped += ch;
-    }
-  }
-  escaped += "\"";
-  return escaped;
-}
-
 /** @brief Joins escaped fields into one CSV row. */
 static std::string renderCsvRow(const CsvRow& fields)
 {
@@ -91,7 +74,7 @@ static std::string renderCsvRow(const CsvRow& fields)
     if (index != 0U) {
       out << ",";
     }
-    out << escapeCsvField(fields[index]);
+    out << Csv::escapeField(fields[index]);
   }
   return out.str();
 }

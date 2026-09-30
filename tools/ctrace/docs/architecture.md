@@ -335,6 +335,11 @@ Diagnostics carry a severity, message, context, and impact. Severity describes t
 determines whether the current job must fail. This distinction allows a trace-run generation error to remain visible
 without necessarily preventing the decoding of otherwise valid trace input.
 
+`MessageCatalog.inc` owns ctrace's diagnostic templates and generates the central `MessageId` enum. Each entry keeps
+its detailed and compact text together. `Messages` substitutes positional arguments; typed `TraceMessages` and
+`DiagnosticMessages` adapters select IDs and arguments. Trace records remain structured until output; CLI-only
+messages can be formatted at their existing call sites. See the [message-system design](message-system-design.md).
+
 Decoder issue packets remain part of the event stream. `DecodeConsumers` reports every issue to stderr independently
 of output filters and forwards all events to the backends. The backends apply stream and type selection internally;
 selected issues become CSV error rows or CTF trace-status events. Repeated issues are not silently collapsed.
@@ -343,13 +348,15 @@ Ordinary route-bound CSV warnings and errors both use the `error` selector: an e
 severity column; diagnostic severity remains available in CLI output.
 
 A fatal decode abort adds an input-wide CSV `type=error` record regardless of type or stream selection. Only `type`
-and `note` are populated: `decode aborted after processing N input bytes; trace is incomplete: reason`. The empty
-cycle and stream fields avoid inventing a timestamp or assigning the input-wide termination to one route. This is
+and `note` are populated. The note starts with `Decode aborted after N bytes; trace incomplete` and appends a compact
+structured cause when available; the detailed reason remains in CLI output. The empty cycle and stream fields avoid
+inventing a timestamp or assigning the input-wide termination to one route. This is
 a ctrace output contract beyond the published specification, which does not define partial-file retention or
 global abort records. It does not turn ordinary route-bound diagnostics into unfiltered CSV rows.
 
-Byte-skip annotations are non-failing Info, not synchronization events. CSV uses `type=info`, a descriptive note,
+Byte-skip annotations are non-failing Info, not synchronization events. CSV uses `type=info`, `N bytes skipped: reason`,
 the observed formatter ID in `stream` when known, and empty `cycles`, `source`, `value`, `pc`, and `address` fields.
+The first formatter output group's raw offset remains in the detailed CLI message.
 These rows bypass both type and stream filters; `info` is not a new selectable event type. CTF ignores them instead
 of creating routes or clocks, and CLI Info remains visible in CTF-only mode. The existing once-per-ID unsupported
 source warning remains separate from byte accounting. A route-bound missing-sync Error follows ordinary output

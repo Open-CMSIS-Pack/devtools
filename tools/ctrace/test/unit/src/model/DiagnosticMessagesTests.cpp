@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <stdexcept>
 
 TEST(CtraceUnitTests, testDiagnosticLocationPreservesOpaqueDetail)
 {
@@ -61,4 +62,24 @@ TEST(CtraceUnitTests, testDecodeSummaryRetainsPrecisionAndZeroDuration)
             "processed 0 input bytes in 0.000 s (0.00 MiB/s); trace/diagnostic records: 3");
   EXPECT_EQ(decodeSummaryMessage(1048576U, 2.0, 4U),
             "processed 1048576 input bytes in 2.000 s (0.50 MiB/s); trace/diagnostic records: 4");
+}
+
+TEST(CtraceUnitTests, testDiagnosticAdaptersRejectUnknownDomainValues)
+{
+  EXPECT_THROW(configFieldMessage("clock", static_cast<ConfigFieldProblem>(-1)), std::logic_error);
+  EXPECT_THROW(processorBindingMessage(static_cast<ProcessorBindingProblem>(-1), "core"), std::logic_error);
+  EXPECT_THROW(traceBusBindingMessage(static_cast<TraceBusBindingProblem>(-1), 7U), std::logic_error);
+  EXPECT_THROW(pathDiagnosticMessage(static_cast<PathDiagnosticCode>(-1), "capture.raw"), std::logic_error);
+}
+
+TEST(CtraceUnitTests, testDiagnosticParametersRemainLiteralAfterSubstitution)
+{
+  EXPECT_EQ(unsignedArgumentMessage("--stream", "{0}%s"),
+            "--stream must be an unsigned integer, got {0}%s");
+  EXPECT_EQ(configFieldMessage("clock{1}", ConfigFieldProblem::ScalarUnsigned),
+            "'clock{1}' must be a scalar unsigned integer");
+  EXPECT_EQ(pathDiagnosticMessage(PathDiagnosticCode::CsvInspect, "trace {0}.csv", "native {1}: \"error\""),
+            "Failed to inspect existing CSV output trace {0}.csv: native {1}: \"error\"");
+  EXPECT_EQ(yamlParseMessage("input.yml", 42U, 7U, "native {0}\nsecond line"),
+            "failed to parse trace-run configuration: input.yml(42,7): native {0}\nsecond line");
 }

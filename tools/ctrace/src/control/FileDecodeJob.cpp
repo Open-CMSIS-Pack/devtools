@@ -165,7 +165,7 @@ static void reportTraceRunMeta(const CtraceRunMeta& meta, DiagnosticSink& diagno
 {
   diagnostics.report({
       DiagnosticSink::Severity::Info,
-      diagnosticMessage(DiagnosticMessageCode::AppliedTraceMetadata),
+      formatMessage(MessageId::AppliedTraceMetadata),
       {
           {"path", meta.configPath()},
           {"routes", std::to_string(meta.routes().size())},
@@ -187,7 +187,7 @@ static void reportTimestampPrescalers(const CtraceRunMeta& meta, DiagnosticSink&
       context.emplace_back("pname", *route.processorName);
     }
     diagnostics.report({DiagnosticSink::Severity::Info,
-                        diagnosticMessage(DiagnosticMessageCode::UsingTimestampPrescaler), std::move(context)});
+                        formatMessage(MessageId::UsingTimestampPrescaler), std::move(context)});
   }
 }
 
@@ -204,7 +204,7 @@ createDecodePipeline(const std::vector<CortexMDecodeRoute>& routes, OpenCsdItmIn
       routes, inputMode, consumers, [&diagnostics](std::uint8_t traceBusId, std::uint64_t sourceOffset) {
         diagnostics.report({
             DiagnosticSink::Severity::Warning,
-            diagnosticMessage(DiagnosticMessageCode::SkippingUnsupportedTraceSource),
+            formatMessage(MessageId::SkippingUnsupportedTraceSource),
             {
                 {"stream", std::to_string(traceBusId)},
                 {"rawOffset", std::to_string(sourceOffset)},

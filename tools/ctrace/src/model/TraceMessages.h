@@ -8,6 +8,8 @@
 #ifndef CTRACE_SRC_MODEL_TRACEMESSAGES_H
 #define CTRACE_SRC_MODEL_TRACEMESSAGES_H
 
+#include "Messages.h"
+
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -17,10 +19,7 @@
 #include <vector>
 
 /** @brief Chooses the complete CLI description or the compact CSV note. */
-enum class TraceMessageStyle {
-  Detailed,
-  Compact,
-};
+using TraceMessageStyle = MessageStyle;
 
 /** @brief Retains foreign text without inferring structured parameters from it. */
 struct TraceOpaqueMessage {

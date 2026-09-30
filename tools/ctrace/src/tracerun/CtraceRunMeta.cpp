@@ -253,17 +253,17 @@ static std::string referenceProblemMessage(const TraceRunConfig& config, const T
 {
   if (problem == ReferenceProblem::DuplicateSource) {
     return configError(config, reference.line,
-                       reference.line > 0U ? diagnosticMessage(DiagnosticMessageCode::ReferenceDuplicateSourceLocated)
-                                           : diagnosticMessage(DiagnosticMessageCode::ReferenceDuplicateSource));
+                       reference.line > 0U ? formatMessage(MessageId::ReferenceDuplicateSourceLocated)
+                                           : formatMessage(MessageId::ReferenceDuplicateSource));
   }
   if (problem == ReferenceProblem::InvalidStream) {
     return configError(config, reference.line,
-                       reference.line > 0U ? diagnosticMessage(DiagnosticMessageCode::ReferenceStreamRangeLocated)
-                                           : diagnosticMessage(DiagnosticMessageCode::ReferenceStreamRange));
+                       reference.line > 0U ? formatMessage(MessageId::ReferenceStreamRangeLocated)
+                                           : formatMessage(MessageId::ReferenceStreamRange));
   }
   return configError(config, reference.line,
-                     reference.line > 0U ? diagnosticMessage(DiagnosticMessageCode::ReferenceItmSourceRangeLocated)
-                                         : diagnosticMessage(DiagnosticMessageCode::ReferenceItmSourceRange));
+                     reference.line > 0U ? formatMessage(MessageId::ReferenceItmSourceRangeLocated)
+                                         : formatMessage(MessageId::ReferenceItmSourceRange));
 }
 
 static bool setupContainsReference(const TraceRunSetup& setup, const TraceRunReference& reference);
@@ -364,7 +364,7 @@ static ProcessorIdentity resolveMultiSetupProcessorIdentity(const TraceRunConfig
 {
   if (evidence.unnamedSetup) {
     throw std::runtime_error(
-        locatedDiagnosticMessage(config.path, 0U, diagnosticMessage(DiagnosticMessageCode::SetupProcessorRequired)));
+        locatedDiagnosticMessage(config.path, 0U, formatMessage(MessageId::SetupProcessorRequired)));
   }
 
   std::set<std::string> matchingReferenceNames;
@@ -385,7 +385,7 @@ static ProcessorIdentity resolveMultiSetupProcessorIdentity(const TraceRunConfig
     for (const auto& binding : evidence.references) {
       if (!binding.name.has_value()) {
         addRootInconsistency(warnings,
-                             diagnosticMessage(DiagnosticMessageCode::IgnoringReferenceMultipleProcessors),
+                             formatMessage(MessageId::IgnoringReferenceMultipleProcessors),
                              warningContext(*binding.reference));
       }
     }
@@ -406,7 +406,7 @@ static ProcessorIdentity resolveMultiSetupProcessorIdentity(const TraceRunConfig
     }
     const auto& reference = *binding.reference;
     if (!reference.stream.has_value() || selectedStreams.find(*reference.stream) == selectedStreams.end()) {
-      addRootInconsistency(warnings, diagnosticMessage(DiagnosticMessageCode::IgnoringReferenceAmbiguousProcessor),
+      addRootInconsistency(warnings, formatMessage(MessageId::IgnoringReferenceAmbiguousProcessor),
                            warningContext(reference));
     }
   }
@@ -432,7 +432,7 @@ static ProcessorIdentity resolveSingleSetupProcessorIdentity(const TraceRunConfi
 
   if (evidence.referenceNames.size() > 1U) {
     throw std::runtime_error(
-        locatedDiagnosticMessage(config.path, 0U, diagnosticMessage(DiagnosticMessageCode::SingleProcessorBindingRequired)));
+        locatedDiagnosticMessage(config.path, 0U, formatMessage(MessageId::SingleProcessorBindingRequired)));
   }
   const auto processorName = evidence.referenceNames.empty()
                                  ? std::nullopt
@@ -447,7 +447,7 @@ static ProcessorIdentity resolveReferenceProcessorIdentity(const TraceRunConfig&
   if (evidence.referenceNames.size() > 1U) {
     if (evidence.unnamedReference) {
       throw std::runtime_error(
-          locatedDiagnosticMessage(config.path, 0U, diagnosticMessage(DiagnosticMessageCode::ReferenceProcessorRequired)));
+          locatedDiagnosticMessage(config.path, 0U, formatMessage(MessageId::ReferenceProcessorRequired)));
     }
     return {true, std::nullopt};
   }
@@ -512,7 +512,7 @@ static std::optional<TraceRunDataSetup> referencedDataSetup(const TraceRunConfig
   }
   if (conflict) {
     resolved->size.reset();
-    resolved->sizeError = diagnosticMessage(DiagnosticMessageCode::ConflictingDataSizes);
+    resolved->sizeError = formatMessage(MessageId::ConflictingDataSizes);
   }
   return resolved;
 }
@@ -633,7 +633,7 @@ static std::optional<std::string> commonTimestampClockError(const std::vector<Pr
     const auto candidateClock = processor.timestampsEnabled ? processor.timestampClockHz : std::nullopt;
     const auto candidateError = processor.timestampsEnabled ? processor.timestampClockError : std::nullopt;
     if (found && (clockHz != candidateClock || clockError != candidateError)) {
-      return diagnosticMessage(DiagnosticMessageCode::AmbiguousSingleClock);
+      return formatMessage(MessageId::AmbiguousSingleClock);
     }
     found = true;
     clockHz = candidateClock;
@@ -776,7 +776,7 @@ static std::optional<std::string> formattedProcessorName(const TraceRunConfig& c
   }
   throw std::runtime_error(configError(
       config, reference.line,
-      diagnosticMessage(DiagnosticMessageCode::FormattedReferenceProcessorRequired)));
+      formatMessage(MessageId::FormattedReferenceProcessorRequired)));
 }
 
 /** @brief Tests whether a setup feature path resolves one reference within the same fragment. */
@@ -852,15 +852,15 @@ static void validateFormattedReference(const TraceRunConfig& config, const Trace
 {
   if (referenceLeaf(reference.ctraceRef) == "itm" && !hasProcessorItmPath(reference)) {
     throw std::runtime_error(
-        configError(config, reference.line, diagnosticMessage(DiagnosticMessageCode::ItmAnchorPathRequired)));
+        configError(config, reference.line, formatMessage(MessageId::ItmAnchorPathRequired)));
   }
   if (hasProcessorItmPath(reference) && reference.type != "itm") {
     throw std::runtime_error(
-        configError(config, reference.line, diagnosticMessage(DiagnosticMessageCode::ItmAnchorTypeRequired)));
+        configError(config, reference.line, formatMessage(MessageId::ItmAnchorTypeRequired)));
   }
   if (hasFeaturePath(reference, "timestamps") && reference.type != "itm" && reference.type != "dwt") {
     throw std::runtime_error(
-        configError(config, reference.line, diagnosticMessage(DiagnosticMessageCode::TimestampReferenceType)));
+        configError(config, reference.line, formatMessage(MessageId::TimestampReferenceType)));
   }
   const auto pathSeparator = reference.ctraceRef.find('/');
   const auto processorName = TraceRunSchema::normalizedProcessorName(reference.processorName);
@@ -878,7 +878,7 @@ static void validateFormattedReference(const TraceRunConfig& config, const Trace
   }
   if (isProcessorItmAnchor(reference) && !reference.stream.has_value()) {
     throw std::runtime_error(
-        configError(config, reference.line, diagnosticMessage(DiagnosticMessageCode::ItmAnchorBusIdRequired)));
+        configError(config, reference.line, formatMessage(MessageId::ItmAnchorBusIdRequired)));
   }
 }
 
@@ -947,18 +947,18 @@ public:
         if (!TraceRunSchema::isTimestampPrescaler(candidatePrescaler)) {
           throw std::runtime_error(configError(
               m_config, timestamps.line,
-              timestamps.line > 0U ? diagnosticMessage(DiagnosticMessageCode::TimestampPrescalerRangeLocated)
-                                    : diagnosticMessage(DiagnosticMessageCode::TimestampPrescalerRange)));
+              timestamps.line > 0U ? formatMessage(MessageId::TimestampPrescalerRangeLocated)
+                                    : formatMessage(MessageId::TimestampPrescalerRange)));
         }
         if (prescaler.has_value() && *prescaler != candidatePrescaler) {
           throw std::runtime_error(configError(
               m_config, timestamps.line,
-              diagnosticMessage(DiagnosticMessageCode::ConflictingFormattedPrescalers)));
+              formatMessage(MessageId::ConflictingFormattedPrescalers)));
         }
         prescaler = candidatePrescaler;
 
         mergeTimestampClock(clockHz, clockError, timestamps.clockHz, timestamps.clockError,
-                            diagnosticMessage(DiagnosticMessageCode::ConflictingClocks));
+                            formatMessage(MessageId::ConflictingClocks));
       }
       if (setup->itm.has_value()) {
         if (setup->itm->enableError.has_value()) {
@@ -971,7 +971,7 @@ public:
         if (enableMask.has_value() && *enableMask != *candidateMask) {
           if (!enableMaskConflict) {
             addRootInconsistency(
-                m_warnings, diagnosticMessage(DiagnosticMessageCode::IgnoringFormattedItmEnableConflict),
+                m_warnings, formatMessage(MessageId::IgnoringFormattedItmEnableConflict),
                 {{"pname", route.processorName.value_or("<unnamed>")}, {"line", std::to_string(setup->line)}});
           }
           enableMaskConflict = true;
@@ -1081,7 +1081,7 @@ static void validateFormattedSetupProcessors(const TraceRunConfig& config, const
   if (setups.namedProcessors.size() > 1U && setups.hasUnnamedProcessor) {
     throw std::runtime_error(
         locatedDiagnosticMessage(config.path, 0U,
-                                 diagnosticMessage(DiagnosticMessageCode::ActiveSetupProcessorRequired)));
+                                 formatMessage(MessageId::ActiveSetupProcessorRequired)));
   }
   if (setups.namedProcessors.empty() && setups.hasUnnamedProcessor) {
     std::set<std::string> referenceNames;
@@ -1096,7 +1096,7 @@ static void validateFormattedSetupProcessors(const TraceRunConfig& config, const
     }
     if (referenceNames.size() > 1U) {
       throw std::runtime_error(
-          locatedDiagnosticMessage(config.path, 0U, diagnosticMessage(DiagnosticMessageCode::UnnamedSetupMultipleProcessors)));
+          locatedDiagnosticMessage(config.path, 0U, formatMessage(MessageId::UnnamedSetupMultipleProcessors)));
     }
   }
 }
@@ -1139,12 +1139,12 @@ static void validateFormattedRouteSet(const TraceRunConfig& config, const Active
 {
   if (setups.namedProcessors.empty() && setups.hasUnnamedProcessor && bindings.routes.size() > 1U) {
     throw std::runtime_error(
-        locatedDiagnosticMessage(config.path, 0U, diagnosticMessage(DiagnosticMessageCode::UnnamedSetupMultipleRoutes)));
+        locatedDiagnosticMessage(config.path, 0U, formatMessage(MessageId::UnnamedSetupMultipleRoutes)));
   }
 
   if (bindings.routes.empty()) {
     throw std::runtime_error(
-        locatedDiagnosticMessage(config.path, 0U, diagnosticMessage(DiagnosticMessageCode::FormattedRouteAnchorRequired)));
+        locatedDiagnosticMessage(config.path, 0U, formatMessage(MessageId::FormattedRouteAnchorRequired)));
   }
 }
 
@@ -1174,7 +1174,7 @@ static void bindFormattedReferences(const TraceRunConfig& config, const ActiveSe
     const auto routeId = streamlessRouteId(processorName, bindings.routes, bindings.processorRoutes);
     if (!routeId.has_value()) {
       throw std::runtime_error(configError(
-          config, reference.line, diagnosticMessage(DiagnosticMessageCode::StreamlessReferenceAmbiguous)));
+          config, reference.line, formatMessage(MessageId::StreamlessReferenceAmbiguous)));
     }
     bindStreamlessRoute(config, reference, *routeId, processorName, bindings.routes, bindings.processorRoutes);
   }
@@ -1273,8 +1273,8 @@ static void validateUnformattedSetups(const TraceRunConfig& config, const Proces
       throw std::runtime_error(
           configError(config, setup.timestamps->line,
                       setup.timestamps->line > 0U
-                          ? diagnosticMessage(DiagnosticMessageCode::TimestampPrescalerRangeLocated)
-                          : diagnosticMessage(DiagnosticMessageCode::TimestampPrescalerRange)));
+                          ? formatMessage(MessageId::TimestampPrescalerRangeLocated)
+                          : formatMessage(MessageId::TimestampPrescalerRange)));
     }
     if (setup.itm.has_value() && setup.itm->enableError.has_value()) {
       throw std::runtime_error(itmEnableError(config, setup));
@@ -1293,10 +1293,10 @@ static void mergeUnformattedTimestamps(const TraceRunConfig& config, const Trace
   if (processor.timestampsEnabled && processor.timestampPrescaler != prescaler) {
     throw std::runtime_error(
         configError(config, setup.timestamps->line,
-                    diagnosticMessage(DiagnosticMessageCode::ConflictingSinglePrescalers)));
+                    formatMessage(MessageId::ConflictingSinglePrescalers)));
   }
   mergeTimestampClock(processor.timestampClockHz, processor.timestampClockError, setup.timestamps->clockHz,
-                      setup.timestamps->clockError, diagnosticMessage(DiagnosticMessageCode::ConflictingClocks));
+                      setup.timestamps->clockError, formatMessage(MessageId::ConflictingClocks));
   processor.timestampsEnabled = true;
   processor.timestampPrescaler = prescaler;
 }
@@ -1312,7 +1312,7 @@ static void mergeUnformattedItm(const TraceRunSetup& setup, const std::optional<
     processor.itmEnableConflict = true;
     processor.itmEnableMask.reset();
     addRootInconsistency(warnings,
-                         diagnosticMessage(DiagnosticMessageCode::IgnoringSingleItmEnableConflict),
+                         formatMessage(MessageId::IgnoringSingleItmEnableConflict),
                          {{"pname", processorName.value_or("<unnamed>")}});
     return;
   }
@@ -1364,14 +1364,14 @@ static CtraceRunRoute makeUnformattedRoute(const TraceRunConfig& config, const s
   const auto timestampPrescaler = commonTimestampPrescaler(processors);
   if (!processors.empty() && !timestampPrescaler.has_value()) {
     throw std::runtime_error(
-        locatedDiagnosticMessage(config.path, 0U, diagnosticMessage(DiagnosticMessageCode::AmbiguousSinglePrescalers)));
+        locatedDiagnosticMessage(config.path, 0U, formatMessage(MessageId::AmbiguousSinglePrescalers)));
   }
   const auto timestampClockHz = commonTimestampClock(processors);
   const auto itmEnableMask = commonItmEnableMask(processors);
   if (hasDistinctItmEnableMasks(processors)) {
     addRootInconsistency(
         warnings,
-        diagnosticMessage(DiagnosticMessageCode::IgnoringProcessorItmEnableConflict));
+        formatMessage(MessageId::IgnoringProcessorItmEnableConflict));
   }
   const auto clockError = commonTimestampClockError(processors);
 

@@ -80,10 +80,10 @@ public:
   void push(const std::uint8_t* data, std::uint32_t size)
   {
     if (m_finished) {
-      throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::OpenCsdDecoderFinished));
+      throw std::runtime_error(formatMessage(MessageId::OpenCsdDecoderFinished));
     }
     if (data == nullptr && size != 0U) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::RawTraceDataNull));
+      throw std::invalid_argument(formatMessage(MessageId::RawTraceDataNull));
     }
     if (isFormatted() && size % CoreSightFormatter::kMemoryAlignedFrameSize != 0U) {
       m_collector.appendDecodeError(m_traceIndex, TraceInvalidFormattedChunk{},
@@ -208,11 +208,11 @@ private:
                                                 OpenCsdSkippedBytesObserver skippedBytesObserver)
   {
     if (routes.empty()) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::OpenCsdRoutesRequired));
+      throw std::invalid_argument(formatMessage(MessageId::OpenCsdRoutesRequired));
     }
     if (inputMode == OpenCsdItmInputMode::Single) {
       if (routes.size() != 1U) {
-        throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::OpenCsdSingleRouteRequired));
+        throw std::invalid_argument(formatMessage(MessageId::OpenCsdSingleRouteRequired));
       }
       return OpenCsdPacketCollector(routes.front(), elementSink);
     }

@@ -52,7 +52,7 @@ static void validateConfiguredRoute(const CtfEncoderConfig& config, const TraceR
   const auto configured = std::find_if(config.routes.begin(), config.routes.end(),
                                        [&](const TraceRouteIdentity& candidate) { return candidate.id == route.id; });
   if (configured == config.routes.end() || *configured != route) {
-    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfRouteIdentityMismatch));
+    throw std::runtime_error(formatMessage(MessageId::CtfRouteIdentityMismatch));
   }
 }
 
@@ -110,7 +110,7 @@ static const CtfSchema::DwtAddressVariant& dwtAddressVariant(const std::optional
   }
   const auto* variant = CtfSchema::dwtAddressVariantForSize(fragment->size);
   if (variant == nullptr) {
-    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfAddressPayloadSizeInvalid));
+    throw std::runtime_error(formatMessage(MessageId::CtfAddressPayloadSizeInvalid));
   }
   return *variant;
 }
@@ -262,7 +262,7 @@ void CtfEncoder::start(const std::filesystem::path& outputDirectory, const CtfUu
     const auto addInitialRoute = [&](const TraceRouteIdentity& route) {
       const auto [found, inserted] = initialRoutes.emplace(route.id, route);
       if (!inserted && found->second != route) {
-        throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfConfiguredRouteIdentityConflict));
+        throw std::runtime_error(formatMessage(MessageId::CtfConfiguredRouteIdentityConflict));
       }
     };
     for (const auto& route : m_config.routes) {
@@ -330,7 +330,7 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
   const auto* stream = m_metadata->streamForRoute(event.route);
   if (stream == nullptr) {
     throw std::runtime_error(
-        diagnosticMessage(DiagnosticMessageCode::CtfRuntimeStreamRequired));
+        formatMessage(MessageId::CtfRuntimeStreamRequired));
   }
   const auto selected = traceEventSelectedForOutput(event, m_config.selection);
   if (activatesStream(event, selected)) {
@@ -459,7 +459,7 @@ void CtfEncoder::writeSoftwareEvent(const TraceEvent& event, const SoftwareTrace
 {
   const auto* variant = CtfSchema::valueVariantForTraceRunType("unsigned", software.size);
   if (variant == nullptr) {
-    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfItmPayloadSizeInvalid));
+    throw std::runtime_error(formatMessage(MessageId::CtfItmPayloadSizeInvalid));
   }
   const auto quality = computeSampleQuality(event);
   const auto eventTimestamp = allocateEventTimestamp(event.route);
@@ -521,7 +521,7 @@ void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTra
   };
   m_config.diagnostics->report({
       DiagnosticSink::Severity::Warning,
-      diagnosticMessage(DiagnosticMessageCode::CtfConfiguredPayloadSizeMismatch),
+      formatMessage(MessageId::CtfConfiguredPayloadSizeMismatch),
       std::move(context),
   });
 }

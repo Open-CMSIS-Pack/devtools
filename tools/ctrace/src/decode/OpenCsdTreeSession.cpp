@@ -22,6 +22,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <utility>
 
 namespace {
 
@@ -71,9 +72,11 @@ void OpenCsdSessionValidation::requireObject(const void* object, TraceSetupOpera
 void OpenCsdSessionValidation::requireSuccess(ocsd_err_t error, TraceSetupOperation operation)
 {
   if (error != OCSD_OK) {
-    throw OpenCsdTreeSessionError(TraceSetupFailure{
-        operation, OpenCsdErrorController::describeApiError(error, formatTraceSetupOperation(operation)),
-        static_cast<int>(error)});
+    TraceSetupFailure failure;
+    failure.operation = operation;
+    failure.errorCode = static_cast<int>(error);
+    failure.nativeText = OpenCsdErrorController::describeApiError(error, formatTraceSetupOperation(operation));
+    throw OpenCsdTreeSessionError(std::move(failure));
   }
 }
 

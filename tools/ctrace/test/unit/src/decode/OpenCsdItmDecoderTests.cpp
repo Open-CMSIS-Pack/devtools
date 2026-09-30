@@ -1563,6 +1563,29 @@ TEST(CtraceUnitTests, testOpenCsdItmSessionUsesRouteLocalResetForSingleInput)
   EXPECT_NE(errors.decide(session.endOfTrace()).action, OpenCsdErrorController::Action::Abort);
 }
 
+TEST(CtraceUnitTests, testEmptySessionSetupErrorRetainsInitializationIssueFallback)
+{
+  CollectingOpenCsdElementSink sink;
+  const OpenCsdItmSessionFactory factory =
+      [](OpenCsdPacketCollector&, OpenCsdErrorController&) -> std::unique_ptr<OpenCsdItmSessionInterface> {
+    throw OpenCsdItmSessionError("");
+  };
+  const auto fatal = captureExceptionMessage<OpenCsdFatalError>([&] {
+    OpenCsdItmDecoder decoder(std::vector<TraceRouteIdentity>{TraceRouteIdentity{}},
+                              OpenCsdItmInputMode::Single, sink, factory);
+  });
+  ASSERT_TRUE(fatal.has_value());
+  EXPECT_TRUE(fatal->empty()) << "The original foreign exception detail remains unchanged";
+  ASSERT_EQ(sink.elements().size(), 1U);
+  const auto& element = sink.elements().front();
+  ASSERT_EQ(element.issueCode, TraceIssueCode::OpenCsdInitializationError);
+  const TraceIssueEvent issue{*element.issueCode, element.issueSeverity, element.errorMessage};
+  EXPECT_EQ(formatTraceIssue(issue, element.sourceIndex, TraceMessageStyle::Detailed),
+            "OpenCSD initialization failed");
+  EXPECT_EQ(formatTraceIssue(issue, element.sourceIndex, TraceMessageStyle::Compact),
+            "OpenCSD initialization failed; raw@0");
+}
+
 TEST(CtraceUnitTests, testOpenCsdItmSessionUsesSingleChannelAndAssociatedErrorLogger)
 {
   CollectingOpenCsdElementSink sink;

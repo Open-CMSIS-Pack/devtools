@@ -518,13 +518,13 @@ static bool isCanonicalClockUuid(std::string_view uuid)
 static void validateViewRoute(const TraceCompassXmlWriter::ViewRoute& route)
 {
   if ((route.views & ~TraceCompassXmlWriter::AllViews) != 0U) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::XmlViewSelectionInvalid));
+    throw std::invalid_argument(formatMessage(MessageId::XmlViewSelectionInvalid));
   }
   if (route.traceBusId != 0U && !CoreSight::isAtbTraceId(route.traceBusId)) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::XmlTraceBusIdRange));
+    throw std::invalid_argument(formatMessage(MessageId::XmlTraceBusIdRange));
   }
   if (!isCanonicalClockUuid(route.clockUuid)) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::XmlCanonicalClockUuidRequired));
+    throw std::invalid_argument(formatMessage(MessageId::XmlCanonicalClockUuidRequired));
   }
 }
 
@@ -532,19 +532,19 @@ static void validateViewRoute(const TraceCompassXmlWriter::ViewRoute& route)
 static AnalysisIdentity analysisIdentity(const std::vector<TraceCompassXmlWriter::ViewRoute>& routes)
 {
   if (routes.empty()) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::XmlViewRouteRequired));
+    throw std::invalid_argument(formatMessage(MessageId::XmlViewRouteRequired));
   }
   std::set<std::pair<std::string, std::uint8_t>> identities;
   auto views = TraceCompassXmlWriter::ViewMask{0U};
   for (const auto& route : routes) {
     validateViewRoute(route);
     if (!identities.emplace(route.clockUuid, route.traceBusId).second) {
-      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::XmlUniqueClockRouteRequired));
+      throw std::invalid_argument(formatMessage(MessageId::XmlUniqueClockRouteRequired));
     }
     views |= route.views;
   }
   if (views == 0U) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::XmlGraphicalViewRequired));
+    throw std::invalid_argument(formatMessage(MessageId::XmlGraphicalViewRequired));
   }
 
   constexpr std::uint64_t kFnvOffsetBasis = 14695981039346656037ULL;

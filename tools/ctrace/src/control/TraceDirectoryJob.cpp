@@ -89,7 +89,7 @@ static void reportConsumedReferenceDiagnostics(const TraceRunConfig& config, Dia
     for (const auto& error : reference.error) {
       diagnostics.report({
           DiagnosticSink::Severity::Error,
-          error.empty() ? diagnosticMessage(DiagnosticMessageCode::ReferenceDiagnosticMissing) : error,
+          error.empty() ? formatMessage(MessageId::ReferenceDiagnosticMissing) : error,
           referenceContext(config, reference),
           DiagnosticSink::Impact::NonFailing,
       });
@@ -151,7 +151,7 @@ void TraceDirectoryJob::run()
   if (m_options.traceDir.has_value()) {
     configFiles = TraceRunDiscovery::selectConfigFiles(*m_options.traceDir, m_options.targetName);
   } else {
-    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::TraceDirectoryRequired));
+    throw std::runtime_error(formatMessage(MessageId::TraceDirectoryRequired));
   }
 
   for (const auto& configFile : configFiles) {
@@ -166,7 +166,7 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
     auto config = m_configReader.read(configFile.string());
     m_diagnostics.report({
         DiagnosticSink::Severity::Info,
-        diagnosticMessage(DiagnosticMessageCode::SelectedTraceConfiguration),
+        formatMessage(MessageId::SelectedTraceConfiguration),
         {
             {"solutionSet", solutionSet},
             {"path", config.path},
@@ -178,7 +178,7 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
     const auto inputs = TraceRunDiscovery::selectInputs(config, [&](const auto& rawInput) {
       m_diagnostics.report({
           DiagnosticSink::Severity::Warning,
-          diagnosticMessage(DiagnosticMessageCode::SkippingExcludedTraceChannel),
+          formatMessage(MessageId::SkippingExcludedTraceChannel),
           {
               {"solutionSet", solutionSet},
               {"channel", rawInput.channel},

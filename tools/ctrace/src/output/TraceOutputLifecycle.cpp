@@ -30,7 +30,7 @@ static std::string exceptionMessage(const std::exception_ptr& error)
     // Preserve noexcept error reporting even for non-standard exceptions.
     (void)0;
   }
-  return diagnosticMessage(DiagnosticMessageCode::UnknownException);
+  return formatMessage(MessageId::UnknownException);
 }
 
 TraceOutputLifecycle::TraceOutputLifecycle(std::vector<std::unique_ptr<TraceOutput>> outputs,

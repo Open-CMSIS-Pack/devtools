@@ -37,7 +37,7 @@ CtfStreamWriter::Record::Record(std::vector<std::uint8_t>& buffer, std::size_t o
 void CtfStreamWriter::Record::requireSpace(std::size_t size) const
 {
   if (size > m_endOffset - m_offset) {
-    throw std::logic_error(diagnosticMessage(DiagnosticMessageCode::CtfPayloadExceedsSize));
+    throw std::logic_error(formatMessage(MessageId::CtfPayloadExceedsSize));
   }
 }
 
@@ -130,7 +130,7 @@ void CtfStreamWriter::writeRecord(std::uint32_t eventId, std::uint64_t timestamp
   const auto routeContextSize = m_eventContextLayout == EventContextLayout::RouteLabeled ? kRouteLabelContextSize : 0U;
   const auto totalSize = kEventPrefixSize + routeContextSize + payloadSize;
   if (totalSize > kPacketSizeBytes - kPacketOverhead) {
-    throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfRecordTooLarge));
+    throw std::invalid_argument(formatMessage(MessageId::CtfRecordTooLarge));
   }
   if (m_contentOffset + totalSize > kPacketSizeBytes) {
     flushPacket();
@@ -147,7 +147,7 @@ void CtfStreamWriter::writeRecord(std::uint32_t eventId, std::uint64_t timestamp
   }
   writePayload(record);
   if (record.m_offset != recordEnd) {
-    throw std::logic_error(diagnosticMessage(DiagnosticMessageCode::CtfPayloadShorterThanSize));
+    throw std::logic_error(formatMessage(MessageId::CtfPayloadShorterThanSize));
   }
 
   m_contentOffset = recordEnd;

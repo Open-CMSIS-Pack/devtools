@@ -255,15 +255,15 @@ static void requireSequence(const std::string& path, const Node& element, const 
 static Node traceRunRoot(const std::string& path, const Node& document)
 {
   if (!document.IsMap()) {
-    fail(path, document, diagnosticMessage(DiagnosticMessageCode::YamlRootMapRequired));
+    fail(path, document, formatMessage(MessageId::YamlRootMapRequired));
   }
 
   const auto root = childNode(document, "ctrace-run");
   if (!root) {
-    fail(path, document, diagnosticMessage(DiagnosticMessageCode::YamlRootMissing));
+    fail(path, document, formatMessage(MessageId::YamlRootMissing));
   }
   if (!root.IsMap()) {
-    fail(path, root, diagnosticMessage(DiagnosticMessageCode::YamlRootMapInvalid));
+    fail(path, root, formatMessage(MessageId::YamlRootMapInvalid));
   }
   return root;
 }
@@ -284,7 +284,7 @@ static std::optional<TraceRunFormat> parseTraceFormat(const std::string& path, c
   if (node.Scalar() == "formatted") {
     return TraceRunFormat::Formatted;
   }
-  fail(path, node, diagnosticMessage(DiagnosticMessageCode::TraceFormatInvalid));
+  fail(path, node, formatMessage(MessageId::TraceFormatInvalid));
 }
 
 /** @brief Parses scalar or sequence source identifiers from one reference. */
@@ -427,7 +427,7 @@ static std::vector<TraceRunReference> parseReferences(const std::string& path, c
 {
   const auto referencesNode = childNode(root, "ctrace-refs");
   if (!referencesNode) {
-    fail(path, root, diagnosticMessage(DiagnosticMessageCode::ReferenceArrayMissing));
+    fail(path, root, formatMessage(MessageId::ReferenceArrayMissing));
   }
   requireSequence(path, referencesNode, "ctrace-refs");
 
@@ -452,14 +452,14 @@ static std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::stri
     TraceRunTimestampSetup timestamps;
     timestamps.line = lineNumber(timestampsNode);
     if (timestampsNode.IsScalar() && !timestampsNode.Scalar().empty()) {
-      timestamps.clockError = diagnosticMessage(DiagnosticMessageCode::TimestampsMapRequired);
+      timestamps.clockError = formatMessage(MessageId::TimestampsMapRequired);
     }
     return timestamps;
   }
   if (!timestampsNode.IsMap()) {
     TraceRunTimestampSetup timestamps;
     timestamps.line = lineNumber(timestampsNode);
-    timestamps.clockError = diagnosticMessage(DiagnosticMessageCode::TimestampsMapRequired);
+    timestamps.clockError = formatMessage(MessageId::TimestampsMapRequired);
     return timestamps;
   }
 
@@ -492,7 +492,7 @@ static std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, co
   }
   if (!itmNode.IsMap()) {
     TraceRunItmSetup setup;
-    setup.enableError = errorMessage(path, itmNode, diagnosticMessage(DiagnosticMessageCode::ItmEnableMapRequired));
+    setup.enableError = errorMessage(path, itmNode, formatMessage(MessageId::ItmEnableMapRequired));
     return setup;
   }
   const auto enableNode = childNode(itmNode, "enable");
@@ -695,7 +695,7 @@ static std::vector<TraceRunSetup> parseSetups(const std::string& path, const Nod
 TraceRunConfig YmlTraceRunConfigReader::read(const std::string& path) const
 {
   if (path.empty()) {
-    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::TraceConfigurationPathEmpty));
+    throw std::runtime_error(formatMessage(MessageId::TraceConfigurationPathEmpty));
   }
 
   std::vector<Node> documents;
@@ -708,7 +708,7 @@ TraceRunConfig YmlTraceRunConfigReader::read(const std::string& path) const
   }
   if (documents.size() != 1U) {
     const auto location = documents.size() > 1U ? documents[1] : Node(YAML::NodeType::Undefined);
-    fail(path, location, diagnosticMessage(DiagnosticMessageCode::YamlDocumentCount));
+    fail(path, location, formatMessage(MessageId::YamlDocumentCount));
   }
 
   const auto root = traceRunRoot(path, documents.front());

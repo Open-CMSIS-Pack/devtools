@@ -12,6 +12,7 @@
 
 #include <array>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -285,4 +286,75 @@ TEST(TraceMessagesTests, OverflowEventAndSummaryKeepSeparateMeanings)
   EXPECT_EQ(formatTraceMessage(OverflowTraceEvent{"custom overflow detail"}, compact), "Timestamp discontinuity");
   EXPECT_EQ(formatOverflowSummary({{}, 1U}), "first overflow occurred at an unknown cycle timestamp");
   EXPECT_EQ(formatOverflowSummary({wideValue, 4U}), "first overflow occurred at cycle timestamp 4294967297; 3 more occurred");
+}
+
+TEST(TraceMessagesTests, EmptyInitializationDetailKeepsIssueFallbackAndOriginalAbortDetail)
+{
+  const TraceMessage message = TraceInitializationFailure{""};
+  const auto issue = makeTraceIssue(message);
+  EXPECT_EQ(formatTraceIssue(issue, wideValue, detailed), "OpenCSD initialization failed");
+  EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), "OpenCSD initialization failed; raw@4294967297");
+  EXPECT_EQ(formatTraceMessage(TraceDecodeAbort{0U, message}, detailed),
+            "decode aborted after processing 0 input bytes; trace is incomplete: ");
+  EXPECT_EQ(formatTraceMessage(TraceDecodeAbort{0U, message}, compact),
+            "Decode aborted after 0 bytes; trace incomplete; OpenCSD initialization failed");
+}
+
+TEST(TraceMessagesTests, SemanticFallbacksKeepCategoriesWithoutInventingPayloadParameters)
+{
+  const std::vector<std::pair<TraceIssueCode, const char*>> cases{
+      {TraceIssueCode::DecodeError, "Trace decode error"},
+      {TraceIssueCode::InvalidExceptionAction, "Invalid exception action"},
+      {TraceIssueCode::UnsupportedDwtEventCounterPayload, "Invalid DWT counter"},
+      {TraceIssueCode::UnsupportedPmuEventCounterPayload, "Invalid PMU counter"},
+      {TraceIssueCode::UnsupportedDwtAddressPayload, "Invalid DWT address payload"},
+      {TraceIssueCode::UnsupportedDwtPcSamplePayload, "Invalid PC sample"},
+      {TraceIssueCode::OpenCsdBadPacketSequence, "Invalid ITM packet sequence"},
+      {TraceIssueCode::OpenCsdInvalidPacketHeader, "Invalid ITM packet header"},
+      {TraceIssueCode::OpenCsdIncompleteTail, "Incomplete ITM packet at EOF"},
+      {TraceIssueCode::OpenCsdMissingSync, "No ITM SYNC before EOF"},
+      {TraceIssueCode::OpenCsdNoProgress, "No decode progress"},
+      {TraceIssueCode::OpenCsdWaitTimeout, "OpenCSD flush timeout"},
+      {TraceIssueCode::OpenCsdInitializationError, "OpenCSD initialization failed"},
+      {TraceIssueCode::OpenCsdDecodeError, "OpenCSD error"},
+  };
+  for (const auto& [code, expected] : cases) {
+    const TraceIssueEvent issue{code, TraceIssueSeverity::Error, "foreign {0} text"};
+    EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), std::string(expected) + "; raw@4294967297");
+    EXPECT_EQ(formatTraceIssue(issue, wideValue, detailed), "foreign {0} text");
+  }
+  const TraceIssueEvent warning{TraceIssueCode::OpenCsdDecodeError, TraceIssueSeverity::Warning, ""};
+  EXPECT_EQ(formatTraceIssue(warning, 0U, compact), "OpenCSD warning; raw@0");
+  EXPECT_EQ(formatTraceIssue(warning, 0U, detailed), "trace decode error at raw offset 0");
+  EXPECT_EQ(makeTraceIssue(TraceOpaqueMessage{"native detail"}).code, TraceIssueCode::DecodeError);
+}
+
+TEST(TraceMessagesTests, InvalidTypedParametersAreRejectedInsteadOfProducingEmptyMessages)
+{
+  EXPECT_THROW(formatTraceMessage(TraceCounterPayload{static_cast<TraceCounterKind>(99)}, detailed),
+               std::invalid_argument);
+  EXPECT_THROW(formatTraceMessage(TraceAddressPayload{static_cast<TraceAddressKind>(99)}, compact),
+               std::invalid_argument);
+  EXPECT_THROW(formatTraceMessage(TraceFlushTimeout{static_cast<TraceFlushPhase>(99)}, detailed),
+               std::invalid_argument);
+  EXPECT_THROW(formatTraceMessage(TraceRecovery{static_cast<TraceRecoveryKind>(99)}, detailed),
+               std::invalid_argument);
+  EXPECT_THROW(formatTraceMessage(TraceNativeDiagnostic{static_cast<TraceNativeCategory>(99)}, compact),
+               std::invalid_argument);
+  EXPECT_THROW(formatTraceMessage(TracePacketDiagnostic{static_cast<TracePacketDiagnosticKind>(99)}, detailed),
+               std::invalid_argument);
+  EXPECT_THROW(formatTraceMessage(TraceProgressFailure{static_cast<TraceProgressKind>(99)}, detailed),
+               std::invalid_argument);
+  EXPECT_THROW(formatTraceMessage(TraceByteSkip{0U, 1U, static_cast<TraceByteSkipReason>(99)}, compact),
+               std::invalid_argument);
+  const auto invalidStyle = static_cast<TraceMessageStyle>(99);
+  for (const auto reason : {TraceByteSkipReason::NoSourceId, TraceByteSkipReason::ReservedSourceId,
+                           TraceByteSkipReason::UnconfiguredSourceId}) {
+    EXPECT_THROW(formatTraceMessage(TraceByteSkip{0U, 1U, reason, 112U}, invalidStyle), std::invalid_argument);
+  }
+  EXPECT_THROW(formatTraceSetupOperation(static_cast<TraceSetupOperation>(99)), std::invalid_argument);
+  EXPECT_THROW(formatTracePacketContext({static_cast<TracePacketKind>(99), 0U, {}}), std::invalid_argument);
+  TraceMessage failure = TraceInvalidFormattedChunk{};
+  failure.phase = static_cast<TraceAbortPhase>(99);
+  EXPECT_THROW(formatTraceMessage(failure, detailed), std::invalid_argument);
 }
