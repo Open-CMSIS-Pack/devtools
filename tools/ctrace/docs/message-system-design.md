@@ -11,9 +11,8 @@ Parameterized messages use ordinary typed C++ functions and records. Fixed opera
 `DiagnosticMessageCode`. The implementation requires C++17 and no additional formatting dependency. A message's
 wording is independent of severity, process-failure impact, route, output filtering, and diagnostic context.
 
-The [coverage audit](message-coverage-audit.md) records the pre-migration sources and the boundaries that motivated
-this design. Both shared trace diagnostics and ctrace-owned CLI-only wording are now centralized; foreign text
-continues through an explicit opaque-text path.
+Both shared trace diagnostics and ctrace-owned CLI-only wording are centralized; foreign text continues through
+an explicit opaque-text path.
 
 ## Output contract
 
