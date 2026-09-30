@@ -55,7 +55,7 @@ static std::vector<std::pair<std::string, std::string>> referenceContext(const T
 {
   std::vector<std::pair<std::string, std::string>> context{
       {"config", config.path},
-      {"ctraceRef", reference.ctraceRef},
+      {"ref", reference.ref},
       {"type", reference.type},
   };
   if (reference.processorName.has_value()) {

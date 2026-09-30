@@ -33,7 +33,7 @@ ctrace-run:
     synchronization:
       DWT: 16M
   ctrace-refs:
-  - ctrace-ref: CM4/timestamps
+  - ref: CM4/timestamps
     type: dwt
     pname: CM4
     stream: 1
@@ -41,7 +41,7 @@ ctrace-run:
     - name: ITM_TCR
       value: 0x00000003
       mask: 0x00000303
-  - ctrace-ref: CM4/exceptions
+  - ref: CM4/exceptions
     type: exception
     pname: CM4
     stream: 1
@@ -52,7 +52,7 @@ ctrace-run:
     - name: ITM_TCR
       value: 0x00000009
       mask: 0x00000009
-  - ctrace-ref: CM4/itm
+  - ref: CM4/itm
     type: itm
     pname: CM4
     stream: 1
@@ -65,7 +65,7 @@ ctrace-run:
     - name: ITM_TCR
       value: 0x00010001
       mask: 0x007f0001
-  - ctrace-ref: CM4/pcsampling
+  - ref: CM4/pcsampling
     type: pcsample
     pname: CM4
     stream: 1
@@ -76,7 +76,7 @@ ctrace-run:
     - name: ITM_TCR
       value: 0x00000009
       mask: 0x00000009
-  - ctrace-ref: CM7/timestamps
+  - ref: CM7/timestamps
     type: dwt
     pname: CM7
     stream: 2
@@ -84,7 +84,7 @@ ctrace-run:
     - name: ITM_TCR
       value: 0x00000003
       mask: 0x00000303
-  - ctrace-ref: CM7/data#0
+  - ref: CM7/data#0
     type: dwt
     pname: CM7
     address: 0x24000024
@@ -102,7 +102,7 @@ ctrace-run:
     - name: ITM_TCR
       value: 0x00000009
       mask: 0x00000009
-  - ctrace-ref: CM7/exceptions
+  - ref: CM7/exceptions
     type: exception
     pname: CM7
     stream: 2
@@ -113,7 +113,7 @@ ctrace-run:
     - name: ITM_TCR
       value: 0x00000009
       mask: 0x00000009
-  - ctrace-ref: CM7/itm
+  - ref: CM7/itm
     type: itm
     pname: CM7
     stream: 2
@@ -126,7 +126,7 @@ ctrace-run:
     - name: ITM_TCR
       value: 0x00020001
       mask: 0x007f0001
-  - ctrace-ref: CM7/pcsampling
+  - ref: CM7/pcsampling
     type: pcsample
     pname: CM7
     stream: 2
@@ -137,7 +137,7 @@ ctrace-run:
     - name: ITM_TCR
       value: 0x00000009
       mask: 0x00000009
-  - ctrace-ref: CM7/synchronization
+  - ref: CM7/synchronization
     type: dwt
     pname: CM7
     stream: 2

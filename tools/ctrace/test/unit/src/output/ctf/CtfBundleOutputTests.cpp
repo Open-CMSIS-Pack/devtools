@@ -350,7 +350,7 @@ TEST(CtraceUnitTests, testCtfBundleOutputDefaultsDwtValueType)
   first.dataSize = 4U;
   TraceRunReference second = first;
   second.processorName = "core-two";
-  second.ctraceRef = "core-two/data#0";
+  second.ref = "core-two/data#0";
   second.stream = 2U;
   second.label = "core-two";
   traceRun.references = {
