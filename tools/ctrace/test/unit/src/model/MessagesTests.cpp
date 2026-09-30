@@ -69,13 +69,33 @@ std::string expectedText(const std::string& pattern, const std::vector<std::stri
   return result;
 }
 
+/** @brief Derives shared arity independently from the positions present in either catalog template. */
+std::size_t expectedArgumentCount(const CatalogRow& row)
+{
+  static const std::regex tokens(R"(\{([0-9]+)\})");
+  std::size_t count = 0U;
+  for (const auto* text : {row.detailed, row.compact}) {
+    if (text == nullptr) {
+      continue;
+    }
+    const std::string pattern(text);
+    for (std::sregex_iterator token(pattern.begin(), pattern.end(), tokens), end; token != end; ++token) {
+      const auto argument = static_cast<std::size_t>(std::stoul((*token)[1].str()));
+      if (argument >= count) {
+        count = argument + 1U;
+      }
+    }
+  }
+  return count;
+}
+
 } // namespace
 
 TEST(MessagesTests, EveryCatalogEntryFormatsBothStylesAndValidatesTheSharedArgumentCount)
 {
   for (const auto& row : rows) {
     SCOPED_TRACE(row.name);
-    const auto count = messageArgumentCount(row.id);
+    const auto count = expectedArgumentCount(row);
     ASSERT_LT(count, 16U);
     std::vector<std::string> arguments;
     for (std::size_t index = 0U; index < count; ++index) {
@@ -83,7 +103,6 @@ TEST(MessagesTests, EveryCatalogEntryFormatsBothStylesAndValidatesTheSharedArgum
     }
     for (const auto style : {MessageStyle::Detailed, MessageStyle::Compact}) {
       const auto* pattern = style == MessageStyle::Detailed || row.compact == nullptr ? row.detailed : row.compact;
-      EXPECT_EQ(messageTemplate(row.id, style), pattern);
       EXPECT_EQ(formatArguments(row.id, style, arguments), expectedText(pattern, arguments));
       if (count != 0U) {
         auto missing = arguments;
@@ -142,12 +161,9 @@ TEST(MessagesTests, InvalidIdsAndStylesAreRejected)
 {
   for (const auto id : {MessageId::Count, static_cast<MessageId>(std::numeric_limits<std::size_t>::max())}) {
     EXPECT_THROW(formatMessage(id), std::invalid_argument);
-    EXPECT_THROW(messageTemplate(id), std::invalid_argument);
-    EXPECT_THROW(messageArgumentCount(id), std::invalid_argument);
   }
   const auto invalidStyle = static_cast<MessageStyle>(-1);
   ASSERT_FALSE(rows.empty());
-  EXPECT_THROW(messageTemplate(rows.front().id, invalidStyle), std::invalid_argument);
-  const std::vector<std::string> arguments(messageArgumentCount(rows.front().id), "argument");
+  const std::vector<std::string> arguments(expectedArgumentCount(rows.front()), "argument");
   EXPECT_THROW(formatArguments(rows.front().id, invalidStyle, arguments), std::invalid_argument);
 }

@@ -52,8 +52,7 @@ style or wrong argument count is rejected rather than producing partial text.
 
 A `nullptr` compact template reuses the detailed template. This is the normal declaration for CLI-only messages;
 it does not cause a new CSV record to be emitted. An empty string is an intentionally empty template, not a request
-for fallback. `messageTemplate` and `messageArgumentCount` expose the selected template and shared arity for inspection
-and tests. Message IDs are internal identifiers; they are not serialized as new CSV fields or CTF attributes.
+for fallback. Message IDs are internal identifiers; they are not serialized as new CSV fields or CTF attributes.
 
 ## Typed trace transport
 

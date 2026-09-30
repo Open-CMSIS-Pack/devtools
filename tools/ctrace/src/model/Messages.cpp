@@ -165,13 +165,3 @@ std::string formatMessage(MessageId id, MessageStyle style, std::initializer_lis
   }
   return text;
 }
-
-std::string_view messageTemplate(MessageId id, MessageStyle style)
-{
-  return selectTemplate(catalogEntry(id), style);
-}
-
-std::size_t messageArgumentCount(MessageId id)
-{
-  return catalogEntry(id).argumentCount;
-}

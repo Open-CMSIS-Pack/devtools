@@ -65,9 +65,4 @@ private:
 std::string formatMessage(MessageId id, MessageStyle style = MessageStyle::Detailed,
                           std::initializer_list<MessageArgument> arguments = {});
 
-/** @brief Returns the selected template, including detailed fallback for CLI-only catalog entries. */
-std::string_view messageTemplate(MessageId id, MessageStyle style = MessageStyle::Detailed);
-/** @brief Returns the shared argument count derived from both templates' placeholder positions. */
-std::size_t messageArgumentCount(MessageId id);
-
 #endif // CTRACE_SRC_MODEL_MESSAGES_H
