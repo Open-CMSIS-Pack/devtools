@@ -190,9 +190,10 @@ OpenCSD logs an ITM packet error before invoking the raw-packet monitor. Ctrace
 therefore joins their observations after the operation using the normalized route
 and exact OpenCSD packet index. The copied context survives transaction rollback
 until that operation's logger diagnostics have been emitted; a new operation
-clears it. No pointer into the producer's buffer is retained. CLI and CSV preserve
-the native message and bounded packet preview instead of replacing them with a
-generic error label.
+clears it. No pointer into the producer's buffer is retained. Typed message data and packet
+context survive until output formatting. The CLI preserves native detail and the bounded
+packet preview; CSV uses a compact category and relevant parameters from the shared
+[message catalog](message-system-design.md).
 
 The current ITM decoder and formatter do not emit `LogMessage` diagnostics or
 warning-only root responses themselves. The latter are handled defensively.

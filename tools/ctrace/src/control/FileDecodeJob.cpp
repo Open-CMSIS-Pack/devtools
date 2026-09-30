@@ -7,6 +7,7 @@
 
 #include "FileDecodeJob.h"
 
+#include "DiagnosticMessages.h"
 #include "CliOptions.h"
 #include "csv/CsvFileOutput.h"
 #include "ctf/CtfBundleOutput.h"
@@ -16,6 +17,7 @@
 #include "DiagnosticSink.h"
 #include "OpenCsdItmDecoder.h"
 #include "OutputRequirements.h"
+#include "TraceMessages.h"
 #include "TraceOutput.h"
 #include "TraceOutputConfig.h"
 #include "TraceRunConfig.h"
@@ -25,12 +27,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <iomanip>
 #include <ios>
 #include <memory>
 #include <map>
 #include <optional>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -69,7 +69,7 @@ public:
       return {{m_buffer.data(), static_cast<std::size_t>(readBytes)}, false};
     }
     if (m_stream.bad()) {
-      throw std::runtime_error("failed to read input file: " + m_path.string());
+      throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::RawInputReadFailed, m_path.string()));
     }
     m_eof = true;
     return {{}, true};
@@ -86,13 +86,7 @@ private:
 static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady_clock::duration elapsed)
 {
   const auto seconds = std::chrono::duration<double>(elapsed).count();
-  const auto mebibytes = static_cast<double>(decode.bytesIn) / (1024.0 * 1024.0);
-  const auto mebibytesPerSecond = seconds > 0.0 ? mebibytes / seconds : 0.0;
-
-  std::ostringstream out;
-  out << "processed " << decode.bytesIn << " input bytes in " << std::fixed << std::setprecision(3) << seconds
-      << " s (" << std::setprecision(2) << mebibytesPerSecond << " MiB/s); trace/diagnostic records: " << decode.eventsOut;
-  return out.str();
+  return decodeSummaryMessage(decode.bytesIn, seconds, decode.eventsOut);
 }
 
 /** @brief Converts normalized trace-run routes into semantic decoder routes. */
@@ -171,7 +165,7 @@ static void reportTraceRunMeta(const CtraceRunMeta& meta, DiagnosticSink& diagno
 {
   diagnostics.report({
       DiagnosticSink::Severity::Info,
-      "applied ctrace-run meta",
+      diagnosticMessage(DiagnosticMessageCode::AppliedTraceMetadata),
       {
           {"path", meta.configPath()},
           {"routes", std::to_string(meta.routes().size())},
@@ -192,7 +186,8 @@ static void reportTimestampPrescalers(const CtraceRunMeta& meta, DiagnosticSink&
     if (route.processorName.has_value()) {
       context.emplace_back("pname", *route.processorName);
     }
-    diagnostics.report({DiagnosticSink::Severity::Info, "using timestamp prescaler", std::move(context)});
+    diagnostics.report({DiagnosticSink::Severity::Info,
+                        diagnosticMessage(DiagnosticMessageCode::UsingTimestampPrescaler), std::move(context)});
   }
 }
 
@@ -209,7 +204,7 @@ createDecodePipeline(const std::vector<CortexMDecodeRoute>& routes, OpenCsdItmIn
       routes, inputMode, consumers, [&diagnostics](std::uint8_t traceBusId, std::uint64_t sourceOffset) {
         diagnostics.report({
             DiagnosticSink::Severity::Warning,
-            "skipping unsupported formatted CoreSight trace source",
+            diagnosticMessage(DiagnosticMessageCode::SkippingUnsupportedTraceSource),
             {
                 {"stream", std::to_string(traceBusId)},
                 {"rawOffset", std::to_string(sourceOffset)},
@@ -269,13 +264,13 @@ std::optional<CtfMetadataModel> FileDecodeJob::run()
     auto pipeline = createDecodePipeline(routes, inputMode, consumers, m_sessionFactory, m_diagnostics);
     decode = decodeRawInput(m_input.path(), m_input.stream(), *pipeline);
   } catch (const OpenCsdFatalError& error) {
-    decodeAbort = TraceDecodeAbort{error.bytesProcessed(), error.what()};
+    decodeAbort = TraceDecodeAbort{error.bytesProcessed(), error.message()};
     decode.bytesIn = error.bytesProcessed();
     decode.eventsOut = consumers.eventCount() + 1U; // Includes the final input-wide abort record.
   }
   consumers.finishIssues();
   if (decodeAbort.has_value()) {
-    m_diagnostics.report({DiagnosticSink::Severity::Error, traceDecodeAbortMessage(*decodeAbort),
+    m_diagnostics.report({DiagnosticSink::Severity::Error, formatTraceMessage(*decodeAbort, TraceMessageStyle::Detailed),
                           {{"bytesProcessed", std::to_string(decodeAbort->bytesProcessed)}}});
   }
   const auto decodeEnd = std::chrono::steady_clock::now();

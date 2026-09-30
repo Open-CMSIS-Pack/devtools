@@ -7,6 +7,7 @@
 
 #include "CliParser.h"
 
+#include "DiagnosticMessages.h"
 #include "CliOptions.h"
 #include "ProductInfo.h"
 #include "TraceSelection.h"
@@ -34,7 +35,7 @@ static std::uint32_t parseUnsignedInteger(const std::string& value, const std::s
   std::uint32_t parsed = 0;
   const auto result = std::from_chars(value.data(), value.data() + value.size(), parsed);
   if (value.empty() || result.ec != std::errc{} || result.ptr != value.data() + value.size()) {
-    throw std::runtime_error(option + " must be an unsigned integer, got " + value);
+    throw std::runtime_error(unsignedArgumentMessage(option, value));
   }
   return parsed;
 }
@@ -51,10 +52,10 @@ static std::optional<std::vector<std::string>> consumeMultiValueOption(const std
   std::vector<std::string> values;
   const auto append = [&](const std::string& value) {
     if (value.empty()) {
-      throw std::runtime_error("Missing value for " + option);
+      throw std::runtime_error(missingArgumentValueMessage(option));
     }
     if (value.find(',') != std::string::npos) {
-      throw std::runtime_error(option + " values must be separated by spaces");
+      throw std::runtime_error(argumentValueSeparatorMessage(option));
     }
     values.push_back(value);
   };
@@ -66,7 +67,7 @@ static std::optional<std::vector<std::string>> consumeMultiValueOption(const std
     append(arg.substr(option.size() + 1U));
   }
   if (values.empty()) {
-    throw std::runtime_error("Missing value for " + option);
+    throw std::runtime_error(missingArgumentValueMessage(option));
   }
   return values;
 }
@@ -159,10 +160,10 @@ static CliOptions parseCliArgs(const std::vector<std::string>& arguments)
   const auto& unknown = parsed.unmatched();
   for (const auto& argument : unknown) {
     if (startsWithDash(argument)) {
-      throw std::runtime_error("Unknown argument: " + argument);
+      throw std::runtime_error(unknownArgumentMessage(argument));
     }
     if (options.traceDir.has_value()) {
-      throw std::runtime_error("Unexpected positional argument: " + argument);
+      throw std::runtime_error(positionalArgumentMessage(argument));
     }
     options.traceDir = argument;
   }
@@ -181,7 +182,7 @@ static CliOptions parseCliArgs(const std::vector<std::string>& arguments)
     for (const auto& stream : parsed["stream"].as<std::vector<std::string>>()) {
       const auto streamId = parseUnsignedInteger(stream, "--stream");
       if (!CoreSight::isTraceBusId(streamId)) {
-        throw std::runtime_error("--stream must be a CoreSight Trace Bus ID between 0 and 111, got " + stream);
+        throw std::runtime_error(streamArgumentMessage(stream));
       }
       options.selection.streams.push_back(static_cast<std::uint8_t>(streamId));
     }
@@ -200,14 +201,14 @@ static void validateCliOptions(const CliOptions& options)
   }
   for (const auto& type : options.selection.types) {
     if (!parseTraceEventType(type).has_value()) {
-      throw std::runtime_error("Invalid --type value: " + type + " (accepted: " + traceEventTypeList(", ") + ")");
+      throw std::runtime_error(typeArgumentMessage(type, traceEventTypeList(", ")));
     }
   }
   if (options.version) {
     return;
   }
   if (!options.traceDir.has_value()) {
-    throw std::runtime_error("Specify <trace-dir>");
+    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::SpecifyTraceDirectory));
   }
 }
 

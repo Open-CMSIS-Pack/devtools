@@ -255,8 +255,8 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleIsolatesByteSkipWriteFailures)
   EXPECT_TRUE(diagnostics.containsMessage("intentional byte-skip write failure"));
   const auto lines = readTestLines(temporaryPath.path());
   ASSERT_EQ(lines.size(), 4U);
-  EXPECT_NE(lines[1].find("1 bytes skipped due to missing source ID"), std::string::npos);
-  EXPECT_NE(lines[2].find("2 bytes skipped due to missing source ID"), std::string::npos);
+  EXPECT_NE(lines[1].find("1 bytes skipped: no source ID"), std::string::npos);
+  EXPECT_NE(lines[2].find("2 bytes skipped: no source ID"), std::string::npos);
   EXPECT_EQ(lines[3], ",,itm,1,0x41,,,");
 }
 
@@ -324,6 +324,5 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleRetainsCsvDespiteFatalCleanupFailu
   const auto lines = readTestLines(outputPath.path());
   ASSERT_EQ(lines.size(), 3U);
   EXPECT_EQ(lines[1], ",,itm,1,0x41,,,");
-  EXPECT_EQ(lines[2], ",,error,,,,,decode aborted after processing 16 input bytes; "
-                      "trace is incomplete: synthetic fatal error");
+  EXPECT_EQ(lines[2], ",,error,,,,,Decode aborted after 16 bytes; trace incomplete");
 }

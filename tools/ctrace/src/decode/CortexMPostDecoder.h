@@ -15,7 +15,6 @@
 
 #include <cstdint>
 #include <optional>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -53,7 +52,7 @@ private:
 
   /** @brief Queues an issue whose final interval ends at the next reliable timestamp. */
   void queueDiscontinuityIssue(std::uint64_t sourceIndex, const TraceQuality& quality, TraceIssueCode issueCode,
-                               const std::string& message,
+                               const TraceMessage& message,
                                std::optional<std::uint64_t> rawBytesConsumed = std::nullopt);
   /** @brief Finalizes queued discontinuity intervals at the first resumed timestamp. */
   void finalizePendingDiscontinuityIssues(std::optional<std::uint64_t> firstResumedTcyc);

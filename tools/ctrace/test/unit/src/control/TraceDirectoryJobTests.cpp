@@ -791,7 +791,8 @@ TEST(CtraceUnitTests, testInputSelectionAndPreflightNeverConstructDecoder)
 
 /** @brief Checks the unfiltered final CSV row and matching route-independent CLI diagnostic. */
 static void expectGlobalDecodeAbort(const std::filesystem::path& csvPath, const CollectingDiagnosticSink& diagnostics,
-                                    std::uint64_t processed, std::string_view reason)
+                                    std::uint64_t processed, std::string_view reason,
+                                    std::string_view compactReason)
 {
   const auto lines = readTestLines(csvPath);
   ASSERT_GE(lines.size(), 2U);
@@ -799,10 +800,10 @@ static void expectGlobalDecodeAbort(const std::filesystem::path& csvPath, const 
   EXPECT_EQ(lines.back().find(",,error,,,,,"), 0U) << "abort must have no timestamp, stream, or source";
   const auto prefix = "decode aborted after processing " + std::to_string(processed) +
                       " input bytes; trace is incomplete: ";
-  EXPECT_NE(lines.back().find(prefix), std::string::npos);
-  EXPECT_NE(lines.back().find(reason), std::string::npos);
+  EXPECT_EQ(lines.back(), ",,error,,,,,Decode aborted after " + std::to_string(processed) +
+                              " bytes; trace incomplete; " + std::string(compactReason));
   EXPECT_EQ(std::count_if(lines.begin(), lines.end(), [](const auto& line) {
-              return line.find("decode aborted after processing ") != std::string::npos;
+              return line.find("Decode aborted after ") != std::string::npos;
             }), 1);
   std::size_t globalErrors = 0U;
   for (const auto& event : diagnostics.events()) {
@@ -850,7 +851,8 @@ TEST(CtraceUnitTests, testFileDecodeJobRetainsCsvAfterFatalDecoderError)
   EXPECT_NO_THROW(job.run());
   EXPECT_GT(diagnostics.failureCount(), 0U);
   const auto csvPath = temporaryPath.path() / "fatal.SWO.csv";
-  expectGlobalDecodeAbort(csvPath, diagnostics, 1U, "OpenCSD aborted decode: OpenCSD reported a system error");
+  expectGlobalDecodeAbort(csvPath, diagnostics, 1U, "OpenCSD aborted decode: OpenCSD reported a system error",
+                          "Decode: OpenCSD system error (response 10)");
   EXPECT_EQ(readTestLines(csvPath).size(), 2U) << "the excluded route error must remain filtered";
 }
 
@@ -871,7 +873,8 @@ TEST(CtraceUnitTests, testFileDecodeJobRetainsCsvForDecoderInitializationFailure
   FileDecodeJob job(options, testInput(rawPath), diagnostics, std::move(factory));
   EXPECT_NO_THROW(job.run());
   const auto csvPath = temporaryPath.path() / "startup.SWO.csv";
-  expectGlobalDecodeAbort(csvPath, diagnostics, 0U, "synthetic decoder initialization failure");
+  expectGlobalDecodeAbort(csvPath, diagnostics, 0U, "synthetic decoder initialization failure",
+                          "OpenCSD initialization failed");
   EXPECT_EQ(readTestLines(csvPath).size(), 2U);
 }
 
@@ -903,7 +906,8 @@ TEST(CtraceUnitTests, testFileDecodeJobKeepsSafePrefixAndRejectsFatalBatchForAll
   EXPECT_EQ(script->pushCalls, 2U);
   EXPECT_EQ(script->endCalls, 0U);
   const auto csvPath = temporaryPath.path() / "prefix.TB.csv";
-  expectGlobalDecodeAbort(csvPath, diagnostics, 32U, "synthetic fatal tail");
+  expectGlobalDecodeAbort(csvPath, diagnostics, 32U, "synthetic fatal tail",
+                          "Decode: OpenCSD out of memory (code 2)");
   const auto lines = readTestLines(csvPath);
   ASSERT_EQ(lines.size(), 3U);
   EXPECT_EQ(lines[1], "42,1,itm,1,0x41,,,");
@@ -936,7 +940,8 @@ TEST(CtraceUnitTests, testFileDecodeJobRetainsCsvAfterFatalEndOfTrace)
   EXPECT_NO_THROW(job.run());
   EXPECT_EQ(script->endCalls, 1U);
   const auto csvPath = temporaryPath.path() / "end.SWO.csv";
-  expectGlobalDecodeAbort(csvPath, diagnostics, 16U, "OpenCSD aborted end-of-trace processing");
+  expectGlobalDecodeAbort(csvPath, diagnostics, 16U, "OpenCSD aborted end-of-trace processing",
+                          "End of trace: OpenCSD error (code 1)");
   EXPECT_TRUE(diagnostics.containsMessage("synthetic end-of-trace failure"));
   const auto lines = readTestLines(csvPath);
   ASSERT_EQ(lines.size(), 3U);

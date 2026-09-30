@@ -509,7 +509,7 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderClosesUnresolvedRouteLossAtE
   EXPECT_EQ(losses.front()->route, route2);
   EXPECT_EQ(losses.front()->sourceIndex, 5U);
   EXPECT_EQ(losses.front()->rawBytesConsumed, 11U);
-  EXPECT_NE(losses.front()->errorMessage.find("no later hardware SYNC"), std::string::npos);
+  EXPECT_NE(formatTraceMessage(losses.front()->errorMessage, TraceMessageStyle::Detailed).find("no later hardware SYNC"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRejectsFatalResponseAndInvalidRootProgress)
@@ -550,7 +550,7 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRejectsFatalResponseAndInval
     EXPECT_EQ(std::string(error.what()).find("invalid ITM packet header"), std::string::npos);
   }
   ASSERT_EQ(mixedSink.elements().size(), 1U);
-  EXPECT_NE(mixedSink.elements().front().errorMessage.find("system error"), std::string::npos);
+  EXPECT_NE(formatTraceMessage(mixedSink.elements().front().errorMessage, TraceMessageStyle::Detailed).find("system error"), std::string::npos);
   EXPECT_TRUE(mixedScript->routeResetCalls.empty());
 }
 
@@ -891,7 +891,7 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderReportsNeverSynchronizedRout
   EXPECT_EQ(error.issueSeverity, TraceIssueSeverity::Error);
   EXPECT_EQ(error.route, route);
   EXPECT_EQ(error.sourceIndex, 0U);
-  EXPECT_EQ(error.errorMessage,
+  EXPECT_EQ(formatTraceMessage(error.errorMessage, TraceMessageStyle::Detailed),
             "no hardware ITM SYNC before end of input; "
             "first formatter group at raw offset 0");
   const auto missingSync = std::find_if(discarded.begin(), discarded.end(), [](const auto& skipped) {
@@ -938,7 +938,7 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderKeepsHealthyAndUnobservedRou
     if (element.issueCode == TraceIssueCode::OpenCsdMissingSync) {
       ++missingSync;
       EXPECT_EQ(element.route, unsynchronized);
-      EXPECT_NE(element.errorMessage.find("no hardware ITM SYNC"), std::string::npos);
+      EXPECT_NE(formatTraceMessage(element.errorMessage, TraceMessageStyle::Detailed).find("no hardware ITM SYNC"), std::string::npos);
     }
     if (element.route == unsynchronized) {
       EXPECT_NE(element.kind, OpenCsdTraceElement::Kind::Software);
@@ -1460,6 +1460,67 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderHandlesFlushRecoveryAndTimeout)
   EXPECT_TRUE(timeout.sink().hasIssue(TraceIssueCode::OpenCsdWaitTimeout));
 }
 
+TEST(CtraceUnitTests, testFormattedResetRetainsTypedSetupFailureThroughFatalAndIssuePaths)
+{
+  class SetupFailureSession final : public OpenCsdItmSessionInterface {
+  public:
+    explicit SetupFailureSession(OpenCsdErrorController& errors) : m_errors(errors) {}
+
+    ocsd_datapath_resp_t pushData(ocsd_trc_index_t index, std::uint32_t size, const std::uint8_t*,
+                                  std::uint32_t& processed) override
+    {
+      processed = size;
+      const ocsdError error(OCSD_ERR_SEV_ERROR, OCSD_ERR_INVALID_PCKT_HDR, index, 1U, "bad packet");
+      m_errors.LogError(0U, &error);
+      return OCSD_RESP_ERR_CONT;
+    }
+    ocsd_datapath_resp_t flush() override { return OCSD_RESP_CONT; }
+    ocsd_datapath_resp_t endOfTrace() override { return OCSD_RESP_CONT; }
+    ocsd_datapath_resp_t resetRoute(std::uint8_t, ocsd_trc_index_t) override
+    {
+      OpenCsdSessionValidation::requireSuccess(OCSD_ERR_MEM, TraceSetupOperation::ResolveDecoderInput);
+      return OCSD_RESP_CONT;
+    }
+
+  private:
+    OpenCsdErrorController& m_errors;
+  };
+
+  CollectingOpenCsdElementSink sink;
+  const OpenCsdItmSessionFactory factory = [](OpenCsdPacketCollector&, OpenCsdErrorController& errors) {
+    return std::make_unique<SetupFailureSession>(errors);
+  };
+  OpenCsdItmDecoder decoder({TraceRouteIdentity{TraceRouteId{0U}, 1U}},
+                             OpenCsdItmInputMode::CoreSightFormatted, sink, factory);
+  const std::array<std::uint8_t, 16U> frame{};
+  try {
+    decoder.push(frame.data(), frame.size());
+    FAIL() << "a failed route reset must abort the formatted input";
+  } catch (const OpenCsdFatalError& error) {
+    EXPECT_EQ(error.message().phase, TraceAbortPhase::RouteReset);
+    const auto* failure = std::get_if<TraceFormattedSessionFailure>(&error.message().data);
+    ASSERT_NE(failure, nullptr);
+    ASSERT_TRUE(failure->setup.has_value());
+    EXPECT_EQ(failure->setup->operation, TraceSetupOperation::ResolveDecoderInput);
+    EXPECT_EQ(failure->setup->errorCode, static_cast<int>(OCSD_ERR_MEM));
+    EXPECT_TRUE(failure->detail.empty());
+    EXPECT_NE(std::string(error.what()).find("OpenCSD route-local decoder reset failed: "
+                                           "formatted OpenCSD session operation failed: "), std::string::npos);
+    EXPECT_NE(std::string(error.what()).find("failed to resolve OpenCSD decoder input"), std::string::npos);
+    EXPECT_NE(std::string(error.what()).find(" at raw input offset "), std::string::npos);
+    EXPECT_EQ(formatTraceMessage(error.message(), TraceMessageStyle::Compact),
+              "OpenCSD route reset failed: OpenCSD session operation failed (code " +
+                  std::to_string(OCSD_ERR_MEM) + ")");
+  }
+
+  ASSERT_FALSE(sink.elements().empty());
+  const auto* issue = std::get_if<TraceFormattedSessionFailure>(&sink.elements().back().errorMessage.data);
+  ASSERT_NE(issue, nullptr);
+  ASSERT_TRUE(issue->setup.has_value());
+  EXPECT_EQ(issue->setup->operation, TraceSetupOperation::ResolveDecoderInput);
+  EXPECT_EQ(issue->setup->errorCode, static_cast<int>(OCSD_ERR_MEM));
+}
+
 TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsResetAndInitializationFailures)
 {
   ScriptedDecoderHarness reset;
@@ -1529,15 +1590,15 @@ TEST(CtraceUnitTests, testOpenCsdItmSessionUsesSingleChannelAndAssociatedErrorLo
 TEST(CtraceUnitTests, testOpenCsdSessionValidationRejectsInvalidApiResults)
 {
   const std::uint32_t object = 1U;
-  EXPECT_NO_THROW(OpenCsdSessionValidation::requireObject(&object, "valid object"));
-  EXPECT_THROW(OpenCsdSessionValidation::requireObject(nullptr, "missing object"), OpenCsdItmSessionError);
+  EXPECT_NO_THROW(OpenCsdSessionValidation::requireObject(&object, TraceSetupOperation::DecoderComponent));
+  EXPECT_THROW(OpenCsdSessionValidation::requireObject(nullptr, TraceSetupOperation::DecoderComponent), OpenCsdItmSessionError);
 
-  EXPECT_NO_THROW(OpenCsdSessionValidation::requireSuccess(OCSD_OK, "successful call"));
+  EXPECT_NO_THROW(OpenCsdSessionValidation::requireSuccess(OCSD_OK, TraceSetupOperation::CreateDecoder));
   const auto message = captureExceptionMessage<OpenCsdItmSessionError>(
-      [] { OpenCsdSessionValidation::requireSuccess(OCSD_ERR_MEM, "decoder setup failed"); });
+      [] { OpenCsdSessionValidation::requireSuccess(OCSD_ERR_MEM, TraceSetupOperation::CreateDecoder); });
   ASSERT_TRUE(message.has_value());
   EXPECT_NE(message->find("OCSD_ERR_MEM"), std::string::npos);
-  EXPECT_NE(message->find("decoder setup failed"), std::string::npos);
+  EXPECT_NE(message->find("failed to create OpenCSD decoder"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsWarningResponsesWithoutDuplicatingCallbacks)
@@ -1571,7 +1632,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsWarningResponsesWithoutDuplica
             ++warnings;
             EXPECT_EQ(element.issueSeverity, TraceIssueSeverity::Warning);
             EXPECT_FALSE(element.discontinuity);
-            EXPECT_NE(element.errorMessage.find(severity == OCSD_ERR_SEV_WARN ? "native callback detail"
+            EXPECT_NE(formatTraceMessage(element.errorMessage, TraceMessageStyle::Detailed).find(severity == OCSD_ERR_SEV_WARN ? "native callback detail"
                                                                             : "OCSD_RESP_WARN_"),
                       std::string::npos);
           }

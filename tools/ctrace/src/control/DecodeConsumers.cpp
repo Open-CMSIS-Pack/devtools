@@ -7,8 +7,10 @@
 
 #include "DecodeConsumers.h"
 
+#include "DiagnosticMessages.h"
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 #include "TraceOutput.h"
 #include "TraceOutputLifecycle.h"
 #include "TraceRoute.h"
@@ -58,7 +60,7 @@ void DecodeConsumers::appendByteSkip(const TraceByteSkip& skipped)
   if (skipped.traceId.has_value()) {
     context.emplace_back("stream", std::to_string(*skipped.traceId));
   }
-  m_diagnostics.report({DiagnosticSink::Severity::Info, traceByteSkipMessage(skipped), std::move(context)});
+  m_diagnostics.report({DiagnosticSink::Severity::Info, formatTraceMessage(skipped, TraceMessageStyle::Detailed), std::move(context)});
 }
 
 void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
@@ -84,7 +86,7 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
   context.emplace_back("enable", hexMask(streamMask->second));
   m_diagnostics.report({
       DiagnosticSink::Severity::Warning,
-      "ITM data was received on a channel not enabled by ctrace-setup.itm.enable",
+      diagnosticMessage(DiagnosticMessageCode::ItmDisabledChannel),
       std::move(context),
   });
 }

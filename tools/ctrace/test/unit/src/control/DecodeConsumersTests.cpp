@@ -10,6 +10,7 @@
 #include "DecodeConsumers.h"
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 #include "TraceOutput.h"
 #include "TraceRoute.h"
 
@@ -100,7 +101,7 @@ TEST(CtraceUnitTests, testDecodeConsumersRetainsSkippedBytesAsNonFailingInfo)
   ASSERT_EQ(diagnostics.events().size(), skipped.size());
   for (std::size_t index = 0U; index < skipped.size(); ++index) {
     const auto& diagnostic = diagnostics.events()[index];
-    EXPECT_EQ(diagnostic.message, traceByteSkipMessage(skipped[index]));
+    EXPECT_EQ(diagnostic.message, formatTraceMessage(skipped[index], TraceMessageStyle::Detailed));
     EXPECT_EQ(diagnostic.severity, DiagnosticSink::Severity::Info);
     EXPECT_EQ(diagnostic.impact, DiagnosticSink::Impact::NonFailing);
     if (skipped[index].traceId.has_value()) {

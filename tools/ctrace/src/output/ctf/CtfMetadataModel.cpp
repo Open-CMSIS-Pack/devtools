@@ -7,6 +7,7 @@
 
 #include "CtfMetadataModel.h"
 
+#include "DiagnosticMessages.h"
 #include "CtfSchema.h"
 #include "TraceStreamId.h"
 
@@ -96,7 +97,7 @@ void CtfMetadataModel::observeException(CtfStreamClassId streamClassId, Exceptio
       std::find_if(m_topology.streams.begin(), m_topology.streams.end(),
                    [&](const CtfStreamDescriptor& candidate) { return candidate.streamClassId == streamClassId; });
   if (stream == m_topology.streams.end()) {
-    throw std::runtime_error("CTF exception observation references an unknown stream class");
+    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfExceptionStreamUnknown));
   }
   m_observedExceptions[streamClassId].insert(number);
 }
@@ -113,7 +114,7 @@ void CtfMetadataModel::observeGraphicalTopic(CtfStreamClassId streamClassId, Ctf
   if (std::none_of(m_topology.streams.begin(), m_topology.streams.end(), [&](const auto& stream) {
         return stream.streamClassId == streamClassId;
       })) {
-    throw std::runtime_error("CTF graphical-topic observation references an unknown stream class");
+    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfGraphicalStreamUnknown));
   }
   m_observedGraphicalTopics[streamClassId].insert(topic);
 }
@@ -193,16 +194,16 @@ void CtfMetadataModel::validateClockDomains() const
   std::set<CtfUuid> clockUuids;
   for (const auto& clock : m_topology.clockDomains) {
     if (!clockIds.insert(clock.id).second) {
-      throw std::invalid_argument("CTF metadata contains a duplicate clock-domain ID");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfDuplicateClockId));
     }
     if (!isTsdlIdentifier(clock.name) || !clockNames.insert(clock.name).second) {
-      throw std::invalid_argument("CTF metadata requires unique valid clock-domain names");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfClockNamesInvalid));
     }
     if (clock.frequencyHz == 0U) {
-      throw std::invalid_argument("CTF metadata requires a non-zero clock-domain frequency");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfClockFrequencyNonzero));
     }
     if (clock.uuid.has_value() && (*clock.uuid == m_traceUuid || !clockUuids.insert(*clock.uuid).second)) {
-      throw std::invalid_argument("CTF clock UUIDs must be distinct from the trace and other clock domains");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfClockUuidsDistinct));
     }
   }
 }
@@ -216,28 +217,28 @@ void CtfMetadataModel::validateStreams() const
     const auto [route, inserted] = routeIdentities.emplace(stream.route.id, stream.route);
     if (!inserted) {
       throw std::invalid_argument(route->second == stream.route
-                                      ? "CTF metadata contains a duplicate normalized route"
-                                      : "CTF metadata contains inconsistent normalized route identities");
+                                      ? diagnosticMessage(DiagnosticMessageCode::CtfDuplicateRoute)
+                                      : diagnosticMessage(DiagnosticMessageCode::CtfInconsistentRoutes));
     }
     if (!streamIds.insert(stream.streamClassId).second) {
-      throw std::invalid_argument("CTF metadata contains a duplicate stream-class ID");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfDuplicateStreamId));
     }
     if (clockDomain(stream.clockDomainId) == nullptr) {
-      throw std::invalid_argument("CTF stream class references an unknown clock domain");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfStreamClockUnknown));
     }
     referencedClockIds.insert(stream.clockDomainId);
     if (stream.route.traceBusId.has_value() && !CoreSight::isAtbTraceId(*stream.route.traceBusId)) {
-      throw std::invalid_argument("CTF ITM stream route requires a CoreSight ATB trace ID between 1 and 111");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfRouteBusIdRange));
     }
     const auto expectedStreamClassId = CtfStreamClassId{stream.route.traceBusId.value_or(0U)};
     if (stream.streamClassId != expectedStreamClassId) {
-      throw std::invalid_argument("CTF stream-class ID does not match its normalized route identity");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfStreamRouteMismatch));
     }
   }
 
   for (const auto& clock : m_topology.clockDomains) {
     if (referencedClockIds.find(clock.id) == referencedClockIds.end()) {
-      throw std::invalid_argument("CTF metadata contains a clock domain without a referencing stream class");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfUnreferencedClock));
     }
   }
 }
@@ -247,25 +248,25 @@ void CtfMetadataModel::validateSources() const
   for (std::size_t index = 0U; index < m_topology.sources.size(); ++index) {
     const auto& source = m_topology.sources[index];
     if (streamForRoute(source.route) == nullptr) {
-      throw std::invalid_argument("CTF source metadata references an unknown normalized route");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfSourceRouteUnknown));
     }
     if (source.type == "itm") {
       if (source.source == CoreSight::kExcludedItmStimulusPort || !CoreSight::isItmStimulusPort(source.source)) {
-        throw std::invalid_argument("CTF ITM source metadata requires a channel between 1 and 31");
+        throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfItmChannelRange));
       }
     } else if (source.type == "dwt") {
       if (source.source > 3U) {
-        throw std::invalid_argument("CTF DWT source metadata requires a comparator between 0 and 3");
+        throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfDwtComparatorRange));
       }
       if (CtfSchema::valueVariantForTraceRunType(source.dataType, source.dataSize) == nullptr) {
-        throw std::invalid_argument("CTF DWT source metadata has an invalid data-type/size combination");
+        throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfDataTypeSizeInvalid));
       }
       const auto extent = static_cast<std::uint64_t>(source.dataSize - 1U);
       if (source.address.has_value() && *source.address > std::numeric_limits<std::uint64_t>::max() - extent) {
-        throw std::invalid_argument("CTF DWT source address range exceeds the unsigned 64-bit metadata domain");
+        throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfSourceAddressOverflow));
       }
     } else {
-      throw std::invalid_argument("CTF source metadata type must be 'itm' or 'dwt'");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfSourceTypeInvalid));
     }
     if (index > 0U) {
       const auto& previous = m_topology.sources[index - 1U];
@@ -273,8 +274,8 @@ void CtfMetadataModel::validateSources() const
           previous.route.id == source.route.id && previous.type == source.type && previous.source == source.source;
       if (sameKey) {
         throw std::invalid_argument(equivalentSource(previous, source)
-                                        ? "CTF metadata contains duplicate source metadata"
-                                        : "CTF metadata contains conflicting source metadata for one route");
+                                        ? diagnosticMessage(DiagnosticMessageCode::CtfDuplicateSource)
+                                        : diagnosticMessage(DiagnosticMessageCode::CtfConflictingSource));
       }
     }
   }
@@ -285,7 +286,7 @@ void CtfMetadataModel::validateNonLegacyClockDomains() const
   if (!isLegacySingleStreamLayout()) {
     for (const auto& clock : m_topology.clockDomains) {
       if (!clock.uuid.has_value()) {
-        throw std::invalid_argument("non-legacy CTF clock domains require an explicit UUID");
+        throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::CtfExplicitClockUuidRequired));
       }
     }
   }

@@ -138,72 +138,78 @@ std::string OpenCsdErrorController::describeApiError(ocsd_err_t code, const std:
   return openCsdErrorText(error);
 }
 
-std::string OpenCsdErrorController::describeSummary(const Decision& decision)
+TraceMessage OpenCsdErrorController::diagnosticMessage(const Decision& decision)
 {
-  std::string summary;
+  TraceNativeDiagnostic diagnostic;
   if (decision.error.has_value()) {
     switch (decision.error->code) {
     case OCSD_ERR_BAD_PACKET_SEQ:
-      summary = "OpenCSD detected an invalid ITM packet sequence";
+      diagnostic.category = TraceNativeCategory::BadPacketSequence;
       break;
     case OCSD_ERR_INVALID_PCKT_HDR:
-      summary = "OpenCSD detected an invalid ITM packet header";
+      diagnostic.category = TraceNativeCategory::InvalidPacketHeader;
       break;
     case OCSD_ERR_NOT_INIT:
-      summary = "OpenCSD decoder is not initialized";
+      diagnostic.category = TraceNativeCategory::NotInitialized;
       break;
     case OCSD_ERR_MEM:
-      summary = "OpenCSD decoder ran out of memory";
+      diagnostic.category = TraceNativeCategory::OutOfMemory;
       break;
     case OCSD_ERR_INVALID_PARAM_VAL:
     case OCSD_ERR_INVALID_PARAM_TYPE:
-      summary = "OpenCSD rejected a decoder parameter";
+      diagnostic.category = TraceNativeCategory::InvalidParameter;
       break;
     case OCSD_ERR_FILE_ERROR:
     case OCSD_ERR_RDR_FILE_NOT_FOUND:
-      summary = "OpenCSD could not read required input data";
+      diagnostic.category = TraceNativeCategory::InputRead;
       break;
     case OCSD_ERR_DATA_DECODE_FATAL:
-      summary = "OpenCSD could not decode the trace data";
+      diagnostic.category = TraceNativeCategory::DecodeFailed;
       break;
     default:
-      summary = "OpenCSD decoder error";
+      diagnostic.category = TraceNativeCategory::Error;
       break;
     }
   } else {
     switch (decision.response) {
     case OCSD_RESP_WARN_CONT:
     case OCSD_RESP_WARN_WAIT:
-      summary = "OpenCSD decoder warning";
+      diagnostic.category = TraceNativeCategory::Warning;
       break;
     case OCSD_RESP_FATAL_NOT_INIT:
-      summary = "OpenCSD decoder is not initialized";
+      diagnostic.category = TraceNativeCategory::NotInitialized;
       break;
     case OCSD_RESP_FATAL_INVALID_OP:
-      summary = "OpenCSD rejected a decoder operation";
+      diagnostic.category = TraceNativeCategory::InvalidOperation;
       break;
     case OCSD_RESP_FATAL_INVALID_PARAM:
-      summary = "OpenCSD rejected a decoder parameter";
+      diagnostic.category = TraceNativeCategory::InvalidParameter;
       break;
     case OCSD_RESP_FATAL_INVALID_DATA:
-      summary = "OpenCSD rejected invalid trace data";
+      diagnostic.category = TraceNativeCategory::InvalidData;
       break;
     case OCSD_RESP_FATAL_SYS_ERR:
-      summary = "OpenCSD reported a system error";
+      diagnostic.category = TraceNativeCategory::SystemError;
       break;
     default:
-      summary = "OpenCSD decoder error";
+      diagnostic.category = TraceNativeCategory::Error;
       break;
     }
   }
   const auto offset = errorOffset(decision, 0U);
   if ((decision.error.has_value() && decision.error->hasIndex) || offset != 0U) {
-    summary += " at raw offset " + std::to_string(offset);
+    diagnostic.offset = offset;
   }
-  const auto nativeText = decision.error.has_value()
+  diagnostic.nativeText = decision.error.has_value()
                               ? openCsdErrorText(*decision.error)
                               : normalizeWhitespace(ocsdDataRespStr(decision.response).getStr());
-  return summary + ". " + nativeText;
+  if (decision.error.has_value()) {
+    diagnostic.errorCode = static_cast<int>(decision.error->code);
+    diagnostic.warning = decision.error->severity == OCSD_ERR_SEV_WARN;
+  } else {
+    diagnostic.responseCode = static_cast<int>(decision.response);
+  }
+  return diagnostic;
 }
 
 void OpenCsdErrorController::LogError(ocsd_hndl_err_log_t handle, const ocsdError* error)

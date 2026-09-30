@@ -7,6 +7,7 @@
 
 #include "CtfBundleOutput.h"
 
+#include "DiagnosticMessages.h"
 #include "CtfUuid.h"
 #include "OutputPath.h"
 
@@ -23,12 +24,12 @@ static void validateExistingOutput(const std::filesystem::path& directory)
   std::error_code error;
   const auto status = std::filesystem::symlink_status(directory, error);
   if (error && error != std::errc::no_such_file_or_directory) {
-    throw std::runtime_error("Failed to inspect existing CTF output " + directory.string() + ": " + error.message());
+    throw std::runtime_error(
+        pathDiagnosticMessage(PathDiagnosticCode::CtfInspect, directory.string(), error.message()));
   }
   if (!error && std::filesystem::exists(status) && !std::filesystem::is_directory(status) &&
       !std::filesystem::is_symlink(status)) {
-    throw std::runtime_error("Refusing to replace CTF output because the target is not a directory: " +
-                             directory.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CtfRefuseFile, directory.string()));
   }
 }
 
@@ -38,7 +39,7 @@ static void removeOutputDirectory(const std::filesystem::path& directory)
   std::error_code error;
   std::filesystem::remove_all(directory, error);
   if (error) {
-    throw std::runtime_error("Failed to remove CTF directory " + directory.string() + ": " + error.message());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CtfRemove, directory.string(), error.message()));
   }
 }
 
@@ -81,8 +82,8 @@ void CtfBundleOutput::prepareOutput()
   std::error_code error;
   std::filesystem::create_directories(m_ctfOutputDirectory, error);
   if (error) {
-    throw std::runtime_error("Failed to create CTF output directory " + m_ctfOutputDirectory.string() + ": " +
-                             error.message());
+    throw std::runtime_error(
+        pathDiagnosticMessage(PathDiagnosticCode::CtfCreateDirectory, m_ctfOutputDirectory.string(), error.message()));
   }
 }
 

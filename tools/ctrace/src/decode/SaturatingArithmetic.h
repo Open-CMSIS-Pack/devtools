@@ -8,6 +8,8 @@
 #ifndef CTRACE_SRC_DECODE_SATURATINGARITHMETIC_H
 #define CTRACE_SRC_DECODE_SATURATINGARITHMETIC_H
 
+#include "DiagnosticMessages.h"
+
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -26,7 +28,7 @@ public:
   static constexpr std::uint64_t multiply(std::uint64_t value, std::uint32_t factor)
   {
     if (factor == 0U) {
-      throw std::invalid_argument("ITM timestamp prescaler must not be zero");
+      throw std::invalid_argument(diagnosticMessage(DiagnosticMessageCode::TimestampPrescalerNonzero));
     }
     const auto maximum = std::numeric_limits<std::uint64_t>::max();
     return value > maximum / factor ? maximum : value * factor;

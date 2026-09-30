@@ -9,6 +9,7 @@
 #define CTRACE_SRC_MODEL_TRACEEVENT_H
 
 #include "TraceRoute.h"
+#include "TraceMessages.h"
 
 #include <array>
 #include <cstdint>
@@ -251,7 +252,7 @@ struct SyncTraceEvent {};
 struct TraceIssueEvent {
   TraceIssueCode code = TraceIssueCode::DecodeError;
   TraceIssueSeverity severity = TraceIssueSeverity::Error;
-  std::string message;
+  TraceMessage message;
   std::optional<std::uint64_t> rawBytesConsumed = std::nullopt;
   std::optional<std::uint64_t> lastValidTcyc = std::nullopt;
 };
@@ -259,15 +260,8 @@ struct TraceIssueEvent {
 /** @brief Describes a fatal end to the entire raw input, independently of any trace route. */
 struct TraceDecodeAbort {
   std::uint64_t bytesProcessed = 0;
-  std::string reason;
+  TraceMessage reason;
 };
-
-/** @brief Describes an incomplete trace consistently in CLI and retained CSV output. */
-inline std::string traceDecodeAbortMessage(const TraceDecodeAbort& failure)
-{
-  return "decode aborted after processing " + std::to_string(failure.bytesProcessed) +
-         " input bytes; trace is incomplete: " + failure.reason;
-}
 
 /** @brief Identifies why formatter or initial ITM payload was skipped. */
 enum class TraceByteSkipReason {
@@ -288,32 +282,6 @@ struct TraceByteSkip {
   // An observed formatter ID, including NULL/reserved IDs; not a decoded route.
   std::optional<std::uint8_t> traceId = std::nullopt;
 };
-
-/** @brief Describes skipped input bytes consistently for CLI and CSV. */
-inline std::string traceByteSkipMessage(const TraceByteSkip& skipped)
-{
-  auto message = std::to_string(skipped.byteCount);
-  const auto traceId = skipped.traceId.has_value() ? std::to_string(*skipped.traceId) : "unknown";
-  switch (skipped.reason) {
-  case TraceByteSkipReason::NoSourceId:
-    message += " bytes skipped due to missing source ID";
-    break;
-  case TraceByteSkipReason::NullSourceId:
-    message += " bytes skipped for null source ID 0";
-    break;
-  case TraceByteSkipReason::ReservedSourceId:
-    message += " bytes skipped for reserved source ID " + traceId;
-    break;
-  case TraceByteSkipReason::UnconfiguredSourceId:
-    message += " bytes skipped for unconfigured source ID " + traceId;
-    break;
-  case TraceByteSkipReason::MissingSync:
-    // Synchronization is missing, so no software or hardware packet type is established yet.
-    message += " bytes skipped due to missing SYNC";
-    break;
-  }
-  return message + "; first formatter group at raw offset " + std::to_string(skipped.formatterOffset);
-}
 
 /** @brief Stores the semantic payload of a decoded trace event. */
 using TraceEventPayload =

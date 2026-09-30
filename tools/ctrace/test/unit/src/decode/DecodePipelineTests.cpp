@@ -18,6 +18,7 @@
 #include "OpenCsdTraceElement.h"
 #include "SaturatingArithmetic.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -451,7 +452,8 @@ TEST(CtraceUnitTests, testCortexMPostDecoderReportsDiscontinuityInterval)
   ASSERT_TRUE(packets[0].tcyc == std::optional<std::uint64_t>(0U)) << "discontinuity last valid timestamp mismatch";
   ASSERT_TRUE(discontinuityIssue->lastValidTcyc == std::optional<std::uint64_t>(0U))
       << "discontinuity start field mismatch";
-  ASSERT_TRUE(discontinuityIssue->message.find("timestamp 0 .. 42.") != std::string::npos)
+  ASSERT_TRUE(formatTraceMessage(discontinuityIssue->message, TraceMessageStyle::Detailed)
+                  .find("timestamp 0 .. 42.") != std::string::npos)
       << "discontinuity interval message mismatch";
   ASSERT_TRUE(isTraceEvent<SoftwareTraceEvent>(packets[1])) << "discontinuity interval payload order mismatch";
   ASSERT_TRUE(packets[1].tcyc == std::optional<std::uint64_t>(42U)) << "resumed payload timestamp mismatch";
@@ -485,11 +487,13 @@ TEST(CtraceUnitTests, testCortexMPostDecoderSeparatesRecoveryCauseAndDataLoss)
   const auto* lossIssue = issueEvent(packets[1]);
   ASSERT_TRUE(causeIssue != nullptr && causeIssue->code == TraceIssueCode::OpenCsdBadPacketSequence)
       << "recovery cause should be emitted first";
-  ASSERT_TRUE(causeIssue->message.find("timestamp") == std::string::npos)
+  ASSERT_TRUE(formatTraceMessage(causeIssue->message, TraceMessageStyle::Detailed)
+                  .find("timestamp") == std::string::npos)
       << "recovery cause should not contain the data-loss timestamp interval";
   ASSERT_TRUE(lossIssue != nullptr && lossIssue->code == TraceIssueCode::DataLoss)
       << "recovery data loss should be a separate error";
-  ASSERT_TRUE(lossIssue->message.find("timestamp 0 .. 42.") != std::string::npos)
+  ASSERT_TRUE(formatTraceMessage(lossIssue->message, TraceMessageStyle::Detailed)
+                  .find("timestamp 0 .. 42.") != std::string::npos)
       << "recovery data-loss interval mismatch";
   ASSERT_TRUE(packets[0].quality.has_value() && packets[0].quality->overflowCount == 1U &&
               packets[1].quality.has_value() && packets[1].quality->overflowCount == 1U)
@@ -631,12 +635,13 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversAtRealSync)
       << "recovery should preserve packets before the damaged section";
   const auto* error = findIssue(decoded.events, TraceIssueCode::OpenCsdBadPacketSequence, 8U);
   ASSERT_NE(error, nullptr) << "recovery should retain the exact OpenCSD error offset";
-  EXPECT_NE(error->message.find("OpenCSD detected an invalid ITM packet sequence at raw offset 8."),
+  const auto message = formatTraceMessage(error->message, TraceMessageStyle::Detailed);
+  EXPECT_NE(message.find("OpenCSD detected an invalid ITM packet sequence at raw offset 8."),
             std::string::npos);
-  EXPECT_NE(error->message.find("OCSD_ERR_BAD_PACKET_SEQ"), std::string::npos);
-  EXPECT_NE(error->message.find("Async Packet: unexpected none zero value"), std::string::npos);
-  EXPECT_NE(error->message.find("packet=ASYNC"), std::string::npos);
-  EXPECT_NE(error->message.find("bytes=[00 fe]"), std::string::npos);
+  EXPECT_NE(message.find("OCSD_ERR_BAD_PACKET_SEQ"), std::string::npos);
+  EXPECT_NE(message.find("Async Packet: unexpected none zero value"), std::string::npos);
+  EXPECT_NE(message.find("packet=ASYNC"), std::string::npos);
+  EXPECT_NE(message.find("bytes=[00 fe]"), std::string::npos);
   ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
       << "recovery should resume after the next real ITM sync";
 }
@@ -742,11 +747,12 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversFromReservedHeader)
 
   const auto* error = findIssue(decoded.events, TraceIssueCode::OpenCsdInvalidPacketHeader, 8U);
   ASSERT_NE(error, nullptr) << "reserved header should retain its exact OpenCSD error";
-  EXPECT_NE(error->message.find("OpenCSD detected an invalid ITM packet header at raw offset 8."),
+  const auto message = formatTraceMessage(error->message, TraceMessageStyle::Detailed);
+  EXPECT_NE(message.find("OpenCSD detected an invalid ITM packet header at raw offset 8."),
             std::string::npos);
-  EXPECT_NE(error->message.find("OCSD_ERR_INVALID_PCKT_HDR"), std::string::npos);
-  EXPECT_NE(error->message.find("packet=RESERVED"), std::string::npos);
-  EXPECT_NE(error->message.find("bytes=[04]"), std::string::npos);
+  EXPECT_NE(message.find("OCSD_ERR_INVALID_PCKT_HDR"), std::string::npos);
+  EXPECT_NE(message.find("packet=RESERVED"), std::string::npos);
+  EXPECT_NE(message.find("bytes=[04]"), std::string::npos);
   ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
       << "recovery should resume after a reserved header";
 }
@@ -901,9 +907,10 @@ TEST(CtraceUnitTests, testDecodePipelineDoesNotInjectSync)
       foundDataLoss = true;
       ASSERT_TRUE(issue->rawBytesConsumed == std::optional<std::uint64_t>(sizeof(validWithoutAsync)))
           << "decode should count all raw bytes consumed before synchronization";
-      ASSERT_TRUE(issue->message.find("OpenCSD consumed 2 raw bytes") != std::string::npos)
+      const auto message = formatTraceMessage(issue->message, TraceMessageStyle::Detailed);
+      ASSERT_TRUE(message.find("OpenCSD consumed 2 raw bytes") != std::string::npos)
           << "decode data-loss message should include the consumed raw-byte count";
-      ASSERT_TRUE(issue->message.find("timestamp 0 .. unknown.") != std::string::npos)
+      ASSERT_TRUE(message.find("timestamp 0 .. unknown.") != std::string::npos)
           << "decode should mark a missing post-recovery timestamp as unknown";
     }
   }

@@ -4,7 +4,9 @@
 
 set(CTRACE_MODEL_HEADER_FILES
   model/CoreSightFormatter.h
+  model/DiagnosticMessages.h
   model/TraceEvent.h
+  model/TraceMessages.h
   model/TraceRoute.h
   model/TraceSelection.h
   model/TraceStreamId.h
@@ -77,6 +79,8 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 add_library(ctrace-model STATIC
+  model/DiagnosticMessages.cpp
+  model/TraceMessages.cpp
   model/TraceSelection.cpp
   ${CTRACE_MODEL_HEADER_FILES}
 )

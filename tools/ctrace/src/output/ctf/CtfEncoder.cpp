@@ -7,6 +7,7 @@
 
 #include "CtfEncoder.h"
 
+#include "DiagnosticMessages.h"
 #include "CtfExceptionLaneTracker.h"
 #include "CtfMetadataModel.h"
 #include "CtfMetadataWriter.h"
@@ -51,7 +52,7 @@ static void validateConfiguredRoute(const CtfEncoderConfig& config, const TraceR
   const auto configured = std::find_if(config.routes.begin(), config.routes.end(),
                                        [&](const TraceRouteIdentity& candidate) { return candidate.id == route.id; });
   if (configured == config.routes.end() || *configured != route) {
-    throw std::runtime_error("CTF route identity does not match the configured normalized route catalogue");
+    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfRouteIdentityMismatch));
   }
 }
 
@@ -109,7 +110,7 @@ static const CtfSchema::DwtAddressVariant& dwtAddressVariant(const std::optional
   }
   const auto* variant = CtfSchema::dwtAddressVariantForSize(fragment->size);
   if (variant == nullptr) {
-    throw std::runtime_error("CTF DWT address fragment has an invalid SWO payload size");
+    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfAddressPayloadSizeInvalid));
   }
   return *variant;
 }
@@ -261,7 +262,7 @@ void CtfEncoder::start(const std::filesystem::path& outputDirectory, const CtfUu
     const auto addInitialRoute = [&](const TraceRouteIdentity& route) {
       const auto [found, inserted] = initialRoutes.emplace(route.id, route);
       if (!inserted && found->second != route) {
-        throw std::runtime_error("CTF configuration contains inconsistent normalized route identities");
+        throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfConfiguredRouteIdentityConflict));
       }
     };
     for (const auto& route : m_config.routes) {
@@ -329,7 +330,7 @@ void CtfEncoder::writeEvent(const TraceEvent& event)
   const auto* stream = m_metadata->streamForRoute(event.route);
   if (stream == nullptr) {
     throw std::runtime_error(
-        "CTF binary output cannot encode an event route without an exact runtime stream descriptor");
+        diagnosticMessage(DiagnosticMessageCode::CtfRuntimeStreamRequired));
   }
   const auto selected = traceEventSelectedForOutput(event, m_config.selection);
   if (activatesStream(event, selected)) {
@@ -458,7 +459,7 @@ void CtfEncoder::writeSoftwareEvent(const TraceEvent& event, const SoftwareTrace
 {
   const auto* variant = CtfSchema::valueVariantForTraceRunType("unsigned", software.size);
   if (variant == nullptr) {
-    throw std::runtime_error("CTF ITM value has an invalid SWO payload size");
+    throw std::runtime_error(diagnosticMessage(DiagnosticMessageCode::CtfItmPayloadSizeInvalid));
   }
   const auto quality = computeSampleQuality(event);
   const auto eventTimestamp = allocateEventTimestamp(event.route);
@@ -520,7 +521,7 @@ void CtfEncoder::reportDwtSizeMismatch(const TraceEvent& event, const DwtDataTra
   };
   m_config.diagnostics->report({
       DiagnosticSink::Severity::Warning,
-      "configured ctrace-run size does not match the decoded SWO payload size",
+      diagnosticMessage(DiagnosticMessageCode::CtfConfiguredPayloadSizeMismatch),
       std::move(context),
   });
 }

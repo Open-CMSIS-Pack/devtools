@@ -93,7 +93,7 @@ public:
    * Context survives commit or rollback until the next beginTransaction(), so
    * logger errors can be enriched after unsafe trace elements are discarded.
    */
-  std::string packetErrorContext(std::optional<std::uint8_t> channel, std::uint64_t index) const;
+  std::optional<TracePacketContext> packetErrorContext(std::optional<std::uint8_t> channel, std::uint64_t index) const;
   /** @brief Clears packet observations before an operation without a new transaction. */
   void clearPacketErrorContexts() noexcept;
   /** @brief Returns the number of currently buffered elements. */
@@ -124,7 +124,7 @@ public:
    * @param discontinuity Whether the issue breaks semantic continuity.
    * @param severity Output severity assigned to the issue.
    */
-  void appendDecodeError(ocsd_trc_index_t index, const std::string& message,
+  void appendDecodeError(ocsd_trc_index_t index, const TraceMessage& message,
                          TraceIssueCode issueCode = TraceIssueCode::OpenCsdDecodeError, bool discontinuity = true,
                          TraceIssueSeverity severity = TraceIssueSeverity::Error);
   /**
@@ -136,14 +136,14 @@ public:
    * @param discontinuity Whether the issue breaks semantic continuity.
    * @param severity Output severity assigned to the issue.
    */
-  void appendDecodeError(const TraceRouteIdentity& route, ocsd_trc_index_t index, const std::string& message,
+  void appendDecodeError(const TraceRouteIdentity& route, ocsd_trc_index_t index, const TraceMessage& message,
                          TraceIssueCode issueCode = TraceIssueCode::OpenCsdDecodeError, bool discontinuity = true,
                          TraceIssueSeverity severity = TraceIssueSeverity::Error);
   /**
    * @brief Appends an OpenCSD logger diagnostic at its original callback position.
    * @param callbackOrder Position reserved when the logger callback occurred.
    */
-  void appendReportedDecodeError(ocsd_trc_index_t index, const std::string& message,
+  void appendReportedDecodeError(ocsd_trc_index_t index, const TraceMessage& message,
                                  std::optional<std::uint64_t> callbackOrder,
                                  TraceIssueCode issueCode = TraceIssueCode::OpenCsdDecodeError,
                                  bool discontinuity = true, TraceIssueSeverity severity = TraceIssueSeverity::Error);
@@ -152,7 +152,7 @@ public:
    * @param route Route receiving the diagnostic.
    * @param callbackOrder Position reserved when the logger callback occurred.
    */
-  void appendReportedDecodeError(const TraceRouteIdentity& route, ocsd_trc_index_t index, const std::string& message,
+  void appendReportedDecodeError(const TraceRouteIdentity& route, ocsd_trc_index_t index, const TraceMessage& message,
                                  std::optional<std::uint64_t> callbackOrder,
                                  TraceIssueCode issueCode = TraceIssueCode::OpenCsdDecodeError,
                                  bool discontinuity = true, TraceIssueSeverity severity = TraceIssueSeverity::Error);
@@ -163,7 +163,7 @@ public:
    * @param issueCode Decoder issue state.
    * @param rawBytesConsumed Number of discarded bytes, when known.
    */
-  void prependDiscontinuity(ocsd_trc_index_t index, const std::string& message, TraceIssueCode issueCode,
+  void prependDiscontinuity(ocsd_trc_index_t index, const TraceMessage& message, TraceIssueCode issueCode,
                             std::optional<std::uint64_t> rawBytesConsumed = std::nullopt);
   /**
    * @brief Prepends a data-loss error before buffered resumed events.
@@ -171,7 +171,7 @@ public:
    * @param message Human-readable data-loss description.
    * @param rawBytesConsumed Number of discarded raw bytes.
    */
-  void prependDataLossError(ocsd_trc_index_t index, const std::string& message, std::uint64_t rawBytesConsumed);
+  void prependDataLossError(ocsd_trc_index_t index, const TraceMessage& message, std::uint64_t rawBytesConsumed);
   /**
    * @brief Appends one explicit route's data-loss interval.
    * @param route Route whose unresolved recovery interval is being closed.
@@ -179,7 +179,7 @@ public:
    * @param message Human-readable data-loss description.
    * @param rawBytesConsumed Raw input span covered by the interval.
    */
-  void appendDataLossError(const TraceRouteIdentity& route, ocsd_trc_index_t index, const std::string& message,
+  void appendDataLossError(const TraceRouteIdentity& route, ocsd_trc_index_t index, const TraceMessage& message,
                            std::uint64_t rawBytesConsumed);
   /**
    * @brief Inserts one route's data-loss interval immediately before its next buffered sync.
@@ -190,7 +190,7 @@ public:
    * @param beforeOffset Optional exclusive failure boundary for an operation that fails again.
    * @return True when a matching retained sync was found and the issue was inserted.
    */
-  bool insertDataLossBeforeSync(const TraceRouteIdentity& route, ocsd_trc_index_t index, const std::string& message,
+  bool insertDataLossBeforeSync(const TraceRouteIdentity& route, ocsd_trc_index_t index, const TraceMessage& message,
                                 std::uint64_t rawBytesConsumed,
                                 std::optional<std::uint64_t> beforeOffset = std::nullopt);
   /**
@@ -236,7 +236,7 @@ private:
   void appendRawPacket(const TraceRouteIdentity& route, ocsd_datapath_op_t op, ocsd_trc_index_t index_sop,
                        const ItmTrcPacket* pkt, std::uint32_t size, const std::uint8_t* data);
   /** @brief Copies bounded error-packet context without retaining OpenCSD-owned bytes. */
-  std::string capturePacketErrorContext(const TraceRouteIdentity& route, ocsd_trc_index_t index,
+  TracePacketContext capturePacketErrorContext(const TraceRouteIdentity& route, ocsd_trc_index_t index,
                                          const ItmTrcPacket& packet, std::uint32_t size, const std::uint8_t* data);
   /** @brief Counts only bytes explicitly discarded during initial formatted-route synchronization. */
   void recordUnsynchronizedBytes(const TraceRouteIdentity& route, std::uint32_t size);
@@ -250,7 +250,7 @@ private:
   void appendGlobalTimestamp(ocsd_trc_index_t index, const OcsdTraceElement& elem, const TraceRouteIdentity& route);
   /** @brief Converts an OpenCSD error packet callback. */
   void appendError(ocsd_trc_index_t index, const ItmTrcPacket& pkt, const TraceRouteIdentity& route,
-                     const std::string& context);
+                     const TracePacketContext& context);
   /** @brief Converts an ITM software packet callback. */
   void appendSoftware(ocsd_trc_index_t index, const OcsdTraceElement& elem, const TraceRouteIdentity& route);
   /** @brief Converts a DWT hardware packet callback. */
@@ -262,7 +262,7 @@ private:
   /** @brief Buffers or commits one element according to transaction state. */
   void appendElement(OpenCsdTraceElement element, const TraceRouteIdentity& route);
   /** @brief Builds and appends one ordinary or logger-reported diagnostic. */
-  void appendDecodeErrorImpl(const TraceRouteIdentity& route, ocsd_trc_index_t index, const std::string& message,
+  void appendDecodeErrorImpl(const TraceRouteIdentity& route, ocsd_trc_index_t index, const TraceMessage& message,
                              TraceIssueCode issueCode, bool discontinuity, TraceIssueSeverity severity,
                              std::optional<std::uint64_t> callbackOrder, bool reportedDiagnostic);
   /** @brief Emits one committed element while deferring sink exceptions. */
@@ -294,7 +294,7 @@ private:
   bool m_transactionActive = false;
   std::uint64_t m_nextTransactionOrder = 1U;
   std::vector<BufferedElement> m_transactionElements;
-  std::map<std::pair<TraceRouteId, std::uint64_t>, std::string> m_packetErrorContexts;
+  std::map<std::pair<TraceRouteId, std::uint64_t>, TracePacketContext> m_packetErrorContexts;
   std::exception_ptr m_outputError;
 };
 

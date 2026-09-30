@@ -13,6 +13,7 @@
 #include "csv/CsvRowMapper.h"
 #include "DwtPacketDecoder.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 #include "TraceSelection.h"
 
 #include <array>
@@ -113,7 +114,8 @@ TEST(CtraceUnitTests, testDwtPcSampleRejectsUnsupportedPayloads)
     ASSERT_NE(issue, nullptr);
     EXPECT_EQ(issue->code, TraceIssueCode::UnsupportedDwtPcSamplePayload)
         << "unsupported DWT PC sample error mismatch";
-    EXPECT_EQ(issue->message, expectedMessage) << "unsupported DWT PC sample diagnostic mismatch";
+    EXPECT_EQ(formatTraceMessage(issue->message, TraceMessageStyle::Detailed), expectedMessage)
+        << "unsupported DWT PC sample diagnostic mismatch";
   };
 
   verify(dwtPayload(2U, 1U, 1U),
@@ -188,7 +190,8 @@ TEST(CtraceUnitTests, testDwtPmuPacketRejectsUnsupportedPayloads)
     const auto* issue = traceEventPayload<TraceIssueEvent>(packets.front());
     ASSERT_NE(issue, nullptr) << "invalid value " << invalid.value;
     EXPECT_EQ(issue->code, TraceIssueCode::UnsupportedPmuEventCounterPayload);
-    EXPECT_NE(issue->message.find("expected a non-zero 1-byte mask using bits 0..7"), std::string::npos);
+    EXPECT_NE(formatTraceMessage(issue->message, TraceMessageStyle::Detailed)
+                  .find("expected a non-zero 1-byte mask using bits 0..7"), std::string::npos);
     EXPECT_EQ(packets.front().index, 23U);
     EXPECT_EQ(packets.front().route.traceBusId, 4U);
     EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(949339100U));
@@ -223,7 +226,8 @@ TEST(CtraceUnitTests, testDwtEventCounterRejectsUnsupportedPayloadsWithoutPartia
     const auto* issue = traceEventPayload<TraceIssueEvent>(packets.front());
     ASSERT_NE(issue, nullptr) << "invalid value " << invalid.value;
     EXPECT_EQ(issue->code, TraceIssueCode::UnsupportedDwtEventCounterPayload);
-    EXPECT_NE(issue->message.find("expected a non-zero 1-byte mask using bits 0..5 only"), std::string::npos);
+    EXPECT_NE(formatTraceMessage(issue->message, TraceMessageStyle::Detailed)
+                  .find("expected a non-zero 1-byte mask using bits 0..5 only"), std::string::npos);
     EXPECT_EQ(packets.front().index, 23U);
     EXPECT_EQ(packets.front().route.traceBusId, 4U);
     EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(949339100U));
@@ -246,13 +250,14 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsReservedExceptionAction)
   ASSERT_TRUE(issue != nullptr) << "DwtPacketDecoder reserved exception action should emit only an error";
   ASSERT_TRUE(issue->code == TraceIssueCode::InvalidExceptionAction)
       << "DwtPacketDecoder reserved exception action code mismatch";
-  ASSERT_TRUE(issue->message == "invalid exception action 0x0 for exception 11")
+  ASSERT_TRUE(formatTraceMessage(issue->message, TraceMessageStyle::Detailed) ==
+              "invalid exception action 0x0 for exception 11")
       << "DwtPacketDecoder reserved exception action message mismatch";
   ASSERT_TRUE(packets[0].index == 17U && packets[0].route.traceBusId == 3U)
       << "DwtPacketDecoder reserved exception action identity mismatch";
   ASSERT_TRUE(packets[0].tcyc.has_value() && *packets[0].tcyc == 1234U)
       << "DwtPacketDecoder reserved exception action timestamp mismatch";
-  ASSERT_TRUE(CsvRowMapper::row(packets[0]) == "1234,3,error,,,,,invalid exception action 0x0 for exception 11")
+  ASSERT_TRUE(CsvRowMapper::row(packets[0]) == "1234,3,error,,,,,Invalid action 0x0: exception 11; raw@17")
       << "DwtPacketDecoder reserved exception error CSV mismatch";
 }
 

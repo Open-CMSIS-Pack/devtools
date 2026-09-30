@@ -112,7 +112,7 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
   errorOutput.start();
   errorOutput.writeEvent(issuePacket(TraceIssueCode::DecodeError, "decoder warning", TraceIssueSeverity::Warning));
   errorOutput.stop();
-  ASSERT_TRUE(readTestTextFile(errorOutputPath.path()).find(",,error,,,,,decoder warning\n") != std::string::npos)
+  ASSERT_TRUE(readTestTextFile(errorOutputPath.path()).find(",,error,,,,,Trace decode error; raw@0\n") != std::string::npos)
       << "the error selector must include warning-severity decoder issue packets";
 }
 
@@ -135,13 +135,11 @@ TEST(CtraceUnitTests, testCsvFileOutputRetainsAllByteSkipReasonsOutsideSelection
 
   const auto lines = readTestLines(temporaryPath.path());
   ASSERT_EQ(lines.size(), 7U);
-  EXPECT_EQ(lines[1], ",,info,,,,,5 bytes skipped due to missing source ID; first formatter group at raw offset 16");
-  EXPECT_EQ(lines[2], ",0,info,,,,,6 bytes skipped for null source ID 0; first formatter group at raw offset 32");
-  EXPECT_EQ(lines[3], ",127,info,,,,,7 bytes skipped for reserved source ID 127; "
-                      "first formatter group at raw offset 48");
-  EXPECT_EQ(lines[4], ",42,info,,,,,8 bytes skipped for unconfigured source ID 42; "
-                      "first formatter group at raw offset 64");
-  EXPECT_EQ(lines[5], ",1,info,,,,,9 bytes skipped due to missing SYNC; first formatter group at raw offset 80");
+  EXPECT_EQ(lines[1], ",,info,,,,,5 bytes skipped: no source ID");
+  EXPECT_EQ(lines[2], ",0,info,,,,,6 bytes skipped: null source ID");
+  EXPECT_EQ(lines[3], ",127,info,,,,,7 bytes skipped: reserved source ID");
+  EXPECT_EQ(lines[4], ",42,info,,,,,8 bytes skipped: unconfigured source ID");
+  EXPECT_EQ(lines[5], ",1,info,,,,,9 bytes skipped: no SYNC");
   EXPECT_EQ(lines[6], ",7,itm,1,0x41,,,");
 }
 
@@ -221,9 +219,9 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
   ASSERT_TRUE(lines.size() == 3U) << "CSV issue row count mismatch";
   ASSERT_TRUE(lines[0] == "cycles,stream,type,source,value,pc,address,note") << "CSV issue header mismatch";
   ASSERT_TRUE(
-      (lines[1] == "1234,,overflow,,,,,overflow: new timestamp segment; time across boundary may be unreliable"))
+      (lines[1] == "1234,,overflow,,,,,Timestamp discontinuity"))
       << "CSV overflow issue row mismatch";
-  ASSERT_TRUE(lines[2] == "1235,,error,,,,,trace data lost before resynchronization")
+  ASSERT_TRUE(lines[2] == "1235,,error,,,,,ITM data loss; raw@0")
       << "CSV data-loss issue row mismatch";
 }
 
@@ -393,8 +391,8 @@ TEST(CtraceUnitTests, testCsvFileOutputRetainsFilteredPrefixAndGlobalDecodeAbort
 
     const auto lines = readTestLines(outputPath.path());
     ASSERT_EQ(lines.size(), 3U);
-    EXPECT_EQ(lines[1], selectErrors ? ",7,error,,,,,selected stream error" : ",7,itm,1,0x41,,,");
-    EXPECT_EQ(lines[2], R"(,,error,,,,,"decode aborted after processing 4294967297 input bytes; trace is incomplete: bad ""header"", trace stopped")");
+    EXPECT_EQ(lines[1], selectErrors ? ",7,error,,,,,Trace decode error; raw@0" : ",7,itm,1,0x41,,,");
+    EXPECT_EQ(lines[2], ",,error,,,,,Decode aborted after 4294967297 bytes; trace incomplete");
   }
 }
 

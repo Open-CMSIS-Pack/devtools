@@ -209,7 +209,7 @@ void expectSyntheticCsvRoute(std::string_view csv, std::uint8_t stream, std::uin
   expectContains(csv, addressRow.str());
   expectContains(csv, prefix + "dwt,3,,,,\n");
   expectContains(csv,
-                 prefix + "overflow,,,,,overflow: new timestamp segment; time across boundary may be unreliable\n");
+                 prefix + "overflow,,,,,Timestamp discontinuity\n");
 }
 
 void expectSyntheticCtfRoute(const std::filesystem::path& streamPath, std::uint8_t traceBusId,
@@ -266,7 +266,7 @@ void expectCompleteSyntheticCsv(const std::filesystem::path& csvPath)
   EXPECT_EQ(countCsvStreamRows(csv, "2"), 13U);
   EXPECT_EQ(countCsvStreamRows(csv, "0"), 0U);
   expectContains(csv, ",0,info,,,,,");
-  expectContains(csv, " bytes skipped for null source ID 0;");
+  expectContains(csv, " bytes skipped: null source ID");
 }
 
 /** @brief Requires all CTF records to use, and to cover, exactly the listed event families. */
@@ -894,7 +894,7 @@ TEST_F(CtraceIntegTests, SkipsUnsupportedFormattedSourceOnceAndKeepsConfiguredRo
             "0,1,itm,2,0x42,,,\n",
             traceCsvRows(readTestTextFile(workDirectory() / "Mixed.TB.csv")));
   expectContains(readTestTextFile(workDirectory() / "Mixed.TB.csv"),
-                 ",42,info,,,,,4 bytes skipped for unconfigured source ID 42;");
+                 ",42,info,,,,,4 bytes skipped: unconfigured source ID");
   expectNonEmptyFile(workDirectory() / "Mixed.TB.ctf" / "stream_1");
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Mixed.TB.ctf" / "stream_42"));
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Mixed.traceanalysis.xml"));
@@ -942,10 +942,8 @@ TEST_F(CtraceIntegTests, PublishesOutputsWithUnresolvedFormattedRouteRecovery)
   expectContains(result.stderrText, "ITM decoding did not resume before end of input at raw offset 16");
   expectContains(result.stderrText, "no later hardware SYNC; affected raw interval [6, 16) spans 10 bytes");
   EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
-            "0,1,error,,,,,\"OpenCSD detected an invalid ITM packet header at raw offset 6. "
-            "0x0014 (OCSD_ERR_INVALID_PCKT_HDR) [Invalid packet header]; packet=RESERVED, size=1 byte, bytes=[04]\"\n"
-            "0,1,error,,,,,\"ITM decoding did not resume before end of input at raw offset 16; "
-            "no later hardware SYNC; affected raw interval [6, 16) spans 10 bytes; timestamp 0 .. unknown.\"\n",
+            "0,1,error,,,,,Invalid ITM packet header (code 20); raw@6\n"
+            "0,1,error,,,,,\"No ITM resync before EOF; raw span [6,16): 10 bytes; cycles 0..?\"\n",
             traceCsvRows(readTestTextFile(workDirectory() / "Invalid.TB.csv")));
   expectNonEmptyFile(workDirectory() / "Invalid.TB.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Invalid.TB.ctf" / "stream_1");
@@ -1025,8 +1023,7 @@ TEST_F(CtraceIntegTests, ReportsUnassignedFormatterOnlyInputWithoutInventingRout
   expectNotContains(result.stderrText, "no hardware ITM SYNC");
   expectNotContains(result.stderrText, "[error]");
   EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
-            ",,info,,,,,15 bytes skipped due to missing source ID; "
-            "first formatter group at raw offset 0\n",
+            ",,info,,,,,15 bytes skipped: no source ID\n",
             readTestTextFile(workDirectory() / "Unassigned.TB.csv"));
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Unassigned.TB.ctf" / "stream_1"));
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Unassigned.traceanalysis.xml"));
@@ -1056,10 +1053,11 @@ TEST_F(CtraceIntegTests, DecodesFormattedCaptureAfterUnassignedPrefixAndRetainsI
       expectNotContains(result.stderrText, "[error]");
       expectNotContains(result.stderrText, "no hardware ITM SYNC");
       const auto csv = readTestTextFile(directory / "Synthetic.TB.csv");
-      const auto infoRow = ",,info,,,,," + message + "\n";
+      const auto infoRow = ",,info,,,,," + std::to_string(prefixByte == 0U ? 30U : 1U) +
+                           " bytes skipped: no source ID\n";
       EXPECT_EQ(countOccurrences(csv, infoRow), 1U);
-      EXPECT_EQ(countOccurrences(csv, " bytes skipped for null source ID 0;"), 1U);
-      EXPECT_EQ(countOccurrences(csv, " bytes skipped for reserved source ID 127;"), prefixByte == 0xffU ? 1U : 0U);
+      EXPECT_EQ(countOccurrences(csv, " bytes skipped: null source ID"), 1U);
+      EXPECT_EQ(countOccurrences(csv, " bytes skipped: reserved source ID"), prefixByte == 0xffU ? 1U : 0U);
       if (filtered) {
         EXPECT_EQ(traceCsvRows(csv), "cycles,stream,type,source,value,pc,address,note\n");
         EXPECT_EQ(countOccurrences(csv, ",info,"), prefixByte == 0xffU ? 3U : 2U);
@@ -1090,13 +1088,11 @@ TEST_F(CtraceIntegTests, ReportsNeverSynchronizedFormattedRouteAndKeepsHealthyOu
   expectContains(result.stderrText, "8 bytes skipped due to missing SYNC");
   expectContains(result.stderrText, "stream=2");
   const auto csv = readTestTextFile(workDirectory() / "Synthetic.TB.csv");
-  expectContains(csv, ",,info,,,,,15 bytes skipped due to missing source ID");
+  expectContains(csv, ",,info,,,,,15 bytes skipped: no source ID");
   expectContains(csv, "0,1,itm,1,0x41,,,\n");
-  EXPECT_EQ(countOccurrences(csv, "0,2,error,,,,,no hardware ITM SYNC before end of input; "
-                                 "first formatter group at raw offset 24\n"),
+  EXPECT_EQ(countOccurrences(csv, "0,2,error,,,,,No ITM SYNC before EOF; raw@24\n"),
             1U);
-  EXPECT_EQ(countOccurrences(csv, ",2,info,,,,,8 bytes skipped due to missing SYNC; "
-                                 "first formatter group at raw offset 24\n"),
+  EXPECT_EQ(countOccurrences(csv, ",2,info,,,,,8 bytes skipped: no SYNC\n"),
             1U);
   expectNotContains(csv, ",1,error,");
   expectNotContains(csv, ",2,itm,");
@@ -1130,11 +1126,13 @@ TEST_F(CtraceIntegTests, ReportsInitialRoutedByteSkipsAndDecodesAfterRealHardwar
   expectNotContains(result.stderrText, "[error]");
   expectNotContains(result.stderrText, "no hardware ITM SYNC");
   const auto csv = readTestTextFile(workDirectory() / "Synthetic.TB.csv");
-  EXPECT_EQ(countOccurrences(csv, ",1,info,,,,," + std::string(skipped) + "\n"), 1U);
-  EXPECT_EQ(countOccurrences(csv, skipped), 1U);
+  constexpr std::string_view compactSkipped{"3 bytes skipped: no SYNC"};
+  EXPECT_EQ(countOccurrences(csv, ",1,info,,,,," + std::string(compactSkipped) + "\n"), 1U);
+  EXPECT_EQ(countOccurrences(csv, compactSkipped), 1U);
+  expectNotContains(csv, "first formatter group");
   expectContains(csv, "0,1,itm,1,0x41,,,\n");
   expectContains(csv, "0,2,itm,1,0x42,,,\n");
-  EXPECT_LT(csv.find(skipped), csv.find("0,1,itm,1,0x41,,,\n"));
+  EXPECT_LT(csv.find(compactSkipped), csv.find("0,1,itm,1,0x41,,,\n"));
   expectNotContains(csv, ",1,error,");
   expectNotContains(csv, ",2,error,");
   expectNotContains(csv, ",sync,");
@@ -1337,7 +1335,7 @@ TEST_F(CtraceIntegTests, RetainsProhibitedOnlyTraceDataWithoutGeneratingEmptyXml
     auto expectedCsv = std::string("cycles,stream,type,source,value,pc,address,note\n6,") +
                        (formatted ? "1" : "") + ",pcsample,,,,,Trace prohibited\n";
     if (formatted) {
-      expectedCsv += ",0,info,,,,,4 bytes skipped for null source ID 0; first formatter group at raw offset 10\n";
+      expectedCsv += ",0,info,,,,,4 bytes skipped: null source ID\n";
       expectContains(result.stderrText, "4 bytes skipped for null source ID 0");
     }
     EXPECT_EQ(readTestTextFile(directory / (baseName + ".csv")), expectedCsv);
@@ -1425,8 +1423,7 @@ TEST_F(CtraceIntegTests, ReportsInvalidDwtEventCounterWithoutPartialDecode)
   expectContains(result.stderrText, "unsupported DWT event-counter payload: size 1, value 0x41");
   expectContains(result.stderrText, "raw_offset=6");
   EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
-            "0,,error,,,,,\"unsupported DWT event-counter payload: size 1, value 0x41; expected a non-zero 1-byte "
-            "mask using bits 0..5 only\"\n"
+            "0,,error,,,,,Invalid DWT counter: 1 B; 0x41; raw@6\n"
             "0,,itm,1,0x41,,,\n",
             readTestTextFile(workDirectory() / "InvalidEvent.SWO.csv"));
 }
@@ -1472,8 +1469,7 @@ TEST_F(CtraceIntegTests, ReportsInvalidPmuEventCounterWithoutPartialDecode)
   expectContains(result.stderrText, "unsupported PMU event-counter payload: size 1, value 0x0");
   expectContains(result.stderrText, "raw_offset=6");
   EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
-            "0,,error,,,,,\"unsupported PMU event-counter payload: size 1, value 0x0; expected a non-zero 1-byte "
-            "mask using bits 0..7\"\n"
+            "0,,error,,,,,Invalid PMU counter: 1 B; 0x0; raw@6\n"
             "0,,itm,1,0x41,,,\n",
             readTestTextFile(workDirectory() / "InvalidPmu.SWO.csv"));
 }
@@ -1919,7 +1915,7 @@ TEST_F(CtraceIntegTests, CompletesSiblingChannelsAfterMissingSynchronization)
   expectContains(result.stderrText, "OpenCSD consumed 2 raw bytes while waiting for usable ITM trace packets");
   expectContains(result.stderrText, "inputChannel=SWO, input=");
   expectContains(readTestTextFile(workDirectory() / "Selected.SWO.csv"),
-                 "OpenCSD consumed 2 raw bytes while waiting for usable ITM trace packets");
+                 "2 raw bytes without usable ITM packets");
   for (const auto& fixture : kChannelFixtures) {
     if (fixture.channel != "SWO") {
       expectChannelArtifacts(workDirectory(), "Selected", fixture, true, true);
@@ -2274,9 +2270,9 @@ TEST_F(CtraceIntegTests, RecoversAtHardwareSyncAfterResetDiscontinuity)
 
   const auto csv = readTestTextFile(workDirectory() / "Arm.SWO.csv");
   expectNotContains(csv, ",itm,");
-  const auto recoveryError = csv.find("OpenCSD detected an invalid ITM packet sequence at raw offset 10.");
+  const auto recoveryError = csv.find("Invalid ITM packet sequence (code 19); raw@10");
   const auto dataLoss =
-      csv.find("0,,error,,,,,OpenCSD consumed 116 raw bytes while waiting for usable ITM trace packets");
+      csv.find("0,,error,,,,,116 raw bytes without usable ITM packets");
   const auto firstResumedEvent = csv.find("271773258,,dwt,0,0x00,,,");
   const auto lateResumedEvent = csv.find("425766493,,dwt,0,0x2a,,,");
   ASSERT_NE(std::string::npos, recoveryError);
@@ -2317,14 +2313,18 @@ TEST_F(CtraceIntegTests, ReportsMalformedAsyncDetailsAndRealResynchronization)
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Malformed", "--all"});
   EXPECT_EQ(result.exitCode, 1) << "the retained output must not hide the input error";
   const auto csv = readTestTextFile(workDirectory() / "Malformed.TB.csv");
-  for (const auto& text : {result.stderrText, csv}) {
-    expectContains(text, "OCSD_ERR_BAD_PACKET_SEQ");
-    expectContains(text, "Async Packet: unexpected none zero value");
-    expectContains(text, "packet=ASYNC");
-    expectContains(text, "bytes=[00 08]");
-    expectContains(text, "ITM decoding resumed at hardware SYNC at raw offset");
-    EXPECT_EQ(countOccurrences(text, "OCSD_ERR_BAD_PACKET_SEQ"), 1U);
-  }
+  expectContains(result.stderrText, "OCSD_ERR_BAD_PACKET_SEQ");
+  expectContains(result.stderrText, "Async Packet: unexpected none zero value");
+  expectContains(result.stderrText, "packet=ASYNC");
+  expectContains(result.stderrText, "bytes=[00 08]");
+  expectContains(result.stderrText, "ITM decoding resumed at hardware SYNC at raw offset");
+  EXPECT_EQ(countOccurrences(result.stderrText, "OCSD_ERR_BAD_PACKET_SEQ"), 1U);
+  expectContains(csv, "Invalid ITM packet sequence (code 19)");
+  expectContains(csv, "ITM resynced; raw span [");
+  EXPECT_EQ(countOccurrences(csv, "Invalid ITM packet sequence"), 1U);
+  expectNotContains(csv, "OCSD_ERR_BAD_PACKET_SEQ");
+  expectNotContains(csv, "packet=ASYNC");
+  expectNotContains(csv, "bytes=[00 08]");
   expectContains(csv, ",1,itm,1,0x41");
   expectNotContains(csv, ",1,itm,1,0x58");
   expectNonEmptyFile(workDirectory() / "Malformed.TB.ctf" / "metadata");
@@ -2343,6 +2343,8 @@ TEST_F(CtraceIntegTests, RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTai
   const auto abortMessage = "decode aborted after processing " + std::to_string(capture.size()) +
                             " input bytes; trace is incomplete: OpenCSD aborted end-of-trace processing: "
                             "incomplete ITM packet at end of input";
+  const auto compactAbortMessage = "Decode aborted after " + std::to_string(capture.size()) +
+                                   " bytes; trace incomplete; End of trace: Incomplete ITM packet at EOF";
   struct SelectionCase {
     std::string name;
     std::vector<std::string> arguments;
@@ -2387,9 +2389,9 @@ TEST_F(CtraceIntegTests, RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTai
     const auto csv = readTestTextFile(csvPath);
     const auto lines = readTestLines(csvPath);
     ASSERT_GE(lines.size(), 2U);
-    EXPECT_EQ(lines.back(), ",,error,,,,," + abortMessage)
+    EXPECT_EQ(lines.back(), ",,error,,,,," + compactAbortMessage)
         << "the final abort is input-wide, has no cycles/source, and bypasses selection";
-    EXPECT_EQ(countOccurrences(csv, "decode aborted after processing "), 1U);
+    EXPECT_EQ(countOccurrences(csv, "Decode aborted after "), 1U);
     const auto expectedPayload = selection.includesPayload ? "42,1,itm,1,0x41,,,\n" : "";
     const auto semanticRows = traceCsvRows(csv);
     if (selection.includesPayload) {
@@ -2400,7 +2402,7 @@ TEST_F(CtraceIntegTests, RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTai
     EXPECT_EQ(countOccurrences(csv, ",1,error,"), selection.includesRouteError ? 1U : 0U);
     if (!selection.includesRouteError) {
       EXPECT_EQ(semanticRows, "cycles,stream,type,source,value,pc,address,note\n" +
-                                 std::string(expectedPayload) + ",,error,,,,," + abortMessage + "\n");
+                                 std::string(expectedPayload) + ",,error,,,,," + compactAbortMessage + "\n");
     }
     expectNotContains(csv, ",pcsample,");
     EXPECT_FALSE(std::filesystem::exists(directory / "Incomplete.TB.ctf"));
