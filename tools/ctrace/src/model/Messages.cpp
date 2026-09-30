@@ -11,7 +11,8 @@
 #include <limits>
 #include <stdexcept>
 
-namespace {
+// Compile-time-only constexpr helpers are implicitly inline and are not part of the public message API.
+namespace CtraceMessageCatalogDetail {
 
 struct TemplateInfo {
   bool valid = true;
@@ -23,9 +24,11 @@ struct TemplateInfo {
 constexpr TemplateInfo inspectTemplate(std::string_view text, std::size_t requestedArgument = 0U)
 {
   TemplateInfo info;
-  for (std::size_t cursor = 0U; cursor < text.size(); ++cursor) {
+  std::size_t cursor = 0U;
+  while (cursor < text.size()) {
     const auto character = text[cursor];
     if (character != '{' && character != '}') {
+      ++cursor;
       continue;
     }
     if (character == '}') {
@@ -50,6 +53,7 @@ constexpr TemplateInfo inspectTemplate(std::string_view text, std::size_t reques
       info.argumentCount = argument + 1U;
     }
     info.containsArgument = info.containsArgument || argument == requestedArgument;
+    ++cursor;
   }
   return info;
 }
@@ -84,10 +88,14 @@ constexpr bool validCatalogEntry(const char* detailed, const char* compact)
   return true;
 }
 
+} // namespace CtraceMessageCatalogDetail
+
+namespace {
+
 // Evaluate each row separately so growing the catalog does not exhaust a compiler's per-expression step budget.
 #define CTRACE_MESSAGE(id, detailed, compact) \
-  static_assert(validCatalogEntry(detailed, compact), "Invalid message templates: " #id); \
-  constexpr std::size_t kArgumentCount##id = catalogArgumentCount(detailed, compact);
+  static_assert(CtraceMessageCatalogDetail::validCatalogEntry(detailed, compact), "Invalid message templates: " #id); \
+  constexpr std::size_t kArgumentCount##id = CtraceMessageCatalogDetail::catalogArgumentCount(detailed, compact);
 #include "MessageCatalog.inc"
 #undef CTRACE_MESSAGE
 
@@ -148,7 +156,8 @@ std::string formatMessage(MessageId id, MessageStyle style, std::initializer_lis
   const auto pattern = selectTemplate(entry, style);
   std::string text;
   text.reserve(pattern.size());
-  for (std::size_t cursor = 0U; cursor < pattern.size(); ++cursor) {
+  std::size_t cursor = 0U;
+  while (cursor < pattern.size()) {
     const auto character = pattern[cursor];
     if (character != '{') {
       text += character;
@@ -162,6 +171,7 @@ std::string formatMessage(MessageId id, MessageStyle style, std::initializer_lis
       }
       text += arguments.begin()[argument].text();
     }
+    ++cursor;
   }
   return text;
 }
