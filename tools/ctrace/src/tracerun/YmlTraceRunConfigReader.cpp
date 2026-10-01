@@ -193,17 +193,17 @@ static std::optional<std::string> deferredReferenceStringAttribute(const Node& e
   return node.Scalar();
 }
 
-// ctrace-ref identifies the originating ctrace.yml node. The data index links
+// ref identifies the originating ctrace.yml node. The data index links
 // a generated DWT route to its copied ctrace-setup.data metadata.
 /** @brief Extracts a DWT data setup index from a ctrace reference path. */
-static std::optional<std::size_t> dwtDataIndex(const std::string_view& ctraceRef)
+static std::optional<std::size_t> dwtDataIndex(const std::string_view& ref)
 {
   constexpr std::string_view marker = "data#";
-  const auto markerPosition = ctraceRef.rfind(marker);
-  if (markerPosition == std::string_view::npos || (markerPosition != 0U && ctraceRef[markerPosition - 1U] != '/')) {
+  const auto markerPosition = ref.rfind(marker);
+  if (markerPosition == std::string_view::npos || (markerPosition != 0U && ref[markerPosition - 1U] != '/')) {
     return std::nullopt;
   }
-  const auto value = ctraceRef.substr(markerPosition + marker.size());
+  const auto value = ref.substr(markerPosition + marker.size());
   if (value.empty()) {
     return std::nullopt;
   }
@@ -222,11 +222,11 @@ static std::optional<std::string> dataReferenceProcessorName(const TraceRunRefer
   if (explicitName.has_value() || !reference.dataSetupIndex.has_value()) {
     return explicitName;
   }
-  const auto separator = reference.ctraceRef.find('/');
-  if (separator == 0U || separator == std::string::npos || separator != reference.ctraceRef.rfind('/')) {
+  const auto separator = reference.ref.find('/');
+  if (separator == 0U || separator == std::string::npos || separator != reference.ref.rfind('/')) {
     return std::nullopt;
   }
-  return reference.ctraceRef.substr(0U, separator);
+  return reference.ref.substr(0U, separator);
 }
 
 /** @brief Collects data setup indices consumed by matching references. */
@@ -374,7 +374,7 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
   const auto requiredScalar = [&](const std::string_view& name) {
     const auto node = childNode(element, name);
     if (!node || !node.IsScalar() || node.Scalar().empty()) {
-      fail(path, node ? node : element, "missing required '" + std::string(name) + "' scalar in ctrace-ref entry");
+      fail(path, node ? node : element, "missing required '" + std::string(name) + "' scalar in 'ctrace-refs' entry");
     }
     return node.Scalar();
   };
@@ -384,10 +384,10 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
   if (!TraceRunSchema::consumesReferenceMetadata(reference.type)) {
     return std::nullopt;
   }
-  reference.ctraceRef = requiredScalar("ctrace-ref");
+  reference.ref = requiredScalar("ref");
   reference.line = lineNumber(element);
   if (reference.type == "dwt") {
-    reference.dataSetupIndex = dwtDataIndex(reference.ctraceRef);
+    reference.dataSetupIndex = dwtDataIndex(reference.ref);
   }
 
   const auto diagnostics = parseReferenceDiagnostics(path, element);
@@ -633,7 +633,7 @@ static bool hasRelevantSetupContent(const Node& element, const std::vector<Trace
   };
   return std::any_of(featurePaths.begin(), featurePaths.end(), [&](const std::string& featurePath) {
     return std::any_of(references.begin(), references.end(), [&](const TraceRunReference& reference) {
-      return TraceRunSchema::consumesReferenceMetadata(reference.type) && matches(featurePath, reference.ctraceRef);
+      return TraceRunSchema::consumesReferenceMetadata(reference.type) && matches(featurePath, reference.ref);
     });
   });
 }

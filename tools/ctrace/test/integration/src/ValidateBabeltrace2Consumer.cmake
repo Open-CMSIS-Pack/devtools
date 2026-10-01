@@ -148,7 +148,7 @@ file(WRITE "${unbound_work_directory}/Unbound.ctrace-run.yml" [=[ctrace-run:
         clock: 240000000
         itm-prescaler: 1
   ctrace-refs:
-    - ctrace-ref: itm
+    - ref: itm
       type: itm
       stream: 1
 ]=])

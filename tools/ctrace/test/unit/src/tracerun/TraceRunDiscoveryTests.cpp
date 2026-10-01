@@ -33,7 +33,7 @@ static TraceRunConfig inputConfig(const std::filesystem::path& configFile,
   config.path = configFile.string();
   config.traceFormat = traceFormat;
   TraceRunReference route;
-  route.ctraceRef = "core/itm";
+  route.ref = "core/itm";
   route.type = "itm";
   route.processorName = "core";
   route.stream = 1U;
@@ -224,7 +224,7 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesFormatBeforeMulticoreRouteNor
   writeTestFile(rawFile, std::string(16U, '\0'));
   auto config = inputConfig(root / "Multicore.ctrace-run.yml");
   auto secondRoute = config.references.front();
-  secondRoute.ctraceRef = "other/itm";
+  secondRoute.ref = "other/itm";
   secondRoute.processorName = "other";
   secondRoute.stream = 2U;
   config.references.push_back(std::move(secondRoute));

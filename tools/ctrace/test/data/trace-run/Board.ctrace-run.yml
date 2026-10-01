@@ -6,12 +6,12 @@ ctrace-run:
       itm:
         enable: 0xFFFFFFFE
   ctrace-refs:
-    - ctrace-ref: opaque/printf-route
+    - ref: opaque/printf-route
       type: itm
       info: configured ITM channel
       stream: 1
       source: 0
-    - ctrace-ref: data#0
+    - ref: data#0
       type: dwt
       info: configured DWT data trace
       warning: aligned DWT range

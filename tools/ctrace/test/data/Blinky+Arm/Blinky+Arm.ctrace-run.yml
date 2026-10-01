@@ -21,14 +21,14 @@ ctrace-run:
     pcsampling:
       period: 16384
   ctrace-refs:
-  - ctrace-ref: CM7/timestamps
+  - ref: CM7/timestamps
     type: itm
     pname: CM7
     regs:
     - name: ITM_TCR
       value: 0x00000003
       mask: 0x00000303
-  - ctrace-ref: CM7/data#0
+  - ref: CM7/data#0
     type: dwt
     pname: CM7
     symbol-file: Blinky_cm7.axf
@@ -46,7 +46,7 @@ ctrace-run:
     - name: ITM_TCR
       value: 0x00000009
       mask: 0x00000009
-  - ctrace-ref: CM7/synchronization#0
+  - ref: CM7/synchronization#0
     type: dwt
     pname: CM7
     regs:

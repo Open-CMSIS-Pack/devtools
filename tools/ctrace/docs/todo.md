@@ -10,9 +10,11 @@
 
 - [ ] Align caller-facing raw-input/channel selection and transport format/framing with the outcome of
       [cmsis-toolbox #699](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/pull/699), also tracked by
-      [vscode-cmsis-debugger #1150](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/1150) and
-      [devtools #2573](https://github.com/Open-CMSIS-Pack/devtools/issues/2573). Keep trace communication separate from
-      trace-source setup and decide how to replace the temporary `trace-format` override without assuming its
+      [vscode-cmsis-debugger #1150](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/1150).
+      TB input/CSV naming support tracked by
+      [devtools #2573](https://github.com/Open-CMSIS-Pack/devtools/issues/2573) is complete and that issue is closed;
+      public channel selection and format/framing remain separate follow-up work. Keep trace communication separate
+      from trace-source setup and decide how to replace the temporary `trace-format` override without assuming its
       standardization.
 - [ ] Align the published CTF bundle path with ctrace's `<solution-set>.<channel>.ctf` naming, including single-input runs.
 - [ ] Support FSYNC and FSYNC+HSYNC formatted input after a public framing contract is specified.
