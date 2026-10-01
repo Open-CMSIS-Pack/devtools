@@ -112,7 +112,7 @@ inline bool processorNamesMayBind(const std::optional<std::string>& left, const 
 
 /** @brief Stores one parsed ctrace reference and its resolved routing metadata. */
 struct TraceRunReference {
-  std::string ctraceRef;
+  std::string ref;
   std::string type;
   std::optional<std::string> processorName;
   std::vector<std::string> info;
@@ -130,7 +130,7 @@ struct TraceRunReference {
   std::optional<std::uint32_t> stream;
   std::vector<std::uint32_t> sources;
   // Index of the referenced ctrace-setup.data entry, derived from the
-  // specified ctrace-ref path form [<pname>/]data#<index>.
+  // specified ref path form [<pname>/]data#<index>.
   std::optional<std::size_t> dataSetupIndex;
   std::size_t line = 0U;
 };
@@ -174,9 +174,9 @@ inline bool hasConsumedRouteShape(const TraceRunReference& reference)
 inline bool isTimestampReference(const TraceRunReference& reference)
 {
   constexpr std::string_view name = "timestamps";
-  const auto separator = reference.ctraceRef.rfind('/');
-  const auto leaf = separator == std::string::npos ? std::string_view(reference.ctraceRef)
-                                                   : std::string_view(reference.ctraceRef).substr(separator + 1U);
+  const auto separator = reference.ref.rfind('/');
+  const auto leaf = separator == std::string::npos ? std::string_view(reference.ref)
+                                                   : std::string_view(reference.ref).substr(separator + 1U);
   return leaf == name;
 }
 
@@ -184,9 +184,9 @@ inline bool isTimestampReference(const TraceRunReference& reference)
 inline bool isProcessorItmReference(const TraceRunReference& reference)
 {
   constexpr std::string_view name = "itm";
-  const auto separator = reference.ctraceRef.rfind('/');
-  const auto leaf = separator == std::string::npos ? std::string_view(reference.ctraceRef)
-                                                   : std::string_view(reference.ctraceRef).substr(separator + 1U);
+  const auto separator = reference.ref.rfind('/');
+  const auto leaf = separator == std::string::npos ? std::string_view(reference.ref)
+                                                   : std::string_view(reference.ref).substr(separator + 1U);
   return reference.type == "itm" && leaf == name;
 }
 

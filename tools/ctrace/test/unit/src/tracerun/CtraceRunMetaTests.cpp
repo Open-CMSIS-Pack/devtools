@@ -336,7 +336,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaWarnsForSingleSetupIdentityConflicts)
   auto unnamedDwtReference = makeReference("dwt", std::nullopt, 3U, {0U});
   unnamedDwtReference.dataSetupIndex = 0U;
   referencesOnly.references.push_back(unnamedDwtReference);
-  EXPECT_TRUE(metaRejects(referencesOnly, "pname is required for every ctrace-ref"));
+  EXPECT_TRUE(metaRejects(referencesOnly, "pname is required for every ref"));
 
   referencesOnly.references.pop_back();
   const auto mergedReferences = CtraceRunMeta::fromConfig(referencesOnly);
@@ -436,8 +436,8 @@ TEST(CtraceUnitTests, testCtraceRunMetaMapsDistinctPrescalersPerStream)
   EXPECT_TRUE(metaRejects(config, "different timestamps.itm-prescaler values"));
 
   config.traceFormat = TraceRunFormat::Formatted;
-  config.references[0].ctraceRef = "a/itm";
-  config.references[1].ctraceRef = "b/itm";
+  config.references[0].ref = "a/itm";
+  config.references[1].ref = "b/itm";
   const auto meta = CtraceRunMeta::fromConfig(config);
   EXPECT_EQ(meta.routes()[0].timestampPrescaler, 4U);
   EXPECT_EQ(meta.routes()[1].timestampPrescaler, 16U);
@@ -731,7 +731,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaValidatesFormattedSetupInference)
       makeTimestampSetup("second"),
   };
   EXPECT_TRUE(metaRejects(formattedConfig({routeReference("itm", "itm", std::nullopt, 1U)}, processors),
-                          "pname is required for a formatted ctrace-ref"));
+                          "pname is required for a formatted ref"));
   EXPECT_TRUE(metaRejects(formattedConfig({routeReference("itm", "ghost/itm", "ghost", 1U)}, processors),
                           "has no matching active ctrace-setup processor"));
 
@@ -1025,7 +1025,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaProducerFailuresDoNotWeakenRouting)
       routeReference("global_ts", "first/timesync", "first", std::nullopt),
       routeReference("overflow", "second/overflow", "second", std::nullopt),
   });
-  EXPECT_TRUE(metaRejects(conflictingStreamless, "streamless ctrace-ref cannot be associated"));
+  EXPECT_TRUE(metaRejects(conflictingStreamless, "streamless ref cannot be associated"));
 
   EXPECT_TRUE(metaRejects(formattedConfig({routeReference("itm", "core/itm", "core", 1U),
                                            routeReference("overflow", "core/overflow", "core", 2U)}),

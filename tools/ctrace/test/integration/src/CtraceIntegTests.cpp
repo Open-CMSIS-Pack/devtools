@@ -544,7 +544,7 @@ void writeMultipleChannelFixture(const std::filesystem::path& directory, std::st
         clock: 1000000
         itm-prescaler: 1
   ctrace-refs:
-    - { ctrace-ref: core/itm, type: itm, pname: core, stream: 1 }
+    - { ref: core/itm, type: itm, pname: core, stream: 1 }
 )yml";
   writeTestFile(directory / (std::string(solutionSet) + ".ctrace-run.yml"), traceRun);
   for (const auto& fixture : kChannelFixtures) {
@@ -630,8 +630,8 @@ void writeSwoAndTbTopicFixture(const std::filesystem::path& directory, std::stri
       data:
         - size: 1
   ctrace-refs:
-    - { ctrace-ref: core/itm, type: itm, pname: core, stream: 1 }
-    - { ctrace-ref: core/data#0, type: dwt, pname: core, stream: 1, source: 0, size: 1, data-type: unsigned }
+    - { ref: core/itm, type: itm, pname: core, stream: 1 }
+    - { ref: core/data#0, type: dwt, pname: core, stream: 1, source: 0, size: 1, data-type: unsigned }
 )yml";
   writeTestFile(directory / (std::string(target) + ".ctrace-run.yml"), traceRun);
   for (const auto channel : {"SWO", "TB"}) {
@@ -668,10 +668,10 @@ void writePcSamplingFixture(const std::filesystem::path& directory, const std::f
       timestamps:
 )yml");
     replaceFixtureText(traceRun, "  ctrace-refs: []\n", R"yml(  ctrace-refs:
-    - ctrace-ref: first/itm
+    - ref: first/itm
       type: itm
       stream: 1
-    - ctrace-ref: second/itm
+    - ref: second/itm
       type: itm
       stream: 2
 )yml");
@@ -944,7 +944,7 @@ TEST_F(CtraceIntegTests, RejectsPartialFormattedFrameBeforeCreatingArtifacts)
   constexpr std::string_view configuration = R"yml(  ctrace-setup:
     - pname: core
   ctrace-refs:
-    - ctrace-ref: core/itm
+    - ref: core/itm
       type: itm
       pname: core
       stream: 1
@@ -977,7 +977,7 @@ TEST_F(CtraceIntegTests, SkipsUnsupportedFormattedSourceOnceAndKeepsConfiguredRo
       timestamps:
         clock: 400000000
   ctrace-refs:
-    - ctrace-ref: core/itm
+    - ref: core/itm
       type: itm
       pname: core
       stream: 1
@@ -1014,7 +1014,7 @@ TEST_F(CtraceIntegTests, PublishesOutputsWithUnresolvedFormattedRouteRecovery)
       timestamps:
         clock: 400000000
   ctrace-refs:
-    - ctrace-ref: core/itm
+    - ref: core/itm
       type: itm
       pname: core
       stream: 1
@@ -1067,11 +1067,11 @@ TEST_F(CtraceIntegTests, RecoversOneFormattedRouteWithoutLosingInterleavedOutput
       timestamps:
         clock: 400000000
   ctrace-refs:
-    - ctrace-ref: first/itm
+    - ref: first/itm
       type: itm
       pname: first
       stream: 1
-    - ctrace-ref: second/itm
+    - ref: second/itm
       type: itm
       pname: second
       stream: 2
@@ -1111,7 +1111,7 @@ TEST_F(CtraceIntegTests, ReportsUnassignedFormatterOnlyInputWithoutInventingRout
       timestamps:
         clock: 400000000
   ctrace-refs:
-    - ctrace-ref: core/itm
+    - ref: core/itm
       type: itm
       pname: core
       stream: 1
@@ -1420,7 +1420,7 @@ TEST_F(CtraceIntegTests, RetainsProhibitedOnlyTraceDataWithoutGeneratingEmptyXml
     if (formatted) {
       replaceFixtureText(traceRun, "ctrace-run:\n", "ctrace-run:\n  trace-format: formatted\n");
       replaceFixtureText(traceRun, "  ctrace-refs: []\n", R"yml(  ctrace-refs:
-    - ctrace-ref: itm
+    - ref: itm
       type: itm
       stream: 1
 )yml");
@@ -1637,7 +1637,7 @@ TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
       timestamps:
         clock: 400000000
   ctrace-refs:
-    - ctrace-ref: core/itm
+    - ref: core/itm
       type: itm
       pname: core
       stream: 1
@@ -1649,7 +1649,7 @@ TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
       error:
         - target could not enable ITM channel zero
         - target rejected the fallback configuration
-    - ctrace-ref: core/exceptions
+    - ref: core/exceptions
       type: exception
       error: ignored reference diagnostic
 )yml");
@@ -1662,9 +1662,9 @@ TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
   expectContains(result.stderrText, "[warning] ITM channel zero uses fallback routing:");
   expectContains(result.stderrText, "[error] target could not enable ITM channel zero:");
   expectContains(result.stderrText, "[error] target rejected the fallback configuration:");
-  expectContains(result.stderrText, "ctraceRef=core/itm, type=itm, pname=core");
+  expectContains(result.stderrText, "ref=core/itm, type=itm, pname=core");
   expectContains(result.stderrText, "[error] ignored reference diagnostic:");
-  expectContains(result.stderrText, "ctraceRef=core/exceptions, type=exception");
+  expectContains(result.stderrText, "ref=core/exceptions, type=exception");
 
   expectNonEmptyFile(workDirectory() / "Diagnostics.SWO.csv");
   expectNonEmptyFile(workDirectory() / "Diagnostics.SWO.ctf" / "metadata");
@@ -2139,7 +2139,7 @@ TEST_F(CtraceIntegTests, RequiresTraceBusIdWhenTraceBufferFormatIsInferred)
   ctrace-setup:
     - pname: core
   ctrace-refs:
-    - ctrace-ref: core/itm
+    - ref: core/itm
       type: itm
       pname: core
 )yml");
@@ -2284,7 +2284,7 @@ TEST_F(CtraceIntegTests, RejectsMissingAndInvalidFormattedRouteFallbacksBeforeOu
       timestamps:
         clock: 240000000
   ctrace-refs:
-    - ctrace-ref: core/timesync
+    - ref: core/timesync
       type: global_ts
       pname: core
       stream: 1
@@ -2452,7 +2452,7 @@ TEST_F(CtraceIntegTests, ReportsMalformedAsyncDetailsAndRealResynchronization)
       timestamps:
         clock: 400000000
   ctrace-refs:
-    - ctrace-ref: core/itm
+    - ref: core/itm
       type: itm
       pname: core
       stream: 1
@@ -2567,7 +2567,7 @@ TEST_F(CtraceIntegTests, RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTai
       timestamps:
         clock: 400000000
   ctrace-refs:
-    - ctrace-ref: core/itm
+    - ref: core/itm
       type: itm
       pname: core
       stream: 1

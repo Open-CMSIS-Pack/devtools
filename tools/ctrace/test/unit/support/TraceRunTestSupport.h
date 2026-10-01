@@ -21,14 +21,14 @@ namespace TraceRunTestSupport {
 /** @brief Creates a trace-run reference with common test defaults. */
 inline TraceRunReference makeReference(std::string type, std::optional<std::string> processorName,
                                        std::optional<std::uint32_t> stream, std::vector<std::uint32_t> sources,
-                                       std::string ctraceRef = "route")
+                                       std::string ref = "route")
 {
   TraceRunReference reference;
   reference.type = std::move(type);
   reference.processorName = std::move(processorName);
   reference.stream = stream;
   reference.sources = std::move(sources);
-  reference.ctraceRef = std::move(ctraceRef);
+  reference.ref = std::move(ref);
   return reference;
 }
 

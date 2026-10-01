@@ -560,7 +560,7 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   reported.warning = {"producer warning", "second producer warning"};
   reported.error = {"producer error", "second producer error"};
   TraceRunReference emptyError = reported;
-  emptyError.ctraceRef = "core/pmu";
+  emptyError.ref = "core/pmu";
   emptyError.type = "pmu";
   emptyError.info.clear();
   emptyError.warning = {""};
@@ -568,7 +568,7 @@ TEST(CtraceUnitTests, testTraceDirectoryReportsGenerationDiagnosticsAndMissingSw
   auto channelZero = TraceRunTestSupport::makeReference("itm", std::nullopt, std::nullopt, {0U}, "core/itm");
   channelZero.error = {"channel zero diagnostic"};
   TraceRunReference noStream = reported;
-  noStream.ctraceRef = "core/no-stream";
+  noStream.ref = "core/no-stream";
   noStream.stream.reset();
   noStream.warning.clear();
   noStream.error.clear();

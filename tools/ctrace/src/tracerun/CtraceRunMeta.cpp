@@ -90,16 +90,16 @@ static std::string_view referenceLeaf(const std::string_view path)
 /** @brief Derives a processor name from a one-segment `[pname/]feature` reference path. */
 static std::optional<std::string> referencePathProcessorName(const TraceRunReference& reference)
 {
-  const auto separator = processorFeatureSeparator(reference.ctraceRef);
+  const auto separator = processorFeatureSeparator(reference.ref);
   if (!separator.has_value()) {
     return std::nullopt;
   }
 
-  const auto leaf = std::string_view(reference.ctraceRef).substr(*separator + 1U);
+  const auto leaf = std::string_view(reference.ref).substr(*separator + 1U);
   if (!isProcessorScopedFeature(reference.type, leaf)) {
     return std::nullopt;
   }
-  return reference.ctraceRef.substr(0U, *separator);
+  return reference.ref.substr(0U, *separator);
 }
 
 /** @brief Resolves processor evidence without repeating a previously performed consistency check. */
@@ -225,7 +225,7 @@ static void mergeTimestampClock(std::optional<std::uint64_t>& clockHz, std::opti
 static std::vector<std::pair<std::string, std::string>> warningContext(const TraceRunReference& reference)
 {
   std::vector<std::pair<std::string, std::string>> context{
-      {"ctraceRef", reference.ctraceRef},
+      {"ref", reference.ref},
       {"type", reference.type},
   };
   if (reference.line > 0U) {
@@ -645,14 +645,14 @@ static std::optional<std::string> commonTimestampClockError(const std::vector<Pr
 /** @brief Tests whether a ctrace reference uses the specified `[pname/]feature` path form. */
 static bool hasFeaturePath(const TraceRunReference& reference, const std::string_view& leaf)
 {
-  if (reference.ctraceRef == leaf) {
+  if (reference.ref == leaf) {
     return true;
   }
-  const auto separator = processorFeatureSeparator(reference.ctraceRef);
+  const auto separator = processorFeatureSeparator(reference.ref);
   if (!separator.has_value()) {
     return false;
   }
-  return std::string_view(reference.ctraceRef).substr(*separator + 1U) == leaf;
+  return std::string_view(reference.ref).substr(*separator + 1U) == leaf;
 }
 
 /** @brief Tests whether a reference path denotes the authoritative processor ITM anchor. */
@@ -688,7 +688,7 @@ static bool isNamedFormattedRouteFallback(const std::string_view type, const std
 /** @brief Tests whether one reference is permitted to establish a formatted ITM route without an anchor. */
 static bool isFormattedRouteFallback(const TraceRunReference& reference)
 {
-  const auto leaf = referenceLeaf(reference.ctraceRef);
+  const auto leaf = referenceLeaf(reference.ref);
   if (!hasFeaturePath(reference, leaf)) {
     return false;
   }
@@ -787,7 +787,7 @@ static bool setupContainsReference(const TraceRunSetup& setup, const TraceRunRef
   if (referenceName.has_value() && setupName.has_value() && referenceName != setupName) {
     return false;
   }
-  auto referencePath = reference.ctraceRef;
+  auto referencePath = reference.ref;
   if (referencePath.find('/') == std::string::npos && referenceName.has_value()) {
     referencePath = *referenceName + "/" + referencePath;
   }
@@ -817,10 +817,10 @@ static bool setupContainsReference(const TraceRunSetup& setup, const TraceRunRef
     }
   }
   const auto mayBindUnnamedPath =
-      !setupName.has_value() || (!referenceName.has_value() && reference.ctraceRef.find('/') == std::string::npos);
+      !setupName.has_value() || (!referenceName.has_value() && reference.ref.find('/') == std::string::npos);
   return mayBindUnnamedPath &&
          std::any_of(setup.featurePaths.begin(), setup.featurePaths.end(), [&](const std::string& featurePath) {
-           return referenceLeaf(featurePath) == referenceLeaf(reference.ctraceRef);
+           return referenceLeaf(featurePath) == referenceLeaf(reference.ref);
          });
 }
 
@@ -842,7 +842,7 @@ static void validateDisabledReferences(const TraceRunConfig& config)
     }
     if (disabledMatch != nullptr && !activeMatch) {
       throw std::runtime_error(configError(config, reference.line,
-                                           disabledReferenceMessage(reference.ctraceRef, disabledMatch->ordinal)));
+                                           disabledReferenceMessage(reference.ref, disabledMatch->ordinal)));
     }
   }
 }
@@ -850,7 +850,7 @@ static void validateDisabledReferences(const TraceRunConfig& config)
 /** @brief Validates all routing-relevant fields retained from one formatted reference. */
 static void validateFormattedReference(const TraceRunConfig& config, const TraceRunReference& reference)
 {
-  if (referenceLeaf(reference.ctraceRef) == "itm" && !hasProcessorItmPath(reference)) {
+  if (referenceLeaf(reference.ref) == "itm" && !hasProcessorItmPath(reference)) {
     throw std::runtime_error(
         configError(config, reference.line, formatMessage(MessageId::ItmAnchorPathRequired)));
   }
@@ -862,11 +862,11 @@ static void validateFormattedReference(const TraceRunConfig& config, const Trace
     throw std::runtime_error(
         configError(config, reference.line, formatMessage(MessageId::TimestampReferenceType)));
   }
-  const auto pathSeparator = reference.ctraceRef.find('/');
+  const auto pathSeparator = reference.ref.find('/');
   const auto processorName = TraceRunSchema::normalizedProcessorName(reference.processorName);
   if (processorName.has_value() && pathSeparator != std::string::npos &&
-      pathSeparator == reference.ctraceRef.rfind('/') &&
-      std::string_view(reference.ctraceRef).substr(0U, pathSeparator) != *processorName &&
+      pathSeparator == reference.ref.rfind('/') &&
+      std::string_view(reference.ref).substr(0U, pathSeparator) != *processorName &&
       describesFormattedRoute(reference)) {
     throw std::runtime_error(
         configError(config, reference.line,

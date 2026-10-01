@@ -507,7 +507,7 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
 
   config.references[1].stream = 2U;
   config.references[1].processorName = "core1";
-  config.references[1].ctraceRef = "core1/data#0";
+  config.references[1].ref = "core1/data#0";
   CollectingDiagnosticSink routeDiagnostics;
   const auto routePlan = planOutputs(allRequest, "captures/AmbiguousRoutes.SWO.raw", config, routeDiagnostics);
   ASSERT_TRUE(routePlan.csv.has_value() && routePlan.ctf.has_value() && routePlan.ctf->metadata.sources.size() == 2U)
@@ -531,10 +531,10 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   processorConfig.setups = config.setups;
   auto core0Reference = first;
   core0Reference.processorName = "core0";
-  core0Reference.ctraceRef = "core0/data#0";
+  core0Reference.ref = "core0/data#0";
   auto core1Reference = first;
   core1Reference.processorName = "core1";
-  core1Reference.ctraceRef = "core1/data#0";
+  core1Reference.ref = "core1/data#0";
   core1Reference.stream = 2U;
   processorConfig.references = {core0Reference, core1Reference, firstAnchor, secondAnchor};
   CollectingDiagnosticSink processorDiagnostics;
@@ -556,7 +556,7 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   config.setups[0].data.push_back(TraceRunDataSetup{2U});
   config.references[1].stream = 1U;
   config.references[1].processorName = "core0";
-  config.references[1].ctraceRef = "core0/data#1";
+  config.references[1].ref = "core0/data#1";
   config.references[1].dataSetupIndex = 1U;
   CollectingDiagnosticSink sizeDiagnostics;
   const auto csvPlan =
