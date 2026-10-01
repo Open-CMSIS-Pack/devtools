@@ -30,24 +30,24 @@ struct MessageCase {
 };
 } // namespace
 
-TEST(TraceMessagesTests, PayloadsPreserveDetailedTextAndFormatTypedCompactParameters)
+TEST(TraceMessagesTests, PayloadsPreserveDetailedTextAndKeepCompactCauses)
 {
   const std::vector<MessageCase> cases{
       {TraceCounterPayload{TraceCounterKind::Dwt, 2U, 0x81U}, TraceIssueCode::UnsupportedDwtEventCounterPayload,
        "unsupported DWT event-counter payload: size 2, value 0x81; expected a non-zero 1-byte mask using bits 0..5 only",
-       "Invalid DWT counter: 2 B; 0x81"},
+       "Invalid DWT counter"},
       {TraceCounterPayload{TraceCounterKind::Pmu, 4U, 0x80000000U}, TraceIssueCode::UnsupportedPmuEventCounterPayload,
        "unsupported PMU event-counter payload: size 4, value 0x80000000; expected a non-zero 1-byte mask using bits 0..7",
-       "Invalid PMU counter: 4 B; 0x80000000"},
+       "Invalid PMU counter"},
       {TraceInvalidExceptionAction{511U}, TraceIssueCode::InvalidExceptionAction,
-       "invalid exception action 0x0 for exception 511", "Invalid action 0x0: exception 511"},
+       "invalid exception action 0x0 for exception 511", "Invalid exception action"},
       {TracePcSamplePayload{2U, 255U}, TraceIssueCode::UnsupportedDwtPcSamplePayload,
        "unsupported DWT PC-sample payload: size 2, value 255; expected a 4-byte PC or a 1-byte marker (0x00: CPU Sleeping, 0xff: Trace prohibited)",
-       "Invalid PC sample: 2 B; 0xff"},
+       "Invalid PC sample"},
       {TraceAddressPayload{TraceAddressKind::DataAddress, 3U}, TraceIssueCode::UnsupportedDwtAddressPayload,
-       "unsupported DWT data address payload size 3; expected 1, 2, or 4 bytes", "Invalid DWT data address: 3 B"},
+       "unsupported DWT data address payload size 3; expected 1, 2, or 4 bytes", "Invalid DWT data address"},
       {TraceAddressPayload{TraceAddressKind::PcOrMatch, 0U}, TraceIssueCode::UnsupportedDwtAddressPayload,
-       "unsupported DWT PC or match payload size 0; expected 1, 2, or 4 bytes", "Invalid DWT PC or match: 0 B"},
+       "unsupported DWT PC or match payload size 0; expected 1, 2, or 4 bytes", "Invalid DWT PC or match"},
       {TraceRecovery{}, TraceIssueCode::DataLoss,
        "data loss/resync boundary; timestamps across this point may not match", "Data loss; timestamp discontinuity"},
       {TraceRecovery{TraceRecoveryKind::Consumed, 0U, 0U, wideValue}, TraceIssueCode::DataLoss,
@@ -55,10 +55,10 @@ TEST(TraceMessagesTests, PayloadsPreserveDetailedTextAndFormatTypedCompactParame
        "4294967297 raw bytes without usable ITM packets"},
       {TraceRecovery{TraceRecoveryKind::Resumed, wideValue, wideValue + 9U, 9U}, TraceIssueCode::DataLoss,
        "ITM decoding resumed at hardware SYNC at raw offset 4294967306; affected raw interval [4294967297, 4294967306) spans 9 bytes",
-       "ITM resynced; raw span [4294967297,4294967306): 9 bytes"},
+       "ITM resynced; 9 raw bytes affected"},
       {TraceRecovery{TraceRecoveryKind::Unresolved, wideValue, wideValue + 9U, 9U}, TraceIssueCode::DataLoss,
        "ITM decoding did not resume before end of input at raw offset 4294967306; no later hardware SYNC; affected raw interval [4294967297, 4294967306) spans 9 bytes",
-       "No ITM resync before EOF; raw span [4294967297,4294967306): 9 bytes"},
+       "No ITM resync before EOF; 9 raw bytes affected"},
       {TracePacketDiagnostic{TracePacketDiagnosticKind::Reserved, {}}, TraceIssueCode::OpenCsdDecodeError,
        "Reserved ITM packet", "Reserved ITM packet"},
       {TracePacketDiagnostic{TracePacketDiagnosticKind::BadSequence, {}}, TraceIssueCode::OpenCsdDecodeError,
@@ -109,12 +109,12 @@ TEST(TraceMessagesTests, ProgressAndTimeoutCausesRemainDistinct)
     const TraceMessage message = TraceFlushTimeout{phase, wideValue, true};
     EXPECT_EQ(formatTraceMessage(message, detailed),
               "OpenCSD " + name + " did not clear after 4294967297 FLUSH operations; decode aborted");
-    EXPECT_EQ(formatTraceMessage(message, compact), "OpenCSD " + name + " timeout: 4294967297 flushes");
+    EXPECT_EQ(formatTraceMessage(message, compact), "OpenCSD " + name + " timeout");
     EXPECT_EQ(makeTraceIssue(message).code, TraceIssueCode::OpenCsdWaitTimeout);
   }
 }
 
-TEST(TraceMessagesTests, NativeCodesAndPacketPreviewsAreSeparatedFromOpaqueText)
+TEST(TraceMessagesTests, NativeCodesOffsetsAndPacketPreviewsStayInDetailedText)
 {
   const std::vector<std::pair<TraceNativeCategory, std::string>> categories{
       {TraceNativeCategory::Error, "OpenCSD error"}, {TraceNativeCategory::Warning, "OpenCSD warning"},
@@ -133,11 +133,18 @@ TEST(TraceMessagesTests, NativeCodesAndPacketPreviewsAreSeparatedFromOpaqueText)
     TraceNativeDiagnostic native{category, 42, {}, "native detail, with punctuation", wideValue};
     TraceMessage message = native;
     message.packet = TracePacketContext{TracePacketKind::Dwt, 2U, std::vector<std::uint8_t>{0x00U, 0xffU}};
+    message.timestampRange = TraceTimestampRange{wideValue, wideValue + 1U};
     const auto issue = makeTraceIssue(message);
-    EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), text + " (code 42); raw@4294967297");
+    EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), text);
+    EXPECT_EQ(formatTraceIssue(issue, 0U, compact), text);
+    EXPECT_EQ(formatTraceMessage(message, compact), text);
     EXPECT_NE(formatTraceIssue(issue, wideValue, detailed).find(" at raw offset 4294967297. native detail, with punctuation"),
               std::string::npos);
+    EXPECT_NE(formatTraceIssue(issue, wideValue, detailed).find("native detail, with punctuation (code 42); packet="),
+              std::string::npos);
     EXPECT_NE(formatTraceIssue(issue, wideValue, detailed).find("; packet=DWT, size=2 bytes, bytes=[00 ff]"),
+              std::string::npos);
+    EXPECT_NE(formatTraceIssue(issue, wideValue, detailed).find("; timestamp 4294967297 .. 4294967298."),
               std::string::npos);
     const auto expectedCode = category == TraceNativeCategory::BadPacketSequence ? TraceIssueCode::OpenCsdBadPacketSequence
                            : category == TraceNativeCategory::InvalidPacketHeader ? TraceIssueCode::OpenCsdInvalidPacketHeader
@@ -146,16 +153,41 @@ TEST(TraceMessagesTests, NativeCodesAndPacketPreviewsAreSeparatedFromOpaqueText)
     native.errorCode.reset();
     native.responseCode = 7;
     native.offset = 0U;
-    EXPECT_EQ(formatTraceMessage(native, compact), text + " (response 7)");
+    EXPECT_EQ(formatTraceMessage(native, compact), text);
     EXPECT_NE(formatTraceMessage(native, detailed).find(" at raw offset 0. "), std::string::npos);
+    EXPECT_NE(formatTraceMessage(native, detailed).find("native detail, with punctuation (response 7)"), std::string::npos);
   }
   const TraceMessage warning = TraceNativeDiagnostic{TraceNativeCategory::Error, 42, {}, "warning detail", {}, true};
-  EXPECT_EQ(formatTraceMessage(warning, detailed), "OpenCSD decoder error. warning detail");
-  EXPECT_EQ(formatTraceMessage(warning, compact), "OpenCSD warning (code 42)");
-  TraceMessage trailingSeparator = TraceNativeDiagnostic{TraceNativeCategory::Error, 42, {}, "native detail;", {}};
+  EXPECT_EQ(formatTraceMessage(warning, detailed), "OpenCSD decoder error. warning detail (code 42)");
+  EXPECT_EQ(formatTraceMessage(warning, compact), "OpenCSD warning");
+  TraceMessage trailingSeparator = TraceNativeDiagnostic{TraceNativeCategory::Error, {}, {}, "native detail;", {}};
   trailingSeparator.packet = TracePacketContext{TracePacketKind::Reserved, 0U, {}};
   EXPECT_EQ(formatTraceMessage(trailingSeparator, detailed),
             "OpenCSD decoder error. native detail; packet=RESERVED, size=0 bytes, bytes=[]");
+}
+
+TEST(TraceMessagesTests, DetailedNativeCodesKeepBothDomainsWithoutForeignDescriptions)
+{
+  struct CodeCase {
+    std::optional<int> error;
+    std::optional<int> response;
+    const char* expected;
+  };
+  const std::array<CodeCase, 4U> cases{{
+      {{}, {}, "OpenCSD decoder error"},
+      {0, {}, "OpenCSD decoder error (code 0)"},
+      {{}, -7, "OpenCSD decoder error (response -7)"},
+      {19, 4, "OpenCSD decoder error (code 19) (response 4)"},
+  }};
+  for (const auto& test : cases) {
+    const TraceMessage message = TraceNativeDiagnostic{TraceNativeCategory::Error, test.error, test.response, "", {}};
+    EXPECT_EQ(formatTraceMessage(message, detailed), test.expected);
+    EXPECT_EQ(formatTraceMessage(message, compact), "OpenCSD error");
+  }
+  const TraceMessage both = TraceNativeDiagnostic{TraceNativeCategory::Error, 19, 4, "native detail", 42U};
+  EXPECT_EQ(formatTraceMessage(both, detailed),
+            "OpenCSD decoder error at raw offset 42. native detail (code 19) (response 4)");
+  EXPECT_EQ(formatTraceMessage(both, compact), "OpenCSD error");
 }
 
 TEST(TraceMessagesTests, PacketPreviewHandlesAbsentEmptyAndTruncatedBytes)
@@ -170,19 +202,21 @@ TEST(TraceMessagesTests, PacketPreviewHandlesAbsentEmptyAndTruncatedBytes)
             "packet=SWIT, size=20 bytes, bytes=[ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab ... (truncated)]");
 }
 
-TEST(TraceMessagesTests, TimestampRangesAndRecoverySpansRetainTheirDifferentUnits)
+TEST(TraceMessagesTests, CompactRecoveryKeepsAffectedByteCountWithoutOffsetsOrTimestamps)
 {
   auto issue = makeTraceIssue(TraceRecovery{TraceRecoveryKind::Resumed, wideValue, wideValue + 16U, 16U});
   issue.message.timestampRange = TraceTimestampRange{wideValue, std::nullopt};
   EXPECT_EQ(formatTraceIssue(issue, wideValue, compact),
-            "ITM resynced; raw span [4294967297,4294967313): 16 bytes; cycles 4294967297..?");
+            "ITM resynced; 16 raw bytes affected");
   EXPECT_EQ(formatTraceIssue(issue, wideValue, detailed),
             "ITM decoding resumed at hardware SYNC at raw offset 4294967313; affected raw interval [4294967297, 4294967313) spans 16 bytes; timestamp 4294967297 .. unknown.");
   issue.message.timestampRange->firstResumed = wideValue + 3U;
   EXPECT_EQ(formatTraceIssue(issue, wideValue, compact),
-            "ITM resynced; raw span [4294967297,4294967313): 16 bytes; cycles 4294967297..4294967300");
+            "ITM resynced; 16 raw bytes affected");
+  EXPECT_EQ(formatTraceIssue(issue, wideValue, detailed),
+            "ITM decoding resumed at hardware SYNC at raw offset 4294967313; affected raw interval [4294967297, 4294967313) spans 16 bytes; timestamp 4294967297 .. 4294967300.");
   auto consumed = makeTraceIssue(TraceRecovery{TraceRecoveryKind::Consumed, wideValue, 0U, 9U});
-  EXPECT_EQ(formatTraceIssue(consumed, wideValue, compact), "9 raw bytes without usable ITM packets; raw@4294967297");
+  EXPECT_EQ(formatTraceIssue(consumed, wideValue, compact), "9 raw bytes without usable ITM packets");
 }
 
 TEST(TraceMessagesTests, ByteSkipsKeepCountsAndReasonsButNoCsvOffsets)
@@ -207,37 +241,42 @@ TEST(TraceMessagesTests, ByteSkipsKeepCountsAndReasonsButNoCsvOffsets)
 
 TEST(TraceMessagesTests, AbortKeepsTypedCauseAndPhaseWhileOpaqueReasonsStayDetailed)
 {
-  const std::array<std::pair<TraceAbortPhase, const char*>, 7U> prefixes{{
-      {TraceAbortPhase::None, ""}, {TraceAbortPhase::Decode, "OpenCSD aborted decode: "},
-      {TraceAbortPhase::EndOfTrace, "OpenCSD aborted end-of-trace processing: "},
-      {TraceAbortPhase::WaitFlush, "OpenCSD aborted while flushing a WAIT response: "},
-      {TraceAbortPhase::FormattedDrain, "OpenCSD aborted while draining formatted trace: "},
-      {TraceAbortPhase::DecoderReset, "OpenCSD decoder reset failed: "},
-      {TraceAbortPhase::RouteReset, "OpenCSD route-local decoder reset failed: "},
+  struct PhaseCase { TraceAbortPhase phase; const char* detailed; const char* compact; };
+  const std::array<PhaseCase, 7U> prefixes{{
+      {TraceAbortPhase::None, "", ""}, {TraceAbortPhase::Decode, "OpenCSD aborted decode: ", ""},
+      {TraceAbortPhase::EndOfTrace, "OpenCSD aborted end-of-trace processing: ", "End of trace: "},
+      {TraceAbortPhase::WaitFlush, "OpenCSD aborted while flushing a WAIT response: ", "WAIT flush: "},
+      {TraceAbortPhase::FormattedDrain, "OpenCSD aborted while draining formatted trace: ", "Formatted drain: "},
+      {TraceAbortPhase::DecoderReset, "OpenCSD decoder reset failed: ", "OpenCSD decoder reset failed: "},
+      {TraceAbortPhase::RouteReset, "OpenCSD route-local decoder reset failed: ", "OpenCSD route reset failed: "},
   }};
-  for (const auto& [phase, prefix] : prefixes) {
+  for (const auto& test : prefixes) {
     TraceDecodeAbort failure{wideValue, TraceInvalidFormattedChunk{}};
-    failure.reason.phase = phase;
+    failure.reason.phase = test.phase;
     EXPECT_EQ(formatTraceMessage(failure, detailed),
-              "decode aborted after processing 4294967297 input bytes; trace is incomplete: " + std::string(prefix) +
+              "decode aborted after processing 4294967297 input bytes; trace is incomplete: " + std::string(test.detailed) +
               "formatted raw trace chunk is not a multiple of 16 bytes");
-    EXPECT_NE(formatTraceMessage(failure, compact).find("Invalid formatted chunk size"), std::string::npos);
+    EXPECT_EQ(formatTraceMessage(failure, compact),
+              "Decode aborted; trace incomplete; " + std::string(test.compact) + "Invalid formatted chunk size");
   }
   const TraceDecodeAbort opaque{wideValue, "foreign text, never parsed"};
-  EXPECT_EQ(formatTraceMessage(opaque, compact), "Decode aborted after 4294967297 bytes; trace incomplete");
+  EXPECT_EQ(formatTraceMessage(opaque, compact), "Decode aborted; trace incomplete");
   EXPECT_EQ(formatTraceMessage(opaque, detailed),
             "decode aborted after processing 4294967297 input bytes; trace is incomplete: foreign text, never parsed");
 }
 
-TEST(TraceMessagesTests, SetupFailuresCarryNativeDescriptionsAndCompactCodes)
+TEST(TraceMessagesTests, SetupFailuresKeepNativeDescriptionsInDetailedText)
 {
   const TraceMessage setup = TraceSetupFailure{TraceSetupOperation::CreateDecoder};
   EXPECT_EQ(formatTraceMessage(setup, detailed), "failed to create OpenCSD decoder");
   EXPECT_EQ(formatTraceMessage(setup, compact), "OpenCSD initialization failed");
   const TraceMessage native = TraceSetupFailure{TraceSetupOperation::CreateDecoder, "native API error: detail", 9};
-  EXPECT_EQ(formatTraceMessage(native, detailed), "native API error: detail");
-  EXPECT_EQ(formatTraceMessage(native, compact), "OpenCSD initialization failed (code 9)");
+  EXPECT_EQ(formatTraceMessage(native, detailed), "native API error: detail (code 9)");
+  EXPECT_EQ(formatTraceMessage(native, compact), "OpenCSD initialization failed");
   EXPECT_EQ(makeTraceIssue(native).code, TraceIssueCode::OpenCsdInitializationError);
+  const TraceMessage withoutNativeText = TraceSetupFailure{TraceSetupOperation::CreateDecoder, "", 0};
+  EXPECT_EQ(formatTraceMessage(withoutNativeText, detailed), "failed to create OpenCSD decoder (code 0)");
+  EXPECT_EQ(formatTraceMessage(withoutNativeText, compact), "OpenCSD initialization failed");
 }
 
 TEST(TraceMessagesTests, FormattedSessionFailureRetainsItsTypedSetupCause)
@@ -245,14 +284,19 @@ TEST(TraceMessagesTests, FormattedSessionFailureRetainsItsTypedSetupCause)
   const TraceSetupFailure setup{TraceSetupOperation::ResolveDecoderInput, "native API error: detail", 9};
   const TraceMessage failure = TraceFormattedSessionFailure{"", wideValue, setup};
   EXPECT_EQ(formatTraceMessage(failure, detailed),
-            "formatted OpenCSD session operation failed: native API error: detail at raw input offset 4294967297");
-  EXPECT_EQ(formatTraceMessage(failure, compact), "OpenCSD session operation failed (code 9)");
+            "formatted OpenCSD session operation failed: native API error: detail (code 9) at raw input offset 4294967297");
+  EXPECT_EQ(formatTraceMessage(failure, compact), "OpenCSD session operation failed");
   EXPECT_EQ(makeTraceIssue(failure).code, TraceIssueCode::OpenCsdDecodeError);
   const TraceMessage missingObject = TraceFormattedSessionFailure{
       "", 0U, TraceSetupFailure{TraceSetupOperation::DecoderInput}};
   EXPECT_EQ(formatTraceMessage(missingObject, detailed),
             "formatted OpenCSD session operation failed: OpenCSD decoder input is not initialized at raw input offset 0");
   EXPECT_EQ(formatTraceMessage(missingObject, compact), "OpenCSD session operation failed");
+  const TraceMessage noDescription = TraceFormattedSessionFailure{
+      "", 0U, TraceSetupFailure{TraceSetupOperation::CreateDecoder, "", 0}};
+  EXPECT_EQ(formatTraceMessage(noDescription, detailed),
+            "formatted OpenCSD session operation failed: failed to create OpenCSD decoder (code 0) at raw input offset 0");
+  EXPECT_EQ(formatTraceMessage(noDescription, compact), "OpenCSD session operation failed");
 }
 
 TEST(TraceMessagesTests, OpaqueAndEmptyIssuesUseSemanticFallbacksWithoutInventingParameters)
@@ -261,21 +305,21 @@ TEST(TraceMessagesTests, OpaqueAndEmptyIssuesUseSemanticFallbacksWithoutInventin
   TraceIssueEvent issue;
   EXPECT_TRUE(issue.message.empty());
   EXPECT_EQ(formatTraceIssue(issue, wideValue, detailed), "trace decode error at raw offset 4294967297");
-  EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), "Trace decode error; raw@4294967297");
+  EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), "Trace decode error");
   issue.code = TraceIssueCode::UnsupportedDwtPcSamplePayload;
   issue.message = "arbitrary native text";
   EXPECT_FALSE(issue.message.empty());
   EXPECT_EQ(formatTraceIssue(issue, wideValue, detailed), "arbitrary native text");
-  EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), "Invalid PC sample; raw@4294967297");
+  EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), "Invalid PC sample");
   issue.message = {};
   issue.code = TraceIssueCode::DataLoss;
   EXPECT_EQ(formatTraceIssue(issue, wideValue, detailed),
             "trace data at raw offset 4294967297 could not be decoded before the next hardware ITM sync");
-  EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), "ITM data loss; raw@4294967297");
+  EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), "ITM data loss");
   issue.rawBytesConsumed = wideValue;
   EXPECT_EQ(formatTraceIssue(issue, wideValue, detailed),
             "4294967297 raw bytes from raw offset 4294967297 could not be decoded before the next hardware ITM sync");
-  EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), "ITM data loss; 4294967297 raw bytes affected; raw@4294967297");
+  EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), "ITM data loss; 4294967297 raw bytes affected");
 }
 
 TEST(TraceMessagesTests, OverflowEventAndSummaryKeepSeparateMeanings)
@@ -286,6 +330,10 @@ TEST(TraceMessagesTests, OverflowEventAndSummaryKeepSeparateMeanings)
   EXPECT_EQ(formatTraceMessage(OverflowTraceEvent{"custom overflow detail"}, compact), "Timestamp discontinuity");
   EXPECT_EQ(formatOverflowSummary({{}, 1U}), "first overflow occurred at an unknown cycle timestamp");
   EXPECT_EQ(formatOverflowSummary({wideValue, 4U}), "first overflow occurred at cycle timestamp 4294967297; 3 more occurred");
+  EXPECT_EQ(formatOverflowSummary({{}, 1U}, compact), "Timestamp discontinuity");
+  EXPECT_EQ(formatOverflowSummary({wideValue, 1U}, compact), "Timestamp discontinuity");
+  EXPECT_EQ(formatOverflowSummary({{}, 4U}, compact), "Timestamp discontinuity; 3 more occurred");
+  EXPECT_EQ(formatOverflowSummary({wideValue, 4U}, compact), "Timestamp discontinuity; 3 more occurred");
 }
 
 TEST(TraceMessagesTests, EmptyInitializationDetailKeepsIssueFallbackAndOriginalAbortDetail)
@@ -293,11 +341,11 @@ TEST(TraceMessagesTests, EmptyInitializationDetailKeepsIssueFallbackAndOriginalA
   const TraceMessage message = TraceInitializationFailure{""};
   const auto issue = makeTraceIssue(message);
   EXPECT_EQ(formatTraceIssue(issue, wideValue, detailed), "OpenCSD initialization failed");
-  EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), "OpenCSD initialization failed; raw@4294967297");
+  EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), "OpenCSD initialization failed");
   EXPECT_EQ(formatTraceMessage(TraceDecodeAbort{0U, message}, detailed),
             "decode aborted after processing 0 input bytes; trace is incomplete: ");
   EXPECT_EQ(formatTraceMessage(TraceDecodeAbort{0U, message}, compact),
-            "Decode aborted after 0 bytes; trace incomplete; OpenCSD initialization failed");
+            "Decode aborted; trace incomplete; OpenCSD initialization failed");
 }
 
 TEST(TraceMessagesTests, SemanticFallbacksKeepCategoriesWithoutInventingPayloadParameters)
@@ -320,11 +368,11 @@ TEST(TraceMessagesTests, SemanticFallbacksKeepCategoriesWithoutInventingPayloadP
   };
   for (const auto& [code, expected] : cases) {
     const TraceIssueEvent issue{code, TraceIssueSeverity::Error, "foreign {0} text"};
-    EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), std::string(expected) + "; raw@4294967297");
+    EXPECT_EQ(formatTraceIssue(issue, wideValue, compact), expected);
     EXPECT_EQ(formatTraceIssue(issue, wideValue, detailed), "foreign {0} text");
   }
   const TraceIssueEvent warning{TraceIssueCode::OpenCsdDecodeError, TraceIssueSeverity::Warning, ""};
-  EXPECT_EQ(formatTraceIssue(warning, 0U, compact), "OpenCSD warning; raw@0");
+  EXPECT_EQ(formatTraceIssue(warning, 0U, compact), "OpenCSD warning");
   EXPECT_EQ(formatTraceIssue(warning, 0U, detailed), "trace decode error at raw offset 0");
   EXPECT_EQ(makeTraceIssue(TraceOpaqueMessage{"native detail"}).code, TraceIssueCode::DecodeError);
 }

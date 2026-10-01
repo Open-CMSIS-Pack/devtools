@@ -60,7 +60,10 @@ void DecodeConsumers::appendByteSkip(const TraceByteSkip& skipped)
   if (skipped.traceId.has_value()) {
     context.emplace_back("stream", std::to_string(*skipped.traceId));
   }
-  m_diagnostics.report({DiagnosticSink::Severity::Info, formatTraceMessage(skipped, TraceMessageStyle::Detailed), std::move(context)});
+  DiagnosticSink::Event diagnostic{DiagnosticSink::Severity::Info,
+                                   formatTraceMessage(skipped, TraceMessageStyle::Compact), std::move(context)};
+  diagnostic.detailedMessage = formatTraceMessage(skipped, TraceMessageStyle::Detailed);
+  m_diagnostics.report(diagnostic);
 }
 
 void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
@@ -83,12 +86,13 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
     context.emplace_back("stream", std::to_string(*event.route.traceBusId));
   }
   context.emplace_back("channel", std::to_string(software->channel));
-  context.emplace_back("enable", hexMask(streamMask->second));
-  m_diagnostics.report({
+  DiagnosticSink::Event diagnostic{
       DiagnosticSink::Severity::Warning,
       formatMessage(MessageId::ItmDisabledChannel),
       std::move(context),
-  });
+  };
+  diagnostic.detailedContext.emplace_back("enable", hexMask(streamMask->second));
+  m_diagnostics.report(diagnostic);
 }
 
 std::uint64_t DecodeConsumers::eventCount() const

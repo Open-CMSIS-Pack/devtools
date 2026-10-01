@@ -1509,8 +1509,7 @@ TEST(CtraceUnitTests, testFormattedResetRetainsTypedSetupFailureThroughFatalAndI
     EXPECT_NE(std::string(error.what()).find("failed to resolve OpenCSD decoder input"), std::string::npos);
     EXPECT_NE(std::string(error.what()).find(" at raw input offset "), std::string::npos);
     EXPECT_EQ(formatTraceMessage(error.message(), TraceMessageStyle::Compact),
-              "OpenCSD route reset failed: OpenCSD session operation failed (code " +
-                  std::to_string(OCSD_ERR_MEM) + ")");
+              "OpenCSD route reset failed: OpenCSD session operation failed");
   }
 
   ASSERT_FALSE(sink.elements().empty());
@@ -1583,7 +1582,7 @@ TEST(CtraceUnitTests, testEmptySessionSetupErrorRetainsInitializationIssueFallba
   EXPECT_EQ(formatTraceIssue(issue, element.sourceIndex, TraceMessageStyle::Detailed),
             "OpenCSD initialization failed");
   EXPECT_EQ(formatTraceIssue(issue, element.sourceIndex, TraceMessageStyle::Compact),
-            "OpenCSD initialization failed; raw@0");
+            "OpenCSD initialization failed");
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmSessionUsesSingleChannelAndAssociatedErrorLogger)

@@ -112,7 +112,7 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
   errorOutput.start();
   errorOutput.writeEvent(issuePacket(TraceIssueCode::DecodeError, "decoder warning", TraceIssueSeverity::Warning));
   errorOutput.stop();
-  ASSERT_TRUE(readTestTextFile(errorOutputPath.path()).find(",,error,,,,,Trace decode error; raw@0\n") != std::string::npos)
+  ASSERT_TRUE(readTestTextFile(errorOutputPath.path()).find(",,error,,,,,Trace decode error\n") != std::string::npos)
       << "the error selector must include warning-severity decoder issue packets";
 }
 
@@ -221,7 +221,7 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
   ASSERT_TRUE(
       (lines[1] == "1234,,overflow,,,,,Timestamp discontinuity"))
       << "CSV overflow issue row mismatch";
-  ASSERT_TRUE(lines[2] == "1235,,error,,,,,ITM data loss; raw@0")
+  ASSERT_TRUE(lines[2] == "1235,,error,,,,,ITM data loss")
       << "CSV data-loss issue row mismatch";
 }
 
@@ -391,8 +391,8 @@ TEST(CtraceUnitTests, testCsvFileOutputRetainsFilteredPrefixAndGlobalDecodeAbort
 
     const auto lines = readTestLines(outputPath.path());
     ASSERT_EQ(lines.size(), 3U);
-    EXPECT_EQ(lines[1], selectErrors ? ",7,error,,,,,Trace decode error; raw@0" : ",7,itm,1,0x41,,,");
-    EXPECT_EQ(lines[2], ",,error,,,,,Decode aborted after 4294967297 bytes; trace incomplete");
+    EXPECT_EQ(lines[1], selectErrors ? ",7,error,,,,,Trace decode error" : ",7,itm,1,0x41,,,");
+    EXPECT_EQ(lines[2], ",,error,,,,,Decode aborted; trace incomplete");
   }
 }
 

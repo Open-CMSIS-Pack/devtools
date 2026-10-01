@@ -141,7 +141,8 @@ static void configureCliParser(cxxopts::Options& parser)
                                                     cxxopts::value<SelectionValues>(), "sel [...]")(
       "stream", "Filter output for specific streams (default: all)", cxxopts::value<SelectionValues>(),
       "sel [...]")("t,target", "Specify a trace solution-set (default: all)",
-                   cxxopts::value<std::string>())("V,version", "Print version");
+                   cxxopts::value<std::string>())("V,version", "Print version")(
+      "v,verbose", "Show detailed diagnostics and processing information");
   parser.add_options("Hidden")("h,help", "Print help");
 }
 
@@ -170,6 +171,7 @@ static CliOptions parseCliArgs(const std::vector<std::string>& arguments)
 
   options.help = parsed.count("help") != 0U;
   options.version = parsed.count("version") != 0U;
+  options.verbose = parsed["verbose"].as<bool>();
   if (parsed.count("target") != 0U) {
     options.targetName = parsed["target"].as<std::string>();
   }

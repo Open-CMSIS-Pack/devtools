@@ -91,9 +91,10 @@ and multi-clock CTF bundles remain valid. Historical per-channel XML files are n
 
 A fatal OpenCSD decode abort removes the incomplete CTF bundle, including data already written for healthy routes,
 and excludes it from target XML. If CSV output remains healthy, ctrace retains its selected rows and appends one
-input-wide `error` row with the processed-byte count, an incomplete-trace indication, and a compact structured cause
-when available. The detailed abort reason remains in CLI output. That final row has no cycle timestamp, stream, or
-source and bypasses type and stream filters. A recoverable route-local error allows normal output completion, as described
+input-wide `error` row stating `Decode aborted; trace incomplete`, with a compact structured cause when available.
+Normal CLI uses the same text; `--verbose` adds the processed-byte count and detailed abort reason. That final row has
+no cycle timestamp, stream, or source and bypasses type and stream filters. A recoverable route-local error allows
+normal output completion, as described
 under [`TRACE_STATUS`](#trace_status-event-id-3). Both kinds of Error produce a failing command exit status. Remaining
 raw inputs are still processed, and their completed bundles and XML contributions are unaffected by another input's
 failure. Target XML preparation and finalization have their own lifecycle; an XML failure leaves completed CTF and
@@ -253,9 +254,10 @@ therefore visible as a gap instead of being attributed to the previously active 
 events in the standard CTF event table; the generated XML does not create a status timeline.
 
 Route-local decoder errors and data-loss records follow the normal `error` type and stream filters in CSV and CTF.
-CLI diagnostics remain visible independently of those filters. Native decoder error names, descriptions, packet types,
-and bounded byte previews remain in detailed CLI output. CSV uses compact categories and numeric native codes when
-available. The CTF profile stores the status reason and overflow epoch, without those strings or raw bytes.
+CLI trace diagnostics remain visible independently of those filters. Normal CLI and CSV use compact categories,
+causes and meaningful counts. Native decoder codes and descriptions, raw positions/ranges, cycle intervals, packet
+types and bounded byte previews appear only with `--verbose`. The CTF profile stores the status reason and overflow
+epoch, without those strings or raw bytes; verbosity changes neither CSV nor CTF content.
 Successful formatted-route recovery emits a separate data-loss diagnostic and a `resync` when a real hardware ITM
 sync is committed. An unresolved interval at end of input emits data loss without a
 `resync`.

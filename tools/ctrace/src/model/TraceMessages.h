@@ -18,7 +18,7 @@
 #include <variant>
 #include <vector>
 
-/** @brief Chooses the complete CLI description or the compact CSV note. */
+/** @brief Chooses the complete verbose description or the compact CLI/CSV note. */
 using TraceMessageStyle = MessageStyle;
 
 /** @brief Retains foreign text without inferring structured parameters from it. */
@@ -254,7 +254,8 @@ std::string formatTraceMessage(const OverflowTraceEvent& overflow, TraceMessageS
 std::string formatTraceIssue(const TraceIssueEvent& issue, std::uint64_t rawOffset, TraceMessageStyle style);
 std::string formatTracePacketContext(const TracePacketContext& packet);
 std::string formatTraceSetupOperation(TraceSetupOperation operation);
-std::string formatOverflowSummary(const TraceOverflowSummary& summary);
+std::string formatOverflowSummary(const TraceOverflowSummary& summary,
+                                  TraceMessageStyle style = TraceMessageStyle::Detailed);
 TraceIssueEvent makeTraceIssue(TraceMessage message, TraceIssueSeverity severity);
 TraceIssueEvent makeTraceIssue(TraceMessage message);
 

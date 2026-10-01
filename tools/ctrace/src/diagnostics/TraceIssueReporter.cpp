@@ -49,8 +49,10 @@ void TraceIssueReporter::finish()
   m_finished = true;
   for (const auto& [routeId, state] : m_overflowByRoute) {
     (void)routeId;
+    const TraceOverflowSummary summary{state.firstTimestamp, state.packetCount};
     report(DiagnosticSink::Severity::Warning,
-           formatOverflowSummary({state.firstTimestamp, state.packetCount}), routeContext(state.route));
+           formatOverflowSummary(summary, TraceMessageStyle::Compact),
+           formatOverflowSummary(summary, TraceMessageStyle::Detailed), routeContext(state.route));
   }
 }
 
@@ -66,19 +68,19 @@ void TraceIssueReporter::reportOverflow(const TraceEvent& event)
 
 void TraceIssueReporter::reportError(const TraceEvent& event, const TraceIssueEvent& issue)
 {
-  auto context = routeContext(event.route);
-  context.emplace_back("raw_offset", std::to_string(event.index));
   report(issue.severity == TraceIssueSeverity::Warning ? DiagnosticSink::Severity::Warning
                                                        : DiagnosticSink::Severity::Error,
-         formatTraceIssue(issue, event.index, TraceMessageStyle::Detailed), std::move(context));
+         formatTraceIssue(issue, event.index, TraceMessageStyle::Compact),
+         formatTraceIssue(issue, event.index, TraceMessageStyle::Detailed), routeContext(event.route),
+         {{"raw_offset", std::to_string(event.index)}});
 }
 
-void TraceIssueReporter::report(DiagnosticSink::Severity severity, std::string message,
-                                std::vector<std::pair<std::string, std::string>> context)
+void TraceIssueReporter::report(DiagnosticSink::Severity severity, std::string message, std::string detailedMessage,
+                                std::vector<std::pair<std::string, std::string>> context,
+                                std::vector<std::pair<std::string, std::string>> detailedContext)
 {
-  m_diagnostics.report({
-      severity,
-      std::move(message),
-      std::move(context),
-  });
+  DiagnosticSink::Event event{severity, std::move(message), std::move(context)};
+  event.detailedMessage = std::move(detailedMessage);
+  event.detailedContext = std::move(detailedContext);
+  m_diagnostics.report(event);
 }

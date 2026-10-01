@@ -163,7 +163,7 @@ static ConfiguredOutputs createConfiguredOutputs(const TraceOutputPlan& outputPl
 /** @brief Reports the normalized trace-run model selected for one decode job. */
 static void reportTraceRunMeta(const CtraceRunMeta& meta, DiagnosticSink& diagnostics)
 {
-  diagnostics.report({
+  DiagnosticSink::Event diagnostic{
       DiagnosticSink::Severity::Info,
       formatMessage(MessageId::AppliedTraceMetadata),
       {
@@ -171,7 +171,9 @@ static void reportTraceRunMeta(const CtraceRunMeta& meta, DiagnosticSink& diagno
           {"routes", std::to_string(meta.routes().size())},
           {"sources", std::to_string(sourceCount(meta))},
       },
-  });
+  };
+  diagnostic.visibility = DiagnosticSink::Visibility::Verbose;
+  diagnostics.report(diagnostic);
 }
 
 /** @brief Reports the timestamp prescaler applied to every normalized route. */
@@ -186,8 +188,10 @@ static void reportTimestampPrescalers(const CtraceRunMeta& meta, DiagnosticSink&
     if (route.processorName.has_value()) {
       context.emplace_back("pname", *route.processorName);
     }
-    diagnostics.report({DiagnosticSink::Severity::Info,
-                        formatMessage(MessageId::UsingTimestampPrescaler), std::move(context)});
+    DiagnosticSink::Event diagnostic{DiagnosticSink::Severity::Info,
+                                     formatMessage(MessageId::UsingTimestampPrescaler), std::move(context)};
+    diagnostic.visibility = DiagnosticSink::Visibility::Verbose;
+    diagnostics.report(diagnostic);
   }
 }
 
@@ -202,14 +206,15 @@ createDecodePipeline(const std::vector<CortexMDecodeRoute>& routes, OpenCsdItmIn
   }
   return std::make_unique<DecodePipeline>(
       routes, inputMode, consumers, [&diagnostics](std::uint8_t traceBusId, std::uint64_t sourceOffset) {
-        diagnostics.report({
+        DiagnosticSink::Event diagnostic{
             DiagnosticSink::Severity::Warning,
             formatMessage(MessageId::SkippingUnsupportedTraceSource),
             {
                 {"stream", std::to_string(traceBusId)},
-                {"rawOffset", std::to_string(sourceOffset)},
             },
-        });
+        };
+        diagnostic.detailedContext.emplace_back("rawOffset", std::to_string(sourceOffset));
+        diagnostics.report(diagnostic);
       });
 }
 
@@ -270,14 +275,19 @@ std::optional<CtfMetadataModel> FileDecodeJob::run()
   }
   consumers.finishIssues();
   if (decodeAbort.has_value()) {
-    m_diagnostics.report({DiagnosticSink::Severity::Error, formatTraceMessage(*decodeAbort, TraceMessageStyle::Detailed),
-                          {{"bytesProcessed", std::to_string(decodeAbort->bytesProcessed)}}});
+    DiagnosticSink::Event diagnostic{DiagnosticSink::Severity::Error,
+                                     formatTraceMessage(*decodeAbort, TraceMessageStyle::Compact)};
+    diagnostic.detailedMessage = formatTraceMessage(*decodeAbort, TraceMessageStyle::Detailed);
+    diagnostic.detailedContext.emplace_back("bytesProcessed", std::to_string(decodeAbort->bytesProcessed));
+    m_diagnostics.report(diagnostic);
   }
   const auto decodeEnd = std::chrono::steady_clock::now();
-  m_diagnostics.report({
+  DiagnosticSink::Event summary{
       DiagnosticSink::Severity::Info,
       decodeSummary(decode, decodeEnd - decodeStart),
-  });
+  };
+  summary.visibility = DiagnosticSink::Visibility::Verbose;
+  m_diagnostics.report(summary);
   consumers.finishOutputs(decodeAbort.has_value() ? &*decodeAbort : nullptr);
   const auto* metadata = outputs.ctf == nullptr ? nullptr : outputs.ctf->completedMetadata();
   return metadata == nullptr ? std::nullopt : std::optional<CtfMetadataModel>{*metadata};

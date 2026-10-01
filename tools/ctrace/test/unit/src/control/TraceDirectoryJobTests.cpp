@@ -800,19 +800,21 @@ static void expectGlobalDecodeAbort(const std::filesystem::path& csvPath, const 
   EXPECT_EQ(lines.back().find(",,error,,,,,"), 0U) << "abort must have no timestamp, stream, or source";
   const auto prefix = "decode aborted after processing " + std::to_string(processed) +
                       " input bytes; trace is incomplete: ";
-  EXPECT_EQ(lines.back(), ",,error,,,,,Decode aborted after " + std::to_string(processed) +
-                              " bytes; trace incomplete; " + std::string(compactReason));
+  const auto compact = "Decode aborted; trace incomplete; " + std::string(compactReason);
+  EXPECT_EQ(lines.back(), ",,error,,,,," + compact);
   EXPECT_EQ(std::count_if(lines.begin(), lines.end(), [](const auto& line) {
-              return line.find("Decode aborted after ") != std::string::npos;
+              return line.find("Decode aborted; trace incomplete") != std::string::npos;
             }), 1);
   std::size_t globalErrors = 0U;
   for (const auto& event : diagnostics.events()) {
-    if (event.message.find(prefix) != 0U) {
+    if (event.message != compact) {
       continue;
     }
     ++globalErrors;
     EXPECT_EQ(event.severity, DiagnosticSink::Severity::Error);
-    EXPECT_NE(event.message.find(reason), std::string::npos);
+    ASSERT_TRUE(event.detailedMessage.has_value());
+    EXPECT_EQ(event.detailedMessage->find(prefix), 0U);
+    EXPECT_NE(event.detailedMessage->find(reason), std::string::npos);
     EXPECT_TRUE(std::none_of(event.context.begin(), event.context.end(), [](const auto& item) {
       return item.first == "stream";
     }));
@@ -852,7 +854,7 @@ TEST(CtraceUnitTests, testFileDecodeJobRetainsCsvAfterFatalDecoderError)
   EXPECT_GT(diagnostics.failureCount(), 0U);
   const auto csvPath = temporaryPath.path() / "fatal.SWO.csv";
   expectGlobalDecodeAbort(csvPath, diagnostics, 1U, "OpenCSD aborted decode: OpenCSD reported a system error",
-                          "Decode: OpenCSD system error (response 10)");
+                          "OpenCSD system error");
   EXPECT_EQ(readTestLines(csvPath).size(), 2U) << "the excluded route error must remain filtered";
 }
 
@@ -907,13 +909,12 @@ TEST(CtraceUnitTests, testFileDecodeJobKeepsSafePrefixAndRejectsFatalBatchForAll
   EXPECT_EQ(script->endCalls, 0U);
   const auto csvPath = temporaryPath.path() / "prefix.TB.csv";
   expectGlobalDecodeAbort(csvPath, diagnostics, 32U, "synthetic fatal tail",
-                          "Decode: OpenCSD out of memory (code 2)");
+                          "OpenCSD out of memory");
   const auto lines = readTestLines(csvPath);
   ASSERT_EQ(lines.size(), 3U);
   EXPECT_EQ(lines[1], "42,1,itm,1,0x41,,,");
   EXPECT_EQ(readTestTextFile(csvPath).find("0x58"), std::string::npos)
       << "callbacks from the fatal root operation must never reach the retained CSV";
-  EXPECT_TRUE(diagnostics.containsMessage("synthetic fatal tail"));
   EXPECT_FALSE(std::filesystem::exists(temporaryPath.path() / "prefix.TB.ctf"));
   EXPECT_FALSE(std::filesystem::exists(temporaryPath.path() / "prefix.TB.traceanalysis.xml"));
 }
@@ -940,9 +941,8 @@ TEST(CtraceUnitTests, testFileDecodeJobRetainsCsvAfterFatalEndOfTrace)
   EXPECT_NO_THROW(job.run());
   EXPECT_EQ(script->endCalls, 1U);
   const auto csvPath = temporaryPath.path() / "end.SWO.csv";
-  expectGlobalDecodeAbort(csvPath, diagnostics, 16U, "OpenCSD aborted end-of-trace processing",
-                          "End of trace: OpenCSD error (code 1)");
-  EXPECT_TRUE(diagnostics.containsMessage("synthetic end-of-trace failure"));
+  expectGlobalDecodeAbort(csvPath, diagnostics, 16U, "synthetic end-of-trace failure",
+                          "End of trace: OpenCSD error");
   const auto lines = readTestLines(csvPath);
   ASSERT_EQ(lines.size(), 3U);
   EXPECT_EQ(lines[1], "42,,itm,1,0x41,,,");

@@ -1,8 +1,9 @@
 # ctrace message-system design
 
 All ctrace-owned diagnostic templates live in one [message catalog][catalog] in `ctrace::model`. Each entry has a
-`MessageId`, detailed CLI text, and compact CSV text. The enum is generated from the same table, so there is no
-separate list of IDs to keep synchronized. Foreign descriptions remain opaque values supplied to owned templates.
+`MessageId`, detailed text for verbose CLI, and compact text shared by CSV and normal CLI. The enum is generated from
+the same table, so there is no separate list of IDs to keep synchronized. Foreign descriptions remain opaque values
+supplied to owned templates.
 
 | Component | Responsibility |
 | --- | --- |
@@ -83,8 +84,9 @@ preserve severity, route, callback order and discontinuity policy while transpor
 
 Messages travel through collector APIs and `OpenCsdTraceElement::errorMessage` into `TraceIssueEvent::message`.
 `CortexMPostDecoder` completes `TraceMessage::timestampRange` when recovery timing becomes known; it does not append
-prose. The CLI reporter chooses `MessageStyle::Detailed`; the CSV mapper chooses `MessageStyle::Compact` and supplies
-the raw position from the enclosing `TraceEvent`.
+prose. The CLI reporter retains both `MessageStyle::Compact` and `MessageStyle::Detailed`; its stderr sink selects
+the presentation. The CSV mapper always chooses `MessageStyle::Compact`. The enclosing `TraceEvent` supplies the
+raw position for detailed issue formatting, without inserting it into compact text.
 
 The shared model has no OpenCSD dependency. [OpenCsdErrorController][error-controller] translates native enums into
 `TraceNativeCategory`, retaining native error/response codes and normalized foreign text. `OpenCsdPacketCollector`
@@ -98,17 +100,23 @@ end-of-trace, WAIT flush, formatted drain, SINGLE reset and formatted route-rese
 
 ## Output contract
 
-| Message family | CLI | CSV |
-| --- | --- | --- |
-| Decoder issue | Detailed warning or error. | Compact note in the existing `error` row. |
-| Skipped bytes | Detailed Info with formatter offset. | `info` row with count and cause. |
-| Fatal decoder abort | Detailed error with processed count and cause. | Final global `error` row. |
-| Overflow | One warning summary per internal route. | One `overflow` row per event. |
-| Operational diagnostic | Detailed text and context. | No additional row. |
+| Message family | Normal CLI | CLI with `--verbose` / `-v` | CSV |
+| --- | --- | --- | --- |
+| Decoder issue | Compact warning/error. | Full cause and technical context. | Same compact `error` note. |
+| Skipped bytes | Count and cause. | Also formatter offset. | Same compact `info` note. |
+| Fatal decoder abort | Incomplete trace and known cause. | Also processed count and full cause. | Final `error` row. |
+| Overflow | One compact summary per route. | Also first known timestamp. | Compact `overflow` row per event. |
+| Operational diagnostic | Actionable diagnostics. | Also technical configuration and run Info. | No additional row. |
 
-Wording is independent of severity, process-failure impact, route, filtering and diagnostic context. Existing CLI
-text, failure counts and overflow aggregation remain unchanged. Reference-file errors retain their explicit
+`--verbose` controls stderr presentation only. CSV always uses compact wording; CSV and CTF content, filters,
+failure counts and overflow aggregation are independent of the option. Reference-file errors retain their explicit
 non-failing impact. CSV warning-severity decoder issues still use `type=error`; there is no new severity column.
+
+`DiagnosticSink::Event::message` carries normal text and `context` carries always-visible attribution or actionable
+details. Optional `detailedMessage` replaces the text in verbose mode; `detailedContext` adds technical fields such as
+raw offsets. `Visibility::Always` and `Visibility::Verbose` explicitly distinguish normal diagnostics from technical
+run information. The stderr sink makes this presentation choice without classifying text or filtering context keys.
+`DiagnosticSink::report` still counts failing impact before presentation, and forwarding sinks preserve all fields.
 
 [CsvRowMapper][csv-mapper] continues to escape CSV fields. Source IDs stay in `stream`, including observed null and
 reserved IDs in byte-skip records. `CPU Sleeping` and `Trace prohibited` remain compact PC-state notes outside the
@@ -126,7 +134,7 @@ Compact skipped-byte notes retain the count and cause:
 | Unconfigured source ID | `N bytes skipped: unconfigured source ID` |
 | Missing synchronization | `N bytes skipped: no SYNC` |
 
-The detailed CLI text also identifies the first formatter output group's raw offset. The compact note omits that
+The verbose CLI text also identifies the first formatter output group's raw offset. The compact note omits that
 offset; it remains available internally. `TraceByteSkip::byteCount` counts skipped deformatted payload, excluding
 formatter control bytes. In contrast, a formatted recovery interval can include control bytes and interleaved routes;
 its length is not a skipped-payload count.
@@ -136,24 +144,28 @@ They do not create decoded routes, hardware synchronization events, or CTF strea
 
 ### Decoder issues
 
-Compact issue text retains the diagnostic category and meaningful parameters, such as invalid payload size/value,
-flush limit, or recovery interval. It includes a numeric native error code or response code when available and keeps
-those code domains distinct. Native descriptions, packet types, and bounded byte previews remain in detailed CLI
-output. Known semantic issue codes without typed parameters receive meaningful category-only compact fallbacks.
+Compact issue text answers what happened: it retains the diagnostic category, cause and meaningful counts. Raw
+positions/ranges, cycle intervals, native codes, packet kinds, payload sizes and hexadecimal previews belong to
+verbose CLI output. Known semantic issue codes without typed parameters receive category-only compact fallbacks.
+CSV retains its existing `cycles` and `stream` columns; the note does not repeat them or append `raw@N`.
 
-For ordinary decoder issues, CSV includes `; raw@N`. A formatter-group position does not promise an exact physical
-packet-byte position. Recovery messages include their raw interval directly. When discontinuity timing is available,
-CSV adds `; cycles A..B`, using `?` for an unknown resumed timestamp. Missing timestamps are not invented.
+Recovery distinguishes consumed undecodable bytes from an affected raw span. Examples include
+`2179 raw bytes without usable ITM packets`, `ITM resynced; 32 raw bytes affected`, and
+`No ITM resync before EOF; 32 raw bytes affected`. The latter spans can include formatter control and other routes;
+they must not be relabelled as skipped payload. Verbose output also identifies the raw span and known timestamp
+range. A formatter-group position does not promise an exact physical packet-byte position, and missing timestamps
+are not invented.
 
 Ordinary issue and overflow rows retain their existing type/stream selection behavior; CLI reporting is unfiltered.
 An overflow event uses the compact note `Timestamp discontinuity`. Its CLI aggregate remains a separate catalog
-entry selected by `TraceOverflowSummary`, with the optional first timestamp and count for the internal route.
+entry selected by `TraceOverflowSummary`: normal output appends `N more occurred` when needed, while verbose output
+also includes the first known timestamp for the internal route.
 
 ### Fatal aborts
 
-The final CSV note starts with `Decode aborted after N bytes; trace incomplete`. A compact structured cause follows
-when available. Arbitrary exception text is not truncated or parsed to manufacture a compact cause. CLI output
-retains the complete detailed reason.
+The final CSV note and normal CLI error start with `Decode aborted; trace incomplete`. A compact structured cause
+follows when available. Arbitrary exception text is not truncated or parsed to manufacture a compact cause. Verbose
+CLI output retains the processed-byte count, complete detailed reason and available technical context.
 
 Only `OpenCsdFatalError` becomes a shared terminal abort record. Ordinary input-read exceptions and output-backend
 failures retain their CLI-only catch paths. The abort row bypasses event filters and has no route or timestamp.
@@ -165,7 +177,9 @@ removes the unreliable file. A failure before CSV startup does not create a CSV 
 `DiagnosticMessages` provides typed adapters for CLI argument checks, trace-run discovery, YAML field validation,
 source locations, processor/route binding, deferred metadata errors, path/IO failures, backend lifecycle failures
 and run summaries. Each adapter selects an entry in the central catalog. Messages are formatted at their existing
-call sites because only the CLI consumes them; they do not become `TraceIssueEvent` values.
+call sites because only the CLI consumes them; they do not become `TraceIssueEvent` values. Actionable file/field
+identity and causes remain available in normal output. Selected configuration, metadata, timestamp prescalers and
+processing summaries are marked `Visibility::Verbose`; byte-skip Info remains normally visible.
 
 Examples include `configFieldMessage(field, ConfigFieldProblem::UnsignedRange)`,
 `pathDiagnosticMessage(PathDiagnosticCode::CsvOpen, path)`, and `decodeSummaryMessage(bytes, seconds, records)`.
@@ -173,16 +187,17 @@ Fixed messages need no adapter and call `formatMessage` directly. Owned wrappers
 source locations or backend failure context, also use catalog templates.
 
 Reference/pyTS messages, native YAML/cxxopts/OpenCSD text, OS errors and unexpected exception text retain their
-passthrough behavior. `TraceOpaqueMessage` retains foreign or caller-supplied trace descriptions: CLI preserves them,
-while CSV uses the semantic issue category as its compact fallback. Opaque abort causes do not pretend to supply a
-structured explanation. Severity and failure impact remain at their existing call sites.
+passthrough behavior for operational diagnostics: they are not parsed or truncated to make them shorter.
+`TraceOpaqueMessage` retains foreign or caller-supplied trace descriptions: verbose CLI preserves them,
+while normal CLI and CSV use the semantic issue category as their compact fallback. Opaque abort causes do not pretend
+to supply a structured explanation. Severity and failure impact remain at their existing call sites.
 
 ## Migration and extension
 
-CSV diagnostic notes intentionally change to compact text. Consumers that compare complete notes must update their
-expectations. Columns, event types, filters, route attribution and CSV escaping are unchanged. Use `type` and `stream`
-for selection, and detailed CLI diagnostics when investigating native errors or packet bytes. Internal message IDs
-are not an additional interchange format.
+CSV notes and default CLI diagnostic text intentionally become compact. Technical informational output now requires
+`--verbose`. Consumers that compare complete messages must update their expectations. Columns, event types, filters,
+route attribution and CSV escaping are unchanged. Use `type` and `stream` for selection, and `--verbose` when
+investigating native errors or packet bytes. Internal message IDs are not an additional interchange format.
 
 When adding or changing a message:
 
@@ -191,15 +206,17 @@ When adding or changing a message:
 2. For a shared trace diagnostic, add or reuse a typed record and adapt it to catalog arguments at the output
    boundary. Preserve semantic issue mapping and transport the record through every intermediate API.
 3. For a CLI-only message, call `formatMessage` directly or extend an appropriate typed adapter. Preserve exception
-   type, context, severity and failure impact. Keep foreign text opaque.
+   type, context, severity and failure impact. Keep foreign text opaque. Mark technical-only context or informational
+   events explicitly; do not infer their visibility from strings or field names.
 4. Test the catalog arguments and both output styles. Verify the producer/consumer path when parameters, optional
    context, filtering, ordering or output lifecycle can change.
 
 Catalog tests cover placeholder validation, argument ownership and substitution, omitted compact parameters,
 64-bit values, decimal/hex rendering, native categories/codes, packet previews, timestamp ranges and abort phases.
 Decoder, CSV, diagnostics and integration tests cover transport, callback ordering, route attribution, event filters,
-recovery, overflow summaries and terminal-abort lifecycle. CSV reference changes are confined to diagnostic notes;
-other columns and the CTF/XML fixtures retain their contents.
+recovery, overflow summaries and terminal-abort lifecycle. Verbosity tests compare normal and verbose stderr, shared
+compact CLI/CSV text, unchanged CSV/CTF output and exit status, and forwarding of optional details. CSV reference
+changes are confined to diagnostic notes; other columns and the CTF/XML fixtures retain their contents.
 
 [catalog]: ../src/model/MessageCatalog.inc
 [messages-header]: ../src/model/Messages.h

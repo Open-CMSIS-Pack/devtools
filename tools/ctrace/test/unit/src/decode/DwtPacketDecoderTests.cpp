@@ -257,7 +257,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsReservedExceptionAction)
       << "DwtPacketDecoder reserved exception action identity mismatch";
   ASSERT_TRUE(packets[0].tcyc.has_value() && *packets[0].tcyc == 1234U)
       << "DwtPacketDecoder reserved exception action timestamp mismatch";
-  ASSERT_TRUE(CsvRowMapper::row(packets[0]) == "1234,3,error,,,,,Invalid action 0x0: exception 11; raw@17")
+  ASSERT_TRUE(CsvRowMapper::row(packets[0]) == "1234,3,error,,,,,Invalid exception action")
       << "DwtPacketDecoder reserved exception error CSV mismatch";
 }
 

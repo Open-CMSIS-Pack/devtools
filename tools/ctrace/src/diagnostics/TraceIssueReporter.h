@@ -43,8 +43,9 @@ private:
   /** @brief Reports one semantic decoder issue. */
   void reportError(const TraceEvent& event, const TraceIssueEvent& issue);
   /** @brief Submits one normalized trace diagnostic to the sink. */
-  void report(DiagnosticSink::Severity severity, std::string message,
-              std::vector<std::pair<std::string, std::string>> context = {});
+  void report(DiagnosticSink::Severity severity, std::string message, std::string detailedMessage,
+              std::vector<std::pair<std::string, std::string>> context = {},
+              std::vector<std::pair<std::string, std::string>> detailedContext = {});
 
   DiagnosticSink& m_diagnostics;
   std::map<TraceRouteId, OverflowState> m_overflowByRoute;

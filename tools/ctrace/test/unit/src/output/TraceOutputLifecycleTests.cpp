@@ -324,5 +324,5 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleRetainsCsvDespiteFatalCleanupFailu
   const auto lines = readTestLines(outputPath.path());
   ASSERT_EQ(lines.size(), 3U);
   EXPECT_EQ(lines[1], ",,itm,1,0x41,,,");
-  EXPECT_EQ(lines[2], ",,error,,,,,Decode aborted after 16 bytes; trace incomplete");
+  EXPECT_EQ(lines[2], ",,error,,,,,Decode aborted; trace incomplete");
 }

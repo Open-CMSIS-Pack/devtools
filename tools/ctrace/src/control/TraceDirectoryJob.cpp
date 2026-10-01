@@ -164,7 +164,7 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
   const auto solutionSet = TraceRunDiscovery::solutionSetName(configFile);
   try {
     auto config = m_configReader.read(configFile.string());
-    m_diagnostics.report({
+    DiagnosticSink::Event selected{
         DiagnosticSink::Severity::Info,
         formatMessage(MessageId::SelectedTraceConfiguration),
         {
@@ -173,7 +173,9 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
             {"references", std::to_string(config.references.size())},
             {"setups", std::to_string(config.setups.size())},
         },
-    });
+    };
+    selected.visibility = DiagnosticSink::Visibility::Verbose;
+    m_diagnostics.report(selected);
     reportConsumedReferenceDiagnostics(config, m_diagnostics);
     const auto inputs = TraceRunDiscovery::selectInputs(config, [&](const auto& rawInput) {
       m_diagnostics.report({

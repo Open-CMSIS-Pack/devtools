@@ -191,8 +191,8 @@ therefore joins their observations after the operation using the normalized rout
 and exact OpenCSD packet index. The copied context survives transaction rollback
 until that operation's logger diagnostics have been emitted; a new operation
 clears it. No pointer into the producer's buffer is retained. Typed message data and packet
-context survive until output formatting. The CLI preserves native detail and the bounded
-packet preview; CSV uses a compact category and relevant parameters from the shared
+context survive until output formatting. Verbose CLI preserves native detail and the bounded
+packet preview; normal CLI and CSV use the same compact category, cause and meaningful counts from the shared
 [message catalog](message-system-design.md).
 
 The current ITM decoder and formatter do not emit `LogMessage` diagnostics or
@@ -202,8 +202,9 @@ source-ID contract and cannot justify resetting a decoder. Unsupported generic
 trace families remain outside this ITM-only profile. Existing SYNC, overflow,
 NOTSYNC, and EOT reporting is not duplicated by extra callback hooks.
 
-Formatted recovery diagnostics report OpenCSD's next hardware-SYNC index, or
-explicitly state that no later SYNC was found before EOT. Their raw interval is a
+Formatted recovery diagnostics distinguish later synchronization from no SYNC before EOT. Compact text reports
+the number of raw bytes affected; verbose text also reports OpenCSD's next hardware-SYNC index or unresolved span.
+Their raw interval is a
 source-position span, including formatter control and interleaved streams, not an
 exact count of discarded protocol bytes. A formatted packet index can identify a
 deformatter output group rather than the exact physical position of its first
@@ -331,7 +332,8 @@ or removes historical per-channel XML files.
 
 ## Diagnostics and failure semantics
 
-Diagnostics carry a severity, message, context, and impact. Severity describes the issue, while impact
+Diagnostics carry a severity, compact message, normal context, optional detailed message, detailed context, visibility,
+and impact. Severity describes the issue, while impact
 determines whether the current job must fail. This distinction allows a trace-run generation error to remain visible
 without necessarily preventing the decoding of otherwise valid trace input.
 
@@ -339,6 +341,13 @@ without necessarily preventing the decoding of otherwise valid trace input.
 its detailed and compact text together. `Messages` substitutes positional arguments; typed `TraceMessages` and
 `DiagnosticMessages` adapters select IDs and arguments. Trace records remain structured until output; CLI-only
 messages can be formatted at their existing call sites. See the [message-system design](message-system-design.md).
+
+`StderrDiagnosticSink` selects normal text or detailed text/context for `--verbose` / `-v`. Normal trace messages match
+CSV notes; raw offsets/ranges, cycle intervals, native codes and packet previews remain verbose details. Selected
+configuration, metadata, prescalers and run statistics use `Visibility::Verbose`; byte-skip Info, warnings and errors
+remain normally visible. Operational file/field/cause details remain actionable without verbosity. The option does
+not affect decoding, file outputs, event filtering or failure counts; `DiagnosticSink::report` counts impact before
+the sink makes its presentation choice. There is no global mode or text-based context filter.
 
 Decoder issue packets remain part of the event stream. `DecodeConsumers` reports every issue to stderr independently
 of output filters and forwards all events to the backends. The backends apply stream and type selection internally;
@@ -348,25 +357,31 @@ Ordinary route-bound CSV warnings and errors both use the `error` selector: an e
 severity column; diagnostic severity remains available in CLI output.
 
 A fatal decode abort adds an input-wide CSV `type=error` record regardless of type or stream selection. Only `type`
-and `note` are populated. The note starts with `Decode aborted after N bytes; trace incomplete` and appends a compact
-structured cause when available; the detailed reason remains in CLI output. The empty cycle and stream fields avoid
+and `note` are populated. The note starts with `Decode aborted; trace incomplete` and appends a compact
+structured cause when available; normal CLI shares this text, while verbose CLI adds the processed-byte count and
+detailed reason. The empty cycle and stream fields avoid
 inventing a timestamp or assigning the input-wide termination to one route. This is
 a ctrace output contract beyond the published specification, which does not define partial-file retention or
 global abort records. It does not turn ordinary route-bound diagnostics into unfiltered CSV rows.
 
 Byte-skip annotations are non-failing Info, not synchronization events. CSV uses `type=info`, `N bytes skipped: reason`,
 the observed formatter ID in `stream` when known, and empty `cycles`, `source`, `value`, `pc`, and `address` fields.
-The first formatter output group's raw offset remains in the detailed CLI message.
+The first formatter output group's raw offset is included only in the verbose CLI message.
 These rows bypass both type and stream filters; `info` is not a new selectable event type. CTF ignores them instead
 of creating routes or clocks, and CLI Info remains visible in CTF-only mode. The existing once-per-ID unsupported
 source warning remains separate from byte accounting. A route-bound missing-sync Error follows ordinary output
 selection but always contributes to command failure; its text does not repeat the byte count already reported as Info.
 
+Overflow CLI warnings stay aggregated per internal route. Normal wording is `Timestamp discontinuity`, with
+`N more occurred` when needed; verbose wording also identifies the first known timestamp. CSV retains one compact
+overflow note per selected event.
+
 An invocation-wide diagnostic sink aggregates failures while remaining inputs in the same set and other solution
 sets continue, then determines the final process status. Errors are rendered as `error` even when their impact causes
 a non-zero exit status. Unhandled internal ctrace failures also terminate the command after an error diagnostic.
 An input-scoped forwarding sink adds `inputChannel` and `input` context to every file-job diagnostic while preserving
-its severity and failure impact. Producer reference annotations are reported once per configuration, before file jobs.
+its severity, failure impact, visibility and optional detailed fields. Producer reference annotations are reported once
+per configuration, before file jobs, and their foreign text remains intact in both CLI modes.
 
 ## External dependencies
 

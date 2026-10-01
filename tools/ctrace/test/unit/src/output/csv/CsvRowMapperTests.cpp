@@ -130,19 +130,28 @@ TEST(CtraceUnitTests, testCsvRowMapperCoversAddressAndExceptionVariants)
             ",,exception,1,0x0,,,");
 }
 
-TEST(CtraceUnitTests, testCsvRowMapperFormatsTypedIssuesAndEscapesCompactIntervals)
+TEST(CtraceUnitTests, testCsvRowMapperFormatsCompactIssuesWithoutTechnicalContext)
 {
   const auto issue = onStream(issuePacket(TraceIssueCode::DecodeError, "comma, quote \" and\nnewline"), 7U);
-  EXPECT_EQ(CsvRowMapper::row(issue), ",7,error,,,,,Trace decode error; raw@0");
+  EXPECT_EQ(CsvRowMapper::row(issue), ",7,error,,,,,Trace decode error");
 
   const auto missingSync =
       onStream(issuePacket(TraceIssueCode::OpenCsdMissingSync, "no sync, \"stream\"\r\nended"), 1U);
-  EXPECT_EQ(CsvRowMapper::row(missingSync), ",1,error,,,,,No ITM SYNC before EOF; raw@0");
+  EXPECT_EQ(CsvRowMapper::row(missingSync), ",1,error,,,,,No ITM SYNC before EOF");
 
   const auto recovery = onStream(TraceEvent{makeTraceIssue(
       TraceRecovery{TraceRecoveryKind::Resumed, 4294967296ULL, 8589934592ULL, 4294967296ULL})}, 7U);
   EXPECT_EQ(CsvRowMapper::row(recovery),
-            ",7,error,,,,,\"ITM resynced; raw span [4294967296,8589934592): 4294967296 bytes\"");
+            ",7,error,,,,,ITM resynced; 4294967296 raw bytes affected");
+
+  TraceMessage diagnostic{TraceNativeDiagnostic{
+      TraceNativeCategory::BadPacketSequence, 19, std::nullopt, "native diagnostic detail", 8195U}};
+  diagnostic.timestampRange = TraceTimestampRange{29249610U, 29324609U};
+  diagnostic.packet = TracePacketContext{TracePacketKind::BadSequence, 2U, std::vector<std::uint8_t>{0xaaU, 0x47U}};
+  auto diagnosticEvent = onStream(atCycle(TraceEvent{makeTraceIssue(std::move(diagnostic))}, 29249610U), 7U);
+  diagnosticEvent.index = 8195U;
+  EXPECT_EQ(CsvRowMapper::row(diagnosticEvent), "29249610,7,error,,,,,Invalid ITM packet sequence")
+      << "CSV retains time and route columns but excludes verbose diagnostic details from the note";
 
   EXPECT_EQ(CsvRowMapper::row(atCycle(TraceEvent{GlobalTimestampTraceEvent{123U, false}}, 99U)), "123,,global_ts,,,,,");
 }

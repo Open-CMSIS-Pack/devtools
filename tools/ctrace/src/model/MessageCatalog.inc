@@ -9,7 +9,7 @@
 // Template braces form positional arguments {0}, {1}, ... . Compact nullptr reuses Detailed.
 // Both styles take the same argument list, even when one template omits positions.
 
-// Shared trace diagnostics: detailed CLI wording and compact CSV wording.
+// Shared trace diagnostics: detailed verbose wording and compact CLI/CSV wording.
 
 CTRACE_MESSAGE(TraceUnknownParameter,
     "unknown trace message parameter {0}",
@@ -21,27 +21,27 @@ CTRACE_MESSAGE(TraceDecodeError,
 
 CTRACE_MESSAGE(TraceDwtCounterPayload,
     "unsupported DWT event-counter payload: size {0}, value 0x{1}; expected a non-zero 1-byte mask using bits 0..5 only",
-    "Invalid DWT counter: {0} B; 0x{1}")
+    "Invalid DWT counter")
 
 CTRACE_MESSAGE(TracePmuCounterPayload,
     "unsupported PMU event-counter payload: size {0}, value 0x{1}; expected a non-zero 1-byte mask using bits 0..7",
-    "Invalid PMU counter: {0} B; 0x{1}")
+    "Invalid PMU counter")
 
 CTRACE_MESSAGE(TraceInvalidExceptionAction,
     "invalid exception action 0x0 for exception {0}",
-    "Invalid action 0x0: exception {0}")
+    "Invalid exception action")
 
 CTRACE_MESSAGE(TracePcSamplePayload,
     "unsupported DWT PC-sample payload: size {0}, value {1}; expected a 4-byte PC or a 1-byte marker (0x00: CPU Sleeping, 0xff: Trace prohibited)",
-    "Invalid PC sample: {0} B; 0x{2}")
+    "Invalid PC sample")
 
 CTRACE_MESSAGE(TraceDataAddressPayload,
     "unsupported DWT data address payload size {0}; expected 1, 2, or 4 bytes",
-    "Invalid DWT data address: {0} B")
+    "Invalid DWT data address")
 
 CTRACE_MESSAGE(TracePcOrMatchPayload,
     "unsupported DWT PC or match payload size {0}; expected 1, 2, or 4 bytes",
-    "Invalid DWT PC or match: {0} B")
+    "Invalid DWT PC or match")
 
 CTRACE_MESSAGE(TraceRecoveryGeneric,
     "data loss/resync boundary; timestamps across this point may not match",
@@ -53,11 +53,11 @@ CTRACE_MESSAGE(TraceRecoveryConsumed,
 
 CTRACE_MESSAGE(TraceRecoveryResumed,
     "ITM decoding resumed at hardware SYNC at raw offset {1}; affected raw interval [{0}, {1}) spans {2} bytes",
-    "ITM resynced; raw span [{0},{1}): {2} bytes")
+    "ITM resynced; {2} raw bytes affected")
 
 CTRACE_MESSAGE(TraceRecoveryUnresolved,
     "ITM decoding did not resume before end of input at raw offset {1}; no later hardware SYNC; affected raw interval [{0}, {1}) spans {2} bytes",
-    "No ITM resync before EOF; raw span [{0},{1}): {2} bytes")
+    "No ITM resync before EOF; {2} raw bytes affected")
 
 CTRACE_MESSAGE(TraceNativeError,
     "OpenCSD decoder error",
@@ -109,11 +109,11 @@ CTRACE_MESSAGE(TraceNativeSystemError,
 
 CTRACE_MESSAGE(TraceNativeErrorCode,
     "{0} (code {1})",
-    nullptr)
+    "{0}")
 
 CTRACE_MESSAGE(TraceNativeResponseCode,
     "{0} (response {1})",
-    nullptr)
+    "{0}")
 
 CTRACE_MESSAGE(TraceAtRawOffset,
     "{0} at raw offset {1}",
@@ -173,11 +173,11 @@ CTRACE_MESSAGE(TraceAbortedSuffix,
 
 CTRACE_MESSAGE(TraceWaitTimeout,
     "OpenCSD WAIT did not clear after {0} FLUSH operations",
-    "OpenCSD WAIT timeout: {0} flushes")
+    "OpenCSD WAIT timeout")
 
 CTRACE_MESSAGE(TraceDrainTimeout,
     "OpenCSD formatted drain did not clear after {0} FLUSH operations",
-    "OpenCSD formatted drain timeout: {0} flushes")
+    "OpenCSD formatted drain timeout")
 
 CTRACE_MESSAGE(TraceInvalidFormattedChunk,
     "formatted raw trace chunk is not a multiple of 16 bytes",
@@ -197,7 +197,7 @@ CTRACE_MESSAGE(TraceAbortNone,
 
 CTRACE_MESSAGE(TraceAbortDecode,
     "OpenCSD aborted decode: {0}",
-    "Decode: {0}")
+    "{0}")
 
 CTRACE_MESSAGE(TraceAbortEndOfTrace,
     "OpenCSD aborted end-of-trace processing: {0}",
@@ -229,11 +229,11 @@ CTRACE_MESSAGE(TraceAppendPacketAfterSeparator,
 
 CTRACE_MESSAGE(TraceTimestampRange,
     "{0}; timestamp {1} .. {2}.",
-    "{0}; cycles {1}..{2}")
+    "{0}")
 
 CTRACE_MESSAGE(TraceTimestampRangeUnknown,
     "{0}; timestamp {1} .. unknown.",
-    "{0}; cycles {1}..?")
+    "{0}")
 
 CTRACE_MESSAGE(TraceFallbackDataLoss,
     "trace data at raw offset {0} could not be decoded before the next hardware ITM sync",
@@ -295,10 +295,6 @@ CTRACE_MESSAGE(TraceFallbackNativeWarning,
     "trace decode error at raw offset {0}",
     "OpenCSD warning")
 
-CTRACE_MESSAGE(TraceIssuePosition,
-    "{0}",
-    "{0}; raw@{1}")
-
 CTRACE_MESSAGE(TraceSkipNoSourceId,
     "{0} bytes skipped due to missing source ID; first formatter group at raw offset {1}",
     "{0} bytes skipped: no source ID")
@@ -325,11 +321,11 @@ CTRACE_MESSAGE(TraceUnknownSourceId,
 
 CTRACE_MESSAGE(TraceDecodeAbort,
     "decode aborted after processing {0} input bytes; trace is incomplete: {1}",
-    "Decode aborted after {0} bytes; trace incomplete; {1}")
+    "Decode aborted; trace incomplete; {1}")
 
 CTRACE_MESSAGE(TraceDecodeAbortOpaque,
     "decode aborted after processing {0} input bytes; trace is incomplete: {1}",
-    "Decode aborted after {0} bytes; trace incomplete")
+    "Decode aborted; trace incomplete")
 
 CTRACE_MESSAGE(TraceOverflow,
     "overflow: new timestamp segment; time across boundary may be unreliable",
@@ -501,11 +497,11 @@ CTRACE_MESSAGE(TraceSetupDuplicateFormattedRoute,
 
 CTRACE_MESSAGE(TraceOverflowSummary,
     "first overflow occurred at cycle timestamp {0}",
-    nullptr)
+    "Timestamp discontinuity")
 
 CTRACE_MESSAGE(TraceOverflowSummaryUnknown,
     "first overflow occurred at an unknown cycle timestamp",
-    nullptr)
+    "Timestamp discontinuity")
 
 CTRACE_MESSAGE(TraceOverflowSummaryMore,
     "{0}; {1} more occurred",

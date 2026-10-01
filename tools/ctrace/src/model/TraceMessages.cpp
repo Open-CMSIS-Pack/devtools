@@ -55,8 +55,7 @@ std::string render(const TraceInvalidExceptionAction& message, TraceMessageStyle
 
 std::string render(const TracePcSamplePayload& message, TraceMessageStyle style)
 {
-  return formatMessage(MessageId::TracePcSamplePayload, style,
-                        {message.size, message.value, hexadecimal(message.value)});
+  return formatMessage(MessageId::TracePcSamplePayload, style, {message.size, message.value});
 }
 
 std::string render(const TraceAddressPayload& message, TraceMessageStyle style)
@@ -107,18 +106,18 @@ std::string render(const TraceNativeDiagnostic& message, TraceMessageStyle style
                             message.category == TraceNativeCategory::Error
                             ? TraceNativeCategory::Warning : message.category;
   auto text = nativeCategory(category, style);
-  if (style == TraceMessageStyle::Compact) {
-    if (message.errorCode.has_value()) {
-      text = formatMessage(MessageId::TraceNativeErrorCode, style, {text, *message.errorCode});
-    } else if (message.responseCode.has_value()) {
-      text = formatMessage(MessageId::TraceNativeResponseCode, style, {text, *message.responseCode});
-    }
-  } else {
+  if (style == TraceMessageStyle::Detailed) {
     if (message.offset.has_value()) {
       text = formatMessage(MessageId::TraceAtRawOffset, style, {text, *message.offset});
     }
     if (!message.nativeText.empty()) {
       text = formatMessage(MessageId::TraceNativeDetail, style, {text, message.nativeText});
+    }
+    if (message.errorCode.has_value()) {
+      text = formatMessage(MessageId::TraceNativeErrorCode, style, {text, *message.errorCode});
+    }
+    if (message.responseCode.has_value()) {
+      text = formatMessage(MessageId::TraceNativeResponseCode, style, {text, *message.responseCode});
     }
   }
   return text;
@@ -204,22 +203,16 @@ MessageId setupMessageId(TraceSetupOperation operation)
 
 std::string render(const TraceSetupFailure& message, TraceMessageStyle style)
 {
-  if (style == TraceMessageStyle::Detailed && !message.nativeText.empty()) {
-    return message.nativeText;
-  }
-  auto text = formatMessage(setupMessageId(message.operation), style);
-  return style == TraceMessageStyle::Compact && message.errorCode.has_value()
+  auto text = style == TraceMessageStyle::Detailed && !message.nativeText.empty()
+                  ? message.nativeText : formatMessage(setupMessageId(message.operation), style);
+  return style == TraceMessageStyle::Detailed && message.errorCode.has_value()
              ? formatMessage(MessageId::TraceNativeErrorCode, style, {text, *message.errorCode}) : text;
 }
 
 std::string render(const TraceFormattedSessionFailure& message, TraceMessageStyle style)
 {
   const auto detail = message.setup.has_value() ? render(*message.setup, TraceMessageStyle::Detailed) : message.detail;
-  auto text = formatMessage(MessageId::TraceFormattedSessionFailure, style, {detail, message.offset});
-  if (style == TraceMessageStyle::Compact && message.setup.has_value() && message.setup->errorCode.has_value()) {
-    text = formatMessage(MessageId::TraceNativeErrorCode, style, {text, *message.setup->errorCode});
-  }
-  return text;
+  return formatMessage(MessageId::TraceFormattedSessionFailure, style, {detail, message.offset});
 }
 
 std::string render(const TraceInitializationFailure& message, TraceMessageStyle style)
@@ -251,7 +244,7 @@ std::string formatBaseMessage(const TraceMessage& message, TraceMessageStyle sty
 
 void appendTimestampRange(std::string& text, const TraceMessage& message, TraceMessageStyle style)
 {
-  if (!message.timestampRange.has_value()) {
+  if (style != TraceMessageStyle::Detailed || !message.timestampRange.has_value()) {
     return;
   }
   const auto& range = *message.timestampRange;
@@ -337,12 +330,6 @@ std::string formatTraceIssue(const TraceIssueEvent& issue, std::uint64_t rawOffs
   const bool fallback = (opaque != nullptr && (opaque->text.empty() || style == TraceMessageStyle::Compact)) ||
                         (initialization != nullptr && initialization->detail.empty());
   auto text = fallback ? fallbackIssue(issue, rawOffset, style) : formatBaseMessage(issue.message, style);
-  const auto* recovery = std::get_if<TraceRecovery>(&issue.message.data);
-  const bool containsInterval = recovery != nullptr &&
-      (recovery->kind == TraceRecoveryKind::Resumed || recovery->kind == TraceRecoveryKind::Unresolved);
-  if (style == TraceMessageStyle::Compact && !containsInterval) {
-    text = formatMessage(MessageId::TraceIssuePosition, style, {text, rawOffset});
-  }
   appendTimestampRange(text, issue.message, style);
   return text;
 }
@@ -393,13 +380,13 @@ std::string formatTraceSetupOperation(TraceSetupOperation operation)
   return formatMessage(setupMessageId(operation));
 }
 
-std::string formatOverflowSummary(const TraceOverflowSummary& summary)
+std::string formatOverflowSummary(const TraceOverflowSummary& summary, TraceMessageStyle style)
 {
   auto text = summary.firstTimestamp.has_value()
-                  ? formatMessage(MessageId::TraceOverflowSummary, MessageStyle::Detailed, {*summary.firstTimestamp})
-                  : formatMessage(MessageId::TraceOverflowSummaryUnknown);
+                  ? formatMessage(MessageId::TraceOverflowSummary, style, {*summary.firstTimestamp})
+                  : formatMessage(MessageId::TraceOverflowSummaryUnknown, style);
   return summary.packetCount > 1U
-             ? formatMessage(MessageId::TraceOverflowSummaryMore, MessageStyle::Detailed, {text, summary.packetCount - 1U})
+             ? formatMessage(MessageId::TraceOverflowSummaryMore, style, {text, summary.packetCount - 1U})
              : text;
 }
 

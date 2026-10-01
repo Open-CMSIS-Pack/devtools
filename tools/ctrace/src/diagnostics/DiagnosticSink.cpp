@@ -15,13 +15,21 @@
 #include <string_view>
 
 /** @brief Renders a structured diagnostic in the stable command-line format. */
-static std::string formatDiagnosticEvent(const DiagnosticSink::Event& event)
+static std::string formatDiagnosticEvent(const DiagnosticSink::Event& event, bool verbose)
 {
   std::ostringstream out;
-  out << "[" << toString(event.severity) << "] " << event.message;
-  for (std::size_t index = 0; index < event.context.size(); ++index) {
-    const auto& item = event.context[index];
-    out << (index == 0U ? ": " : ", ") << item.first << "=" << item.second;
+  out << "[" << toString(event.severity) << "] "
+      << (verbose && event.detailedMessage.has_value() ? *event.detailedMessage : event.message);
+  bool firstContext = true;
+  const auto appendContext = [&](const auto& context) {
+    for (const auto& item : context) {
+      out << (firstContext ? ": " : ", ") << item.first << "=" << item.second;
+      firstContext = false;
+    }
+  };
+  appendContext(event.context);
+  if (verbose) {
+    appendContext(event.detailedContext);
   }
   out << "\n";
   return out.str();
@@ -53,7 +61,15 @@ std::string_view toString(DiagnosticSink::Severity severity)
   return "unknown";
 }
 
+void StderrDiagnosticSink::setVerbose(bool verbose) noexcept
+{
+  m_verbose = verbose;
+}
+
 void StderrDiagnosticSink::write(const Event& event)
 {
-  std::cerr << formatDiagnosticEvent(event);
+  if (!m_verbose && event.visibility == Visibility::Verbose) {
+    return;
+  }
+  std::cerr << formatDiagnosticEvent(event, m_verbose);
 }

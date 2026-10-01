@@ -63,6 +63,57 @@ TEST(CtraceUnitTests, testDiagnosticTextCoversSeverityAndFormatting)
   EXPECT_EQ(text.find("output/write"), std::string::npos);
 }
 
+TEST(CtraceUnitTests, testDiagnosticVerboseSelectsDetailsAndTechnicalContext)
+{
+  DiagnosticSink::Event event{DiagnosticSink::Severity::Warning, "Invalid ITM packet sequence", {{"stream", "7"}}};
+  event.detailedMessage = "OpenCSD detected an invalid ITM packet sequence; packet data";
+  event.detailedContext = {{"raw_offset", "42"}, {"size", "2"}};
+  StderrDiagnosticSink sink;
+
+  testing::internal::CaptureStderr();
+  sink.report(event);
+  EXPECT_EQ(testing::internal::GetCapturedStderr(), "[warning] Invalid ITM packet sequence: stream=7\n");
+
+  sink.setVerbose(true);
+  testing::internal::CaptureStderr();
+  sink.report(event);
+  EXPECT_EQ(testing::internal::GetCapturedStderr(),
+            "[warning] OpenCSD detected an invalid ITM packet sequence; packet data: stream=7, raw_offset=42, size=2\n");
+
+  event.context.clear();
+  event.detailedMessage.reset();
+  testing::internal::CaptureStderr();
+  sink.report(event);
+  EXPECT_EQ(testing::internal::GetCapturedStderr(),
+            "[warning] Invalid ITM packet sequence: raw_offset=42, size=2\n");
+  EXPECT_EQ(sink.failureCount(), 0U);
+}
+
+TEST(CtraceUnitTests, testDiagnosticVisibilityDoesNotChangeFailureImpact)
+{
+  DiagnosticSink::Event event{DiagnosticSink::Severity::Info, "processing details", {}, DiagnosticSink::Impact::Failing};
+  event.visibility = DiagnosticSink::Visibility::Verbose;
+  StderrDiagnosticSink sink;
+  testing::internal::CaptureStderr();
+  sink.report(event);
+  EXPECT_TRUE(testing::internal::GetCapturedStderr().empty());
+  EXPECT_EQ(sink.failureCount(), 1U);
+
+  sink.setVerbose(true);
+  testing::internal::CaptureStderr();
+  sink.report(event);
+  sink.report({DiagnosticSink::Severity::Error, "foreign generator diagnostic", {}, DiagnosticSink::Impact::NonFailing});
+  EXPECT_EQ(testing::internal::GetCapturedStderr(),
+            "[info] processing details\n[error] foreign generator diagnostic\n");
+  EXPECT_EQ(sink.failureCount(), 2U);
+
+  sink.setVerbose(false);
+  testing::internal::CaptureStderr();
+  sink.report(event);
+  EXPECT_TRUE(testing::internal::GetCapturedStderr().empty());
+  EXPECT_EQ(sink.failureCount(), 3U);
+}
+
 TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
 {
   CollectingDiagnosticSink payloadIndependentDiagnostics;
@@ -98,11 +149,13 @@ TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
       << "TraceIssueReporter should report every error and warning occurrence";
   ASSERT_TRUE(diagnostics.events()[0].severity == DiagnosticSink::Severity::Warning)
       << "TraceIssueReporter overflow severity mismatch";
-  EXPECT_NE(diagnostics.events()[0].message.find("1 more occurred"), std::string::npos);
+  EXPECT_EQ(diagnostics.events()[0].message, "Timestamp discontinuity; 1 more occurred");
+  EXPECT_NE(diagnostics.events()[0].detailedMessage.value().find("1 more occurred"), std::string::npos);
   EXPECT_TRUE(diagnostics.events()[0].context.empty());
   ASSERT_TRUE(diagnostics.events()[1].severity == DiagnosticSink::Severity::Error)
       << "TraceIssueReporter data-loss severity mismatch";
-  EXPECT_EQ(diagnostics.events()[1].context,
+  EXPECT_TRUE(diagnostics.events()[1].context.empty());
+  EXPECT_EQ(diagnostics.events()[1].detailedContext,
             (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "12"}}));
   ASSERT_TRUE(diagnostics.events()[1].message.find("3 raw bytes") != std::string::npos)
       << "TraceIssueReporter should include the lost byte count";
@@ -110,11 +163,13 @@ TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
       << "TraceIssueReporter repeated data-loss message mismatch";
   ASSERT_TRUE(diagnostics.events()[3].severity == DiagnosticSink::Severity::Warning)
       << "TraceIssueReporter should preserve warning severity";
-  EXPECT_EQ(diagnostics.events()[3].message, "decoder warning");
-  EXPECT_EQ(diagnostics.events()[4].message, "decoder setup failed");
-  EXPECT_EQ(diagnostics.events()[3].context,
+  EXPECT_EQ(diagnostics.events()[3].message, "OpenCSD warning");
+  EXPECT_EQ(diagnostics.events()[4].message, "OpenCSD initialization failed");
+  EXPECT_EQ(diagnostics.events()[3].detailedMessage, "decoder warning");
+  EXPECT_EQ(diagnostics.events()[4].detailedMessage, "decoder setup failed");
+  EXPECT_EQ(diagnostics.events()[3].detailedContext,
             (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "0"}}));
-  EXPECT_EQ(diagnostics.events()[4].context,
+  EXPECT_EQ(diagnostics.events()[4].detailedContext,
             (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "0"}}));
   ASSERT_TRUE(diagnostics.failureCount() == 3U) << "TraceIssueReporter should classify decoder errors as failing";
 }
@@ -127,9 +182,11 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsUnknownOverflowTimestamp)
   reporter.finish();
 
   ASSERT_EQ(diagnostics.events().size(), 1U);
-  EXPECT_NE(diagnostics.events().front().message.find("unknown cycle timestamp"), std::string::npos);
-  EXPECT_EQ(diagnostics.events().front().message.find("cycle timestamp 0"), std::string::npos);
-  EXPECT_EQ(diagnostics.events().front().message.find("0 more occurred"), std::string::npos);
+  EXPECT_EQ(diagnostics.events().front().message, "Timestamp discontinuity");
+  ASSERT_TRUE(diagnostics.events().front().detailedMessage.has_value());
+  EXPECT_NE(diagnostics.events().front().detailedMessage->find("unknown cycle timestamp"), std::string::npos);
+  EXPECT_EQ(diagnostics.events().front().detailedMessage->find("cycle timestamp 0"), std::string::npos);
+  EXPECT_EQ(diagnostics.events().front().detailedMessage->find("0 more occurred"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testTraceIssueReporterPartitionsIssuesAndOverflowByRoute)
@@ -153,17 +210,20 @@ TEST(CtraceUnitTests, testTraceIssueReporterPartitionsIssuesAndOverflowByRoute)
 
   ASSERT_EQ(diagnostics.events().size(), 6U);
   EXPECT_EQ(diagnostics.events()[0].context,
-            (std::vector<std::pair<std::string, std::string>>{{"stream", "1"}, {"raw_offset", "0"}}));
+            (std::vector<std::pair<std::string, std::string>>{{"stream", "1"}}));
   EXPECT_EQ(diagnostics.events()[1].context,
-            (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}, {"raw_offset", "0"}}));
+            (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}}));
+  EXPECT_EQ(diagnostics.events()[0].detailedContext,
+            (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "0"}}));
+  EXPECT_EQ(diagnostics.events()[1].detailedContext, diagnostics.events()[0].detailedContext);
   EXPECT_EQ(diagnostics.events()[2].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "1"}}));
-  EXPECT_NE(diagnostics.events()[2].message.find("cycle timestamp 10; 1 more occurred"), std::string::npos);
+  EXPECT_NE(diagnostics.events()[2].detailedMessage.value().find("cycle timestamp 10; 1 more occurred"), std::string::npos);
   EXPECT_EQ(diagnostics.events()[3].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}}));
-  EXPECT_NE(diagnostics.events()[3].message.find("cycle timestamp 100"), std::string::npos);
+  EXPECT_NE(diagnostics.events()[3].detailedMessage.value().find("cycle timestamp 100"), std::string::npos);
   EXPECT_TRUE(diagnostics.events()[4].context.empty());
   EXPECT_TRUE(diagnostics.events()[5].context.empty());
-  EXPECT_NE(diagnostics.events()[4].message.find("cycle timestamp 30"), std::string::npos);
-  EXPECT_NE(diagnostics.events()[5].message.find("cycle timestamp 31"), std::string::npos)
+  EXPECT_NE(diagnostics.events()[4].detailedMessage.value().find("cycle timestamp 30"), std::string::npos);
+  EXPECT_NE(diagnostics.events()[5].detailedMessage.value().find("cycle timestamp 31"), std::string::npos)
       << "distinct no-bus route IDs must not collapse into one overflow summary";
 }
 
@@ -176,17 +236,18 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
   struct Case {
     TraceIssueCode code;
     const char* message;
+    const char* compact;
   };
   constexpr Case cases[]{
-      {TraceIssueCode::OpenCsdBadPacketSequence, "invalid ITM packet sequence at raw offset 42"},
-      {TraceIssueCode::OpenCsdInvalidPacketHeader, "invalid ITM packet header at raw offset 42"},
-      {TraceIssueCode::OpenCsdIncompleteTail, "incomplete ITM packet starting at raw offset 42 at end of input"},
-      {TraceIssueCode::OpenCsdMissingSync, "no hardware ITM SYNC before end of input"},
-      {TraceIssueCode::OpenCsdNoProgress, "OpenCSD made no decode progress at raw offset 42"},
-      {TraceIssueCode::OpenCsdWaitTimeout, "OpenCSD remained blocked while flushing pending data"},
-      {TraceIssueCode::OpenCsdInitializationError, "OpenCSD initialization failed"},
-      {TraceIssueCode::DecodeError, "trace decode error at raw offset 42"},
-      {static_cast<TraceIssueCode>(255U), "trace decode error at raw offset 42"},
+      {TraceIssueCode::OpenCsdBadPacketSequence, "invalid ITM packet sequence at raw offset 42", "Invalid ITM packet sequence"},
+      {TraceIssueCode::OpenCsdInvalidPacketHeader, "invalid ITM packet header at raw offset 42", "Invalid ITM packet header"},
+      {TraceIssueCode::OpenCsdIncompleteTail, "incomplete ITM packet starting at raw offset 42 at end of input", "Incomplete ITM packet at EOF"},
+      {TraceIssueCode::OpenCsdMissingSync, "no hardware ITM SYNC before end of input", "No ITM SYNC before EOF"},
+      {TraceIssueCode::OpenCsdNoProgress, "OpenCSD made no decode progress at raw offset 42", "No decode progress"},
+      {TraceIssueCode::OpenCsdWaitTimeout, "OpenCSD remained blocked while flushing pending data", "OpenCSD flush timeout"},
+      {TraceIssueCode::OpenCsdInitializationError, "OpenCSD initialization failed", "OpenCSD initialization failed"},
+      {TraceIssueCode::DecodeError, "trace decode error at raw offset 42", "Trace decode error"},
+      {static_cast<TraceIssueCode>(255U), "trace decode error at raw offset 42", "Trace decode error"},
   };
   for (const auto& testCase : cases) {
     auto event = issuePacket(testCase.code);
@@ -204,14 +265,18 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
 
   ASSERT_EQ(diagnostics.events().size(), std::size(cases) + 3U);
   for (std::size_t index = 0U; index < std::size(cases); ++index) {
-    EXPECT_EQ(diagnostics.events()[index].message, cases[index].message);
-    EXPECT_EQ(diagnostics.events()[index].context,
+    EXPECT_EQ(diagnostics.events()[index].message, cases[index].compact);
+    EXPECT_EQ(diagnostics.events()[index].detailedMessage, cases[index].message);
+    EXPECT_TRUE(diagnostics.events()[index].context.empty());
+    EXPECT_EQ(diagnostics.events()[index].detailedContext,
               (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "42"}}));
   }
-  EXPECT_NE(diagnostics.events()[std::size(cases)].message.find("raw offset 43"), std::string::npos);
+  EXPECT_EQ(diagnostics.events()[std::size(cases)].message, "ITM data loss");
+  EXPECT_NE(diagnostics.events()[std::size(cases)].detailedMessage.value().find("raw offset 43"), std::string::npos);
   EXPECT_EQ(diagnostics.events()[std::size(cases) + 1U].severity, DiagnosticSink::Severity::Warning);
-  EXPECT_EQ(diagnostics.events()[std::size(cases) + 1U].message, "warning loss");
-  EXPECT_EQ(diagnostics.events().back().message, "trace decode error at raw offset 0");
+  EXPECT_EQ(diagnostics.events()[std::size(cases) + 1U].detailedMessage, "warning loss");
+  EXPECT_EQ(diagnostics.events().back().message, "Trace decode error");
+  EXPECT_EQ(diagnostics.events().back().detailedMessage, "trace decode error at raw offset 0");
 }
 
 TEST(CtraceUnitTests, testTraceIssueReporterPreservesMissingSyncDetailsAndFailure)
@@ -225,11 +290,13 @@ TEST(CtraceUnitTests, testTraceIssueReporterPreservesMissingSyncDetailsAndFailur
   reporter.append(event);
 
   ASSERT_EQ(diagnostics.events().size(), 1U);
-  EXPECT_EQ(diagnostics.events().front().message, message);
+  EXPECT_EQ(diagnostics.events().front().message, "No ITM SYNC before EOF");
+  EXPECT_EQ(diagnostics.events().front().detailedMessage, message);
   EXPECT_EQ(diagnostics.events().front().severity, DiagnosticSink::Severity::Error);
   EXPECT_EQ(diagnostics.events().front().impact, DiagnosticSink::Impact::Failing);
   EXPECT_TRUE(diagnostics.containsContext("stream", "1"));
-  EXPECT_TRUE(diagnostics.containsContext("raw_offset", "32"));
+  EXPECT_EQ(diagnostics.events().front().detailedContext,
+            (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "32"}}));
   EXPECT_EQ(diagnostics.failureCount(), 1U);
 }
 
@@ -265,11 +332,15 @@ TEST(CtraceUnitTests, testTraceIssueReporterPreservesDetailsForEveryIssueKind)
 
   ASSERT_EQ(diagnostics.events().size(), std::size(codes));
   for (const auto& diagnostic : diagnostics.events()) {
-    EXPECT_EQ(diagnostic.message, detail);
+    EXPECT_EQ(diagnostic.detailedMessage, detail);
+    EXPECT_NE(diagnostic.message, detail);
+    EXPECT_EQ(diagnostic.message.find("raw offset"), std::string::npos);
     EXPECT_EQ(diagnostic.severity, DiagnosticSink::Severity::Error);
     EXPECT_EQ(diagnostic.impact, DiagnosticSink::Impact::Failing);
     EXPECT_EQ(diagnostic.context,
-              (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}, {"raw_offset", "42"}}));
+              (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}}));
+    EXPECT_EQ(diagnostic.detailedContext,
+              (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "42"}}));
   }
   EXPECT_EQ(diagnostics.failureCount(), std::size(codes));
 }
@@ -291,13 +362,18 @@ TEST(CtraceUnitTests, testTraceIssueReporterKeepsRawOffsetsAlongsidePayloadDetai
   reporter.append(warning);
 
   ASSERT_EQ(diagnostics.events().size(), 2U);
-  EXPECT_EQ(diagnostics.events()[0].message, detail);
-  EXPECT_EQ(diagnostics.events()[0].context,
+  EXPECT_EQ(diagnostics.events()[0].message, "Invalid DWT counter");
+  EXPECT_EQ(diagnostics.events()[0].detailedMessage, detail);
+  EXPECT_TRUE(diagnostics.events()[0].context.empty());
+  EXPECT_EQ(diagnostics.events()[0].detailedContext,
             (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "4294967338"}}));
   EXPECT_EQ(diagnostics.events()[0].severity, DiagnosticSink::Severity::Error);
-  EXPECT_EQ(diagnostics.events()[1].message, warningDetail);
+  EXPECT_EQ(diagnostics.events()[1].message, "Invalid PMU counter");
+  EXPECT_EQ(diagnostics.events()[1].detailedMessage, warningDetail);
   EXPECT_EQ(diagnostics.events()[1].context,
-            (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}, {"raw_offset", "73"}}));
+            (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}}));
+  EXPECT_EQ(diagnostics.events()[1].detailedContext,
+            (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "73"}}));
   EXPECT_EQ(diagnostics.events()[1].severity, DiagnosticSink::Severity::Warning);
   EXPECT_EQ(diagnostics.failureCount(), 1U);
 }

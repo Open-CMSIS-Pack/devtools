@@ -23,7 +23,7 @@ enum class MessageId : std::size_t {
   Count,
 };
 
-/** @brief Chooses detailed CLI wording or compact CSV wording. */
+/** @brief Chooses detailed verbose wording or compact CLI/CSV wording. */
 enum class MessageStyle {
   Detailed,
   Compact,
