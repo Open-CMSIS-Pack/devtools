@@ -1,9 +1,9 @@
 ---
 name: analyze-ctrace
 description: >-
-  Analyze existing CMSIS Cortex-M trace captures by translating a user's question
-  into ctrace output filters and inspecting a bounded, isolated CSV result.
-  Explain reported decoding failures on request.
+  Answer questions about recorded CMSIS Cortex-M interrupts, sampled CPU activity,
+  and traced data values using ctrace and a bounded, isolated CSV result.
+  Resolve capture/core selections and explain reported decoding failures on request.
   Use for SWO or trace-buffer recordings, not live capture or trace configuration.
 ---
 
@@ -42,9 +42,10 @@ concise question with numbered choices in the conversation. Use the user's
 language and do not re-ask a choice already made explicitly.
 
 Wait for the answer before executing the affected conversion. A suggested or
-preselected option is not confirmation. If a requested selector is unsupported,
-explain the limitation and ask whether an available broader selection would
-answer the question; do not silently change its meaning.
+preselected option is not confirmation. If an explicitly requested export filter
+is unsupported, explain the limitation and ask whether a broader export is
+acceptable. A question about a variable or time interval is not by itself a
+request for an exact export filter; use the bounded interpretation below.
 
 ## Resolve the capture
 
@@ -106,6 +107,25 @@ and diagnostic instead of silently selecting another file.
 
 ## Translate the question into filters
 
+Identify the question to answer separately from the capture, processor, and
+native export selection. Use metadata to connect the user's terms to available
+evidence; the user need not know ctrace's event-type names.
+
+| User's analysis goal | Evidence to request and interpret |
+| --- | --- |
+| Interrupts, ISR entries, preemption | `exception`; distinguish entries, exits, and resumes. |
+| CPU sleeping or sampled execution locations | `pcsample`; status markers and PC samples, not execution history. |
+| Changes to a variable, label, or watched location | `dwt`; resolve the matching reference and data metadata. |
+| Application ITM messages | `itm`; text needs a known port/protocol and encoding; port 0 output is unavailable. |
+| DWT performance counters or PMU overflows | `event` or `pmu`, as evidenced by the request/configuration. |
+| Decode failure, gaps, or capture completeness | CLI diagnostics and relevant `error`/`overflow` rows. |
+
+For an open-ended "what happened?", ask which aspect matters and use available
+metadata to suggest concrete choices. Missing feature/reference metadata does
+not prove that corresponding events are absent. Clarify "events" when it could
+mean all trace records, DWT counter events, or PMU events. Do not infer a unique
+goal from the presence of one enabled trace feature.
+
 Always request `--csv` explicitly. The
 [ctrace CLI specification](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#ctrace-utility)
 defines the option semantics; the selected executable must support them:
@@ -124,21 +144,24 @@ implicitly include `event`, `pmu`, or `pcsample`. `--all` means CSV plus CTF,
 not all event types; use `--csv` without a type filter when the user requests
 every event in CSV.
 
-Translate exceptions/interrupt transitions to `--type exception`, data trace to
-`--type dwt`, and PC sampling to `--type pcsample`. Clarify a vague request for
-"events": it can mean every trace event, DWT counter events (`event`), or PMU
-events (`pmu`). ITM port 0 console output is not part of ctrace payload output.
-
 Resolve processor names to formatted stream IDs only from unambiguous
 `ctrace-refs` associations in the selected `ctrace-run.yml`, not from names or
 copied setup IDs. For unformatted input, leave `--stream` unset or use `0`;
 do not translate a configured processor ID into a formatted selector.
 
+Resolve variable names and labels through matching `ctrace-refs` and setup
+metadata; see [CSV interpretation](references/csv-interpretation.md). Choose
+the narrowest native type/stream selection that retains the evidence needed
+for the question. If the resulting CSV fits the budgets, interpret the relevant
+records directly, even when the export also contains other comparators or times.
+This needs no extra confirmation when the question and metadata match uniquely.
+
 There are no CLI selectors for ITM port, DWT comparator, exception number,
 variable name, time range, address, PC, value, or maximum row count. Do not
 invent options or implement these selectors through shell/CSV post-filtering.
-Ask about a supported selection instead; a later interpretation of a small CSV
-must not be presented as an additional ctrace filter.
+State the actual export selection and distinguish it from the records used to
+answer the question. If the result is too large, follow the budget procedure;
+do not silently turn a whole-recording question into a claim from a preview.
 
 ## Isolate the filtered output
 
