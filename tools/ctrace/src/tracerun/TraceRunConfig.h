@@ -236,6 +236,7 @@ struct TraceRunTimestampSetup {
   std::optional<std::uint32_t> timestampPrescaler = std::nullopt;
   std::optional<std::string> clockError = std::nullopt;
   std::size_t line = 0U;
+  std::optional<std::string> prescalerError = std::nullopt;
 };
 
 /** @brief Stores size metadata copied from one DWT data setup. */

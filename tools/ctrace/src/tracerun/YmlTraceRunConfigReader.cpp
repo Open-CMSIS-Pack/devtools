@@ -411,6 +411,9 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
       }
     }
   }
+  if (!TraceRunSchema::isUsableReference(reference)) {
+    return reference;
+  }
   if (reference.type == "dwt") {
     reference.address = deferredReferenceUnsignedAttribute(
         path, element, "address", std::numeric_limits<std::uint64_t>::max(), reference.addressError);
@@ -473,12 +476,16 @@ static std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::stri
                                                    std::numeric_limits<std::uint64_t>::max(), timestamps.clockError);
   }
   if (childContainer(timestampsNode, "itm-prescaler")) {
-    fail(path, timestampsNode, configFieldMessage("timestamps.itm-prescaler", ConfigFieldProblem::ScalarUnsigned));
-  }
-  const auto prescaler =
-      optionalUnsignedAttribute(path, timestampsNode, "itm-prescaler", std::numeric_limits<std::uint32_t>::max());
-  if (prescaler.has_value()) {
-    timestamps.timestampPrescaler = static_cast<std::uint32_t>(*prescaler);
+    timestamps.prescalerError =
+        errorMessage(path, timestampsNode,
+                     configFieldMessage("timestamps.itm-prescaler", ConfigFieldProblem::ScalarUnsigned));
+  } else {
+    const auto prescaler = deferredUnsignedAttribute(path, timestampsNode, "itm-prescaler",
+                                                     std::numeric_limits<std::uint32_t>::max(),
+                                                     timestamps.prescalerError);
+    if (prescaler.has_value()) {
+      timestamps.timestampPrescaler = static_cast<std::uint32_t>(*prescaler);
+    }
   }
   return timestamps;
 }

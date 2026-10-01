@@ -182,9 +182,8 @@ static std::string configError(const TraceRunConfig& config, std::size_t line, c
 }
 
 /** @brief Preserves reader locations while locating programmatically supplied setup errors. */
-static std::string itmEnableError(const TraceRunConfig& config, const TraceRunSetup& setup)
+static std::string setupFieldError(const TraceRunConfig& config, std::size_t line, const std::string& error)
 {
-  const auto& error = *setup.itm->enableError;
   const auto pathLocation = config.path + ':';
   const auto lineLocation = config.path + '(';
   if (!config.path.empty() &&
@@ -192,7 +191,7 @@ static std::string itmEnableError(const TraceRunConfig& config, const TraceRunSe
        error.compare(0U, lineLocation.size(), lineLocation) == 0)) {
     return error;
   }
-  return configError(config, setup.line, error);
+  return configError(config, line, error);
 }
 
 /** @brief Merges one optional clock fragment without treating an absent scalar as a conflict. */
@@ -942,6 +941,9 @@ public:
     for (const auto* setup : setupFragments(route)) {
       if (setup->timestamps.has_value()) {
         const auto& timestamps = *setup->timestamps;
+        if (timestamps.prescalerError.has_value()) {
+          throw std::runtime_error(setupFieldError(m_config, timestamps.line, *timestamps.prescalerError));
+        }
         const auto candidatePrescaler =
             timestamps.timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
         if (!TraceRunSchema::isTimestampPrescaler(candidatePrescaler)) {
@@ -962,7 +964,7 @@ public:
       }
       if (setup->itm.has_value()) {
         if (setup->itm->enableError.has_value()) {
-          throw std::runtime_error(itmEnableError(m_config, *setup));
+          throw std::runtime_error(setupFieldError(m_config, setup->line, *setup->itm->enableError));
         }
         const auto candidateMask = setup->itm->enableMask;
         if (!candidateMask.has_value()) {
@@ -1268,6 +1270,10 @@ static void validateUnformattedSetups(const TraceRunConfig& config, const Proces
     if (!isSelectedUnformattedSetup(config, identity, setup)) {
       continue;
     }
+    if (setup.timestamps.has_value() && setup.timestamps->prescalerError.has_value()) {
+      throw std::runtime_error(
+          setupFieldError(config, setup.timestamps->line, *setup.timestamps->prescalerError));
+    }
     if (setup.timestamps.has_value() && setup.timestamps->timestampPrescaler.has_value() &&
         !TraceRunSchema::isTimestampPrescaler(*setup.timestamps->timestampPrescaler)) {
       throw std::runtime_error(
@@ -1277,7 +1283,7 @@ static void validateUnformattedSetups(const TraceRunConfig& config, const Proces
                           : formatMessage(MessageId::TimestampPrescalerRange)));
     }
     if (setup.itm.has_value() && setup.itm->enableError.has_value()) {
-      throw std::runtime_error(itmEnableError(config, setup));
+      throw std::runtime_error(setupFieldError(config, setup.line, *setup.itm->enableError));
     }
   }
 }
