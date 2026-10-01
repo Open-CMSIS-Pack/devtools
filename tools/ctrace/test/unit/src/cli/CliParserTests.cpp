@@ -90,6 +90,7 @@ TEST(CtraceUnitTests, testCliParserOutputOptions)
            "Filter output for specific streams (default: all)",
            "Specify a trace solution-set (default: all)",
            "Print version",
+           "Show detailed diagnostics and processing information",
        }) {
     ASSERT_TRUE(helpText.find(expected) != std::string::npos) << "CliParser help text differs from the specification";
   }
@@ -101,6 +102,31 @@ TEST(CtraceUnitTests, testCliParserOutputOptions)
   ASSERT_TRUE(trailingTraceDirectory.selection.types == std::vector<std::string>({"dwt", "itm"}) &&
               trailingTraceDirectory.selection.streams == std::vector<std::uint8_t>({1U, 2U}))
       << "CliParser trailing trace directory must preserve selector values";
+}
+
+TEST(CtraceUnitTests, testCliParserVerboseDoesNotChangeVersionOrOutputSelection)
+{
+  EXPECT_FALSE(parseAndValidate({"ctrace", ".trace"}).verbose);
+  EXPECT_FALSE(parseAndValidate({"ctrace", ".trace", "--verbose=false"}).verbose);
+  EXPECT_TRUE(parseAndValidate({"ctrace", ".trace", "--verbose=true"}).verbose);
+  const auto verbose = parseAndValidate({"ctrace", ".trace", "--verbose", "--csv"});
+  EXPECT_TRUE(verbose.verbose);
+  EXPECT_FALSE(verbose.version);
+  EXPECT_EQ(verbose.outputFormat, OutputFormat::Csv);
+  const auto shortVerbose = parseAndValidate({"ctrace", ".trace", "-v"});
+  EXPECT_TRUE(shortVerbose.verbose);
+  EXPECT_FALSE(shortVerbose.version);
+  const auto version = parseAndValidate({"ctrace", "-V"});
+  EXPECT_TRUE(version.version);
+  EXPECT_FALSE(version.verbose);
+  const auto both = parseAndValidate({"ctrace", "-v", "-V"});
+  EXPECT_TRUE(both.verbose);
+  EXPECT_TRUE(both.version);
+  const auto filtered = parseAndValidate({"ctrace", ".trace", "--type", "itm", "--verbose", "--stream", "7"});
+  EXPECT_TRUE(filtered.verbose);
+  EXPECT_EQ(filtered.selection.types, std::vector<std::string>{"itm"});
+  EXPECT_EQ(filtered.selection.streams, std::vector<std::uint8_t>{7U});
+  EXPECT_NE(CliParser::helpString().find("--verbose"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCliParserRejectsInvalidSelections)

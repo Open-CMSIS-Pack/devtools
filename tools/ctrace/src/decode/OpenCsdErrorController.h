@@ -68,8 +68,8 @@ public:
   static TraceIssueCode issueCode(const Decision& decision);
   /** @brief Formats an OpenCSD API setup failure. */
   static std::string describeApiError(ocsd_err_t code, const std::string& message);
-  /** @brief Formats the user-facing summary for a decoder decision. */
-  static std::string describeSummary(const Decision& decision);
+  /** @brief Retains native classification and detail until a consumer selects a message style. */
+  static TraceMessage diagnosticMessage(const Decision& decision);
 
   /** @brief Captures an OpenCSD callback while preserving default logging behavior. */
   void LogError(ocsd_hndl_err_log_t handle, const ocsdError* error) override;

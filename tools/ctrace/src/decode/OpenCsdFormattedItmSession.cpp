@@ -253,15 +253,15 @@ std::vector<TraceRouteIdentity>
 OpenCsdFormattedItmSession::validateRoutes(std::vector<TraceRouteIdentity>&& routes)
 {
   if (routes.empty()) {
-    throw OpenCsdItmSessionError("formatted OpenCSD ITM session requires at least one route");
+    throw OpenCsdItmSessionError(TraceSetupFailure{TraceSetupOperation::EmptyFormattedRoutes});
   }
   std::array<bool, 128U> configured{};
   for (const auto& route : routes) {
     if (!route.traceBusId.has_value() || !CoreSight::isAtbTraceId(*route.traceBusId)) {
-      throw OpenCsdItmSessionError("formatted OpenCSD ITM route requires a Trace Bus ID between 1 and 111");
+      throw OpenCsdItmSessionError(TraceSetupFailure{TraceSetupOperation::InvalidFormattedRoute});
     }
     if (configured[*route.traceBusId]) {
-      throw OpenCsdItmSessionError("formatted OpenCSD ITM routes require unique Trace Bus IDs");
+      throw OpenCsdItmSessionError(TraceSetupFailure{TraceSetupOperation::DuplicateFormattedRoute});
     }
     configured[*route.traceBusId] = true;
   }

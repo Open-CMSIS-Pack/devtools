@@ -7,8 +7,10 @@
 
 #include "DecodeConsumers.h"
 
+#include "DiagnosticMessages.h"
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 #include "TraceOutput.h"
 #include "TraceOutputLifecycle.h"
 #include "TraceRoute.h"
@@ -58,7 +60,13 @@ void DecodeConsumers::appendByteSkip(const TraceByteSkip& skipped)
   if (skipped.traceId.has_value()) {
     context.emplace_back("stream", std::to_string(*skipped.traceId));
   }
-  m_diagnostics.report({DiagnosticSink::Severity::Info, traceByteSkipMessage(skipped), std::move(context)});
+  DiagnosticSink::Event diagnostic{DiagnosticSink::Severity::Info,
+                                   formatTraceMessage(skipped, TraceMessageStyle::Compact), std::move(context)};
+  diagnostic.detailedMessage = formatTraceMessage(skipped, TraceMessageStyle::Detailed);
+  diagnostic.rawLocation = RawDiagnosticLocation{};
+  diagnostic.rawLocation->offset = skipped.formatterOffset;
+  diagnostic.rawLocation->kind = RawDiagnosticLocation::Kind::FormatterGroup;
+  m_diagnostics.report(diagnostic);
 }
 
 void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
@@ -81,12 +89,15 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
     context.emplace_back("stream", std::to_string(*event.route.traceBusId));
   }
   context.emplace_back("channel", std::to_string(software->channel));
-  context.emplace_back("enable", hexMask(streamMask->second));
-  m_diagnostics.report({
+  DiagnosticSink::Event diagnostic{
       DiagnosticSink::Severity::Warning,
-      "ITM data was received on a channel not enabled by ctrace-setup.itm.enable",
+      formatMessage(MessageId::ItmDisabledChannel),
       std::move(context),
-  });
+  };
+  diagnostic.detailedContext.emplace_back("enable", hexMask(streamMask->second));
+  diagnostic.rawLocation = RawDiagnosticLocation{};
+  diagnostic.rawLocation->offset = event.index;
+  m_diagnostics.report(diagnostic);
 }
 
 std::uint64_t DecodeConsumers::eventCount() const

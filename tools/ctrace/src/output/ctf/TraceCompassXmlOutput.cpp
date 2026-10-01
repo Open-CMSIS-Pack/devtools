@@ -7,6 +7,7 @@
 
 #include "TraceCompassXmlOutput.h"
 
+#include "DiagnosticMessages.h"
 #include "CtfMetadataModel.h"
 #include "DiagnosticSink.h"
 #include "OutputPath.h"
@@ -26,11 +27,10 @@ static void validateXmlTarget(const std::filesystem::path& path)
   std::error_code error;
   const auto status = std::filesystem::symlink_status(path, error);
   if (error && error != std::errc::no_such_file_or_directory) {
-    throw std::runtime_error("Failed to inspect existing Trace Compass XML " + path.string() + ": " + error.message());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::XmlInspect, path.string(), error.message()));
   }
   if (!error && std::filesystem::is_directory(status)) {
-    throw std::runtime_error("Refusing to replace Trace Compass XML because the target is a directory: " +
-                             path.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::XmlRefuseDirectory, path.string()));
   }
 }
 
@@ -40,7 +40,7 @@ static void removeXmlFile(const std::filesystem::path& path)
   std::error_code error;
   std::filesystem::remove(path, error);
   if (error) {
-    throw std::runtime_error("Failed to remove existing Trace Compass XML " + path.string() + ": " + error.message());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::XmlRemove, path.string(), error.message()));
   }
 }
 
@@ -69,7 +69,7 @@ static std::vector<TraceCompassXmlWriter::ViewRoute> viewRoutes(std::string_view
       continue;
     }
     if (!clock.uuid.has_value()) {
-      throw std::invalid_argument("Trace Compass XML requires an explicit clock UUID for input " + std::string(channel));
+      throw std::invalid_argument(pathDiagnosticMessage(PathDiagnosticCode::XmlClockUuidMissing, channel));
     }
     auto label = std::string(channel);
     if (stream.processorName.has_value() && !stream.processorName->empty()) {
@@ -106,7 +106,7 @@ void TraceCompassXmlOutput::add(std::string_view channel, const CtfMetadataModel
   if (clocks.size() != 1U) {
     m_diagnostics.report({
         DiagnosticSink::Severity::Warning,
-        "Trace Compass XML views were not generated for this input because emitted CTF streams use multiple clock domains",
+        formatMessage(MessageId::XmlMultipleClockDomains),
         {{"backend", "ctf"}, {"path", m_path.string()}, {"inputChannel", std::string(channel)},
          {"clockDomains", std::to_string(clocks.size())}},
     });
@@ -118,8 +118,7 @@ void TraceCompassXmlOutput::add(std::string_view channel, const CtfMetadataModel
     return;
   }
   if (!m_clockUuids.insert(routes.front().clockUuid).second) {
-    throw std::invalid_argument("Trace Compass XML requires independent clock UUIDs for separate inputs: " +
-                                 std::string(channel));
+    throw std::invalid_argument(pathDiagnosticMessage(PathDiagnosticCode::XmlClockUuidShared, channel));
   }
   m_routes.insert(m_routes.end(), std::make_move_iterator(routes.begin()), std::make_move_iterator(routes.end()));
 }

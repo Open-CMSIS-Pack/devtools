@@ -7,7 +7,9 @@
 
 #include "CsvRowMapper.h"
 
+#include "CsvField.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 #include "TraceSelection.h"
 
 #include <algorithm>
@@ -64,24 +66,6 @@ static std::size_t column(CsvColumn value)
   return static_cast<std::size_t>(value);
 }
 
-/** @brief Applies RFC-style quoting to one CSV field when required. */
-static std::string escapeCsvField(const std::string& value)
-{
-  if (value.find_first_of("\",\r\n") == std::string::npos) {
-    return value;
-  }
-  std::string escaped = "\"";
-  for (const auto ch : value) {
-    if (ch == '"') {
-      escaped += "\"\"";
-    } else {
-      escaped += ch;
-    }
-  }
-  escaped += "\"";
-  return escaped;
-}
-
 /** @brief Joins escaped fields into one CSV row. */
 static std::string renderCsvRow(const CsvRow& fields)
 {
@@ -90,7 +74,7 @@ static std::string renderCsvRow(const CsvRow& fields)
     if (index != 0U) {
       out << ",";
     }
-    out << escapeCsvField(fields[index]);
+    out << Csv::escapeField(fields[index]);
   }
   return out.str();
 }
@@ -214,9 +198,7 @@ static void writePayloadColumns(CsvRow& row, const GlobalTimestampTraceEvent& ev
 /** @brief Writes one overflow diagnostic to the CSV note column. */
 static void writePayloadColumns(CsvRow& row, const OverflowTraceEvent& event)
 {
-  row[column(CsvColumn::Note)] = event.message.empty()
-                                     ? "overflow: new timestamp segment; time across boundary may be unreliable"
-                                     : event.message;
+  row[column(CsvColumn::Note)] = formatTraceMessage(event, TraceMessageStyle::Compact);
 }
 
 /** @brief Leaves synchronization control packets without payload-specific CSV columns. */
@@ -224,10 +206,9 @@ static void writePayloadColumns(CsvRow&, const SyncTraceEvent&)
 {
 }
 
-/** @brief Writes one retained decoder issue to the CSV note column. */
-static void writePayloadColumns(CsvRow& row, const TraceIssueEvent& event)
+/** @brief Defers issue text until the enclosing event supplies its raw position. */
+static void writePayloadColumns(CsvRow&, const TraceIssueEvent&)
 {
-  row[column(CsvColumn::Note)] = event.message;
 }
 
 /** @brief Maps one semantic trace event to all CSV columns. */
@@ -245,6 +226,9 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
   }
 
   std::visit([&row](const auto& payload) { writePayloadColumns(row, payload); }, event.payload);
+  if (const auto* issue = traceEventPayload<TraceIssueEvent>(event)) {
+    row[column(CsvColumn::Note)] = formatTraceIssue(*issue, event.index, TraceMessageStyle::Compact);
+  }
 
   return row;
 }
@@ -266,7 +250,7 @@ std::string CsvRowMapper::byteSkipRow(const TraceByteSkip& skipped)
     row[column(CsvColumn::Stream)] = std::to_string(*skipped.traceId);
   }
   row[column(CsvColumn::Type)] = "info";
-  row[column(CsvColumn::Note)] = traceByteSkipMessage(skipped);
+  row[column(CsvColumn::Note)] = formatTraceMessage(skipped, TraceMessageStyle::Compact);
   return renderCsvRow(row);
 }
 
@@ -274,6 +258,6 @@ std::string CsvRowMapper::decodeAbortRow(const TraceDecodeAbort& failure)
 {
   CsvRow row{};
   row[column(CsvColumn::Type)] = "error";
-  row[column(CsvColumn::Note)] = traceDecodeAbortMessage(failure);
+  row[column(CsvColumn::Note)] = formatTraceMessage(failure, TraceMessageStyle::Compact);
   return renderCsvRow(row);
 }

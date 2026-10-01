@@ -134,12 +134,13 @@ configuration with trace communication, separate from trace-source setup.
   Type and stream filters affect output, not decoding or diagnostic reporting. The seventh CSV column is `address`,
   matching the published CMSIS-Toolbox
   [CSV schema](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#csv-format).
-- Byte-skip annotations are retained in CSV regardless of `--type` or `--stream`: `type` is `info`, `note` describes
-  the reason, byte count, and formatter-group offset, and `stream` is the observed formatter ID when known, including
+- Byte-skip annotations are retained in CSV regardless of `--type` or `--stream`: `type` is `info`, `note` contains
+  `N bytes skipped: reason`, and `stream` is the observed formatter ID when known, including
   `0` or `127`. All other fields are empty. `info` is an input annotation, not a new CLI type selector. No annotation
   may be represented as a hardware `SYNC`, assigned to a synthetic route, or given an invented time. CTF ignores
-  these annotations, so the accounting is CLI/CSV-only. Missing sync at end of input remains a separate route-bound
-  Error that always reaches CLI and contributes to command failure, while its CSV row follows ordinary output
+  these annotations, so the accounting is CLI/CSV-only. The first formatter-group offset is available with `--verbose`.
+  Missing sync at end of input remains a separate route-bound Error that always reaches CLI and contributes to
+  command failure, while its CSV row follows ordinary output
   filters; it does not repeat the counted bytes as another loss record.
 - PC sampling distinguishes four-byte PC values from the one-byte `0x00` (`CPU Sleeping`) and Armv8-M `0xff`
   (`Trace prohibited`) status markers. CSV leaves `pc` empty for both markers and writes their meaning in `note`;
@@ -177,13 +178,24 @@ configuration with trace communication, separate from trace-source setup.
   published CSV schema defines no `warning` type or severity column. A recoverable protocol error may be published
   with selected route-bound error/data-loss events even though its Error diagnostic makes the invocation fail.
 - A fatal OpenCSD decode abort preserves already committed CSV rows and appends one input-wide `type=error` record
-  with `note` set to `decode aborted after processing N input bytes; trace is incomplete: reason`. All other fields
-  are empty. This global marker bypasses both type and stream filters; ordinary route-bound errors do not. Partial
+  whose `note` starts with `Decode aborted; trace incomplete`, followed by a compact structured cause when available.
+  Normal CLI uses the same text; `--verbose` adds the processed-byte count and full abort reason. All other CSV fields
+  are empty.
+  This global marker bypasses both type and stream filters; ordinary route-bound errors do not. Partial
   CTF artifacts are removed and contribute no XML views. This retention and global-marker policy is an explicit
   ctrace contract, not a
   requirement of the published CSV specification. Failures before CSV startup create no CSV; CSV write or close
   failures still remove the unreliable file.
-- Structured diagnostic impact determines command failure; formatted stderr text does not.
+- Structured diagnostic impact determines command failure; formatted stderr text and visibility do not.
+- Ctrace-owned diagnostic templates share one central message catalog. Typed records preserve trace parameters
+  until CLI or CSV rendering. Normal CLI uses the same compact trace text as CSV: what happened, its cause and
+  meaningful counts. Raw positions/ranges, cycle intervals, native codes and packet details appear only with
+  `--verbose` / `-v`. Recovery-span lengths describe raw bytes affected, not skipped payload. Overflow summaries stay
+  aggregated per route; the compact summary omits the first timestamp. Foreign text remains opaque and is never
+  parsed to reconstruct parameters. Operational messages remain CLI-only; the catalog does not create new CSV event types.
+- Verbosity affects only stderr presentation. CSV/CTF content, event selection, failure counts and exit status are
+  unchanged. Selected configuration, metadata, prescalers and run statistics are verbose-only Info. Byte-skip Info,
+  warnings and errors remain normally visible, with input/stream attribution and actionable file/field/cause details.
 - Target XML is prepared before processing the target's inputs and finalized after all have been attempted. It uses
   only CTF metadata successfully finalized in that invocation, never stale bundles discovered on disk. Recoverable
   decoder errors do not exclude an otherwise completed bundle. An XML failure does not remove completed CTF or CSV;

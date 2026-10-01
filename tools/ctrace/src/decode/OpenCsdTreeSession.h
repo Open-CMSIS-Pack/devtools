@@ -8,6 +8,8 @@
 #ifndef CTRACE_SRC_DECODE_OPENCSDTREESESSION_H
 #define CTRACE_SRC_DECODE_OPENCSDTREESESSION_H
 
+#include "TraceMessages.h"
+
 #include "opencsd/ocsd_if_types.h"
 
 #include <cstdint>
@@ -26,8 +28,18 @@ class ITrcTypedBase;
 /** @brief Reports an OpenCSD tree-session creation or API failure. */
 class OpenCsdTreeSessionError final : public std::runtime_error {
 public:
-  /** @brief Inherits standard runtime-error construction. */
-  using std::runtime_error::runtime_error;
+  /** @brief Retains a setup operation or foreign detail alongside its detailed exception text. */
+  explicit OpenCsdTreeSessionError(TraceMessage message)
+    : std::runtime_error(formatTraceMessage(message, TraceMessageStyle::Detailed)),
+      m_message(std::move(message))
+  {
+  }
+
+  /** @brief Returns the structured setup failure for the decoder's initialization diagnostic. */
+  const TraceMessage& message() const noexcept { return m_message; }
+
+private:
+  TraceMessage m_message;
 };
 
 /** @brief Validates pointers and results returned by OpenCSD session setup APIs. */
@@ -36,17 +48,17 @@ public:
   /**
    * @brief Rejects a null OpenCSD API object with a session error.
    * @param object Required external API object.
-   * @param message Failure text used when object is null.
+   * @param operation Catalogued setup operation used when object is null.
    * @throws OpenCsdTreeSessionError If object is null.
    */
-  static void requireObject(const void* object, const char* message);
+  static void requireObject(const void* object, TraceSetupOperation operation);
   /**
    * @brief Rejects an unsuccessful OpenCSD API result with a session error.
    * @param error OpenCSD result to validate.
-   * @param message Failure text used for an error result.
+   * @param operation Catalogued setup operation retained alongside native failure detail.
    * @throws OpenCsdTreeSessionError If error does not report success.
    */
-  static void requireSuccess(ocsd_err_t error, const char* message);
+  static void requireSuccess(ocsd_err_t error, TraceSetupOperation operation);
 
 private:
   /** @brief Prevents construction of this stateless validation utility. */

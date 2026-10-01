@@ -122,10 +122,6 @@ inline constexpr std::array<ValueVariant, 7U> ValueVariants{{
     {ValueTag::Float32, "f32", "double", 4U, true, false},
 }};
 
-inline constexpr std::string_view ValueTypeRequirements =
-    "supported data-type values are 'unsigned', 'signed', and 'float'; "
-    "size must be 1, 2, or 4, and float requires size 4";
-
 /** @brief Returns the schema descriptor for a value tag. */
 constexpr const ValueVariant& valueVariant(ValueTag tag)
 {

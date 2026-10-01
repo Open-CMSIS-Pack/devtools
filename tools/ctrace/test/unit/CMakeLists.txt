@@ -39,7 +39,11 @@ add_executable(CtraceUnitTests
   src/decode/OpenCsdPacketCollectorTests.cpp
   src/decode/OpenCsdTreeSessionTests.cpp
   src/diagnostics/DiagnosticsTests.cpp
+  src/diagnostics/RawDiagnosticSinkTests.cpp
   src/model/TraceSelectionTests.cpp
+  src/model/DiagnosticMessagesTests.cpp
+  src/model/MessagesTests.cpp
+  src/model/TraceMessagesTests.cpp
   src/output/OutputRequirementsTests.cpp
   src/output/TraceOutputLifecycleTests.cpp
   src/output/csv/CsvFileOutputTests.cpp

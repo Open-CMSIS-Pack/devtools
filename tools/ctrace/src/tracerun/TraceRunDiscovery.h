@@ -45,6 +45,8 @@ public:
   const std::filesystem::path& path() const noexcept;
   /** @brief Returns the effective byte format of this input. */
   TraceRunFormat format() const noexcept;
+  /** @brief Returns the byte size measured on the preflighted input handle. */
+  std::uint64_t size() const noexcept;
   /** @brief Returns the normalized trace-run metadata and routes. */
   const CtraceRunMeta& metadata() const noexcept;
 
@@ -58,12 +60,13 @@ private:
 
   /** @brief Creates one descriptor after successful selection and preflight. */
   TraceRunInputDescriptor(std::filesystem::path path, TraceRunFormat format, CtraceRunMeta metadata,
-                          std::ifstream stream);
+                          std::ifstream stream, std::uint64_t size);
 
   std::filesystem::path m_path;
   TraceRunFormat m_format = TraceRunFormat::Unformatted;
   CtraceRunMeta m_metadata;
   std::ifstream m_stream;
+  std::uint64_t m_size;
 };
 
 /** @brief Receives recognized raw inputs excluded from the active selection contract. */

@@ -7,6 +7,7 @@
 
 #include "OutputRequirements.h"
 
+#include "DiagnosticMessages.h"
 #include "CtraceRunMeta.h"
 #include "ctf/CtfMetadataModel.h"
 #include "ctf/CtfSchema.h"
@@ -40,7 +41,7 @@ static OutputPaths outputPaths(const std::filesystem::path& rawInputPath)
   const auto captureName = rawInputPath.filename().stem();
   const auto solutionSetName = captureName.stem();
   if (captureName.empty() || solutionSetName.empty()) {
-    throw std::runtime_error("cannot derive trace artifact names from " + rawInputPath.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::ArtifactNamesInvalid, rawInputPath.string()));
   }
   const auto outputDirectory = rawInputPath.parent_path();
   auto csvPath = outputDirectory / captureName;
@@ -137,7 +138,7 @@ static bool validateCtfSourceIdentity(const CtraceRunMeta& ctraceRunMeta, const 
       context.emplace_back("firstProcessor", first.processorName.value_or("<unspecified>"));
       context.emplace_back("otherProcessor", source.processorName.value_or("<unspecified>"));
       reportRequirementError(diagnostics,
-                             "CTF metadata cannot describe conflicting active metadata for one route/type/source key",
+                             formatMessage(MessageId::CtfConflictingSourceMetadata),
                              std::move(context));
     }
   }
@@ -176,14 +177,15 @@ resolveCtfTopology(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& sel
     if (route->timestampClockError.has_value()) {
       valid = false;
       context.emplace_back("error", *route->timestampClockError);
-      reportRequirementError(diagnostics, "CTF output cannot use the configured timestamps.clock", std::move(context));
+      reportRequirementError(diagnostics, formatMessage(MessageId::CtfConfiguredClockInvalid),
+                             std::move(context));
     } else if (!route->timestampClockHz.has_value()) {
       valid = false;
-      reportRequirementError(diagnostics, "CTF output requires timestamps.clock; no default is assumed",
+      reportRequirementError(diagnostics, formatMessage(MessageId::CtfClockRequired),
                              std::move(context));
     } else if (*route->timestampClockHz == 0U) {
       valid = false;
-      reportRequirementError(diagnostics, "CTF output requires timestamps.clock to be greater than zero",
+      reportRequirementError(diagnostics, formatMessage(MessageId::CtfClockPositive),
                              std::move(context));
     }
   }
@@ -212,7 +214,7 @@ resolveCtfTopology(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& sel
 
 /** @brief Reports one deferred trace-run field error for a selected DWT source. */
 static bool reportCtfDwtFieldError(const CtraceRunMeta& ctraceRunMeta, const CtraceRunSourceMeta& source,
-                                   const std::optional<std::string>& error, const char* message,
+                                   const std::optional<std::string>& error, const std::string& message,
                                    DiagnosticSink& diagnostics)
 {
   if (!error.has_value()) {
@@ -230,15 +232,15 @@ static bool validateCtfDwtParsedMetadata(const CtraceRunMeta& ctraceRunMeta, con
 {
   bool valid = true;
   if (reportCtfDwtFieldError(ctraceRunMeta, source, source.addressError,
-                             "CTF output cannot use the configured ctrace-run address", diagnostics)) {
+                             formatMessage(MessageId::CtfConfiguredAddressInvalid), diagnostics)) {
     valid = false;
   }
   if (reportCtfDwtFieldError(ctraceRunMeta, source, source.dataTypeError,
-                             "CTF output cannot use the configured ctrace-run data-type", diagnostics)) {
+                             formatMessage(MessageId::CtfConfiguredDataTypeInvalid), diagnostics)) {
     valid = false;
   }
   if (reportCtfDwtFieldError(ctraceRunMeta, source, source.dataSizeError,
-                             "CTF output cannot use the configured ctrace-run size", diagnostics)) {
+                             formatMessage(MessageId::CtfConfiguredSizeInvalid), diagnostics)) {
     valid = false;
   }
   return valid;
@@ -251,7 +253,7 @@ static bool validateCtfDwtShape(const CtraceRunMeta& ctraceRunMeta, const Ctrace
   bool valid = true;
   if (source.source > 3U) {
     valid = false;
-    reportRequirementError(diagnostics, "CTF output requires DWT comparator sources between 0 and 3",
+    reportRequirementError(diagnostics, formatMessage(MessageId::CtfComparatorRange),
                            routeContext("ctf", ctraceRunMeta, source));
   }
 
@@ -262,8 +264,7 @@ static bool validateCtfDwtShape(const CtraceRunMeta& ctraceRunMeta, const Ctrace
     auto context = routeContext("ctf", ctraceRunMeta, source);
     context.emplace_back("dataType", source.dataType);
     reportRequirementError(diagnostics,
-                           "CTF output cannot use ctrace-run data-type '" + source.dataType + "'; " +
-                               std::string(CtfSchema::ValueTypeRequirements),
+                           ctfDataTypeMessage(source.dataType),
                            std::move(context));
   }
   if (!TraceRunSchema::isDwtDataSize(source.dataSize) || (validType && valueVariant == nullptr)) {
@@ -272,9 +273,7 @@ static bool validateCtfDwtShape(const CtraceRunMeta& ctraceRunMeta, const Ctrace
     context.emplace_back("dataType", source.dataType);
     context.emplace_back("dataSize", std::to_string(source.dataSize));
     reportRequirementError(diagnostics,
-                           "CTF output cannot use ctrace-run size " + std::to_string(source.dataSize) +
-                               " with data-type '" + source.dataType + "'; " +
-                               std::string(CtfSchema::ValueTypeRequirements),
+                           ctfDataSizeMessage(source.dataSize, source.dataType),
                            std::move(context));
   }
   return valid;
@@ -296,7 +295,7 @@ static bool validateCtfDwtAddressRange(const CtraceRunMeta& ctraceRunMeta, const
   auto context = routeContext("ctf", ctraceRunMeta, source);
   context.emplace_back("address", std::to_string(*source.address));
   context.emplace_back("dataSize", std::to_string(source.dataSize));
-  reportRequirementError(diagnostics, "CTF output cannot represent the configured DWT address range",
+  reportRequirementError(diagnostics, formatMessage(MessageId::CtfAddressRangeInvalid),
                          std::move(context));
   return false;
 }

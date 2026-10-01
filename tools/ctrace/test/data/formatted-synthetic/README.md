@@ -27,7 +27,7 @@ The deterministic generated capture has these properties:
 - generated raw SHA-256:
   `e8a62ad20f048385fde894ed1b869bdfb402feabf8a5e4d88283334a92674847`;
 - trace-run SHA-256:
-  `a8370d26cd2f75264fc4f48fcdbf5fa2c9e1404c80a61c898dd30de8a44b91c6`.
+  `7a4980237b850f471e80b5a30ff7076095514ce6f94e7171b4506d8e6d305047`.
 
 ## Routes
 

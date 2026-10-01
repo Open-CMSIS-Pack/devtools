@@ -7,6 +7,7 @@
 
 #include "OutputPath.h"
 
+#include "DiagnosticMessages.h"
 #include <stdexcept>
 #include <string>
 #include <system_error>
@@ -16,7 +17,7 @@ void OutputPath::requireSpecificTarget(const std::filesystem::path& path, const 
   const auto normalized = path.lexically_normal();
   if (path.empty() || normalized == normalized.root_path() || normalized.filename().empty() ||
       normalized.filename() == "." || normalized.filename() == "..") {
-    throw std::invalid_argument(std::string(description) + " must identify a specific output path");
+    throw std::invalid_argument(specificOutputTargetMessage(description));
   }
 }
 
@@ -29,7 +30,7 @@ void OutputPath::validateParent(const std::filesystem::path& path, const char* d
     const auto status = std::filesystem::status(parent);
     if (std::filesystem::exists(status)) {
       if (!std::filesystem::is_directory(status)) {
-        throw std::runtime_error(std::string(description) + " parent is not a directory: " + parent.string());
+        throw std::runtime_error(outputParentMessage(description, parent.string()));
       }
       return;
     }

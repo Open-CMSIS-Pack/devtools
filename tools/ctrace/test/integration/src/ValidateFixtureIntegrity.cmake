@@ -31,7 +31,7 @@ endfunction()
 set(fixture_entries
   "Arm-reset/Arm.SWO.raw|8c7ba2b90e42188517c7b793e8b7dd4030fa5455b7a38a2de15d8ca2b47995c9|131071"
   "Arm-reset/Arm.ctrace-run.yml|56ad6c463f4388338305218474bfee3a69201bf1b94a0391ba8ccc06d79889fb|691"
-  "Blinky+Arm/Blinky+Arm.SWO.csv|9951a4d21680b51640c32f0ca82abf0d97b09072060883e1db569a2513647a49|21533"
+  "Blinky+Arm/Blinky+Arm.SWO.csv|2995f6406ba0c7b6ab27a32a86dc6b1f4bff8d39b66744575c47b7893cef5a06|21168"
   "Blinky+Arm/Blinky+Arm.SWO.raw|f2de14241242697fa0948f1878850cce81575c404233c5c135aa68fc582dc72c|12288"
   "Blinky+Arm/Blinky+Arm.TB.raw|b0fccabe1a326ffe9fadf12d5c3a205d87628985e5e75a99da23c97d7f33d13b|4096"
   "Blinky+Arm/Blinky+Arm.ctrace-run.yml|f15a4a11c382c66ebc371dd8cd826187daed1995ff41a7430247e065d0790bb2|1149"

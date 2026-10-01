@@ -11,11 +11,11 @@
 #include "OpenCsdTraceElement.h"
 #include "SaturatingArithmetic.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 
 #include <cstdint>
 #include <iterator>
 #include <optional>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -115,9 +115,7 @@ void CortexMPostDecoder::appendOverflow(const OpenCsdTraceElement& element)
 {
   const auto status = markDiscontinuity();
 
-  auto event = makeEvent(element.sourceIndex, OverflowTraceEvent{
-      "overflow: new timestamp segment; time across boundary may be unreliable",
-  });
+  auto event = makeEvent(element.sourceIndex, OverflowTraceEvent{});
   event.tcyc = m_timelineKnown ? std::optional<std::uint64_t>(m_currentTcyc) : std::nullopt;
   event.quality = status;
   emitEvent(event);
@@ -139,7 +137,7 @@ void CortexMPostDecoder::appendDiscontinuity(const OpenCsdTraceElement& element)
 
   queueDiscontinuityIssue(element.sourceIndex, status, element.issueCode.value_or(TraceIssueCode::DataLoss),
                           element.errorMessage.empty()
-                              ? "data loss/resync boundary; timestamps across this point may not match"
+                              ? TraceMessage{TraceRecovery{TraceRecoveryKind::Generic}}
                               : element.errorMessage,
                           element.rawBytesConsumed);
 }
@@ -239,7 +237,7 @@ void CortexMPostDecoder::appendPendingEvents(std::vector<TraceEvent> events)
 }
 
 void CortexMPostDecoder::queueDiscontinuityIssue(std::uint64_t sourceIndex, const TraceQuality& quality,
-                                                 TraceIssueCode issueCode, const std::string& message,
+                                                 TraceIssueCode issueCode, const TraceMessage& message,
                                                  std::optional<std::uint64_t> rawBytesConsumed)
 {
   auto event = makeEvent(sourceIndex, TraceIssueEvent{
@@ -261,8 +259,7 @@ void CortexMPostDecoder::finalizePendingDiscontinuityIssues(std::optional<std::u
     if (issue == nullptr || !issue->lastValidTcyc.has_value()) {
       continue;
     }
-    issue->message += "; timestamp " + std::to_string(*issue->lastValidTcyc) + " .. " +
-                      (firstResumedTcyc.has_value() ? std::to_string(*firstResumedTcyc) : "unknown") + ".";
+    issue->message.timestampRange = TraceTimestampRange{*issue->lastValidTcyc, firstResumedTcyc};
   }
 }
 

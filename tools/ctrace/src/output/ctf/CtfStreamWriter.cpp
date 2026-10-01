@@ -7,6 +7,7 @@
 
 #include "CtfStreamWriter.h"
 
+#include "DiagnosticMessages.h"
 #include "CtfMetadataModel.h"
 #include "CtfSchema.h"
 #include "CtfUuid.h"
@@ -36,7 +37,7 @@ CtfStreamWriter::Record::Record(std::vector<std::uint8_t>& buffer, std::size_t o
 void CtfStreamWriter::Record::requireSpace(std::size_t size) const
 {
   if (size > m_endOffset - m_offset) {
-    throw std::logic_error("CTF record payload exceeds its declared size");
+    throw std::logic_error(formatMessage(MessageId::CtfPayloadExceedsSize));
   }
 }
 
@@ -90,7 +91,7 @@ void CtfStreamWriter::open(const std::filesystem::path& filePath, CtfStreamClass
   m_file.open(m_filePath, std::ios::binary | std::ios::out | std::ios::trunc);
   if (!m_file) {
     abort();
-    throw std::runtime_error("Failed to open CTF stream " + filePath.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CtfStreamOpen, filePath.string()));
   }
   m_open = true;
 }
@@ -105,7 +106,8 @@ void CtfStreamWriter::close()
   m_open = false;
   m_packetBuffer.clear();
   if (!m_file) {
-    throw std::runtime_error("Failed to write CTF stream in " + m_filePath.parent_path().string());
+    throw std::runtime_error(
+        pathDiagnosticMessage(PathDiagnosticCode::CtfStreamWrite, m_filePath.parent_path().string()));
   }
 }
 
@@ -128,7 +130,7 @@ void CtfStreamWriter::writeRecord(std::uint32_t eventId, std::uint64_t timestamp
   const auto routeContextSize = m_eventContextLayout == EventContextLayout::RouteLabeled ? kRouteLabelContextSize : 0U;
   const auto totalSize = kEventPrefixSize + routeContextSize + payloadSize;
   if (totalSize > kPacketSizeBytes - kPacketOverhead) {
-    throw std::invalid_argument("CTF record does not fit into a packet");
+    throw std::invalid_argument(formatMessage(MessageId::CtfRecordTooLarge));
   }
   if (m_contentOffset + totalSize > kPacketSizeBytes) {
     flushPacket();
@@ -145,7 +147,7 @@ void CtfStreamWriter::writeRecord(std::uint32_t eventId, std::uint64_t timestamp
   }
   writePayload(record);
   if (record.m_offset != recordEnd) {
-    throw std::logic_error("CTF record payload is shorter than its declared size");
+    throw std::logic_error(formatMessage(MessageId::CtfPayloadShorterThanSize));
   }
 
   m_contentOffset = recordEnd;

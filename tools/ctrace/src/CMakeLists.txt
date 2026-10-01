@@ -4,7 +4,11 @@
 
 set(CTRACE_MODEL_HEADER_FILES
   model/CoreSightFormatter.h
+  model/DiagnosticMessages.h
+  model/MessageCatalog.inc
+  model/Messages.h
   model/TraceEvent.h
+  model/TraceMessages.h
   model/TraceRoute.h
   model/TraceSelection.h
   model/TraceStreamId.h
@@ -22,6 +26,8 @@ set(CTRACE_TRACE_RUN_HEADER_FILES
 )
 set(CTRACE_DIAGNOSTICS_HEADER_FILES
   diagnostics/DiagnosticSink.h
+  diagnostics/RawDiagnosticLocation.h
+  diagnostics/RawDiagnosticSink.h
   diagnostics/TraceIssueReporter.h
 )
 set(CTRACE_DECODE_HEADER_FILES
@@ -44,6 +50,7 @@ set(CTRACE_OUTPUT_HEADER_FILES
   output/TraceOutput.h
   output/TraceOutputConfig.h
   output/TraceOutputLifecycle.h
+  output/csv/CsvField.h
   output/csv/CsvFileOutput.h
   output/csv/CsvRowMapper.h
   output/ctf/CtfBundleOutput.h
@@ -77,6 +84,9 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 add_library(ctrace-model STATIC
+  model/DiagnosticMessages.cpp
+  model/Messages.cpp
+  model/TraceMessages.cpp
   model/TraceSelection.cpp
   ${CTRACE_MODEL_HEADER_FILES}
 )
@@ -119,6 +129,7 @@ target_link_libraries(ctrace-trace-run
 
 add_library(ctrace-diagnostics STATIC
   diagnostics/DiagnosticSink.cpp
+  diagnostics/RawDiagnosticSink.cpp
   diagnostics/TraceIssueReporter.cpp
   ${CTRACE_DIAGNOSTICS_HEADER_FILES}
 )
@@ -193,6 +204,7 @@ add_library(ctrace::control ALIAS ctrace-control)
 target_include_directories(ctrace-control PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/control"
 )
+target_include_directories(ctrace-control PRIVATE "${PROJECT_BINARY_DIR}")
 # FileDecodeJob.h exposes decoder types to build-tree consumers.
 target_link_libraries(ctrace-control PUBLIC
   ctrace::cli

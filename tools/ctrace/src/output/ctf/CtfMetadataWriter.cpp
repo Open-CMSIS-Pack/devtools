@@ -7,6 +7,7 @@
 
 #include "CtfMetadataWriter.h"
 
+#include "DiagnosticMessages.h"
 #include "CtfMetadataModel.h"
 #include "CtfSchema.h"
 
@@ -788,7 +789,7 @@ void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const CtfM
   const auto metadataPath = outputDir / "metadata";
   std::ofstream out(metadataPath, std::ios::out | std::ios::binary | std::ios::trunc);
   if (!out) {
-    throw std::runtime_error("Failed to write CTF metadata " + metadataPath.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CtfMetadataWrite, metadataPath.string()));
   }
 
   const auto& topology = model.topology();
@@ -813,6 +814,6 @@ void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const CtfM
   }
   out.close();
   if (!out) {
-    throw std::runtime_error("Failed to write CTF metadata " + metadataPath.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CtfMetadataWrite, metadataPath.string()));
   }
 }

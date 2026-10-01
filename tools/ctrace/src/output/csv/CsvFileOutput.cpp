@@ -7,6 +7,7 @@
 
 #include "CsvFileOutput.h"
 
+#include "DiagnosticMessages.h"
 #include "CsvRowMapper.h"
 #include "TraceEvent.h"
 #include "TraceSelection.h"
@@ -47,20 +48,20 @@ static void removeExistingCsv(const std::filesystem::path& path)
   const auto normalized = path.lexically_normal();
   if (path.empty() || normalized == normalized.root_path() || normalized.filename().empty() ||
       normalized.filename() == "." || normalized.filename() == "..") {
-    throw std::invalid_argument("CSV output path must identify a file");
+    throw std::invalid_argument(formatMessage(MessageId::CsvFilePathRequired));
   }
   std::error_code error;
   const auto status = std::filesystem::symlink_status(path, error);
   if (error && error != std::errc::no_such_file_or_directory) {
-    throw std::runtime_error("Failed to inspect existing CSV output " + path.string() + ": " + error.message());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CsvInspect, path.string(), error.message()));
   }
   if (!error && std::filesystem::is_directory(status)) {
-    throw std::runtime_error("Refusing to replace CSV output because the target is a directory: " + path.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CsvRefuseDirectory, path.string()));
   }
   error.clear();
   std::filesystem::remove(path, error);
   if (error) {
-    throw std::runtime_error("Failed to remove existing CSV output " + path.string() + ": " + error.message());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CsvRemove, path.string(), error.message()));
   }
 }
 
@@ -74,7 +75,8 @@ static void createParentDirectory(const std::filesystem::path& path)
   std::error_code error;
   std::filesystem::create_directories(parent, error);
   if (error) {
-    throw std::runtime_error("Failed to create CSV output directory " + parent.string() + ": " + error.message());
+    throw std::runtime_error(
+        pathDiagnosticMessage(PathDiagnosticCode::CsvCreateDirectory, parent.string(), error.message()));
   }
 }
 
@@ -91,7 +93,7 @@ CsvFileOutput::CsvFileOutput(std::filesystem::path outputFile, TraceSelection se
     m_streamFactory(std::move(streamFactory))
 {
   if (!m_streamFactory) {
-    throw std::invalid_argument("CSV stream factory must be configured");
+    throw std::invalid_argument(formatMessage(MessageId::CsvStreamFactoryRequired));
   }
 }
 
@@ -121,12 +123,12 @@ void CsvFileOutput::startOutput()
 {
   m_stream = m_streamFactory(m_outputFile);
   if (m_stream == nullptr || !m_stream->output()) {
-    throw std::runtime_error("Failed to open CSV output " + m_outputFile.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CsvOpen, m_outputFile.string()));
   }
 
   m_stream->output() << CsvRowMapper::header() << "\n";
   if (!m_stream->output()) {
-    throw std::runtime_error("Failed to write CSV output " + m_outputFile.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CsvWrite, m_outputFile.string()));
   }
 }
 
@@ -138,7 +140,7 @@ void CsvFileOutput::stopOutput()
   const auto failed = m_stream != nullptr && !m_stream->output();
   m_stream.reset();
   if (failed) {
-    throw std::runtime_error("Failed to write CSV output " + m_outputFile.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CsvWrite, m_outputFile.string()));
   }
 }
 

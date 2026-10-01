@@ -51,8 +51,9 @@ public:
    * @param message Human-readable failure description.
    * @param bytesProcessed Raw bytes consumed before the failure.
    */
-  OpenCsdFatalError(const std::string& message, std::uint64_t bytesProcessed)
-    : std::runtime_error(message),
+  OpenCsdFatalError(TraceMessage message, std::uint64_t bytesProcessed)
+    : std::runtime_error(formatTraceMessage(message, TraceMessageStyle::Detailed)),
+      m_message(std::move(message)),
       m_bytesProcessed(bytesProcessed)
   {
   }
@@ -66,7 +67,11 @@ public:
     return m_bytesProcessed;
   }
 
+  /** @brief Returns the structured cause retained for output-specific rendering. */
+  const TraceMessage& message() const noexcept { return m_message; }
+
 private:
+  TraceMessage m_message;
   std::uint64_t m_bytesProcessed = 0;
 };
 

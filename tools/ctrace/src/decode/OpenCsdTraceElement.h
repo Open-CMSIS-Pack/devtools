@@ -58,7 +58,7 @@ struct OpenCsdTraceElement {
 
   std::optional<TraceIssueCode> issueCode;
   TraceIssueSeverity issueSeverity = TraceIssueSeverity::Error;
-  std::string errorMessage;
+  TraceMessage errorMessage;
 };
 
 /** @brief Receives normalized OpenCSD trace elements. */

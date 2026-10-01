@@ -111,14 +111,17 @@ pyOCD producer output:
   while ID 1 and the deformatter retain state.
 - `Malformed.TB.raw` is a synthetic ID-1 stream with hardware sync, malformed
   ASYNC bytes `00 08`, an intervening packet, then a real sync and valid payload.
-  It verifies native CLI/CSV error details, the bounded packet preview, recovery
-  without replay, retained output, and a failing exit status.
+  It verifies verbose native CLI diagnostics and bounded packet previews,
+  compact normal CLI/CSV categories without native codes or raw positions, recovery without replay, retained
+  output, and a failing exit status.
 - `Incomplete.TB.raw` has complete formatter frames but ends route 1 with an
   incomplete DWT packet after valid ITM payload and a local timestamp. It
   verifies fatal end-of-input handling: selected CSV rows remain and one final
-  input-wide `error` row bypasses type/stream filters, while the route-local
-  error obeys them. The incomplete CTF bundle is removed, contributes no target
-  XML views, and the command fails.
+  input-wide `error` row reports the incomplete trace and
+  compact structured cause. It bypasses type/stream filters, while the route-local
+  error obeys them. The processed-byte count and detailed abort reason appear only with `--verbose`.
+  The incomplete CTF bundle is removed, contributes no target XML views, and the
+  command fails.
 - `Unassigned.TB.raw` is one all-zero frame with payload before any formatter
   source ID; it proves CLI Info and one CSV `info` row for 15 skipped
   payload bytes, with no invented route, CTF stream, or missing-sync error.
