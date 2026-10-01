@@ -26,20 +26,6 @@ static std::vector<std::pair<std::string, std::string>> routeContext(const Trace
   return {{"stream", std::to_string(*route.traceBusId)}};
 }
 
-/** @brief Formats the bounded set of representative overflow offsets. */
-static std::string formatSampleOffsets(const std::vector<std::uint64_t>& offsets)
-{
-  std::string result = "[";
-  for (const auto offset : offsets) {
-    if (result.size() > 1U) {
-      result += ',';
-    }
-    result += std::to_string(offset);
-  }
-  result += ']';
-  return result;
-}
-
 TraceIssueReporter::TraceIssueReporter(DiagnosticSink& diagnostics)
   : m_diagnostics(diagnostics)
 {
@@ -69,7 +55,14 @@ void TraceIssueReporter::finish()
   for (const auto& [routeId, state] : m_overflowByRoute) {
     (void)routeId;
     const TraceOverflowSummary summary{state.firstTimestamp, state.packetCount};
-    auto sampleOffsets = formatSampleOffsets(state.sampleOffsets);
+    std::string sampleOffsets = "[";
+    for (const auto offset : state.sampleOffsets) {
+      if (sampleOffsets.size() > 1U) {
+        sampleOffsets += ',';
+      }
+      sampleOffsets += std::to_string(offset);
+    }
+    sampleOffsets += ']';
     std::vector<std::pair<std::string, std::string>> detailedContext;
     detailedContext.reserve(5U);
     detailedContext.emplace_back("overflow_count", std::to_string(state.packetCount));
