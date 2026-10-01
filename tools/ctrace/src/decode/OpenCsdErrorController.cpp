@@ -13,25 +13,35 @@
 #include "opencsd/ocsd_if_types.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <string>
 #include <utility>
 
-/** @brief Removes line terminators and trailing whitespace from an OpenCSD message. */
-static std::string trimTrailingWhitespace(std::string value)
+/** @brief Collapses whitespace to keep native diagnostics on one readable line. */
+static std::string normalizeWhitespace(const std::string& value)
 {
-  while (!value.empty() &&
-         (value.back() == '\n' || value.back() == '\r' || value.back() == ' ' || value.back() == '\t')) {
-    value.pop_back();
+  std::string normalized;
+  bool pendingSpace = false;
+  for (const unsigned char character : value) {
+    if (std::isspace(character)) {
+      pendingSpace = !normalized.empty();
+    } else {
+      if (pendingSpace) {
+        normalized += ' ';
+        pendingSpace = false;
+      }
+      normalized += static_cast<char>(character);
+    }
   }
-  return value;
+  return normalized;
 }
 
 /** @brief Uses OpenCSD itself to format one native error enum. */
 static std::string openCsdErrorText(const OpenCsdErrorRecord& error)
 {
   const ocsdError nativeError(error.severity, error.code, error.message);
-  return trimTrailingWhitespace(ocsdError::getErrorString(nativeError));
+  return normalizeWhitespace(ocsdError::getErrorString(nativeError));
 }
 
 OpenCsdErrorController::OpenCsdErrorController()
@@ -162,6 +172,10 @@ std::string OpenCsdErrorController::describeSummary(const Decision& decision)
     }
   } else {
     switch (decision.response) {
+    case OCSD_RESP_WARN_CONT:
+    case OCSD_RESP_WARN_WAIT:
+      summary = "OpenCSD decoder warning";
+      break;
     case OCSD_RESP_FATAL_NOT_INIT:
       summary = "OpenCSD decoder is not initialized";
       break;
@@ -186,7 +200,10 @@ std::string OpenCsdErrorController::describeSummary(const Decision& decision)
   if ((decision.error.has_value() && decision.error->hasIndex) || offset != 0U) {
     summary += " at raw offset " + std::to_string(offset);
   }
-  return summary + ".";
+  const auto nativeText = decision.error.has_value()
+                              ? openCsdErrorText(*decision.error)
+                              : normalizeWhitespace(ocsdDataRespStr(decision.response).getStr());
+  return summary + ". " + nativeText;
 }
 
 void OpenCsdErrorController::LogError(ocsd_hndl_err_log_t handle, const ocsdError* error)
@@ -214,6 +231,6 @@ OpenCsdErrorRecord OpenCsdErrorController::makeRecord(const ocsdError& error)
   if (channel != OCSD_BAD_CS_SRC_ID) {
     record.channel = channel;
   }
-  record.message = trimTrailingWhitespace(error.getMessage());
+  record.message = normalizeWhitespace(error.getMessage());
   return record;
 }

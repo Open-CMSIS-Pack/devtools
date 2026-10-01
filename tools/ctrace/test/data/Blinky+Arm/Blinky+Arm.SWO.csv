@@ -391,7 +391,7 @@ cycles,stream,type,source,value,pc,address,note
 29174611,,dwt,0,0x00000a37,0x0800b8aa,,
 29249610,,dwt,0,0x00000a38,0x0800b8aa,,
 29249610,,dwt,0,,0xb8aa47aa,,
-29249610,,error,,,,,OpenCSD detected an invalid ITM packet sequence at raw offset 8195.
+29249610,,error,,,,,"OpenCSD detected an invalid ITM packet sequence at raw offset 8195. 0x0013 (OCSD_ERR_BAD_PACKET_SEQ) [Bad packet sequence]; Async Packet: unexpected none zero value; packet=ASYNC, size=2 bytes, bytes=[00 08]"
 29249610,,error,,,,,OpenCSD consumed 2179 raw bytes while waiting for usable ITM trace packets; data loss until a later sync/recovery point; timestamp 29249610 .. 29324609.
 29324609,,dwt,0,0x00000ebd,0x0800b8aa,,
 29399608,,dwt,0,0x00000ebe,0x0800b8aa,,
@@ -529,4 +529,4 @@ cycles,stream,type,source,value,pc,address,note
 39299476,,dwt,0,0x00000f42,0x0800b8aa,,
 39374475,,dwt,0,0x00000f43,0x0800b8aa,,
 39449474,,dwt,0,0x00000f44,0x0800b8aa,,
-39449474,,error,,,,,incomplete ITM packet at end of input
+39449474,,error,,,,,"incomplete ITM packet at end of input at raw offset 12286; packet=DWT, size=2 bytes, bytes=[47 aa]"

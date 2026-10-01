@@ -89,6 +89,29 @@ static TraceRunConfig backendRequirementsConfig()
   return config;
 }
 
+TEST(CtraceUnitTests, testOutputPathsRetainChannelAndCompleteSolutionSetName)
+{
+  auto config = backendRequirementsConfig();
+  config.references.front().dataType.reset();
+  for (const auto* solutionSet : {"Board", "Blinky.v2+Board.Debug"}) {
+    for (const auto* channel : {"SWO", "TB", "TB_ETB"}) {
+      const auto capture = std::string(solutionSet) + "." + channel;
+      SCOPED_TRACE(capture);
+      CollectingDiagnosticSink diagnostics;
+      const auto plan =
+          planOutputs(outputRequest(true, true), std::filesystem::path("captures") / (capture + ".raw"), config,
+                      diagnostics);
+      ASSERT_TRUE(plan.csv.has_value());
+      ASSERT_TRUE(plan.ctf.has_value());
+      EXPECT_EQ(plan.csv->outputPath, std::filesystem::path("captures") / (capture + ".csv"));
+      EXPECT_EQ(plan.ctf->outputDirectory, std::filesystem::path("captures") / (capture + ".ctf"));
+      ASSERT_EQ(plan.ctf->metadata.clockDomains.size(), 1U);
+      EXPECT_TRUE(plan.ctf->metadata.clockDomains.front().uuid.has_value());
+      EXPECT_TRUE(diagnostics.events().empty());
+    }
+  }
+}
+
 TEST(CtraceUnitTests, testBackendRequirementsUsePerStreamMetadata)
 {
   TraceRunConfig multicore;
@@ -323,8 +346,7 @@ TEST(CtraceUnitTests, testOutputRequirementsAreBackendSpecific)
       << "missing data-type must use the CTF default and leave CSV enabled";
   ASSERT_TRUE(
       (missingType.csv->outputPath == std::filesystem::path("BackendRequirements.SWO.csv") &&
-       missingType.ctf->outputDirectory == std::filesystem::path("BackendRequirements.ctf") &&
-       missingType.ctf->traceCompassXmlPath == std::filesystem::path("BackendRequirements.SWO.traceanalysis.xml") &&
+       missingType.ctf->outputDirectory == std::filesystem::path("BackendRequirements.SWO.ctf") &&
        missingType.ctf->metadata.clockDomains.size() == 1U &&
        missingType.ctf->metadata.clockDomains[0].frequencyHz == 400000000U &&
        missingType.ctf->metadata.sources.size() == 1U && missingType.ctf->metadata.sources[0].dataType == "unsigned" &&
@@ -485,7 +507,7 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
 
   config.references[1].stream = 2U;
   config.references[1].processorName = "core1";
-  config.references[1].ctraceRef = "core1/data#0";
+  config.references[1].ref = "core1/data#0";
   CollectingDiagnosticSink routeDiagnostics;
   const auto routePlan = planOutputs(allRequest, "captures/AmbiguousRoutes.SWO.raw", config, routeDiagnostics);
   ASSERT_TRUE(routePlan.csv.has_value() && routePlan.ctf.has_value() && routePlan.ctf->metadata.sources.size() == 2U)
@@ -509,10 +531,10 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   processorConfig.setups = config.setups;
   auto core0Reference = first;
   core0Reference.processorName = "core0";
-  core0Reference.ctraceRef = "core0/data#0";
+  core0Reference.ref = "core0/data#0";
   auto core1Reference = first;
   core1Reference.processorName = "core1";
-  core1Reference.ctraceRef = "core1/data#0";
+  core1Reference.ref = "core1/data#0";
   core1Reference.stream = 2U;
   processorConfig.references = {core0Reference, core1Reference, firstAnchor, secondAnchor};
   CollectingDiagnosticSink processorDiagnostics;
@@ -534,7 +556,7 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   config.setups[0].data.push_back(TraceRunDataSetup{2U});
   config.references[1].stream = 1U;
   config.references[1].processorName = "core0";
-  config.references[1].ctraceRef = "core0/data#1";
+  config.references[1].ref = "core0/data#1";
   config.references[1].dataSetupIndex = 1U;
   CollectingDiagnosticSink sizeDiagnostics;
   const auto csvPlan =

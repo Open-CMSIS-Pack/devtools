@@ -85,10 +85,10 @@ static bool isTraceChannel(const std::string_view& value)
   return value == "SWO" || value == "ER" || isTraceBufferChannel(value);
 }
 
-/** @brief Resolves input eligibility from declaration state without guessing from the channel. */
-static bool isEligibleTraceChannel(const std::string_view& value, bool formatDeclared)
+/** @brief Tests input eligibility independently of an optional byte-format override. */
+static bool isEligibleTraceChannel(const std::string_view& value)
 {
-  return value == "SWO" || (formatDeclared && isTraceBufferChannel(value));
+  return value == "SWO" || isTraceBufferChannel(value);
 }
 
 /** @brief Tests whether a solution-set name is reserved by Windows. */
@@ -204,19 +204,18 @@ std::vector<TraceRunRawInput> TraceRunDiscovery::rawInputs(const std::filesystem
   return inputs;
 }
 
-TraceRunInputDescriptor TraceRunDiscovery::resolveInput(CtraceRunMeta metadata,
-                                                        const SkippedTraceRunInputSink& skippedInputSink)
+std::vector<TraceRunRawInput> TraceRunDiscovery::selectInputs(const TraceRunConfig& config,
+                                                             const SkippedTraceRunInputSink& skippedInputSink)
 {
-  if (metadata.configPath().empty()) {
-    throw std::runtime_error("normalized trace-run metadata has no configuration path");
+  if (config.path.empty()) {
+    throw std::runtime_error("trace-run configuration has no source path");
   }
-  const std::filesystem::path configFile(metadata.configPath());
+  const std::filesystem::path configFile(config.path);
   const auto rawInputs = TraceRunDiscovery::rawInputs(configFile);
-  const auto& traceFormat = metadata.traceFormat();
-  std::vector<const TraceRunRawInput*> eligible;
+  std::vector<TraceRunRawInput> eligible;
   for (const auto& rawInput : rawInputs) {
-    if (isEligibleTraceChannel(rawInput.channel, traceFormat.has_value())) {
-      eligible.push_back(&rawInput);
+    if (isEligibleTraceChannel(rawInput.channel)) {
+      eligible.push_back(rawInput);
     } else if (skippedInputSink) {
       skippedInputSink(rawInput);
     }
@@ -226,15 +225,11 @@ TraceRunInputDescriptor TraceRunDiscovery::resolveInput(CtraceRunMeta metadata,
   if (eligible.empty()) {
     throw std::runtime_error("no eligible raw trace input found for solution-set " + solutionSet);
   }
-  if (eligible.size() > 1U) {
-    std::string message = "multiple eligible raw trace inputs found for solution-set " + solutionSet + ":";
-    for (const auto* rawInput : eligible) {
-      message += " " + rawInput->path.string();
-    }
-    throw std::runtime_error(message);
-  }
+  return eligible;
+}
 
-  const auto& selected = *eligible.front();
+TraceRunInputDescriptor TraceRunDiscovery::resolveInput(TraceRunConfig config, const TraceRunRawInput& selected)
+{
   if (!std::filesystem::is_regular_file(selected.path)) {
     throw std::runtime_error("raw trace input is not a regular file: " + selected.path.string());
   }
@@ -243,7 +238,8 @@ TraceRunInputDescriptor TraceRunDiscovery::resolveInput(CtraceRunMeta metadata,
     throw std::runtime_error("raw trace input is not readable: " + selected.path.string());
   }
 
-  const auto format = TraceRunSchema::effectiveTraceFormat(traceFormat);
+  const auto format = config.traceFormat.value_or(isTraceBufferChannel(selected.channel) ? TraceRunFormat::Formatted
+                                                                                        : TraceRunFormat::Unformatted);
   readable.exceptions(std::ios::badbit | std::ios::failbit);
   const auto endPosition = readable.tellg();
   const auto fileSize = static_cast<std::uintmax_t>(static_cast<std::streamoff>(endPosition));
@@ -256,5 +252,6 @@ TraceRunInputDescriptor TraceRunDiscovery::resolveInput(CtraceRunMeta metadata,
   readable.seekg(0U, std::ios::beg);
   readable.exceptions(std::ios::goodbit);
 
-  return TraceRunInputDescriptor(selected.path, format, std::move(metadata), std::move(readable));
+  config.traceFormat = format;
+  return TraceRunInputDescriptor(selected.path, format, CtraceRunMeta::fromConfig(config), std::move(readable));
 }

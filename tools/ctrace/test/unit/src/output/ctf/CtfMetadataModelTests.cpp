@@ -152,6 +152,10 @@ TEST(CtraceUnitTests, testCtfMetadataModelAcceptsSharedDomainsAndItmRouteBoundar
                           CtfTestSupport::legacyTopology(1000000U, {TraceRouteId{88U}, std::nullopt}));
   EXPECT_TRUE(legacy.isLegacySingleStreamLayout());
 
+  auto identifiedLegacy = CtfTestSupport::legacyTopology(1000000U);
+  identifiedLegacy.clockDomains.front().uuid = CtfTestSupport::testUuid(1U);
+  EXPECT_TRUE(CtfMetadataModel(CtfTestSupport::testUuid(), std::move(identifiedLegacy)).isLegacySingleStreamLayout());
+
   CtfMetadataModel empty(CtfTestSupport::testUuid(), {});
   EXPECT_TRUE(empty.topology().clockDomains.empty());
   EXPECT_FALSE(empty.isLegacySingleStreamLayout());

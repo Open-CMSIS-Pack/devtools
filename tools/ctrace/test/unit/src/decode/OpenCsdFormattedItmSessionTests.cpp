@@ -92,6 +92,13 @@ public:
     ocsd_trc_index_t index = 0U;
   };
 
+  /** @brief Stores the formatter group and deformatted byte count delivered to one route. */
+  struct DataObservation {
+    TraceRouteIdentity route;
+    ocsd_trc_index_t formatterOffset = 0U;
+    std::uint32_t byteCount = 0U;
+  };
+
   /** @brief Copies packet identity while ignoring callback-only control operations. */
   void rawPacketForRoute(const TraceRouteIdentity& route, ocsd_datapath_op_t operation, ocsd_trc_index_t index,
                          const ItmTrcPacket* packet, std::uint32_t, const std::uint8_t*) override
@@ -101,6 +108,12 @@ public:
     } else if (operation == OCSD_OP_RESET) {
       m_resets.push_back({route, index});
     }
+  }
+
+  /** @brief Records received protocol bytes independently of decoded packets. */
+  void formattedDataForRoute(const TraceRouteIdentity& route, ocsd_trc_index_t index, std::uint32_t size) override
+  {
+    m_data.push_back({route, index, size});
   }
 
   /** @brief Counts software packets attributed to an exact normalized route. */
@@ -123,9 +136,16 @@ public:
     return m_resets;
   }
 
+  /** @brief Returns input observations in formatter callback order. */
+  const std::vector<DataObservation>& data() const
+  {
+    return m_data;
+  }
+
 private:
   std::vector<PacketObservation> m_packets;
   std::vector<ResetObservation> m_resets;
+  std::vector<DataObservation> m_data;
 };
 
 /** @brief Throws only when a real software element crosses the callback boundary. */
@@ -151,6 +171,22 @@ public:
     if (packet != nullptr && packet->getPktType() == ITM_PKT_SWIT) {
       throw std::runtime_error("synthetic routed-packet failure");
     }
+  }
+};
+
+/** @brief Throws from received-data accounting before protocol decoding begins. */
+class ThrowingDataSink final : public OpenCsdFormattedItmPacketSink {
+public:
+  /** @brief Accepts protocol packet callbacks without additional work. */
+  void rawPacketForRoute(const TraceRouteIdentity&, ocsd_datapath_op_t, ocsd_trc_index_t, const ItmTrcPacket*,
+                         std::uint32_t, const std::uint8_t*) override
+  {
+  }
+
+  /** @brief Raises a stable test exception from a real deformatter callback. */
+  void formattedDataForRoute(const TraceRouteIdentity&, ocsd_trc_index_t, std::uint32_t) override
+  {
+    throw std::runtime_error("synthetic routed-data failure");
   }
 };
 
@@ -190,6 +226,17 @@ bool observedTraceId(const RecordingElementOutput& output, std::uint8_t traceId)
 {
   return std::find(output.callbackTraceIds().begin(), output.callbackTraceIds().end(), traceId) !=
          output.callbackTraceIds().end();
+}
+
+/** @brief Restricts prefix tests to initial bytes without an ID while other skip categories remain observable. */
+OpenCsdSkippedBytesSink recordUnassignedPrefix(std::vector<std::pair<std::uint64_t, std::uint64_t>>& discarded)
+{
+  return [&discarded](const TraceByteSkip& skipped) {
+    if (skipped.reason == TraceByteSkipReason::NoSourceId) {
+      EXPECT_FALSE(skipped.traceId.has_value());
+      discarded.emplace_back(skipped.formatterOffset, skipped.byteCount);
+    }
+  };
 }
 
 } // namespace
@@ -359,24 +406,277 @@ TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionRethrowsPacketCallbackFailur
   EXPECT_EQ(message, std::optional<std::string>("synthetic routed-packet failure"));
 }
 
-TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionRejectsDataBeforeFirstFormatterId)
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionReportsUnassignedPrefixAtEndOfTrace)
+{
+  const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+  RecordingElementOutput elements;
+  RecordingPacketSink packets;
+  OpenCsdErrorController errors;
+  std::vector<std::pair<std::uint64_t, std::uint64_t>> discarded;
+  OpenCsdFormattedItmSession session({route}, elements, errors, packets, {}, recordUnassignedPrefix(discarded));
+  const std::vector<std::uint8_t> unassignedFrame(16U, 0U);
+
+  feedCapture(session, unassignedFrame, 64U);
+  EXPECT_TRUE(discarded.empty());
+  EXPECT_EQ(session.flush(), OCSD_RESP_CONT);
+  EXPECT_TRUE(discarded.empty());
+  EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+  ASSERT_EQ(discarded.size(), 1U);
+  EXPECT_EQ(discarded.front().first, 64U);
+  EXPECT_EQ(discarded.front().second, 15U);
+  EXPECT_TRUE(elements.software().empty());
+  EXPECT_TRUE(packets.data().empty());
+  EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+  EXPECT_EQ(discarded.size(), 1U);
+}
+
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionAggregatesPrefixAndContinuesRegardlessOfChunking)
+{
+  for (const std::size_t chunkSize : {16U, 48U}) {
+    SCOPED_TRACE(chunkSize);
+    const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+    RecordingElementOutput elements;
+    RecordingPacketSink packets;
+    OpenCsdErrorController errors;
+    std::vector<std::pair<std::uint64_t, std::uint64_t>> discarded;
+    OpenCsdFormattedItmSession session({route}, elements, errors, packets, {}, recordUnassignedPrefix(discarded));
+    const auto synchronization = itmHardwareSync();
+    const auto software = itmSoftwarePacket(1U, static_cast<std::uint8_t>('A'));
+    const auto payload = memoryAlignedFrames({{1U, synchronization}, {1U, software}});
+    std::vector<std::uint8_t> capture(32U, 0U);
+    capture.insert(capture.end(), payload.begin(), payload.end());
+    ASSERT_EQ(capture.size(), 48U);
+    for (std::size_t offset = 0U; offset < capture.size(); offset += chunkSize) {
+      const std::vector<std::uint8_t> chunk(capture.begin() + offset, capture.begin() + offset + chunkSize);
+      feedCapture(session, chunk, 64U + offset);
+      EXPECT_EQ(discarded.size(), offset + chunkSize == capture.size() ? 1U : 0U);
+    }
+    EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+    ASSERT_EQ(discarded.size(), 1U);
+    EXPECT_EQ(discarded.front().first, 64U);
+    EXPECT_EQ(discarded.front().second, 30U);
+    ASSERT_EQ(elements.software().size(), 1U);
+    EXPECT_EQ(elements.software().front().value, static_cast<std::uint32_t>('A'));
+    ASSERT_EQ(packets.data().size(), 1U);
+    EXPECT_EQ(packets.data().front().route, route);
+    EXPECT_EQ(packets.data().front().formatterOffset, 96U);
+    // The fixture assigns all remaining frame padding to ID 0, not this ITM route.
+    EXPECT_EQ(packets.data().front().byteCount, synchronization.size() + software.size());
+  }
+}
+
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionClosesPrefixOnNullOrReservedId)
+{
+  for (const std::uint8_t traceId : {0U, 112U, 127U}) {
+    SCOPED_TRACE(traceId);
+    const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+    RecordingElementOutput elements;
+    RecordingPacketSink packets;
+    OpenCsdErrorController errors;
+    std::vector<std::pair<std::uint64_t, std::uint64_t>> discarded;
+    OpenCsdFormattedItmSession session({route}, elements, errors, packets, {}, recordUnassignedPrefix(discarded));
+    feedCapture(session, std::vector<std::uint8_t>(16U, 0U));
+    EXPECT_TRUE(discarded.empty());
+    const auto assigned = memoryAlignedFrames({Segment{traceId, std::vector<std::uint8_t>(14U, 0U)}});
+    feedCapture(session, assigned, 16U);
+    ASSERT_EQ(discarded.size(), 1U);
+    EXPECT_EQ(discarded.front().first, 0U);
+    EXPECT_EQ(discarded.front().second, 15U);
+    EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+    EXPECT_EQ(discarded.size(), 1U);
+    EXPECT_TRUE(elements.software().empty());
+    EXPECT_TRUE(packets.data().empty());
+  }
+}
+
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionAllowsOmittedSkippedBytesSink)
 {
   const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
   RecordingElementOutput elements;
   RecordingPacketSink packets;
   OpenCsdErrorController errors;
   OpenCsdFormattedItmSession session({route}, elements, errors, packets);
-  const std::vector<std::uint8_t> unassignedFrame(16U, 0U);
+  feedCapture(session, std::vector<std::uint8_t>(16U, 0U));
+  EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+  EXPECT_TRUE(elements.software().empty());
+  EXPECT_TRUE(packets.data().empty());
+}
 
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionDoesNotCountReservedFfDataAsUnassigned)
+{
+  const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+  RecordingElementOutput elements;
+  RecordingPacketSink packets;
+  OpenCsdErrorController errors;
+  std::vector<std::pair<std::uint64_t, std::uint64_t>> discarded;
+  OpenCsdFormattedItmSession session({route}, elements, errors, packets, {}, recordUnassignedPrefix(discarded));
+  feedCapture(session, std::vector<std::uint8_t>(16U, 0xffU));
+  ASSERT_EQ(discarded.size(), 1U);
+  EXPECT_EQ(discarded.front().first, 0U);
+  EXPECT_EQ(discarded.front().second, 1U);
+
+  const auto payload = memoryAlignedFrames({
+      {1U, itmHardwareSync()},
+      {1U, itmSoftwarePacket(1U, static_cast<std::uint8_t>('A'))},
+  });
+  feedCapture(session, payload, 16U);
+  EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+  EXPECT_EQ(discarded.size(), 1U);
+  ASSERT_EQ(elements.software().size(), 1U);
+  EXPECT_EQ(elements.software().front().value, static_cast<std::uint32_t>('A'));
+}
+
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionRethrowsDataCallbackFailureAfterPush)
+{
+  const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+  RecordingElementOutput elements;
+  ThrowingDataSink packets;
+  OpenCsdErrorController errors;
+  OpenCsdFormattedItmSession session({route}, elements, errors, packets);
+  const auto capture = memoryAlignedFrames({Segment{1U, itmHardwareSync()}});
   std::uint32_t processed = 0U;
-  try {
-    (void)session.pushData(0U, static_cast<std::uint32_t>(unassignedFrame.size()), unassignedFrame.data(), processed);
-    FAIL() << "unassigned formatted data did not fail";
-  } catch (const OpenCsdFormattedInputError& error) {
-    EXPECT_EQ(error.sourceOffset(), 0U);
-    EXPECT_NE(std::string(error.what()).find("has no source ID"), std::string::npos);
-    EXPECT_EQ(processed, unassignedFrame.size());
+  const auto message = captureExceptionMessage(
+      [&] { (void)session.pushData(0U, static_cast<std::uint32_t>(capture.size()), capture.data(), processed); });
+  EXPECT_EQ(message, std::optional<std::string>("synthetic routed-data failure"));
+  EXPECT_EQ(processed, capture.size());
+}
+
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionDoesNotRepeatThrowingPrefixObserver)
+{
+  const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+  RecordingElementOutput elements;
+  RecordingPacketSink packets;
+  OpenCsdErrorController errors;
+  std::size_t observed = 0U;
+  OpenCsdFormattedItmSession session({route}, elements, errors, packets, {},
+                                     [&](const TraceByteSkip&) {
+                                       ++observed;
+                                       throw std::runtime_error("synthetic prefix-observer failure");
+                                     });
+  feedCapture(session, std::vector<std::uint8_t>(16U, 0U));
+  EXPECT_EQ(captureExceptionMessage([&] { (void)session.endOfTrace(); }),
+            std::optional<std::string>("synthetic prefix-observer failure"));
+  EXPECT_EQ(observed, 1U);
+  EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+  EXPECT_EQ(observed, 1U);
+}
+
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionReportsSkippedSourceTotalsAtEndOfTrace)
+{
+  for (const std::size_t chunkSize : {16U, 80U}) {
+    SCOPED_TRACE(chunkSize);
+    const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+    RecordingElementOutput elements;
+    RecordingPacketSink packets;
+    OpenCsdErrorController errors;
+    std::vector<TraceByteSkip> skipped;
+    std::vector<std::uint8_t> unsupported;
+    OpenCsdFormattedItmSession session(
+        {route}, elements, errors, packets,
+        [&](std::uint8_t traceId, ocsd_trc_index_t) { unsupported.push_back(traceId); },
+        [&](const TraceByteSkip& item) { skipped.push_back(item); });
+    std::vector<std::uint8_t> capture;
+    for (const std::uint8_t traceId : {0U, 112U, 127U, 42U, 42U}) {
+      // One ID marker + fourteen payload bytes + one formatter flag byte.
+      std::vector<std::uint8_t> frame(16U, 0U);
+      frame.front() = static_cast<std::uint8_t>((traceId << 1U) | 1U);
+      capture.insert(capture.end(), frame.begin(), frame.end());
+    }
+    for (std::size_t offset = 0U; offset < capture.size(); offset += chunkSize) {
+      feedCapture(session, {capture.begin() + offset, capture.begin() + offset + chunkSize}, offset);
+      EXPECT_TRUE(skipped.empty());
+    }
+    EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+    ASSERT_EQ(skipped.size(), 4U);
+    const std::vector<std::uint8_t> expectedIds{0U, 42U, 112U, 127U};
+    const std::vector<std::uint64_t> expectedCounts{14U, 28U, 14U, 14U};
+    const std::vector<std::uint64_t> expectedOffsets{0U, 48U, 16U, 32U};
+    const std::vector<TraceByteSkipReason> expectedReasons{
+        TraceByteSkipReason::NullSourceId, TraceByteSkipReason::UnconfiguredSourceId,
+        TraceByteSkipReason::ReservedSourceId, TraceByteSkipReason::ReservedSourceId};
+    for (std::size_t index = 0U; index < skipped.size(); ++index) {
+      EXPECT_EQ(skipped[index].traceId, expectedIds[index]);
+      EXPECT_EQ(skipped[index].byteCount, expectedCounts[index]);
+      EXPECT_EQ(skipped[index].formatterOffset, expectedOffsets[index]);
+      EXPECT_EQ(skipped[index].reason, expectedReasons[index]);
+    }
+    EXPECT_EQ(unsupported, std::vector<std::uint8_t>{42U});
+    EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+    EXPECT_EQ(skipped.size(), 4U);
+    EXPECT_TRUE(packets.data().empty());
+    EXPECT_TRUE(elements.software().empty());
   }
+}
+
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionSeparatesSkippedPayloadFromFormatterControlBytes)
+{
+  const std::vector<std::uint8_t> capture{
+      0xffU, 0xffU, 0xffU, 0xffU, 0xffU, 0xffU, 0xffU, 0xffU,
+      0xffU, 0xffU, 0xffU, 0xffU, 0xffU, 0xffU, 0xffU, 0xffU,
+      0xffU, 0xffU, 0xffU, 0xffU, 0xffU, 0xffU, 0xffU, 0xffU,
+      0xfeU, 0x57U, 0x00U, 0x00U, 0x00U, 0x00U, 0x03U, 0x13U,
+      0x00U, 0x80U, 0x16U, 0xacU, 0x5eU, 0x00U, 0x08U, 0xc0U,
+      0x01U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x02U,
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U,
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U,
+  };
+  for (const std::size_t chunkSize : {16U, 64U}) {
+    SCOPED_TRACE(chunkSize);
+    const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+    RecordingElementOutput elements;
+    RecordingPacketSink packets;
+    OpenCsdErrorController errors;
+    std::vector<TraceByteSkip> skipped;
+    OpenCsdFormattedItmSession session({route}, elements, errors, packets, {},
+                                       [&](const TraceByteSkip& item) { skipped.push_back(item); });
+    for (std::size_t offset = 0U; offset < capture.size(); offset += chunkSize) {
+      feedCapture(session, {capture.begin() + offset, capture.begin() + offset + chunkSize}, offset);
+    }
+    ASSERT_EQ(skipped.size(), 1U);
+    EXPECT_EQ(skipped.front().reason, TraceByteSkipReason::NoSourceId);
+    EXPECT_EQ(skipped.front().formatterOffset, 0U);
+    EXPECT_EQ(skipped.front().byteCount, 1U);
+    EXPECT_FALSE(skipped.front().traceId.has_value());
+    EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+    ASSERT_EQ(skipped.size(), 3U);
+    EXPECT_EQ(skipped[1U].reason, TraceByteSkipReason::NullSourceId);
+    EXPECT_EQ(skipped[1U].traceId, 0U);
+    EXPECT_EQ(skipped[1U].formatterOffset, 40U);
+    EXPECT_EQ(skipped[1U].byteCount, 21U);
+    EXPECT_EQ(skipped[2U].reason, TraceByteSkipReason::ReservedSourceId);
+    EXPECT_EQ(skipped[2U].traceId, 127U);
+    EXPECT_EQ(skipped[2U].formatterOffset, 0U);
+    EXPECT_EQ(skipped[2U].byteCount, 16U);
+    ASSERT_EQ(packets.data().size(), 1U);
+    EXPECT_EQ(packets.data().front().route, route);
+    EXPECT_EQ(packets.data().front().byteCount, 8U);
+    // 38 skipped + 8 routed bytes leave 18 processed formatter-control bytes.
+    EXPECT_EQ(capture.size() - skipped[0U].byteCount - skipped[1U].byteCount -
+                  skipped[2U].byteCount - packets.data().front().byteCount,
+              18U);
+    EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+    EXPECT_EQ(skipped.size(), 3U);
+  }
+}
+
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionDoesNotRepeatThrowingSkippedSourceObserver)
+{
+  const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+  RecordingElementOutput elements;
+  RecordingPacketSink packets;
+  OpenCsdErrorController errors;
+  std::size_t observed = 0U;
+  OpenCsdFormattedItmSession session({route}, elements, errors, packets, {}, [&](const TraceByteSkip&) {
+    ++observed;
+    throw std::runtime_error("synthetic skipped-source failure");
+  });
+  feedCapture(session, memoryAlignedFrames({Segment{0U, std::vector<std::uint8_t>(14U, 0U)}}));
+  EXPECT_EQ(observed, 0U);
+  EXPECT_EQ(captureExceptionMessage([&] { (void)session.endOfTrace(); }),
+            std::optional<std::string>("synthetic skipped-source failure"));
+  EXPECT_EQ(observed, 1U);
+  EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+  EXPECT_EQ(observed, 1U);
 }
 
 TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionAllowsOmittedUnsupportedIdSink)
@@ -535,4 +835,47 @@ TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionResetsOnlySelectedRoute)
   EXPECT_THROW(session.resetRoute(42U, 41U), OpenCsdTreeSessionError);
   EXPECT_THROW(session.resetRoute(112U, 42U), OpenCsdTreeSessionError);
   EXPECT_EQ(packets.resets().size(), 1U);
+}
+
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionPreservesSourceIdAcrossFrameBoundaryAndRouteReset)
+{
+  const TraceRouteIdentity route{TraceRouteId{10U}, 1U};
+  RecordingElementOutput elements;
+  RecordingPacketSink packets;
+  OpenCsdErrorController errors;
+  std::vector<TraceByteSkip> skipped;
+  OpenCsdFormattedItmSession session({route}, elements, errors, packets, {},
+                                     [&](const TraceByteSkip& item) { skipped.push_back(item); });
+  auto protocol = itmHardwareSync();
+  for (const auto value : {'A', 'B', 'C', 'D'}) {
+    const auto packet = itmSoftwarePacket(1U, static_cast<std::uint8_t>(value));
+    protocol.insert(protocol.end(), packet.begin(), packet.end());
+  }
+  ASSERT_EQ(protocol.size(), 14U); // The first frame has one ID marker and fourteen protocol bytes.
+  const auto synchronization = itmHardwareSync();
+  protocol.insert(protocol.end(), synchronization.begin(), synchronization.end());
+  const auto lastPacket = itmSoftwarePacket(1U, 'Z');
+  protocol.insert(protocol.end(), lastPacket.begin(), lastPacket.end());
+  const auto capture = memoryAlignedFrames({{1U, protocol}});
+  ASSERT_EQ(capture.size(), 32U);
+  for (std::size_t slot = 16U; slot < 24U; slot += 2U) {
+    ASSERT_EQ(capture[slot] & 1U, 0U) << "the second frame must not repeat the source ID before its payload";
+  }
+
+  feedCapture(session, {capture.begin(), capture.begin() + 16U});
+  ASSERT_EQ(elements.software().size(), 4U);
+  EXPECT_EQ(session.flush(), OCSD_RESP_CONT);
+  EXPECT_EQ(session.resetRoute(1U, 16U), OCSD_RESP_CONT);
+  feedCapture(session, {capture.begin() + 16U, capture.end()}, 16U);
+  EXPECT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+  ASSERT_EQ(elements.software().size(), 5U);
+  EXPECT_EQ(elements.software().back().traceId, 1U);
+  EXPECT_EQ(elements.software().back().value, static_cast<std::uint32_t>('Z'));
+  ASSERT_EQ(packets.data().size(), 2U);
+  EXPECT_EQ(packets.data()[1U].route, route);
+  EXPECT_EQ(packets.data()[1U].formatterOffset, 16U);
+  EXPECT_EQ(packets.data()[1U].byteCount, 8U);
+  ASSERT_EQ(skipped.size(), 1U);
+  EXPECT_EQ(skipped.front().reason, TraceByteSkipReason::NullSourceId);
+  EXPECT_EQ(skipped.front().byteCount, 6U);
 }

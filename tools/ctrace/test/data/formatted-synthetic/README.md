@@ -60,5 +60,10 @@ PMU event, global timestamp, and trace-status CTF event families. The
 reconstructed `TB-Trace` fixture independently covers real-hardware PC,
 exception, and DWT-value traffic. The synthetic fixture also drives check,
 CSV, CTF, and `--all`; stream/type filter combinations; absent/null clock
-handling; route-normalization failures; explicit formatted SWO naming;
-independent backend failures; and repeated-conversion cleanup.
+handling; route-normalization failures; absent/null format inference for TB and
+TB-suffix filenames; explicit formatted SWO naming; independent backend
+failures; and repeated-conversion cleanup. Additional generated variants cover
+unassigned and routed synchronization prefixes, skipped-byte annotations under
+filters, and a never-synchronized route beside a healthy route. They are
+described in the [test-data README](../README.md); their bytes differ from the
+canonical generated capture and hash above.

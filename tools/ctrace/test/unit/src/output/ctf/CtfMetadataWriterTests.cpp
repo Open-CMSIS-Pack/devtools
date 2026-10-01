@@ -64,6 +64,11 @@ TEST(CtraceUnitTests, testCtfMetadataWriterEscapesAndDeduplicatesSourceLabels)
   EXPECT_NE(metadata.find("variant <cmsis_dwt_address_type>"), std::string::npos);
   EXPECT_NE(metadata.find("uint32_t u32;"), std::string::npos);
   EXPECT_NE(metadata.find("cmsis_dwt0_address_end = \"0xFFFFFFFFFFFFFFFF\""), std::string::npos);
+  EXPECT_NE(metadata.find("cmsis_ctf_profile_version = 1;"), std::string::npos);
+  EXPECT_NE(metadata.find("id = 10;\n    name = \"PC_SAMPLE_PROHIBITED\";\n    stream_id = 0;\n"
+                          "    fields := struct {\n        uint8_t cmsis_sample_flags;\n"
+                          "        uint32_t cmsis_overflow_count;\n    };"),
+            std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfMetadataWriterRejectsMissingOutputDirectory)
@@ -71,6 +76,22 @@ TEST(CtraceUnitTests, testCtfMetadataWriterRejectsMissingOutputDirectory)
   const TemporaryTestPath path("ctrace-metadata-writer-missing");
   const CtfMetadataModel model(CtfTestSupport::testUuid(), CtfTestSupport::legacyTopology(1U));
   EXPECT_THROW(CtfMetadataWriter::write(path.path(), model), std::runtime_error);
+}
+
+TEST(CtraceUnitTests, testCtfMetadataWriterIdentifiesLegacyClockWithoutChangingEventLayout)
+{
+  const TemporaryTestPath path("ctrace-legacy-clock-uuid");
+  path.createDirectory();
+  auto topology = CtfTestSupport::legacyTopology(1000000U);
+  topology.clockDomains.front().uuid = CtfTestSupport::testUuid(1U);
+  const CtfMetadataModel model(CtfTestSupport::testUuid(), std::move(topology));
+  ASSERT_TRUE(model.isLegacySingleStreamLayout());
+  CtfMetadataWriter::write(path.path(), model);
+  const auto metadata = readTestTextFile(path.path() / "metadata");
+  EXPECT_NE(metadata.find("name = swo_clock;\n    uuid = \"" + CtfTestSupport::testUuid(1U).toString() + "\";"),
+            std::string::npos);
+  EXPECT_NE(metadata.find("uint8_t cmsis_trace_bus_id;"), std::string::npos);
+  EXPECT_EQ(metadata.find("ctrace_route"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testCtfMetadataWriterSerializesRouteScopedMultiStreamTopology)
@@ -134,6 +155,12 @@ TEST(CtraceUnitTests, testCtfMetadataWriterSerializesRouteScopedMultiStreamTopol
   EXPECT_EQ(metadata.find("name = swo_clock;"), std::string::npos);
   EXPECT_EQ(metadata.find("stream_id = 0;"), std::string::npos);
   EXPECT_FALSE(std::filesystem::exists(path.path() / "stream_0"));
+  for (const auto streamId : {1U, 111U}) {
+    EXPECT_NE(metadata.find("id = 10;\n    name = \"PC_SAMPLE_PROHIBITED\";\n    stream_id = " +
+                            std::to_string(streamId) + ";\n    fields := struct {\n"
+                            "        uint8_t cmsis_sample_flags;\n        uint32_t cmsis_overflow_count;\n    };"),
+              std::string::npos);
+  }
 }
 
 TEST(CtraceUnitTests, testCtfMetadataWriterUsesStreamClassIdLabelForUnboundRoute)

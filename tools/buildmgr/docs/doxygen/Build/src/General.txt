@@ -57,6 +57,18 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.15.0</td>
+    <td>Release notes:
+      - added Infineon Device Configurator and Infineon MCU Config Wizard generators
+      - fixed integer MVE option generation for Arm Compiler 6 and LLVM/Clang
+      - fixed LLVM/Clang target, CPU, and FPU option generation
+      - fixed LLVM/Clang size optimization to use `-Oz`
+      - updated cbridge utility v0.10.2
+      - updated cbuild2cmake utility v0.12.0
+      - updated cbuild utility v2.15.0
+      - updated cpackget utility v2.2.2
+      - updated csolution utility v2.15.0
+    </td>
     <td>2.14.0</td>
     <td>Release notes:
       - added support for compile macros generation

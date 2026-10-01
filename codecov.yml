@@ -2,6 +2,9 @@
 # ----------------------
 coverage:
   status:
+    default_rules:
+      # Only gate components with a fresh coverage upload for this commit.
+      flag_coverage_not_uploaded_behavior: exclude
     patch: false
     project:
       default: false

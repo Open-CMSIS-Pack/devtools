@@ -28,11 +28,10 @@
 #include <utility>
 #include <vector>
 
-/** @brief Stores the derived CSV, CTF, and Trace Compass target paths. */
+/** @brief Stores the derived per-capture CSV and CTF target paths. */
 struct OutputPaths {
   std::filesystem::path csv;
   std::filesystem::path ctf;
-  std::filesystem::path traceCompassXml;
 };
 
 /** @brief Derives all output targets from one raw input path. */
@@ -46,14 +45,11 @@ static OutputPaths outputPaths(const std::filesystem::path& rawInputPath)
   const auto outputDirectory = rawInputPath.parent_path();
   auto csvPath = outputDirectory / captureName;
   csvPath += ".csv";
-  auto ctfPath = outputDirectory / solutionSetName;
+  auto ctfPath = outputDirectory / captureName;
   ctfPath += ".ctf";
-  auto traceCompassXmlPath = outputDirectory / captureName;
-  traceCompassXmlPath += ".traceanalysis.xml";
   return {
       std::move(csvPath),
       std::move(ctfPath),
-      std::move(traceCompassXmlPath),
   };
 }
 
@@ -198,7 +194,7 @@ resolveCtfTopology(const CtraceRunMeta& ctraceRunMeta, const TraceSelection& sel
   CtfMetadataTopology topology;
   if (legacy) {
     topology.clockDomains.push_back(
-        {CtfClockDomainId{0U}, "swo_clock", std::nullopt, *routes.front()->timestampClockHz, false});
+        {CtfClockDomainId{0U}, "swo_clock", CtfUuid::randomV4(), *routes.front()->timestampClockHz, false});
     topology.streams.push_back(
         {CtfStreamClassId{0U}, routes.front()->identity, routes.front()->processorName, CtfClockDomainId{0U}});
     return topology;
@@ -407,7 +403,7 @@ TraceOutputPlan planTraceOutputs(const TraceOutputRequest& request, const std::f
     if (metadata.has_value() && validRoutes && validTypes) {
       metadata->sources = resolveCtfSources(ctraceRunMeta, request.selection);
       plan.ctf = CtfOutputConfig{
-          paths.ctf, paths.traceCompassXml, request.selection, std::move(*metadata), resolveCtfRoutes(ctraceRunMeta),
+          paths.ctf, request.selection, std::move(*metadata), resolveCtfRoutes(ctraceRunMeta),
       };
     }
   }

@@ -102,7 +102,7 @@ private:
   void writeDwtEvent(const TraceEvent& event, const DwtEventTraceEvent& counters);
   /** @brief Expands one PMU trace-on-overflow mask into individual CTF records. */
   void writePmuEvent(const TraceEvent& event, const PmuTraceEvent& counters);
-  /** @brief Encodes one periodic PC-sample or processor-sleep event. */
+  /** @brief Encodes one periodic PC sample, sleep indication, or trace-prohibited marker. */
   void writePcSampleEvent(const TraceEvent& event, const PcSampleTraceEvent& sample);
   /** @brief Encodes one reconstructed global timestamp event. */
   void writeGlobalTimestampEvent(const TraceEvent& event, const GlobalTimestampTraceEvent& timestamp);

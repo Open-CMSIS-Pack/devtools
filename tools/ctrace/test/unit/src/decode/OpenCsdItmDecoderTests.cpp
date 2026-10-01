@@ -184,6 +184,7 @@ TEST(CtraceUnitTests, testOpenCsdItmDecoderConstructsDefaultSession)
   const TraceRouteIdentity formattedRoute{TraceRouteId{0U}, 1U};
   OpenCsdItmDecoder formatted({formattedRoute}, OpenCsdItmInputMode::CoreSightFormatted, sink);
   EXPECT_EQ(formatted.finish().bytesIn, 0U);
+  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdMissingSync));
 }
 
 TEST(CtraceUnitTests, testOpenCsdItmDecoderDestroysSessionBeforeItsCallbackTargets)
@@ -392,7 +393,6 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderPreservesContinuousFormatter
   EXPECT_EQ(protocolErrors.front()->sourceIndex, 17U);
   ASSERT_EQ(losses.size(), 1U);
   EXPECT_EQ(losses.front()->route, route2);
-  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdFormattedInputError));
 }
 
 TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRecoversSeveralRoutesOnceAtTheirEarliestFailure)
@@ -509,7 +509,7 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderClosesUnresolvedRouteLossAtE
   EXPECT_EQ(losses.front()->route, route2);
   EXPECT_EQ(losses.front()->sourceIndex, 5U);
   EXPECT_EQ(losses.front()->rawBytesConsumed, 11U);
-  EXPECT_NE(losses.front()->errorMessage.find("no later hardware sync"), std::string::npos);
+  EXPECT_NE(losses.front()->errorMessage.find("no later hardware SYNC"), std::string::npos);
 }
 
 TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderRejectsFatalResponseAndInvalidRootProgress)
@@ -786,6 +786,8 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderPreservesRoutedIncompleteTai
     FAIL() << "incomplete formatted ITM packet did not fail the input";
   } catch (const OpenCsdFatalError& error) {
     EXPECT_EQ(error.bytesProcessed(), capture.size());
+    EXPECT_NE(std::string(error.what()).find("incomplete ITM packet at end of input"), std::string::npos);
+    EXPECT_EQ(std::string(error.what()).find("OCSD_RESP_CONT"), std::string::npos);
   }
 
   std::vector<const OpenCsdTraceElement*> issues;
@@ -802,26 +804,372 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderPreservesRoutedIncompleteTai
   EXPECT_EQ(issues.front()->issueSeverity, TraceIssueSeverity::Error);
 }
 
-TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderNormalizesUnassignedDataWithExactOffset)
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderSkipsInitialUnassignedDataAndDecodesLaterPayload)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  for (const auto prefixByte : {0x00U, 0xffU}) {
+    SCOPED_TRACE(prefixByte);
+    CollectingOpenCsdElementSink sink;
+    std::vector<TraceByteSkip> discarded;
+    OpenCsdItmDecoder decoder(
+        {route}, OpenCsdItmInputMode::CoreSightFormatted, sink, OpenCsdUnsupportedTraceIdObserver{},
+        [&](const TraceByteSkip& skipped) { discarded.push_back(skipped); });
+    std::vector<std::uint8_t> capture(32U, static_cast<std::uint8_t>(prefixByte));
+    const auto payload = memoryAlignedFrames({{1U, itmHardwareSync()}, {1U, itmSoftwarePacket(1U, 'A')}});
+    capture.insert(capture.end(), payload.begin(), payload.end());
+
+    for (std::size_t offset = 0U; offset < capture.size(); offset += 16U) {
+      EXPECT_NO_THROW(decoder.push(capture.data() + offset, 16U));
+    }
+    EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+    EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+
+    const auto unassigned = std::find_if(discarded.begin(), discarded.end(), [](const auto& skipped) {
+      return skipped.reason == TraceByteSkipReason::NoSourceId;
+    });
+    ASSERT_NE(unassigned, discarded.end());
+    EXPECT_EQ(unassigned->formatterOffset, 0U);
+    EXPECT_FALSE(unassigned->traceId.has_value());
+    // A zero frame contains 15 unassigned payload bytes; the FF ID marker
+    // leaves only its first following byte assigned to the previous unknown ID.
+    EXPECT_EQ(unassigned->byteCount, prefixByte == 0U ? 30U : 1U);
+    EXPECT_EQ(std::count_if(discarded.begin(), discarded.end(), [](const auto& skipped) {
+                return skipped.reason == TraceByteSkipReason::NoSourceId;
+              }),
+              1);
+    EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdMissingSync));
+    EXPECT_EQ(std::count_if(sink.elements().begin(), sink.elements().end(), [&](const auto& element) {
+                return element.route == route && element.kind == OpenCsdTraceElement::Kind::Software &&
+                       element.value == 'A';
+              }),
+              1);
+  }
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderReportsUnassignedOnlyInputOnceAtEnd)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  std::vector<TraceByteSkip> discarded;
+  OpenCsdItmDecoder decoder(
+      {route}, OpenCsdItmInputMode::CoreSightFormatted, sink, OpenCsdUnsupportedTraceIdObserver{},
+      [&](const TraceByteSkip& skipped) { discarded.push_back(skipped); });
+  const std::array<std::uint8_t, 32U> unassignedFrames{};
+
+  decoder.push(unassignedFrames.data(), unassignedFrames.size());
+  EXPECT_TRUE(discarded.empty());
+  EXPECT_EQ(decoder.finish().bytesIn, unassignedFrames.size());
+  EXPECT_EQ(decoder.finish().bytesIn, unassignedFrames.size());
+  ASSERT_EQ(discarded.size(), 1U);
+  EXPECT_EQ(discarded.front().formatterOffset, 0U);
+  EXPECT_EQ(discarded.front().byteCount, 30U);
+  EXPECT_EQ(discarded.front().reason, TraceByteSkipReason::NoSourceId);
+  EXPECT_FALSE(discarded.front().traceId.has_value());
+  EXPECT_TRUE(sink.elements().empty()) << "unassigned bytes must not be attributed to a configured route";
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderReportsNeverSynchronizedRouteOnlyAtEnd)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  std::vector<TraceByteSkip> discarded;
+  OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                           OpenCsdUnsupportedTraceIdObserver{},
+                           [&](const TraceByteSkip& skipped) { discarded.push_back(skipped); });
+  // Plausible packet bytes after an incomplete sync must not be decoded by assumption.
+  const auto capture = memoryAlignedFrames({{1U, {0x00U, 0x80U, 0x17U, 0xacU, 0x5eU, 0x00U, 0x08U, 0xc0U}}});
+
+  decoder.push(capture.data(), static_cast<std::uint32_t>(capture.size()));
+  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdMissingSync));
+  EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+  EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+
+  ASSERT_EQ(sink.elements().size(), 1U);
+  const auto& error = sink.elements().front();
+  EXPECT_EQ(error.kind, OpenCsdTraceElement::Kind::Error);
+  EXPECT_EQ(error.issueCode, TraceIssueCode::OpenCsdMissingSync);
+  EXPECT_EQ(error.issueSeverity, TraceIssueSeverity::Error);
+  EXPECT_EQ(error.route, route);
+  EXPECT_EQ(error.sourceIndex, 0U);
+  EXPECT_EQ(error.errorMessage,
+            "no hardware ITM SYNC before end of input; "
+            "first formatter group at raw offset 0");
+  const auto missingSync = std::find_if(discarded.begin(), discarded.end(), [](const auto& skipped) {
+    return skipped.reason == TraceByteSkipReason::MissingSync;
+  });
+  ASSERT_NE(missingSync, discarded.end());
+  EXPECT_EQ(missingSync->byteCount, 8U);
+  EXPECT_EQ(missingSync->formatterOffset, 0U);
+  EXPECT_EQ(missingSync->traceId, 1U);
+  EXPECT_EQ(std::count_if(discarded.begin(), discarded.end(), [](const auto& skipped) {
+              return skipped.reason == TraceByteSkipReason::MissingSync;
+            }),
+            1);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderKeepsHealthyAndUnobservedRoutesSeparateFromMissingSync)
+{
+  const TraceRouteIdentity healthy{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity unsynchronized{TraceRouteId{1U}, 2U};
+  const TraceRouteIdentity unobserved{TraceRouteId{2U}, 3U};
+  CollectingOpenCsdElementSink sink;
+  std::vector<TraceByteSkip> discarded;
+  OpenCsdItmDecoder decoder({healthy, unsynchronized, unobserved}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                           OpenCsdUnsupportedTraceIdObserver{},
+                           [&](const TraceByteSkip& skipped) { discarded.push_back(skipped); });
+  const auto capture = memoryAlignedFrames({
+      {1U, itmHardwareSync()},
+      {2U, {0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x09U, 'X'}},
+      {1U, itmSoftwarePacket(1U, 'A')},
+  });
+
+  for (std::size_t offset = 0U; offset < capture.size(); offset += 16U) {
+    decoder.push(capture.data() + offset, 16U);
+  }
+  EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+  EXPECT_EQ(std::count_if(sink.elements().begin(), sink.elements().end(), [&](const auto& element) {
+              return element.route == healthy && element.kind == OpenCsdTraceElement::Kind::Software &&
+                     element.value == 'A';
+            }),
+            1);
+  std::size_t missingSync = 0U;
+  for (const auto& element : sink.elements()) {
+    EXPECT_NE(element.route, unobserved);
+    if (element.issueCode == TraceIssueCode::OpenCsdMissingSync) {
+      ++missingSync;
+      EXPECT_EQ(element.route, unsynchronized);
+      EXPECT_NE(element.errorMessage.find("no hardware ITM SYNC"), std::string::npos);
+    }
+    if (element.route == unsynchronized) {
+      EXPECT_NE(element.kind, OpenCsdTraceElement::Kind::Software);
+    }
+  }
+  EXPECT_EQ(missingSync, 1U);
+  EXPECT_EQ(std::count_if(discarded.begin(), discarded.end(), [](const auto& skipped) {
+              return skipped.reason == TraceByteSkipReason::MissingSync && skipped.traceId == 2U &&
+                     skipped.byteCount == 7U;
+            }),
+            1);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderAcceptsInitialHardwareSyncAcrossFrames)
 {
   const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
   CollectingOpenCsdElementSink sink;
   OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink);
-  const std::array<std::uint8_t, 16U> unassignedFrame{};
+  std::vector<std::uint8_t> protocol(12U, 0xffU);
+  const auto sync = itmHardwareSync();
+  protocol.insert(protocol.end(), sync.begin(), sync.end());
+  const auto payload = itmSoftwarePacket(1U, 'A');
+  protocol.insert(protocol.end(), payload.begin(), payload.end());
+  const auto capture = memoryAlignedFrames({{1U, std::move(protocol)}});
+  ASSERT_GT(capture.size(), 16U);
+
+  for (std::size_t offset = 0U; offset < capture.size(); offset += 16U) {
+    decoder.push(capture.data() + offset, 16U);
+  }
+  EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdMissingSync));
+  EXPECT_EQ(std::count_if(sink.elements().begin(), sink.elements().end(), [](const auto& element) {
+              return element.kind == OpenCsdTraceElement::Kind::Software && element.value == 'A';
+            }),
+            1);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderReportsRoutedPrefixBeforeFirstCommittedSync)
+{
+  const TraceRouteIdentity prefixed{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity healthy{TraceRouteId{1U}, 2U};
+  CollectingOpenCsdElementSink sink;
+  std::vector<TraceByteSkip> discarded;
+  OpenCsdItmDecoder decoder({prefixed, healthy}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                           OpenCsdUnsupportedTraceIdObserver{}, [&](const TraceByteSkip& skipped) {
+                             if (skipped.reason == TraceByteSkipReason::MissingSync) {
+                               EXPECT_FALSE(std::any_of(sink.elements().begin(), sink.elements().end(),
+                                                        [&](const auto& element) {
+                                                          return element.route == prefixed &&
+                                                                 element.kind == OpenCsdTraceElement::Kind::Sync;
+                                                        }));
+                             }
+                             discarded.push_back(skipped);
+                           });
+  const auto capture = memoryAlignedFrames({
+      {1U, {0x11U, 0x22U, 0x33U}},
+      {1U, itmHardwareSync()},
+      {1U, itmSoftwarePacket(1U, 'A')},
+      {2U, itmHardwareSync()},
+      {2U, itmSoftwarePacket(1U, 'B')},
+  });
+
+  for (std::size_t offset = 0U; offset < capture.size(); offset += 16U) {
+    decoder.push(capture.data() + offset, 16U);
+  }
+  EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+  EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdMissingSync));
+  const auto& elements = sink.elements();
+  const auto prefix = std::find_if(discarded.begin(), discarded.end(), [](const auto& skipped) {
+    return skipped.reason == TraceByteSkipReason::MissingSync;
+  });
+  const auto sync = std::find_if(elements.begin(), elements.end(), [&](const auto& element) {
+    return element.route == prefixed && element.kind == OpenCsdTraceElement::Kind::Sync;
+  });
+  ASSERT_NE(prefix, discarded.end());
+  ASSERT_NE(sync, elements.end());
+  EXPECT_EQ(prefix->traceId, 1U);
+  EXPECT_EQ(prefix->formatterOffset, 0U);
+  EXPECT_EQ(prefix->byteCount, 3U);
+  EXPECT_EQ(std::count_if(discarded.begin(), discarded.end(), [](const auto& skipped) {
+              return skipped.reason == TraceByteSkipReason::MissingSync;
+            }),
+            1);
+  EXPECT_FALSE(std::any_of(elements.begin(), elements.end(), [](const auto& element) {
+    return element.issueCode.has_value();
+  }));
+  for (const auto& routeAndValue : {std::make_pair(prefixed, 'A'), std::make_pair(healthy, 'B')}) {
+    EXPECT_TRUE(std::any_of(elements.begin(), elements.end(), [&](const auto& element) {
+      return element.route == routeAndValue.first && element.kind == OpenCsdTraceElement::Kind::Software &&
+             element.value == static_cast<std::uint32_t>(routeAndValue.second);
+    }));
+  }
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderDoesNotClassifyPayloadBeforeInitialSync)
+{
+  for (const auto kind : {OpenCsdTraceElement::Kind::Software, OpenCsdTraceElement::Kind::Hardware}) {
+    SCOPED_TRACE(static_cast<int>(kind));
+    const auto hardware = kind == OpenCsdTraceElement::Kind::Hardware;
+    const auto value = hardware ? 0x100bU : static_cast<std::uint32_t>('A');
+    // The hardware candidate would describe exception 11 entry, but only after synchronization.
+    const auto candidate = hardware ? FormattedTraceTestSupport::itmHardwarePacket(1U, 2U, value)
+                                    : itmSoftwarePacket(1U, static_cast<std::uint8_t>(value));
+    const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+    CollectingOpenCsdElementSink sink;
+    std::vector<TraceByteSkip> discarded;
+    OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                             OpenCsdUnsupportedTraceIdObserver{}, [&](const TraceByteSkip& skipped) {
+                               if (skipped.reason == TraceByteSkipReason::MissingSync) {
+                                 EXPECT_TRUE(sink.elements().empty()); // Info precedes the committed sync.
+                                 discarded.push_back(skipped);
+                               }
+                             });
+    const auto capture = memoryAlignedFrames({
+        {1U, candidate},
+        {1U, itmHardwareSync()},
+        {1U, candidate},
+    });
+    decoder.push(capture.data(), static_cast<std::uint32_t>(capture.size()));
+    EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+    EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+
+    ASSERT_EQ(discarded.size(), 1U);
+    EXPECT_EQ(discarded.front().byteCount, candidate.size());
+    EXPECT_EQ(discarded.front().traceId, 1U);
+    EXPECT_EQ(discarded.front().formatterOffset, 0U);
+    ASSERT_EQ(sink.elements().size(), 2U); // One real sync and only the post-sync payload.
+    EXPECT_EQ(sink.elements().front().kind, OpenCsdTraceElement::Kind::Sync);
+    const auto& decoded = sink.elements().back();
+    EXPECT_EQ(decoded.kind, kind);
+    EXPECT_EQ(decoded.route, route);
+    EXPECT_EQ(decoded.value, value);
+    EXPECT_EQ(decoded.size, hardware ? 2U : 1U);
+    EXPECT_EQ(hardware ? decoded.discriminator : decoded.channel, 1U);
+    EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdMissingSync));
+  }
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderDoesNotInferMissingSyncFromUnconfiguredChannels)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  for (const auto traceId : {0U, 42U, 112U, 127U}) {
+    SCOPED_TRACE(traceId);
+    CollectingOpenCsdElementSink sink;
+    OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink);
+    const auto capture = memoryAlignedFrames({{static_cast<std::uint8_t>(traceId), {0xffU, 0x00U, 0x80U}}});
+
+    decoder.push(capture.data(), static_cast<std::uint32_t>(capture.size()));
+    EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+    EXPECT_TRUE(sink.elements().empty());
+  }
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderAccountsForSkippedPayloadWithoutCountingFormatterControls)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  std::vector<TraceByteSkip> discarded;
+  OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                           OpenCsdUnsupportedTraceIdObserver{},
+                           [&](const TraceByteSkip& skipped) { discarded.push_back(skipped); });
+  std::vector<std::uint8_t> capture(16U, 0U);
+  const auto payload = memoryAlignedFrames({
+      {127U, {0x11U, 0x22U, 0x33U, 0x44U}},
+      {42U, {0x55U, 0x66U, 0x77U}},
+      {0U, {0x88U, 0x99U}},
+      {1U, {0x00U, 0x80U, 0x17U, 0xacU, 0x5eU, 0x00U, 0x08U, 0xc0U}},
+  });
+  capture.insert(capture.end(), payload.begin(), payload.end());
+
+  for (std::size_t offset = 0U; offset < capture.size(); offset += 16U) {
+    decoder.push(capture.data() + offset, 16U);
+  }
+  EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+  EXPECT_EQ(decoder.finish().bytesIn, capture.size());
+  ASSERT_EQ(discarded.size(), 5U);
+  std::uint64_t skippedBytes = 0U;
+  for (const auto& skipped : discarded) {
+    skippedBytes += skipped.byteCount;
+    if (skipped.reason == TraceByteSkipReason::NoSourceId) {
+      EXPECT_EQ(skipped.byteCount, 15U);
+      EXPECT_FALSE(skipped.traceId.has_value());
+    } else if (skipped.reason == TraceByteSkipReason::ReservedSourceId) {
+      EXPECT_EQ(skipped.byteCount, 4U);
+      EXPECT_EQ(skipped.traceId, 127U);
+    } else if (skipped.reason == TraceByteSkipReason::UnconfiguredSourceId) {
+      EXPECT_EQ(skipped.byteCount, 3U);
+      EXPECT_EQ(skipped.traceId, 42U);
+    } else if (skipped.reason == TraceByteSkipReason::MissingSync) {
+      EXPECT_EQ(skipped.byteCount, 8U);
+      EXPECT_EQ(skipped.traceId, 1U);
+    } else {
+      EXPECT_EQ(skipped.reason, TraceByteSkipReason::NullSourceId);
+      EXPECT_EQ(skipped.traceId, 0U);
+      EXPECT_GE(skipped.byteCount, 2U);
+    }
+  }
+  std::size_t controlBytes = capture.size() / 16U; // One flag byte per frame.
+  for (std::size_t frame = 0U; frame < capture.size(); frame += 16U) {
+    for (std::size_t slot = 0U; slot < 15U; slot += 2U) {
+      controlBytes += (capture[frame + slot] & 1U) != 0U ? 1U : 0U;
+    }
+  }
+  EXPECT_EQ(skippedBytes + controlBytes, capture.size());
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().issueCode, TraceIssueCode::OpenCsdMissingSync);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderNormalizesUnassignedObserverFailureAndRollsBackPayload)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                           OpenCsdUnsupportedTraceIdObserver{}, [](const TraceByteSkip&) {
+                             throw std::runtime_error("synthetic unassigned-data observer failure");
+                           });
+  std::vector<std::uint8_t> capture(16U, 0U);
+  const auto payload = memoryAlignedFrames({{1U, itmHardwareSync()}, {1U, itmSoftwarePacket(1U, 'A')}});
+  capture.insert(capture.end(), payload.begin(), payload.end());
 
   try {
-    decoder.push(unassignedFrame.data(), unassignedFrame.size());
-    FAIL() << "formatted data before the first source ID did not fail";
+    decoder.push(capture.data(), static_cast<std::uint32_t>(capture.size()));
+    FAIL() << "observer failure did not abort decoding";
   } catch (const OpenCsdFatalError& error) {
-    EXPECT_EQ(error.bytesProcessed(), unassignedFrame.size());
-    EXPECT_NE(std::string(error.what()).find("has no source ID"), std::string::npos);
+    EXPECT_EQ(error.bytesProcessed(), capture.size());
+    EXPECT_NE(std::string(error.what()).find("synthetic unassigned-data observer failure"), std::string::npos);
   }
-
   ASSERT_EQ(sink.elements().size(), 1U);
-  EXPECT_EQ(sink.elements().front().kind, OpenCsdTraceElement::Kind::Error);
-  EXPECT_EQ(sink.elements().front().issueCode, TraceIssueCode::OpenCsdFormattedInputError);
-  EXPECT_EQ(sink.elements().front().sourceIndex, 0U);
-  EXPECT_TRUE(sink.elements().front().discontinuity);
+  EXPECT_EQ(sink.elements().front().issueCode, TraceIssueCode::OpenCsdDecodeError);
+  EXPECT_EQ(sink.elements().front().issueSeverity, TraceIssueSeverity::Error);
 }
 
 TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderNormalizesPostRootSessionExceptionsAndRollsBack)
@@ -1190,4 +1538,82 @@ TEST(CtraceUnitTests, testOpenCsdSessionValidationRejectsInvalidApiResults)
   ASSERT_TRUE(message.has_value());
   EXPECT_NE(message->find("OCSD_ERR_MEM"), std::string::npos);
   EXPECT_NE(message->find("decoder setup failed"), std::string::npos);
+}
+
+TEST(CtraceUnitTests, testOpenCsdItmDecoderReportsWarningResponsesWithoutDuplicatingCallbacks)
+{
+  for (const auto inputMode : {OpenCsdItmInputMode::Single, OpenCsdItmInputMode::CoreSightFormatted}) {
+    for (const auto response : {OCSD_RESP_WARN_CONT, OCSD_RESP_WARN_WAIT}) {
+      for (const auto severity : {OCSD_ERR_SEV_NONE, OCSD_ERR_SEV_INFO, OCSD_ERR_SEV_WARN}) {
+        const TraceRouteIdentity route{TraceRouteId{0U}, inputMode == OpenCsdItmInputMode::Single
+                                                           ? std::nullopt
+                                                           : std::optional<std::uint8_t>{1U}};
+        const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+        std::vector<OpenCsdSessionTestSupport::ScriptedObservation> observations{syncCallback(route, 0U)};
+        if (severity != OCSD_ERR_SEV_NONE) {
+          observations.push_back(errorObservation(OCSD_ERR_BAD_PACKET_SEQ, 2U, route.traceBusId.value_or(0U),
+                                                  "native callback detail", severity));
+        }
+        observations.push_back(softwareCallback(route, 8U, 1U, 'A'));
+        script->pushes.emplace_back(response, 16U, std::move(observations));
+        CollectingOpenCsdElementSink sink;
+        OpenCsdItmDecoder decoder({route}, inputMode, sink, OpenCsdSessionTestSupport::scriptedFactory(script));
+        const std::array<std::uint8_t, 16U> input{};
+
+        EXPECT_NO_THROW(decoder.push(input.data(), input.size()));
+        EXPECT_EQ(decoder.finish().bytesIn, input.size());
+        EXPECT_TRUE(script->routeResetCalls.empty()) << "a warning must not reset a decoder";
+        EXPECT_EQ(script->flushCalls, response == OCSD_RESP_WARN_WAIT ? 1U : 0U);
+        std::size_t warnings = 0U;
+        std::size_t software = 0U;
+        for (const auto& element : sink.elements()) {
+          if (element.kind == OpenCsdTraceElement::Kind::Error) {
+            ++warnings;
+            EXPECT_EQ(element.issueSeverity, TraceIssueSeverity::Warning);
+            EXPECT_FALSE(element.discontinuity);
+            EXPECT_NE(element.errorMessage.find(severity == OCSD_ERR_SEV_WARN ? "native callback detail"
+                                                                            : "OCSD_RESP_WARN_"),
+                      std::string::npos);
+          }
+          if (element.kind == OpenCsdTraceElement::Kind::Software && element.value == 'A') {
+            ++software;
+          }
+        }
+        EXPECT_EQ(warnings, 1U) << "each warning response must produce exactly one diagnostic";
+        EXPECT_EQ(software, 1U) << "warning reporting must retain the normal payload";
+      }
+    }
+  }
+}
+
+TEST(CtraceUnitTests, testFormattedIncompleteTailAbortReasonSurvivesAdvisoryCallbacks)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  for (const auto response : {OCSD_RESP_CONT, OCSD_RESP_WARN_CONT, OCSD_RESP_WARN_WAIT, OCSD_RESP_WAIT,
+                             OCSD_RESP_ERR_CONT, OCSD_RESP_FATAL_SYS_ERR}) {
+    for (const auto severity : {OCSD_ERR_SEV_INFO, OCSD_ERR_SEV_WARN, OCSD_ERR_SEV_ERROR}) {
+      CollectingOpenCsdElementSink sink;
+      const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+      script->ends.emplace_back(response, 0U, std::vector<OpenCsdSessionTestSupport::ScriptedObservation>{
+          errorObservation(OCSD_ERR_MEM, 5U, 1U, "native callback detail", severity),
+          OpenCsdSessionTestSupport::rawPacketCallback(route, 6U, ITM_PKT_INCOMPLETE_EOT, OCSD_OP_EOT)});
+      OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink,
+                                OpenCsdSessionTestSupport::scriptedFactory(script));
+      try {
+        (void)decoder.finish();
+        FAIL() << "an incomplete formatted tail must remain fatal";
+      } catch (const OpenCsdFatalError& error) {
+        const bool nativeError = severity == OCSD_ERR_SEV_ERROR ||
+                                 OpenCsdErrorController::responseReportsError(response);
+        const auto expected = response == OCSD_RESP_FATAL_SYS_ERR && severity != OCSD_ERR_SEV_ERROR
+                                  ? "OCSD_RESP_FATAL_SYS_ERR"
+                                  : nativeError ? "OCSD_ERR_MEM" : "incomplete ITM packet at end of input";
+        EXPECT_NE(std::string(error.what()).find(expected), std::string::npos)
+            << "response=" << response << ", severity=" << severity << ": " << error.what();
+      }
+      EXPECT_TRUE(sink.hasIssue(TraceIssueCode::OpenCsdIncompleteTail));
+      EXPECT_EQ(script->flushCalls, 0U);
+      EXPECT_TRUE(script->routeResetCalls.empty());
+    }
+  }
 }

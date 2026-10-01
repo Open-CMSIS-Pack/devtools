@@ -1,4 +1,5 @@
-SET(SOURCE_FILES SvdConvIntegTestEnv.cpp SvdConvIntegTests.cpp SvdConvTestUtils.cpp SvdConvTestCmdLine.cpp)
+SET(SOURCE_FILES SvdConvIntegTestEnv.cpp SvdConvIntegTests.cpp SvdConvTestUtils.cpp SvdConvTestCmdLine.cpp
+  SvdConvEnumHeaderTests.cpp)
 SET(HEADER_FILES SvdConvIntegTestEnv.h SvdConvTestUtils.h)
 
 list(TRANSFORM SOURCE_FILES PREPEND src/)

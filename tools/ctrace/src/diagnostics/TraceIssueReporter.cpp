@@ -33,6 +33,9 @@ static std::string atRawOffset(const std::string& message, const TraceEvent& eve
 /** @brief Creates the concise user-facing representation of a trace issue. */
 static std::string displayErrorMessage(const TraceEvent& event, const TraceIssueEvent& issue)
 {
+  if (!issue.message.empty()) {
+    return issue.message;
+  }
   switch (issue.code) {
   case TraceIssueCode::DataLoss:
     if (issue.rawBytesConsumed.has_value()) {
@@ -47,8 +50,8 @@ static std::string displayErrorMessage(const TraceEvent& event, const TraceIssue
     return atRawOffset("invalid ITM packet header", event);
   case TraceIssueCode::OpenCsdIncompleteTail:
     return "incomplete ITM packet starting at raw offset " + std::to_string(event.index) + " at end of input";
-  case TraceIssueCode::OpenCsdFormattedInputError:
-    return issue.message.empty() ? atRawOffset("formatted trace input error", event) : issue.message;
+  case TraceIssueCode::OpenCsdMissingSync:
+    return "no hardware ITM SYNC before end of input";
   case TraceIssueCode::OpenCsdNoProgress:
     return atRawOffset("OpenCSD made no decode progress", event);
   case TraceIssueCode::OpenCsdWaitTimeout:
@@ -115,9 +118,11 @@ void TraceIssueReporter::reportOverflow(const TraceEvent& event)
 
 void TraceIssueReporter::reportError(const TraceEvent& event, const TraceIssueEvent& issue)
 {
+  auto context = routeContext(event.route);
+  context.emplace_back("raw_offset", std::to_string(event.index));
   report(issue.severity == TraceIssueSeverity::Warning ? DiagnosticSink::Severity::Warning
                                                        : DiagnosticSink::Severity::Error,
-         displayErrorMessage(event, issue), routeContext(event.route));
+         displayErrorMessage(event, issue), std::move(context));
 }
 
 void TraceIssueReporter::report(DiagnosticSink::Severity severity, std::string message,

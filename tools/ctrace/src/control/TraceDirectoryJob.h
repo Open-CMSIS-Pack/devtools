@@ -11,8 +11,14 @@
 #include "CliOptions.h"
 #include "DiagnosticSink.h"
 #include "TraceRunConfigReader.h"
+#include "ctf/CtfMetadataModel.h"
 
 #include <filesystem>
+#include <optional>
+#include <vector>
+
+struct TraceRunConfig;
+struct TraceRunRawInput;
 
 /** @brief Discovers and decodes the selected trace-run configurations in a directory. */
 class TraceDirectoryJob {
@@ -34,8 +40,13 @@ public:
   void run();
 
 private:
-  /** @brief Reads, normalizes, and decodes one selected trace-run configuration. */
+  /** @brief Reads one configuration and processes all its supported raw inputs. */
   void processConfigFile(const std::filesystem::path& configFile);
+  /** @brief Collects completed per-input CTF metadata into one target-level XML. */
+  void processInputs(const TraceRunConfig& config, const std::vector<TraceRunRawInput>& inputs,
+                      const std::filesystem::path& xmlPath);
+  /** @brief Isolates one input's preflight, decoding, outputs, and contextual diagnostics. */
+  std::optional<CtfMetadataModel> processInput(const TraceRunConfig& config, const TraceRunRawInput& rawInput);
 
   CliOptions m_options;
   DiagnosticSink& m_diagnostics;

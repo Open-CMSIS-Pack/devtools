@@ -10,7 +10,8 @@ authoritative for trace input and `*.ctrace-run.yml` configuration.
 - DWT data trace: [`DWT_VALUE`](#dwt_value-event-id-1), [`DWT_ADDR`](#dwt_addr-event-id-2), and
   [`DWT_MATCH`](#dwt_match-event-id-9)
 - Trace integrity: [`TRACE_STATUS`](#trace_status-event-id-3)
-- Execution state: [`EXCEPTION`](#exception-event-id-4) and [`PC_SAMPLE`](#pc_sample-event-id-6)
+- Execution state: [`EXCEPTION`](#exception-event-id-4), [`PC_SAMPLE`](#pc_sample-event-id-6), and
+  [`PC_SAMPLE_PROHIBITED`](#pc_sample_prohibited-event-id-10)
 - Time correlation: [`GLOBAL_TIMESTAMP`](#global_timestamp-event-id-5)
 - Profiling: [`DWT_EVENT`](#dwt_event-event-id-7) and [`PMU_EVENT`](#pmu_event-event-id-8)
 
@@ -23,9 +24,17 @@ cmsis_ctf_profile_version = 1
 
 ## Files and common structure
 
+Each raw input writes an independent `<solution-set>.<channel>.ctf` bundle, where `<channel>` is `SWO`, `TB`, or
+`TB_<name>`. The channel is always included, even when only one input exists. Inputs are processed sequentially;
+their metadata, stream IDs, clocks, and output cleanup are independent. Existing `<solution-set>.ctf` directories
+are not reused, migrated, or removed. This intentional pathname change differs from the published
+[file layout](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#directory-and-file-structure),
+which still names `<solution-set>.ctf`; specification alignment remains outstanding.
+
 Every CTF bundle contains a `metadata` file and zero or more binary stream files. When selected, unformatted
 single-source input preserves the established layout: stream class `0` is written eagerly to `stream_0` and references
-`swo_clock`. Formatted input uses the generalized layout: each emitted Trace Bus route has its own stream class,
+`swo_clock`. That clock now has an explicit UUID without changing the legacy binary layout. Formatted input uses
+the generalized layout: each emitted Trace Bus route has its own stream class,
 binary `stream_<id>` file, and explicit clock-domain reference. Formatted streams without emitted records are omitted
 from the final bundle and metadata; a stream filter that selects no route therefore produces a metadata-only bundle.
 
@@ -46,15 +55,16 @@ cmsis_stream_<id>_route_t ctrace_route
 `timestamp` is a cycle count in the clock domain referenced by its stream class. CTF preflight requires a non-zero
 `timestamps.clock` for every configured route selected by the stream filter, before ctrace knows which routes will
 emit records. A stream filter that selects no configured route requires no clock. Timestamps never decrease within
-one binary stream; independent routes are not clamped against each other. Generalized clock domains have distinct
-UUIDs even when their configured frequencies are equal, because equal frequency alone does not establish
-synchronization.
+one binary stream; independent routes are not clamped against each other. All clock domains receive random UUIDs,
+including legacy `swo_clock`. Independent captures and routes have distinct identities even when their configured
+frequencies are equal, because equal frequency alone does not establish synchronization.
 
 `cmsis_trace_bus_id` identifies the CoreSight Trace Bus route. Value `0` denotes unformatted single-source input;
 formatted IDs use values `1` through `111`. It is routing context, not a CPU identity. `ctrace_route` is a private
 enum carrying the resolved processor name for display, or the numeric stream-class ID as an internal fallback. The
 optional processor name is also stored in the generalized environment as
-`cmsis_stream_<id>_processor_name`.
+`cmsis_stream_<id>_processor_name`. Generated XML uses the public Trace Bus ID and clock identity, not the private
+`ctrace_route` display enum.
 
 The packet context has this exact field order:
 
@@ -67,13 +77,27 @@ uint32_t events_discarded
 uint32_t packet_seq_num
 ```
 
-The timestamp fields use the stream class's clock mapping. Trace loss is represented by `TRACE_STATUS` events rather
-than the CTF `events_discarded` counter, which is currently zero.
+The timestamp fields use the stream class's clock mapping. Route-bound trace loss is represented by `TRACE_STATUS`
+events rather than the CTF `events_discarded` counter, which is currently zero. Formatter skips and initial ITM
+synchronization skips are separate byte-accounting Info annotations in CLI/CSV only. Their optional formatter ID
+identifies observed input, not a decoded CTF route or clock; this includes NULL and reserved IDs. Ctrace does not
+invent a CTF stream, timestamp, or `resync` event for these annotations.
 
-The optional `<solution-set>.<channel>.traceanalysis.xml` companion is stored next to the bundle. It is generated
-only when the completed metadata retains at least one stream and all retained streams reference one clock domain,
-because the supported Trace Compass reader cannot safely combine independent clocks. This limitation affects only
-the generated visualization; a metadata-only or multi-clock CTF bundle remains valid.
+One optional `<solution-set>.traceanalysis.xml` is stored beside the target's bundles. It collects graphical views
+from eligible bundles completed in the current invocation, not from existing CTF files found on disk. Each bundle
+must retain graphical data and exactly one clock domain. A multi-clock bundle is excluded with a warning; eligible
+single-clock bundles still contribute. These restrictions affect only visualization; metadata-only, point-event-only,
+and multi-clock CTF bundles remain valid. Historical per-channel XML files are neither migrated nor deleted.
+
+A fatal OpenCSD decode abort removes the incomplete CTF bundle, including data already written for healthy routes,
+and excludes it from target XML. If CSV output remains healthy, ctrace retains its selected rows and appends one
+input-wide `error`
+row with the processed-byte count and abort reason. That final row has no cycle timestamp, stream, or source and
+bypasses type and stream filters. A recoverable route-local error instead allows normal output completion, as described
+under [`TRACE_STATUS`](#trace_status-event-id-3). Both kinds of Error produce a failing command exit status. Remaining
+raw inputs are still processed, and their completed bundles and XML contributions are unaffected by another input's
+failure. Target XML preparation and finalization have their own lifecycle; an XML failure leaves completed CTF and
+CSV outputs intact.
 
 ## Event catalogue
 
@@ -89,6 +113,7 @@ the generated visualization; a metadata-only or multi-clock CTF bundle remains v
 | Profiling | 7 | `DWT_EVENT` | Architectural DWT event-counter overflow |
 | Profiling | 8 | `PMU_EVENT` | Programmable PMU counter overflow |
 | DWT data trace | 9 | `DWT_MATCH` | Comparator match without additional data |
+| Execution state | 10 | `PC_SAMPLE_PROHIBITED` | PC sampling reports that trace is prohibited |
 
 ## Common sample fields
 
@@ -174,9 +199,9 @@ uint32_t               cmsis_overflow_count
 `cmsis_dwt_access` is `read` (`0`) or `write` (`1`). DWT comparator labels and data types are resolved from
 `ctrace-run.yml`; fallback labels are `DWT0` through `DWT3`.
 
-The configured value size controls the CTF scalar type. If it differs from the SWO payload size, `ctrace` emits a
-warning for that route. Trace Compass provides the standard event table and, when such data was emitted, a generated
-XY view with one series per comparator.
+The configured value size controls the CTF scalar type. If it differs from the decoded payload size, `ctrace` emits
+one warning per affected comparator and route. Trace Compass provides the standard event table and, when such data
+was emitted, a generated XY view with one series per comparator.
 
 ### DWT_ADDR (event ID 2)
 
@@ -227,6 +252,18 @@ An overflow or data-loss boundary closes active exception and sleep visualizatio
 therefore visible as a gap instead of being attributed to the previously active state. Status records remain point
 events in the standard CTF event table; the generated XML does not create a status timeline.
 
+Route-local decoder errors and data-loss records follow the normal `error` type and stream filters in CSV and CTF.
+CLI diagnostics remain visible independently of those filters. Native decoder error names, descriptions, packet types,
+and bounded byte previews are CLI/CSV diagnostic details; the CTF profile stores the status reason and overflow epoch,
+without those strings or raw bytes. Successful formatted-route recovery emits a separate data-loss diagnostic and a
+`resync` when a real hardware ITM sync is committed. An unresolved interval at end of input emits data loss without a
+`resync`.
+
+A configured formatted route that receives payload but never commits a real ITM hardware sync reports a decoder
+Error at end of input. When selected for output, it follows the normal route-bound `decode_error` status path; it
+does not generate a `resync`. The command fails, but valid CTF output from healthy routes and selected diagnostic
+records is retained. A configured route with no received payload does not produce this error.
+
 ## Execution-state events
 
 ### EXCEPTION (event ID 4)
@@ -262,10 +299,33 @@ uint32_t cmsis_overflow_count
 State `0` denotes processor sleep and leaves the PC array empty. State `1` denotes a periodic PC sample and stores one
 32-bit PC. The state therefore doubles as the zero-or-one array length.
 
+Four-byte PC values and one-byte `0x00` sleep indications use this event. The Armv8-M one-byte `0xff`
+trace-prohibited marker uses [`PC_SAMPLE_PROHIBITED`](#pc_sample_prohibited-event-id-10); other payloads produce
+a decoder Error.
+
 PC samples are point observations and are available in the CTF event table. Trace Compass does not invent execution
 duration between sampled PCs. If a sleep indication was emitted, the generated `Processor State` view opens a
-`Sleep` interval; the next PC sample, overflow, or data loss closes it. Ordinary PC samples alone do not create this
-view.
+`Sleep` interval; the next PC sample, trace-prohibited marker, overflow, or data loss closes it. Ordinary PC samples
+alone do not create this view.
+
+### PC_SAMPLE_PROHIBITED (event ID 10)
+
+```text
+uint8_t  cmsis_sample_flags
+uint32_t cmsis_overflow_count
+```
+
+The Armv8-M one-byte DWT PC-sampling payload `0xff` reports `Trace prohibited`. It is a valid point observation,
+not a PC address, decoder error, or data-loss boundary. Its timestamp and sample quality are preserved; the marker
+does not increment the overflow count or reset exception state.
+
+This additive event keeps the existing `PC_SAMPLE` binary layout and profile version unchanged. Adding another
+`cmsis_pc_sample_state` value instead would change the PC array length and misalign consumers. Both event kinds remain
+part of the `pcsample` output selection.
+
+The event is visible in the CTF event table. If a `Processor State` view exists, it closes any open `Sleep` interval
+for that route, leaving the state unknown. It neither establishes running state nor creates a trace-prohibited
+duration or a graphical view by itself.
 
 ## Time-correlation events
 
@@ -325,21 +385,38 @@ events as generated XML tables. The companion XML contains only graphical views 
 - XY views for DWT values and data-address fragments.
 - Time graphs for DWT matches, DWT and PMU counter pulses, decoded exception activity, and processor sleep.
 
-ITM values, trace-status records, Global Timestamps, and ordinary PC samples stay in the standard event table because
-they do not establish a duration. Each generalized route receives a separate graphical view. Its visible suffix is
-the resolved processor name, if available; numeric Trace Bus IDs are omitted from visible labels but remain in the
+ITM values, trace-status records, Global Timestamps, ordinary PC samples, and trace-prohibited markers stay in the
+standard event table because they do not establish a duration. Each contributing route receives a separate graphical
+view. Its visible suffix is the input channel followed by the resolved processor name, if available; numeric Trace Bus
+IDs are omitted from visible labels but remain in the
 public CTF event context and internally in provider IDs and state queries. Routes and topics without corresponding
-emitted data do not add graphical views.
+emitted data do not add graphical views. When no graphical topic remains, ctrace omits the XML entirely and removes
+any stale target file; importing only the CTF bundle still provides the event table.
 
 The production output planner conservatively assigns each formatted route a distinct clock domain and UUID, even
-when configured frequencies match. After lazy stream projection, ctrace writes XML only if the completed bundle
-retains at least one stream and exactly one referenced domain; with current planning, this normally means one retained
-formatted route. Multiple retained domains deliberately omit the XML and produce one warning rather than presenting
-unrelated cycle domains as a shared timeline. The underlying CTF model and XML writer retain support for explicitly
-described shared domains once the input contract can establish one.
+when configured frequencies match. After lazy stream projection, a completed bundle contributes XML views only if
+it retains at least one stream and exactly one referenced domain; with current planning, this normally means one
+retained formatted route. Multiple retained domains exclude that bundle and produce one warning, since the supported
+reader cannot establish a combined event order within it. Separate single-clock CTF bundles can contribute to the
+same target XML without correlating clocks or rebasing timestamps.
+
+Every state path begins with `hostId` (the reader's sole clock UUID for that bundle), then
+`context.cmsis_trace_bus_id`, then the topic. View entries select the concrete `<clock-uuid>/<trace-bus-id>/<topic>`
+path. This includes legacy ID `0` and separates captures that reuse formatted ID `1` or the same processor label.
+View queries accept only that concrete UUID, either bare or quoted, because supported readers can expose the TSDL
+quotes as part of `hostId`; they do not wildcard the capture identity.
+Separate bundles must not reuse a clock UUID: if future inputs establish shared clocks across captures, this
+capture-identity contract must be revised explicitly.
+Only metadata from successfully finalized bundles in the current run contributes: a preserved old bundle after an
+input preflight failure is not eligible. Completed output after recoverable decoding errors remains eligible.
 
 The state-provider version is a deterministic hash of the generated XML contents. A semantic XML change therefore
 changes the version automatically and prevents a Trace Compass server from reusing stale analysis state.
+
+Analysis and view identifiers share a deterministic namespace derived from the contributing clock identities.
+Random clock UUIDs distinguish independent captures; the namespace prevents XML definitions for different targets
+from colliding in one viewer. Display labels are not used as identity. Preparing or writing the target XML cannot
+delete completed CSV/CTF output, and it never removes historical per-channel XML files.
 
 ## Current profile boundaries
 
@@ -347,7 +424,8 @@ changes the version automatically and prevents a Trace Compass server from reusi
 - The optional resolved processor name is encoded as stream-scoped environment metadata and private display context;
   `cmsis_trace_bus_id` remains the stable public routing field.
 - Separate trace clock domains are represented, but Global Timestamp packets do not yet establish cross-stream
-  synchronization and the generated Trace Compass XML therefore requires one shared domain.
+  synchronization. Each bundle contributing to XML must have one domain; different contributing bundles remain
+  independent and their timestamps are not rebased.
 - ETM and MTB instruction trace have no CTF event definitions yet.
 - Event Recorder input has no CTF event definitions yet.
 - Formatted input with FSYNC/HSYNC transport framing is not decoded; the current input contract requires complete,
@@ -370,12 +448,14 @@ The primary implementation sources are [`OutputRequirements.cpp`](../src/output/
 [`CtfMetadataWriter.cpp`](../src/output/ctf/CtfMetadataWriter.cpp),
 [`CtfEncoder.cpp`](../src/output/ctf/CtfEncoder.cpp),
 [`CtfStreamWriter.cpp`](../src/output/ctf/CtfStreamWriter.cpp),
-[`CtfBundleOutput.cpp`](../src/output/ctf/CtfBundleOutput.cpp), and
+[`CtfBundleOutput.cpp`](../src/output/ctf/CtfBundleOutput.cpp),
+[`TraceCompassXmlOutput.cpp`](../src/output/ctf/TraceCompassXmlOutput.cpp), and
 [`TraceCompassXmlWriter.cpp`](../src/output/ctf/TraceCompassXmlWriter.cpp).
 
 The data-driven XML shape is an approved compatibility refinement of the former eager legacy XML: only graphical
-topics observed in completed output create views. The checked-in legacy XML remains the current golden. Any further
-XML-shape change must update focused XML tests, review and update that golden plus its fixture-manifest hash, and
+topics observed in completed output create views. Target-level aggregation additionally scopes views by clock UUID
+and Trace Bus ID. XML-shape changes must update focused XML tests, review and update the golden plus its
+fixture-manifest hash, and
 re-run the external Trace Compass acceptance.
 
 Changes to an event ID, name, type, field, enum value, or interpretation must update this document and the relevant

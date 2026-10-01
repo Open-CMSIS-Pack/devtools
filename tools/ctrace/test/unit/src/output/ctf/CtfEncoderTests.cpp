@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -166,10 +167,10 @@ TEST(CtraceUnitTests, testCtfEncoderPcSampleEncoding)
 
   CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{{"pcsample"}, {}}));
   startEncoder(encoder, outputDirectory);
-  auto pc = atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U, false}}, 10U);
+  auto pc = atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U, PcSampleKind::Pc}}, 10U);
   pc.quality = TraceQuality{false, true, 0U};
   encoder.writeEvent(pc);
-  auto sleep = atCycle(TraceEvent{PcSampleTraceEvent{0x12345678U, true}}, 11U);
+  auto sleep = atCycle(TraceEvent{PcSampleTraceEvent{0x12345678U, PcSampleKind::Sleep}}, 11U);
   sleep.quality = TraceQuality{true, false, 7U};
   encoder.writeEvent(sleep);
   encoder.stop();
@@ -198,6 +199,76 @@ TEST(CtraceUnitTests, testCtfEncoderPcSampleEncoding)
   EXPECT_NE(metadata.find("uint8_t cmsis_pc_sample_state"), std::string::npos);
   EXPECT_EQ(metadata.find("cmsis_pc_sample_state_t"), std::string::npos);
   EXPECT_NE(metadata.find("uint32_t cmsis_pc[cmsis_pc_sample_state]"), std::string::npos);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderPcSampleProhibitedPreservesQualityAndFollowingPc)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-pc-sample-prohibited-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+  CtfEncoder encoder(legacyEncoderConfig(1000000U, TraceSelection{{"pcsample"}, {}}));
+  startEncoder(encoder, outputDirectory);
+
+  auto prohibited = atCycle(TraceEvent{PcSampleTraceEvent{0xffffffffU, PcSampleKind::TraceProhibited}}, 12U);
+  prohibited.quality = TraceQuality{true, true, 7U};
+  encoder.writeEvent(prohibited);
+  auto pc = atCycle(TraceEvent{PcSampleTraceEvent{0x08005678U, PcSampleKind::Pc}}, 13U);
+  pc.quality = TraceQuality{false, true, 7U};
+  encoder.writeEvent(pc);
+  encoder.stop();
+
+  const auto records = readCtfRecords(outputDirectory / "stream_0");
+  ASSERT_EQ(records.size(), 2U);
+  EXPECT_EQ(records[0].id, CtfSchema::value(CtfSchema::EventId::PcSampleProhibited));
+  EXPECT_EQ(records[0].timestamp, 12U);
+  EXPECT_EQ(records[0].traceBusId, 0U);
+  EXPECT_FALSE(records[0].routeLabelId.has_value());
+  ASSERT_EQ(records[0].payload.size(), 5U);
+  EXPECT_EQ(records[0].payload[0U],
+            CtfSchema::SampleFlagOverflow | CtfSchema::SampleFlagTimestampReliable);
+  EXPECT_EQ(readLe32(records[0].payload, 1U), 7U);
+
+  EXPECT_EQ(records[1].id, CtfSchema::value(CtfSchema::EventId::PcSample));
+  EXPECT_EQ(records[1].timestamp, 13U);
+  ASSERT_EQ(records[1].payload.size(), 10U);
+  EXPECT_EQ(records[1].payload[0U], CtfSchema::value(CtfSchema::PcSampleState::Pc));
+  EXPECT_EQ(readLe32(records[1].payload, 1U), 0x08005678U);
+  EXPECT_EQ(records[1].payload[5U], CtfSchema::SampleFlagTimestampReliable);
+  EXPECT_EQ(readLe32(records[1].payload, 6U), 7U);
+}
+
+TEST(CtraceUnitTests, testCtfEncoderPcSampleProhibitedRespectsTypeAndRouteFilters)
+{
+  const TemporaryTestPath temporaryPath("ctrace-ctf-pc-sample-prohibited-filter-test");
+  const auto& outputDirectory = temporaryPath.createDirectory();
+  CtfEncoder encoder(formattedEncoderConfig(TraceSelection{{"pcsample"}, {111U}}));
+  startEncoder(encoder, outputDirectory);
+  const TraceRouteIdentity firstRoute{TraceRouteId{4U}, 1U};
+  const TraceRouteIdentity secondRoute{TraceRouteId{90U}, 111U};
+  auto prohibited = atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::TraceProhibited}}, 15U);
+  prohibited.quality = TraceQuality{false, false, 3U};
+  encoder.writeEvent(onRoute(prohibited, firstRoute));
+  encoder.writeEvent(onRoute(prohibited, secondRoute));
+  encoder.writeEvent(onRoute(softwarePacket(1U, 1U, 'A'), secondRoute));
+  encoder.stop();
+
+  EXPECT_FALSE(std::filesystem::exists(outputDirectory / "stream_1"));
+  const auto records =
+      readCtfRecords(outputDirectory / "stream_111", CtfStreamWriter::EventContextLayout::RouteLabeled);
+  ASSERT_EQ(records.size(), 1U);
+  EXPECT_EQ(records[0].id, CtfSchema::value(CtfSchema::EventId::PcSampleProhibited));
+  EXPECT_EQ(records[0].timestamp, 15U);
+  EXPECT_EQ(records[0].traceBusId, 111U);
+  EXPECT_EQ(records[0].routeLabelId, std::optional<std::uint8_t>{111U});
+  ASSERT_EQ(records[0].payload.size(), 5U);
+  EXPECT_EQ(records[0].payload[0U], CtfSchema::SampleFlagBeforeFirstTimestamp);
+  EXPECT_EQ(readLe32(records[0].payload, 1U), 3U);
+
+  const TemporaryTestPath filteredPath("ctrace-ctf-pc-sample-prohibited-unselected-test");
+  CtfEncoder filteredEncoder(legacyEncoderConfig(1000000U, TraceSelection{{"itm"}, {}}));
+  startEncoder(filteredEncoder, filteredPath.createDirectory());
+  filteredEncoder.writeEvent(prohibited);
+  filteredEncoder.stop();
+  EXPECT_TRUE(readCtfRecords(filteredPath.path() / "stream_0").empty());
 }
 
 TEST(CtraceUnitTests, testCtfEncoderExpandsDwtEventCounterMask)

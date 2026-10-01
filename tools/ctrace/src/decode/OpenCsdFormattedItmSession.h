@@ -9,14 +9,13 @@
 #define CTRACE_SRC_DECODE_OPENCSDFORMATTEDITMSESSION_H
 
 #include "OpenCsdItmSession.h"
+#include "TraceEvent.h"
 #include "TraceRoute.h"
 #include "opencsd/ocsd_if_types.h"
 
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <stdexcept>
-#include <string>
 #include <vector>
 
 class ITraceErrorLog;
@@ -40,34 +39,24 @@ public:
    */
   virtual void rawPacketForRoute(const TraceRouteIdentity& route, ocsd_datapath_op_t operation, ocsd_trc_index_t index,
                                  const ItmTrcPacket* packet, std::uint32_t size, const std::uint8_t* data) = 0;
+
+  /**
+   * @brief Observes received deformatted bytes before delivery to a configured ITM route.
+   *
+   * The index identifies the raw formatter group, not an exact payload-byte offset.
+   * The size counts protocol bytes, including potential ITM synchronization bytes.
+   * Packet sinks that do not need input accounting may leave this callback unimplemented.
+   */
+  virtual void formattedDataForRoute(const TraceRouteIdentity&, ocsd_trc_index_t, std::uint32_t)
+  {
+  }
 };
 
 /** @brief Reports one normal formatter source ID for which no protocol route is configured. */
 using OpenCsdUnsupportedTraceIdSink = std::function<void(std::uint8_t, ocsd_trc_index_t)>;
 
-/** @brief Reports malformed formatted input detected outside OpenCSD's error callback API. */
-class OpenCsdFormattedInputError final : public std::runtime_error {
-public:
-  /**
-   * @brief Creates an input error at an exact raw formatter offset.
-   * @param message Human-readable failure description without an offset suffix.
-   * @param sourceOffset Raw formatted-input offset at which the failure was detected.
-   */
-  OpenCsdFormattedInputError(const std::string& message, std::uint64_t sourceOffset)
-    : std::runtime_error(message + " at raw input offset " + std::to_string(sourceOffset)),
-      m_sourceOffset(sourceOffset)
-  {
-  }
-
-  /** @brief Returns the raw formatted-input offset associated with the failure. */
-  std::uint64_t sourceOffset() const noexcept
-  {
-    return m_sourceOffset;
-  }
-
-private:
-  std::uint64_t m_sourceOffset = 0U;
-};
+/** @brief Reports skipped deformatted bytes with their reason and first formatter-group offset. */
+using OpenCsdSkippedBytesSink = std::function<void(const TraceByteSkip&)>;
 
 /**
  * @brief Owns one memory-aligned formatted OpenCSD tree with routed ITM decoders.
@@ -84,11 +73,13 @@ public:
    * @param errorLogger Error logger kept active for the complete tree lifetime.
    * @param packetSink Routed raw-packet callback target shared by all decoder adapters.
    * @param unsupportedTraceIdSink Optional callback invoked once per observed unconfigured normal ID.
+   * @param skippedBytesSink Optional callback reporting skipped payload bytes aggregated by reason and source ID.
    * @throws OpenCsdItmSessionError If route validation or external session setup fails.
    */
   OpenCsdFormattedItmSession(std::vector<TraceRouteIdentity> routes, ITrcGenElemIn& elementOutput,
                              ITraceErrorLog& errorLogger, OpenCsdFormattedItmPacketSink& packetSink,
-                             OpenCsdUnsupportedTraceIdSink unsupportedTraceIdSink = {});
+                             OpenCsdUnsupportedTraceIdSink unsupportedTraceIdSink = {},
+                             OpenCsdSkippedBytesSink skippedBytesSink = {});
   /** @brief Disconnects callbacks and destroys the formatted DecodeTree without throwing. */
   ~OpenCsdFormattedItmSession() noexcept;
 
@@ -116,12 +107,13 @@ private:
   /** @brief Validates route IDs before any OpenCSD process-global state is acquired. */
   static std::vector<TraceRouteIdentity> validateRoutes(std::vector<TraceRouteIdentity>&& routes);
   /** @brief Rethrows callback failures and publishes observations after one tree operation. */
-  ocsd_datapath_resp_t completeOperation(ocsd_datapath_resp_t response);
+  ocsd_datapath_resp_t completeOperation(ocsd_datapath_resp_t response, bool endOfTrace = false);
 
   // Declaration order is intentional: the tree is destroyed before every
   // callback object whose address was installed in it.
   std::vector<TraceRouteIdentity> m_routes;
   OpenCsdUnsupportedTraceIdSink m_unsupportedTraceIdSink;
+  OpenCsdSkippedBytesSink m_skippedBytesSink;
   std::unique_ptr<CallbackErrorState> m_callbackErrors;
   std::unique_ptr<GenericElementAdapter> m_elementAdapter;
   std::vector<std::unique_ptr<RoutePacketMonitor>> m_packetMonitors;

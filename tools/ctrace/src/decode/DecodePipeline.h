@@ -28,7 +28,7 @@ struct RawByteView {
   }
 };
 
-/** @brief Summarizes raw bytes consumed and semantic events produced. */
+/** @brief Summarizes raw bytes consumed and trace/diagnostic records produced before output filtering. */
 struct DecodeResult {
   std::uint64_t bytesIn = 0;
   std::uint64_t eventsOut = 0;
@@ -64,13 +64,14 @@ public:
   void push(RawByteView bytes);
   /**
    * @brief Finalizes decoding and returns aggregate counters.
-   * @return Total raw bytes consumed and semantic events emitted.
+   * @return Total raw bytes consumed and trace/diagnostic records emitted before output filtering.
    * @throws OpenCsdFatalError If decoder finalization fails.
    */
   DecodeResult finish();
 
 private:
   CortexMStreamDecoder m_streamDecoder;
+  std::uint64_t m_byteSkipCount = 0U;
   OpenCsdItmDecoder m_decoder;
 };
 

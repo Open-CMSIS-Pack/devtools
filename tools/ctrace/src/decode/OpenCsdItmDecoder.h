@@ -27,6 +27,9 @@ enum class OpenCsdItmInputMode {
 /** @brief Receives one observed but unconfigured normal CoreSight Trace Bus ID. */
 using OpenCsdUnsupportedTraceIdObserver = std::function<void(std::uint8_t, std::uint64_t)>;
 
+/** @brief Receives skipped payload-byte accounting independently of semantic trace routes. */
+using OpenCsdSkippedBytesObserver = std::function<void(const TraceByteSkip&)>;
+
 /** @brief Summarizes raw input consumed by an OpenCSD ITM decoder. */
 struct OpenCsdItmDecodeResult {
   std::uint64_t bytesIn = 0;
@@ -78,10 +81,12 @@ public:
    * @param inputMode OpenCSD root transport used for the raw bytes.
    * @param elementSink Sink receiving decoded and recovery elements.
    * @param unsupportedTraceIdSink Observer for unconfigured normal formatted IDs.
+   * @param skippedBytesSink Observer for skipped formatter or unsynchronized ITM payload.
    */
   OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
                     OpenCsdTraceElementSink& elementSink,
-                    OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdSink = {});
+                    OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdSink = {},
+                    OpenCsdSkippedBytesObserver skippedBytesSink = {});
   /**
    * @brief Creates a configured decoder with an injected external session.
    * @param routes Normalized routes accepted by the input frontend.

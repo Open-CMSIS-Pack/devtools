@@ -13,33 +13,37 @@ comparison test.
 ## Fixture integrity
 
 The [fixture manifest](../integration/src/ValidateFixtureIntegrity.cmake) is
-the canonical SHA-256 and size inventory for checked-in fixtures, including
-fixture-local provenance documents. `CtraceFixtureIntegrity` checks that the
-inventory is complete and the reconstructed TB capture contains 256 frames.
-Update the manifest in the same review as a fixture change. Inputs generated
-at test runtime are defined and checked by the integration tests, not listed
-in this manifest.
+the canonical SHA-256 and size inventory for checked-in test inputs, reference
+outputs and fixture scripts. Markdown documentation is excluded.
+`CtraceFixtureIntegrity` checks that the inventory is complete and the
+reconstructed TB capture contains 256 frames. Update the manifest in the same
+review as a fixture change. Tests work on copies in the build tree; the manifest
+guards against unintended changes to the versioned fixtures, not test-time
+mutation. Inputs generated at test runtime are defined and checked by the
+integration tests, not listed in this manifest.
 
 ## Blinky reference outputs
 
 The Blinky fixture is stored under the generic `Blinky+Arm` target name. It was
 captured from a CMSIS project with CMSIS-Debugger 1.4.0 and pyTS 0.1.0, as
 recorded in the accompanying `ctrace-run` file. It contains SWO and TB input.
-The integration test compares the generated SWO CSV byte-for-byte with its
-reference and verifies that the coexisting TB input is excluded by the legacy
-undeclared-format selection contract.
+The integration test isolates the SWO input and compares its generated CSV
+byte-for-byte with the reference. Coexisting SWO and TB inputs are decoded
+independently; the generated multi-channel fixtures below cover that case.
 
 The Blinky YAML, SWO capture, and TB capture are approved ctrace test assets and
 may be redistributed as part of Open-CMSIS-Pack/devtools. The reference CSV is
 derived from the SWO capture and is covered by the same approval and the
 repository-wide Apache-2.0 license terms.
 
-The `Blinky+Arm/expected` directory freezes the legacy SWO CTF and Trace Compass
-output. The integration test adds the captured CM7 clock of 480 MHz to its
+The `Blinky+Arm/expected` directory freezes the legacy SWO CTF output and current
+target-level Trace Compass XML. The integration test adds the captured CM7 clock of 480 MHz to its
 working copy of the legacy YAML, normalizes platform-dependent generated CRLF
 line endings to LF while rejecting bare carriage returns, validates the
-generated RFC 4122 UUID, and normalizes only that trace UUID to zero in the
-metadata and packet headers before the byte-for-byte comparison.
+generated RFC 4122 UUIDs, and normalizes trace/clock identities before the
+byte-for-byte comparison. Packet headers retain the same binary layout. The
+complete XML comparison normalizes only the generated UUID, identity-derived
+namespace, and analysis version; labels, handlers and view paths remain covered.
 
 ## Formatted multi-source inputs
 
@@ -48,6 +52,9 @@ capture from the approved Blinky hardware payload. Its local README documents
 all transformations, the manually added ctrace-private `trace-format` field,
 deterministic regeneration, and independent deformatting/counterchecks. Its
 Python tools validate formatter-ID and payload counters and are test-only.
+The reconstruction removes the original unassigned prefix and adds initial
+ITM sync packets; prefix-loss and missing-sync behavior therefore have separate
+generated regression inputs rather than relying on that reconstructed capture.
 
 [formatted-synthetic](formatted-synthetic/README.md) complements that payload
 with deterministic packet-family coverage on two routes: one authoritative
@@ -55,6 +62,32 @@ processor-ITM anchor and one constrained current-pyTS fallback. The integration
 test generates its 128-byte raw input; only the YAML and documentation are
 checked in. The local README records the exact routes, packet sequence,
 generated raw hash, and test matrix.
+
+## Generated multi-channel inputs
+
+`writeMultipleChannelFixture` in
+[CtraceIntegTests.cpp](../integration/src/CtraceIntegTests.cpp) creates one
+trace-run configuration per target with SWO, TB and TB_ETB captures. Distinct
+ITM values and timestamps verify independent decoding, default formats,
+type/stream filters, target selection, and continuation after channel errors.
+CSV and CTF retain channel-qualified names; graphical views are collected in
+one `<target>.traceanalysis.xml` without per-channel XML files.
+
+`writeSwoAndTbTopicFixture` creates exactly three input files: one
+`<target>.ctrace-run.yml`, `<target>.SWO.raw`, and `<target>.TB.raw`. SWO contains
+a DWT value and TB a processor-sleep event. A second variant explicitly formats
+both captures on Trace Bus ID 1. The tests verify that each topic remains bound
+to its own CTF clock UUID, even when the stream ID and processor name match.
+They also check unique provider/view IDs across targets and remove stale XML
+when filters leave no graphical events.
+
+Failure variants first generate valid outputs, then replace TB input with an
+unaligned frame, an incomplete final packet, or a recoverable malformed packet.
+Only freshly finalized CTF bundles contribute views: preserved old output from
+a preflight failure and removed output from a fatal decode are excluded;
+successfully finalized output after recovery is included despite a failing
+command status. The healthy SWO contribution remains present in every case.
+These fixtures are generated only in the build tree and add no binary assets.
 
 ## Generated negative and recovery inputs
 
@@ -67,8 +100,8 @@ pyOCD producer output:
 - `Partial.TB.raw` is 15 arbitrary bytes and exists only to prove alignment
   preflight before output creation.
 - `Mixed.TB.raw` is two frames containing clean ID-1 ITM software packets and
-  two opaque ID-42 runs; it proves one warning and no guessed decoder/output
-  for an unsupported normal formatter ID.
+  two opaque ID-42 runs; it proves one compatibility warning, skipped-byte
+  Info, and no guessed decoder or semantic payload for an unsupported ID.
 - `Invalid.TB.raw` is one ID-1 frame containing ITM hardware sync followed by
   reserved header `0x04`; it proves an unresolved route-local loss interval at
   end of input.
@@ -76,8 +109,32 @@ pyOCD producer output:
   reserved header, continues into the next frame without a repeated formatter
   ID marker, then resynchronizes; it proves that reset and rollback stay local
   while ID 1 and the deformatter retain state.
+- `Malformed.TB.raw` is a synthetic ID-1 stream with hardware sync, malformed
+  ASYNC bytes `00 08`, an intervening packet, then a real sync and valid payload.
+  It verifies native CLI/CSV error details, the bounded packet preview, recovery
+  without replay, retained output, and a failing exit status.
+- `Incomplete.TB.raw` has complete formatter frames but ends route 1 with an
+  incomplete DWT packet after valid ITM payload and a local timestamp. It
+  verifies fatal end-of-input handling: selected CSV rows remain and one final
+  input-wide `error` row bypasses type/stream filters, while the route-local
+  error obeys them. The incomplete CTF bundle is removed, contributes no target
+  XML views, and the command fails.
 - `Unassigned.TB.raw` is one all-zero frame with payload before any formatter
-  source ID; it proves that an input-wide deformatter error aborts all outputs.
+  source ID; it proves CLI Info and one CSV `info` row for 15 skipped
+  payload bytes, with no invented route, CTF stream, or missing-sync error.
+- Variants of `Synthetic.TB.raw` prepend two all-zero or all-`0xff` frames to
+  valid two-route input. They verify continued decoding, exactly one unassigned
+  prefix Info, and CSV retention even under type and stream filters. The
+  unassigned counts are 30 and 1 payload bytes respectively, not 32 raw bytes;
+  payload attributed to NULL or reserved IDs is accounted separately.
+- Another `Synthetic.TB.raw` variant combines an unassigned prefix, one healthy
+  route, and eight bytes without a hardware sync on the other route. It
+  requires skipped-byte Info, a separate route-bound end-of-input Error, and
+  non-zero exit while preserving healthy output and diagnostic rows.
+- A routed-prefix variant places three unsynchronized bytes before ID 1's real
+  hardware sync and includes valid ID-2 payload. It verifies route-specific
+  skipped-byte Info and continued decoding of both routes without a decoder
+  Error.
 
 These generated files exist only in each test's build-tree working directory.
 Their canonical representation and expected semantics are the reviewed source
@@ -105,6 +162,11 @@ It contains a hardware synchronization packet followed by one Data Trace Match
 packet for each comparator 0 through 3 and local timestamps. The integration
 test verifies the generated CSV rows, CTF records, labels, and Trace Compass
 timeline configuration.
+
+[trace-pc-sample](trace-pc-sample/README.md) is a synthetic PC/sleep/trace-prohibited/PC
+sequence with local timestamps. Tests exercise unformatted SWO and two-route
+formatted TB input, output modes, filtering and an independent Babeltrace
+consumer. The marker is valid status information, not a decoder error.
 
 ## Reader and entry-point inputs
 

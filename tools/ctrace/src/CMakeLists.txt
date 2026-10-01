@@ -39,6 +39,7 @@ set(CTRACE_DECODE_HEADER_FILES
   decode/SaturatingArithmetic.h
 )
 set(CTRACE_OUTPUT_HEADER_FILES
+  output/OutputPath.h
   output/OutputRequirements.h
   output/TraceOutput.h
   output/TraceOutputConfig.h
@@ -55,6 +56,7 @@ set(CTRACE_OUTPUT_HEADER_FILES
   output/ctf/CtfStreamWriter.h
   output/ctf/CtfUuid.h
   output/ctf/TraceCompassXmlWriter.h
+  output/ctf/TraceCompassXmlOutput.h
 )
 set(CTRACE_CONTROL_HEADER_FILES
   control/DecodeConsumers.h
@@ -153,6 +155,7 @@ target_link_libraries(ctrace-decode PUBLIC
 )
 
 add_library(ctrace-output STATIC
+  output/OutputPath.cpp
   output/csv/CsvFileOutput.cpp
   output/csv/CsvRowMapper.cpp
   output/ctf/CtfBundleOutput.cpp
@@ -163,6 +166,7 @@ add_library(ctrace-output STATIC
   output/ctf/CtfStreamWriter.cpp
   output/ctf/CtfUuid.cpp
   output/ctf/TraceCompassXmlWriter.cpp
+  output/ctf/TraceCompassXmlOutput.cpp
   output/OutputRequirements.cpp
   output/TraceOutputLifecycle.cpp
   ${CTRACE_OUTPUT_HEADER_FILES}

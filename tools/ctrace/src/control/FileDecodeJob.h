@@ -12,6 +12,9 @@
 #include "DiagnosticSink.h"
 #include "OpenCsdItmDecoder.h"
 #include "TraceRunDiscovery.h"
+#include "ctf/CtfMetadataModel.h"
+
+#include <optional>
 
 /** @brief Decodes one raw trace file and owns its configured output lifecycle. */
 class FileDecodeJob {
@@ -39,8 +42,9 @@ public:
    * Recoverable trace corruption is reported and decoding resumes at hardware
    * synchronization. Setup, input, and output failures are reported through the
    * diagnostic sink.
+   * @return Completed CTF metadata, if that backend finished successfully.
    */
-  void run();
+  std::optional<CtfMetadataModel> run();
 
 private:
   CliOptions m_options;

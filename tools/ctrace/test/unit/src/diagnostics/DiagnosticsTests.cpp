@@ -82,7 +82,7 @@ TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
   reporter.finish();
   reporter.finish();
 
-  TraceEvent dataLoss = issuePacket(TraceIssueCode::DataLoss, "trace data was lost");
+  TraceEvent dataLoss = issuePacket(TraceIssueCode::DataLoss);
   dataLoss.index = 12U;
   std::get<TraceIssueEvent>(dataLoss.payload).rawBytesConsumed = 3U;
   reporter.append(dataLoss);
@@ -99,16 +99,23 @@ TEST(CtraceUnitTests, testTraceIssueReporterReportsEveryIssue)
   ASSERT_TRUE(diagnostics.events()[0].severity == DiagnosticSink::Severity::Warning)
       << "TraceIssueReporter overflow severity mismatch";
   EXPECT_NE(diagnostics.events()[0].message.find("1 more occurred"), std::string::npos);
+  EXPECT_TRUE(diagnostics.events()[0].context.empty());
   ASSERT_TRUE(diagnostics.events()[1].severity == DiagnosticSink::Severity::Error)
       << "TraceIssueReporter data-loss severity mismatch";
-  ASSERT_TRUE(diagnostics.events()[1].context.empty()) << "TraceIssueReporter context mismatch";
+  EXPECT_EQ(diagnostics.events()[1].context,
+            (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "12"}}));
   ASSERT_TRUE(diagnostics.events()[1].message.find("3 raw bytes") != std::string::npos)
       << "TraceIssueReporter should include the lost byte count";
   ASSERT_TRUE(diagnostics.events()[2].message == diagnostics.events()[1].message)
       << "TraceIssueReporter repeated data-loss message mismatch";
   ASSERT_TRUE(diagnostics.events()[3].severity == DiagnosticSink::Severity::Warning)
       << "TraceIssueReporter should preserve warning severity";
-  ASSERT_TRUE(diagnostics.events()[4].context.empty()) << "TraceIssueReporter context mismatch";
+  EXPECT_EQ(diagnostics.events()[3].message, "decoder warning");
+  EXPECT_EQ(diagnostics.events()[4].message, "decoder setup failed");
+  EXPECT_EQ(diagnostics.events()[3].context,
+            (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "0"}}));
+  EXPECT_EQ(diagnostics.events()[4].context,
+            (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "0"}}));
   ASSERT_TRUE(diagnostics.failureCount() == 3U) << "TraceIssueReporter should classify decoder errors as failing";
 }
 
@@ -145,8 +152,10 @@ TEST(CtraceUnitTests, testTraceIssueReporterPartitionsIssuesAndOverflowByRoute)
   reporter.finish();
 
   ASSERT_EQ(diagnostics.events().size(), 6U);
-  EXPECT_EQ(diagnostics.events()[0].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "1"}}));
-  EXPECT_EQ(diagnostics.events()[1].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}}));
+  EXPECT_EQ(diagnostics.events()[0].context,
+            (std::vector<std::pair<std::string, std::string>>{{"stream", "1"}, {"raw_offset", "0"}}));
+  EXPECT_EQ(diagnostics.events()[1].context,
+            (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}, {"raw_offset", "0"}}));
   EXPECT_EQ(diagnostics.events()[2].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "1"}}));
   EXPECT_NE(diagnostics.events()[2].message.find("cycle timestamp 10; 1 more occurred"), std::string::npos);
   EXPECT_EQ(diagnostics.events()[3].context, (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}}));
@@ -172,7 +181,7 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
       {TraceIssueCode::OpenCsdBadPacketSequence, "invalid ITM packet sequence at raw offset 42"},
       {TraceIssueCode::OpenCsdInvalidPacketHeader, "invalid ITM packet header at raw offset 42"},
       {TraceIssueCode::OpenCsdIncompleteTail, "incomplete ITM packet starting at raw offset 42 at end of input"},
-      {TraceIssueCode::OpenCsdFormattedInputError, "formatted input failed at raw input offset 42"},
+      {TraceIssueCode::OpenCsdMissingSync, "no hardware ITM SYNC before end of input"},
       {TraceIssueCode::OpenCsdNoProgress, "OpenCSD made no decode progress at raw offset 42"},
       {TraceIssueCode::OpenCsdWaitTimeout, "OpenCSD remained blocked while flushing pending data"},
       {TraceIssueCode::OpenCsdInitializationError, "OpenCSD initialization failed"},
@@ -180,16 +189,10 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
       {static_cast<TraceIssueCode>(255U), "trace decode error at raw offset 42"},
   };
   for (const auto& testCase : cases) {
-    auto event = issuePacket(testCase.code, testCase.code == TraceIssueCode::OpenCsdFormattedInputError
-                                                ? "formatted input failed at raw input offset 42"
-                                                : "");
+    auto event = issuePacket(testCase.code);
     event.index = 42U;
     reporter.append(event);
   }
-
-  auto formattedFallback = issuePacket(TraceIssueCode::OpenCsdFormattedInputError);
-  formattedFallback.index = 44U;
-  reporter.append(formattedFallback);
 
   auto dataLoss = issuePacket(TraceIssueCode::DataLoss);
   dataLoss.index = 43U;
@@ -199,12 +202,102 @@ TEST(CtraceUnitTests, testTraceIssueReporterFormatsEveryErrorKind)
   reporter.append(warningDataLoss);
   reporter.append(issuePacket(TraceIssueCode::DecodeError));
 
-  ASSERT_EQ(diagnostics.events().size(), std::size(cases) + 4U);
+  ASSERT_EQ(diagnostics.events().size(), std::size(cases) + 3U);
   for (std::size_t index = 0U; index < std::size(cases); ++index) {
     EXPECT_EQ(diagnostics.events()[index].message, cases[index].message);
+    EXPECT_EQ(diagnostics.events()[index].context,
+              (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "42"}}));
   }
-  EXPECT_EQ(diagnostics.events()[std::size(cases)].message, "formatted trace input error at raw offset 44");
-  EXPECT_NE(diagnostics.events()[std::size(cases) + 1U].message.find("raw offset 43"), std::string::npos);
-  EXPECT_EQ(diagnostics.events()[std::size(cases) + 2U].severity, DiagnosticSink::Severity::Warning);
+  EXPECT_NE(diagnostics.events()[std::size(cases)].message.find("raw offset 43"), std::string::npos);
+  EXPECT_EQ(diagnostics.events()[std::size(cases) + 1U].severity, DiagnosticSink::Severity::Warning);
+  EXPECT_EQ(diagnostics.events()[std::size(cases) + 1U].message, "warning loss");
   EXPECT_EQ(diagnostics.events().back().message, "trace decode error at raw offset 0");
+}
+
+TEST(CtraceUnitTests, testTraceIssueReporterPreservesMissingSyncDetailsAndFailure)
+{
+  CollectingDiagnosticSink diagnostics;
+  TraceIssueReporter reporter(diagnostics);
+  const std::string message = "no hardware ITM SYNC before end of input; "
+                              "first formatter group at raw offset 32";
+  auto event = onStream(issuePacket(TraceIssueCode::OpenCsdMissingSync, message), 1U);
+  event.index = 32U;
+  reporter.append(event);
+
+  ASSERT_EQ(diagnostics.events().size(), 1U);
+  EXPECT_EQ(diagnostics.events().front().message, message);
+  EXPECT_EQ(diagnostics.events().front().severity, DiagnosticSink::Severity::Error);
+  EXPECT_EQ(diagnostics.events().front().impact, DiagnosticSink::Impact::Failing);
+  EXPECT_TRUE(diagnostics.containsContext("stream", "1"));
+  EXPECT_TRUE(diagnostics.containsContext("raw_offset", "32"));
+  EXPECT_EQ(diagnostics.failureCount(), 1U);
+}
+
+TEST(CtraceUnitTests, testTraceIssueReporterPreservesDetailsForEveryIssueKind)
+{
+  constexpr TraceIssueCode codes[]{
+      TraceIssueCode::DecodeError,
+      TraceIssueCode::DataLoss,
+      TraceIssueCode::InvalidExceptionAction,
+      TraceIssueCode::UnsupportedDwtEventCounterPayload,
+      TraceIssueCode::UnsupportedPmuEventCounterPayload,
+      TraceIssueCode::UnsupportedDwtAddressPayload,
+      TraceIssueCode::UnsupportedDwtPcSamplePayload,
+      TraceIssueCode::OpenCsdDecodeError,
+      TraceIssueCode::OpenCsdBadPacketSequence,
+      TraceIssueCode::OpenCsdInvalidPacketHeader,
+      TraceIssueCode::OpenCsdIncompleteTail,
+      TraceIssueCode::OpenCsdMissingSync,
+      TraceIssueCode::OpenCsdNoProgress,
+      TraceIssueCode::OpenCsdWaitTimeout,
+      TraceIssueCode::OpenCsdInitializationError,
+      static_cast<TraceIssueCode>(255U),
+  };
+  CollectingDiagnosticSink diagnostics;
+  TraceIssueReporter reporter(diagnostics);
+  const std::string detail = "OpenCSD failed at raw offset 42. OCSD_ERR_BAD_PACKET_SEQ; invalid async sequence";
+  for (const auto code : codes) {
+    auto event = onStream(issuePacket(code, detail), 111U);
+    event.index = 42U;
+    std::get<TraceIssueEvent>(event.payload).rawBytesConsumed = 9U;
+    reporter.append(event);
+  }
+
+  ASSERT_EQ(diagnostics.events().size(), std::size(codes));
+  for (const auto& diagnostic : diagnostics.events()) {
+    EXPECT_EQ(diagnostic.message, detail);
+    EXPECT_EQ(diagnostic.severity, DiagnosticSink::Severity::Error);
+    EXPECT_EQ(diagnostic.impact, DiagnosticSink::Impact::Failing);
+    EXPECT_EQ(diagnostic.context,
+              (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}, {"raw_offset", "42"}}));
+  }
+  EXPECT_EQ(diagnostics.failureCount(), std::size(codes));
+}
+
+TEST(CtraceUnitTests, testTraceIssueReporterKeepsRawOffsetsAlongsidePayloadDetails)
+{
+  CollectingDiagnosticSink diagnostics;
+  TraceIssueReporter reporter(diagnostics);
+  const std::string detail = "unsupported DWT event counter payload size 2";
+  auto error = issuePacket(TraceIssueCode::UnsupportedDwtEventCounterPayload, detail);
+  error.index = 0x10000002aULL;
+  reporter.append(error);
+
+  const std::string warningDetail = "unsupported PMU event counter payload size 1";
+  auto warning = onStream(issuePacket(TraceIssueCode::UnsupportedPmuEventCounterPayload, warningDetail,
+                                       TraceIssueSeverity::Warning),
+                            111U);
+  warning.index = 73U;
+  reporter.append(warning);
+
+  ASSERT_EQ(diagnostics.events().size(), 2U);
+  EXPECT_EQ(diagnostics.events()[0].message, detail);
+  EXPECT_EQ(diagnostics.events()[0].context,
+            (std::vector<std::pair<std::string, std::string>>{{"raw_offset", "4294967338"}}));
+  EXPECT_EQ(diagnostics.events()[0].severity, DiagnosticSink::Severity::Error);
+  EXPECT_EQ(diagnostics.events()[1].message, warningDetail);
+  EXPECT_EQ(diagnostics.events()[1].context,
+            (std::vector<std::pair<std::string, std::string>>{{"stream", "111"}, {"raw_offset", "73"}}));
+  EXPECT_EQ(diagnostics.events()[1].severity, DiagnosticSink::Severity::Warning);
+  EXPECT_EQ(diagnostics.failureCount(), 1U);
 }

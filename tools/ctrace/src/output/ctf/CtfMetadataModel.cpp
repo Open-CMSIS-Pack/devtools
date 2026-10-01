@@ -173,7 +173,7 @@ bool CtfMetadataModel::isLegacySingleStreamLayout() const noexcept
   }
   const auto& clock = m_topology.clockDomains.front();
   const auto& stream = m_topology.streams.front();
-  return clock.id == CtfClockDomainId{0U} && clock.name == "swo_clock" && !clock.uuid.has_value() && !clock.absolute &&
+  return clock.id == CtfClockDomainId{0U} && clock.name == "swo_clock" && !clock.absolute &&
          stream.streamClassId == CtfStreamClassId{0U} && !stream.route.traceBusId.has_value() &&
          stream.clockDomainId == clock.id;
 }

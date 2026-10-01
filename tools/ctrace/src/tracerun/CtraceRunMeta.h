@@ -72,7 +72,7 @@ public:
 
   /** @brief Returns the source trace-run configuration path. */
   const std::string& configPath() const;
-  /** @brief Returns the optional global byte-format declaration used during normalization. */
+  /** @brief Returns the global byte format used during normalization, resolved by discovery when available. */
   const std::optional<TraceRunFormat>& traceFormat() const;
   /** @brief Returns the normalized protocol-route catalogue. */
   const std::vector<CtraceRunRoute>& routes() const;

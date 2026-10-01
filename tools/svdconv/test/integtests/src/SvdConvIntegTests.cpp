@@ -131,6 +131,87 @@ TEST_F(SvdConvIntegTests, CheckSfdGeneration) {
   EXPECT_FALSE(sfd.empty());
 }
 
+TEST_F(SvdConvIntegTests, GeneratesMemoryMapsAtRequestedDetailLevel) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/memoryMaps";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  struct MapMode {
+    const char* option;
+    const char* suffix;
+    bool registers;
+    bool fields;
+  };
+  const MapMode modes[] = {
+    {"peripheralMap", "MapPeripherals", false, false},
+    {"registerMap", "MapRegisters", true, false},
+    {"fieldMap", "MapFields", true, true},
+  };
+  for(const auto& mode : modes) {
+    SCOPED_TRACE(mode.option);
+    Arguments args("SVDConv.exe", inFile);
+    args.add({"-o", testOut, string("--generate=") + mode.option, "--create-folder"});
+    SvdConv svdConv;
+    ASSERT_EQ(0, svdConv.Check(args, args, nullptr));
+
+    string listing;
+    ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/option_n_" + mode.suffix + ".txt", listing));
+    EXPECT_NE(string::npos, listing.find("Peripheral Map"));
+    for(const auto* address : {"0x40003000", "0x40004000", "0xe000ee08"}) {
+      EXPECT_NE(string::npos, listing.find(string("Base Address: ") + address));
+    }
+    EXPECT_NE(string::npos, listing.find("AddressBlock:"));
+    EXPECT_TRUE(regex_search(listing, regex(R"(000\s+---)")));
+    EXPECT_TRUE(regex_search(listing, regex(R"(001\s+---)")));
+    EXPECT_TRUE(regex_search(listing, regex(R"(002\s+IWDG\s+IWDG Interrupt)")));
+
+    // Derived peripherals and nested clusters must retain their resolved addresses.
+    for(const auto* pattern : {
+          R"(\bKR\b[^\n]*Address: 0x40003000,[^\n]*Access: wo)",
+          R"(\bKR\b[^\n]*Address: 0x40004000,[^\n]*Access: wo)",
+          R"(\bPR\b[^\n]*Address: 0x40003004,[^\n]*Offset: 0x00000004,[^\n]*Width: 4,[^\n]*Access: rw)",
+          R"(\bDSCSR_Clust\b[^\n]*Address: 0xe000ee08)",
+          R"(\bDSCSR\b[^\n]*Address: 0xe000ee08)",
+          R"(\bDSCSR\b[^\n]*Address: 0xe000ee10)"}) {
+      EXPECT_EQ(mode.registers, regex_search(listing, regex(pattern))) << pattern;
+    }
+    for(const auto* pattern : {
+          R"(\bKEY\b[^\n]*\[15 \.\.\.  0\][^\n]*Bits: 16)",
+          R"(\bCDS\b[^\n]*\[16 \.\.\. 16\][^\n]*Bits: 1)"}) {
+      EXPECT_EQ(mode.fields, regex_search(listing, regex(pattern))) << pattern;
+    }
+  }
+}
+
+TEST_F(SvdConvIntegTests, ExpandsRegisterAndFieldDimensionsInMemoryMap) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/posMaskDim/PosMaskDim.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/dimensionMemoryMap";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+  Arguments args("SVDConv.exe", inFile);
+  args.add({"-o", testOut, "--generate=fieldMap", "--create-folder"});
+  SvdConv svdConv;
+  ASSERT_EQ(0, svdConv.Check(args, args, nullptr));
+
+  string listing;
+  ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/PosMaskDim_MapFields.txt", listing));
+  const regex registers(R"(\bDATA(\d+)\b[^\n]*Address: 0x([0-9a-f]+))");
+  unsigned count = 0;
+  for(auto it = sregex_iterator(listing.begin(), listing.end(), registers); it != sregex_iterator(); ++it) {
+    EXPECT_EQ(count, stoul((*it)[1].str()));
+    EXPECT_EQ(0x40000000UL + count * 4U, stoul((*it)[2].str(), nullptr, 16));
+    count++;
+  }
+  EXPECT_EQ(256U, count);
+  for(unsigned bit = 0; bit < 8; bit++) {
+    SCOPED_TRACE(bit);
+    const string value = to_string(bit);
+    const regex field("\\bPIN" + value + R"(\b[^\n]*\[ )" + value + R"( \.\.\.  )" + value +
+                      R"(\][^\n]*Bits: 1)");
+    const auto matches = SvdConvTestUtils::FindRegex(listing, field);
+    EXPECT_EQ(256U, matches.size());
+  }
+}
+
 #ifndef _WIN32
 TEST_F(SvdConvIntegTests, CheckSfrUnsupportedPlatform) {
   const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";

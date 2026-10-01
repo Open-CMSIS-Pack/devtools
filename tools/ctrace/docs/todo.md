@@ -1,9 +1,5 @@
 # ctrace TODO
 
-## Cleanup
-
-- [ ] Clarify the compound DWT/PMU payload-validation expressions in `DwtPacketDecoder` with explicit grouping.
-
 ## DWT
 
 - [ ] Preserve logical DWT reference and setup identities when expanding comparator source arrays.
@@ -12,20 +8,21 @@
 
 ## Inputs and time correlation
 
-- [ ] Resolve the cross-tool raw-input contract tracked by
-      [vscode-cmsis-debugger #1150](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/1150) and
-      [devtools #2573](https://github.com/Open-CMSIS-Pack/devtools/issues/2573): standardize selected raw-input identity
-      plus effective byte format/framing in the CMSIS-Toolbox trace specification, then migrate the provisional global
-      `trace-format` reader contract and producer output deliberately.
-- [ ] Correct the CMSIS-Toolbox CSV schema from the obsolete seventh-column name `offset` to the implemented
-      `address` name.
-- [ ] Support FSYNC and FSYNC+HSYNC formatted input after a public framing field is specified.
+- [ ] Align caller-facing raw-input/channel selection and transport format/framing with the outcome of
+      [cmsis-toolbox #699](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/pull/699), also tracked by
+      [vscode-cmsis-debugger #1150](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/1150).
+      TB input/CSV naming support tracked by
+      [devtools #2573](https://github.com/Open-CMSIS-Pack/devtools/issues/2573) is complete and that issue is closed;
+      public channel selection and format/framing remain separate follow-up work. Keep trace communication separate
+      from trace-source setup and decide how to replace the temporary `trace-format` override without assuming its
+      standardization.
+- [ ] Align the published CTF bundle path with ctrace's `<solution-set>.<channel>.ctf` naming, including single-input runs.
+- [ ] Support FSYNC and FSYNC+HSYNC formatted input after a public framing contract is specified.
 - [ ] Define cross-stream clock correlation and offsets once a common producer time reference is available.
 - [ ] Add per-clock-domain Trace Compass bundles/experiments for uncorrelated streams when required.
 
 ## Additional decoders
 
-- [ ] Support multiple simultaneous named trace-buffer inputs after explicit file association is specified.
 - [ ] Add ETM/ETE/PTM instruction trace decoding and output in its own PR.
 - [ ] Add MTB instruction trace decoding and output in its own PR.
 - [ ] Add Event Recorder decoding and output when it enters the implementation scope.
@@ -34,4 +31,5 @@
 
 - [ ] Replace private OpenCSD `common/` and `interfaces/` headers with supported public APIs.
 - [ ] Update OpenCSD after the [empty-buffer issue](opencsd-issues.md) is fixed upstream.
-- [ ] Decide the signing, macOS notarization, SBOM, and archive-checksum requirements for production releases.
+- [ ] Decide the signing, macOS notarization, and SBOM requirements for production releases. The release archive
+      already includes `SHA256SUMS` for its binaries and license material.

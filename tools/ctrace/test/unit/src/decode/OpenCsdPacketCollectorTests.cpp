@@ -172,11 +172,14 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorMapsPayloadAndRawPacketKinds)
   };
   constexpr RawPacketCase rawPacketCases[]{
       {ITM_PKT_OVERFLOW, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Overflow, "", std::nullopt},
-      {ITM_PKT_RESERVED, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Error, "Reserved ITM packet",
+      {ITM_PKT_RESERVED, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Error,
+       "Reserved ITM packet; packet=RESERVED, size=0 bytes, bytes=[]",
        TraceIssueCode::OpenCsdDecodeError},
-      {ITM_PKT_BAD_SEQUENCE, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Error, "Bad ITM packet sequence",
+      {ITM_PKT_BAD_SEQUENCE, OCSD_OP_DATA, OpenCsdTraceElement::Kind::Error,
+       "Bad ITM packet sequence; packet=BAD_SEQUENCE, size=0 bytes, bytes=[]",
        TraceIssueCode::OpenCsdDecodeError},
-      {ITM_PKT_INCOMPLETE_EOT, OCSD_OP_EOT, OpenCsdTraceElement::Kind::Error, "incomplete ITM packet at end of input",
+      {ITM_PKT_INCOMPLETE_EOT, OCSD_OP_EOT, OpenCsdTraceElement::Kind::Error,
+       "incomplete ITM packet at end of input at raw offset 18; packet=INCOMPLETE_EOT, size=0 bytes, bytes=[]",
        TraceIssueCode::OpenCsdIncompleteTail},
   };
   for (std::size_t index = 0U; index < std::size(rawPacketCases); ++index) {
@@ -556,4 +559,292 @@ TEST(CtraceUnitTests, testOpenCsdPacketCollectorDefersOutputFailures)
   collector.RawPacketDataMon(OCSD_OP_DATA, 4U, &packet, 0U, nullptr);
   EXPECT_EQ(sink.elements().size(), 4U);
   EXPECT_THROW(collector.rethrowOutputError(), std::runtime_error);
+}
+
+TEST(CtraceUnitTests, testFormattedInputAccountingRequiresCommittedSynchronization)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  std::vector<TraceByteSkip> discarded;
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{route}, sink,
+                                  [&](const TraceByteSkip& skipped) {
+                                    EXPECT_TRUE(sink.elements().empty());
+                                    discarded.push_back(skipped);
+                                  });
+  EXPECT_THROW(collector.formattedDataForRoute({TraceRouteId{2U}, 1U}, 0U, 1U), std::invalid_argument);
+  EXPECT_THROW(collector.formattedDataForRoute({TraceRouteId{0U}, 2U}, 0U, 1U), std::invalid_argument);
+  collector.formattedDataForRoute(route, 0U, 0U);
+  collector.formattedDataForRoute(route, 32U, 3U);
+  collector.formattedDataForRoute(route, 32U, 3U); // A repeated delivery attempt is not new input.
+  collector.formattedDataForRoute(route, 48U, 5U);
+
+  ItmTrcPacket sync;
+  sync.setPktType(ITM_PKT_ASYNC);
+  collector.beginTransaction();
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 48U, &sync, 6U, nullptr);
+  collector.rollbackTransaction();
+  collector.reportUnsynchronizedFormattedRoutes();
+  collector.reportUnsynchronizedFormattedRoutes();
+
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().route, route);
+  EXPECT_EQ(sink.elements().front().sourceIndex, 32U);
+  EXPECT_EQ(sink.elements().front().issueCode, TraceIssueCode::OpenCsdMissingSync);
+  EXPECT_EQ(sink.elements().front().errorMessage,
+            "no hardware ITM SYNC before end of input; "
+            "first formatter group at raw offset 32");
+  ASSERT_EQ(discarded.size(), 1U);
+  EXPECT_EQ(discarded.front().reason, TraceByteSkipReason::MissingSync);
+  EXPECT_EQ(discarded.front().formatterOffset, 32U);
+  EXPECT_EQ(discarded.front().byteCount, 8U);
+  EXPECT_EQ(discarded.front().traceId, 1U);
+}
+
+TEST(CtraceUnitTests, testFormattedInputAccountingPreservesExistingErrorsAndCommittedSync)
+{
+  const TraceRouteIdentity healthy{TraceRouteId{0U}, 1U};
+  const TraceRouteIdentity failed{TraceRouteId{1U}, 2U};
+  const TraceRouteIdentity empty{TraceRouteId{2U}, 3U};
+  CollectingOpenCsdElementSink sink;
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{healthy, failed, empty}, sink);
+  collector.formattedDataForRoute(healthy, 0U, 8U);
+  collector.formattedDataForRoute(failed, 16U, 4U);
+  ItmTrcPacket sync;
+  sync.setPktType(ITM_PKT_ASYNC);
+  collector.beginTransaction();
+  collector.rawPacketForRoute(healthy, OCSD_OP_DATA, 0U, &sync, 6U, nullptr);
+  collector.appendDecodeError(failed, 16U, "existing route failure");
+  collector.commitTransaction();
+  collector.formattedDataForRoute(healthy, 32U, 8U);
+  collector.reportUnsynchronizedFormattedRoutes();
+
+  EXPECT_EQ(sink.elements().size(), 2U);
+  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdMissingSync));
+}
+
+TEST(CtraceUnitTests, testFormattedUnsynchronizedPrefixIsReportedOnceBeforeCommittedSync)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  std::vector<TraceByteSkip> discarded;
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{route}, sink,
+                                  [&](const TraceByteSkip& skipped) {
+                                    EXPECT_TRUE(sink.elements().empty());
+                                    discarded.push_back(skipped);
+                                  });
+  collector.formattedDataForRoute(route, 32U, 14U);
+  collector.formattedDataForRoute(route, 48U, 14U);
+  ItmTrcPacket notSync;
+  notSync.setPktType(ITM_PKT_NOTSYNC);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 32U, &notSync, 0U, nullptr);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 32U, &notSync, 8U, nullptr);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 32U, &notSync, 8U, nullptr);
+  ItmTrcPacket sync;
+  sync.setPktType(ITM_PKT_ASYNC);
+  collector.beginTransaction();
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 48U, &sync, 6U, nullptr);
+  collector.rollbackTransaction();
+  EXPECT_TRUE(sink.elements().empty());
+  EXPECT_TRUE(discarded.empty());
+
+  collector.beginTransaction();
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 64U, &sync, 6U, nullptr);
+  collector.commitTransaction();
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().kind, OpenCsdTraceElement::Kind::Sync);
+  ASSERT_EQ(discarded.size(), 1U);
+  EXPECT_EQ(discarded.front().reason, TraceByteSkipReason::MissingSync);
+  EXPECT_EQ(discarded.front().formatterOffset, 32U);
+  EXPECT_EQ(discarded.front().byteCount, 16U);
+  EXPECT_EQ(discarded.front().traceId, 1U);
+
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 80U, &notSync, 8U, nullptr);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 96U, &sync, 6U, nullptr);
+  collector.reportUnsynchronizedFormattedRoutes();
+  EXPECT_EQ(sink.elements().size(), 2U); // Only another real sync, no duplicate skipped-byte record.
+  EXPECT_EQ(discarded.size(), 1U);
+}
+
+TEST(CtraceUnitTests, testFormattedUnsynchronizedPrefixDoesNotDuplicateExistingRouteFailure)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  CollectingOpenCsdElementSink sink;
+  std::vector<TraceByteSkip> discarded;
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{route}, sink,
+                                  [&](const TraceByteSkip& skipped) { discarded.push_back(skipped); });
+  collector.formattedDataForRoute(route, 0U, 14U);
+  ItmTrcPacket notSync;
+  notSync.setPktType(ITM_PKT_NOTSYNC);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 0U, &notSync, 8U, nullptr);
+  collector.appendDecodeError(route, 8U, "existing route recovery failure");
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 16U, &notSync, 8U, nullptr);
+  ItmTrcPacket sync;
+  sync.setPktType(ITM_PKT_ASYNC);
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 32U, &sync, 6U, nullptr);
+  collector.reportUnsynchronizedFormattedRoutes();
+  EXPECT_EQ(sink.elements().size(), 2U);
+  EXPECT_TRUE(discarded.empty());
+  EXPECT_FALSE(sink.hasIssue(TraceIssueCode::OpenCsdMissingSync));
+}
+
+TEST(CtraceUnitTests, testOpenCsdPacketCollectorRetainsPacketContextUntilTheNextOperation)
+{
+  CollectingOpenCsdElementSink sink;
+  OpenCsdPacketCollector collector(TraceRouteIdentity{TraceRouteId{4U}, 7U}, sink);
+  std::array<std::uint8_t, 2U> bytes{0x00U, 0x08U};
+  ItmTrcPacket packet;
+  packet.setPktType(ITM_PKT_ASYNC);
+  packet.updateErrType(ITM_PKT_BAD_SEQUENCE);
+
+  collector.beginTransaction();
+  collector.RawPacketDataMon(OCSD_OP_DATA, 64U, &packet, bytes.size(), bytes.data());
+  bytes.fill(0xffU); // The callback buffer belongs to OpenCSD and may be reused immediately.
+  const std::string expected = "packet=ASYNC, size=2 bytes, bytes=[00 08]";
+  EXPECT_EQ(collector.packetErrorContext(std::nullopt, 64U), expected);
+  EXPECT_EQ(collector.packetErrorContext(0U, 64U), expected);
+  EXPECT_TRUE(collector.packetErrorContext(7U, 64U).empty());
+  EXPECT_TRUE(collector.packetErrorContext(0U, 65U).empty());
+  collector.commitTransactionBefore(64U);
+  EXPECT_TRUE(sink.elements().empty());
+  EXPECT_EQ(collector.packetErrorContext(0U, 64U), expected);
+  collector.rollbackTransaction();
+  EXPECT_EQ(collector.packetErrorContext(0U, 64U), expected);
+
+  collector.beginTransaction();
+  EXPECT_TRUE(collector.packetErrorContext(0U, 64U).empty());
+  bytes = {0x00U, 0x08U};
+  collector.RawPacketDataMon(OCSD_OP_DATA, 64U, &packet, bytes.size(), bytes.data());
+  collector.commitTransaction();
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().errorMessage, "Bad ITM packet sequence; " + expected);
+  EXPECT_EQ(collector.packetErrorContext(0U, 64U), expected);
+}
+
+TEST(CtraceUnitTests, testFormattedOpenCsdPacketCollectorSeparatesPacketContextByRouteAndIndex)
+{
+  CollectingOpenCsdElementSink sink;
+  const TraceRouteIdentity route1{TraceRouteId{3U}, 1U};
+  const TraceRouteIdentity route2{TraceRouteId{8U}, 2U};
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{route1, route2}, sink);
+  const std::array<std::uint8_t, 2U> asyncBytes{0x00U, 0x08U};
+  const std::uint8_t reservedByte = 0x04U;
+  ItmTrcPacket packet;
+  packet.setPktType(ITM_PKT_ASYNC);
+  packet.updateErrType(ITM_PKT_BAD_SEQUENCE);
+
+  collector.beginTransaction();
+  collector.rawPacketForRoute(route1, OCSD_OP_DATA, 64U, &packet, asyncBytes.size(), asyncBytes.data());
+  packet.setPktType(ITM_PKT_RESERVED); // Ignore the previous original type for a reserved header.
+  collector.rawPacketForRoute(route2, OCSD_OP_DATA, 64U, &packet, 1U, &reservedByte);
+  EXPECT_EQ(collector.packetErrorContext(1U, 64U), "packet=ASYNC, size=2 bytes, bytes=[00 08]");
+  EXPECT_EQ(collector.packetErrorContext(2U, 64U), "packet=RESERVED, size=1 byte, bytes=[04]");
+  EXPECT_TRUE(collector.packetErrorContext(std::nullopt, 64U).empty());
+  EXPECT_TRUE(collector.packetErrorContext(0U, 64U).empty());
+  EXPECT_TRUE(collector.packetErrorContext(3U, 64U).empty());
+  EXPECT_TRUE(collector.packetErrorContext(1U, 63U).empty());
+
+  collector.commitTransactionForRouteFailures({{route1.id, 64U}});
+  ASSERT_EQ(sink.elements().size(), 1U);
+  EXPECT_EQ(sink.elements().front().errorMessage,
+            "Reserved ITM packet; packet=RESERVED, size=1 byte, bytes=[04]");
+  EXPECT_EQ(collector.packetErrorContext(1U, 64U), "packet=ASYNC, size=2 bytes, bytes=[00 08]");
+  EXPECT_EQ(collector.packetErrorContext(2U, 64U), "packet=RESERVED, size=1 byte, bytes=[04]");
+  collector.beginTransaction();
+  EXPECT_TRUE(collector.packetErrorContext(1U, 64U).empty());
+  EXPECT_TRUE(collector.packetErrorContext(2U, 64U).empty());
+}
+
+TEST(CtraceUnitTests, testOpenCsdPacketCollectorBoundsPacketHexPrefixes)
+{
+  CollectingOpenCsdElementSink sink;
+  OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
+  std::array<std::uint8_t, 20U> bytes{};
+  for (std::size_t index = 0U; index < bytes.size(); ++index) {
+    bytes[index] = static_cast<std::uint8_t>(index);
+  }
+  ItmTrcPacket packet;
+  packet.setPktType(ITM_PKT_ASYNC);
+  packet.updateErrType(ITM_PKT_BAD_SEQUENCE);
+  collector.beginTransaction();
+  collector.RawPacketDataMon(OCSD_OP_DATA, 64U, &packet, bytes.size(), bytes.data());
+  EXPECT_EQ(collector.packetErrorContext(0U, 64U),
+            "packet=ASYNC, size=20 bytes, bytes=[00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f ... (truncated)]");
+  collector.RawPacketDataMon(OCSD_OP_DATA, 80U, &packet, 16U, bytes.data());
+  EXPECT_EQ(collector.packetErrorContext(0U, 80U),
+            "packet=ASYNC, size=16 bytes, bytes=[00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f]");
+}
+
+TEST(CtraceUnitTests, testOpenCsdPacketCollectorDescribesOriginalPacketTypesAndUnavailableBytes)
+{
+  CollectingOpenCsdElementSink sink;
+  OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
+  constexpr std::array<std::pair<ocsd_itm_pkt_type, const char*>, 8U> types{{
+      {ITM_PKT_ASYNC, "ASYNC"}, {ITM_PKT_OVERFLOW, "OVERFLOW"}, {ITM_PKT_SWIT, "SWIT"},
+      {ITM_PKT_DWT, "DWT"}, {ITM_PKT_TS_LOCAL, "TS_LOCAL"}, {ITM_PKT_TS_GLOBAL_1, "TS_GLOBAL_1"},
+      {ITM_PKT_TS_GLOBAL_2, "TS_GLOBAL_2"}, {ITM_PKT_EXTENSION, "EXTENSION"},
+  }};
+  for (const auto& [type, name] : types) {
+    SCOPED_TRACE(name);
+    ItmTrcPacket packet;
+    packet.setPktType(type);
+    packet.updateErrType(ITM_PKT_BAD_SEQUENCE);
+    collector.beginTransaction();
+    collector.RawPacketDataMon(OCSD_OP_DATA, 64U, &packet, 0U, nullptr);
+    EXPECT_EQ(collector.packetErrorContext(0U, 64U), std::string("packet=") + name + ", size=0 bytes, bytes=[]");
+  }
+
+  ItmTrcPacket packet;
+  packet.setPktType(ITM_PKT_BAD_SEQUENCE);
+  collector.beginTransaction();
+  collector.RawPacketDataMon(OCSD_OP_DATA, 64U, &packet, 2U, nullptr);
+  EXPECT_EQ(collector.packetErrorContext(0U, 64U), "packet=BAD_SEQUENCE, size=2 bytes, bytes=unavailable");
+  packet.err_type = ITM_PKT_RESERVED;
+  collector.RawPacketDataMon(OCSD_OP_DATA, 64U, &packet, 0U, nullptr);
+  EXPECT_EQ(collector.packetErrorContext(0U, 64U), "packet=BAD_SEQUENCE, size=0 bytes, bytes=[]");
+}
+
+TEST(CtraceUnitTests, testOpenCsdPacketCollectorKeepsControlAndOrdinaryPacketsOutOfErrorContext)
+{
+  CollectingOpenCsdElementSink sink;
+  OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
+  const std::uint8_t byte = 0x04U;
+  ItmTrcPacket packet;
+  packet.setPktType(ITM_PKT_RESERVED);
+  collector.beginTransaction();
+  collector.RawPacketDataMon(OCSD_OP_DATA, 64U, nullptr, 1U, &byte);
+  collector.RawPacketDataMon(OCSD_OP_RESET, 64U, &packet, 1U, &byte);
+  EXPECT_TRUE(collector.packetErrorContext(0U, 64U).empty());
+  packet.setPktType(ITM_PKT_SWIT);
+  collector.RawPacketDataMon(OCSD_OP_DATA, 64U, &packet, 1U, &byte);
+  EXPECT_TRUE(collector.packetErrorContext(0U, 64U).empty());
+  EXPECT_TRUE(sink.elements().empty());
+  EXPECT_EQ(collector.transactionElementCount(), 0U);
+  packet.setPktType(ITM_PKT_RESERVED);
+  collector.RawPacketDataMon(OCSD_OP_DATA, 64U, &packet, 0U, &byte);
+  EXPECT_EQ(collector.packetErrorContext(0U, 64U), "packet=RESERVED, size=0 bytes, bytes=[]");
+}
+
+TEST(CtraceUnitTests, testOpenCsdPacketCollectorEnrichesIncompleteTailWithoutLoggerCallback)
+{
+  CollectingOpenCsdElementSink sink;
+  const TraceRouteIdentity route{TraceRouteId{3U}, 1U};
+  OpenCsdPacketCollector collector(std::vector<TraceRouteIdentity>{route}, sink);
+  const std::array<std::uint8_t, 2U> bytes{0x17U, 0xf2U};
+  ItmTrcPacket packet;
+  packet.setPktType(ITM_PKT_DWT);
+  packet.updateErrType(ITM_PKT_INCOMPLETE_EOT);
+  collector.beginTransaction();
+  collector.rawPacketForRoute(route, OCSD_OP_DATA, 4085U, &packet, bytes.size(), bytes.data());
+  collector.rawPacketForRoute(route, OCSD_OP_EOT, 0U, nullptr, 0U, nullptr);
+  EXPECT_EQ(collector.packetErrorContext(1U, 4085U), "packet=DWT, size=2 bytes, bytes=[17 f2]");
+  EXPECT_EQ(collector.commitTransactionErrors(TraceIssueCode::OpenCsdIncompleteTail), 1U);
+  ASSERT_EQ(sink.elements().size(), 1U);
+  const auto& error = sink.elements().front();
+  EXPECT_EQ(error.errorMessage,
+            "incomplete ITM packet at end of input at raw offset 4085; packet=DWT, size=2 bytes, bytes=[17 f2]");
+  EXPECT_EQ(error.route, route);
+  EXPECT_EQ(error.sourceIndex, 4085U);
+  EXPECT_EQ(error.issueSeverity, TraceIssueSeverity::Error);
+  EXPECT_TRUE(error.discontinuity);
+  EXPECT_EQ(collector.packetErrorContext(1U, 4085U), "packet=DWT, size=2 bytes, bytes=[17 f2]");
 }

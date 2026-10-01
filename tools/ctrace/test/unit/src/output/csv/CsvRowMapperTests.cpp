@@ -36,6 +36,7 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
     ASSERT_TRUE(parseTraceEventType(type).has_value()) << "declared trace event type should parse";
   }
   ASSERT_TRUE(!parseTraceEventType("timestamp").has_value()) << "undeclared trace event type should be rejected";
+  EXPECT_FALSE(parseTraceEventType("info").has_value()) << "input annotations do not add a selectable event type";
   const std::vector<std::pair<TraceEvent, std::optional<TraceEventType>>> semanticTypes{
       {TraceEvent{SoftwareTraceEvent{}}, TraceEventType::Itm},
       {TraceEvent{DwtDataTraceEvent{}}, TraceEventType::Dwt},
@@ -79,12 +80,17 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 4U, 0U, AccessType::Write}}), ",,dwt,0,0x00000000,,,");
   ASSERT_TRUE(CsvRowMapper::row(TraceEvent{DwtMatchTraceEvent{2U}}) == ",,dwt,2,,,,")
       << "CSV must expose a match only through its DWT comparator source";
-  ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U, false}}, 949339000U)) ==
+  ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U}}, 949339000U)) ==
               "949339000,,pcsample,,,0x08001234,,")
       << "CSV PC-sample row mismatch";
-  ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0U, true}}, 949339100U)) ==
-              "949339100,,pcsample,,,,,")
+  ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::Sleep}}, 949339100U)) ==
+              "949339100,,pcsample,,,,,CPU Sleeping")
       << "CSV PC-sample sleep row mismatch";
+  EXPECT_EQ(CsvRowMapper::row(onStream(
+                atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::TraceProhibited}}, 949339200U), 4U)),
+            "949339200,4,pcsample,,,,,Trace prohibited");
+  EXPECT_EQ(CsvRowMapper::row(TraceEvent{PcSampleTraceEvent{0xffU}}), ",,pcsample,,,0x000000ff,,")
+      << "a four-byte PC value must not be rendered as a status marker";
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperCoversAddressAndExceptionVariants)
@@ -109,7 +115,28 @@ TEST(CtraceUnitTests, testCsvRowMapperEscapesDiagnosticText)
   const auto issue = onStream(issuePacket(TraceIssueCode::DecodeError, "comma, quote \" and\nnewline"), 7U);
   EXPECT_EQ(CsvRowMapper::row(issue), ",7,error,,,,,\"comma, quote \"\" and\nnewline\"");
 
+  const auto missingSync =
+      onStream(issuePacket(TraceIssueCode::OpenCsdMissingSync, "no sync, \"stream\"\r\nended"), 1U);
+  EXPECT_EQ(CsvRowMapper::row(missingSync), ",1,error,,,,,\"no sync, \"\"stream\"\"\r\nended\"");
+
   EXPECT_EQ(CsvRowMapper::row(atCycle(TraceEvent{GlobalTimestampTraceEvent{123U, false}}, 99U)), "123,,global_ts,,,,,");
+}
+
+TEST(CtraceUnitTests, testCsvRowMapperMapsByteSkipReasonsWithoutInventingTimeOrRoute)
+{
+  EXPECT_EQ(CsvRowMapper::byteSkipRow({0U, 1U}),
+            ",,info,,,,,1 bytes skipped due to missing source ID; first formatter group at raw offset 0");
+  EXPECT_EQ(CsvRowMapper::byteSkipRow({16U, 5U, TraceByteSkipReason::NullSourceId, 0U}),
+            ",0,info,,,,,5 bytes skipped for null source ID 0; first formatter group at raw offset 16");
+  EXPECT_EQ(CsvRowMapper::byteSkipRow({32U, 3U, TraceByteSkipReason::ReservedSourceId, 127U}),
+            ",127,info,,,,,3 bytes skipped for reserved source ID 127; first formatter group at raw offset 32");
+  EXPECT_EQ(CsvRowMapper::byteSkipRow({48U, 2U, TraceByteSkipReason::UnconfiguredSourceId, 42U}),
+            ",42,info,,,,,2 bytes skipped for unconfigured source ID 42; first formatter group at raw offset 48");
+  EXPECT_EQ(CsvRowMapper::byteSkipRow({64U, 8U, TraceByteSkipReason::MissingSync, 1U}),
+            ",1,info,,,,,8 bytes skipped due to missing SYNC; first formatter group at raw offset 64");
+  EXPECT_EQ(CsvRowMapper::byteSkipRow({4294967296ULL, 8589934592ULL}),
+            ",,info,,,,,8589934592 bytes skipped due to missing source ID; "
+            "first formatter group at raw offset 4294967296");
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperSerializesOnlyArchitecturalTraceBusId)

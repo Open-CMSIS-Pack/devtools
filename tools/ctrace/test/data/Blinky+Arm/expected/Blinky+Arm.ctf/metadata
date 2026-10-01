@@ -21,6 +21,7 @@ env {
 
 clock {
     name = swo_clock;
+    uuid = "00000000-0000-4000-8000-000000000001";
     precision = 0;
     offset_s = 0;
     offset = 0;
@@ -304,6 +305,16 @@ event {
     fields := struct {
         uint8_t cmsis_pc_sample_state;
         uint32_t cmsis_pc[cmsis_pc_sample_state];
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+
+event {
+    id = 10;
+    name = "PC_SAMPLE_PROHIBITED";
+    stream_id = 0;
+    fields := struct {
         uint8_t cmsis_sample_flags;
         uint32_t cmsis_overflow_count;
     };

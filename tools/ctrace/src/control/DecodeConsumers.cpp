@@ -50,6 +50,17 @@ void DecodeConsumers::append(const TraceEvent& event)
   m_issueReporter.append(event);
 }
 
+void DecodeConsumers::appendByteSkip(const TraceByteSkip& skipped)
+{
+  ++m_eventCount;
+  m_outputLifecycle.appendByteSkip(skipped);
+  std::vector<std::pair<std::string, std::string>> context;
+  if (skipped.traceId.has_value()) {
+    context.emplace_back("stream", std::to_string(*skipped.traceId));
+  }
+  m_diagnostics.report({DiagnosticSink::Severity::Info, traceByteSkipMessage(skipped), std::move(context)});
+}
+
 void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
 {
   const auto* software = traceEventPayload<SoftwareTraceEvent>(event);
@@ -88,12 +99,7 @@ void DecodeConsumers::finishIssues()
   m_issueReporter.finish();
 }
 
-void DecodeConsumers::finishOutputs() noexcept
+void DecodeConsumers::finishOutputs(const TraceDecodeAbort* decodeAbort) noexcept
 {
-  m_outputLifecycle.finish();
-}
-
-void DecodeConsumers::abortOutputs() noexcept
-{
-  m_outputLifecycle.abort();
+  m_outputLifecycle.finish(decodeAbort);
 }
