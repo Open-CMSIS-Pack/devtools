@@ -311,20 +311,30 @@ ctrace-run:
 TEST(CtraceUnitTests, TraceRunReaderDefersMalformedDwtMetadataToOutputPlanning)
 {
   TraceRunFixture file("ctrace-run-reader-malformed-data-metadata-test");
-  const auto config = file.read(R"yml(ctrace-run:
+  for (const auto* value : {"[]", "invalid"}) {
+    SCOPED_TRACE(value);
+    const auto config = file.read(std::string(R"yml(ctrace-run:
   ctrace-refs:
     - ref: data#0
       type: dwt
       index: 0
-      address: []
+      address: )yml") + value + R"yml(
       data-type: []
-      size: []
-)yml");
+      size: )yml" + value + "\n");
 
-  ASSERT_EQ(config.references.size(), 1U);
-  EXPECT_TRUE(config.references[0].addressError.has_value());
-  EXPECT_TRUE(config.references[0].dataTypeError.has_value());
-  EXPECT_TRUE(config.references[0].dataSizeError.has_value());
+    ASSERT_EQ(config.references.size(), 1U);
+    const auto& reference = config.references.front();
+    EXPECT_TRUE(reference.addressError.has_value());
+    EXPECT_TRUE(reference.dataTypeError.has_value());
+    EXPECT_TRUE(reference.dataSizeError.has_value());
+
+    const auto meta = CtraceRunMeta::fromConfig(config);
+    ASSERT_EQ(sourceCount(meta), 1U);
+    const auto& source = sourceAt(meta, 0U);
+    EXPECT_EQ(source.addressError, reference.addressError);
+    EXPECT_EQ(source.dataTypeError, reference.dataTypeError);
+    EXPECT_EQ(source.dataSizeError, reference.dataSizeError);
+  }
 }
 
 TEST(CtraceUnitTests, TraceRunReaderAcceptsProcessorItmReferenceWithoutEnabledChannels)
