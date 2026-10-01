@@ -3,14 +3,17 @@ name: analyze-ctrace
 description: >-
   Analyze existing CMSIS Cortex-M trace captures by translating a user's question
   into ctrace output filters and inspecting a bounded, isolated CSV result.
+  Explain reported decoding failures on request.
   Use for SWO or trace-buffer recordings, not live capture or trace configuration.
 ---
 
 # Analyze ctrace captures efficiently
 
 Use `ctrace` to decode and filter, then analyze only a bounded CSV result. Do not
-load raw bytes or a large CSV into model context. Use only the documented ctrace
-CLI; do not generate Python, processing scripts, or additional data filters.
+read raw files or a large CSV into model context. Bounded packet previews already
+included in requested verbose diagnostics may be interpreted. Use only the
+documented ctrace CLI; do not generate Python, processing scripts, or additional
+data filters.
 Existing file and process tools are sufficient; MCP is not required.
 
 ## Resolve ctrace and the execution context
@@ -195,6 +198,19 @@ diagnostics or an empty result; nonzero exit can leave usable partial CSV.
   Do not infer that the application never produced the requested event.
   Diagnostic-only output can still answer a question about decode errors.
 
+## Explain a reported failure on request
+
+Run normal analysis without `--verbose` or `-v`. Report observed failures or
+decode/data-loss diagnostics using the compact evidence; their presence alone
+does not trigger a verbose run, regardless of the exit status.
+
+When the user asks to explain or clarify such an issue, use the existing
+diagnostics first. If more detail is needed, follow
+[verbose diagnosis](references/verbose-diagnosis.md). A question such as
+"Why did decoding fail?" is sufficient; the user need not name `--verbose` or
+confirm the same investigation again. This also applies when the current request
+already asks about a reported error.
+
 ## Bound and analyze the CSV
 
 Before reading CSV data, load [CSV interpretation](references/csv-interpretation.md).
@@ -203,8 +219,9 @@ count without dumping the content. Otherwise use physical line count only as a
 conservative estimate, not an exact event count: quoted CSV fields may span lines.
 
 Default model-input budgets per analysis request are **200 CSV data records and
-16 KiB of CSV text**, plus **4 KiB of diagnostic excerpts**. Apply both CSV
-limits, cumulatively across reads and selected recordings. These are skill
+16 KiB of CSV text**, plus **4 KiB of diagnostic excerpts**. Apply each budget
+cumulatively across reads and selected recordings; compact and verbose diagnostic
+excerpts, including packet previews, share the diagnostic budget. These are skill
 context budgets, not ctrace options, byte-to-token conversions, or file-size
 limits on disk. Use a smaller budget if the host or user requires one.
 
