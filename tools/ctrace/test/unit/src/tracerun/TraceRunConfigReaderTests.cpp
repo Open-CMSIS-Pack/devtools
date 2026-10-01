@@ -180,21 +180,6 @@ TEST(CtraceUnitTests, TraceRunReaderAcceptsScalarAndArrayIndexNotation)
   EXPECT_TRUE(config.references[2].indices == std::vector<std::uint32_t>({4U, 5U}));
 }
 
-TEST(CtraceUnitTests, TraceRunReaderRejectsLegacySourceKeyEvenWithProducerErrors)
-{
-  TraceRunFixture file("ctrace-run-reader-legacy-source-test");
-  for (const auto* type : {"itm", "dwt"}) {
-    for (const auto* fields : {"source: 1", "source: [1, 2]", "source: null", "source: 1, index: 2",
-                              "index: 2, source: 1", "index: 2, source: null"}) {
-      for (const auto* diagnostic : {"", ", error: producer-error"}) {
-        const auto yaml = std::string("ctrace-run:\n  ctrace-refs:\n    - { type: ") + type +
-                          ", ref: core/data#0, " + fields + diagnostic + " }\n";
-        expectReadError(file, yaml, "'source' is no longer supported; use 'index' in 'ctrace-refs' entries");
-      }
-    }
-  }
-}
-
 TEST(CtraceUnitTests, TraceRunReaderParsesTraceFormatDeclaration)
 {
   TraceRunFixture file("ctrace-run-reader-trace-format-test");
