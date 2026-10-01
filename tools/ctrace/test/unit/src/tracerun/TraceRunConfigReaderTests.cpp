@@ -172,7 +172,7 @@ TEST(CtraceUnitTests, TraceRunReaderAcceptsScalarAndArrayIndexNotation)
       index: [4, 5]
     - ref: ignored/unsupported
       type: unsupported
-      source: [invalid]
+      index: [invalid]
 )yml");
   ASSERT_EQ(config.references.size(), 3U);
   EXPECT_TRUE(config.references[0].indices == std::vector<std::uint32_t>({1U, 2U}));
@@ -265,23 +265,44 @@ TEST(CtraceUnitTests, TraceRunReaderUsesReferencedSetupSizeAsFallback)
   EXPECT_EQ(sourceAt(meta, 0).dataSize, 2U);
 }
 
-TEST(CtraceUnitTests, TraceRunReaderIgnoresUnsupportedMetadataNames)
+TEST(CtraceUnitTests, TraceRunReaderIgnoresUnconsumedFields)
 {
-  TraceRunFixture file("ctrace-run-reader-unsupported-data-metadata-test");
-  const auto config = file.read(R"yml(ctrace-run:
+  TraceRunFixture file("ctrace-run-reader-unconsumed-fields-test");
+  const auto config = file.read(R"yml(unconsumed-document-data:
+  ctrace-run: invalid
+ctrace-run:
+  unconsumed: { ctrace-refs: invalid }
   ctrace-setup:
-    - data:
+    - unconsumed: { pname: [] }
+      timestamps:
+        clock: 1000000
+        unconsumed: { clock: invalid }
+      itm:
+        enable: 3
+        unconsumed: [invalid]
+      data:
         - symbol-type: signed int
           symbol-size: 1
+          unconsumed: { size: [] }
   ctrace-refs:
     - ref: data#0
       type: dwt
       index: 0
       symbol-address: 0x20000100
+      unconsumed: { index: [], stream: [] }
+    - type: unsupported
+      ref: []
+      index: invalid
 )yml");
 
+  ASSERT_EQ(config.references.size(), 1U);
+  ASSERT_EQ(config.setups.size(), 1U);
   const auto meta = CtraceRunMeta::fromConfig(config);
+  ASSERT_EQ(meta.routes().size(), 1U);
+  EXPECT_EQ(meta.routes().front().timestampClockHz, std::optional<std::uint64_t>(1000000U));
+  EXPECT_EQ(meta.routes().front().itmEnableMask, 3U);
   ASSERT_EQ(sourceCount(meta), 1U);
+  EXPECT_EQ(sourceAt(meta, 0).source, 0U);
   EXPECT_FALSE(sourceAt(meta, 0).address.has_value());
   EXPECT_EQ(sourceAt(meta, 0).dataType, "unsigned");
   EXPECT_EQ(sourceAt(meta, 0).dataSize, 4U);

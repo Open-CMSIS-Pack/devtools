@@ -403,10 +403,6 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
   reference.processorName = processorNameAttribute(path, element);
   reference.stream = parseStream();
   if (TraceRunSchema::supportsSource(reference.type)) {
-    const auto legacySource = childNode(element, "source");
-    if (legacySource) {
-      fail(path, legacySource, formatMessage(MessageId::ReferenceLegacySourceUnsupported));
-    }
     try {
       reference.indices = parseIndices(path, element);
     } catch (const std::runtime_error&) {

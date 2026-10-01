@@ -28,8 +28,7 @@ configuration with trace communication, separate from trace-source setup.
   `ctrace-setup.itm.enable` is absent; a malformed enable value bound to an active route is an Error. Conflicting valid
   masks on one route produce one Warning and disable that route's optional received-on-disabled-channel check. An ITM
   reference without `index` values is valid and contributes no source events. The `index` field accepts a scalar or
-  array of ITM channel or DWT comparator numbers. Legacy `source` fields on ITM/DWT references are rejected with an
-  explicit migration error.
+  array of ITM channel or DWT comparator numbers. Unconsumed fields are ignored without validation or diagnostics.
 - DWT data metadata comes from reference-level `address`, `size`, and `data-type`. When reference `size` is absent,
   the referenced `ctrace-setup.data.size` supplies it. DWT instruction-control references may bind a processor stream
   but do not create decoded data-source routes.

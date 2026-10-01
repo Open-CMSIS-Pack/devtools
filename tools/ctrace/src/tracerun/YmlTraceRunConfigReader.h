@@ -18,6 +18,7 @@ class YmlTraceRunConfigReader final : public TraceRunConfigReader {
 public:
   /**
    * @brief Reads and validates the ctrace-relevant YAML fields.
+   * Fields not consumed by ctrace are ignored.
    * @param path YAML trace-run configuration path.
    * @return Parsed processors, trace sources, and setup metadata.
    * @throws std::runtime_error If YAML syntax or required fields are invalid.
