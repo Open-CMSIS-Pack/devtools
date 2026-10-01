@@ -70,15 +70,17 @@ void TraceIssueReporter::finish()
     (void)routeId;
     const TraceOverflowSummary summary{state.firstTimestamp, state.packetCount};
     auto sampleOffsets = formatSampleOffsets(state.sampleOffsets);
+    std::vector<std::pair<std::string, std::string>> detailedContext;
+    detailedContext.reserve(5U);
+    detailedContext.emplace_back("overflow_count", std::to_string(state.packetCount));
+    detailedContext.emplace_back("first_raw_offset", std::to_string(state.firstLocation.offset));
+    detailedContext.emplace_back("last_raw_offset", std::to_string(state.lastOffset));
+    detailedContext.emplace_back("sample_raw_offsets", std::move(sampleOffsets));
+    detailedContext.emplace_back("omitted_offsets", std::to_string(state.packetCount - state.sampleOffsets.size()));
     report(DiagnosticSink::Severity::Warning,
            formatOverflowSummary(summary, TraceMessageStyle::Compact),
            formatOverflowSummary(summary, TraceMessageStyle::Detailed), routeContext(state.route),
-           {{"overflow_count", std::to_string(state.packetCount)},
-            {"first_raw_offset", std::to_string(state.firstLocation.offset)},
-            {"last_raw_offset", std::to_string(state.lastOffset)},
-            {"sample_raw_offsets", std::move(sampleOffsets)},
-            {"omitted_offsets", std::to_string(state.packetCount - state.sampleOffsets.size())}},
-           state.firstLocation);
+           std::move(detailedContext), state.firstLocation);
   }
 }
 
