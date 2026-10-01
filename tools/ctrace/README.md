@@ -26,8 +26,8 @@ If the directory follows them, terminate option parsing explicitly, for example
 output files. Run `ctrace --help` for the current option details.
 
 Normal CLI diagnostics use the same compact trace messages as CSV. Add `--verbose` (or `-v`) to include detailed
-reasons, raw positions, native decoder codes, packet previews and technical run information on stderr. This option
-does not change CSV or CTF output, event selection or the exit status.
+reasons, raw positions with bounded inspection windows, native decoder codes, packet previews and technical run
+information on stderr. This option does not change CSV or CTF output, event selection or the exit status.
 
 ## Trace directory
 
@@ -131,25 +131,43 @@ cycles,stream,type,source,value,pc,address,note
 ```
 
 Normal CLI adds severity and input/stream identity so diagnostics can be attributed across inputs. `--verbose`
-additionally shows native OpenCSD details, the structured `raw_offset` and known recovery timestamps.
+additionally shows native OpenCSD details, the structured `raw_offset` and known recovery timestamps. Raw positions
+are zero-based byte offsets in the original input file. `position_kind=exact` identifies an unformatted location,
+`formatter_hint` a formatted source-position group, and `input_progress` a progress boundary rather than a packet start.
+`read_offset` and `read_length` identify an inspection window of at most 128 bytes, with nearby context and clipping
+at the file boundaries. Formatted windows start at a 16-byte frame boundary. For example, a window with `read_offset=0`
+and `read_length=64` can be inspected with `xxd -g 1 -s 0 -l 64 capture.SWO.raw`. This is a hex-inspection window;
+independent decoding may require earlier synchronization and decoder state.
+
 When the raw-packet callback identifies the failing packet, the verbose CLI diagnostic also
-includes its original ITM packet type, total byte count, and up to 16 hexadecimal
-bytes. Longer packets have an explicitly truncated preview. Incomplete packets
+includes `packet=ASYNC, packet_size=2, packet_bytes=[00 fe], packet_bytes_truncated=false`, for example. Sizes count
+bytes; previews contain at most 16 bytes, with `packet_bytes_truncated=true` when shortened. Unavailable bytes use
+`packet_bytes=unavailable`; this remains distinct from an empty packet. Incomplete packets
 at end of input receive the same context even when OpenCSD reports them only
 through the packet monitor, without a logger error.
 
 For formatted input, the reported raw index can identify a deformatter output
-group rather than the exact physical position of the failing byte. A recovery
+group rather than the exact physical position of the failing byte. `packet_bytes_kind=deformatted` identifies ITM
+payload bytes that need not be contiguous in the file; unformatted previews use `packet_bytes_kind=file`. A recovery
 message distinguishes a later hardware SYNC from reaching end of input without resynchronization. Compact wording
 reports `N raw bytes affected`; `--verbose` also gives the raw interval and synchronization position. The interval
 includes formatter control and potentially other routes: its length is not a count of
-zero bytes or discarded ITM payload bytes. Errors still make the invocation
+zero bytes or discarded ITM payload bytes. `raw_end` is exclusive; unknown `previous_sync_offset` and
+`next_sync_offset` values are explicitly `unknown`. Errors still make the invocation
 fail even when decoding resumes and completed outputs are retained.
 
-Overflow warnings remain aggregated once per route: `Timestamp discontinuity`, followed by `N more occurred` when
-needed. `--verbose` also reports the first known timestamp. Configuration selection, trace-run metadata, prescalers
-and processing statistics appear only with `--verbose`; byte-skip information, warnings and errors remain visible
-normally. File and configuration failures retain the file, field and cause needed to act on them in either mode.
+Overflow warnings remain aggregated once per route: `Trace overflow; timestamp discontinuity`, followed by
+`N more occurred` when needed. `--verbose` also reports the first known timestamp, first and last raw positions,
+up to three sample positions and the number of omitted samples. Overflow alone does not make the command fail.
+
+Each input emits a verbose-only inspection Info with `input_path` (absolute path), `input_size` (bytes), effective
+`format`, `framing`, selected `config`, `ctrace_version`, `offset_unit=byte` and `offset_base=0`. Configuration selection,
+trace-run metadata, prescalers and processing statistics also appear only with `--verbose`; byte-skip information,
+warnings and errors remain visible normally. File and configuration failures retain the file, field and cause needed
+to act on them in either mode.
+
+The input size is measured from the retained file handle during preflight. The absolute path keeps symbolic links
+and `..` intact.
 
 CSV diagnostic notes and default CLI wording intentionally change. Consumers that compare complete diagnostic
 strings must update those expectations. Columns, event types and filters are unchanged. Use `type` and `stream` for

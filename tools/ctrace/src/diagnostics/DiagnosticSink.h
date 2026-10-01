@@ -8,6 +8,8 @@
 #ifndef CTRACE_SRC_DIAGNOSTICS_DIAGNOSTICSINK_H
 #define CTRACE_SRC_DIAGNOSTICS_DIAGNOSTICSINK_H
 
+#include "RawDiagnosticLocation.h"
+
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -64,6 +66,8 @@ public:
     std::optional<std::string> detailedMessage;
     /** @brief Technical context shown only with verbose CLI output. */
     std::vector<std::pair<std::string, std::string>> detailedContext;
+    /** @brief Optional typed raw location, resolved by the input-scoped diagnostic sink. */
+    std::optional<RawDiagnosticLocation> rawLocation;
     Visibility visibility = Visibility::Always;
   };
 

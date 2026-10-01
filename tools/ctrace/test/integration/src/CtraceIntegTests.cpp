@@ -16,10 +16,12 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cstdint>
 #include <filesystem>
 #include <iomanip>
 #include <initializer_list>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -96,6 +98,109 @@ void expectContains(std::string_view text, std::string_view expected)
 void expectNotContains(std::string_view text, std::string_view unexpected)
 {
   EXPECT_EQ(std::string_view::npos, text.find(unexpected)) << unexpected << "\n" << text;
+}
+
+/** @brief Selects one diagnostic so context assertions cannot match unrelated records. */
+std::string_view diagnosticLine(std::string_view text, std::string_view marker)
+{
+  const auto markerOffset = text.find(marker);
+  if (markerOffset == std::string_view::npos) {
+    return {};
+  }
+  const auto previousLine = text.rfind('\n', markerOffset);
+  const auto start = previousLine == std::string_view::npos ? 0U : previousLine + 1U;
+  const auto end = text.find('\n', markerOffset);
+  return text.substr(start, end == std::string_view::npos ? text.size() - start : end - start);
+}
+
+/** @brief Reads one complete context field, decoding the quoted escapes emitted by verbose diagnostics. */
+std::optional<std::string> diagnosticField(std::string_view line, std::string_view key)
+{
+  const auto marker = std::string(key) + "=";
+  bool quoted = false;
+  std::size_t offset = 0U;
+  while (offset < line.size()) {
+    if (quoted && line[offset] == '\\') {
+      offset += std::min<std::size_t>(2U, line.size() - offset);
+      continue;
+    }
+    if (line[offset] == '"') {
+      quoted = !quoted;
+    }
+    const bool fieldBoundary = offset == 0U ||
+        (offset >= 2U && line[offset - 1U] == ' ' && (line[offset - 2U] == ',' || line[offset - 2U] == ':'));
+    if (!quoted && fieldBoundary && line.substr(offset, marker.size()) == marker) {
+      offset += marker.size();
+      if (offset >= line.size() || line[offset] != '"') {
+        const auto end = line.find(',', offset);
+        return std::string(line.substr(offset, end == std::string_view::npos ? line.size() - offset : end - offset));
+      }
+      ++offset;
+      std::string value;
+      while (offset < line.size()) {
+        const auto character = line[offset++];
+        if (character == '"') {
+          return value;
+        }
+        if (character != '\\') {
+          value += character;
+          continue;
+        }
+        if (offset >= line.size()) {
+          return std::nullopt;
+        }
+        const auto escape = line[offset++];
+        if (escape == '\\' || escape == '"') {
+          value += escape;
+        } else if (escape == 'u' && offset + 4U <= line.size()) {
+          unsigned int code = 0U;
+          const auto digits = line.substr(offset, 4U);
+          const auto parsed = std::from_chars(digits.data(), digits.data() + digits.size(), code, 16);
+          if (parsed.ec != std::errc{} || parsed.ptr != digits.data() + digits.size() || code > 0x7fU) {
+            return std::nullopt;
+          }
+          value += static_cast<char>(code);
+          offset += digits.size();
+        } else {
+          return std::nullopt;
+        }
+      }
+      return std::nullopt;
+    }
+    ++offset;
+  }
+  return std::nullopt;
+}
+
+/** @brief Reads a decimal context field without matching a suffix of another field name. */
+std::optional<std::uint64_t> unsignedDiagnosticField(std::string_view line, std::string_view key)
+{
+  const auto value = diagnosticField(line, key);
+  if (!value.has_value()) {
+    return std::nullopt;
+  }
+  std::uint64_t result = 0U;
+  const auto parsed = std::from_chars(value->data(), value->data() + value->size(), result);
+  return parsed.ec == std::errc{} && parsed.ptr == value->data() + value->size()
+             ? std::optional<std::uint64_t>{result} : std::nullopt;
+}
+
+/** @brief Verifies that a suggested raw-file window is bounded and usable for the selected framing. */
+void expectRawReadWindow(std::string_view line, std::uint64_t inputSize, bool formatted)
+{
+  SCOPED_TRACE(line);
+  const auto offset = unsignedDiagnosticField(line, "read_offset");
+  const auto length = unsignedDiagnosticField(line, "read_length");
+  ASSERT_TRUE(offset.has_value());
+  ASSERT_TRUE(length.has_value());
+  ASSERT_LE(*offset, inputSize);
+  EXPECT_LE(*length, 128U);
+  EXPECT_LE(*length, inputSize - *offset);
+  EXPECT_GT(*length, 0U);
+  if (formatted) {
+    EXPECT_EQ(*offset % 16U, 0U);
+    EXPECT_EQ(*length % 16U, 0U);
+  }
 }
 
 void appendBytes(std::vector<std::uint8_t>& destination, const std::vector<std::uint8_t>& source)
@@ -209,7 +314,7 @@ void expectSyntheticCsvRoute(std::string_view csv, std::uint8_t stream, std::uin
   expectContains(csv, addressRow.str());
   expectContains(csv, prefix + "dwt,3,,,,\n");
   expectContains(csv,
-                 prefix + "overflow,,,,,Timestamp discontinuity\n");
+                 prefix + "overflow,,,,,Trace overflow; timestamp discontinuity\n");
 }
 
 void expectSyntheticCtfRoute(const std::filesystem::path& streamPath, std::uint8_t traceBusId,
@@ -1367,13 +1472,35 @@ TEST_F(CtraceIntegTests, ConvertsCapturedDwtEventCountersAcrossOverflow)
   EXPECT_EQ(raw[9998U], 0x70U);
   EXPECT_TRUE(std::equal(hardwareSync.begin(), hardwareSync.end(), raw.begin() + 9999U));
 
+  const auto compact = run({"ctrace", workDirectory().string(), "--target", "trace-event", "--all"});
+  EXPECT_EQ(compact.exitCode, 0) << compact.stderrText;
+  expectContains(compact.stderrText, "[warning] Trace overflow; timestamp discontinuity: inputChannel=SWO,");
+  EXPECT_EQ(countOccurrences(compact.stderrText, "[warning]"), 1U);
+  for (const auto field : {"raw_offset=", "read_offset=", "input_size=", "overflow_count=", "ctrace_version="}) {
+    expectNotContains(compact.stderrText, field);
+  }
+  const auto compactCsv = readTestTextFile(workDirectory() / "trace-event.SWO.csv");
+  expectContains(compactCsv, "796135,,overflow,,,,,Trace overflow; timestamp discontinuity\n");
+
   const auto result = run({"ctrace", "--verbose", workDirectory().string(), "--target", "trace-event", "--all"});
   EXPECT_EQ(result.exitCode, 0) << result.stderrText;
   expectContains(result.stderrText, "[warning] first overflow occurred at cycle timestamp 796135");
+  const auto overflowDiagnostic = diagnosticLine(result.stderrText, "[warning] first overflow");
+  expectContains(overflowDiagnostic, "overflow_count=1");
+  expectContains(overflowDiagnostic, "first_raw_offset=9998");
+  expectContains(overflowDiagnostic, "last_raw_offset=9998");
+  EXPECT_EQ(diagnosticField(overflowDiagnostic, "sample_raw_offsets"), "[9998]");
+  EXPECT_EQ(unsignedDiagnosticField(overflowDiagnostic, "raw_offset"), 9998U);
+  expectContains(overflowDiagnostic, "omitted_offsets=0");
+  expectContains(overflowDiagnostic, "position_kind=exact");
+  expectContains(overflowDiagnostic, "previous_sync_offset=0");
+  expectContains(overflowDiagnostic, "next_sync_offset=9999");
+  expectRawReadWindow(overflowDiagnostic, raw.size(), false);
   expectContains(result.stderrText, "[info] processed 19999 input bytes in ");
   expectContains(result.stderrText, "); trace/diagnostic records: 8599: inputChannel=SWO,");
 
   const auto csv = readTestTextFile(workDirectory() / "trace-event.SWO.csv");
+  EXPECT_EQ(csv, compactCsv);
   EXPECT_EQ(countOccurrences(csv, ",,event,0,"), 5797U);
   EXPECT_EQ(countOccurrences(csv, ",,event,0,0x04,,,"), 3073U);
   EXPECT_EQ(countOccurrences(csv, ",,overflow,"), 1U);
@@ -2245,20 +2372,53 @@ TEST_F(CtraceIntegTests, ReplacesStaleArtifactsAcrossMultiSingleMultiClockConver
 TEST_F(CtraceIntegTests, RecoversAtHardwareSyncAfterResetDiscontinuity)
 {
   const auto fixtureDirectory = testDataDirectory() / "Arm-reset";
-  copyFixtureFile(fixtureDirectory, "Arm.SWO.raw");
-  copyFixtureFile(fixtureDirectory, "Arm.ctrace-run.yml");
+  const auto relativeDirectory = std::filesystem::path{"raw files, input"};
+  const auto directory = workDirectory() / relativeDirectory;
+  ASSERT_TRUE(std::filesystem::create_directory(directory));
+  copyFixtureFile(fixtureDirectory, "Arm.SWO.raw", (relativeDirectory / "Arm.SWO.raw").string());
+  copyFixtureFile(fixtureDirectory, "Arm.ctrace-run.yml", (relativeDirectory / "Arm.ctrace-run.yml").string());
 
-  const auto raw = readTestBinaryFile(workDirectory() / "Arm.SWO.raw");
+  const auto raw = readTestBinaryFile(directory / "Arm.SWO.raw");
   ASSERT_EQ(131071U, raw.size());
   constexpr std::array<unsigned char, 6U> hardwareSync{0U, 0U, 0U, 0U, 0U, 0x80U};
   for (const auto offset : {0U, 128U}) {
     ASSERT_LE(offset + hardwareSync.size(), raw.size());
     EXPECT_TRUE(std::equal(hardwareSync.begin(), hardwareSync.end(), raw.begin() + offset)) << offset;
   }
+  ASSERT_EQ(raw[10U], 0x00U);
+  ASSERT_EQ(raw[11U], 0xfeU);
 
-  const auto result = run({"ctrace", "--verbose", workDirectory().string(), "--target", "Arm", "--csv"});
+  const auto compact = run({"ctrace", directory.string(), "--target", "Arm", "--csv"});
+  EXPECT_EQ(compact.exitCode, 1) << compact.stderrText;
+  expectContains(compact.stderrText, "[error] Invalid ITM packet sequence: inputChannel=SWO,");
+  expectContains(compact.stderrText, "[error] 116 raw bytes without usable ITM packets:");
+  for (const auto detail : {"raw_offset=", "read_offset=", "position_kind=", "packet=", "input_size=",
+                            "previous_sync_offset=", "ctrace_version="}) {
+    expectNotContains(compact.stderrText, detail);
+  }
+  const auto compactCsv = readTestTextFile(directory / "Arm.SWO.csv");
+
+  const auto result = run({"ctrace", "--verbose", directory.string(), "--target", "Arm", "--csv"});
   EXPECT_EQ(1, result.exitCode) << result.stderrText;
   expectContains(result.stderrText, "[error] OpenCSD detected an invalid ITM packet sequence at raw offset 10");
+  const auto inputContext = diagnosticLine(result.stderrText, "[info] raw input inspection context");
+  expectContains(inputContext, "input_size=131071");
+  expectContains(inputContext, "format=unformatted");
+  expectContains(inputContext, "framing=none");
+  EXPECT_EQ(diagnosticField(inputContext, "config"), (directory / "Arm.ctrace-run.yml").string());
+  EXPECT_EQ(diagnosticField(inputContext, "input_path"),
+            std::filesystem::absolute(directory / "Arm.SWO.raw").string());
+  expectContains(inputContext, "ctrace_version=");
+  expectContains(inputContext, "offset_unit=byte");
+  expectContains(inputContext, "offset_base=0");
+  const auto issueDiagnostic = diagnosticLine(result.stderrText, "[error] OpenCSD detected an invalid ITM packet sequence");
+  expectContains(issueDiagnostic, "raw_offset=10");
+  expectContains(issueDiagnostic, "position_kind=exact");
+  expectContains(issueDiagnostic, "packet=ASYNC, packet_size=2, packet_bytes=[00 fe], packet_bytes_truncated=false");
+  expectContains(issueDiagnostic, "packet_bytes_kind=file");
+  expectContains(issueDiagnostic, "previous_sync_offset=0");
+  expectContains(issueDiagnostic, "next_sync_offset=unknown");
+  expectRawReadWindow(issueDiagnostic, raw.size(), false);
   expectContains(result.stderrText,
                  "[error] OpenCSD consumed 116 raw bytes while waiting for usable ITM trace packets");
   expectContains(result.stderrText, "[info] processed 131071 input bytes in ");
@@ -2267,7 +2427,8 @@ TEST_F(CtraceIntegTests, RecoversAtHardwareSyncAfterResetDiscontinuity)
   expectNotContains(result.stderrText, "OpenCSD made no decode progress");
   expectNotContains(result.stderrText, "decode aborted");
 
-  const auto csv = readTestTextFile(workDirectory() / "Arm.SWO.csv");
+  const auto csv = readTestTextFile(directory / "Arm.SWO.csv");
+  EXPECT_EQ(csv, compactCsv);
   expectNotContains(csv, ",itm,");
   const auto recoveryError = csv.find("Invalid ITM packet sequence");
   const auto dataLoss =
@@ -2315,8 +2476,9 @@ TEST_F(CtraceIntegTests, ReportsMalformedAsyncDetailsAndRealResynchronization)
   expectContains(compactResult.stderrText, "[error] Invalid ITM packet sequence: inputChannel=TB,");
   expectContains(compactResult.stderrText, "[error] ITM resynced;");
   expectContains(compactResult.stderrText, "stream=1");
-  for (const auto detail : {"raw@", "raw_offset", "raw offset", "raw span", "cycles ",
-                            "OCSD_ERR_", "packet=", "bytes=[", "applied ctrace-run meta", "processed "}) {
+  for (const auto detail : {"raw@", "raw_offset", "raw offset", "raw span", "cycles ", "position_kind=",
+                            "read_offset=", "input_size=", "previous_sync_offset=", "OCSD_ERR_", "packet=",
+                            "packet_bytes=[", "applied ctrace-run meta", "processed "}) {
     expectNotContains(compactResult.stderrText, detail);
     expectNotContains(compactCsv, detail);
   }
@@ -2326,10 +2488,28 @@ TEST_F(CtraceIntegTests, ReportsMalformedAsyncDetailsAndRealResynchronization)
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Malformed", "--all", "--verbose"});
   EXPECT_EQ(result.exitCode, 1) << "the retained output must not hide the input error";
   const auto csv = readTestTextFile(workDirectory() / "Malformed.TB.csv");
+  const auto inputContext = diagnosticLine(result.stderrText, "[info] raw input inspection context");
+  expectContains(inputContext, "input_size=" + std::to_string(capture.size()));
+  expectContains(inputContext, "format=formatted");
+  expectContains(inputContext, "framing=memory-aligned-16");
+  const auto issueDiagnostic = diagnosticLine(result.stderrText, "[error] OpenCSD detected an invalid ITM packet sequence");
+  expectContains(issueDiagnostic, "position_kind=formatter_hint");
+  expectContains(issueDiagnostic, "packet_bytes_kind=deformatted");
+  expectContains(issueDiagnostic, "packet=ASYNC, packet_size=2, packet_bytes=[00 08], packet_bytes_truncated=false");
+  expectContains(issueDiagnostic, "next_sync_offset=unknown");
+  EXPECT_TRUE(unsignedDiagnosticField(issueDiagnostic, "previous_sync_offset").has_value());
+  expectRawReadWindow(issueDiagnostic, capture.size(), true);
+  EXPECT_EQ(unsignedDiagnosticField(issueDiagnostic, "read_length"), capture.size());
+  const auto recoveryDiagnostic = diagnosticLine(result.stderrText, "[error] ITM decoding resumed");
+  const auto recoveryEnd = unsignedDiagnosticField(recoveryDiagnostic, "raw_end");
+  ASSERT_TRUE(recoveryEnd.has_value());
+  EXPECT_EQ(unsignedDiagnosticField(recoveryDiagnostic, "next_sync_offset"), recoveryEnd);
+  expectContains(recoveryDiagnostic, "position_kind=formatter_hint");
+  expectRawReadWindow(recoveryDiagnostic, capture.size(), true);
   expectContains(result.stderrText, "OCSD_ERR_BAD_PACKET_SEQ");
   expectContains(result.stderrText, "Async Packet: unexpected none zero value");
   expectContains(result.stderrText, "packet=ASYNC");
-  expectContains(result.stderrText, "bytes=[00 08]");
+  expectContains(result.stderrText, "packet_bytes=[00 08]");
   expectContains(result.stderrText, "ITM decoding resumed at hardware SYNC at raw offset");
   EXPECT_EQ(countOccurrences(result.stderrText, "OCSD_ERR_BAD_PACKET_SEQ"), 1U);
   EXPECT_EQ(csv, compactCsv);
@@ -2344,7 +2524,7 @@ TEST_F(CtraceIntegTests, ReportsMalformedAsyncDetailsAndRealResynchronization)
   EXPECT_EQ(countOccurrences(csv, "Invalid ITM packet sequence"), 1U);
   expectNotContains(csv, "OCSD_ERR_BAD_PACKET_SEQ");
   expectNotContains(csv, "packet=ASYNC");
-  expectNotContains(csv, "bytes=[00 08]");
+  expectNotContains(csv, "packet_bytes=[00 08]");
   expectContains(csv, ",1,itm,1,0x41");
   expectNotContains(csv, ",1,itm,1,0x58");
   expectNonEmptyFile(workDirectory() / "Malformed.TB.ctf" / "metadata");
@@ -2409,7 +2589,15 @@ TEST_F(CtraceIntegTests, RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTai
         expectContains(result.stderrText, "[error] " + abortMessage);
         EXPECT_EQ(countOccurrences(result.stderrText, "decode aborted after processing "), 1U);
         expectContains(result.stderrText, "incomplete ITM packet at end of input at raw offset");
-        expectContains(result.stderrText, "packet=DWT, size=2 bytes, bytes=[17 f2]");
+        expectContains(result.stderrText,
+                       "packet=DWT, packet_size=2, packet_bytes=[17 f2], packet_bytes_truncated=false");
+        const auto tailDiagnostic = diagnosticLine(result.stderrText, "[error] incomplete ITM packet at end of input");
+        expectContains(tailDiagnostic, "packet_bytes_kind=deformatted");
+        const auto abortDiagnostic = diagnosticLine(result.stderrText, "[error] decode aborted after processing ");
+        expectContains(abortDiagnostic, "raw_offset=" + std::to_string(capture.size()));
+        expectContains(abortDiagnostic, "position_kind=input_progress");
+        expectNotContains(abortDiagnostic, "packet_bytes_kind=");
+        expectRawReadWindow(abortDiagnostic, capture.size(), true);
       } else {
         expectContains(result.stderrText, "[error] " + compactAbortMessage);
         EXPECT_EQ(countOccurrences(result.stderrText, compactAbortMessage), 1U);
@@ -2418,6 +2606,8 @@ TEST_F(CtraceIntegTests, RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTai
         expectNotContains(result.stderrText, "raw offset");
         expectNotContains(result.stderrText, "bytesProcessed");
         expectNotContains(result.stderrText, "packet=");
+        expectNotContains(result.stderrText, "read_offset=");
+        expectNotContains(result.stderrText, "input_size=");
       }
       expectContains(result.stderrText, "inputChannel=TB, input=");
       expectNotContains(result.stderrText, "OCSD_RESP_CONT");

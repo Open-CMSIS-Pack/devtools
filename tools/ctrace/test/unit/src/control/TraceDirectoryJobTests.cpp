@@ -880,6 +880,40 @@ TEST(CtraceUnitTests, testFileDecodeJobRetainsCsvForDecoderInitializationFailure
   EXPECT_EQ(readTestLines(csvPath).size(), 2U);
 }
 
+TEST(CtraceUnitTests, testFileDecodeJobPreservesFatalPacketContextWithoutInventingPacketPosition)
+{
+  const TemporaryTestPath temporaryPath("ctrace-file-decode-fatal-packet-test");
+  const auto rawPath = temporaryPath.path() / "packet.SWO.raw";
+  writeTestFile(rawPath, std::string(16U, 'x'));
+  CliOptions options;
+  options.outputFormat = OutputFormat::Csv;
+  CollectingDiagnosticSink diagnostics;
+  OpenCsdItmSessionFactory factory = [](OpenCsdPacketCollector&, OpenCsdErrorController&)
+      -> std::unique_ptr<OpenCsdItmSessionInterface> {
+    TraceMessage reason = TracePacketDiagnostic{TracePacketDiagnosticKind::Incomplete, 14U};
+    reason.packet = TracePacketContext{TracePacketKind::Dwt, 2U, std::vector<std::uint8_t>{0x17U, 0x34U}};
+    throw OpenCsdFatalError(std::move(reason), 16U);
+  };
+  FileDecodeJob job(options, testInput(rawPath), diagnostics, std::move(factory));
+  EXPECT_NO_THROW(job.run());
+  const auto* failure = findDiagnostic(diagnostics, "Decode aborted; trace incomplete; Incomplete ITM packet at EOF");
+  ASSERT_NE(failure, nullptr);
+  ASSERT_TRUE(failure->detailedMessage.has_value());
+  EXPECT_NE(failure->detailedMessage->find("packet_bytes=[17 34]"), std::string::npos);
+  EXPECT_NE(std::find(failure->detailedContext.begin(), failure->detailedContext.end(),
+                      std::make_pair(std::string("packet_bytes_kind"), std::string("file"))),
+            failure->detailedContext.end());
+  ASSERT_TRUE(failure->rawLocation.has_value());
+  EXPECT_EQ(failure->rawLocation->kind, RawDiagnosticLocation::Kind::InputProgress);
+  EXPECT_EQ(failure->rawLocation->offset, 16U);
+  EXPECT_TRUE(std::none_of(failure->detailedContext.begin(), failure->detailedContext.end(),
+                           [](const auto& item) { return item.first == "raw_end"; }))
+      << "input progress plus protocol packet size is not a physical packet interval";
+  EXPECT_EQ(diagnostics.failureCount(), 1U);
+  EXPECT_EQ(readTestLines(temporaryPath.path() / "packet.SWO.csv").back(),
+            ",,error,,,,,Decode aborted; trace incomplete; Incomplete ITM packet at EOF");
+}
+
 TEST(CtraceUnitTests, testFileDecodeJobKeepsSafePrefixAndRejectsFatalBatchForAllOutputs)
 {
   const TemporaryTestPath temporaryPath("ctrace-file-decode-fatal-prefix-test");
@@ -989,4 +1023,32 @@ TEST(CtraceUnitTests, testFileDecodeJobConsumesPreflightedHandleAfterPathReplace
             "cycles,stream,type,source,value,pc,address,note\n"
             "0,,pcsample,,,0x08001234,,\n"
             "0,,itm,1,0x41,,,\n");
+  const auto* inspection = findDiagnostic(diagnostics, "raw input inspection context");
+  ASSERT_NE(inspection, nullptr);
+  EXPECT_NE(std::find(inspection->context.begin(), inspection->context.end(),
+                      std::make_pair(std::string("input_size"), std::string("13"))), inspection->context.end())
+      << "inspection size must belong to the retained handle, not its replaced path";
+}
+
+TEST(CtraceUnitTests, testFileDecodeJobPreservesSymlinkParentPathForRawInspection)
+{
+  if (!TestPlatform::supports(TestPlatformCapability::PosixPermissions)) {
+    GTEST_SKIP();
+  }
+  const TemporaryTestPath temporaryPath("ctrace-file-decode-inspection-symlink-test");
+  const auto& root = temporaryPath.path();
+  std::filesystem::create_directories(root / "target" / "child");
+  std::filesystem::create_directory_symlink(root / "target" / "child", root / "link");
+  writeTestFile(root / "target" / "capture.SWO.raw", std::string{"\0\0\0\0\0\x80", 6U});
+  const auto selected = root / "link" / ".." / "capture.SWO.raw";
+  CollectingDiagnosticSink diagnostics;
+  FileDecodeJob job(CliOptions{}, testInput(selected), diagnostics);
+  EXPECT_NO_THROW(job.run());
+  const auto* inspection = findDiagnostic(diagnostics, "raw input inspection context");
+  ASSERT_NE(inspection, nullptr);
+  const auto path = std::find_if(inspection->context.begin(), inspection->context.end(),
+                               [](const auto& item) { return item.first == "input_path"; });
+  ASSERT_NE(path, inspection->context.end());
+  EXPECT_TRUE(std::filesystem::equivalent(path->second, root / "target" / "capture.SWO.raw"));
+  EXPECT_EQ(diagnostics.failureCount(), 0U);
 }

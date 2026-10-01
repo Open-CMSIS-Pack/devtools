@@ -25,11 +25,12 @@
 constexpr std::string_view ConfigSuffix = ".ctrace-run.yml";
 
 TraceRunInputDescriptor::TraceRunInputDescriptor(std::filesystem::path path, TraceRunFormat format,
-                                                 CtraceRunMeta metadata, std::ifstream stream)
+                                                 CtraceRunMeta metadata, std::ifstream stream, std::uint64_t size)
   : m_path(std::move(path)),
     m_format(format),
     m_metadata(std::move(metadata)),
-    m_stream(std::move(stream))
+    m_stream(std::move(stream)),
+    m_size(size)
 {
 }
 
@@ -41,6 +42,11 @@ const std::filesystem::path& TraceRunInputDescriptor::path() const noexcept
 TraceRunFormat TraceRunInputDescriptor::format() const noexcept
 {
   return m_format;
+}
+
+std::uint64_t TraceRunInputDescriptor::size() const noexcept
+{
+  return m_size;
 }
 
 const CtraceRunMeta& TraceRunInputDescriptor::metadata() const noexcept
@@ -252,5 +258,5 @@ TraceRunInputDescriptor TraceRunDiscovery::resolveInput(TraceRunConfig config, c
   readable.exceptions(std::ios::goodbit);
 
   config.traceFormat = format;
-  return TraceRunInputDescriptor(selected.path, format, CtraceRunMeta::fromConfig(config), std::move(readable));
+  return TraceRunInputDescriptor(selected.path, format, CtraceRunMeta::fromConfig(config), std::move(readable), fileSize);
 }

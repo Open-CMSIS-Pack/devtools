@@ -14,6 +14,35 @@
 #include <string>
 #include <string_view>
 
+/** @brief Quotes verbose context values that could be mistaken for field separators. */
+static std::string verboseContextValue(const std::string& value)
+{
+  bool quote = value.empty();
+  for (const unsigned char byte : value) {
+    quote = quote || byte <= 0x20U || byte == 0x7fU ||
+            std::string_view(",:=\"\\[]").find(static_cast<char>(byte)) != std::string_view::npos;
+  }
+  if (!quote) {
+    return value;
+  }
+  constexpr char hex[] = "0123456789abcdef";
+  std::string result = "\"";
+  for (const unsigned char byte : value) {
+    if (byte == '"' || byte == '\\') {
+      result += '\\';
+      result += static_cast<char>(byte);
+    } else if (byte < 0x20U || byte == 0x7fU) {
+      result += "\\u00";
+      result += hex[byte >> 4U];
+      result += hex[byte & 0xfU];
+    } else {
+      result += static_cast<char>(byte);
+    }
+  }
+  result += '"';
+  return result;
+}
+
 /** @brief Renders a structured diagnostic in the stable command-line format. */
 static std::string formatDiagnosticEvent(const DiagnosticSink::Event& event, bool verbose)
 {
@@ -23,7 +52,8 @@ static std::string formatDiagnosticEvent(const DiagnosticSink::Event& event, boo
   bool firstContext = true;
   const auto appendContext = [&](const auto& context) {
     for (const auto& item : context) {
-      out << (firstContext ? ": " : ", ") << item.first << "=" << item.second;
+      out << (firstContext ? ": " : ", ") << item.first << "="
+          << (verbose ? verboseContextValue(item.second) : item.second);
       firstContext = false;
     }
   };

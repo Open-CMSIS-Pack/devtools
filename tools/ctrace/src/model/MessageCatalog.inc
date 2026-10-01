@@ -329,22 +329,14 @@ CTRACE_MESSAGE(TraceDecodeAbortOpaque,
 
 CTRACE_MESSAGE(TraceOverflow,
     "overflow: new timestamp segment; time across boundary may be unreliable",
-    "Timestamp discontinuity")
+    "Trace overflow; timestamp discontinuity")
 
-CTRACE_MESSAGE(TracePacketPreviewSingle,
-    "packet={0}, size={1} byte, bytes={2}",
-    nullptr)
-
-CTRACE_MESSAGE(TracePacketPreviewMultiple,
-    "packet={0}, size={1} bytes, bytes={2}",
+CTRACE_MESSAGE(TracePacketPreview,
+    "packet={0}, packet_size={1}, packet_bytes={2}, packet_bytes_truncated={3}",
     nullptr)
 
 CTRACE_MESSAGE(TracePacketBytesUnavailable,
     "unavailable",
-    nullptr)
-
-CTRACE_MESSAGE(TracePacketBytesTruncated,
-    "{0} ... (truncated)",
     nullptr)
 
 CTRACE_MESSAGE(TracePacketBytes,
@@ -497,11 +489,11 @@ CTRACE_MESSAGE(TraceSetupDuplicateFormattedRoute,
 
 CTRACE_MESSAGE(TraceOverflowSummary,
     "first overflow occurred at cycle timestamp {0}",
-    "Timestamp discontinuity")
+    "Trace overflow; timestamp discontinuity")
 
 CTRACE_MESSAGE(TraceOverflowSummaryUnknown,
     "first overflow occurred at an unknown cycle timestamp",
-    "Timestamp discontinuity")
+    "Trace overflow; timestamp discontinuity")
 
 CTRACE_MESSAGE(TraceOverflowSummaryMore,
     "{0}; {1} more occurred",
@@ -515,6 +507,7 @@ CTRACE_MESSAGE(TraceConfigurationPathEmpty, "trace-run configuration path is emp
 CTRACE_MESSAGE(TraceConfigurationSourcePathMissing, "trace-run configuration has no source path", nullptr)
 CTRACE_MESSAGE(ReferenceDiagnosticMissing, "trace generation setup failed without a diagnostic message", nullptr)
 CTRACE_MESSAGE(SelectedTraceConfiguration, "selected trace-run configuration", nullptr)
+CTRACE_MESSAGE(RawInputInspection, "raw input inspection context", nullptr)
 CTRACE_MESSAGE(SkippingExcludedTraceChannel, "skipping raw trace channel excluded from active input selection", nullptr)
 CTRACE_MESSAGE(AppliedTraceMetadata, "applied ctrace-run meta", nullptr)
 CTRACE_MESSAGE(UsingTimestampPrescaler, "using timestamp prescaler", nullptr)

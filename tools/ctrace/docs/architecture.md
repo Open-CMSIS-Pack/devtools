@@ -195,6 +195,11 @@ context survive until output formatting. Verbose CLI preserves native detail and
 packet preview; normal CLI and CSV use the same compact category, cause and meaningful counts from the shared
 [message catalog](message-system-design.md).
 
+Packet context renders stable `packet`, `packet_size`, `packet_bytes`, and `packet_bytes_truncated` fields. The preview
+contains at most 16 hexadecimal bytes with truncation marked outside the brackets. Unavailable bytes remain explicit.
+The input-scoped sink identifies their domain with `packet_bytes_kind=file` for unformatted input or `deformatted`
+for formatted ITM payload. Formatted preview bytes need not be contiguous in the original raw file.
+
 The current ITM decoder and formatter do not emit `LogMessage` diagnostics or
 warning-only root responses themselves. The latter are handled defensively.
 `LogMessage` is not promoted into protocol errors: it has no packet index or
@@ -332,8 +337,8 @@ or removes historical per-channel XML files.
 
 ## Diagnostics and failure semantics
 
-Diagnostics carry a severity, compact message, normal context, optional detailed message, detailed context, visibility,
-and impact. Severity describes the issue, while impact
+Diagnostics carry a severity, compact message, normal context, optional detailed message, detailed context, typed
+raw-location data, visibility, and impact. Severity describes the issue, while impact
 determines whether the current job must fail. This distinction allows a trace-run generation error to remain visible
 without necessarily preventing the decoding of otherwise valid trace input.
 
@@ -348,6 +353,21 @@ configuration, metadata, prescalers and run statistics use `Visibility::Verbose`
 remain normally visible. Operational file/field/cause details remain actionable without verbosity. The option does
 not affect decoding, file outputs, event filtering or failure counts; `DiagnosticSink::report` counts impact before
 the sink makes its presentation choice. There is no global mode or text-based context filter.
+
+Typed raw locations preserve zero-based original-file byte offsets, optional exclusive interval ends, and observed
+synchronization positions. The input-scoped sink uses file size and effective format to render `raw_offset`,
+`position_kind`, and a bounded `read_offset`/`read_length` window. Exact unformatted positions, formatted
+source-position hints, and decoder progress are distinguished as `exact`, `formatter_hint`, and `input_progress`.
+Inspection windows are at most 128 bytes, include nearby context, and are clipped to EOF; formatted starts are
+16-byte frame aligned. The window supports targeted hex inspection without promising independently decodable trace.
+Missing `previous_sync_offset` and `next_sync_offset` values remain `unknown`. Verbose context values are quoted and
+escaped when needed, keeping paths and control characters unambiguous. Default context rendering stays unchanged.
+
+One verbose `RawInputInspection` Info per input reports its absolute path, size, effective format/framing,
+configuration, ctrace version, and the byte-based zero-origin offset convention. The absolute path retains symbolic
+links and `..` without lexical rewriting. Size comes from the retained input handle during preflight, so replacing
+the path does not substitute an unrelated file's size. Context enrichment computes read
+windows from known positions; it does not rescan or copy the capture. CSV and CTF receive no inspection fields.
 
 Decoder issue packets remain part of the event stream. `DecodeConsumers` reports every issue to stderr independently
 of output filters and forwards all events to the backends. The backends apply stream and type selection internally;
@@ -372,16 +392,17 @@ of creating routes or clocks, and CLI Info remains visible in CTF-only mode. The
 source warning remains separate from byte accounting. A route-bound missing-sync Error follows ordinary output
 selection but always contributes to command failure; its text does not repeat the byte count already reported as Info.
 
-Overflow CLI warnings stay aggregated per internal route. Normal wording is `Timestamp discontinuity`, with
-`N more occurred` when needed; verbose wording also identifies the first known timestamp. CSV retains one compact
-overflow note per selected event.
+Overflow CLI warnings stay aggregated per internal route. Normal wording is `Trace overflow; timestamp discontinuity`, with
+`N more occurred` when needed; verbose output also identifies the first known timestamp, first and last raw positions,
+up to three position samples and the number omitted. The bounded sample list prevents aggregation from growing with
+the capture size. CSV retains one compact overflow note per selected event. Overflow warnings alone are non-failing.
 
 An invocation-wide diagnostic sink aggregates failures while remaining inputs in the same set and other solution
 sets continue, then determines the final process status. Errors are rendered as `error` even when their impact causes
 a non-zero exit status. Unhandled internal ctrace failures also terminate the command after an error diagnostic.
 An input-scoped forwarding sink adds `inputChannel` and `input` context to every file-job diagnostic while preserving
-its severity, failure impact, visibility and optional detailed fields. Producer reference annotations are reported once
-per configuration, before file jobs, and their foreign text remains intact in both CLI modes.
+its severity, failure impact, visibility and optional detailed fields, including typed raw locations. Producer reference
+annotations are reported once per configuration, before file jobs, and their foreign text remains intact in both CLI modes.
 
 ## External dependencies
 

@@ -351,6 +351,7 @@ std::string formatTracePacketContext(const TracePacketContext& packet)
   }};
   const auto name = formatMessage(selectMessage(packet.kind, kinds));
   std::string bytes;
+  bool truncated = false;
   if (!packet.bytes.has_value() && packet.size != 0U) {
     bytes = formatMessage(MessageId::TracePacketBytesUnavailable);
   } else {
@@ -366,13 +367,11 @@ std::string formatTracePacketContext(const TracePacketContext& packet)
       bytes += digits[value >> 4U];
       bytes += digits[value & 0xfU];
     }
-    if (shown < packet.size) {
-      bytes = formatMessage(MessageId::TracePacketBytesTruncated, MessageStyle::Detailed, {bytes});
-    }
+    truncated = shown < packet.size;
     bytes = formatMessage(MessageId::TracePacketBytes, MessageStyle::Detailed, {bytes});
   }
-  const auto id = packet.size == 1U ? MessageId::TracePacketPreviewSingle : MessageId::TracePacketPreviewMultiple;
-  return formatMessage(id, MessageStyle::Detailed, {name, packet.size, bytes});
+  return formatMessage(MessageId::TracePacketPreview, MessageStyle::Detailed,
+                       {name, packet.size, bytes, truncated ? "true" : "false"});
 }
 
 std::string formatTraceSetupOperation(TraceSetupOperation operation)

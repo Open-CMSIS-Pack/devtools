@@ -219,7 +219,7 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
   ASSERT_TRUE(lines.size() == 3U) << "CSV issue row count mismatch";
   ASSERT_TRUE(lines[0] == "cycles,stream,type,source,value,pc,address,note") << "CSV issue header mismatch";
   ASSERT_TRUE(
-      (lines[1] == "1234,,overflow,,,,,Timestamp discontinuity"))
+      (lines[1] == "1234,,overflow,,,,,Trace overflow; timestamp discontinuity"))
       << "CSV overflow issue row mismatch";
   ASSERT_TRUE(lines[2] == "1235,,error,,,,,ITM data loss")
       << "CSV data-loss issue row mismatch";

@@ -17,6 +17,8 @@
 #include "DiagnosticSink.h"
 #include "OpenCsdItmDecoder.h"
 #include "OutputRequirements.h"
+#include "ProductInfo.h"
+#include "RawDiagnosticSink.h"
 #include "TraceMessages.h"
 #include "TraceOutput.h"
 #include "TraceOutputConfig.h"
@@ -33,6 +35,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -176,6 +179,30 @@ static void reportTraceRunMeta(const CtraceRunMeta& meta, DiagnosticSink& diagno
   diagnostics.report(diagnostic);
 }
 
+/** @brief Reports the file identity and byte-coordinate contract once per input. */
+static void reportRawInput(const TraceRunInputDescriptor& input, DiagnosticSink& diagnostics)
+{
+  std::error_code error;
+  const auto absolutePath = std::filesystem::absolute(input.path(), error);
+  const bool formatted = input.format() == TraceRunFormat::Formatted;
+  DiagnosticSink::Event diagnostic{
+      DiagnosticSink::Severity::Info,
+      formatMessage(MessageId::RawInputInspection),
+      {
+          {"input_path", error ? input.path().string() : absolutePath.string()},
+          {"input_size", std::to_string(input.size())},
+          {"format", formatted ? "formatted" : "unformatted"},
+          {"framing", formatted ? "memory-aligned-16" : "none"},
+          {"config", input.metadata().configPath()},
+          {"ctrace_version", CtraceVersion},
+          {"offset_unit", "byte"},
+          {"offset_base", "0"},
+      },
+  };
+  diagnostic.visibility = DiagnosticSink::Visibility::Verbose;
+  diagnostics.report(diagnostic);
+}
+
 /** @brief Reports the timestamp prescaler applied to every normalized route. */
 static void reportTimestampPrescalers(const CtraceRunMeta& meta, DiagnosticSink& diagnostics)
 {
@@ -213,7 +240,9 @@ createDecodePipeline(const std::vector<CortexMDecodeRoute>& routes, OpenCsdItmIn
                 {"stream", std::to_string(traceBusId)},
             },
         };
-        diagnostic.detailedContext.emplace_back("rawOffset", std::to_string(sourceOffset));
+        diagnostic.rawLocation = RawDiagnosticLocation{};
+        diagnostic.rawLocation->offset = sourceOffset;
+        diagnostic.rawLocation->kind = RawDiagnosticLocation::Kind::FormatterGroup;
         diagnostics.report(diagnostic);
       });
 }
@@ -250,23 +279,25 @@ FileDecodeJob::FileDecodeJob(CliOptions options, TraceRunInputDescriptor input, 
 
 std::optional<CtfMetadataModel> FileDecodeJob::run()
 {
+  RawDiagnosticSink diagnostics(m_diagnostics, m_input.format() == TraceRunFormat::Formatted, m_input.size());
   const auto& ctraceRunMeta = m_input.metadata();
   const auto routes = decodeRoutes(ctraceRunMeta);
   const auto inputMode = decodeInputMode(m_input);
-  auto outputPlan = planTraceOutputs(outputRequest(m_options), m_input.path(), ctraceRunMeta, m_diagnostics);
+  auto outputPlan = planTraceOutputs(outputRequest(m_options), m_input.path(), ctraceRunMeta, diagnostics);
   if (outputPlan.hasRequestedOutputs() && !outputPlan.hasEnabledOutputs()) {
     return std::nullopt;
   }
-  reportTraceRunMeta(ctraceRunMeta, m_diagnostics);
-  auto outputs = createConfiguredOutputs(outputPlan, m_diagnostics);
-  DecodeConsumers consumers(std::move(outputs.backends), m_diagnostics, itmEnableMasks(ctraceRunMeta));
-  reportTimestampPrescalers(ctraceRunMeta, m_diagnostics);
+  reportRawInput(m_input, diagnostics);
+  reportTraceRunMeta(ctraceRunMeta, diagnostics);
+  auto outputs = createConfiguredOutputs(outputPlan, diagnostics);
+  DecodeConsumers consumers(std::move(outputs.backends), diagnostics, itmEnableMasks(ctraceRunMeta));
+  reportTimestampPrescalers(ctraceRunMeta, diagnostics);
 
   const auto decodeStart = std::chrono::steady_clock::now();
   DecodeResult decode;
   std::optional<TraceDecodeAbort> decodeAbort;
   try {
-    auto pipeline = createDecodePipeline(routes, inputMode, consumers, m_sessionFactory, m_diagnostics);
+    auto pipeline = createDecodePipeline(routes, inputMode, consumers, m_sessionFactory, diagnostics);
     decode = decodeRawInput(m_input.path(), m_input.stream(), *pipeline);
   } catch (const OpenCsdFatalError& error) {
     decodeAbort = TraceDecodeAbort{error.bytesProcessed(), error.message()};
@@ -279,7 +310,13 @@ std::optional<CtfMetadataModel> FileDecodeJob::run()
                                      formatTraceMessage(*decodeAbort, TraceMessageStyle::Compact)};
     diagnostic.detailedMessage = formatTraceMessage(*decodeAbort, TraceMessageStyle::Detailed);
     diagnostic.detailedContext.emplace_back("bytesProcessed", std::to_string(decodeAbort->bytesProcessed));
-    m_diagnostics.report(diagnostic);
+    diagnostic.rawLocation = RawDiagnosticLocation{};
+    diagnostic.rawLocation->offset = decodeAbort->bytesProcessed;
+    diagnostic.rawLocation->kind = RawDiagnosticLocation::Kind::InputProgress;
+    if (decodeAbort->reason.packet.has_value()) {
+      diagnostic.rawLocation->packetSize = decodeAbort->reason.packet->size;
+    }
+    diagnostics.report(diagnostic);
   }
   const auto decodeEnd = std::chrono::steady_clock::now();
   DiagnosticSink::Event summary{
@@ -287,7 +324,7 @@ std::optional<CtfMetadataModel> FileDecodeJob::run()
       decodeSummary(decode, decodeEnd - decodeStart),
   };
   summary.visibility = DiagnosticSink::Visibility::Verbose;
-  m_diagnostics.report(summary);
+  diagnostics.report(summary);
   consumers.finishOutputs(decodeAbort.has_value() ? &*decodeAbort : nullptr);
   const auto* metadata = outputs.ctf == nullptr ? nullptr : outputs.ctf->completedMetadata();
   return metadata == nullptr ? std::nullopt : std::optional<CtfMetadataModel>{*metadata};

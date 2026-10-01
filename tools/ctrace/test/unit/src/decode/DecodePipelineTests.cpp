@@ -641,7 +641,7 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversAtRealSync)
   EXPECT_NE(message.find("OCSD_ERR_BAD_PACKET_SEQ"), std::string::npos);
   EXPECT_NE(message.find("Async Packet: unexpected none zero value"), std::string::npos);
   EXPECT_NE(message.find("packet=ASYNC"), std::string::npos);
-  EXPECT_NE(message.find("bytes=[00 fe]"), std::string::npos);
+  EXPECT_NE(message.find("packet_bytes=[00 fe]"), std::string::npos);
   ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
       << "recovery should resume after the next real ITM sync";
 }
@@ -752,7 +752,7 @@ TEST(CtraceUnitTests, testDecodePipelineRecoversFromReservedHeader)
             std::string::npos);
   EXPECT_NE(message.find("OCSD_ERR_INVALID_PCKT_HDR"), std::string::npos);
   EXPECT_NE(message.find("packet=RESERVED"), std::string::npos);
-  EXPECT_NE(message.find("bytes=[04]"), std::string::npos);
+  EXPECT_NE(message.find("packet_bytes=[04]"), std::string::npos);
   ASSERT_TRUE(hasSoftwareValue(decoded.events, static_cast<std::uint8_t>('B')))
       << "recovery should resume after a reserved header";
 }

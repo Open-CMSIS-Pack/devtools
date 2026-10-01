@@ -183,7 +183,7 @@ TEST(CtraceUnitTests, testCsvRowMapperSerializesOnlyArchitecturalTraceBusId)
       << "CSV must serialize the architectural Trace Bus ID rather than the internal route ordinal";
 
   TraceEvent overflow{OverflowTraceEvent{"route overflow"}};
-  EXPECT_EQ(CsvRowMapper::row(onRoute(std::move(overflow), formattedRoute)), ",7,overflow,,,,,Timestamp discontinuity");
+  EXPECT_EQ(CsvRowMapper::row(onRoute(std::move(overflow), formattedRoute)), ",7,overflow,,,,,Trace overflow; timestamp discontinuity");
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperHandlesInternalAndCustomOverflowEvents)
@@ -191,5 +191,5 @@ TEST(CtraceUnitTests, testCsvRowMapperHandlesInternalAndCustomOverflowEvents)
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtEventTraceEvent{0x21U}}), ",,event,0,0x21,,,");
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{PmuTraceEvent{0x81U}}), ",,pmu,3,0x81,,,");
   TraceEvent overflow{OverflowTraceEvent{"custom overflow"}};
-  EXPECT_EQ(CsvRowMapper::row(overflow), ",,overflow,,,,,Timestamp discontinuity");
+  EXPECT_EQ(CsvRowMapper::row(overflow), ",,overflow,,,,,Trace overflow; timestamp discontinuity");
 }

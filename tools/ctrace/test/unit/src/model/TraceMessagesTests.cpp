@@ -142,7 +142,8 @@ TEST(TraceMessagesTests, NativeCodesOffsetsAndPacketPreviewsStayInDetailedText)
               std::string::npos);
     EXPECT_NE(formatTraceIssue(issue, wideValue, detailed).find("native detail, with punctuation (code 42); packet="),
               std::string::npos);
-    EXPECT_NE(formatTraceIssue(issue, wideValue, detailed).find("; packet=DWT, size=2 bytes, bytes=[00 ff]"),
+    EXPECT_NE(formatTraceIssue(issue, wideValue, detailed).find(
+                  "; packet=DWT, packet_size=2, packet_bytes=[00 ff], packet_bytes_truncated=false"),
               std::string::npos);
     EXPECT_NE(formatTraceIssue(issue, wideValue, detailed).find("; timestamp 4294967297 .. 4294967298."),
               std::string::npos);
@@ -163,7 +164,8 @@ TEST(TraceMessagesTests, NativeCodesOffsetsAndPacketPreviewsStayInDetailedText)
   TraceMessage trailingSeparator = TraceNativeDiagnostic{TraceNativeCategory::Error, {}, {}, "native detail;", {}};
   trailingSeparator.packet = TracePacketContext{TracePacketKind::Reserved, 0U, {}};
   EXPECT_EQ(formatTraceMessage(trailingSeparator, detailed),
-            "OpenCSD decoder error. native detail; packet=RESERVED, size=0 bytes, bytes=[]");
+            "OpenCSD decoder error. native detail; packet=RESERVED, packet_size=0, packet_bytes=[], "
+            "packet_bytes_truncated=false");
 }
 
 TEST(TraceMessagesTests, DetailedNativeCodesKeepBothDomainsWithoutForeignDescriptions)
@@ -193,13 +195,18 @@ TEST(TraceMessagesTests, DetailedNativeCodesKeepBothDomainsWithoutForeignDescrip
 TEST(TraceMessagesTests, PacketPreviewHandlesAbsentEmptyAndTruncatedBytes)
 {
   EXPECT_EQ(formatTracePacketContext({TracePacketKind::Incomplete, 3U, {}}),
-            "packet=INCOMPLETE_EOT, size=3 bytes, bytes=unavailable");
+            "packet=INCOMPLETE_EOT, packet_size=3, packet_bytes=unavailable, packet_bytes_truncated=false");
   EXPECT_EQ(formatTracePacketContext({TracePacketKind::Reserved, 0U, {}}),
-            "packet=RESERVED, size=0 bytes, bytes=[]");
+            "packet=RESERVED, packet_size=0, packet_bytes=[], packet_bytes_truncated=false");
   EXPECT_EQ(formatTracePacketContext({TracePacketKind::BadSequence, 1U, std::vector<std::uint8_t>{0x0aU}}),
-            "packet=BAD_SEQUENCE, size=1 byte, bytes=[0a]");
+            "packet=BAD_SEQUENCE, packet_size=1, packet_bytes=[0a], packet_bytes_truncated=false");
   EXPECT_EQ(formatTracePacketContext({TracePacketKind::Software, 20U, std::vector<std::uint8_t>(20U, 0xabU)}),
-            "packet=SWIT, size=20 bytes, bytes=[ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab ... (truncated)]");
+            "packet=SWIT, packet_size=20, packet_bytes=[ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab ab], "
+            "packet_bytes_truncated=true");
+  EXPECT_EQ(formatTracePacketContext({TracePacketKind::Async, 3U, std::vector<std::uint8_t>{0x00U, 0xfeU}}),
+            "packet=ASYNC, packet_size=3, packet_bytes=[00 fe], packet_bytes_truncated=true");
+  EXPECT_EQ(formatTracePacketContext({TracePacketKind::Incomplete, 1U, std::vector<std::uint8_t>{}}),
+            "packet=INCOMPLETE_EOT, packet_size=1, packet_bytes=[], packet_bytes_truncated=true");
 }
 
 TEST(TraceMessagesTests, CompactRecoveryKeepsAffectedByteCountWithoutOffsetsOrTimestamps)
@@ -327,13 +334,14 @@ TEST(TraceMessagesTests, OverflowEventAndSummaryKeepSeparateMeanings)
   EXPECT_EQ(formatTraceMessage(OverflowTraceEvent{}, detailed),
             "overflow: new timestamp segment; time across boundary may be unreliable");
   EXPECT_EQ(formatTraceMessage(OverflowTraceEvent{"custom overflow detail"}, detailed), "custom overflow detail");
-  EXPECT_EQ(formatTraceMessage(OverflowTraceEvent{"custom overflow detail"}, compact), "Timestamp discontinuity");
+  EXPECT_EQ(formatTraceMessage(OverflowTraceEvent{"custom overflow detail"}, compact),
+            "Trace overflow; timestamp discontinuity");
   EXPECT_EQ(formatOverflowSummary({{}, 1U}), "first overflow occurred at an unknown cycle timestamp");
   EXPECT_EQ(formatOverflowSummary({wideValue, 4U}), "first overflow occurred at cycle timestamp 4294967297; 3 more occurred");
-  EXPECT_EQ(formatOverflowSummary({{}, 1U}, compact), "Timestamp discontinuity");
-  EXPECT_EQ(formatOverflowSummary({wideValue, 1U}, compact), "Timestamp discontinuity");
-  EXPECT_EQ(formatOverflowSummary({{}, 4U}, compact), "Timestamp discontinuity; 3 more occurred");
-  EXPECT_EQ(formatOverflowSummary({wideValue, 4U}, compact), "Timestamp discontinuity; 3 more occurred");
+  EXPECT_EQ(formatOverflowSummary({{}, 1U}, compact), "Trace overflow; timestamp discontinuity");
+  EXPECT_EQ(formatOverflowSummary({wideValue, 1U}, compact), "Trace overflow; timestamp discontinuity");
+  EXPECT_EQ(formatOverflowSummary({{}, 4U}, compact), "Trace overflow; timestamp discontinuity; 3 more occurred");
+  EXPECT_EQ(formatOverflowSummary({wideValue, 4U}, compact), "Trace overflow; timestamp discontinuity; 3 more occurred");
 }
 
 TEST(TraceMessagesTests, EmptyInitializationDetailKeepsIssueFallbackAndOriginalAbortDetail)

@@ -112,7 +112,7 @@ enum class TracePacketKind {
   GlobalTimestamp2,
   Extension,
 };
-/** @brief Stores a bounded raw packet preview; nullopt denotes unavailable bytes. */
+/** @brief Stores a bounded protocol-packet preview (deformatted for TB); nullopt denotes unavailable bytes. */
 struct TracePacketContext {
   TracePacketKind kind = TracePacketKind::Reserved;
   std::uint32_t size = 0;

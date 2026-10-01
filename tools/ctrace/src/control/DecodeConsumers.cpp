@@ -63,6 +63,9 @@ void DecodeConsumers::appendByteSkip(const TraceByteSkip& skipped)
   DiagnosticSink::Event diagnostic{DiagnosticSink::Severity::Info,
                                    formatTraceMessage(skipped, TraceMessageStyle::Compact), std::move(context)};
   diagnostic.detailedMessage = formatTraceMessage(skipped, TraceMessageStyle::Detailed);
+  diagnostic.rawLocation = RawDiagnosticLocation{};
+  diagnostic.rawLocation->offset = skipped.formatterOffset;
+  diagnostic.rawLocation->kind = RawDiagnosticLocation::Kind::FormatterGroup;
   m_diagnostics.report(diagnostic);
 }
 
@@ -92,6 +95,8 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
       std::move(context),
   };
   diagnostic.detailedContext.emplace_back("enable", hexMask(streamMask->second));
+  diagnostic.rawLocation = RawDiagnosticLocation{};
+  diagnostic.rawLocation->offset = event.index;
   m_diagnostics.report(diagnostic);
 }
 

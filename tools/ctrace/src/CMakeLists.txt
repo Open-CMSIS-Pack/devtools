@@ -26,6 +26,8 @@ set(CTRACE_TRACE_RUN_HEADER_FILES
 )
 set(CTRACE_DIAGNOSTICS_HEADER_FILES
   diagnostics/DiagnosticSink.h
+  diagnostics/RawDiagnosticLocation.h
+  diagnostics/RawDiagnosticSink.h
   diagnostics/TraceIssueReporter.h
 )
 set(CTRACE_DECODE_HEADER_FILES
@@ -127,6 +129,7 @@ target_link_libraries(ctrace-trace-run
 
 add_library(ctrace-diagnostics STATIC
   diagnostics/DiagnosticSink.cpp
+  diagnostics/RawDiagnosticSink.cpp
   diagnostics/TraceIssueReporter.cpp
   ${CTRACE_DIAGNOSTICS_HEADER_FILES}
 )
@@ -201,6 +204,7 @@ add_library(ctrace::control ALIAS ctrace-control)
 target_include_directories(ctrace-control PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/control"
 )
+target_include_directories(ctrace-control PRIVATE "${PROJECT_BINARY_DIR}")
 # FileDecodeJob.h exposes decoder types to build-tree consumers.
 target_link_libraries(ctrace-control PUBLIC
   ctrace::cli
