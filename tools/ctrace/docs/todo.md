@@ -27,6 +27,23 @@
 - [ ] Add MTB instruction trace decoding and output in its own PR.
 - [ ] Add Event Recorder decoding and output when it enters the implementation scope.
 
+## AI trace analysis skill
+
+The [skill evaluation kit](../test/skill/README.md) covers recorded trace questions, capture selection,
+bounded inspection, and diagnostics requested by the user. Fixture and artifact checks complement manual
+semantic review; they do not prove automatic skill discovery or full model behavior.
+
+- [ ] Verify implicit skill selection in the actual CMSIS Extension host, including registration and distinction
+      from live debugging, project configuration, and documentation skills. Metadata-only discovery tests are
+      preliminary evidence.
+- [ ] Integrate deterministic evaluation-kit checks into CI without expanding the ctrace workflow path filters.
+      Keep optional model evaluations separate and record the model, host, transcript, and semantic rubric results.
+- [ ] Add host-observed evaluation of file reads and shell activity to check inspection budgets, direct RAW reads,
+      and bypasses of the recorded CLI wrapper. The current artifact checks cannot observe these actions.
+- [ ] Define native selectors and aggregations for questions about complete, large captures, including the need
+      for time, index, variable, or address selection. Retain the current inspection limits until the CLI supports
+      the required operation; do not infer a complete-capture answer from a bounded sample.
+
 ## Dependencies and release
 
 - [ ] Replace private OpenCSD `common/` and `interfaces/` headers with supported public APIs.
