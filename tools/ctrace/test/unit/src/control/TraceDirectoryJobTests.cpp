@@ -438,7 +438,7 @@ TEST(CtraceUnitTests, testTraceDirectoryDecodesAllExplicitInputsWithoutReplacing
   EXPECT_EQ(readTestTextFile(traceDir / "Multiple.ctf" / "sentinel"), "legacy bundle");
   for (const auto& channel : channels) {
     const auto capture = "Multiple." + channel;
-    EXPECT_EQ(readTestTextFile(traceDir / (capture + ".csv")), "cycles,stream,type,source,value,pc,address,note\n");
+    EXPECT_EQ(readTestTextFile(traceDir / (capture + ".csv")), "cycles,stream,type,index,value,pc,address,note\n");
     EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / (capture + ".ctf") / "metadata"));
     EXPECT_FALSE(std::filesystem::exists(traceDir / (capture + ".ctf") / "sentinel"));
     EXPECT_EQ(readTestTextFile(traceDir / (capture + ".traceanalysis.xml")), "xml sentinel");
@@ -747,7 +747,7 @@ TEST(CtraceUnitTests, testFileDecodeJobUsesInjectedSessionForFormattedInput)
   EXPECT_TRUE(sessionCreated);
   EXPECT_FALSE(diagnostics.containsMessage("formatted trace input is not enabled yet"));
   EXPECT_EQ(readTestTextFile(temporaryPath.path() / "formatted.TB.csv"),
-            "cycles,stream,type,source,value,pc,address,note\n");
+            "cycles,stream,type,index,value,pc,address,note\n");
 }
 
 TEST(CtraceUnitTests, testInputSelectionAndPreflightNeverConstructDecoder)
@@ -795,8 +795,8 @@ static void expectGlobalDecodeAbort(const std::filesystem::path& csvPath, const 
 {
   const auto lines = readTestLines(csvPath);
   ASSERT_GE(lines.size(), 2U);
-  EXPECT_EQ(lines.front(), "cycles,stream,type,source,value,pc,address,note");
-  EXPECT_EQ(lines.back().find(",,error,,,,,"), 0U) << "abort must have no timestamp, stream, or source";
+  EXPECT_EQ(lines.front(), "cycles,stream,type,index,value,pc,address,note");
+  EXPECT_EQ(lines.back().find(",,error,,,,,"), 0U) << "abort must have no timestamp, stream, or index";
   const auto prefix = "decode aborted after processing " + std::to_string(processed) +
                       " input bytes; trace is incomplete: ";
   EXPECT_NE(lines.back().find(prefix), std::string::npos);
@@ -981,7 +981,7 @@ TEST(CtraceUnitTests, testFileDecodeJobConsumesPreflightedHandleAfterPathReplace
   EXPECT_NO_THROW(job.run());
   EXPECT_EQ(diagnostics.failureCount(), 0U);
   EXPECT_EQ(readTestTextFile(temporaryPath.path() / "retained.SWO.csv"),
-            "cycles,stream,type,source,value,pc,address,note\n"
+            "cycles,stream,type,index,value,pc,address,note\n"
             "0,,pcsample,,,0x08001234,,\n"
             "0,,itm,1,0x41,,,\n");
 }

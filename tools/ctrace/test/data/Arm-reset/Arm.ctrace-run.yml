@@ -8,28 +8,28 @@ ctrace-run:
       type: itm
     - ref: data#0
       type: dwt
-      source: 0
+      index: 0
       address: 0x2404AEA4
       size: 4
       data-type: unsigned
       label: Sine
     - ref: data#1
       type: dwt
-      source: 1
+      index: 1
       address: 0x2404AEA0
       size: 4
       data-type: unsigned
       label: Rectangle
     - ref: data#2
       type: dwt
-      source: 2
+      index: 2
       address: 0x2404AE9C
       size: 4
       data-type: unsigned
       label: Random
     - ref: data#3
       type: dwt
-      source: 3
+      index: 3
       address: 0x24000E88
       size: 4
       data-type: unsigned

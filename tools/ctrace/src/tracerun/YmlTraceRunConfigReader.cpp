@@ -293,32 +293,32 @@ static std::optional<TraceRunFormat> parseTraceFormat(const std::string& path, c
   fail(path, node, "'trace-format' must be 'unformatted' or 'formatted'");
 }
 
-/** @brief Parses scalar or sequence source identifiers from one reference. */
-static std::vector<std::uint32_t> parseSources(const std::string& path, const Node& reference)
+/** @brief Parses scalar or sequence ITM channel or DWT comparator indices from one reference. */
+static std::vector<std::uint32_t> parseIndices(const std::string& path, const Node& reference)
 {
-  const auto sourceNode = childNode(reference, "source");
-  if (!sourceNode || sourceNode.IsNull()) {
+  const auto indexNode = childNode(reference, "index");
+  if (!indexNode || indexNode.IsNull()) {
     return {};
   }
-  if (sourceNode.IsScalar()) {
+  if (indexNode.IsScalar()) {
     return {static_cast<std::uint32_t>(
-        unsignedValue(path, sourceNode, "source", sourceNode.Scalar(), std::numeric_limits<std::uint32_t>::max()))};
+        unsignedValue(path, indexNode, "index", indexNode.Scalar(), std::numeric_limits<std::uint32_t>::max()))};
   }
 
-  requireSequence(path, sourceNode, "source");
-  std::vector<std::uint32_t> sources;
-  for (const auto& item : sourceNode) {
+  requireSequence(path, indexNode, "index");
+  std::vector<std::uint32_t> indices;
+  for (const auto& item : indexNode) {
     if (item.IsNull()) {
       continue;
     }
     if (!item.IsScalar() || item.Scalar().empty()) {
-      fail(path, item, "each 'source' entry must be an unsigned integer");
+      fail(path, item, "each 'index' entry must be an unsigned integer");
     }
-    const auto source = static_cast<std::uint32_t>(
-        unsignedValue(path, item, "source", item.Scalar(), std::numeric_limits<std::uint32_t>::max()));
-    sources.push_back(source);
+    const auto index = static_cast<std::uint32_t>(
+        unsignedValue(path, item, "index", item.Scalar(), std::numeric_limits<std::uint32_t>::max()));
+    indices.push_back(index);
   }
-  return sources;
+  return indices;
 }
 
 /** @brief Stores diagnostics copied from one parsed trace reference. */
@@ -409,8 +409,12 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
   reference.processorName = processorNameAttribute(path, element);
   reference.stream = parseStream();
   if (TraceRunSchema::supportsSource(reference.type)) {
+    const auto legacySource = childNode(element, "source");
+    if (legacySource) {
+      fail(path, legacySource, "'source' is no longer supported; use 'index' in 'ctrace-refs' entries");
+    }
     try {
-      reference.sources = parseSources(path, element);
+      reference.indices = parseIndices(path, element);
     } catch (const std::runtime_error&) {
       if (diagnostics.error.empty()) {
         throw;

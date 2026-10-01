@@ -94,14 +94,14 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidReferences)
     const char* message;
   };
   std::vector<Case> cases;
-  auto duplicateDwtSource = makeReference("dwt", std::nullopt, 1U, {1U, 1U});
-  duplicateDwtSource.dataSetupIndex = 0U;
-  cases.push_back({duplicateDwtSource, "duplicate value in source array"});
+  auto duplicateDwtIndex = makeReference("dwt", std::nullopt, 1U, {1U, 1U});
+  duplicateDwtIndex.dataSetupIndex = 0U;
+  cases.push_back({duplicateDwtIndex, "duplicate value in index array"});
   cases.push_back(
       {makeReference("itm", std::nullopt, 0U, {1U}), "stream must be a CoreSight ATB trace ID between 1 and 111"});
   cases.push_back(
       {routeReference("event", "events#0", "core", 0U), "stream must be a CoreSight ATB trace ID between 1 and 111"});
-  cases.push_back({makeReference("itm", std::nullopt, 1U, {32U}), "ITM source must be between 0 and 31"});
+  cases.push_back({makeReference("itm", std::nullopt, 1U, {32U}), "ITM index must be between 0 and 31"});
 
   for (const auto& testCase : cases) {
     TraceRunConfig config;
@@ -119,7 +119,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaRejectsInvalidReferences)
   EXPECT_TRUE(metaRejects(diagnosed, "stream must be a CoreSight ATB trace ID between 1 and 111"));
 
   diagnosed.references.front() = makeReference("itm", std::nullopt, 0U, {1U, 1U});
-  diagnosed.references.front().error = {"producer rejected duplicate sources"};
+  diagnosed.references.front().error = {"producer rejected duplicate indices"};
   EXPECT_TRUE(metaRejects(diagnosed, "stream must be a CoreSight ATB trace ID between 1 and 111"));
 
   TraceRunConfig diagnosedBinding;
@@ -699,7 +699,7 @@ TEST(CtraceUnitTests, testCtraceRunMetaValidatesFormattedRouteBindingsAndIds)
                           "anchor must use reference type 'itm'"));
 
   EXPECT_TRUE(metaRejects(formattedConfig({routeReference("itm", "core/itm", "core", 1U, {32U})}),
-                          "ITM source must be between 0 and 31"));
+                          "ITM index must be between 0 and 31"));
 
   const auto adoptedProcessor = CtraceRunMeta::fromConfig(formattedConfig({
       routeReference("itm", "itm", std::nullopt, 1U),

@@ -348,7 +348,7 @@ a ctrace output contract beyond the published specification, which does not defi
 global abort records. It does not turn ordinary route-bound diagnostics into unfiltered CSV rows.
 
 Byte-skip annotations are non-failing Info, not synchronization events. CSV uses `type=info`, a descriptive note,
-the observed formatter ID in `stream` when known, and empty `cycles`, `source`, `value`, `pc`, and `address` fields.
+the observed formatter ID in `stream` when known, and empty `cycles`, `index`, `value`, `pc`, and `address` fields.
 These rows bypass both type and stream filters; `info` is not a new selectable event type. CTF ignores them instead
 of creating routes or clocks, and CLI Info remains visible in CTF-only mode. The existing once-per-ID unsupported
 source warning remains separate from byte accounting. A route-bound missing-sync Error follows ordinary output

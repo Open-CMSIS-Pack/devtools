@@ -51,6 +51,9 @@ CSV and CTF bundle, using `<solution-set>.<channel>` as their common base name. 
 this channel-qualified name even for a single input; older `Board.ctf` bundles are neither reused nor removed.
 The [CTF profile](docs/ctf-format.md#files-and-common-structure) records the required specification alignment.
 
+Trace references use `index:` for ITM channel and DWT comparator numbers, as a scalar or array. Replace legacy
+`source:` keys with `index:` in `ctrace-refs`. The fourth CSV column is also named `index`; its values are unchanged.
+
 One optional `Board.traceanalysis.xml` collects graphical views from all eligible CTF bundles completed for that
 target in the current invocation. Each contributing bundle must retain exactly one clock domain. A multi-clock bundle
 remains valid CTF but is omitted from the XML with a warning. Independent single-clock bundles can contribute together;

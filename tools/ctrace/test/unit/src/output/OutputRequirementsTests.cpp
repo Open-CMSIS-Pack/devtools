@@ -273,7 +273,7 @@ TEST(CtraceUnitTests, testOutputRequirementsValidateDwtAddressRangeForCtfOnly)
 TEST(CtraceUnitTests, testOutputRequirementsRejectDwtComparatorOutsideCtfDomainOnly)
 {
   auto config = backendRequirementsConfig();
-  config.references[0].sources = {4U};
+  config.references[0].indices = {4U};
   config.references[0].dataType = "unsigned";
 
   CollectingDiagnosticSink diagnostics;
@@ -541,7 +541,7 @@ TEST(CtraceUnitTests, testOutputPreflightRejectsAmbiguousRoutesForCtfOnly)
   const auto processorPlan = planOutputs(outputRequest(true, false), "captures/AmbiguousProcessors.SWO.raw",
                                          processorConfig, processorDiagnostics);
   ASSERT_TRUE(processorPlan.csv.has_value() && processorDiagnostics.events().empty())
-      << "CSV must preserve raw stream/source values without consuming processor metadata";
+      << "CSV must preserve raw stream/index values without consuming processor metadata";
 
   allRequest.selection.streams = {1U};
   CollectingDiagnosticSink selectedDiagnostics;

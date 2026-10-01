@@ -86,9 +86,9 @@ constexpr bool consumesReferenceMetadata(const std::string_view& type)
 }
 
 /** @brief Tests whether an ITM stimulus port number is valid. */
-constexpr bool isItmSource(std::uint32_t source)
+constexpr bool isItmIndex(std::uint32_t index)
 {
-  return CoreSight::isItmStimulusPort(source);
+  return CoreSight::isItmStimulusPort(index);
 }
 
 /** @brief Converts empty processor names to an absent value. */
@@ -128,7 +128,8 @@ struct TraceRunReference {
   // The reader retains the complete YAML value. CtraceRunMeta validates and
   // narrows it to the CoreSight ATB trace-ID domain.
   std::optional<std::uint32_t> stream;
-  std::vector<std::uint32_t> sources;
+  // ITM channel or DWT comparator indices from the scalar/list index field.
+  std::vector<std::uint32_t> indices;
   // Index of the referenced ctrace-setup.data entry, derived from the
   // specified ref path form [<pname>/]data#<index>.
   std::optional<std::size_t> dataSetupIndex;
@@ -140,16 +141,16 @@ namespace TraceRunSchema {
 /** @brief Classifies structural problems in a parsed trace reference. */
 enum class ReferenceProblem {
   None,
-  DuplicateSource,
+  DuplicateIndex,
   InvalidStream,
-  InvalidItmSource,
+  InvalidItmIndex,
 };
 
 /** @brief Tests whether a reference selects ITM stimulus port zero, which is excluded from output. */
 inline bool isItmChannelZero(const TraceRunReference& reference)
 {
-  return reference.type == "itm" && reference.sources.size() == 1U &&
-         reference.sources.front() == CoreSight::kExcludedItmStimulusPort;
+  return reference.type == "itm" && reference.indices.size() == 1U &&
+         reference.indices.front() == CoreSight::kExcludedItmStimulusPort;
 }
 
 /** @brief Tests whether a DWT reference describes a generated data route. */
@@ -161,7 +162,7 @@ inline bool isDwtDataReference(const TraceRunReference& reference)
 /** @brief Tests whether a reference has the fields needed for a decoded route. */
 inline bool hasConsumedRouteShape(const TraceRunReference& reference)
 {
-  if (!supportsSource(reference.type) || reference.sources.empty()) {
+  if (!supportsSource(reference.type) || reference.indices.empty()) {
     return false;
   }
   if (reference.type == "itm") {
@@ -194,7 +195,7 @@ inline bool isProcessorItmReference(const TraceRunReference& reference)
 inline bool contributesStreamBinding(const TraceRunReference& reference)
 {
   return (reference.type == "dwt" || reference.type == "itm") &&
-         (!reference.sources.empty() || isDwtDataReference(reference) || isTimestampReference(reference) ||
+         (!reference.indices.empty() || isDwtDataReference(reference) || isTimestampReference(reference) ||
           isProcessorItmReference(reference));
 }
 
@@ -204,17 +205,17 @@ inline ReferenceProblem referenceProblem(const TraceRunReference& reference)
   if (reference.stream.has_value() && !CoreSight::isAtbTraceId(*reference.stream)) {
     return ReferenceProblem::InvalidStream;
   }
-  for (std::size_t left = 0U; left < reference.sources.size(); ++left) {
-    for (std::size_t right = left + 1U; right < reference.sources.size(); ++right) {
-      if (reference.sources[left] == reference.sources[right]) {
-        return ReferenceProblem::DuplicateSource;
+  for (std::size_t left = 0U; left < reference.indices.size(); ++left) {
+    for (std::size_t right = left + 1U; right < reference.indices.size(); ++right) {
+      if (reference.indices[left] == reference.indices[right]) {
+        return ReferenceProblem::DuplicateIndex;
       }
     }
   }
   if (reference.type == "itm") {
-    for (const auto source : reference.sources) {
-      if (!isItmSource(source)) {
-        return ReferenceProblem::InvalidItmSource;
+    for (const auto index : reference.indices) {
+      if (!isItmIndex(index)) {
+        return ReferenceProblem::InvalidItmIndex;
       }
     }
   }

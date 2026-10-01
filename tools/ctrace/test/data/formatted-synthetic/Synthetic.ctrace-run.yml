@@ -26,33 +26,33 @@ ctrace-run:
       type: itm
       pname: anchored
       stream: 1
-      source: [1, 2, 3]
+      index: [1, 2, 3]
     - ref: anchored/data#0
       type: dwt
       pname: anchored
       stream: 1
-      source: 0
+      index: 0
       size: 1
       data-type: unsigned
     - ref: anchored/data#1
       type: dwt
       pname: anchored
       stream: 1
-      source: 1
+      index: 1
       size: 2
       data-type: unsigned
     - ref: anchored/data#2
       type: dwt
       pname: anchored
       stream: 1
-      source: 2
+      index: 2
       size: 4
       data-type: unsigned
     - ref: anchored/data#3
       type: dwt
       pname: anchored
       stream: 1
-      source: 3
+      index: 3
       size: 4
       data-type: unsigned
 
@@ -63,32 +63,32 @@ ctrace-run:
       type: dwt
       pname: fallback
       stream: 2
-      source: 0
+      index: 0
       size: 1
       data-type: unsigned
     - ref: fallback/data#1
       type: dwt
       pname: fallback
       stream: 2
-      source: 1
+      index: 1
       size: 2
       data-type: unsigned
     - ref: fallback/data#2
       type: dwt
       pname: fallback
       stream: 2
-      source: 2
+      index: 2
       size: 4
       data-type: unsigned
     - ref: fallback/data#3
       type: dwt
       pname: fallback
       stream: 2
-      source: 3
+      index: 3
       size: 4
       data-type: unsigned
     - ref: fallback/messages
       type: itm
       pname: fallback
       stream: 2
-      source: [1, 2, 3]
+      index: [1, 2, 3]

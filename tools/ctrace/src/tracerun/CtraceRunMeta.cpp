@@ -171,7 +171,7 @@ using ReferenceProblem = TraceRunSchema::ReferenceProblem;
 static bool isDiscardableSourceProblem(const TraceRunReference& reference, ReferenceProblem problem)
 {
   return (!reference.stream.has_value() || CoreSight::isAtbTraceId(*reference.stream)) && !reference.error.empty() &&
-         (problem == ReferenceProblem::DuplicateSource || problem == ReferenceProblem::InvalidItmSource);
+         (problem == ReferenceProblem::DuplicateIndex || problem == ReferenceProblem::InvalidItmIndex);
 }
 
 /** @brief Formats a trace-run validation error with source location. */
@@ -254,9 +254,9 @@ static void addRootInconsistency(std::vector<CtraceRunWarning>& warnings, std::s
 static std::string referenceProblemMessage(const TraceRunConfig& config, const TraceRunReference& reference,
                                            ReferenceProblem problem)
 {
-  if (problem == ReferenceProblem::DuplicateSource) {
+  if (problem == ReferenceProblem::DuplicateIndex) {
     return configError(config, reference.line,
-                       reference.line > 0U ? "duplicate value in 'source' array" : "duplicate value in source array");
+                       reference.line > 0U ? "duplicate value in 'index' array" : "duplicate value in index array");
   }
   if (problem == ReferenceProblem::InvalidStream) {
     return configError(config, reference.line,
@@ -264,8 +264,8 @@ static std::string referenceProblemMessage(const TraceRunConfig& config, const T
                                            : "stream must be a CoreSight ATB trace ID between 1 and 111");
   }
   return configError(config, reference.line,
-                     reference.line > 0U ? "ITM 'source' must be between 0 and 31"
-                                         : "ITM source must be between 0 and 31");
+                     reference.line > 0U ? "ITM 'index' must be between 0 and 31"
+                                         : "ITM index must be between 0 and 31");
 }
 
 static bool setupContainsReference(const TraceRunSetup& setup, const TraceRunReference& reference);
@@ -1217,8 +1217,8 @@ static std::vector<CtraceRunRoute> materializeFormattedRoutes(const TraceRunConf
       if (!routeId.has_value() || *routeId != traceBusId || !TraceRunSchema::isUsableReference(reference)) {
         continue;
       }
-      for (const auto source : reference.sources) {
-        route.sources.push_back(routeMetadata.source(reference, source, route));
+      for (const auto sourceIndex : reference.indices) {
+        route.sources.push_back(routeMetadata.source(reference, sourceIndex, route));
       }
     }
     routes.push_back(std::move(route));
@@ -1354,8 +1354,8 @@ static std::vector<CtraceRunSourceMeta> unformattedSources(const TraceRunConfig&
     if (!TraceRunSchema::isUsableReference(reference) || !identity.accepts(reference)) {
       continue;
     }
-    for (const auto source : reference.sources) {
-      sources.push_back(sourceMeta(config, reference, source, identity));
+    for (const auto sourceIndex : reference.indices) {
+      sources.push_back(sourceMeta(config, reference, sourceIndex, identity));
     }
   }
   return sources;

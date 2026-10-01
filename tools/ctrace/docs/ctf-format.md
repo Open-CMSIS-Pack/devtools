@@ -92,7 +92,7 @@ and multi-clock CTF bundles remain valid. Historical per-channel XML files are n
 A fatal OpenCSD decode abort removes the incomplete CTF bundle, including data already written for healthy routes,
 and excludes it from target XML. If CSV output remains healthy, ctrace retains its selected rows and appends one
 input-wide `error`
-row with the processed-byte count and abort reason. That final row has no cycle timestamp, stream, or source and
+row with the processed-byte count and abort reason. That final row has no cycle timestamp, stream, or index and
 bypasses type and stream filters. A recoverable route-local error instead allows normal output completion, as described
 under [`TRACE_STATUS`](#trace_status-event-id-3). Both kinds of Error produce a failing command exit status. Remaining
 raw inputs are still processed, and their completed bundles and XML contributions are unaffected by another input's

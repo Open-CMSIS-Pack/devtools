@@ -42,7 +42,7 @@ the command returns a failing exit status.
 end-of-input decode failure after a valid payload. It requires selected CSV
 rows to remain, followed by exactly one input-wide `error` row containing the
 processed-byte count and abort reason, with no cycle timestamp, stream, or
-source. That final row bypasses type and stream filters; the preceding
+index. That final row bypasses type and stream filters; the preceding
 route-local error follows those filters. Incomplete CTF output must be removed
 and excluded from target XML. The cases cover unfiltered output, `--type itm`, and `--stream 2` when
 the input uses route 1.
