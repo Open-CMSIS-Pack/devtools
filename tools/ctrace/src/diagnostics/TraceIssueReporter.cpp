@@ -69,13 +69,14 @@ void TraceIssueReporter::finish()
   for (const auto& [routeId, state] : m_overflowByRoute) {
     (void)routeId;
     const TraceOverflowSummary summary{state.firstTimestamp, state.packetCount};
+    auto sampleOffsets = formatSampleOffsets(state.sampleOffsets);
     report(DiagnosticSink::Severity::Warning,
            formatOverflowSummary(summary, TraceMessageStyle::Compact),
            formatOverflowSummary(summary, TraceMessageStyle::Detailed), routeContext(state.route),
            {{"overflow_count", std::to_string(state.packetCount)},
             {"first_raw_offset", std::to_string(state.firstLocation.offset)},
             {"last_raw_offset", std::to_string(state.lastOffset)},
-            {"sample_raw_offsets", formatSampleOffsets(state.sampleOffsets)},
+            {"sample_raw_offsets", std::move(sampleOffsets)},
             {"omitted_offsets", std::to_string(state.packetCount - state.sampleOffsets.size())}},
            state.firstLocation);
   }
@@ -146,7 +147,7 @@ RawDiagnosticLocation TraceIssueReporter::rawLocationFor(const TraceRouteIdentit
 void TraceIssueReporter::report(DiagnosticSink::Severity severity, std::string message, std::string detailedMessage,
                                 std::vector<std::pair<std::string, std::string>> context,
                                 std::vector<std::pair<std::string, std::string>> detailedContext,
-                                std::optional<RawDiagnosticLocation> rawLocation)
+                                const RawDiagnosticLocation& rawLocation)
 {
   DiagnosticSink::Event event{severity, std::move(message), std::move(context)};
   event.detailedMessage = std::move(detailedMessage);
