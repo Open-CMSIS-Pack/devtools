@@ -8,13 +8,12 @@
 #include "DwtPacketDecoder.h"
 
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
 #include <optional>
-#include <sstream>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -79,24 +78,6 @@ static std::optional<PcSampleKind> pcSampleKind(const DwtPayloadPacket& payload)
   return std::nullopt;
 }
 
-/** @brief Describes an invalid DWT event-counter payload. */
-static std::string invalidEventCounterMessage(const DwtPayloadPacket& payload)
-{
-  std::ostringstream message;
-  message << "unsupported DWT event-counter payload: size " << static_cast<unsigned>(payload.size) << ", value 0x"
-          << std::hex << payload.value << "; expected a non-zero 1-byte mask using bits 0..5 only";
-  return message.str();
-}
-
-/** @brief Describes an invalid PMU trace-on-overflow payload. */
-static std::string invalidPmuEventCounterMessage(const DwtPayloadPacket& payload)
-{
-  std::ostringstream message;
-  message << "unsupported PMU event-counter payload: size " << static_cast<unsigned>(payload.size) << ", value 0x"
-          << std::hex << payload.value << "; expected a non-zero 1-byte mask using bits 0..7";
-  return message.str();
-}
-
 /** @brief Wraps a DWT payload with its decoded-event metadata. */
 static TraceEvent makeDwtEvent(std::uint64_t index, const TraceRouteIdentity& route, std::uint64_t tcyc,
                                const TraceQuality& quality, TraceEventPayload payload)
@@ -144,13 +125,8 @@ std::vector<TraceEvent> DwtPacketDecoder::decodeEventCounter(const DwtPayloadPac
   const auto validPayload = payload.size == 1U && payload.value != 0U &&
                             (payload.value & ~static_cast<std::uint32_t>(kDwtEventCounterValidMask)) == 0U;
   if (!validPayload) {
-    output.push_back(makeDwtEvent(payload, TraceIssueEvent{
-        TraceIssueCode::UnsupportedDwtEventCounterPayload,
-        TraceIssueSeverity::Error,
-        invalidEventCounterMessage(payload),
-        std::nullopt,
-        std::nullopt,
-    }));
+    output.push_back(makeDwtEvent(payload, makeTraceIssue(
+        TraceCounterPayload{TraceCounterKind::Dwt, payload.size, payload.value})));
     return output;
   }
   output.push_back(makeDwtEvent(payload, DwtEventTraceEvent{static_cast<std::uint8_t>(payload.value)}));
@@ -162,13 +138,8 @@ std::vector<TraceEvent> DwtPacketDecoder::decodePmuTraceOnOverflow(const DwtPayl
   auto output = flush(payload.quality, payload.tcyc);
   const auto validPayload = payload.size == 1U && payload.value != 0U && (payload.value & ~kPmuOverflowMask) == 0U;
   if (!validPayload) {
-    output.push_back(makeDwtEvent(payload, TraceIssueEvent{
-        TraceIssueCode::UnsupportedPmuEventCounterPayload,
-        TraceIssueSeverity::Error,
-        invalidPmuEventCounterMessage(payload),
-        std::nullopt,
-        std::nullopt,
-    }));
+    output.push_back(makeDwtEvent(payload, makeTraceIssue(
+        TraceCounterPayload{TraceCounterKind::Pmu, payload.size, payload.value})));
     return output;
   }
   output.push_back(makeDwtEvent(payload, PmuTraceEvent{static_cast<std::uint8_t>(payload.value)}));
@@ -181,13 +152,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decodeExceptionTrace(const DwtPayloadP
   const auto exceptionNumber = static_cast<ExceptionNumber>(payload.value & kExceptionNumberMask);
   const auto action = exceptionAction((payload.value >> kExceptionActionShift) & kExceptionActionMask);
   if (action == ExceptionAction::Unknown) {
-    output.push_back(makeDwtEvent(payload, TraceIssueEvent{
-        TraceIssueCode::InvalidExceptionAction,
-        TraceIssueSeverity::Error,
-        "invalid exception action 0x0 for exception " + std::to_string(exceptionNumber),
-        std::nullopt,
-        std::nullopt,
-    }));
+    output.push_back(makeDwtEvent(payload, makeTraceIssue(TraceInvalidExceptionAction{exceptionNumber})));
     return output;
   }
   output.push_back(makeDwtEvent(payload, ExceptionTraceEvent{exceptionNumber, action}));
@@ -199,15 +164,7 @@ std::vector<TraceEvent> DwtPacketDecoder::decodePeriodicPcSample(const DwtPayloa
   auto output = flush(payload.quality, payload.tcyc);
   const auto kind = pcSampleKind(payload);
   if (!kind.has_value()) {
-    output.push_back(makeDwtEvent(payload, TraceIssueEvent{
-        TraceIssueCode::UnsupportedDwtPcSamplePayload,
-        TraceIssueSeverity::Error,
-        "unsupported DWT PC-sample payload: size " + std::to_string(payload.size) +
-            ", value " + std::to_string(payload.value) +
-            "; expected a 4-byte PC or a 1-byte marker (0x00: CPU Sleeping, 0xff: Trace prohibited)",
-        std::nullopt,
-        std::nullopt,
-    }));
+    output.push_back(makeDwtEvent(payload, makeTraceIssue(TracePcSamplePayload{payload.size, payload.value})));
     return output;
   }
   const auto pc = kind.value() == PcSampleKind::Pc ? payload.value : 0U;
@@ -279,14 +236,8 @@ void DwtPacketDecoder::decodeDataAddressTrace(const DwtPayloadPacket& payload, s
   if (!isSupportedAddressFragmentSize(payload.size)) {
     auto flushed = flush(payload.quality, payload.tcyc);
     output.insert(output.end(), std::make_move_iterator(flushed.begin()), std::make_move_iterator(flushed.end()));
-    output.push_back(makeDwtEvent(payload, TraceIssueEvent{
-        TraceIssueCode::UnsupportedDwtAddressPayload,
-        TraceIssueSeverity::Error,
-        "unsupported DWT " + std::string(secondarySubtype ? "data address" : "PC or match") +
-            " payload size " + std::to_string(payload.size) + "; expected 1, 2, or 4 bytes",
-        std::nullopt,
-        std::nullopt,
-    }));
+    output.push_back(makeDwtEvent(payload, makeTraceIssue(TraceAddressPayload{
+        secondarySubtype ? TraceAddressKind::DataAddress : TraceAddressKind::PcOrMatch, payload.size})));
     return;
   }
   const DwtAddressFragment fragment{payload.size, payload.value};

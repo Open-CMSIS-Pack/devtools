@@ -7,6 +7,7 @@
 
 #include "TraceOutputLifecycle.h"
 
+#include "DiagnosticMessages.h"
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
 #include "TraceOutput.h"
@@ -29,7 +30,7 @@ static std::string exceptionMessage(const std::exception_ptr& error)
     // Preserve noexcept error reporting even for non-standard exceptions.
     (void)0;
   }
-  return "unknown exception";
+  return formatMessage(MessageId::UnknownException);
 }
 
 TraceOutputLifecycle::TraceOutputLifecycle(std::vector<std::unique_ptr<TraceOutput>> outputs,
@@ -109,8 +110,7 @@ void TraceOutputLifecycle::fail(std::size_t index, const char* phase, const std:
     const auto backend = std::string(m_outputs[index]->backendName());
     const auto target = m_outputs[index]->targetPath();
     const auto displayMessage =
-        backend + " output" + (target.empty() ? std::string() : " '" + target + "'") + " failed during " + phase +
-        ": " + message;
+        backendFailureMessage(backend, target, phase, message);
     m_diagnostics.report({
         DiagnosticSink::Severity::Error,
         displayMessage,

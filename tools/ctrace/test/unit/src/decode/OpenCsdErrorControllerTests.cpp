@@ -69,9 +69,9 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerClassifiesResponses)
       << "OpenCSD error offset should be preserved";
   ASSERT_TRUE(recovery.errors.size() == 1U && recovery.errors[0].code == OCSD_ERR_BAD_PACKET_SEQ)
       << "OpenCSD decision should retain every error reported for the datapath call";
-  ASSERT_TRUE(OpenCsdErrorController::describeSummary(recovery) ==
+  ASSERT_TRUE(formatTraceMessage(OpenCsdErrorController::diagnosticMessage(recovery), TraceMessageStyle::Detailed) ==
               "OpenCSD detected an invalid ITM packet sequence at raw offset 123. "
-              "0x0013 (OCSD_ERR_BAD_PACKET_SEQ) [Bad packet sequence]; invalid async sequence")
+              "0x0013 (OCSD_ERR_BAD_PACKET_SEQ) [Bad packet sequence]; invalid async sequence (code 19)")
       << "OpenCSD summary should retain the native error and detail beside the raw offset";
   ASSERT_TRUE(OpenCsdErrorController::issueCode(recovery) == TraceIssueCode::OpenCsdBadPacketSequence)
       << "OpenCSD error module should own issue-code selection";
@@ -118,7 +118,7 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerClassifiesResponses)
       << "warning-only packet observations should not trigger stream recovery";
   ASSERT_TRUE(warningDecision.error.has_value());
   EXPECT_EQ(warningDecision.error->severity, OCSD_ERR_SEV_WARN);
-  EXPECT_NE(OpenCsdErrorController::describeSummary(warningDecision).find("warning-only packet observation"),
+  EXPECT_NE(formatTraceMessage(OpenCsdErrorController::diagnosticMessage(warningDecision), TraceMessageStyle::Detailed).find("warning-only packet observation"),
             std::string::npos);
   ASSERT_TRUE(controller.decide(OCSD_RESP_FATAL_INVALID_DATA).action == OpenCsdErrorController::Action::Abort)
       << "a warning must not justify recovery from a fatal invalid-data response";
@@ -174,15 +174,15 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerSummarizesKnownFailures)
       std::pair{OCSD_ERR_INVALID_ID, "OpenCSD decoder error."},
   };
   for (const auto& [code, summary] : summaries) {
-    const auto text = OpenCsdErrorController::describeSummary(makeDecision(OCSD_RESP_ERR_CONT, code));
+    const auto text = formatTraceMessage(OpenCsdErrorController::diagnosticMessage(makeDecision(OCSD_RESP_ERR_CONT, code)), TraceMessageStyle::Detailed);
     EXPECT_EQ(text.find(summary), 0U);
     EXPECT_NE(text.find("OCSD_ERR_"), std::string::npos);
   }
 
   auto offsetError = makeDecision(OCSD_RESP_ERR_CONT, OCSD_ERR_MEM, 0U);
-  EXPECT_EQ(OpenCsdErrorController::describeSummary(offsetError),
+  EXPECT_EQ(formatTraceMessage(OpenCsdErrorController::diagnosticMessage(offsetError), TraceMessageStyle::Detailed),
             "OpenCSD decoder ran out of memory at raw offset 0. "
-            "0x0002 (OCSD_ERR_MEM) [Internal memory allocation error.];");
+            "0x0002 (OCSD_ERR_MEM) [Internal memory allocation error.]; (code 2)");
 }
 
 TEST(CtraceUnitTests, testOpenCsdErrorControllerSummarizesFatalResponses)
@@ -200,7 +200,7 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerSummarizesFatalResponses)
   for (const auto& [response, summary] : summaries) {
     OpenCsdErrorController::Decision decision;
     decision.response = response;
-    EXPECT_EQ(OpenCsdErrorController::describeSummary(decision).find(summary), 0U);
+    EXPECT_EQ(formatTraceMessage(OpenCsdErrorController::diagnosticMessage(decision), TraceMessageStyle::Detailed).find(summary), 0U);
   }
 }
 
@@ -210,14 +210,14 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerSummarizesWarningsWithoutErrorRe
   const auto continueWarning = controller.decide(OCSD_RESP_WARN_CONT);
   EXPECT_FALSE(continueWarning.error.has_value());
   EXPECT_EQ(continueWarning.action, OpenCsdErrorController::Action::Continue);
-  EXPECT_EQ(OpenCsdErrorController::describeSummary(continueWarning),
-            "OpenCSD decoder warning. OCSD_RESP_WARN_CONT: Continue processing -> a component logged a warning.");
+  EXPECT_EQ(formatTraceMessage(OpenCsdErrorController::diagnosticMessage(continueWarning), TraceMessageStyle::Detailed),
+            "OpenCSD decoder warning. OCSD_RESP_WARN_CONT: Continue processing -> a component logged a warning. (response 1)");
 
   const auto waitWarning = controller.decide(OCSD_RESP_WARN_WAIT);
   EXPECT_FALSE(waitWarning.error.has_value());
   EXPECT_EQ(waitWarning.action, OpenCsdErrorController::Action::Wait);
-  EXPECT_EQ(OpenCsdErrorController::describeSummary(waitWarning),
-            "OpenCSD decoder warning. OCSD_RESP_WARN_WAIT: Pause processing -> a component logged a warning.");
+  EXPECT_EQ(formatTraceMessage(OpenCsdErrorController::diagnosticMessage(waitWarning), TraceMessageStyle::Detailed),
+            "OpenCSD decoder warning. OCSD_RESP_WARN_WAIT: Pause processing -> a component logged a warning. (response 4)");
 }
 
 TEST(CtraceUnitTests, testOpenCsdErrorControllerNormalizesNativeDiagnosticWhitespace)
@@ -229,9 +229,9 @@ TEST(CtraceUnitTests, testOpenCsdErrorControllerNormalizesNativeDiagnosticWhites
   const auto decision = controller.decide(OCSD_RESP_ERR_CONT);
   ASSERT_TRUE(decision.error.has_value());
   EXPECT_EQ(decision.error->message, "reserved packet header at byte 0xff");
-  EXPECT_EQ(OpenCsdErrorController::describeSummary(decision),
+  EXPECT_EQ(formatTraceMessage(OpenCsdErrorController::diagnosticMessage(decision), TraceMessageStyle::Detailed),
             "OpenCSD detected an invalid ITM packet header at raw offset 42. "
-            "0x0014 (OCSD_ERR_INVALID_PCKT_HDR) [Invalid packet header]; reserved packet header at byte 0xff");
+            "0x0014 (OCSD_ERR_INVALID_PCKT_HDR) [Invalid packet header]; reserved packet header at byte 0xff (code 20)");
   EXPECT_EQ(OpenCsdErrorController::describeApiError(OCSD_ERR_MEM, " \r\n allocation\t  failed \n"),
             "0x0002 (OCSD_ERR_MEM) [Internal memory allocation error.]; allocation failed");
   EXPECT_EQ(OpenCsdErrorController::describeApiError(OCSD_ERR_MEM, " \r\n\t"),

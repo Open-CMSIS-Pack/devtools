@@ -9,6 +9,7 @@
 #define CTRACE_SRC_DIAGNOSTICS_TRACEISSUEREPORTER_H
 
 #include "DiagnosticSink.h"
+#include "RawDiagnosticLocation.h"
 #include "TraceEvent.h"
 #include "TraceRoute.h"
 
@@ -36,18 +37,28 @@ private:
     TraceRouteIdentity route;
     std::optional<std::uint64_t> firstTimestamp;
     std::uint64_t packetCount = 0U;
+    RawDiagnosticLocation firstLocation;
+    std::uint64_t lastOffset = 0U;
+    std::vector<std::uint64_t> sampleOffsets;
   };
 
+  /** @brief Retains synchronization anchors independently for each normalized route. */
+  void observeSync(const TraceEvent& event);
   /** @brief Accumulates overflow state for the final summary. */
   void reportOverflow(const TraceEvent& event);
   /** @brief Reports one semantic decoder issue. */
   void reportError(const TraceEvent& event, const TraceIssueEvent& issue);
+  /** @brief Associates a decoder position with its known preceding route-local synchronization. */
+  RawDiagnosticLocation rawLocationFor(const TraceRouteIdentity& route, std::uint64_t offset) const;
   /** @brief Submits one normalized trace diagnostic to the sink. */
-  void report(DiagnosticSink::Severity severity, std::string message,
-              std::vector<std::pair<std::string, std::string>> context = {});
+  void report(DiagnosticSink::Severity severity, std::string message, std::string detailedMessage,
+              std::vector<std::pair<std::string, std::string>> context,
+              std::vector<std::pair<std::string, std::string>> detailedContext,
+              const RawDiagnosticLocation& rawLocation);
 
   DiagnosticSink& m_diagnostics;
   std::map<TraceRouteId, OverflowState> m_overflowByRoute;
+  std::map<TraceRouteId, std::uint64_t> m_lastSyncByRoute;
   bool m_finished = false;
 };
 

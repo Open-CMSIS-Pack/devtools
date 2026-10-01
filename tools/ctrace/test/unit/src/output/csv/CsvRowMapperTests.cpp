@@ -8,8 +8,10 @@
 #include "TestSupport.h"
 #include <gtest/gtest.h>
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 #include "TraceRoute.h"
 #include "TraceSelection.h"
+#include "csv/CsvField.h"
 #include "csv/CsvRowMapper.h"
 #include <array>
 #include <optional>
@@ -17,6 +19,24 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+
+TEST(CtraceUnitTests, testCsvFieldEscapesDelimitersAndPreservesContents)
+{
+  const std::array<std::pair<std::string_view, std::string_view>, 9> cases{{
+      {"", ""},
+      {"plain text", "plain text"},
+      {"comma, separated", "\"comma, separated\""},
+      {"\"", "\"\"\"\""},
+      {"\"quoted\"", "\"\"\"quoted\"\"\""},
+      {"carriage\rreturn", "\"carriage\rreturn\""},
+      {"line\nbreak", "\"line\nbreak\""},
+      {"both\r\nlines", "\"both\r\nlines\""},
+      {"comma, \"quote\"\r\nnext", "\"comma, \"\"quote\"\"\r\nnext\""},
+  }};
+  for (const auto& [value, expected] : cases) {
+    EXPECT_EQ(Csv::escapeField(value), expected);
+  }
+}
 
 TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
 {
@@ -110,14 +130,28 @@ TEST(CtraceUnitTests, testCsvRowMapperCoversAddressAndExceptionVariants)
             ",,exception,1,0x0,,,");
 }
 
-TEST(CtraceUnitTests, testCsvRowMapperEscapesDiagnosticText)
+TEST(CtraceUnitTests, testCsvRowMapperFormatsCompactIssuesWithoutTechnicalContext)
 {
   const auto issue = onStream(issuePacket(TraceIssueCode::DecodeError, "comma, quote \" and\nnewline"), 7U);
-  EXPECT_EQ(CsvRowMapper::row(issue), ",7,error,,,,,\"comma, quote \"\" and\nnewline\"");
+  EXPECT_EQ(CsvRowMapper::row(issue), ",7,error,,,,,Trace decode error");
 
   const auto missingSync =
       onStream(issuePacket(TraceIssueCode::OpenCsdMissingSync, "no sync, \"stream\"\r\nended"), 1U);
-  EXPECT_EQ(CsvRowMapper::row(missingSync), ",1,error,,,,,\"no sync, \"\"stream\"\"\r\nended\"");
+  EXPECT_EQ(CsvRowMapper::row(missingSync), ",1,error,,,,,No ITM SYNC before EOF");
+
+  const auto recovery = onStream(TraceEvent{makeTraceIssue(
+      TraceRecovery{TraceRecoveryKind::Resumed, 4294967296ULL, 8589934592ULL, 4294967296ULL})}, 7U);
+  EXPECT_EQ(CsvRowMapper::row(recovery),
+            ",7,error,,,,,ITM resynced; 4294967296 raw bytes affected");
+
+  TraceMessage diagnostic{TraceNativeDiagnostic{
+      TraceNativeCategory::BadPacketSequence, 19, std::nullopt, "native diagnostic detail", 8195U}};
+  diagnostic.timestampRange = TraceTimestampRange{29249610U, 29324609U};
+  diagnostic.packet = TracePacketContext{TracePacketKind::BadSequence, 2U, std::vector<std::uint8_t>{0xaaU, 0x47U}};
+  auto diagnosticEvent = onStream(atCycle(TraceEvent{makeTraceIssue(std::move(diagnostic))}, 29249610U), 7U);
+  diagnosticEvent.index = 8195U;
+  EXPECT_EQ(CsvRowMapper::row(diagnosticEvent), "29249610,7,error,,,,,Invalid ITM packet sequence")
+      << "CSV retains time and route columns but excludes verbose diagnostic details from the note";
 
   EXPECT_EQ(CsvRowMapper::row(atCycle(TraceEvent{GlobalTimestampTraceEvent{123U, false}}, 99U)), "123,,global_ts,,,,,");
 }
@@ -125,18 +159,17 @@ TEST(CtraceUnitTests, testCsvRowMapperEscapesDiagnosticText)
 TEST(CtraceUnitTests, testCsvRowMapperMapsByteSkipReasonsWithoutInventingTimeOrRoute)
 {
   EXPECT_EQ(CsvRowMapper::byteSkipRow({0U, 1U}),
-            ",,info,,,,,1 bytes skipped due to missing source ID; first formatter group at raw offset 0");
+            ",,info,,,,,1 bytes skipped: no source ID");
   EXPECT_EQ(CsvRowMapper::byteSkipRow({16U, 5U, TraceByteSkipReason::NullSourceId, 0U}),
-            ",0,info,,,,,5 bytes skipped for null source ID 0; first formatter group at raw offset 16");
+            ",0,info,,,,,5 bytes skipped: null source ID");
   EXPECT_EQ(CsvRowMapper::byteSkipRow({32U, 3U, TraceByteSkipReason::ReservedSourceId, 127U}),
-            ",127,info,,,,,3 bytes skipped for reserved source ID 127; first formatter group at raw offset 32");
+            ",127,info,,,,,3 bytes skipped: reserved source ID");
   EXPECT_EQ(CsvRowMapper::byteSkipRow({48U, 2U, TraceByteSkipReason::UnconfiguredSourceId, 42U}),
-            ",42,info,,,,,2 bytes skipped for unconfigured source ID 42; first formatter group at raw offset 48");
+            ",42,info,,,,,2 bytes skipped: unconfigured source ID");
   EXPECT_EQ(CsvRowMapper::byteSkipRow({64U, 8U, TraceByteSkipReason::MissingSync, 1U}),
-            ",1,info,,,,,8 bytes skipped due to missing SYNC; first formatter group at raw offset 64");
+            ",1,info,,,,,8 bytes skipped: no SYNC");
   EXPECT_EQ(CsvRowMapper::byteSkipRow({4294967296ULL, 8589934592ULL}),
-            ",,info,,,,,8589934592 bytes skipped due to missing source ID; "
-            "first formatter group at raw offset 4294967296");
+            ",,info,,,,,8589934592 bytes skipped: no source ID");
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperSerializesOnlyArchitecturalTraceBusId)
@@ -150,7 +183,7 @@ TEST(CtraceUnitTests, testCsvRowMapperSerializesOnlyArchitecturalTraceBusId)
       << "CSV must serialize the architectural Trace Bus ID rather than the internal route ordinal";
 
   TraceEvent overflow{OverflowTraceEvent{"route overflow"}};
-  EXPECT_EQ(CsvRowMapper::row(onRoute(std::move(overflow), formattedRoute)), ",7,overflow,,,,,route overflow");
+  EXPECT_EQ(CsvRowMapper::row(onRoute(std::move(overflow), formattedRoute)), ",7,overflow,,,,,Trace overflow; timestamp discontinuity");
 }
 
 TEST(CtraceUnitTests, testCsvRowMapperHandlesInternalAndCustomOverflowEvents)
@@ -158,5 +191,5 @@ TEST(CtraceUnitTests, testCsvRowMapperHandlesInternalAndCustomOverflowEvents)
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtEventTraceEvent{0x21U}}), ",,event,0,0x21,,,");
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{PmuTraceEvent{0x81U}}), ",,pmu,3,0x81,,,");
   TraceEvent overflow{OverflowTraceEvent{"custom overflow"}};
-  EXPECT_EQ(CsvRowMapper::row(overflow), ",,overflow,,,,,custom overflow");
+  EXPECT_EQ(CsvRowMapper::row(overflow), ",,overflow,,,,,Trace overflow; timestamp discontinuity");
 }

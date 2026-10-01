@@ -22,6 +22,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <utility>
 
 namespace {
 
@@ -39,7 +40,7 @@ public:
   {
     bool expected = false;
     if (!ctraceOwnsProcessGlobalDecodeTreeState.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
-      throw OpenCsdTreeSessionError("another OpenCSD DecodeTree session is already active");
+      throw OpenCsdTreeSessionError(TraceSetupFailure{TraceSetupOperation::AlreadyActive});
     }
     m_previousLogger = DecodeTree::getCurrentErrorLogI();
     DecodeTree::setAlternateErrorLogger(&errorLogger);
@@ -61,17 +62,21 @@ private:
   ITraceErrorLog* m_previousLogger = nullptr;
 };
 
-void OpenCsdSessionValidation::requireObject(const void* object, const char* message)
+void OpenCsdSessionValidation::requireObject(const void* object, TraceSetupOperation operation)
 {
   if (object == nullptr) {
-    throw OpenCsdTreeSessionError(message);
+    throw OpenCsdTreeSessionError(TraceSetupFailure{operation});
   }
 }
 
-void OpenCsdSessionValidation::requireSuccess(ocsd_err_t error, const char* message)
+void OpenCsdSessionValidation::requireSuccess(ocsd_err_t error, TraceSetupOperation operation)
 {
   if (error != OCSD_OK) {
-    throw OpenCsdTreeSessionError(OpenCsdErrorController::describeApiError(error, message));
+    TraceSetupFailure failure;
+    failure.operation = operation;
+    failure.errorCode = static_cast<int>(error);
+    failure.nativeText = OpenCsdErrorController::describeApiError(error, formatTraceSetupOperation(operation));
+    throw OpenCsdTreeSessionError(std::move(failure));
   }
 }
 
@@ -93,7 +98,7 @@ OpenCsdTreeSession::TreeLifecycle OpenCsdTreeSession::defaultLifecycle()
 ocsd_dcd_tree_src_t OpenCsdTreeSession::validateSourceType(ocsd_dcd_tree_src_t sourceType)
 {
   if (sourceType != OCSD_TRC_SRC_SINGLE && sourceType != OCSD_TRC_SRC_FRAME_FORMATTED) {
-    throw OpenCsdTreeSessionError("unsupported OpenCSD DecodeTree source type");
+    throw OpenCsdTreeSessionError(TraceSetupFailure{TraceSetupOperation::UnsupportedSource});
   }
   return sourceType;
 }
@@ -113,13 +118,13 @@ OpenCsdTreeSession::OpenCsdTreeSession(ocsd_dcd_tree_src_t sourceType, std::uint
     m_tree(nullptr, TreeDeleter{lifecycle.destroy})
 {
   if (!lifecycle.create) {
-    throw OpenCsdTreeSessionError("OpenCSD DecodeTree creator is not configured");
+    throw OpenCsdTreeSessionError(TraceSetupFailure{TraceSetupOperation::MissingCreator});
   }
   if (!lifecycle.destroy) {
-    throw OpenCsdTreeSessionError("OpenCSD DecodeTree destroyer is not configured");
+    throw OpenCsdTreeSessionError(TraceSetupFailure{TraceSetupOperation::MissingDestroyer});
   }
   m_tree.reset(lifecycle.create(m_sourceType, formatterFlags));
-  OpenCsdSessionValidation::requireObject(m_tree.get(), "failed to create OpenCSD DecodeTree");
+  OpenCsdSessionValidation::requireObject(m_tree.get(), TraceSetupOperation::CreateTree);
   m_tree->setGenTraceElemOutI(&elementOutput);
 }
 
@@ -129,56 +134,56 @@ void OpenCsdTreeSession::createDecoder(const std::string& decoderName, int creat
 {
   validateChannel(config.getTraceID());
   OpenCsdSessionValidation::requireSuccess(m_tree->createDecoder(decoderName, createFlags, &config),
-                                           "failed to create OpenCSD decoder");
+                                           TraceSetupOperation::CreateDecoder);
 }
 
 void OpenCsdTreeSession::attachDecoderCallbacks(std::uint8_t channel, ITrcTypedBase& packetMonitor)
 {
   validateChannel(channel);
   auto* element = m_tree->getDecoderElement(channel);
-  OpenCsdSessionValidation::requireObject(element, "OpenCSD decoder element is not initialized");
+  OpenCsdSessionValidation::requireObject(element, TraceSetupOperation::DecoderElement);
   auto* manager = element->getDecoderMngr();
-  OpenCsdSessionValidation::requireObject(manager, "OpenCSD decoder manager is not initialized");
+  OpenCsdSessionValidation::requireObject(manager, TraceSetupOperation::DecoderManager);
   auto* component = element->getDecoderHandle();
-  OpenCsdSessionValidation::requireObject(component, "OpenCSD full decoder component is not initialized");
+  OpenCsdSessionValidation::requireObject(component, TraceSetupOperation::FullDecoderComponent);
   auto* packetProcessor = component->getAssocComponent();
-  OpenCsdSessionValidation::requireObject(packetProcessor, "OpenCSD associated packet processor is not initialized");
+  OpenCsdSessionValidation::requireObject(packetProcessor, TraceSetupOperation::PacketProcessor);
 
   // DecodeTree::createDecoder already attaches the active alternate logger to
   // the full decoder. OpenCSD does not propagate it to the associated packet
   // processor, where ITM protocol errors originate.
   OpenCsdSessionValidation::requireSuccess(manager->attachErrorLogger(packetProcessor, &m_errorLogger),
-                                           "failed to attach OpenCSD packet-processor error logger");
+                                           TraceSetupOperation::AttachPacketLogger);
   OpenCsdSessionValidation::requireSuccess(manager->attachPktMonitor(component, &packetMonitor),
-                                           "failed to attach OpenCSD packet monitor");
+                                           TraceSetupOperation::AttachPacketMonitor);
 }
 
 void OpenCsdTreeSession::attachRawFrameMonitor(ITrcRawFrameIn& frameMonitor)
 {
   if (m_sourceType != OCSD_TRC_SRC_FRAME_FORMATTED) {
-    throw OpenCsdTreeSessionError("OpenCSD raw frame monitor requires a formatted DecodeTree");
+    throw OpenCsdTreeSessionError(TraceSetupFailure{TraceSetupOperation::RawMonitorRequiresFormatted});
   }
   auto* deformatter = m_tree->getFrameDeformatter();
-  OpenCsdSessionValidation::requireObject(deformatter, "OpenCSD frame deformatter is not initialized");
+  OpenCsdSessionValidation::requireObject(deformatter, TraceSetupOperation::FrameDeformatter);
   auto* attachPoint = deformatter->getTrcRawFrameAttachPt();
-  OpenCsdSessionValidation::requireObject(attachPoint, "OpenCSD raw-frame attach point is not initialized");
+  OpenCsdSessionValidation::requireObject(attachPoint, TraceSetupOperation::RawFrameAttachPoint);
   OpenCsdSessionValidation::requireSuccess(attachPoint->attach(&frameMonitor),
-                                           "failed to attach OpenCSD raw frame monitor");
+                                           TraceSetupOperation::AttachRawFrameMonitor);
 }
 
 ocsd_datapath_resp_t OpenCsdTreeSession::resetDecoder(std::uint8_t channel, ocsd_trc_index_t index)
 {
   validateChannel(channel);
   auto* element = m_tree->getDecoderElement(channel);
-  OpenCsdSessionValidation::requireObject(element, "OpenCSD decoder element is not initialized");
+  OpenCsdSessionValidation::requireObject(element, TraceSetupOperation::DecoderElement);
   auto* manager = element->getDecoderMngr();
-  OpenCsdSessionValidation::requireObject(manager, "OpenCSD decoder manager is not initialized");
+  OpenCsdSessionValidation::requireObject(manager, TraceSetupOperation::DecoderManager);
   auto* component = element->getDecoderHandle();
-  OpenCsdSessionValidation::requireObject(component, "OpenCSD decoder component is not initialized");
+  OpenCsdSessionValidation::requireObject(component, TraceSetupOperation::DecoderComponent);
   ITrcDataIn* packetProcessor = nullptr;
   OpenCsdSessionValidation::requireSuccess(manager->getDataInputI(component, &packetProcessor),
-                                           "failed to resolve OpenCSD decoder input");
-  OpenCsdSessionValidation::requireObject(packetProcessor, "OpenCSD decoder input is not initialized");
+                                           TraceSetupOperation::ResolveDecoderInput);
+  OpenCsdSessionValidation::requireObject(packetProcessor, TraceSetupOperation::DecoderInput);
   return packetProcessor->TraceDataIn(OCSD_OP_RESET, index, 0U, nullptr, nullptr);
 }
 
@@ -186,12 +191,12 @@ void OpenCsdTreeSession::validateChannel(std::uint8_t channel) const
 {
   if (m_sourceType == OCSD_TRC_SRC_SINGLE) {
     if (channel != 0U) {
-      throw OpenCsdTreeSessionError("OpenCSD SINGLE tree requires decoder channel 0");
+      throw OpenCsdTreeSessionError(TraceSetupFailure{TraceSetupOperation::SingleChannel});
     }
     return;
   }
   if (!OCSD_IS_VALID_CS_SRC_ID(channel)) {
-    throw OpenCsdTreeSessionError("OpenCSD formatted tree requires a decoder channel between 1 and 111");
+    throw OpenCsdTreeSessionError(TraceSetupFailure{TraceSetupOperation::FormattedChannel});
   }
 }
 

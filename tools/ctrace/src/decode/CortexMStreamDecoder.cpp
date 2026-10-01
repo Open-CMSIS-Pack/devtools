@@ -8,6 +8,7 @@
 #include "CortexMStreamDecoder.h"
 
 #include "CortexMPostDecoder.h"
+#include "DiagnosticMessages.h"
 #include "OpenCsdTraceElement.h"
 #include "SaturatingArithmetic.h"
 #include "TraceEvent.h"
@@ -25,26 +26,26 @@
 CortexMStreamDecoder::CortexMStreamDecoder(const std::vector<CortexMDecodeRoute>& routes, TraceEventSink& eventSink)
 {
   if (routes.empty()) {
-    throw std::invalid_argument("Cortex-M stream decoding requires at least one normalized route");
+    throw std::invalid_argument(formatMessage(MessageId::CortexRoutesRequired));
   }
 
   std::set<std::uint8_t> traceBusIds;
   for (const auto& route : routes) {
     if (route.timestampPrescaler == 0U) {
-      throw std::invalid_argument("ITM timestamp prescaler must be greater than zero");
+      throw std::invalid_argument(formatMessage(MessageId::TimestampPrescalerPositive));
     }
     if (route.identity.traceBusId.has_value() && !CoreSight::isAtbTraceId(*route.identity.traceBusId)) {
-      throw std::invalid_argument("formatted Cortex-M route requires a CoreSight ATB trace ID between 1 and 111");
+      throw std::invalid_argument(formatMessage(MessageId::CortexTraceBusIdRange));
     }
     if (route.identity.traceBusId.has_value() && !traceBusIds.insert(*route.identity.traceBusId).second) {
-      throw std::invalid_argument("duplicate CoreSight ATB trace ID in Cortex-M route configuration");
+      throw std::invalid_argument(formatMessage(MessageId::CortexDuplicateTraceBusId));
     }
     RouteDecoder state;
     state.identity = route.identity;
     state.timestampPrescaler = route.timestampPrescaler;
     state.decoder = std::make_unique<CortexMPostDecoder>(route.identity, eventSink);
     if (!m_decoders.emplace(route.identity.id, std::move(state)).second) {
-      throw std::invalid_argument("duplicate normalized route ID in Cortex-M route configuration");
+      throw std::invalid_argument(formatMessage(MessageId::CortexDuplicateRouteId));
     }
   }
 }
@@ -55,12 +56,11 @@ void CortexMStreamDecoder::append(OpenCsdTraceElement element)
 {
   const auto found = m_decoders.find(element.route.id);
   if (found == m_decoders.end()) {
-    throw std::runtime_error("OpenCSD element references unknown normalized route " +
-                             std::to_string(element.route.id.value()));
+    throw std::runtime_error(unknownNormalizedRouteMessage(element.route.id.value()));
   }
   auto& route = found->second;
   if (element.route != route.identity) {
-    throw std::runtime_error("OpenCSD element route identity does not match normalized route catalogue");
+    throw std::runtime_error(formatMessage(MessageId::CortexRouteIdentityMismatch));
   }
   if (element.kind == OpenCsdTraceElement::Kind::LocalTimestamp && element.tcyc.has_value()) {
     element.tcyc = SaturatingArithmetic::multiply(*element.tcyc, route.timestampPrescaler);

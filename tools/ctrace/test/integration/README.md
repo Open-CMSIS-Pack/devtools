@@ -34,18 +34,25 @@ output contents are covered by the other tests.
 
 The formatted recovery tests verify that a damaged route can resynchronize
 without resetting the formatter or another route. Native decoder error names,
-descriptions, packet types, and bounded byte previews appear in CLI and CSV
-diagnostics. Recoverable errors leave completed CSV/CTF output available while
-the command returns a failing exit status.
+descriptions, packet types, and bounded byte previews appear in verbose CLI
+diagnostics. Normal CLI and CSV notes share compact categories, causes and meaningful counts, without raw positions,
+cycle intervals, native codes or packet payloads. Recoverable errors leave completed CSV/CTF output available
+while the command returns a failing exit status.
 
 `RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTail` covers a fatal
 end-of-input decode failure after a valid payload. It requires selected CSV
 rows to remain, followed by exactly one input-wide `error` row containing the
-processed-byte count and abort reason, with no cycle timestamp, stream, or
-source. That final row bypasses type and stream filters; the preceding
-route-local error follows those filters. Incomplete CTF output must be removed
+incomplete-trace indication and compact structured cause when available, with no cycle timestamp, stream, or source.
+Normal CLI shares that text; `--verbose` adds the processed-byte count and detailed reason. That final row bypasses
+type and stream filters;
+the preceding route-local error follows those filters. Incomplete CTF output must be removed
 and excluded from target XML. The cases cover unfiltered output, `--type itm`, and `--stream 2` when
 the input uses route 1.
+
+Verbosity coverage compares normal CLI with `--verbose` / `-v`: compact trace text matches CSV notes, native and raw
+details require verbosity, and technical run information is suppressed normally. Both modes retain actionable errors
+and byte-skip information, the same output content, event selection and exit status. CSV stays compact in either mode;
+CTF retains its structured status representation.
 
 ## Babeltrace consumer gate
 

@@ -12,7 +12,8 @@
     mode-specific output planning, a SINGLE or formatted
     OpenCSD DecodeTree, route-local recovery and
     Cortex-M state, semantic trace events, diagnostics, CSV, multi-stream CTF, and conditional Trace Compass XML
-    output. Native errors, bounded packet previews, and recovery details reach diagnostics and CSV. Formatter and
+    output. CSV and normal CLI use compact trace messages; verbose CLI adds native errors, bounded packet previews,
+    raw positions, and recovery details. Verbosity does not change CSV or CTF output. Formatter and
     initial synchronization skips follow a separate Info path. Fatal decode retains committed CSV rows with a global
     abort record and removes incomplete CTF for that input. Remaining inputs continue. CSV and CTF outputs always
     include the channel in their names, also for single-input runs. One target XML collects graphical views from

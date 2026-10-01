@@ -10,6 +10,7 @@
 #include "DecodeConsumers.h"
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 #include "TraceOutput.h"
 #include "TraceRoute.h"
 
@@ -100,7 +101,9 @@ TEST(CtraceUnitTests, testDecodeConsumersRetainsSkippedBytesAsNonFailingInfo)
   ASSERT_EQ(diagnostics.events().size(), skipped.size());
   for (std::size_t index = 0U; index < skipped.size(); ++index) {
     const auto& diagnostic = diagnostics.events()[index];
-    EXPECT_EQ(diagnostic.message, traceByteSkipMessage(skipped[index]));
+    EXPECT_EQ(diagnostic.message, formatTraceMessage(skipped[index], TraceMessageStyle::Compact));
+    EXPECT_EQ(diagnostic.detailedMessage, formatTraceMessage(skipped[index], TraceMessageStyle::Detailed));
+    EXPECT_EQ(diagnostic.visibility, DiagnosticSink::Visibility::Always);
     EXPECT_EQ(diagnostic.severity, DiagnosticSink::Severity::Info);
     EXPECT_EQ(diagnostic.impact, DiagnosticSink::Impact::NonFailing);
     if (skipped[index].traceId.has_value()) {
@@ -167,7 +170,7 @@ TEST(CtraceUnitTests, testDecodeConsumersTracksEnableWarningsByInternalRouteIden
   consumers.append(disabledB);
 
   ASSERT_EQ(diagnostics.events().size(), 2U) << "warning-once state must be independent for distinct no-bus route IDs";
-  EXPECT_TRUE(diagnostics.events()[0].context.size() == 2U && diagnostics.events()[1].context.size() == 2U)
+  EXPECT_TRUE(diagnostics.events()[0].context.size() == 1U && diagnostics.events()[1].context.size() == 1U)
       << "an internal route ordinal must not be exposed as public stream context";
   EXPECT_EQ(diagnostics.events()[0].context.front(), (std::pair<std::string, std::string>{"channel", "3"}));
   EXPECT_EQ(diagnostics.events()[1].context.front(), (std::pair<std::string, std::string>{"channel", "3"}));

@@ -7,6 +7,7 @@
 
 #include "TraceDirectoryJob.h"
 
+#include "DiagnosticMessages.h"
 #include "CliOptions.h"
 #include "DiagnosticSink.h"
 #include "FileDecodeJob.h"
@@ -88,7 +89,7 @@ static void reportConsumedReferenceDiagnostics(const TraceRunConfig& config, Dia
     for (const auto& error : reference.error) {
       diagnostics.report({
           DiagnosticSink::Severity::Error,
-          error.empty() ? "trace generation setup failed without a diagnostic message" : error,
+          error.empty() ? formatMessage(MessageId::ReferenceDiagnosticMissing) : error,
           referenceContext(config, reference),
           DiagnosticSink::Impact::NonFailing,
       });
@@ -150,7 +151,7 @@ void TraceDirectoryJob::run()
   if (m_options.traceDir.has_value()) {
     configFiles = TraceRunDiscovery::selectConfigFiles(*m_options.traceDir, m_options.targetName);
   } else {
-    throw std::runtime_error("trace directory job requires <trace-dir>");
+    throw std::runtime_error(formatMessage(MessageId::TraceDirectoryRequired));
   }
 
   for (const auto& configFile : configFiles) {
@@ -163,21 +164,23 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
   const auto solutionSet = TraceRunDiscovery::solutionSetName(configFile);
   try {
     auto config = m_configReader.read(configFile.string());
-    m_diagnostics.report({
+    DiagnosticSink::Event selected{
         DiagnosticSink::Severity::Info,
-        "selected trace-run configuration",
+        formatMessage(MessageId::SelectedTraceConfiguration),
         {
             {"solutionSet", solutionSet},
             {"path", config.path},
             {"references", std::to_string(config.references.size())},
             {"setups", std::to_string(config.setups.size())},
         },
-    });
+    };
+    selected.visibility = DiagnosticSink::Visibility::Verbose;
+    m_diagnostics.report(selected);
     reportConsumedReferenceDiagnostics(config, m_diagnostics);
     const auto inputs = TraceRunDiscovery::selectInputs(config, [&](const auto& rawInput) {
       m_diagnostics.report({
           DiagnosticSink::Severity::Warning,
-          "skipping raw trace channel excluded from active input selection",
+          formatMessage(MessageId::SkippingExcludedTraceChannel),
           {
               {"solutionSet", solutionSet},
               {"channel", rawInput.channel},

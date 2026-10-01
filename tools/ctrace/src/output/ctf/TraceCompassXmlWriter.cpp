@@ -7,6 +7,7 @@
 
 #include "TraceCompassXmlWriter.h"
 
+#include "DiagnosticMessages.h"
 #include "CtfSchema.h"
 #include "TraceStreamId.h"
 
@@ -517,13 +518,13 @@ static bool isCanonicalClockUuid(std::string_view uuid)
 static void validateViewRoute(const TraceCompassXmlWriter::ViewRoute& route)
 {
   if ((route.views & ~TraceCompassXmlWriter::AllViews) != 0U) {
-    throw std::invalid_argument("Trace Compass XML contains an unsupported route view selection");
+    throw std::invalid_argument(formatMessage(MessageId::XmlViewSelectionInvalid));
   }
   if (route.traceBusId != 0U && !CoreSight::isAtbTraceId(route.traceBusId)) {
-    throw std::invalid_argument("Trace Compass XML requires Trace Bus IDs between 0 and 111");
+    throw std::invalid_argument(formatMessage(MessageId::XmlTraceBusIdRange));
   }
   if (!isCanonicalClockUuid(route.clockUuid)) {
-    throw std::invalid_argument("Trace Compass XML requires canonical lower-case clock UUIDs");
+    throw std::invalid_argument(formatMessage(MessageId::XmlCanonicalClockUuidRequired));
   }
 }
 
@@ -531,19 +532,19 @@ static void validateViewRoute(const TraceCompassXmlWriter::ViewRoute& route)
 static AnalysisIdentity analysisIdentity(const std::vector<TraceCompassXmlWriter::ViewRoute>& routes)
 {
   if (routes.empty()) {
-    throw std::invalid_argument("Trace Compass XML requires at least one view route");
+    throw std::invalid_argument(formatMessage(MessageId::XmlViewRouteRequired));
   }
   std::set<std::pair<std::string, std::uint8_t>> identities;
   auto views = TraceCompassXmlWriter::ViewMask{0U};
   for (const auto& route : routes) {
     validateViewRoute(route);
     if (!identities.emplace(route.clockUuid, route.traceBusId).second) {
-      throw std::invalid_argument("Trace Compass XML requires unique clock UUID and Trace Bus ID pairs");
+      throw std::invalid_argument(formatMessage(MessageId::XmlUniqueClockRouteRequired));
     }
     views |= route.views;
   }
   if (views == 0U) {
-    throw std::invalid_argument("Trace Compass XML requires at least one graphical view");
+    throw std::invalid_argument(formatMessage(MessageId::XmlGraphicalViewRequired));
   }
 
   constexpr std::uint64_t kFnvOffsetBasis = 14695981039346656037ULL;
@@ -823,11 +824,11 @@ void TraceCompassXmlWriter::writeFile(const std::filesystem::path& filePath, con
   }
   std::ofstream out(filePath, std::ios::out | std::ios::binary | std::ios::trunc);
   if (!out) {
-    throw std::runtime_error("Failed to write Trace Compass XML " + filePath.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::XmlWrite, filePath.string()));
   }
   out << traceCompassXml(routes, identity);
   out.close();
   if (!out) {
-    throw std::runtime_error("Failed to write Trace Compass XML " + filePath.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::XmlWrite, filePath.string()));
   }
 }

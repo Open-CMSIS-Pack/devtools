@@ -8,6 +8,7 @@
 #include "DecodePipeline.h"
 
 #include "CortexMStreamDecoder.h"
+#include "DiagnosticMessages.h"
 #include "OpenCsdItmDecoder.h"
 #include "TraceEvent.h"
 
@@ -52,7 +53,7 @@ void DecodePipeline::push(RawByteView bytes)
     return;
   }
   if (bytes.size > std::numeric_limits<std::uint32_t>::max()) {
-    throw std::runtime_error("raw decode chunk is too large");
+    throw std::runtime_error(formatMessage(MessageId::RawDecodeChunkTooLarge));
   }
   m_decoder.push(bytes.data, static_cast<std::uint32_t>(bytes.size));
 }
