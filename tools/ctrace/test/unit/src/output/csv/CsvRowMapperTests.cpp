@@ -76,7 +76,7 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
     ASSERT_TRUE(traceEventType(event) == expectedType) << "semantic TraceEvent type mapping mismatch";
   }
 
-  ASSERT_TRUE(CsvRowMapper::header() == "cycles,stream,type,source,value,pc,address,note")
+  ASSERT_TRUE(CsvRowMapper::header() == "cycles,stream,type,index,value,pc,address,note")
       << "CSV schema header integration mismatch";
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{LocalTimestampTraceEvent{}}), ",,,,,,,")
       << "local timestamp control packets must not populate payload-specific CSV columns";
@@ -99,7 +99,7 @@ TEST(CtraceUnitTests, testCsvRowMapperAndTraceEventSchema)
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 2U, 0U, AccessType::Write}}), ",,dwt,0,0x0000,,,");
   EXPECT_EQ(CsvRowMapper::row(TraceEvent{DwtDataTraceEvent{0U, 4U, 0U, AccessType::Write}}), ",,dwt,0,0x00000000,,,");
   ASSERT_TRUE(CsvRowMapper::row(TraceEvent{DwtMatchTraceEvent{2U}}) == ",,dwt,2,,,,")
-      << "CSV must expose a match only through its DWT comparator source";
+      << "CSV must expose a match only through its DWT comparator index";
   ASSERT_TRUE(CsvRowMapper::row(atCycle(TraceEvent{PcSampleTraceEvent{0x08001234U}}, 949339000U)) ==
               "949339000,,pcsample,,,0x08001234,,")
       << "CSV PC-sample row mismatch";

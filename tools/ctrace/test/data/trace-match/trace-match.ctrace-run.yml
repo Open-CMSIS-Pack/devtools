@@ -23,25 +23,25 @@ ctrace-run:
       address: 0x20000000
       size: 4
       data-type: unsigned
-      source: 0
+      index: 0
     - ref: data#1
       type: dwt
       label: Match Comparator 1
       address: 0x20000004
       size: 4
       data-type: unsigned
-      source: 1
+      index: 1
     - ref: data#2
       type: dwt
       label: Match Comparator 2
       address: 0x20000008
       size: 4
       data-type: unsigned
-      source: 2
+      index: 2
     - ref: data#3
       type: dwt
       label: Match Comparator 3
       address: 0x2000000C
       size: 4
       data-type: unsigned
-      source: 3
+      index: 3

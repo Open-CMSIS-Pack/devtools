@@ -93,7 +93,7 @@ A fatal OpenCSD decode abort removes the incomplete CTF bundle, including data a
 and excludes it from target XML. If CSV output remains healthy, ctrace retains its selected rows and appends one
 input-wide `error` row stating `Decode aborted; trace incomplete`, with a compact structured cause when available.
 Normal CLI uses the same text; `--verbose` adds the processed-byte count and detailed abort reason. That final row has
-no cycle timestamp, stream, or source and bypasses type and stream filters. A recoverable route-local error allows
+no cycle timestamp, stream, or index and bypasses type and stream filters. A recoverable route-local error allows
 normal output completion, as described
 under [`TRACE_STATUS`](#trace_status-event-id-3). Both kinds of Error produce a failing command exit status. Remaining
 raw inputs are still processed, and their completed bundles and XML contributions are unaffected by another input's

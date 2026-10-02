@@ -605,7 +605,7 @@ void expectChannelArtifacts(const std::filesystem::path& directory, std::string_
     std::ostringstream value;
     value << std::hex << static_cast<unsigned>(fixture.value);
     EXPECT_EQ(traceCsvRows(readTestTextFile(csvPath)),
-              "cycles,stream,type,source,value,pc,address,note\n" + prefix + "itm,1,0x" + value.str() + ",,,\n" +
+              "cycles,stream,type,index,value,pc,address,note\n" + prefix + "itm,1,0x" + value.str() + ",,,\n" +
                   prefix + "pcsample,,,,,CPU Sleeping\n");
   }
   if (ctf) {
@@ -631,7 +631,7 @@ void writeSwoAndTbTopicFixture(const std::filesystem::path& directory, std::stri
         - size: 1
   ctrace-refs:
     - { ref: core/itm, type: itm, pname: core, stream: 1 }
-    - { ref: core/data#0, type: dwt, pname: core, stream: 1, source: 0, size: 1, data-type: unsigned }
+    - { ref: core/data#0, type: dwt, pname: core, stream: 1, index: 0, size: 1, data-type: unsigned }
 )yml";
   writeTestFile(directory / (std::string(target) + ".ctrace-run.yml"), traceRun);
   for (const auto channel : {"SWO", "TB"}) {
@@ -863,7 +863,7 @@ TEST_F(CtraceIntegTests, GeneratesCsvAndCtfWithoutEmptyGraphicalConfiguration)
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Minimal", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
-  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+  EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             "0,,pcsample,,,0x08001234,,\n"
             "0,,itm,1,0x41,,,\n",
             readTestTextFile(workDirectory() / "Minimal.SWO.csv"));
@@ -887,7 +887,7 @@ TEST_F(CtraceIntegTests, DecodesExplicitUnformattedNamedTraceBuffer)
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Named", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
-  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+  EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             "0,,pcsample,,,0x08001234,,\n"
             "0,,itm,1,0x41,,,\n",
             readTestTextFile(workDirectory() / "Named.TB_MTB.csv"));
@@ -908,7 +908,7 @@ TEST_F(CtraceIntegTests, DefaultsNullTraceFormatToUnformattedForSwo)
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Minimal", "--csv"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
-  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+  EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             "0,,itm,1,0x41,,,\n",
             readTestTextFile(workDirectory() / "Minimal.SWO.csv"));
 }
@@ -994,7 +994,7 @@ TEST_F(CtraceIntegTests, SkipsUnsupportedFormattedSourceOnceAndKeepsConfiguredRo
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
   EXPECT_EQ(countOccurrences(result.stderrText, "skipping unsupported formatted CoreSight trace source"), 1U);
   expectContains(result.stderrText, "stream=42");
-  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+  EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             "0,1,itm,1,0x41,,,\n"
             "0,1,itm,2,0x42,,,\n",
             traceCsvRows(readTestTextFile(workDirectory() / "Mixed.TB.csv")));
@@ -1046,7 +1046,7 @@ TEST_F(CtraceIntegTests, PublishesOutputsWithUnresolvedFormattedRouteRecovery)
   expectContains(result.stderrText, "invalid ITM packet header at raw offset 6");
   expectContains(result.stderrText, "ITM decoding did not resume before end of input at raw offset 16");
   expectContains(result.stderrText, "no later hardware SYNC; affected raw interval [6, 16) spans 10 bytes");
-  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+  EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             "0,1,error,,,,,Invalid ITM packet header\n"
             "0,1,error,,,,,No ITM resync before EOF; 10 raw bytes affected\n",
             traceCsvRows(readTestTextFile(workDirectory() / "Invalid.TB.csv")));
@@ -1127,7 +1127,7 @@ TEST_F(CtraceIntegTests, ReportsUnassignedFormatterOnlyInputWithoutInventingRout
                  "[info] 15 bytes skipped due to missing source ID; first formatter group at raw offset 0");
   expectNotContains(result.stderrText, "no hardware ITM SYNC");
   expectNotContains(result.stderrText, "[error]");
-  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+  EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             ",,info,,,,,15 bytes skipped: no source ID\n",
             readTestTextFile(workDirectory() / "Unassigned.TB.csv"));
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Unassigned.TB.ctf" / "stream_1"));
@@ -1164,7 +1164,7 @@ TEST_F(CtraceIntegTests, DecodesFormattedCaptureAfterUnassignedPrefixAndRetainsI
       EXPECT_EQ(countOccurrences(csv, " bytes skipped: null source ID"), 1U);
       EXPECT_EQ(countOccurrences(csv, " bytes skipped: reserved source ID"), prefixByte == 0xffU ? 1U : 0U);
       if (filtered) {
-        EXPECT_EQ(traceCsvRows(csv), "cycles,stream,type,source,value,pc,address,note\n");
+        EXPECT_EQ(traceCsvRows(csv), "cycles,stream,type,index,value,pc,address,note\n");
         EXPECT_EQ(countOccurrences(csv, ",info,"), prefixByte == 0xffU ? 3U : 2U);
       } else {
         expectCompleteSyntheticCsv(directory / "Synthetic.TB.csv");
@@ -1259,7 +1259,7 @@ TEST_F(CtraceIntegTests, ExpandsDwtEventCountersAcrossCsvAndCtf)
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Events", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
-  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+  EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             "0,,event,0,0x21,,,\n"
             "0,,itm,1,0x41,,,\n",
             readTestTextFile(workDirectory() / "Events.SWO.csv"));
@@ -1302,7 +1302,7 @@ TEST_F(CtraceIntegTests, ConvertsDwtMatchAcrossCsvAndCtf)
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "trace-match", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
-  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+  EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             "1,,dwt,0,,,,\n"
             "3,,dwt,1,,,,\n"
             "6,,dwt,2,,,,\n"
@@ -1403,7 +1403,7 @@ TEST_F(CtraceIntegTests, DoesNotSelectPcSamplingMarkersAsErrors)
   EXPECT_EQ(result.exitCode, 0) << result.stderrText;
   expectNotContains(result.stderrText, "[error]");
   EXPECT_EQ(readTestTextFile(workDirectory() / "trace-pc-sample.SWO.csv"),
-            "cycles,stream,type,source,value,pc,address,note\n");
+            "cycles,stream,type,index,value,pc,address,note\n");
   EXPECT_TRUE(CtfTestSupport::readCtfRecords(workDirectory() / "trace-pc-sample.SWO.ctf" / "stream_0").empty());
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "trace-pc-sample.traceanalysis.xml"));
 }
@@ -1436,7 +1436,7 @@ TEST_F(CtraceIntegTests, RetainsProhibitedOnlyTraceDataWithoutGeneratingEmptyXml
                              "--type", "pcsample"});
     EXPECT_EQ(result.exitCode, 0) << result.stderrText;
     expectNotContains(result.stderrText, "[error]");
-    auto expectedCsv = std::string("cycles,stream,type,source,value,pc,address,note\n6,") +
+    auto expectedCsv = std::string("cycles,stream,type,index,value,pc,address,note\n6,") +
                        (formatted ? "1" : "") + ",pcsample,,,,,Trace prohibited\n";
     if (formatted) {
       expectedCsv += ",0,info,,,,,4 bytes skipped: null source ID\n";
@@ -1548,7 +1548,7 @@ TEST_F(CtraceIntegTests, ReportsInvalidDwtEventCounterWithoutPartialDecode)
   EXPECT_EQ(1, result.exitCode);
   expectContains(result.stderrText, "unsupported DWT event-counter payload: size 1, value 0x41");
   expectContains(result.stderrText, "raw_offset=6");
-  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+  EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             "0,,error,,,,,Invalid DWT counter\n"
             "0,,itm,1,0x41,,,\n",
             readTestTextFile(workDirectory() / "InvalidEvent.SWO.csv"));
@@ -1568,7 +1568,7 @@ TEST_F(CtraceIntegTests, ExpandsPmuEventCountersAcrossCsvAndCtf)
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Pmu", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
-  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+  EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             "0,,pmu,3,0x81,,,\n"
             "0,,itm,1,0x41,,,\n",
             readTestTextFile(workDirectory() / "Pmu.SWO.csv"));
@@ -1594,7 +1594,7 @@ TEST_F(CtraceIntegTests, ReportsInvalidPmuEventCounterWithoutPartialDecode)
   EXPECT_EQ(1, result.exitCode);
   expectContains(result.stderrText, "unsupported PMU event-counter payload: size 1, value 0x0");
   expectContains(result.stderrText, "raw_offset=6");
-  EXPECT_EQ("cycles,stream,type,source,value,pc,address,note\n"
+  EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             "0,,error,,,,,Invalid PMU counter\n"
             "0,,itm,1,0x41,,,\n",
             readTestTextFile(workDirectory() / "InvalidPmu.SWO.csv"));
@@ -1641,7 +1641,7 @@ TEST_F(CtraceIntegTests, ReportsDiagnosticsFromConsumedTraceRunReferences)
       type: itm
       pname: core
       stream: 1
-      source: 0
+      index: 0
       info:
         - configured ITM channel zero
         - retained secondary setup information
@@ -2015,7 +2015,7 @@ TEST_F(CtraceIntegTests, AppliesTypeAndStreamFiltersIndependentlyToEveryChannel)
     EXPECT_FALSE(std::filesystem::exists(workDirectory() / (base + ".traceanalysis.xml")));
     const auto ctfDirectory = workDirectory() / (base + ".ctf");
     if (fixture.channel == "SWO") {
-      EXPECT_EQ(csv, "cycles,stream,type,source,value,pc,address,note\n");
+      EXPECT_EQ(csv, "cycles,stream,type,index,value,pc,address,note\n");
       EXPECT_FALSE(std::filesystem::exists(ctfDirectory / "stream_0"));
       expectNotContains(readTestTextFile(ctfDirectory / "metadata"), "\nstream {");
       continue;
@@ -2623,7 +2623,7 @@ TEST_F(CtraceIntegTests, RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTai
       const auto lines = readTestLines(csvPath);
       ASSERT_GE(lines.size(), 2U);
       EXPECT_EQ(lines.back(), ",,error,,,,," + compactAbortMessage)
-          << "the final abort is input-wide, has no cycles/source, and bypasses selection";
+          << "the final abort is input-wide, has no cycles/index, and bypasses selection";
       EXPECT_EQ(countOccurrences(csv, "Decode aborted; trace incomplete"), 1U);
       const auto expectedPayload = selection.includesPayload ? "42,1,itm,1,0x41,,,\n" : "";
       const auto semanticRows = traceCsvRows(csv);
@@ -2634,7 +2634,7 @@ TEST_F(CtraceIntegTests, RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTai
       }
       EXPECT_EQ(countOccurrences(csv, ",1,error,"), selection.includesRouteError ? 1U : 0U);
       if (!selection.includesRouteError) {
-        EXPECT_EQ(semanticRows, "cycles,stream,type,source,value,pc,address,note\n" +
+        EXPECT_EQ(semanticRows, "cycles,stream,type,index,value,pc,address,note\n" +
                                    std::string(expectedPayload) + ",,error,,,,," + compactAbortMessage + "\n");
       }
       expectNotContains(csv, ",pcsample,");

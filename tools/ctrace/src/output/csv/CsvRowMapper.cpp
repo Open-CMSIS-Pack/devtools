@@ -27,7 +27,7 @@ enum class CsvColumn : std::size_t {
   Cycles,
   Stream,
   Type,
-  Source,
+  Index,
   Value,
   Pc,
   Address,
@@ -39,7 +39,7 @@ constexpr std::array<std::string_view, static_cast<std::size_t>(CsvColumn::Count
     "cycles",
     "stream",
     "type",
-    "source",
+    "index",
     "value",
     "pc",
     "address",
@@ -120,14 +120,14 @@ static std::string_view exceptionActionCsvValue(ExceptionAction action)
 /** @brief Writes one ITM software packet to the CSV event columns. */
 static void writePayloadColumns(CsvRow& row, const SoftwareTraceEvent& event)
 {
-  row[column(CsvColumn::Source)] = std::to_string(event.channel);
+  row[column(CsvColumn::Index)] = std::to_string(event.channel);
   row[column(CsvColumn::Value)] = hexValue(event.value, event.size);
 }
 
 /** @brief Writes one DWT data packet to the CSV event columns. */
 static void writePayloadColumns(CsvRow& row, const DwtDataTraceEvent& event)
 {
-  row[column(CsvColumn::Source)] = std::to_string(event.comparator);
+  row[column(CsvColumn::Index)] = std::to_string(event.comparator);
   row[column(CsvColumn::Value)] = hexValue(event.value, event.size);
   writeDwtAddressFragment(row, CsvColumn::Pc, event.pc);
   writeDwtAddressFragment(row, CsvColumn::Address, event.address);
@@ -136,7 +136,7 @@ static void writePayloadColumns(CsvRow& row, const DwtDataTraceEvent& event)
 /** @brief Writes one DWT address packet to the CSV event columns. */
 static void writePayloadColumns(CsvRow& row, const DwtAddressTraceEvent& event)
 {
-  row[column(CsvColumn::Source)] = std::to_string(event.comparator);
+  row[column(CsvColumn::Index)] = std::to_string(event.comparator);
   writeDwtAddressFragment(row, CsvColumn::Pc, dwtAddressPc(event));
   writeDwtAddressFragment(row, CsvColumn::Address, dwtDataAddress(event));
 }
@@ -144,27 +144,27 @@ static void writePayloadColumns(CsvRow& row, const DwtAddressTraceEvent& event)
 /** @brief Writes one comparator-only DWT match to the CSV event columns. */
 static void writePayloadColumns(CsvRow& row, const DwtMatchTraceEvent& event)
 {
-  row[column(CsvColumn::Source)] = std::to_string(event.comparator);
+  row[column(CsvColumn::Index)] = std::to_string(event.comparator);
 }
 
 /** @brief Writes one exception transition to the CSV event columns. */
 static void writePayloadColumns(CsvRow& row, const ExceptionTraceEvent& event)
 {
-  row[column(CsvColumn::Source)] = std::to_string(event.number);
+  row[column(CsvColumn::Index)] = std::to_string(event.number);
   row[column(CsvColumn::Value)] = exceptionActionCsvValue(event.action);
 }
 
 /** @brief Writes one DWT event-counter packet to the CSV event columns. */
 static void writePayloadColumns(CsvRow& row, const DwtEventTraceEvent& event)
 {
-  row[column(CsvColumn::Source)] = "0";
+  row[column(CsvColumn::Index)] = "0";
   row[column(CsvColumn::Value)] = hexValue(event.counterMask, 1U);
 }
 
 /** @brief Writes one PMU trace-on-overflow packet to the CSV event columns. */
 static void writePayloadColumns(CsvRow& row, const PmuTraceEvent& event)
 {
-  row[column(CsvColumn::Source)] = "3";
+  row[column(CsvColumn::Index)] = "3";
   row[column(CsvColumn::Value)] = hexValue(event.overflowMask, 1U);
 }
 

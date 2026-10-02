@@ -116,13 +116,13 @@ TEST(CtraceUnitTests, TraceRunReaderParsesConsumedFields)
       pname: core0
       type: itm
       stream: 2
-      source: 1
+      index: 1
       label: Console
     - ref: core0/data#0
       pname: core0
       type: dwt
       stream: 2
-      source: 0
+      index: 0
       address: 0x20000100
       data-type: signed
       size: 1
@@ -156,27 +156,28 @@ TEST(CtraceUnitTests, TraceRunReaderParsesConsumedFields)
   EXPECT_EQ(dwt.label, std::optional<std::string>("Current"));
 }
 
-TEST(CtraceUnitTests, TraceRunReaderAcceptsScalarAndArraySourceNotation)
+TEST(CtraceUnitTests, TraceRunReaderAcceptsScalarAndArrayIndexNotation)
 {
   TraceRunFixture file("ctrace-run-reader-consumed-fields-test");
   const auto config = file.read(R"yml(ctrace-run:
   ctrace-refs:
     - ref: relevant/itm
       type: itm
-      source: [1, 2]
+      index: [1, 2]
     - ref: relevant/dwt-scalar
       type: dwt
-      source: 3
+      index: 3
     - ref: relevant/dwt-array
       type: dwt
-      source: [4, 5]
+      index: [4, 5]
     - ref: ignored/unsupported
       type: unsupported
+      index: [invalid]
 )yml");
   ASSERT_EQ(config.references.size(), 3U);
-  EXPECT_TRUE(config.references[0].sources == std::vector<std::uint32_t>({1U, 2U}));
-  EXPECT_TRUE(config.references[1].sources == std::vector<std::uint32_t>({3U}));
-  EXPECT_TRUE(config.references[2].sources == std::vector<std::uint32_t>({4U, 5U}));
+  EXPECT_TRUE(config.references[0].indices == std::vector<std::uint32_t>({1U, 2U}));
+  EXPECT_TRUE(config.references[1].indices == std::vector<std::uint32_t>({3U}));
+  EXPECT_TRUE(config.references[2].indices == std::vector<std::uint32_t>({4U, 5U}));
 }
 
 TEST(CtraceUnitTests, TraceRunReaderParsesTraceFormatDeclaration)
@@ -253,7 +254,7 @@ TEST(CtraceUnitTests, TraceRunReaderUsesReferencedSetupSizeAsFallback)
   ctrace-refs:
     - ref: data#0
       type: dwt
-      source: 0
+      index: 0
       data-type: signed
 )yml");
 
@@ -264,23 +265,44 @@ TEST(CtraceUnitTests, TraceRunReaderUsesReferencedSetupSizeAsFallback)
   EXPECT_EQ(sourceAt(meta, 0).dataSize, 2U);
 }
 
-TEST(CtraceUnitTests, TraceRunReaderIgnoresUnsupportedMetadataNames)
+TEST(CtraceUnitTests, TraceRunReaderIgnoresUnconsumedFields)
 {
-  TraceRunFixture file("ctrace-run-reader-unsupported-data-metadata-test");
-  const auto config = file.read(R"yml(ctrace-run:
+  TraceRunFixture file("ctrace-run-reader-unconsumed-fields-test");
+  const auto config = file.read(R"yml(unconsumed-document-data:
+  ctrace-run: invalid
+ctrace-run:
+  unconsumed: { ctrace-refs: invalid }
   ctrace-setup:
-    - data:
+    - unconsumed: { pname: [] }
+      timestamps:
+        clock: 1000000
+        unconsumed: { clock: invalid }
+      itm:
+        enable: 3
+        unconsumed: [invalid]
+      data:
         - symbol-type: signed int
           symbol-size: 1
+          unconsumed: { size: [] }
   ctrace-refs:
     - ref: data#0
       type: dwt
-      source: 0
+      index: 0
       symbol-address: 0x20000100
+      unconsumed: { index: [], stream: [] }
+    - type: unsupported
+      ref: []
+      index: invalid
 )yml");
 
+  ASSERT_EQ(config.references.size(), 1U);
+  ASSERT_EQ(config.setups.size(), 1U);
   const auto meta = CtraceRunMeta::fromConfig(config);
+  ASSERT_EQ(meta.routes().size(), 1U);
+  EXPECT_EQ(meta.routes().front().timestampClockHz, std::optional<std::uint64_t>(1000000U));
+  EXPECT_EQ(meta.routes().front().itmEnableMask, 3U);
   ASSERT_EQ(sourceCount(meta), 1U);
+  EXPECT_EQ(sourceAt(meta, 0).source, 0U);
   EXPECT_FALSE(sourceAt(meta, 0).address.has_value());
   EXPECT_EQ(sourceAt(meta, 0).dataType, "unsigned");
   EXPECT_EQ(sourceAt(meta, 0).dataSize, 4U);
@@ -289,20 +311,30 @@ TEST(CtraceUnitTests, TraceRunReaderIgnoresUnsupportedMetadataNames)
 TEST(CtraceUnitTests, TraceRunReaderDefersMalformedDwtMetadataToOutputPlanning)
 {
   TraceRunFixture file("ctrace-run-reader-malformed-data-metadata-test");
-  const auto config = file.read(R"yml(ctrace-run:
+  for (const auto* value : {"[]", "invalid"}) {
+    SCOPED_TRACE(value);
+    const auto config = file.read(std::string(R"yml(ctrace-run:
   ctrace-refs:
     - ref: data#0
       type: dwt
-      source: 0
-      address: []
+      index: 0
+      address: )yml") + value + R"yml(
       data-type: []
-      size: []
-)yml");
+      size: )yml" + value + "\n");
 
-  ASSERT_EQ(config.references.size(), 1U);
-  EXPECT_TRUE(config.references[0].addressError.has_value());
-  EXPECT_TRUE(config.references[0].dataTypeError.has_value());
-  EXPECT_TRUE(config.references[0].dataSizeError.has_value());
+    ASSERT_EQ(config.references.size(), 1U);
+    const auto& reference = config.references.front();
+    EXPECT_TRUE(reference.addressError.has_value());
+    EXPECT_TRUE(reference.dataTypeError.has_value());
+    EXPECT_TRUE(reference.dataSizeError.has_value());
+
+    const auto meta = CtraceRunMeta::fromConfig(config);
+    ASSERT_EQ(sourceCount(meta), 1U);
+    const auto& source = sourceAt(meta, 0U);
+    EXPECT_EQ(source.addressError, reference.addressError);
+    EXPECT_EQ(source.dataTypeError, reference.dataTypeError);
+    EXPECT_EQ(source.dataSizeError, reference.dataSizeError);
+  }
 }
 
 TEST(CtraceUnitTests, TraceRunReaderAcceptsProcessorItmReferenceWithoutEnabledChannels)
@@ -322,7 +354,7 @@ TEST(CtraceUnitTests, TraceRunReaderAcceptsProcessorItmReferenceWithoutEnabledCh
 )yml");
 
   ASSERT_EQ(config.references.size(), 1U);
-  EXPECT_TRUE(config.references.front().sources.empty());
+  EXPECT_TRUE(config.references.front().indices.empty());
 
   const auto meta = CtraceRunMeta::fromConfig(config);
   EXPECT_TRUE(sourceCount(meta) == 0U);
@@ -353,23 +385,21 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceContainers)
   expectReadError(file, "ctrace-run:\n  ctrace-refs: {}\n", "'ctrace-refs' must be an array");
   expectReadError(file, "ctrace-run:\n  ctrace-refs: []\n  ctrace-refs: []\n", "map keys must be unique");
   expectReadError(file, "ctrace-run:\n  ctrace-refs: [invalid]\n", "each 'ctrace-refs' entry must be a map");
-  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { ref: core/itm, source: 1 }\n",
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { ref: core/itm, index: 1 }\n",
                   "missing required 'type' scalar");
-  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: [], ref: core/itm, source: 1 }\n",
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: [], ref: core/itm, index: 1 }\n",
                   "missing required 'type' scalar");
-  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: null, ref: core/itm, source: 1 }\n",
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: null, ref: core/itm, index: 1 }\n",
                   "missing required 'type' scalar");
-  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: '', ref: core/itm, source: 1 }\n",
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: '', ref: core/itm, index: 1 }\n",
                   "missing required 'type' scalar");
-  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - type: itm\n      source: 1\n",
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - type: itm\n      index: 1\n",
                   "missing required 'ref' scalar");
-  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: itm, ctrace-ref: core/itm, source: 1 }\n",
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: itm, ref: [], index: 1 }\n",
                   "missing required 'ref' scalar");
-  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: itm, ref: [], source: 1 }\n",
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: itm, ref: null, index: 1 }\n",
                   "missing required 'ref' scalar");
-  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: itm, ref: null, source: 1 }\n",
-                  "missing required 'ref' scalar");
-  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: itm, ref: '', source: 1 }\n",
+  expectReadError(file, "ctrace-run:\n  ctrace-refs:\n    - { type: itm, ref: '', index: 1 }\n",
                   "missing required 'ref' scalar");
 }
 
@@ -382,18 +412,18 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedReferenceRoutes)
     const char* error;
   };
   constexpr Case cases[] = {
-      {"pname: []\n      source: 1", "'pname' must be a scalar string"},
-      {"stream: []\n      source: 1", "'stream' must be a scalar unsigned integer"},
-      {"source: {}", "'source' must be an array"},
-      {"source: 0x", "'source' must be an unsigned integer"},
-      {"source: -1", "'source' must be an unsigned integer in range"},
-      {"source: 4294967296", "'source' must be an unsigned integer in range"},
-      {"source: [1, {}]", "each 'source' entry must be an unsigned integer"},
-      {"source: [1, '']", "each 'source' entry must be an unsigned integer"},
-      {"source: 1\n      source: 2", "map keys must be unique"},
-      {"source: 1\n      info: {}", "'info' must be a string or list of strings"},
-      {"source: 1\n      warning: [valid, {}]", "each 'warning' entry must be a string"},
-      {"source: 1\n      error: [valid, []]", "each 'error' entry must be a string"},
+      {"pname: []\n      index: 1", "'pname' must be a scalar string"},
+      {"stream: []\n      index: 1", "'stream' must be a scalar unsigned integer"},
+      {"index: {}", "'index' must be an array"},
+      {"index: 0x", "'index' must be an unsigned integer"},
+      {"index: -1", "'index' must be an unsigned integer in range"},
+      {"index: 4294967296", "'index' must be an unsigned integer in range"},
+      {"index: [1, {}]", "each 'index' entry must be an unsigned integer"},
+      {"index: [1, '']", "each 'index' entry must be an unsigned integer"},
+      {"index: 1\n      index: 2", "map keys must be unique"},
+      {"index: 1\n      info: {}", "'info' must be a string or list of strings"},
+      {"index: 1\n      warning: [valid, {}]", "each 'warning' entry must be a string"},
+      {"index: 1\n      error: [valid, []]", "each 'error' entry must be a string"},
   };
   for (const auto& testCase : cases) {
     const auto yaml = std::string("ctrace-run:\n  ctrace-refs:\n    - type: itm\n      ref: core/itm\n      ") +
@@ -418,7 +448,7 @@ TEST(CtraceUnitTests, TraceRunReaderIgnoresNullAndNonScalarOptionalReferenceValu
       ref: data#0
       pname: null
       stream: null
-      source: null
+      index: null
       address: null
       data-type: null
       size: null
@@ -428,8 +458,8 @@ TEST(CtraceUnitTests, TraceRunReaderIgnoresNullAndNonScalarOptionalReferenceValu
       error: null
     - type: itm
       ref: itm
-      source: [1, null]
-      label: null
+      index: [1, null]
+      label: []
       info: [note, null]
       warning: [null]
       error: [null]
@@ -440,7 +470,7 @@ TEST(CtraceUnitTests, TraceRunReaderIgnoresNullAndNonScalarOptionalReferenceValu
   const auto& emptyRoute = config.references[0];
   EXPECT_FALSE(emptyRoute.processorName.has_value());
   EXPECT_FALSE(emptyRoute.stream.has_value());
-  EXPECT_TRUE(emptyRoute.sources.empty());
+  EXPECT_TRUE(emptyRoute.indices.empty());
   EXPECT_FALSE(emptyRoute.address.has_value());
   EXPECT_FALSE(emptyRoute.addressError.has_value());
   EXPECT_FALSE(emptyRoute.dataType.has_value());
@@ -452,7 +482,7 @@ TEST(CtraceUnitTests, TraceRunReaderIgnoresNullAndNonScalarOptionalReferenceValu
   EXPECT_TRUE(emptyRoute.warning.empty());
   EXPECT_TRUE(emptyRoute.error.empty());
 
-  EXPECT_EQ(config.references[1].sources, (std::vector<std::uint32_t>{1U}));
+  EXPECT_EQ(config.references[1].indices, (std::vector<std::uint32_t>{1U}));
   EXPECT_FALSE(config.references[1].label.has_value());
   EXPECT_EQ(config.references[1].info, (std::vector<std::string>{"note"}));
   EXPECT_TRUE(config.references[1].warning.empty());
@@ -467,11 +497,18 @@ TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
     - { type: event, ref: core/events#0, pname: core0, stream: 1, info: [note, detail], warning: [] }
     - { type: pmu, ref: core/events#1, pname: core1, stream: 2, warning: [warning] }
     - { type: pcsample, ref: core/pcsampling, pname: null, stream: 3, error: unavailable }
-    - { type: dwt, ref: core/data#, source: 0, address: invalid, error: [diagnostic, detail] }
+    - type: dwt
+      ref: core/data#
+      index: 0
+      address: invalid
+      size: []
+      data-type: []
+      label: unused
+      error: [diagnostic, detail]
     - { type: dwt, ref: core/notdata#2, error: null }
-    - { type: itm, ref: core/itm0, source: 0, error: disabled }
-    - { type: itm, ref: core/itm1, source: 1, error: usable, label: null }
-    - { type: exception, ref: core/exceptions, pname: core0, stream: 4, error: exception-error }
+    - { type: itm, ref: core/itm0, index: 0, error: disabled }
+    - { type: itm, ref: core/itm1, index: 1, error: usable, label: null }
+    - { type: exception, ref: core/exceptions, pname: core0, stream: 4, error: exception-error, label: unused }
     - { type: global_ts, ref: core/timesync, pname: core0, stream: 5, warning: global-warning }
     - { type: overflow, ref: core/overflow, pname: core0, stream: 6, info: overflow-info }
 )yml");
@@ -488,36 +525,40 @@ TEST(CtraceUnitTests, TraceRunReaderPreservesDiagnosticReferences)
   EXPECT_EQ(config.references[2].error, (std::vector<std::string>{"unavailable"}));
   EXPECT_EQ(config.references[3].error, (std::vector<std::string>{"diagnostic", "detail"}));
   EXPECT_FALSE(config.references[3].address.has_value());
-  EXPECT_TRUE(config.references[3].addressError.has_value());
+  EXPECT_FALSE(config.references[3].addressError.has_value());
+  EXPECT_FALSE(config.references[3].dataSizeError.has_value());
+  EXPECT_FALSE(config.references[3].dataTypeError.has_value());
+  EXPECT_FALSE(config.references[3].label.has_value());
   EXPECT_FALSE(config.references[3].dataSetupIndex.has_value());
   EXPECT_TRUE(config.references[4].error.empty());
-  EXPECT_TRUE(config.references[5].sources == std::vector<std::uint32_t>{0U});
+  EXPECT_TRUE(config.references[5].indices == std::vector<std::uint32_t>{0U});
   EXPECT_FALSE(config.references[6].label.has_value());
   EXPECT_EQ(config.references[7].error, (std::vector<std::string>{"exception-error"}));
   EXPECT_EQ(config.references[7].stream, std::optional<std::uint32_t>(4U));
+  EXPECT_FALSE(config.references[7].label.has_value());
   EXPECT_EQ(config.references[8].warning, (std::vector<std::string>{"global-warning"}));
   EXPECT_EQ(config.references[8].stream, std::optional<std::uint32_t>(5U));
   EXPECT_EQ(config.references[9].info, (std::vector<std::string>{"overflow-info"}));
   EXPECT_EQ(config.references[9].stream, std::optional<std::uint32_t>(6U));
 }
 
-TEST(CtraceUnitTests, TraceRunReaderRetainsSourceLessBindingsWithProducerErrors)
+TEST(CtraceUnitTests, TraceRunReaderRetainsBindingsWithoutIndicesWithProducerErrors)
 {
-  TraceRunFixture file("ctrace-run-reader-source-less-bindings-test");
+  TraceRunFixture file("ctrace-run-reader-bindings-without-indices-test");
   const auto config = file.read(R"yml(ctrace-run:
   trace-format: formatted
   ctrace-refs:
     - { type: itm, ref: core/itm, pname: core, stream: 7, error: itm-error }
     - { type: itm, ref: core/timestamps, pname: core, stream: 7, error: normative-error }
     - { type: dwt, ref: core/timestamps, pname: core, stream: 7, error: transitional-error }
-    - { type: itm, ref: core/itm, pname: core, stream: 7, source: [invalid], error: source-error }
+    - { type: itm, ref: core/itm, pname: core, stream: 7, index: [invalid], error: index-error }
 )yml");
 
   ASSERT_EQ(config.references.size(), 4U);
   for (const auto& reference : config.references) {
     EXPECT_EQ(reference.processorName, std::optional<std::string>("core"));
     EXPECT_EQ(reference.stream, std::optional<std::uint32_t>(7U));
-    EXPECT_TRUE(reference.sources.empty());
+    EXPECT_TRUE(reference.indices.empty());
     ASSERT_EQ(reference.error.size(), 1U);
   }
   const auto meta = CtraceRunMeta::fromConfig(config);
@@ -614,20 +655,8 @@ TEST(CtraceUnitTests, TraceRunReaderTreatsNullOptionalSetupValuesAsAbsent)
 TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedConsumedSetups)
 {
   TraceRunFixture file("ctrace-run-reader-setup-errors-test");
-  constexpr std::string_view prefix = "ctrace-run:\n  ctrace-refs: []\n  ctrace-setup:\n    - ";
-  /** @brief Describes malformed setup fields and their expected errors. */
-  struct Case {
-    const char* setup;
-    const char* error;
-  };
-  constexpr Case cases[] = {
-      {"timestamps: { itm-prescaler: [] }", "'timestamps.itm-prescaler' must be a scalar unsigned integer"},
-      {"timestamps: { itm-prescaler: invalid }", "'itm-prescaler' must be an unsigned integer in range"},
-      {"itm: { enable: 1, enable: 2 }", "map keys must be unique"},
-  };
-  for (const auto& testCase : cases) {
-    expectReadError(file, std::string(prefix) + testCase.setup + "\n", testCase.error);
-  }
+  expectReadError(file, "ctrace-run:\n  ctrace-refs: []\n  ctrace-setup:\n    - itm: { enable: 1, enable: 2 }\n",
+                  "map keys must be unique");
 
   expectReadError(file, "ctrace-run:\n  ctrace-refs: []\n  ctrace-setup: {}\n", "'ctrace-setup' must be an array");
   expectReadError(file, "ctrace-run:\n  ctrace-refs: []\n  ctrace-setup: [invalid]\n",
@@ -635,12 +664,59 @@ TEST(CtraceUnitTests, TraceRunReaderRejectsMalformedConsumedSetups)
 
   expectReadError(file, R"yml(ctrace-run:
   ctrace-refs:
-    - { type: dwt, ref: core/data#0, source: 0 }
+    - { type: dwt, ref: core/data#0, index: 0 }
   ctrace-setup:
     - pname: []
       data: [{}]
 )yml",
                   "'pname' must be a scalar string");
+}
+
+TEST(CtraceUnitTests, TraceRunReaderValidatesPrescalerOnlyForConsumedSetups)
+{
+  TraceRunFixture file("ctrace-run-reader-selected-prescaler-test");
+  struct Case {
+    const char* value;
+    const char* error;
+  };
+  constexpr Case cases[] = {
+      {"[]", "'timestamps.itm-prescaler' must be a scalar unsigned integer"},
+      {"{}", "'timestamps.itm-prescaler' must be a scalar unsigned integer"},
+      {"invalid", "'itm-prescaler' must be an unsigned integer in range"},
+      {"4294967296", "'itm-prescaler' must be an unsigned integer in range"},
+      {"0x", "'itm-prescaler' must be an unsigned integer"},
+      {"2", "'timestamps.itm-prescaler' must be one of 1, 4, 16, or 64"},
+  };
+  for (const auto* format : {"unformatted", "formatted"}) {
+    for (const auto& testCase : cases) {
+      SCOPED_TRACE(format);
+      SCOPED_TRACE(testCase.value);
+      auto config = file.read(std::string("ctrace-run:\n  trace-format: ") + format + R"yml(
+  ctrace-setup:
+    - pname: selected
+      timestamps: { clock: 1000000, itm-prescaler: 4 }
+    - pname: unused
+      timestamps: { itm-prescaler: )yml" + testCase.value + R"yml( }
+  ctrace-refs:
+    - { type: itm, ref: selected/itm, pname: selected, stream: 1, index: 1 }
+)yml");
+
+      const auto meta = CtraceRunMeta::fromConfig(config);
+      ASSERT_EQ(meta.routes().size(), 1U);
+      EXPECT_EQ(meta.routes().front().processorName, std::optional<std::string>("selected"));
+      EXPECT_EQ(meta.routes().front().timestampClockHz, std::optional<std::uint64_t>(1000000U));
+      EXPECT_EQ(meta.routes().front().timestampPrescaler, 4U);
+      EXPECT_TRUE(meta.warnings().empty());
+
+      config.references.front().processorName = "unused";
+      config.references.front().ref = "unused/itm";
+      const auto error = captureExceptionMessage([&] { (void)CtraceRunMeta::fromConfig(config); });
+      ASSERT_TRUE(error.has_value());
+      EXPECT_NE(error->find(testCase.error), std::string::npos) << *error;
+      EXPECT_EQ(error->find(config.path + "(7): "), 0U) << *error;
+      EXPECT_EQ(error->find(config.path, config.path.size()), std::string::npos) << *error;
+    }
+  }
 }
 
 TEST(CtraceUnitTests, TraceRunReaderDefersMalformedItmSetupMetadata)
@@ -681,15 +757,15 @@ TEST(CtraceUnitTests, TraceRunReaderParsesReferencedDataVariants)
   TraceRunFixture file("ctrace-run-reader-data-variants-test");
   const auto config = file.read(R"yml(ctrace-run:
   ctrace-refs:
-    - { type: dwt, ref: core0/data#1, pname: core0, source: 0 }
-    - { type: dwt, ref: core0/data#2, pname: core0, source: 1 }
-    - { type: dwt, ref: core0/data#3, pname: core0, source: 2 }
-    - { type: dwt, ref: core0/data#4, pname: core0, source: 3 }
-    - { type: dwt, ref: core0/data#5, pname: core0, source: 4 }
-    - { type: dwt, ref: core1/data#0, pname: core1, source: 0 }
-    - { type: dwt, ref: core2/data#9, pname: core2, source: 0 }
-    - { type: dwt, ref: data#0, source: 6 }
-    - { type: dwt, ref: data#9, source: 7 }
+    - { type: dwt, ref: core0/data#1, pname: core0, index: 0 }
+    - { type: dwt, ref: core0/data#2, pname: core0, index: 1 }
+    - { type: dwt, ref: core0/data#3, pname: core0, index: 2 }
+    - { type: dwt, ref: core0/data#4, pname: core0, index: 3 }
+    - { type: dwt, ref: core0/data#5, pname: core0, index: 4 }
+    - { type: dwt, ref: core1/data#0, pname: core1, index: 0 }
+    - { type: dwt, ref: core2/data#9, pname: core2, index: 0 }
+    - { type: dwt, ref: data#0, index: 6 }
+    - { type: dwt, ref: data#9, index: 7 }
   ctrace-setup:
     - pname: core0
       data:
@@ -731,7 +807,7 @@ TEST(CtraceUnitTests, TraceRunReaderParsesReferencedDataVariants)
   EXPECT_TRUE(config.setups[4].data[0].present);
 
   expectReadError(file, R"yml(ctrace-run:
-  ctrace-refs: [{ type: dwt, ref: data#0, source: 0 }]
+  ctrace-refs: [{ type: dwt, ref: data#0, index: 0 }]
   ctrace-setup:
     - data: [{ size: 1, size: 2 }]
 )yml",
@@ -748,7 +824,7 @@ TEST(CtraceUnitTests, TraceRunReaderDefersMalformedDataContainerWithoutIndexSize
       data: invalid
   ctrace-refs:
     - { type: dwt, ref: core/data#)yml") +
-                                index + ", pname: core, source: 0 }\n");
+                                index + ", pname: core, index: 0 }\n");
 
   ASSERT_EQ(config.setups.size(), 1U);
   EXPECT_TRUE(config.setups.front().data.empty());
@@ -769,7 +845,7 @@ TEST(CtraceUnitTests, TraceRunReaderPropagatesMalformedDataEntryToSourceMetadata
       data: [invalid]
   ctrace-refs:
     - { type: itm, ref: core/itm, pname: core, stream: 1 }
-    - { type: dwt, ref: core/data#0, pname: core, stream: 1, source: 0 }
+    - { type: dwt, ref: core/data#0, pname: core, stream: 1, index: 0 }
 )yml");
 
   ASSERT_EQ(config.setups.size(), 1U);
@@ -791,7 +867,7 @@ TEST(CtraceUnitTests, TraceRunReaderDoesNotCreateSetupMetadataFromNullDataEntrie
     - pname: core
       data: [null]
   ctrace-refs:
-    - { type: dwt, ref: core/data#0, pname: core, stream: 1, source: 0 }
+    - { type: dwt, ref: core/data#0, pname: core, stream: 1, index: 0 }
 )yml");
 
   EXPECT_TRUE(config.setups.empty());
@@ -807,7 +883,7 @@ TEST(CtraceUnitTests, TraceRunReaderDoesNotCreateSetupMetadataFromNullDataEntrie
     - pname: other
       timestamps: null
   ctrace-refs:
-    - { type: dwt, ref: core/data#0, pname: core, source: 0 }
+    - { type: dwt, ref: core/data#0, pname: core, index: 0 }
 )yml");
   ASSERT_EQ(otherProcessor.setups.size(), 1U);
   EXPECT_EQ(otherProcessor.setups.front().processorName, std::optional<std::string>("other"));
@@ -819,7 +895,7 @@ TEST(CtraceUnitTests, TraceRunReaderDoesNotCreateSetupMetadataFromNullDataEntrie
   ctrace-setup:
     - data: [{ size: 2 }]
   ctrace-refs:
-    - { type: dwt, ref: data#invalid, source: 0 }
+    - { type: dwt, ref: data#invalid, index: 0 }
 )yml");
   ASSERT_EQ(malformedIndex.references.size(), 1U);
   EXPECT_FALSE(malformedIndex.references.front().dataSetupIndex.has_value());
@@ -830,7 +906,7 @@ TEST(CtraceUnitTests, TraceRunReaderDoesNotCreateSetupMetadataFromNullDataEntrie
     - pname: core
       data: invalid-but-irrelevant
   ctrace-refs:
-    - { type: dwt, ref: other/data#0, source: 0 }
+    - { type: dwt, ref: other/data#0, index: 0 }
 )yml");
   ASSERT_EQ(foreignProcessor.setups.size(), 1U);
   EXPECT_FALSE(foreignProcessor.setups.front().dataError.has_value());
@@ -854,9 +930,9 @@ TEST(CtraceUnitTests, TraceRunReaderSkipsEmptyActiveSetupsAndNullDataEntries)
     - pname: core
       data: [null, {}, null, { size: 2 }]
   ctrace-refs:
-    - { type: dwt, ref: core/data#0, pname: core, source: 2 }
-    - { type: dwt, ref: core/data#1, pname: core, source: 0 }
-    - { type: dwt, ref: core/data#3, pname: core, source: 1 }
+    - { type: dwt, ref: core/data#0, pname: core, index: 2 }
+    - { type: dwt, ref: core/data#1, pname: core, index: 0 }
+    - { type: dwt, ref: core/data#3, pname: core, index: 1 }
 )yml");
 
   ASSERT_EQ(config.setups.size(), 1U);

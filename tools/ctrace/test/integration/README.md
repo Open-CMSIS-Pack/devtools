@@ -42,7 +42,7 @@ while the command returns a failing exit status.
 `RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTail` covers a fatal
 end-of-input decode failure after a valid payload. It requires selected CSV
 rows to remain, followed by exactly one input-wide `error` row containing the
-incomplete-trace indication and compact structured cause when available, with no cycle timestamp, stream, or source.
+incomplete-trace indication and compact structured cause when available, with no cycle timestamp, stream, or index.
 Normal CLI shares that text; `--verbose` adds the processed-byte count and detailed reason. That final row bypasses
 type and stream filters;
 the preceding route-local error follows those filters. Incomplete CTF output must be removed

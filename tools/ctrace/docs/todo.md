@@ -2,7 +2,7 @@
 
 ## DWT
 
-- [ ] Preserve logical DWT reference and setup identities when expanding comparator source arrays.
+- [ ] Preserve logical DWT reference and setup identities when expanding comparator index arrays.
 - [ ] Complete Armv7-M linked-comparator, range, and value-match decoding.
 - [ ] Resolve programmable PMU event-counter names from trace-run configuration.
 

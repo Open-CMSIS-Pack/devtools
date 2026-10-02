@@ -172,7 +172,7 @@ using ReferenceProblem = TraceRunSchema::ReferenceProblem;
 static bool isDiscardableSourceProblem(const TraceRunReference& reference, ReferenceProblem problem)
 {
   return (!reference.stream.has_value() || CoreSight::isAtbTraceId(*reference.stream)) && !reference.error.empty() &&
-         (problem == ReferenceProblem::DuplicateSource || problem == ReferenceProblem::InvalidItmSource);
+         (problem == ReferenceProblem::DuplicateIndex || problem == ReferenceProblem::InvalidItmIndex);
 }
 
 /** @brief Formats a trace-run validation error with source location. */
@@ -182,9 +182,8 @@ static std::string configError(const TraceRunConfig& config, std::size_t line, c
 }
 
 /** @brief Preserves reader locations while locating programmatically supplied setup errors. */
-static std::string itmEnableError(const TraceRunConfig& config, const TraceRunSetup& setup)
+static std::string setupFieldError(const TraceRunConfig& config, std::size_t line, const std::string& error)
 {
-  const auto& error = *setup.itm->enableError;
   const auto pathLocation = config.path + ':';
   const auto lineLocation = config.path + '(';
   if (!config.path.empty() &&
@@ -192,7 +191,7 @@ static std::string itmEnableError(const TraceRunConfig& config, const TraceRunSe
        error.compare(0U, lineLocation.size(), lineLocation) == 0)) {
     return error;
   }
-  return configError(config, setup.line, error);
+  return configError(config, line, error);
 }
 
 /** @brief Merges one optional clock fragment without treating an absent scalar as a conflict. */
@@ -251,10 +250,10 @@ static void addRootInconsistency(std::vector<CtraceRunWarning>& warnings, std::s
 static std::string referenceProblemMessage(const TraceRunConfig& config, const TraceRunReference& reference,
                                            ReferenceProblem problem)
 {
-  if (problem == ReferenceProblem::DuplicateSource) {
+  if (problem == ReferenceProblem::DuplicateIndex) {
     return configError(config, reference.line,
-                       reference.line > 0U ? formatMessage(MessageId::ReferenceDuplicateSourceLocated)
-                                           : formatMessage(MessageId::ReferenceDuplicateSource));
+                       reference.line > 0U ? formatMessage(MessageId::ReferenceDuplicateIndexLocated)
+                                           : formatMessage(MessageId::ReferenceDuplicateIndex));
   }
   if (problem == ReferenceProblem::InvalidStream) {
     return configError(config, reference.line,
@@ -262,8 +261,8 @@ static std::string referenceProblemMessage(const TraceRunConfig& config, const T
                                            : formatMessage(MessageId::ReferenceStreamRange));
   }
   return configError(config, reference.line,
-                     reference.line > 0U ? formatMessage(MessageId::ReferenceItmSourceRangeLocated)
-                                         : formatMessage(MessageId::ReferenceItmSourceRange));
+                     reference.line > 0U ? formatMessage(MessageId::ReferenceItmIndexRangeLocated)
+                                         : formatMessage(MessageId::ReferenceItmIndexRange));
 }
 
 static bool setupContainsReference(const TraceRunSetup& setup, const TraceRunReference& reference);
@@ -942,6 +941,9 @@ public:
     for (const auto* setup : setupFragments(route)) {
       if (setup->timestamps.has_value()) {
         const auto& timestamps = *setup->timestamps;
+        if (timestamps.prescalerError.has_value()) {
+          throw std::runtime_error(setupFieldError(m_config, timestamps.line, *timestamps.prescalerError));
+        }
         const auto candidatePrescaler =
             timestamps.timestampPrescaler.value_or(TraceRunSchema::kDefaultTimestampPrescaler);
         if (!TraceRunSchema::isTimestampPrescaler(candidatePrescaler)) {
@@ -962,7 +964,7 @@ public:
       }
       if (setup->itm.has_value()) {
         if (setup->itm->enableError.has_value()) {
-          throw std::runtime_error(itmEnableError(m_config, *setup));
+          throw std::runtime_error(setupFieldError(m_config, setup->line, *setup->itm->enableError));
         }
         const auto candidateMask = setup->itm->enableMask;
         if (!candidateMask.has_value()) {
@@ -1211,8 +1213,8 @@ static std::vector<CtraceRunRoute> materializeFormattedRoutes(const TraceRunConf
       if (!routeId.has_value() || *routeId != traceBusId || !TraceRunSchema::isUsableReference(reference)) {
         continue;
       }
-      for (const auto source : reference.sources) {
-        route.sources.push_back(routeMetadata.source(reference, source, route));
+      for (const auto sourceIndex : reference.indices) {
+        route.sources.push_back(routeMetadata.source(reference, sourceIndex, route));
       }
     }
     routes.push_back(std::move(route));
@@ -1268,6 +1270,10 @@ static void validateUnformattedSetups(const TraceRunConfig& config, const Proces
     if (!isSelectedUnformattedSetup(config, identity, setup)) {
       continue;
     }
+    if (setup.timestamps.has_value() && setup.timestamps->prescalerError.has_value()) {
+      throw std::runtime_error(
+          setupFieldError(config, setup.timestamps->line, *setup.timestamps->prescalerError));
+    }
     if (setup.timestamps.has_value() && setup.timestamps->timestampPrescaler.has_value() &&
         !TraceRunSchema::isTimestampPrescaler(*setup.timestamps->timestampPrescaler)) {
       throw std::runtime_error(
@@ -1277,7 +1283,7 @@ static void validateUnformattedSetups(const TraceRunConfig& config, const Proces
                           : formatMessage(MessageId::TimestampPrescalerRange)));
     }
     if (setup.itm.has_value() && setup.itm->enableError.has_value()) {
-      throw std::runtime_error(itmEnableError(config, setup));
+      throw std::runtime_error(setupFieldError(config, setup.line, *setup.itm->enableError));
     }
   }
 }
@@ -1349,8 +1355,8 @@ static std::vector<CtraceRunSourceMeta> unformattedSources(const TraceRunConfig&
     if (!TraceRunSchema::isUsableReference(reference) || !identity.accepts(reference)) {
       continue;
     }
-    for (const auto source : reference.sources) {
-      sources.push_back(sourceMeta(config, reference, source, identity));
+    for (const auto sourceIndex : reference.indices) {
+      sources.push_back(sourceMeta(config, reference, sourceIndex, identity));
     }
   }
   return sources;
