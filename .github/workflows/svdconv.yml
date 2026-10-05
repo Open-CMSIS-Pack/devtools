@@ -214,9 +214,6 @@ jobs:
         (github.event_name == 'push') ||
         (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/tools/svdconv/')) ||
         ((github.event.schedule != '') && (!github.event.repository.private))
-    env:
-        lcov_base: https://github.com/linux-test-project/lcov/releases/download/v1.15/
-        lcov_installer: lcov-1.15.tar.gz
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -229,8 +226,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install \
-            lcov
+          sudo apt-get install -y lcov
 
       - name: Checkout devtools
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -284,19 +280,23 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ steps.var.outputs.retention_days }}
 
-      # Needs to be removed once the bug is resolved
-      # lcov reporting 1.14 on 1.15 version
-      # https://groups.google.com/g/linux.debian.bugs.dist/c/a9SZGCENJ2s?pli=1
-      - name: Setup lcov1.15
-        run: |
-          wget -q ${{ env.lcov_base }}/${{ env.lcov_installer }}
-          tar -xvf ${{ env.lcov_installer }}
-        working-directory: ./build/tools/svdconv
-
       - name: Generate coverage report
         run: |
-          lcov-1.15/bin/lcov --rc lcov_branch_coverage=1 --rc geninfo_no_exception_branch=1 --rc lcov_branch_coverage=1 -c --directory . --output-file full_coverage.info
-          lcov-1.15/bin/lcov --rc lcov_branch_coverage=1 --rc geninfo_no_exception_branch=1 --rc lcov_branch_coverage=1 -e full_coverage.info \
+          lcov --rc branch_coverage=1 \
+              --rc no_exception_branch=1 \
+              -c \
+              --directory . \
+              --include '*/tools/svdconv/SVDConv/include/*' \
+              --include '*/tools/svdconv/SVDConv/src/*' \
+              --include '*/tools/svdconv/SVDGenerator/include/*' \
+              --include '*/tools/svdconv/SVDGenerator/src/*' \
+              --include '*/tools/svdconv/SVDModel/include/*' \
+              --include '*/tools/svdconv/SVDModel/src/*' \
+              --output-file full_coverage.info
+
+          lcov --rc branch_coverage=1 \
+              --rc no_exception_branch=1 \
+              -e full_coverage.info \
             '*/tools/svdconv/SVDConv/include/*' \
             '*/tools/svdconv/SVDConv/src/*' \
             '*/tools/svdconv/SVDGenerator/include/*' \
@@ -304,22 +304,22 @@ jobs:
             '*/tools/svdconv/SVDModel/include/*' \
             '*/tools/svdconv/SVDModel/src/*' \
             -o coverage_svdconv.info
-          genhtml coverage_svdconv.info --output-directory coverage_svdconv --branch-coverage
+          genhtml coverage_svdconv.info \
+            --output-directory coverage_svdconv \
+            --branch-coverage
         working-directory: ./build/tools/svdconv
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: Wandalen/wretry.action@e68c23e6309f2871ca8ae4763e7629b9c258e1ea # v3.8.0
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
         with:
-          action: codecov/codecov-action@v4
-          with: |
-            files: ./build/tools/svdconv/coverage_svdconv.info
-            fail_ci_if_error: true
-            flags: svdconv-cov
-            token: ${{ secrets.CODECOV_TOKEN }}
-            verbose: true
-          attempt_limit: 3
-          attempt_delay: 5000
+          files: ./build/tools/svdconv/coverage_svdconv.info
+          disable_search: true
+          plugins: noop
+          fail_ci_if_error: true
+          flags: svdconv-cov
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
 
       - name: Archive coverage report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
