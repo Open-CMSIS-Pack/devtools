@@ -1,7 +1,11 @@
 name: "CodeQL config"
+paths:
+  - "libs"
+  - "tools"
 paths-ignore:
-  - external
-  - docs
-  - test
-  - cmake
-debug: false
+  - "external/**"
+  - "docs/**"
+  - "test/**"
+  - "**/test/**"
+  - "cmake/**"
+  - "build/**"
