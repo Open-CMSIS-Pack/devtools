@@ -1,11 +1,4 @@
 name: "CodeQL config"
-paths:
-  - "./libs"
-  - "./tools"
-paths-ignore:
-  - "./external/**"
-  - "./docs/**"
-  - "./test/**"
-  - "**/test/**"
-  - "./cmake/**"
-  - "**/build/**"
+queries:
+  - name: Run standard queries
+    uses: security-and-quality
