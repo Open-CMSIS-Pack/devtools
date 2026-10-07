@@ -855,7 +855,9 @@ bool SvdItem::FindChild (const list<SvdItem*> childs, SvdItem *&item, const stri
 bool SvdItem::FindChildFromItem (SvdItem *&item, const string &name)
 {
   // search item
-  const auto thisName = GetDeriveName(); //GetName();
+  // TODO: Resolve derivedFrom by XML name when dimName is set, considering legacy prefixed references.
+  // GetDeriveName() returns ChannelCH[%s] instead of CH[%s] when dimName is Channel.
+  const auto thisName = GetDeriveName();
   if(!thisName.empty() && thisName == name) {
     item = this;
     return true;

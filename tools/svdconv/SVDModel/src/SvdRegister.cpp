@@ -255,6 +255,8 @@ bool SvdRegister::CalculateDim()
     newReg->SetOffset           (offset);
     newReg->SetDimElementIndex  (dimElementIndex++);
     newReg->CheckItem           ();
+    // TODO: Register dimIncrement is already in bytes; CalcAddressIncrement() scales it again.
+    // With 16-bit address units, a requested 4-byte stride incorrectly becomes 8 bytes.
     offset += dim->CalcAddressIncrement();
 
     if(dimElementIndex < 8) {

@@ -173,7 +173,15 @@ bool SvdField::Calculate()
   if(m_offset == SvdItem::VALUE64_NOT_INIT && GetBitWidth() == (int32_t)SvdItem::VALUE32_NOT_INIT) {
     if(m_lsb != SvdItem::VALUE32_NOT_INIT && m_msb != SvdItem::VALUE32_NOT_INIT) {
       m_offset = m_lsb;
-      SetBitWidth(m_msb - m_lsb +1);
+      if(m_msb < m_lsb) {
+        const auto width = static_cast<int64_t>(m_msb) - m_lsb + 1;
+        LogMsg("M313", NAME(GetName()), NUMTXT(to_string(width)), GetLineNumber());
+        SetBitWidth(1);
+        Invalidate();
+      }
+      else {
+        SetBitWidth(m_msb - m_lsb +1);
+      }
     }
   }
 
@@ -188,6 +196,9 @@ bool SvdField::CalculateDim()
   }
 
   Calculate();
+  if(!IsValid()) {
+    return true;
+  }
 
   const auto& childs = dim->GetChildren();
   if(!childs.empty()) {
@@ -227,6 +238,8 @@ bool SvdField::CalculateDim()
     newField->SetOffset           (offset);
     newField->SetDimElementIndex  (dimElementIndex++);
     newField->CheckItem();
+    // TODO: Field dimIncrement is in bits; CalcAddressIncrement() scales it by addressUnitBits / 8.
+    // With 16-bit address units, increment 1 incorrectly produces bit positions 0, 2, 4.
     offset += dim->CalcAddressIncrement();
 
     if(dimElementIndex < 8) {
