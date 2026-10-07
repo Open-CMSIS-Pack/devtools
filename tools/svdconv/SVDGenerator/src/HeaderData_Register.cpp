@@ -46,7 +46,7 @@ bool HeaderData::AddRegisters(SvdItem* container, REGMAP &m_sortedRegs)
       }
     }
 
-    uint64_t addr = item->GetAddress(); //GetAbsoluteOffset();
+    uint64_t addr = item->GetAddress();
     addr &= 0xfffffffc;
     m_sortedRegs[addr].push_back(item);
   }
@@ -86,7 +86,6 @@ uint32_t HeaderData::CreateSvdItem(SvdItem *item, uint64_t address)
   if(item->GetParent()->GetSvdLevel() == L_Cluster) {
     regAddress = (uint32_t)item->GetAddress()        /* + localOffset*/;
   } else {
-  //regAddress = (uint32_t)item->GetAbsoluteOffset() /* + localOffset*/;
     regAddress = (uint32_t)item->GetAddress()        /* + localOffset*/;
   }
 
@@ -220,7 +219,7 @@ uint32_t HeaderData::CreateRegister(SvdRegister* reg)
 
 uint32_t HeaderData::CreateRegCluster(SvdCluster*  cluster)
 {
-  const auto headerTypeName     = cluster->GetHeaderTypeNameHierarchical();//GetHeaderTypeName();
+  const auto headerTypeName     = cluster->GetHeaderTypeNameHierarchical();
   const auto regName            = cluster->GetNameCalculated();
   const auto descr              = cluster->GetDescriptionCalculated();
   uint32_t   addr               = (uint32_t) cluster->GetAddress();

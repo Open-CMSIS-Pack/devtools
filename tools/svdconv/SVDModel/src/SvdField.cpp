@@ -171,7 +171,7 @@ bool SvdField::Calculate()
   }
 
   if(m_offset == SvdItem::VALUE64_NOT_INIT && GetBitWidth() == (int32_t)SvdItem::VALUE32_NOT_INIT) {
-    if(m_lsb != SvdItem::VALUE32_NOT_INIT && m_msb != SvdItem::VALUE32_NOT_INIT) { // && m_msb >= m_lsb) {
+    if(m_lsb != SvdItem::VALUE32_NOT_INIT && m_msb != SvdItem::VALUE32_NOT_INIT) {
       m_offset = m_lsb;
       SetBitWidth(m_msb - m_lsb +1);
     }
@@ -227,7 +227,7 @@ bool SvdField::CalculateDim()
     newField->SetOffset           (offset);
     newField->SetDimElementIndex  (dimElementIndex++);
     newField->CheckItem();
-    offset += dim->CalcAddressIncrement(); //GetDimIncrement();
+    offset += dim->CalcAddressIncrement();
 
     if(dimElementIndex < 8) {
       if(!dimIndexText.empty()) dimIndexText += ",";
@@ -364,7 +364,6 @@ bool SvdField::GetValuesDescriptionString(string &longDescr)
     }
     longDescr += SvdUtils::CreateDecNum(i);
     longDescr += " : ";
-    //longDescr += " = ";
     longDescr += "Reserved - do not use";
   }
 

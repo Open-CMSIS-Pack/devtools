@@ -200,7 +200,7 @@ void HeaderGenerator::MakeFile(const std::string& name)
   Generate<RAW    >("\n");
 }
 
-void HeaderGenerator::MakeCMSISConfig(const std::string& text, const std::string& MCUName, CmsisCfg cmsisCfg)
+void HeaderGenerator::MakeCMSISConfig(const std::string& text, const std::string& MCUName, const CmsisCfg& cmsisCfg)
 {
   const string& cpuName = SvdTypes::GetCpuName(cmsisCfg.cpuType);
   const string& cpuType = SvdTypes::GetCpuType(cmsisCfg.cpuType);
@@ -415,13 +415,6 @@ void HeaderGenerator::MakeEnumStructUnionEnd(const std::string& textBuf, Index e
     Generate<RAW>(" %s;", textBuf);
   }
 
-  if(m_prevOpenedStructUnion) {
-    //Generate_NewLine();
-  }
-  if(m_bracketBegin) {
-    //Generate_NewLine();
-  }
-
   m_prevOpenedStructUnion = false;
   m_prevClosedStructUnion = true;
 
@@ -449,13 +442,6 @@ void HeaderGenerator::MakeEnumStructUnionEndArray(const std::string& textBuf, In
   }
   else {
     Generate<RAW>(" %s;", textBuf);
-  }
-
-  if(m_prevOpenedStructUnion) {
-    //Generate_NewLine();
-  }
-  if(m_bracketBegin) {
-    //Generate_NewLine();
   }
 
   m_prevOpenedStructUnion = false;

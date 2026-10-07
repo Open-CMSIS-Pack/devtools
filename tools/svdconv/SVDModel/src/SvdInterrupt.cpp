@@ -97,7 +97,6 @@ bool SvdInterrupt::CalculateDim()
 
     newIrq->CopyItem            (this);
     newIrq->SetName             (dim->CreateName(dimIndex));
-    //newIrq->SetDisplayName    (dim->CreateDisplayName(dimIndex));
     newIrq->SetDescription      (dim->CreateDescription(dimIndex));
     newIrq->SetValue            (value);
     newIrq->SetDimElementIndex  (dimElementIndex++);

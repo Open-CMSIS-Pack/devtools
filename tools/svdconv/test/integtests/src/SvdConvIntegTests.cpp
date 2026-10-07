@@ -63,7 +63,6 @@ TEST_F(SvdConvIntegTests, CheckDisableCondition) {
   list<smatch> result1 = SvdConvTestUtils::FindRegex(buf, pattern1);
   EXPECT_TRUE(SvdConvTestUtils::FindAllEntries(result1, entries1));
 
-  //const regex pattern2("//[ ]+<view> (\\w+)\\s+//[ ]+<disableCond> \\((\\w+) & .*\\) == \\d+[ ]+</disableCond>");
   const regex pattern2("//[ ]+<view> \\w+\\s+//[ ]+<disableCond> \\((\\w+) & .*\\) == \\d+[ ]+</disableCond>");
   list<string> entries2 = { "DCB_DSCSR", "DCB_DSCSR_Clust_DSCSR" };
   list<smatch> result2 = SvdConvTestUtils::FindRegex(buf, pattern2);

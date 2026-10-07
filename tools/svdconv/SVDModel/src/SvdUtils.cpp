@@ -137,7 +137,7 @@ SvdTypes::Expression SvdUtils::ParseExpression(const string &expr, string &name,
     if(pos != string::npos) {
       exp = SvdTypes::Expression::ARRAY;
       if(pos != expr.length() - 4) {
-        exp = SvdTypes::Expression::NONE; //Expression::ARRAYINVALID;
+        exp = SvdTypes::Expression::NONE;
       }
       posFound = pos;
     }
@@ -147,7 +147,7 @@ SvdTypes::Expression SvdUtils::ParseExpression(const string &expr, string &name,
         exp = SvdTypes::Expression::EXTEND;
         string::size_type pos2 = expr.find_first_of("[]");
         if(pos2 != string::npos) {
-          exp = SvdTypes::Expression::NONE; //Expression::INVALID;
+          exp = SvdTypes::Expression::NONE;
           pos = pos2;
         }
         else {
@@ -157,7 +157,7 @@ SvdTypes::Expression SvdUtils::ParseExpression(const string &expr, string &name,
       else {
         string::size_type pos2 = expr.find_first_of("[%s]");
         if(pos2 != string::npos) {
-          exp = SvdTypes::Expression::NONE; //Expression::INVALID;
+          exp = SvdTypes::Expression::NONE;
           pos = pos2;
         }
       }
@@ -1199,35 +1199,23 @@ string SvdUtils::CheckTextGeneric(const string& value, uint32_t lineNo)
     }
 
     if(c == '?' && cPrev != '?') {
-      //descr += c;
       continue;
     }
 
-    switch(c) {
-      //case '\\':
-      //case '“':
-      //case '”':
-      case '"': {
-        string str;
-        str += c;
-        string hexStr = SvdUtils::CreateHexNum(c);
-        LogMsg("M216", NAME(value), VAL("HEX", hexStr), lineNo);
-        } continue;
-
-      default:
-        break;
+    if(c == '"') {
+      string str;
+      str += c;
+      string hexStr = SvdUtils::CreateHexNum(c);
+      LogMsg("M216", NAME(value), VAL("HEX", hexStr), lineNo);
+      continue;
     }
 
     if(cPrev == '\\') {     // Test on supported ESC sequences
-      switch(c) {
-        case 'n':
-          break;
-
-        default:
-          string str;
-          str += c;
-          LogMsg("M218", NAME(value), VAL("CHAR", str), lineNo);
-          continue;
+      if(c != 'n') {
+        string str;
+        str += c;
+        LogMsg("M218", NAME(value), VAL("CHAR", str), lineNo);
+        continue;
       }
     }
   }
@@ -1286,35 +1274,21 @@ string SvdUtils::CheckTextGeneric_SfrCC2(const string& value, uint32_t lineNo)
       continue;
     }
 
-    switch(c) {
-      //case '\\':
-      // FIXME: These characters are already suppressed by statement above!
-      // case 0x93: // FIXME: ANSI Windows Codepage 1252 character “
-      // case 0x94: // FIXME: ANSI Windows Codepage 1252 character ”
-      case '"': {
-        descr += "\\\"";
-        string hexStr = SvdUtils::CreateHexNum(c);
-        LogMsg("M516", NAME(value), VAL("HEX", hexStr), lineNo);
-        } continue;
-
-      default:
-        break;
+    // FIXME: CP1252 quotes (0x93/0x94) are discarded by the ASCII filter above instead of escaped.
+    if(c == '"') {
+      descr += "\\\"";
+      string hexStr = SvdUtils::CreateHexNum(c);
+      LogMsg("M516", NAME(value), VAL("HEX", hexStr), lineNo);
+      continue;
     }
 
     if(cPrev == '\\') {     // Test on supported ESC sequences
-      switch(c) {
-        case 'n':
-          break;
-
-        default:
-          // FIXME: The escape sequence is messed up, e.g. "\\rtest" converts to "\\test"
-          string str;
-          str += c;
-          LogMsg("M518", NAME(value), VAL("CHAR", str), lineNo);
-          //if(descr.length()) {
-          //  descr.erase(descr.length()-1);
-          //}
-          continue;
+      if(c != 'n') {
+        // FIXME: The escape sequence is messed up, e.g. "\\rtest" converts to "\\test"
+        string str;
+        str += c;
+        LogMsg("M518", NAME(value), VAL("CHAR", str), lineNo);
+        continue;
       }
     }
 
