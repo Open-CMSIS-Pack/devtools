@@ -255,7 +255,9 @@ bool SvdRegister::CalculateDim()
     newReg->SetOffset           (offset);
     newReg->SetDimElementIndex  (dimElementIndex++);
     newReg->CheckItem           ();
-    offset += dim->CalcAddressIncrement(); //GetDimIncrement();
+    // TODO: Register dimIncrement is already in bytes; CalcAddressIncrement() scales it again.
+    // With 16-bit address units, a requested 4-byte stride incorrectly becomes 8 bytes.
+    offset += dim->CalcAddressIncrement();
 
     if(dimElementIndex < 8) {
       if(!dimIndexText.empty()) {
@@ -384,7 +386,7 @@ SvdTypes::Access SvdRegister::GetAccessCalculated()
   const auto regWidth = GetEffectiveBitWidth();
   const auto mask = ((uint64_t)1 << regWidth) -1;
   auto bits = (uint64_t)0U;
-  auto access = SvdTypes::Access::UNDEF; //GetEffectiveAccess();
+  auto access = SvdTypes::Access::UNDEF;
 
   for(const auto child : childs) {
     const auto field = dynamic_cast<SvdField*>(child);
@@ -442,17 +444,14 @@ bool SvdRegister::CalcAccessMask()
     const auto accType = field->GetEffectiveAccess();
     switch(accType) {
       case SvdTypes::Access::READONLY:
-      //m_accessMaskRead  |=  accessMask;
         m_accessMaskWrite &= ~accessMask;
         break;
       case SvdTypes::Access::WRITEONLY:
-      //m_accessMaskRead  &= ~accessMask;
         m_accessMaskWrite |=  accessMask;
         break;
       case SvdTypes::Access::READWRITE:
       case SvdTypes::Access::WRITEONCE:
       case SvdTypes::Access::READWRITEONCE:
-      //m_accessMaskRead  |=  accessMask;
         m_accessMaskWrite |=  accessMask;
         break;
       case SvdTypes::Access::UNDEF:

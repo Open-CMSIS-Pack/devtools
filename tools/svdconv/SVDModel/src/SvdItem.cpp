@@ -17,14 +17,16 @@
 #include "SvdDimension.h"
 #include "SvdTypes.h"
 
+#include <cstdint>
+
 using namespace std;
 
 #define DEFAULT_BITWIDTH     32
 #define DEFAULT_RESETVALUE   0
 #define DEFAULT_RESETMASK    0xffffffff
 
-const uint32_t SvdItem::VALUE32_NOT_INIT = (uint32_t)-1;
-const uint64_t SvdItem::VALUE64_NOT_INIT = (uint64_t)-1;
+const uint32_t SvdItem::VALUE32_NOT_INIT = UINT32_MAX;
+const uint64_t SvdItem::VALUE64_NOT_INIT = UINT64_MAX;
 
 const string SvdItem::m_svdLevelStr[] = {
   "UNDEF",
@@ -95,7 +97,7 @@ bool SvdElement::Construct(XMLTreeElement* xmlElement)
 
   // set attributes to this item
   SetLineNumber(xmlElement->GetLineNumber());
-  SetColNumber(0); //xmlElement->GetColNumber();
+  SetColNumber(0);
 
   SetTag(xmlElement->GetTag());
   SetText(xmlElement->GetText());
@@ -175,7 +177,7 @@ bool SvdItem::Construct(XMLTreeElement* xmlElement)
 
   // set attributes to this item
   SetLineNumber(xmlElement->GetLineNumber());
-  SetColNumber(0); //xmlElement->GetColNumber();
+  SetColNumber(0);
 	SetTag(xmlElement->GetTag());
   SetText(xmlElement->GetText());
 	bool success = ProcessXmlAttributes(xmlElement);
@@ -248,7 +250,7 @@ bool SvdItem::ProcessXmlElement(XMLTreeElement* xmlElement)
     DebugModel(value);
     return true;
 	}
-  else if(tag.find("dim") != string::npos) { //tag == "dim" || tag == "dimIndex" || tag == "dimIncrement") {
+  else if(tag.find("dim") != string::npos) {
     auto dimension = GetDimension();
     if(!dimension) {
       dimension = new SvdDimension(this);
@@ -853,7 +855,9 @@ bool SvdItem::FindChild (const list<SvdItem*> childs, SvdItem *&item, const stri
 bool SvdItem::FindChildFromItem (SvdItem *&item, const string &name)
 {
   // search item
-  const auto thisName = GetDeriveName(); //GetName();
+  // TODO: Resolve derivedFrom by XML name when dimName is set, considering legacy prefixed references.
+  // GetDeriveName() returns ChannelCH[%s] instead of CH[%s] when dimName is Channel.
+  const auto thisName = GetDeriveName();
   if(!thisName.empty() && thisName == name) {
     item = this;
     return true;
@@ -1000,7 +1004,6 @@ bool SvdItem::CopyChilds(SvdItem *from, SvdItem *hook)
       nItem->CopyItem(copy);
     }
     else {
-      //int ctrap = 0;
     }
   }
 
@@ -1149,7 +1152,7 @@ SvdTypes::ProtectionType SvdItem::GetEffectiveProtection()
     }
   }
 
-  return SvdTypes::ProtectionType::UNDEF;    // default, if UNDEF, then do not generate information (SFD, ...);
+  return SvdTypes::ProtectionType::UNDEF;    // Omit protection metadata when no effective value is defined.
 }
 
 const string& SvdItem::GetSvdLevelStr(SVD_LEVEL level)
@@ -1164,7 +1167,6 @@ const string& SvdItem::GetSvdLevelStr()
 
 void SvdItem::DebugModel(const string &value)
 {
-  //int ctrap = 0;
 }
 
 bool SvdItem::CheckItem()

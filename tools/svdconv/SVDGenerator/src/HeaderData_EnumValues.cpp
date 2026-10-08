@@ -324,7 +324,7 @@ bool HeaderData::CreateEnumValuesContainer(SvdEnumContainer* enumCont, EnumValue
     return true;
   }
 
-  const auto  containerName   = enumCont->GetHierarchicalName(); //enumCont->GetNameCalculated();
+  const auto  containerName   = enumCont->GetHierarchicalName();
   const auto& headerEnumName  = enumCont->GetHeaderEnumName(); 
   const auto& descr           = enumCont->GetDescription();
   

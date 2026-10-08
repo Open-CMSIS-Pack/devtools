@@ -52,6 +52,9 @@ protected:
 
   bool Consume(const PdscMsg& msg, const string&) override {
     m_messages.push_back(msg.GetMsgNum());
+    if(msg.GetMsgNum() == "M313") {
+      m_rangeWidth = msg.GetSubstitute("NUM");
+    }
     return true;
   }
 
@@ -91,6 +94,7 @@ protected:
   }
 
   vector<string> m_messages;
+  string m_rangeWidth;
 
 private:
   IErrConsumer* m_previousConsumer = nullptr;
@@ -141,6 +145,99 @@ TEST_F(SvdModelValidationTest, AddressBlockReportsMalformedFields) {
     SvdAddressBlock block(nullptr);
     ASSERT_TRUE(block.Construct(&element));
     EXPECT_TRUE(HasMessage("M202"));
+  }
+}
+
+TEST_F(SvdModelValidationTest, FieldRejectsReversedBitRanges) {
+  for(const bool useBitRange : {false, true}) {
+    for(const auto& [lsb, width] : {pair{1U, "0"}, pair{2U, "-1"}, pair{63U, "-62"},
+                                   pair{UINT32_MAX - 1, "-4294967293"}}) {
+      SCOPED_TRACE(useBitRange ? "bitRange" : "lsb/msb");
+      SCOPED_TRACE(lsb);
+      m_messages.clear();
+      m_rangeWidth.clear();
+      XMLTreeElement element(nullptr, "field");
+      element.CreateElement("name", "BAD");
+      element.CreateElement("description", "Reversed bit range.");
+      if(useBitRange) {
+        element.CreateElement("bitRange", "[0:" + to_string(lsb) + "]");
+      }
+      else {
+        element.CreateElement("lsb", to_string(lsb));
+        element.CreateElement("msb", "0");
+      }
+      SvdField field(nullptr);
+
+      ASSERT_TRUE(field.Construct(&element));
+
+      ASSERT_FALSE(field.IsValid());
+      EXPECT_EQ(1, count(m_messages.begin(), m_messages.end(), "M313"));
+      EXPECT_EQ(width, m_rangeWidth);
+      EXPECT_FALSE(HasMessage("M311"));
+      EXPECT_GT(field.GetBitWidth(), 0);
+    }
+  }
+}
+
+TEST_F(SvdModelValidationTest, FieldDimensionDoesNotExpandReversedBitRanges) {
+  for(const bool useBitRange : {false, true}) {
+    SCOPED_TRACE(useBitRange ? "bitRange" : "lsb/msb");
+    m_messages.clear();
+    SvdRegister reg(nullptr);
+    reg.SetBitWidth(32);
+    reg.SetAccess(SvdTypes::Access::READWRITE);
+    SvdFieldContainer fields(&reg);
+    SvdField field(&fields);
+    XMLTreeElement element(nullptr, "field");
+    element.CreateElement("dim", "2");
+    element.CreateElement("dimIncrement", "1");
+    element.CreateElement("name", "BAD%s");
+    element.CreateElement("description", "Reversed bit range.");
+    if(useBitRange) {
+      element.CreateElement("bitRange", "[0:1]");
+    }
+    else {
+      element.CreateElement("lsb", "1");
+      element.CreateElement("msb", "0");
+    }
+
+    ASSERT_TRUE(field.Construct(&element));
+
+    ASSERT_FALSE(field.IsValid());
+    EXPECT_EQ(1, count(m_messages.begin(), m_messages.end(), "M313"));
+    EXPECT_FALSE(HasMessage("M311"));
+    ASSERT_NE(nullptr, field.GetDimension());
+    EXPECT_TRUE(field.GetDimension()->GetChildren().empty());
+  }
+}
+
+TEST_F(SvdModelValidationTest, FieldAcceptsValidBitRangesIncludingSingleBits) {
+  for(const bool useBitRange : {false, true}) {
+    for(const auto& [lsb, msb] : {pair{0U, 0U}, pair{0U, 31U}, pair{5U, 12U}, pair{63U, 63U}}) {
+      SCOPED_TRACE(useBitRange ? "bitRange" : "lsb/msb");
+      SCOPED_TRACE(lsb);
+      SCOPED_TRACE(msb);
+      m_messages.clear();
+      XMLTreeElement element(nullptr, "field");
+      element.CreateElement("name", "VALID");
+      element.CreateElement("description", "Valid bit range.");
+      if(useBitRange) {
+        element.CreateElement("bitRange", "[" + to_string(msb) + ":" + to_string(lsb) + "]");
+      }
+      else {
+        element.CreateElement("lsb", to_string(lsb));
+        element.CreateElement("msb", to_string(msb));
+      }
+      SvdField field(nullptr);
+
+      ASSERT_TRUE(field.Construct(&element));
+
+      EXPECT_TRUE(field.IsValid());
+      EXPECT_EQ(lsb, field.GetOffset());
+      EXPECT_EQ(msb - lsb + 1, field.GetBitWidth());
+      EXPECT_FALSE(HasMessage("M313"));
+      EXPECT_FALSE(HasMessage("M311"));
+    }
   }
 }
 

@@ -150,7 +150,7 @@ uint32_t FileIo::ConvertTab(string& dest, const string& src)
       m_tabSpaceCnt = 0;
     }
     else if(c == '\t') {
-      if(m_tabSpaceCnt <=  s_charCnt) {  // if((m_tabSpaceCnt + SPACES_PER_TAB_FIO) <=  s_charCnt) {
+      if(m_tabSpaceCnt <=  s_charCnt) {
         m_tabSpaceCnt += SPACES_PER_TAB_FIO;
       }
       else {
