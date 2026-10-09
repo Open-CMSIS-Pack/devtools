@@ -191,7 +191,7 @@ bool ParseOptions::SetDisableValidation(bool bDisable)
  * @param argv command line
  * @return passed / failed
  */
-ParseOptions::Result ParseOptions::Parse(int argc, const char* argv[])
+ParseOptions::Result ParseOptions::Parse(int argc, const char** argv)
 {
   const string fileName = m_packOptions.GetProgramName();
   bool bOk = true;
