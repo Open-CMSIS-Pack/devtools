@@ -387,10 +387,7 @@ bool SvdDevice::AddToMap(SvdItem *item, const string& name, const string& tagUse
       orig = item->GetCopiedFrom();
     }
 
-    if(orig && orig == mapItem) {
-    } else if(mapItem == item) {
-    }
-    else {
+    if(orig != mapItem && mapItem != item) {
       const auto lineNo = item->GetLineNumber();
       const string& svdLevelStr = GetSvdLevelStr(item->GetSvdLevel());
       LogMsg("M372", LEVEL(svdLevelStr), TAG(tagUsed), NAME(name), LINE2(mapItem->GetLineNumber()), lineNo);      // Error
