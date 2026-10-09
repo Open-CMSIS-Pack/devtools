@@ -163,8 +163,7 @@ bool SvdEnum::ProcessXmlElement(XMLTreeElement* xmlElement)
       SvdUtils::CheckParseError(tag, value, xmlElement->GetLineNumber());
     }
 
-    if(!m_isDefault) {
-    } else {
+    if(m_isDefault) {
       const auto parent = (SvdEnumContainer*)(GetParent());
       if(parent) {
         parent->SetDefaultValue(this);

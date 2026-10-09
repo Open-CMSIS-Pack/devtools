@@ -1003,8 +1003,6 @@ bool SvdItem::CopyChilds(SvdItem *from, SvdItem *hook)
       CopyChilds(copy, nItem);
       nItem->CopyItem(copy);
     }
-    else {
-    }
   }
 
   return true;
