@@ -1697,6 +1697,7 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
       LogMsg("M375", VAL("BOARD", boardName));
     }
 
+    // deviceIndex must be unique among mounted devices on this board.
     map<string, RteItem*> mountedDeviceIndex;
     for(auto mountedDevice : mountedDevices) {
       lineNo = mountedDevice->GetLineNumber();
@@ -1726,11 +1727,13 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
         continue;
       }
 
+      // Mounted devices require a concrete Dname; wildcard patterns are not allowed.
       if(dname.find_first_of("*?[]") != string::npos) {
         LogMsg("M607", TAG("Dname"), NAME(dname), lineNo);
         continue;
       }
 
+      // Resolve the reference against the loaded device model, including reference packs.
       list<RteDevice*> devices;
       GetModel().GetDevices(devices, dname, dvendor);
       if(devices.empty()) {
@@ -1742,6 +1745,7 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
         LogMsg("M100", lineNo);
       }
 
+      // Warn when a mounted device name still denotes a device with variants.
       for(const auto device : devices) {
         if(device->GetDeviceItemCount() > 0) {
           LogMsg("M611", VENDOR(dvendor), MCU(dname), lineNo);
@@ -1761,7 +1765,7 @@ bool ValidateSyntax::CheckBoards(RtePackage* pKg)
       LogMsg("M010");
     }
 
-    // ------------  compatible devices  ------------------
+    // Compatible devices describe alternatives and may use Dname wildcard patterns.
     Collection<RteItem*> compatibleDevices;
     board->GetCompatibleDevices(compatibleDevices);
 

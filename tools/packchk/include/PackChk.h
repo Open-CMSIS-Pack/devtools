@@ -22,7 +22,7 @@ public:
   PackChk();
   ~PackChk();
 
-  int Check(int argc, const char* argv[], const char* envp[]);
+  int Check(int argc, const char** argv, const char** envp);
 
   const RteGlobalModel& GetModel() { return m_rteModel; }
 

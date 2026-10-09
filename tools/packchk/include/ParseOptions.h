@@ -23,7 +23,7 @@ public:
     Error,
   };
 
-  Result Parse(int argc, const char* argv[]);
+  Result Parse(int argc, const char** argv);
 
 protected:
   bool SetWarnLevel(const std::string& warnLevel);
