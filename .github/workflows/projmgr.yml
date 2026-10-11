@@ -224,61 +224,61 @@ jobs:
           cp tools/projmgr/docs/LICENSE.txt tools/projmgr/distribution/
 
       - name: Download projmgr schemas
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-schemas
           path: tools/projmgr/distribution/etc/
 
       - name: Download projmgr templates
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-templates
           path: tools/projmgr/distribution/etc/
 
       - name: Download projmgr linux-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-linux-amd64
           path: tools/projmgr/distribution/bin/linux-amd64/
 
       - name: Download projmgr linux-arm64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-linux-arm64
           path: tools/projmgr/distribution/bin/linux-arm64/
 
       - name: Download projmgr macos-arm64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-darwin-arm64
           path: tools/projmgr/distribution/bin/darwin-arm64/
 
       - name: Download projmgr windows-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-windows-amd64
           path: tools/projmgr/distribution/bin/windows-amd64/
 
       - name: Download projmgr windows-arm64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-windows-arm64
           path: tools/projmgr/distribution/bin/windows-arm64/
 
       - name: Download projmgr-swig-python linux-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-swig-python-linux-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/python/
 
       - name: Download projmgr-swig-python windows-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-swig-python-windows-amd64
           path: tools/projmgr/distribution/lib/windows-amd64/python/
 
       - name: Download projmgr-swig-go linux-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-swig-go-linux-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/go/
@@ -297,13 +297,13 @@ jobs:
           asset_name: projmgr.zip
 
       - name: Download test report windows-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: unit_test_result_projmgr-windows-amd64
           path: tools/testreport/windows-amd64/
 
       - name: Download test report linux-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: unit_test_result_projmgr-linux-amd64
           path: tools/testreport/linux-amd64/
@@ -322,7 +322,7 @@ jobs:
           asset_name: testreport.zip
 
       - name: Download coverage report
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: coverage-report-projmgr
           path: tools/coverage/
