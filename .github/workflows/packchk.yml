@@ -92,7 +92,7 @@ jobs:
 
       - name: Archive packchk binary
         if: ${{ github.event_name != 'release' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: packchk-${{ matrix.target }}-${{ matrix.arch }}
           path: build/tools/packchk/packchk-*-${{ matrix.target }}-${{ matrix.arch }}.*
@@ -201,7 +201,7 @@ jobs:
 
       - name: Archive unit test results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unit_test_result_packchk-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkunittests-*.xml
@@ -210,7 +210,7 @@ jobs:
 
       - name: Archive integration test results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: integ_test_result_packchk-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packchkintegtests-*.xml
@@ -274,7 +274,7 @@ jobs:
 
       - name: Archive unit test results
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unit_test_result_packchk-linux-amd64
           path: ./build/test_reports/packchkunittests-*.xml
@@ -283,7 +283,7 @@ jobs:
 
       - name: Archive integration test results
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: integ_test_result_packchk-linux-amd64
           path: ./build/test_reports/packchkintegtests-*.xml
@@ -325,7 +325,7 @@ jobs:
           verbose: true
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-report-packchk
           path: |
@@ -383,7 +383,7 @@ jobs:
           egress-policy: audit
 
       - name: Event File
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Event File packchk
           path: ${{ github.event_path }}
