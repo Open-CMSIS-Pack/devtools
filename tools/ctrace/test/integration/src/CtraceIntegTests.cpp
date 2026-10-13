@@ -277,6 +277,25 @@ void writeSyntheticFormattedFixture(const std::filesystem::path& directory, cons
             {reinterpret_cast<const char*>(raw.data()), raw.size()});
 }
 
+/** @brief Writes one formatted capture whose physical tail and decoder errors are tested independently. */
+void writeFormattedTailFixture(const std::filesystem::path& directory, const std::vector<std::uint8_t>& raw)
+{
+  writeTestFile(directory / "Tail.ctrace-run.yml", R"yml(ctrace-run:
+  trace-format: formatted
+  ctrace-setup:
+    - pname: core
+      timestamps:
+        clock: 400000000
+        itm-prescaler: 1
+  ctrace-refs:
+    - ref: core/itm
+      type: itm
+      pname: core
+      stream: 1
+)yml");
+  writeTestFile(directory / "Tail.TB.raw", std::string(raw.begin(), raw.end()));
+}
+
 /** @brief Replaces every required occurrence in deterministic fixture text. */
 void replaceFixtureText(std::string& text, std::string_view from, std::string_view to)
 {
@@ -939,7 +958,7 @@ TEST_F(CtraceIntegTests, ExcludesUnformattedRawSwoWithoutRequiringClock)
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Filtered.traceanalysis.xml"));
 }
 
-TEST_F(CtraceIntegTests, RejectsPartialFormattedFrameBeforeCreatingArtifacts)
+TEST_F(CtraceIntegTests, ReportsInputsShorterThanOneFormattedFrameInFreshCsv)
 {
   constexpr std::string_view configuration = R"yml(  ctrace-setup:
     - pname: core
@@ -957,12 +976,25 @@ TEST_F(CtraceIntegTests, RejectsPartialFormattedFrameBeforeCreatingArtifacts)
     ASSERT_TRUE(std::filesystem::create_directory(directory));
     writeTestFile(directory / "Partial.ctrace-run.yml",
                   "ctrace-run:\n" + std::string(declaration.second) + std::string(configuration));
-    writeTestFile(directory / "Partial.TB.raw", std::string(15U, 'f'));
-
-    const auto result = run({"ctrace", directory.string(), "--target", "Partial", "--all"});
-    EXPECT_EQ(1, result.exitCode);
-    expectContains(result.stderrText, "formatted raw trace input size must be a multiple of 16 bytes");
-    EXPECT_FALSE(std::filesystem::exists(directory / "Partial.TB.csv"));
+    for (std::size_t size = 0U; size < 16U; ++size) {
+      SCOPED_TRACE(size);
+      const std::string raw(size, 'f');
+      writeTestFile(directory / "Partial.TB.raw", raw);
+      writeTestFile(directory / "Partial.TB.csv", "stale CSV data\n");
+      const auto result = run({"ctrace", directory.string(), "--target", "Partial", "--csv"});
+      EXPECT_EQ(size == 0U ? 0 : 1, result.exitCode) << result.stderrText;
+      std::string expectedCsv = "cycles,stream,type,index,value,pc,address,note\n";
+      if (size != 0U) {
+        const auto message = "Incomplete formatter frame at end of file; discarded bytes: " + std::to_string(size);
+        expectContains(result.stderrText, "[error] " + message);
+        EXPECT_EQ(countOccurrences(result.stderrText, "[error]"), 1U);
+        expectedCsv += ",,error,,,,," + message + "\n";
+      } else {
+        expectNotContains(result.stderrText, "[error]");
+      }
+      EXPECT_EQ(readTestTextFile(directory / "Partial.TB.csv"), expectedCsv);
+      EXPECT_EQ(readTestTextFile(directory / "Partial.TB.raw"), raw);
+    }
     EXPECT_FALSE(std::filesystem::exists(directory / "Partial.TB.ctf"));
     EXPECT_FALSE(std::filesystem::exists(directory / "Partial.traceanalysis.xml"));
   }
@@ -1817,7 +1849,7 @@ TEST_F(CtraceIntegTests, GeneratesAllChannelOutputsForAllTargets)
   EXPECT_EQ(outputs, expectedOutputs);
 }
 
-TEST_F(CtraceIntegTests, ContinuesOtherChannelsAndTargetsAfterChannelPreflightFailure)
+TEST_F(CtraceIntegTests, ContinuesOtherChannelsAndTargetsAfterIncompleteFormattedFrame)
 {
   writeMultipleChannelFixture(workDirectory(), "Alpha");
   writeMultipleChannelFixture(workDirectory(), "Beta");
@@ -1829,7 +1861,7 @@ TEST_F(CtraceIntegTests, ContinuesOtherChannelsAndTargetsAfterChannelPreflightFa
 
   const auto result = run({"ctrace", workDirectory().string(), "--all"});
   EXPECT_EQ(result.exitCode, 1) << result.stderrText;
-  expectContains(result.stderrText, "formatted raw trace input size must be a multiple of 16 bytes");
+  expectContains(result.stderrText, "Incomplete formatter frame at end of file; discarded bytes: 13");
   expectContains(result.stderrText, "Alpha.TB.raw");
   for (const auto& fixture : kChannelFixtures) {
     if (fixture.channel != "TB") {
@@ -1837,8 +1869,11 @@ TEST_F(CtraceIntegTests, ContinuesOtherChannelsAndTargetsAfterChannelPreflightFa
     }
     expectChannelArtifacts(workDirectory(), "Beta", fixture, true, true);
   }
-  EXPECT_EQ(readTestTextFile(workDirectory() / "Alpha.TB.csv"), "csv sentinel");
-  EXPECT_EQ(readTestTextFile(workDirectory() / "Alpha.TB.ctf" / "sentinel"), "ctf sentinel");
+  expectContains(readTestTextFile(workDirectory() / "Alpha.TB.csv"),
+                 ",,error,,,,,Incomplete formatter frame at end of file; discarded bytes: 13");
+  expectNotContains(readTestTextFile(workDirectory() / "Alpha.TB.csv"), "csv sentinel");
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Alpha.TB.ctf" / "sentinel"));
+  expectNonEmptyFile(workDirectory() / "Alpha.TB.ctf" / "metadata");
   EXPECT_NE(readTestTextFile(workDirectory() / "Alpha.traceanalysis.xml"), "xml sentinel");
   expectNonEmptyFile(workDirectory() / "Beta.traceanalysis.xml");
   EXPECT_EQ(readTestTextFile(workDirectory() / "Alpha.ctf" / "sentinel"), "legacy bundle sentinel");
@@ -1962,7 +1997,8 @@ TEST_F(CtraceIntegTests, BuildsCombinedXmlOnlyFromFreshlyCompletedBundles)
     const bool preflight = std::string_view(failure) == "preflight";
     const bool fatal = std::string_view(failure) == "fatal-tail";
     if (preflight) {
-      writeTestFile(directory / "Combined.TB.raw", "partial frame");
+      std::filesystem::rename(directory / "Combined.TB.raw", directory / "previous.raw");
+      ASSERT_TRUE(std::filesystem::create_directory(directory / "Combined.TB.raw"));
     } else {
       auto payload = FormattedTraceTestSupport::itmHardwareSync();
       appendBytes(payload, FormattedTraceTestSupport::itmHardwarePacket(2U, 1U, 0U));
@@ -1981,7 +2017,7 @@ TEST_F(CtraceIntegTests, BuildsCombinedXmlOnlyFromFreshlyCompletedBundles)
     result = run({"ctrace", directory.string(), "--target", "Combined", "--all"});
     EXPECT_EQ(result.exitCode, 1) << result.stderrText;
     expectContains(result.stderrText, "inputChannel=TB");
-    expectContains(result.stderrText, preflight ? "multiple of 16 bytes" : fatal ? "Incomplete ITM packet at EOF"
+    expectContains(result.stderrText, preflight ? "not a regular file" : fatal ? "Incomplete ITM packet at EOF"
                                                                                  : "Invalid ITM packet sequence");
     const auto xml = readTestTextFile(directory / "Combined.traceanalysis.xml");
     expectCaptureView(xml, singleCtfClockUuid(directory / "Combined.SWO.ctf"), 0U, "DWT_VALUE");
@@ -2529,6 +2565,180 @@ TEST_F(CtraceIntegTests, ReportsMalformedAsyncDetailsAndRealResynchronization)
   expectNotContains(csv, ",1,itm,1,0x58");
   expectNonEmptyFile(workDirectory() / "Malformed.TB.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Malformed.TB.ctf" / "stream_1");
+}
+
+TEST_F(CtraceIntegTests, DecodesOnlyCompleteFormatterFramesForEveryTailLength)
+{
+  using namespace FormattedTraceTestSupport;
+  auto payload = itmHardwareSync();
+  for (const auto value : {'A', 'B', 'C', 'D', 'Z'}) {
+    appendBytes(payload, itmSoftwarePacket(1U, static_cast<std::uint8_t>(value)));
+  }
+  const auto completeCapture = memoryAlignedFrames({{1U, payload}});
+  ASSERT_EQ(completeCapture.size(), 32U);
+  writeFormattedTailFixture(workDirectory() / "complete", completeCapture);
+  const auto control = run({"ctrace", (workDirectory() / "complete").string(), "--csv"});
+  EXPECT_EQ(control.exitCode, 0) << control.stderrText;
+  const auto completeCsv = readTestTextFile(workDirectory() / "complete" / "Tail.TB.csv");
+  EXPECT_EQ(countOccurrences(completeCsv, ",1,itm,1,"), 5U);
+  expectContains(completeCsv, ",1,itm,1,0x5a,,,");
+
+  // Exercise complete prefixes ending at and beyond the 64 KiB read-buffer boundary.
+  for (const auto padding : {0U, 65520U, 65536U}) {
+    for (std::size_t tailSize = 1U; tailSize < 16U; ++tailSize) {
+      const auto directory = workDirectory() / (std::to_string(padding) + "-" + std::to_string(tailSize));
+      SCOPED_TRACE(directory.string());
+      std::vector<std::uint8_t> raw(padding, 0U);
+      raw.insert(raw.end(), completeCapture.begin(), completeCapture.begin() + 16U + tailSize);
+      writeFormattedTailFixture(directory, raw);
+      const auto result = run({"ctrace", directory.string(), "--csv"});
+      EXPECT_EQ(result.exitCode, 1) << result.stderrText;
+      const auto message = "Incomplete formatter frame at end of file; discarded bytes: " + std::to_string(tailSize);
+      expectContains(result.stderrText, "[error] " + message);
+      EXPECT_EQ(countOccurrences(result.stderrText, "[error]"), 1U);
+      const auto csv = readTestTextFile(directory / "Tail.TB.csv");
+      EXPECT_EQ(countOccurrences(csv, ",,error,,,,," + message + "\n"), 1U);
+      EXPECT_EQ(countOccurrences(csv, ",1,itm,1,"), 4U);
+      for (const auto value : {"0x41", "0x42", "0x43", "0x44"}) {
+        expectContains(csv, "0,1,itm,1," + std::string(value) + ",,,\n");
+      }
+      expectNotContains(csv, ",1,itm,1,0x5a");
+      expectNotContains(csv, "Decode aborted");
+      EXPECT_EQ(readTestBinaryFile(directory / "Tail.TB.raw"), raw);
+    }
+  }
+}
+
+TEST_F(CtraceIntegTests, KeepsFormatterTailErrorDespiteOutputFiltersAndVerboseMode)
+{
+  using namespace FormattedTraceTestSupport;
+  auto payload = itmHardwareSync();
+  appendBytes(payload, itmSoftwarePacket(1U, 'A'));
+  auto raw = memoryAlignedFrames({{1U, payload}});
+  ASSERT_EQ(raw.size(), 16U);
+  raw.insert(raw.end(), {0xdeU, 0xadU, 0xbeU});
+  const std::string tailMessage = "Incomplete formatter frame at end of file; discarded bytes: 3";
+  struct SelectionCase {
+    std::string name;
+    std::vector<std::string> arguments;
+    bool includesPayload;
+  };
+  const std::vector<SelectionCase> selections{
+      {"all", {}, true},
+      {"type-filter", {"--type", "itm"}, true},
+      {"stream-filter", {"--stream", "2"}, false},
+  };
+  for (const auto& selection : selections) {
+    SCOPED_TRACE(selection.name);
+    const auto directory = workDirectory() / selection.name;
+    writeFormattedTailFixture(directory, raw);
+    std::string compactCsv;
+    for (const bool verbose : {false, true}) {
+      SCOPED_TRACE(verbose);
+      std::vector<std::string> arguments{"ctrace", directory.string(), "--all"};
+      arguments.insert(arguments.end(), selection.arguments.begin(), selection.arguments.end());
+      if (verbose) {
+        arguments.emplace_back("--verbose");
+      }
+      const auto result = run(std::move(arguments));
+      EXPECT_EQ(result.exitCode, 1) << result.stderrText;
+      expectContains(result.stderrText, "[error] " + tailMessage);
+      EXPECT_EQ(countOccurrences(result.stderrText, "[error]"), 1U);
+      const auto csv = readTestTextFile(directory / "Tail.TB.csv");
+      EXPECT_EQ(countOccurrences(csv, ",,error,,,,," + tailMessage + "\n"), 1U);
+      EXPECT_EQ(countOccurrences(csv, ",1,itm,1,0x41"), selection.includesPayload ? 1U : 0U);
+      if (verbose) {
+        EXPECT_EQ(csv, compactCsv);
+      } else {
+        compactCsv = csv;
+      }
+      expectNonEmptyFile(directory / "Tail.TB.ctf" / "metadata");
+      EXPECT_EQ(readTestBinaryFile(directory / "Tail.TB.raw"), raw);
+    }
+  }
+}
+
+TEST_F(CtraceIntegTests, KeepsFormatterTailAndBadStartDiagnosticsWithoutGuessingFramePhase)
+{
+  // This capture only has a plausible ITM stream when shifted by eight bytes. At the declared
+  // offset-zero alignment OpenCSD instead sees a malformed ASYNC sequence; do not shift it.
+  const std::vector<std::uint8_t> raw{
+      0x00U, 0x00U, 0x03U, 0x00U, 0x00U, 0x80U, 0x00U, 0x00U,
+      0x00U, 0x00U, 0x00U, 0x00U, 0x80U, 0x00U, 0x00U, 0x00U,
+      0x00U, 0x00U, 0x80U, 0x0eU, 0x86U, 0x10U, 0xc0U, 0x00U,
+      0xf0U, 0x24U, 0x94U, 0xb5U, 0xf6U, 0xd6U, 0x5eU, 0x0eU,
+      0x86U, 0x20U, 0xc0U, 0xb7U, 0x02U, 0x0eU, 0x00U, 0x00U,
+      0x30U, 0xc0U, 0x18U, 0xb4U, 0xdeU, 0xaeU, 0x01U, 0x00U,
+      0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x04U,
+  };
+  writeFormattedTailFixture(workDirectory(), raw);
+  writeTestFile(workDirectory() / "Tail.TB.csv", "stale CSV data\n");
+  const auto result = run({"ctrace", workDirectory().string(), "--csv", "--verbose"});
+  EXPECT_EQ(result.exitCode, 1) << result.stderrText;
+  expectContains(result.stderrText, "OCSD_ERR_BAD_PACKET_SEQ");
+  expectContains(result.stderrText, "packet=ASYNC");
+  const auto csv = readTestTextFile(workDirectory() / "Tail.TB.csv");
+  expectContains(csv, "Invalid ITM packet sequence");
+  expectContains(csv, "No ITM resync before EOF");
+  expectContains(csv, ",,error,,,,,Incomplete formatter frame at end of file; discarded bytes: 8\n");
+  expectNotContains(csv, "stale CSV data");
+  expectNotContains(csv, ",exception,");
+  expectNotContains(csv, ",itm,");
+  EXPECT_EQ(readTestBinaryFile(workDirectory() / "Tail.TB.raw"), raw);
+}
+
+TEST_F(CtraceIntegTests, KeepsDecodedEventsAndBothErrorsWhenItmPacketSpansDiscardedFrame)
+{
+  using namespace FormattedTraceTestSupport;
+  auto payload = itmHardwareSync();
+  appendBytes(payload, itmSoftwarePacket(1U, 'A'));
+  appendBytes(payload, itmLocalTimestampPacket(16U));
+  appendBytes(payload, itmSoftwarePacket(2U, 4U, 0x44332211U));
+  auto raw = memoryAlignedFrames({{1U, payload}});
+  ASSERT_EQ(raw.size(), 32U);
+  raw.resize(24U);
+  writeFormattedTailFixture(workDirectory(), raw);
+  const auto result = run({"ctrace", workDirectory().string(), "--all"});
+  EXPECT_EQ(result.exitCode, 1) << result.stderrText;
+  expectContains(result.stderrText, "[error] Incomplete formatter frame at end of file; discarded bytes: 8");
+  expectContains(result.stderrText, "[error] Incomplete ITM packet at EOF");
+  const auto csv = readTestTextFile(workDirectory() / "Tail.TB.csv");
+  expectContains(csv, "16,1,itm,1,0x41,,,\n");
+  expectNotContains(csv, ",itm,2,");
+  expectContains(csv, ",1,error,,,,,Incomplete ITM packet at EOF\n");
+  expectContains(csv, ",,error,,,,,Incomplete formatter frame at end of file; discarded bytes: 8");
+  EXPECT_EQ(countOccurrences(csv, "Decode aborted; trace incomplete"), 1U);
+  EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Tail.TB.ctf"));
+  EXPECT_EQ(readTestBinaryFile(workDirectory() / "Tail.TB.raw"), raw);
+}
+
+TEST_F(CtraceIntegTests, DistinguishesMissingItmSyncFromReservedFormatterSourceIds)
+{
+  for (const bool reservedIds : {false, true}) {
+    SCOPED_TRACE(reservedIds);
+    const auto directory = workDirectory() / (reservedIds ? "reserved-source" : "no-itm-sync");
+    auto raw = reservedIds ? std::vector<std::uint8_t>(64U, 0xffU) :
+                            FormattedTraceTestSupport::memoryAlignedFrames({{1U, {0x09U, 0x41U}}});
+    raw.insert(raw.end(), 8U, 0xffU);
+    writeFormattedTailFixture(directory, raw);
+    const auto result = run({"ctrace", directory.string(), "--csv"});
+    EXPECT_EQ(result.exitCode, 1) << result.stderrText;
+    const auto csv = readTestTextFile(directory / "Tail.TB.csv");
+    const std::string tail = "Incomplete formatter frame at end of file; discarded bytes: 8";
+    expectContains(result.stderrText, "[error] " + tail);
+    expectContains(csv, ",,error,,,,," + tail + "\n");
+    expectNotContains(csv, ",itm,");
+    if (reservedIds) {
+      expectNotContains(csv, "No ITM SYNC");
+      expectContains(csv, "bytes skipped: reserved source ID");
+      EXPECT_EQ(countOccurrences(csv, ",error,"), 1U);
+    } else {
+      expectContains(csv, ",1,error,,,,,No ITM SYNC before EOF\n");
+      expectContains(result.stderrText, "[error] No ITM SYNC before EOF");
+      EXPECT_EQ(countOccurrences(csv, ",error,"), 2U);
+    }
+    EXPECT_EQ(readTestBinaryFile(directory / "Tail.TB.raw"), raw);
+  }
 }
 
 TEST_F(CtraceIntegTests, RetainsCsvAndUnfilteredAbortAfterIncompleteFormattedTail)

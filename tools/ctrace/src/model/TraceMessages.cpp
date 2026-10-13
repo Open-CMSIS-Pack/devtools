@@ -310,6 +310,11 @@ std::string formatTraceMessage(const TraceByteSkip& skipped, TraceMessageStyle s
   return formatMessage(id, style, {skipped.byteCount, skipped.formatterOffset});
 }
 
+std::string formatTraceMessage(const TraceRawTail& tail, TraceMessageStyle style)
+{
+  return formatMessage(MessageId::TraceRawTail, style, {tail.bytes.size()});
+}
+
 std::string formatTraceMessage(const TraceDecodeAbort& failure, TraceMessageStyle style)
 {
   const auto id = std::holds_alternative<TraceOpaqueMessage>(failure.reason.data)

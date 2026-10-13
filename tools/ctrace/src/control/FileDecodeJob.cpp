@@ -12,6 +12,7 @@
 #include "csv/CsvFileOutput.h"
 #include "ctf/CtfBundleOutput.h"
 #include "CortexMStreamDecoder.h"
+#include "CoreSightFormatter.h"
 #include "DecodeConsumers.h"
 #include "DecodePipeline.h"
 #include "DiagnosticSink.h"
@@ -25,6 +26,7 @@
 #include "TraceRunConfig.h"
 #include "CtraceRunMeta.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -49,23 +51,29 @@ public:
   };
 
   /** @brief Reads one already opened and preflighted raw trace input. */
-  RawFileReader(std::filesystem::path path, std::istream& stream)
+  RawFileReader(std::filesystem::path path, std::istream& stream, std::optional<std::uint64_t> byteLimit)
     : m_path(std::move(path)),
       m_stream(stream),
-      m_buffer(64U * 1024U)
+      m_buffer(64U * 1024U),
+      m_remaining(byteLimit)
   {
   }
 
   /** @brief Returns the next raw byte chunk. */
   ReadResult read()
   {
-    if (m_eof) {
+    if (m_eof || m_remaining == 0U) {
       return {{}, true};
     }
 
-    m_stream.read(reinterpret_cast<char*>(m_buffer.data()), static_cast<std::streamsize>(m_buffer.size()));
+    const auto requested = m_remaining.has_value() ? std::min<std::uint64_t>(m_buffer.size(), *m_remaining)
+                                                   : m_buffer.size();
+    m_stream.read(reinterpret_cast<char*>(m_buffer.data()), static_cast<std::streamsize>(requested));
     const auto readBytes = m_stream.gcount();
     if (readBytes > 0) {
+      if (m_remaining.has_value()) {
+        *m_remaining -= static_cast<std::uint64_t>(readBytes);
+      }
       if (m_stream.eof()) {
         m_eof = true;
       }
@@ -82,8 +90,27 @@ private:
   std::filesystem::path m_path;
   std::istream& m_stream;
   std::vector<std::uint8_t> m_buffer;
+  std::optional<std::uint64_t> m_remaining;
   bool m_eof = false;
 };
+
+/** @brief Retains the incomplete final formatter frame even if decoding fails before reaching it. */
+static TraceRawTail readRawTail(const std::filesystem::path& path, std::istream& stream, std::uint64_t size)
+{
+  const auto tailSize = size % CoreSightFormatter::kMemoryAlignedFrameSize;
+  TraceRawTail tail{size - tailSize, std::vector<std::uint8_t>(tailSize)};
+  if (tail.bytes.empty()) {
+    return tail;
+  }
+
+  stream.seekg(static_cast<std::streamoff>(tail.rawOffset), std::ios::beg);
+  stream.read(reinterpret_cast<char*>(tail.bytes.data()), static_cast<std::streamsize>(tail.bytes.size()));
+  stream.seekg(0, std::ios::beg);
+  if (!stream) {
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::RawInputReadFailed, path.string()));
+  }
+  return tail;
+}
 
 /** @brief Formats input size, elapsed time, throughput, and the trace/diagnostic record count. */
 static std::string decodeSummary(const DecodeResult& decode, std::chrono::steady_clock::duration elapsed)
@@ -248,9 +275,10 @@ createDecodePipeline(const std::vector<CortexMDecodeRoute>& routes, OpenCsdItmIn
 }
 
 /** @brief Streams one preflighted raw input through its configured decode pipeline. */
-static DecodeResult decodeRawInput(const std::filesystem::path& path, std::istream& stream, DecodePipeline& pipeline)
+static DecodeResult decodeRawInput(const std::filesystem::path& path, std::istream& stream, DecodePipeline& pipeline,
+                                  std::optional<std::uint64_t> byteLimit)
 {
-  RawFileReader input(path, stream);
+  RawFileReader input(path, stream, byteLimit);
   while (true) {
     const auto read = input.read();
     if (read.eof) {
@@ -294,16 +322,23 @@ std::optional<CtfMetadataModel> FileDecodeJob::run()
   reportTimestampPrescalers(ctraceRunMeta, diagnostics);
 
   const auto decodeStart = std::chrono::steady_clock::now();
+  const bool formatted = m_input.format() == TraceRunFormat::Formatted;
+  // The capture starts at frame offset zero. Never search for or invent another frame boundary.
+  const auto tail = formatted ? readRawTail(m_input.path(), m_input.stream(), m_input.size()) : TraceRawTail{};
+  const auto byteLimit = formatted ? std::optional<std::uint64_t>{tail.rawOffset} : std::nullopt;
   DecodeResult decode;
   std::optional<TraceDecodeAbort> decodeAbort;
   try {
     auto pipeline = createDecodePipeline(routes, inputMode, consumers, m_sessionFactory, diagnostics);
-    decode = decodeRawInput(m_input.path(), m_input.stream(), *pipeline);
+    decode = decodeRawInput(m_input.path(), m_input.stream(), *pipeline, byteLimit);
   } catch (const OpenCsdFatalError& error) {
     decodeAbort = TraceDecodeAbort{error.bytesProcessed(), error.message()};
     decode.bytesIn = error.bytesProcessed();
-    decode.eventsOut = consumers.eventCount() + 1U; // Includes the final input-wide abort record.
   }
+  if (!tail.bytes.empty()) {
+    consumers.appendRawTail(tail);
+  }
+  decode.eventsOut = consumers.eventCount() + (decodeAbort.has_value() ? 1U : 0U);
   consumers.finishIssues();
   if (decodeAbort.has_value()) {
     DiagnosticSink::Event diagnostic{DiagnosticSink::Severity::Error,

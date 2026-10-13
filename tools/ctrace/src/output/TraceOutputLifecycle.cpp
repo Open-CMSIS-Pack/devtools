@@ -80,6 +80,11 @@ void TraceOutputLifecycle::appendByteSkip(const TraceByteSkip& skipped)
   writeActiveOutputs([&](TraceOutput& output) { output.writeByteSkip(skipped); });
 }
 
+void TraceOutputLifecycle::appendRawTail(const TraceRawTail& tail)
+{
+  writeActiveOutputs([&](TraceOutput& output) { output.writeRawTail(tail); });
+}
+
 void TraceOutputLifecycle::finish(const TraceDecodeAbort* decodeAbort) noexcept
 {
   if (m_finished) {

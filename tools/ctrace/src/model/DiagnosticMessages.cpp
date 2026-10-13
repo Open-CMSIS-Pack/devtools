@@ -193,11 +193,6 @@ std::string configurationFilenameMessage(std::string_view suffix, std::string_vi
   return formatMessage(MessageId::DiagnosticConfigurationFilename, MessageStyle::Detailed, {suffix, path});
 }
 
-std::string rawInputAlignmentMessage(std::uint64_t alignment, std::string_view path, std::uint64_t size)
-{
-  return formatMessage(MessageId::DiagnosticRawInputAlignment, MessageStyle::Detailed, {alignment, path, size});
-}
-
 std::string specificOutputTargetMessage(std::string_view description)
 {
   return formatMessage(MessageId::DiagnosticSpecificOutputTarget, MessageStyle::Detailed, {description});
