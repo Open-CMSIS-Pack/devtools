@@ -8,6 +8,8 @@
 #ifndef CTRACE_SRC_OUTPUT_CTF_CTFSCHEMA_H
 #define CTRACE_SRC_OUTPUT_CTF_CTFSCHEMA_H
 
+#include "TraceEvent.h"
+
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -26,6 +28,11 @@ enum class EventId : std::uint32_t {
   TraceStatus = 3U,
   Exception = 4U,
   GlobalTimestamp = 5U,
+  PcSample = 6U,
+  DwtEvent = 7U,
+  PmuEvent = 8U,
+  DwtMatch = 9U,
+  PcSampleProhibited = 10U,
 };
 
 /** @brief Classifies CTF trace-status records. */
@@ -43,10 +50,23 @@ enum class DwtAccess : std::uint8_t {
   Write = 1U,
 };
 
-/** @brief Encodes exception entry and exit actions in CTF records. */
+/** @brief Encodes exception entry, exit, and return actions in CTF records. */
 enum class ExceptionAction : std::uint8_t {
   Entered = 0U,
   Exited = 1U,
+  Returned = 2U,
+};
+
+/** @brief Identifies whether an exception record came from trace input or lane reconstruction. */
+enum class ExceptionOrigin : std::uint8_t {
+  Trace = 0U,
+  Synthetic = 1U,
+};
+
+/** @brief Encodes the zero-or-one PC sequence length in PC_SAMPLE records. */
+enum class PcSampleState : std::uint8_t {
+  Sleep = 0U,
+  Pc = 1U,
 };
 
 /** @brief Identifies the supported CTF sample value encodings. */
@@ -59,6 +79,28 @@ enum class ValueTag : std::uint8_t {
   Unsigned32 = 5U,
   Float32 = 6U,
 };
+
+/** @brief Identifies the width of a raw DWT address fragment in CTF. */
+enum class DwtAddressTag : std::uint8_t {
+  None = 0U,
+  U8 = 1U,
+  U16 = 2U,
+  U32 = 4U,
+};
+
+/** @brief Describes one CTF DWT address-fragment representation. */
+struct DwtAddressVariant {
+  DwtAddressTag tag;
+  std::string_view name;
+  std::uint8_t byteSize;
+};
+
+inline constexpr std::array<DwtAddressVariant, 4U> DwtAddressVariants{{
+    {DwtAddressTag::None, "none", 1U},
+    {DwtAddressTag::U8, "u8", 1U},
+    {DwtAddressTag::U16, "u16", 2U},
+    {DwtAddressTag::U32, "u32", 4U},
+}};
 
 /** @brief Describes one supported CTF sample value encoding. */
 struct ValueVariant {
@@ -80,14 +122,21 @@ inline constexpr std::array<ValueVariant, 7U> ValueVariants{{
     {ValueTag::Float32, "f32", "double", 4U, true, false},
 }};
 
-inline constexpr std::string_view ValueTypeRequirements =
-    "supported data.symbol-type values are 'unsigned int', 'signed int', and 'float'; "
-    "data.symbol-size must be 1, 2, or 4, and float requires size 4";
-
 /** @brief Returns the schema descriptor for a value tag. */
 constexpr const ValueVariant& valueVariant(ValueTag tag)
 {
   return ValueVariants[static_cast<std::size_t>(tag)];
+}
+
+/** @brief Resolves a DWT address-fragment width to its CTF representation. */
+constexpr const DwtAddressVariant* dwtAddressVariantForSize(std::uint8_t byteSize)
+{
+  for (const auto& variant : DwtAddressVariants) {
+    if (variant.tag != DwtAddressTag::None && variant.byteSize == byteSize) {
+      return &variant;
+    }
+  }
+  return nullptr;
 }
 
 /** @brief Resolves trace-run type metadata to a supported CTF value encoding. */
@@ -97,8 +146,8 @@ constexpr const ValueVariant* valueVariantForTraceRunType(const std::string_view
     return byteSize == 4U ? &valueVariant(ValueTag::Float32) : nullptr;
   }
 
-  const auto signedInteger = typeName == "signed int";
-  if (!signedInteger && typeName != "unsigned int") {
+  const auto signedInteger = typeName == "signed";
+  if (!signedInteger && typeName != "unsigned") {
     return nullptr;
   }
   if (byteSize == 1U) {
@@ -135,6 +184,12 @@ constexpr std::uint8_t value(ValueTag tag)
   return static_cast<std::uint8_t>(tag);
 }
 
+/** @brief Returns the integer representation of a DWT address tag. */
+constexpr std::uint8_t value(DwtAddressTag tag)
+{
+  return static_cast<std::uint8_t>(tag);
+}
+
 /** @brief Returns the integer representation of a DWT access type. */
 constexpr std::uint8_t value(DwtAccess access)
 {
@@ -145,6 +200,74 @@ constexpr std::uint8_t value(DwtAccess access)
 constexpr std::uint8_t value(ExceptionAction action)
 {
   return static_cast<std::uint8_t>(action);
+}
+
+/** @brief Returns the integer representation of a PC-sample state. */
+constexpr std::uint8_t value(PcSampleState state)
+{
+  return static_cast<std::uint8_t>(state);
+}
+
+/** @brief Returns the integer representation of an exception record origin. */
+constexpr std::uint8_t value(ExceptionOrigin origin)
+{
+  return static_cast<std::uint8_t>(origin);
+}
+
+/** @brief Returns the CTF enumeration value for one DWT event counter. */
+constexpr std::uint8_t value(DwtEventCounter counter)
+{
+  return static_cast<std::uint8_t>(counter);
+}
+
+/** @brief Returns the public counter name used by CTF metadata and Trace Compass. */
+constexpr std::string_view dwtEventCounterName(DwtEventCounter counter)
+{
+  switch (counter) {
+  case DwtEventCounter::Cpi:
+    return "CPICNT";
+  case DwtEventCounter::Exception:
+    return "EXCCNT";
+  case DwtEventCounter::Sleep:
+    return "SLEEPCNT";
+  case DwtEventCounter::LoadStore:
+    return "LSUCNT";
+  case DwtEventCounter::Fold:
+    return "FOLDCNT";
+  case DwtEventCounter::Cycle:
+    return "CYCCNT";
+  }
+  return "UNKNOWN";
+}
+
+/** @brief Returns the CTF enumeration value for one programmable PMU event counter. */
+constexpr std::uint8_t value(PmuEventCounter counter)
+{
+  return static_cast<std::uint8_t>(counter);
+}
+
+/** @brief Returns the provisional PMU counter name used until trace-run configuration can resolve it. */
+constexpr std::string_view pmuEventCounterName(PmuEventCounter counter)
+{
+  switch (counter) {
+  case PmuEventCounter::Event0:
+    return "Event0";
+  case PmuEventCounter::Event1:
+    return "Event1";
+  case PmuEventCounter::Event2:
+    return "Event2";
+  case PmuEventCounter::Event3:
+    return "Event3";
+  case PmuEventCounter::Event4:
+    return "Event4";
+  case PmuEventCounter::Event5:
+    return "Event5";
+  case PmuEventCounter::Event6:
+    return "Event6";
+  case PmuEventCounter::Event7:
+    return "Event7";
+  }
+  return "UNKNOWN";
 }
 
 /** @brief Returns the stable schema name of a CTF event ID. */
@@ -163,6 +286,16 @@ constexpr std::string_view eventName(EventId id)
     return "EXCEPTION";
   case EventId::GlobalTimestamp:
     return "GLOBAL_TIMESTAMP";
+  case EventId::PcSample:
+    return "PC_SAMPLE";
+  case EventId::DwtEvent:
+    return "DWT_EVENT";
+  case EventId::PmuEvent:
+    return "PMU_EVENT";
+  case EventId::DwtMatch:
+    return "DWT_MATCH";
+  case EventId::PcSampleProhibited:
+    return "PC_SAMPLE_PROHIBITED";
   }
   return "UNKNOWN";
 }

@@ -7,6 +7,7 @@
 #include "SvdConvTestUtils.h"
 
 #include "SVDConv.h"
+#include "SfrccInterface.h"
 #include "ErrLog.h"
 
 #include <map>
@@ -62,7 +63,6 @@ TEST_F(SvdConvIntegTests, CheckDisableCondition) {
   list<smatch> result1 = SvdConvTestUtils::FindRegex(buf, pattern1);
   EXPECT_TRUE(SvdConvTestUtils::FindAllEntries(result1, entries1));
 
-  //const regex pattern2("//[ ]+<view> (\\w+)\\s+//[ ]+<disableCond> \\((\\w+) & .*\\) == \\d+[ ]+</disableCond>");
   const regex pattern2("//[ ]+<view> \\w+\\s+//[ ]+<disableCond> \\((\\w+) & .*\\) == \\d+[ ]+</disableCond>");
   list<string> entries2 = { "DCB_DSCSR", "DCB_DSCSR_Clust_DSCSR" };
   list<smatch> result2 = SvdConvTestUtils::FindRegex(buf, pattern2);
@@ -113,6 +113,131 @@ TEST_F(SvdConvIntegTests, CheckOption_n) {
   outNameTest += ".sfd";
   ASSERT_TRUE(RteFsUtils::Exists(outNameTest));
 }
+
+TEST_F(SvdConvIntegTests, CheckSfdGeneration) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/sfdGeneration";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=sfd", "--create-folder" });
+
+  SvdConv svdConv;
+  ASSERT_EQ(0, svdConv.Check(args, args, nullptr));
+
+  string sfd;
+  ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/option_n.sfd", sfd));
+  EXPECT_FALSE(sfd.empty());
+}
+
+TEST_F(SvdConvIntegTests, GeneratesMemoryMapsAtRequestedDetailLevel) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/memoryMaps";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  struct MapMode {
+    const char* option;
+    const char* suffix;
+    bool registers;
+    bool fields;
+  };
+  const MapMode modes[] = {
+    {"peripheralMap", "MapPeripherals", false, false},
+    {"registerMap", "MapRegisters", true, false},
+    {"fieldMap", "MapFields", true, true},
+  };
+  for(const auto& mode : modes) {
+    SCOPED_TRACE(mode.option);
+    Arguments args("SVDConv.exe", inFile);
+    args.add({"-o", testOut, string("--generate=") + mode.option, "--create-folder"});
+    SvdConv svdConv;
+    ASSERT_EQ(0, svdConv.Check(args, args, nullptr));
+
+    string listing;
+    ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/option_n_" + mode.suffix + ".txt", listing));
+    EXPECT_NE(string::npos, listing.find("Peripheral Map"));
+    for(const auto* address : {"0x40003000", "0x40004000", "0xe000ee08"}) {
+      EXPECT_NE(string::npos, listing.find(string("Base Address: ") + address));
+    }
+    EXPECT_NE(string::npos, listing.find("AddressBlock:"));
+    EXPECT_TRUE(regex_search(listing, regex(R"(000\s+---)")));
+    EXPECT_TRUE(regex_search(listing, regex(R"(001\s+---)")));
+    EXPECT_TRUE(regex_search(listing, regex(R"(002\s+IWDG\s+IWDG Interrupt)")));
+
+    // Derived peripherals and nested clusters must retain their resolved addresses.
+    for(const auto* pattern : {
+          R"(\bKR\b[^\n]*Address: 0x40003000,[^\n]*Access: wo)",
+          R"(\bKR\b[^\n]*Address: 0x40004000,[^\n]*Access: wo)",
+          R"(\bPR\b[^\n]*Address: 0x40003004,[^\n]*Offset: 0x00000004,[^\n]*Width: 4,[^\n]*Access: rw)",
+          R"(\bDSCSR_Clust\b[^\n]*Address: 0xe000ee08)",
+          R"(\bDSCSR\b[^\n]*Address: 0xe000ee08)",
+          R"(\bDSCSR\b[^\n]*Address: 0xe000ee10)"}) {
+      EXPECT_EQ(mode.registers, regex_search(listing, regex(pattern))) << pattern;
+    }
+    for(const auto* pattern : {
+          R"(\bKEY\b[^\n]*\[15 \.\.\.  0\][^\n]*Bits: 16)",
+          R"(\bCDS\b[^\n]*\[16 \.\.\. 16\][^\n]*Bits: 1)"}) {
+      EXPECT_EQ(mode.fields, regex_search(listing, regex(pattern))) << pattern;
+    }
+  }
+}
+
+TEST_F(SvdConvIntegTests, ExpandsRegisterAndFieldDimensionsInMemoryMap) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/posMaskDim/PosMaskDim.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/dimensionMemoryMap";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+  Arguments args("SVDConv.exe", inFile);
+  args.add({"-o", testOut, "--generate=fieldMap", "--create-folder"});
+  SvdConv svdConv;
+  ASSERT_EQ(0, svdConv.Check(args, args, nullptr));
+
+  string listing;
+  ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/PosMaskDim_MapFields.txt", listing));
+  const regex registers(R"(\bDATA(\d+)\b[^\n]*Address: 0x([0-9a-f]+))");
+  unsigned count = 0;
+  for(auto it = sregex_iterator(listing.begin(), listing.end(), registers); it != sregex_iterator(); ++it) {
+    EXPECT_EQ(count, stoul((*it)[1].str()));
+    EXPECT_EQ(0x40000000UL + count * 4U, stoul((*it)[2].str(), nullptr, 16));
+    count++;
+  }
+  EXPECT_EQ(256U, count);
+  for(unsigned bit = 0; bit < 8; bit++) {
+    SCOPED_TRACE(bit);
+    const string value = to_string(bit);
+    const regex field("\\bPIN" + value + R"(\b[^\n]*\[ )" + value + R"( \.\.\.  )" + value +
+                      R"(\][^\n]*Bits: 1)");
+    const auto matches = SvdConvTestUtils::FindRegex(listing, field);
+    EXPECT_EQ(256U, matches.size());
+  }
+}
+
+#ifndef _WIN32
+TEST_F(SvdConvIntegTests, CheckSfrUnsupportedPlatform) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/sfrUnsupportedPlatform";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=sfr", "--create-folder" });
+
+  SvdConv svdConv;
+  EXPECT_EQ(2, svdConv.Check(args, args, nullptr));
+
+  string messages;
+  for(const auto& msg : ErrLog::Get()->GetLogMessages()) {
+    messages += msg;
+  }
+  EXPECT_NE(string::npos, messages.find("M133"));
+  EXPECT_NE(string::npos, messages.find("SFR generation is only supported on Windows (requires SfrCC2.exe)."));
+  EXPECT_FALSE(RteFsUtils::Exists(testOut + "/option_n.sfr"));
+}
+
+TEST_F(SvdConvIntegTests, CheckSfrCompileUnsupportedPlatform) {
+  SvdConv svdConv; // Initialize the diagnostic message table.
+  SfrccInterface sfrcc;
+  EXPECT_FALSE(sfrcc.Compile("unused.sfd"));
+}
+#endif
 
 TEST_F(SvdConvIntegTests, CheckSauNumRegions_Ok) {
   const string& inFile = SvdConvIntegTestEnv::localtestdata_dir + "/sauConfig/SSE300_ok.svd";
@@ -302,3 +427,98 @@ TEST_F(SvdConvIntegTests, CheckEnumComboWidthLimit) {
   EXPECT_NE(string::npos, sevenBitEdit);
   EXPECT_EQ(string::npos, buf.find("//    <combo>", sevenBitField));
 }
+
+struct VtorHeaderCase {
+  const char* name;
+  const char* cpu;
+  const char* xmlValue;
+  const char* expectedValue;
+};
+
+class SvdConvVtorHeaderTests : public SvdConvIntegTests, public WithParamInterface<VtorHeaderCase> {
+};
+
+TEST_P(SvdConvVtorHeaderTests, CheckVtorPresent) {
+  const auto& param = GetParam();
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/vtorPresent/" + param.name;
+  const string inFile = testOut + "/VtorPresence.svd";
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(testOut));
+
+  const string xmlValue = param.xmlValue;
+  const string vtorElement = xmlValue.empty() ? "" : "<vtorPresent>" + xmlValue + "</vtorPresent>";
+  const string svd = string(R"(<?xml version="1.0" encoding="utf-8"?>
+<device schemaVersion="1.3">
+  <name>VtorPresence</name>
+  <version>1.0</version>
+  <description>VTOR header configuration test.</description>
+  <cpu>
+    <name>)") + param.cpu + R"(</name>
+    <revision>r0p0</revision>
+    <endian>little</endian>
+    <mpuPresent>false</mpuPresent>
+    <fpuPresent>false</fpuPresent>
+    )" + vtorElement + R"(
+    <nvicPrioBits>2</nvicPrioBits>
+    <vendorSystickConfig>false</vendorSystickConfig>
+  </cpu>
+  <addressUnitBits>8</addressUnitBits>
+  <width>32</width>
+  <size>32</size>
+  <access>read-write</access>
+  <resetValue>0</resetValue>
+  <resetMask>0xFFFFFFFF</resetMask>
+  <peripherals>
+    <peripheral>
+      <name>TEST</name>
+      <description>Test peripheral.</description>
+      <baseAddress>0x40000000</baseAddress>
+      <addressBlock><offset>0</offset><size>4</size><usage>registers</usage></addressBlock>
+      <interrupt><name>TEST</name><description>Test interrupt.</description><value>0</value></interrupt>
+      <registers>
+        <register><name>DATA</name><description>Test data.</description><addressOffset>0</addressOffset></register>
+      </registers>
+    </peripheral>
+  </peripherals>
+</device>
+)";
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(inFile, svd));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=header" });
+  SvdConv svdConv;
+  ASSERT_EQ(0, svdConv.Check(args, args, nullptr));
+
+  string header;
+  ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/VtorPresence.h", header));
+  ASSERT_FALSE(header.empty());
+  const string expectedValue = param.expectedValue;
+  if(expectedValue.empty()) {
+    EXPECT_EQ(string::npos, header.find("__VTOR_PRESENT"));
+  }
+  else {
+    const regex pattern(R"(#define[ \t]+__VTOR_PRESENT[ \t]+([0-9]+)\b)");
+    const auto matches = SvdConvTestUtils::FindRegex(header, pattern);
+    ASSERT_EQ(1U, matches.size());
+    EXPECT_EQ(expectedValue, matches.front()[1].str());
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(VtorPresent, SvdConvVtorHeaderTests,
+  Values(
+    VtorHeaderCase{ "CM33Default",    "CM33",    "",      "1" },
+    VtorHeaderCase{ "CM0PLUSDefault", "CM0PLUS", "",      "1" },
+    VtorHeaderCase{ "CM23Default",    "CM23",    "",      "1" },
+    VtorHeaderCase{ "CM33True",       "CM33",    "true",  "1" },
+    VtorHeaderCase{ "CM33False",      "CM33",    "false", "0" },
+    VtorHeaderCase{ "CM33One",        "CM33",    "1",     "1" },
+    VtorHeaderCase{ "CM33Zero",       "CM33",    "0",     "0" },
+    VtorHeaderCase{ "CM0PLUSTrue",    "CM0PLUS", "true",  "1" },
+    VtorHeaderCase{ "CM0PLUSFalse",   "CM0PLUS", "false", "0" },
+    VtorHeaderCase{ "CM0PLUSOne",     "CM0PLUS", "1",     "1" },
+    VtorHeaderCase{ "CM0PLUSZero",    "CM0PLUS", "0",     "0" },
+    VtorHeaderCase{ "CM0NoMacro",     "CM0",     "",      ""  },
+    VtorHeaderCase{ "CM1NoMacro",     "CM1",     "",      ""  },
+    VtorHeaderCase{ "CM3NoMacro",     "CM3",     "",      ""  }
+  ),
+  [](const TestParamInfo<VtorHeaderCase>& info) { return info.param.name; }
+);

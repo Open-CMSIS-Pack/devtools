@@ -60,7 +60,7 @@ protected:
   void  MakeDoxygenAddGroup               (const std::string& text);
   void  MakeDoxygenEndGroup               (const std::string& text);
   void  MakeAnnonUnionCompiler            (const std::string& text, bool bStart);
-  void  MakeCMSISConfig                   (const std::string& text, const std::string& MCUName, CmsisCfg cmsisCfg);
+  void  MakeCMSISConfig                   (const std::string& text, const std::string& MCUName, const CmsisCfg& cmsisCfg);
   void  MakeRegisterStruct                (const std::string& text, SvdTypes::Access, const std::string& dataType, uint32_t size);
   void  MakeFieldStruct                   (const std::string& text, SvdTypes::Access, const std::string& dataType, uint32_t size, uint32_t bitWidth);
   void  MakeFieldUnion                    (const std::string& text, SvdTypes::Access accessType, const std::string& dataType, uint32_t size);
@@ -111,7 +111,6 @@ public:
     }
 
     if constexpr (elementType == c_header::MAKE) {
-      //m_prevClosedStructUnion = false;
       m_prevOpenedStructUnion = false;
 
       if constexpr (specialType == c_header::MK_PERIMAP) {
@@ -284,8 +283,6 @@ public:
     }
 
     else {
-      //m_prevOpenedStructUnion = 0;
-
       if constexpr(elementIndex == c_header::C_COMMENT) {
         parse_and_call(&HeaderGenerator::CreateCComment, text, std::forward<Args>(args)...);
       }

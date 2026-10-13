@@ -66,7 +66,7 @@ public:
   /**
    * @brief load solution
    * @param path to <solution>.csolution.yml file
-   * @param active target set in the format <target-type>[@<set>]
+   * @param active target set in the format <target-type>[@<target-set>]
    * @return processing status
   */
   bool LoadSolution(const std::string& csolution, const std::string& activeTargetSet);
@@ -74,7 +74,7 @@ public:
   /**
    * @brief setup contexts
    * @param path to <solution>.csolution.yml file
-   * @param active target set in the format <target-type>[@<set>]
+   * @param active target set in the format <target-type>[@<target-set>]
    * @return processing status
   */
   bool SetupContexts(const std::string& csolution, const std::string& activeTargetSet);  

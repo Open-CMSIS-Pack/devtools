@@ -34,7 +34,7 @@ bool HeaderData::AddNode_Register(SvdItem *reg, RegSorter* pRegSorter)
 
   uint32_t address      = (uint32_t)reg->GetAddress();
   pRegSorter->address   = (address & 0xfffffffc);
-  pRegSorter->unaligned = 0; //reg->pBlock->baseAddress & 0x03;
+  pRegSorter->unaligned = 0;
   uint32_t pos          = address & 0x03;
   uint32_t width        = reg->GetEffectiveBitWidth();
     
@@ -135,7 +135,6 @@ void HeaderData::Push_structUnionStack(bool isUnion, uint32_t num)
     m_structUnionPos++;
   }
   else {
-    //Message(MSG_CRITICAL, "Struct/Union Stack full!");
   }
 
   m_structUnionStack[m_structUnionPos].isUnion  = isUnion;
@@ -155,7 +154,6 @@ void HeaderData::Pop_structUnionStack(bool &isUnion, uint32_t &num)
     m_structUnionPos--;
   }
   else {
-    //Message(MSG_CRITICAL, "Struct/Union Stack empty!");
   }
 }
 
@@ -500,7 +498,6 @@ uint32_t HeaderData::GenerateRegItems(RegTreeNode *node, uint32_t address, uint3
       regAddress   = (uint32_t)item->GetAddress()                       /* + localOffset*/;
       alignAddress = (uint32_t)item->GetParent()->GetAddress()          /* + localOffset*/;   // cluster elements can be relative to "any" address
     } else {
-      //regAddress = (uint32_t)item->GetAbsoluteOffset()                /* + localOffset*/;
       regAddress   = (uint32_t)item->GetAddress()                       /* + localOffset*/;
       alignAddress = (uint32_t)item->GetParent()->GetAbsoluteAddress()  /* + localOffset*/;
     }
@@ -590,7 +587,6 @@ uint32_t HeaderData::GenerateNode(RegTreeNode *node, uint32_t address, uint32_t 
       regAddress   = (uint32_t)item->GetAddress()                       /* + localOffset*/;
       alignAddress = (uint32_t)item->GetParent()->GetAddress()          /* + localOffset*/;   // cluster elements can be relative to "any" address
     } else {
-      //regAddress = (uint32_t)item->GetAbsoluteOffset()                /* + localOffset*/;
       regAddress   = (uint32_t)item->GetAddress()                       /* + localOffset*/;
       alignAddress = (uint32_t)item->GetParent()->GetAbsoluteAddress()  /* + localOffset*/;
     }
@@ -753,7 +749,6 @@ void HeaderData::GeneratePart(RegSorter *pRegSorter)
     m_gen->Generate<C_WARNING >("Peripheral unaligned address: 0x%08x", -1, pRegSorter->address + pRegSorter->unaligned);
   }
 
-  //uint32_t address = pRegSorter->address + pRegSorter->unaligned;
   uint32_t address  = m_addressCnt;
   uint32_t sizeMax = 0;
   GenerateNode(m_rootNode, address, 1, sizeMax);    // start level must be 1

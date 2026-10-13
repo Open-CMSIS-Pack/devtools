@@ -9,46 +9,21 @@
 
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
+#include "TraceRoute.h"
 
+#include <cstddef>
 #include <string>
 #include <utility>
+#include <vector>
 
-/** @brief Appends a raw input offset to a diagnostic when available. */
-static std::string atRawOffset(const std::string& message, const TraceEvent& event)
+/** @brief Builds public stream context when a route has an architectural ID. */
+static std::vector<std::pair<std::string, std::string>> routeContext(const TraceRouteIdentity& route)
 {
-  return message + " at raw offset " + std::to_string(event.index);
-}
-
-/** @brief Creates the concise user-facing representation of a trace issue. */
-static std::string displayErrorMessage(const TraceEvent& event, const TraceIssueEvent& issue)
-{
-  switch (issue.code) {
-  case TraceIssueCode::DataLoss:
-    if (issue.rawBytesConsumed.has_value()) {
-      return std::to_string(*issue.rawBytesConsumed) + " raw bytes from raw offset " + std::to_string(event.index) +
-             " could not be decoded before the next hardware ITM sync";
-    }
-    return "trace data at raw offset " + std::to_string(event.index) +
-           " could not be decoded before the next hardware ITM sync";
-  case TraceIssueCode::OpenCsdBadPacketSequence:
-    return atRawOffset("invalid ITM packet sequence", event);
-  case TraceIssueCode::OpenCsdInvalidPacketHeader:
-    return atRawOffset("invalid ITM packet header", event);
-  case TraceIssueCode::OpenCsdIncompleteTail:
-    return "incomplete ITM packet starting at raw offset " + std::to_string(event.index) + " at end of input";
-  case TraceIssueCode::OpenCsdNoProgress:
-    return atRawOffset("OpenCSD made no decode progress", event);
-  case TraceIssueCode::OpenCsdWaitTimeout:
-    return "OpenCSD remained blocked while flushing pending data";
-  case TraceIssueCode::OpenCsdInitializationError:
-    return "OpenCSD initialization failed";
-  case TraceIssueCode::DecodeError:
-  case TraceIssueCode::InvalidExceptionAction:
-  case TraceIssueCode::UnsupportedDwtAddressPayload:
-  case TraceIssueCode::OpenCsdDecodeError:
-    return atRawOffset("trace decode error", event);
+  if (!route.traceBusId.has_value()) {
+    return {};
   }
-  return atRawOffset("trace decode error", event);
+  return {{"stream", std::to_string(*route.traceBusId)}};
 }
 
 TraceIssueReporter::TraceIssueReporter(DiagnosticSink& diagnostics)
@@ -58,6 +33,10 @@ TraceIssueReporter::TraceIssueReporter(DiagnosticSink& diagnostics)
 
 void TraceIssueReporter::append(const TraceEvent& event)
 {
+  if (isTraceEvent<SyncTraceEvent>(event)) {
+    observeSync(event);
+    return;
+  }
   if (isTraceEvent<OverflowTraceEvent>(event)) {
     reportOverflow(event);
     return;
@@ -73,40 +52,101 @@ void TraceIssueReporter::finish()
     return;
   }
   m_finished = true;
-  if (m_overflowPackets == 0U) {
-    return;
+  for (const auto& [routeId, state] : m_overflowByRoute) {
+    (void)routeId;
+    const TraceOverflowSummary summary{state.firstTimestamp, state.packetCount};
+    std::string sampleOffsets = "[";
+    for (const auto offset : state.sampleOffsets) {
+      if (sampleOffsets.size() > 1U) {
+        sampleOffsets += ',';
+      }
+      sampleOffsets += std::to_string(offset);
+    }
+    sampleOffsets += ']';
+    std::vector<std::pair<std::string, std::string>> detailedContext;
+    detailedContext.reserve(5U);
+    detailedContext.emplace_back("overflow_count", std::to_string(state.packetCount));
+    detailedContext.emplace_back("first_raw_offset", std::to_string(state.firstLocation.offset));
+    detailedContext.emplace_back("last_raw_offset", std::to_string(state.lastOffset));
+    detailedContext.emplace_back("sample_raw_offsets", std::move(sampleOffsets));
+    detailedContext.emplace_back("omitted_offsets", std::to_string(state.packetCount - state.sampleOffsets.size()));
+    report(DiagnosticSink::Severity::Warning,
+           formatOverflowSummary(summary, TraceMessageStyle::Compact),
+           formatOverflowSummary(summary, TraceMessageStyle::Detailed), routeContext(state.route),
+           std::move(detailedContext), state.firstLocation);
   }
+}
 
-  const auto additionalOverflows = m_overflowPackets - 1U;
-  const auto firstOverflow = m_firstOverflowTimestamp.has_value()
-                                 ? "cycle timestamp " + std::to_string(*m_firstOverflowTimestamp)
-                                 : std::string("an unknown cycle timestamp");
-  auto summary = "first overflow occurred at " + firstOverflow;
-  if (additionalOverflows > 0U) {
-    summary += "; " + std::to_string(additionalOverflows) + " more occurred";
+void TraceIssueReporter::observeSync(const TraceEvent& event)
+{
+  m_lastSyncByRoute[event.route.id] = event.index;
+  const auto overflow = m_overflowByRoute.find(event.route.id);
+  if (overflow != m_overflowByRoute.end()) {
+    auto& location = overflow->second.firstLocation;
+    if (!location.nextSyncOffset.has_value() && event.index >= location.offset) {
+      location.nextSyncOffset = event.index;
+    }
   }
-  report(DiagnosticSink::Severity::Warning, summary);
 }
 
 void TraceIssueReporter::reportOverflow(const TraceEvent& event)
 {
-  if (m_overflowPackets == 0U) {
-    m_firstOverflowTimestamp = event.tcyc;
+  auto& state = m_overflowByRoute[event.route.id];
+  if (state.packetCount == 0U) {
+    state.route = event.route;
+    state.firstTimestamp = event.tcyc;
+    state.firstLocation = rawLocationFor(event.route, event.index);
   }
-  ++m_overflowPackets;
+  ++state.packetCount;
+  state.lastOffset = event.index;
+  constexpr std::size_t maxSampleOffsets = 3U;
+  if (state.sampleOffsets.size() < maxSampleOffsets) {
+    state.sampleOffsets.push_back(event.index);
+  }
 }
 
 void TraceIssueReporter::reportError(const TraceEvent& event, const TraceIssueEvent& issue)
 {
+  auto location = rawLocationFor(event.route, event.index);
+  if (issue.code == TraceIssueCode::OpenCsdInitializationError) {
+    location.kind = RawDiagnosticLocation::Kind::InputProgress;
+  }
+  if (const auto* recovery = std::get_if<TraceRecovery>(&issue.message.data)) {
+    if (recovery->kind != TraceRecoveryKind::Generic) {
+      location = rawLocationFor(event.route, recovery->startOffset);
+      location.endOffset = recovery->endOffset;
+      if (recovery->kind == TraceRecoveryKind::Resumed) {
+        location.nextSyncOffset = recovery->endOffset;
+      }
+    }
+  }
+  if (issue.message.packet.has_value()) {
+    location.packetSize = issue.message.packet->size;
+  }
   report(issue.severity == TraceIssueSeverity::Warning ? DiagnosticSink::Severity::Warning
                                                        : DiagnosticSink::Severity::Error,
-         displayErrorMessage(event, issue));
+         formatTraceIssue(issue, event.index, TraceMessageStyle::Compact),
+         formatTraceIssue(issue, event.index, TraceMessageStyle::Detailed), routeContext(event.route), {}, location);
 }
 
-void TraceIssueReporter::report(DiagnosticSink::Severity severity, std::string message)
+RawDiagnosticLocation TraceIssueReporter::rawLocationFor(const TraceRouteIdentity& route, std::uint64_t offset) const
 {
-  m_diagnostics.report({
-      severity,
-      std::move(message),
-  });
+  RawDiagnosticLocation location{offset};
+  const auto sync = m_lastSyncByRoute.find(route.id);
+  if (sync != m_lastSyncByRoute.end() && sync->second <= offset) {
+    location.previousSyncOffset = sync->second;
+  }
+  return location;
+}
+
+void TraceIssueReporter::report(DiagnosticSink::Severity severity, std::string message, std::string detailedMessage,
+                                std::vector<std::pair<std::string, std::string>> context,
+                                std::vector<std::pair<std::string, std::string>> detailedContext,
+                                const RawDiagnosticLocation& rawLocation)
+{
+  DiagnosticSink::Event event{severity, std::move(message), std::move(context)};
+  event.detailedMessage = std::move(detailedMessage);
+  event.detailedContext = std::move(detailedContext);
+  event.rawLocation = rawLocation;
+  m_diagnostics.report(event);
 }

@@ -7,8 +7,9 @@
 
 #include "CtfMetadataWriter.h"
 
+#include "DiagnosticMessages.h"
+#include "CtfMetadataModel.h"
 #include "CtfSchema.h"
-#include "TraceOutputConfig.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -88,10 +89,10 @@ static std::string mapValueOrEmpty(const std::map<std::uint32_t, std::string>& v
   return found == values.end() ? "" : found->second;
 }
 
-static std::vector<std::uint32_t>
-exceptionNumbersWithDefaults(const std::vector<std::uint32_t>& observedExceptionNumbers)
+static std::vector<ExceptionNumber>
+exceptionNumbersWithDefaults(const std::vector<ExceptionNumber>& observedExceptionNumbers)
 {
-  std::vector<std::uint32_t> exceptions = {0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 14, 15};
+  std::vector<ExceptionNumber> exceptions = {0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 14, 15};
   for (const auto number : observedExceptionNumbers) {
     if (std::find(exceptions.begin(), exceptions.end(), number) == exceptions.end()) {
       exceptions.push_back(number);
@@ -102,11 +103,11 @@ exceptionNumbersWithDefaults(const std::vector<std::uint32_t>& observedException
 }
 
 /** @brief Returns the architectural name for a known Cortex-M exception. */
-static std::string exceptionName(std::uint32_t number)
+static std::string exceptionName(ExceptionNumber number)
 {
   switch (number) {
   case 0:
-    return "ThreadMode";
+    return "Thread Mode";
   case 1:
     return "Reset";
   case 2:
@@ -170,6 +171,28 @@ static std::string ctfValueFields(const std::string_view& prefix)
   return out.str();
 }
 
+/** @brief Generates a width-tagged TSDL field for a raw DWT address fragment. */
+static std::string ctfDwtAddressFields(const std::string_view& field)
+{
+  std::ostringstream out;
+  out << "        enum : uint8_t { ";
+  for (std::size_t index = 0; index < CtfSchema::DwtAddressVariants.size(); ++index) {
+    const auto& variant = CtfSchema::DwtAddressVariants[index];
+    if (index > 0U) {
+      out << ", ";
+    }
+    out << variant.name << " = " << static_cast<unsigned>(CtfSchema::value(variant.tag));
+  }
+  out << " } cmsis_dwt_" << field << "_type;\n"
+      << "        variant <cmsis_dwt_" << field << "_type> {\n";
+  for (const auto& variant : CtfSchema::DwtAddressVariants) {
+    const auto type = variant.byteSize == 1U ? "uint8_t" : variant.byteSize == 2U ? "uint16_t" : "uint32_t";
+    out << "            " << type << " " << variant.name << ";\n";
+  }
+  out << "        } cmsis_dwt_" << field << ";\n";
+  return out.str();
+}
+
 /** @brief Stores source labels and exception lanes emitted into CTF metadata. */
 struct MetadataSymbols {
   std::map<std::uint32_t, std::string> dwtValueTypes;
@@ -180,7 +203,7 @@ struct MetadataSymbols {
 };
 
 /** @brief Collects deduplicated source and exception symbols for metadata. */
-static MetadataSymbols collectMetadataSymbols(const std::vector<ResolvedTraceSource>& sources)
+static MetadataSymbols collectMetadataSymbols(const std::vector<CtfSourceDescriptor>& sources)
 {
   MetadataSymbols symbols;
   for (const auto& source : sources) {
@@ -191,18 +214,15 @@ static MetadataSymbols collectMetadataSymbols(const std::vector<ResolvedTraceSou
       }
       continue;
     }
-    if (source.type != "dwt") {
-      continue;
-    }
-    symbols.dwtValueTypes[id] = source.valueType;
+    symbols.dwtValueTypes[id] = source.dataType;
     if (source.label.has_value()) {
       symbols.dwtNames[id] = *source.label;
     }
-    if (source.symbolAddress.has_value()) {
-      symbols.dwtAddressStarts[id] = *source.symbolAddress;
-      const auto extent = static_cast<std::uint64_t>(source.valueSize - 1U);
-      if (*source.symbolAddress <= std::numeric_limits<std::uint64_t>::max() - extent) {
-        symbols.dwtAddressEnds[id] = *source.symbolAddress + extent;
+    if (source.address.has_value()) {
+      symbols.dwtAddressStarts[id] = *source.address;
+      const auto extent = static_cast<std::uint64_t>(source.dataSize - 1U);
+      if (*source.address <= std::numeric_limits<std::uint64_t>::max() - extent) {
+        symbols.dwtAddressEnds[id] = *source.address + extent;
       }
     }
   }
@@ -210,7 +230,7 @@ static MetadataSymbols collectMetadataSymbols(const std::vector<ResolvedTraceSou
 }
 
 /** @brief Writes the TSDL trace, environment, and clock declarations. */
-static void writeTraceEnvironment(std::ostream& out, const std::string& uuidString, std::uint64_t coreClockHz,
+static void writeTraceEnvironment(std::ostream& out, const std::string& uuidString, const CtfClockDomainDescriptor& clock,
                                   const MetadataSymbols& symbols)
 {
   out << R"(/* CTF 1.8 */
@@ -244,19 +264,22 @@ env {
 
 clock {
     name = swo_clock;
-    precision = 0;
+)";
+  if (clock.uuid.has_value()) {
+    out << "    uuid = \"" << clock.uuid->toString() << "\";\n";
+  }
+  out << R"(    precision = 0;
     offset_s = 0;
     offset = 0;
     absolute = false;
     freq = )"
-      << coreClockHz << R"(;
+      << clock.frequencyHz << R"(;
 };
 )";
 }
 
-/** @brief Writes reusable TSDL type and enumeration declarations. */
-static void writeTypeDefinitions(std::ostream& out, const MetadataSymbols& symbols,
-                                 const std::vector<std::uint32_t>& observedExceptionNumbers)
+/** @brief Writes primitive TSDL type aliases shared by all metadata layouts. */
+static void writePrimitiveTypeDefinitions(std::ostream& out)
 {
   out << R"(
 typealias integer { size = 8; align = 8; signed = false; } := uint8_t;
@@ -267,8 +290,13 @@ typealias integer { size = 16; align = 8; signed = true; byte_order = le; } := i
 typealias integer { size = 32; align = 8; signed = true; byte_order = le; } := int32_t;
 typealias floating_point { exp_dig = 8; mant_dig = 24; align = 8; byte_order = le; } := ieee_float32_t;
 typealias integer { size = 64; align = 8; signed = false; byte_order = le; } := uint64_t;
-typealias integer { size = 64; align = 8; signed = false; map = clock.swo_clock.value; } := swo_clock_t;
+)";
+}
 
+/** @brief Writes fixed CMSIS enumeration declarations shared by all metadata layouts. */
+static void writeFixedCmsisEnumerationDefinitions(std::ostream& out)
+{
+  out << R"(
 typealias enum : uint8_t {
     "read" = )"
       << static_cast<unsigned>(CtfSchema::value(CtfSchema::DwtAccess::Read)) << R"(,
@@ -291,9 +319,41 @@ typealias enum : uint8_t {
     "entered" = )"
       << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Entered)) << R"(,
     "exited" = )"
-      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Exited)) << R"(
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Exited)) << R"(,
+    "returned" = )"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionAction::Returned)) << R"(
 } := cmsis_exception_action_t;
 typealias enum : uint8_t {
+    "trace" = )"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionOrigin::Trace)) << R"(,
+    "synthetic" = )"
+      << static_cast<unsigned>(CtfSchema::value(CtfSchema::ExceptionOrigin::Synthetic)) << R"(
+} := cmsis_exception_origin_t;
+typealias enum : uint8_t {
+)";
+  for (const auto counter : kDwtEventCounters) {
+    out << "    \"" << CtfSchema::dwtEventCounterName(counter)
+        << "\" = " << static_cast<unsigned>(CtfSchema::value(counter)) << ",\n";
+  }
+  out << R"(} := cmsis_dwt_event_counter_t;
+typealias enum : uint8_t {
+)";
+  for (const auto counter : kPmuEventCounters) {
+    out << "    \"" << CtfSchema::pmuEventCounterName(counter)
+        << "\" = " << static_cast<unsigned>(CtfSchema::value(counter)) << ",\n";
+  }
+  out << "} := cmsis_pmu_event_counter_t;\n";
+}
+
+/** @brief Writes reusable TSDL type and enumeration declarations. */
+static void writeTypeDefinitions(std::ostream& out, const MetadataSymbols& symbols,
+                                 const std::vector<ExceptionNumber>& observedExceptionNumbers)
+{
+  writePrimitiveTypeDefinitions(out);
+  out << "typealias integer { size = 64; align = 8; signed = false; map = clock.swo_clock.value; } := "
+         "swo_clock_t;\n";
+  writeFixedCmsisEnumerationDefinitions(out);
+  out << R"(typealias enum : uint8_t {
 )";
   std::set<std::string> itmLabels;
   for (std::uint32_t channel = 1U; channel < 32U; ++channel) {
@@ -321,25 +381,33 @@ typealias enum : uint16_t {
 )";
 }
 
-/** @brief Writes the packet and event context definition for the SWO stream. */
-static void writeStreamDefinition(std::ostream& out)
+/** @brief Writes packet and event context definitions for one CTF stream. */
+static void writeStreamDefinition(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId,
+                                  std::string_view timestampType = "swo_clock_t", std::string_view routeType = {})
 {
   out << R"(
 stream {
     id = )"
-      << CtfSchema::SwoStreamId << R"(;
+      << streamClassId << R"(;
     event.header := struct {
         uint32_t id;
-        swo_clock_t timestamp;
+        )"
+      << timestampType << R"( timestamp;
     };
     event.context := struct {
         uint8_t cmsis_trace_bus_id;
-    };
+)";
+  if (!routeType.empty()) {
+    out << "        " << routeType << " ctrace_route;\n";
+  }
+  out << R"(    };
     packet.context := struct {
         uint32_t packet_size;
         uint32_t content_size;
-        swo_clock_t timestamp_begin;
-        swo_clock_t timestamp_end;
+        )"
+      << timestampType << R"( timestamp_begin;
+        )"
+      << timestampType << R"( timestamp_end;
         uint32_t events_discarded;
         uint32_t packet_seq_num;
     };
@@ -348,7 +416,8 @@ stream {
 }
 
 /** @brief Writes the ITM software event declaration. */
-static void writeItmEvent(std::ostream& out)
+static void writeItmEvent(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId,
+                          std::string_view channelType = "cmsis_itm_channel_t")
 {
   out << R"(
 event {
@@ -357,9 +426,10 @@ event {
     name = ")"
       << CtfSchema::eventName(CtfSchema::EventId::Itm) << R"(";
     stream_id = )"
-      << CtfSchema::SwoStreamId << R"(;
+      << streamClassId << R"(;
     fields := struct {
-        cmsis_itm_channel_t cmsis_itm_channel;
+        )"
+      << channelType << R"( cmsis_itm_channel;
 )" << ctfValueFields("itm")
       << R"(        uint8_t cmsis_sample_flags;
         uint32_t cmsis_overflow_count;
@@ -369,7 +439,8 @@ event {
 }
 
 /** @brief Writes the DWT value event declaration. */
-static void writeDwtValueEvent(std::ostream& out)
+static void writeDwtValueEvent(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId,
+                               std::string_view comparatorType = "cmsis_dwt_comparator_t")
 {
   out << R"(
 event {
@@ -378,16 +449,13 @@ event {
     name = ")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtValue) << R"(";
     stream_id = )"
-      << CtfSchema::SwoStreamId << R"(;
+      << streamClassId << R"(;
     fields := struct {
-        cmsis_dwt_comparator_t cmsis_dwt_comparator;
+        )"
+      << comparatorType << R"( cmsis_dwt_comparator;
         cmsis_dwt_access_t cmsis_dwt_access;
 )" << ctfValueFields("dwt")
-      << R"(        uint8_t cmsis_has_pc;
-        uint32_t cmsis_pc[cmsis_has_pc];
-        uint8_t cmsis_has_address_lo16;
-        uint16_t cmsis_address_lo16[cmsis_has_address_lo16];
-        uint8_t cmsis_sample_flags;
+      << ctfDwtAddressFields("pc") << ctfDwtAddressFields("address") << R"(        uint8_t cmsis_sample_flags;
         uint32_t cmsis_overflow_count;
     };
 };
@@ -395,7 +463,8 @@ event {
 }
 
 /** @brief Writes the DWT address event declaration. */
-static void writeDwtAddressEvent(std::ostream& out)
+static void writeDwtAddressEvent(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId,
+                                 std::string_view comparatorType = "cmsis_dwt_comparator_t")
 {
   out << R"(
 event {
@@ -404,13 +473,113 @@ event {
     name = ")"
       << CtfSchema::eventName(CtfSchema::EventId::DwtAddress) << R"(";
     stream_id = )"
-      << CtfSchema::SwoStreamId << R"(;
+      << streamClassId << R"(;
     fields := struct {
-        cmsis_dwt_comparator_t cmsis_dwt_comparator;
-        uint8_t cmsis_has_pc;
-        uint8_t cmsis_has_address_lo16;
-        uint32_t cmsis_pc;
-        uint16_t cmsis_address_lo16;
+        )"
+      << comparatorType << R"( cmsis_dwt_comparator;
+)" << ctfDwtAddressFields("pc")
+      << ctfDwtAddressFields("address") << R"(        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+)";
+}
+
+/** @brief Writes the comparator-only DWT match event declaration. */
+static void writeDwtMatchEvent(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId,
+                               std::string_view comparatorType = "cmsis_dwt_comparator_t")
+{
+  out << R"(
+event {
+    id = )"
+      << CtfSchema::value(CtfSchema::EventId::DwtMatch) << R"(;
+    name = ")"
+      << CtfSchema::eventName(CtfSchema::EventId::DwtMatch) << R"(";
+    stream_id = )"
+      << streamClassId << R"(;
+    fields := struct {
+        )"
+      << comparatorType << R"( cmsis_dwt_comparator;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+)";
+}
+
+/** @brief Writes the DWT event-counter declaration. */
+static void writeDwtEvent(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId)
+{
+  out << R"(
+event {
+    id = )"
+      << CtfSchema::value(CtfSchema::EventId::DwtEvent) << R"(;
+    name = ")"
+      << CtfSchema::eventName(CtfSchema::EventId::DwtEvent) << R"(";
+    stream_id = )"
+      << streamClassId << R"(;
+    fields := struct {
+        cmsis_dwt_event_counter_t cmsis_dwt_event_counter;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+)";
+}
+
+/** @brief Writes the programmable PMU event-counter declaration. */
+static void writePmuEvent(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId)
+{
+  out << R"(
+event {
+    id = )"
+      << CtfSchema::value(CtfSchema::EventId::PmuEvent) << R"(;
+    name = ")"
+      << CtfSchema::eventName(CtfSchema::EventId::PmuEvent) << R"(";
+    stream_id = )"
+      << streamClassId << R"(;
+    fields := struct {
+        cmsis_pmu_event_counter_t cmsis_pmu_event_counter;
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+)";
+}
+
+/** @brief Writes the periodic PC-sample event declaration. */
+static void writePcSampleEvent(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId)
+{
+  out << R"(
+event {
+    id = )"
+      << CtfSchema::value(CtfSchema::EventId::PcSample) << R"(;
+    name = ")"
+      << CtfSchema::eventName(CtfSchema::EventId::PcSample) << R"(";
+    stream_id = )"
+      << streamClassId << R"(;
+    fields := struct {
+        uint8_t cmsis_pc_sample_state;
+        uint32_t cmsis_pc[cmsis_pc_sample_state];
+        uint8_t cmsis_sample_flags;
+        uint32_t cmsis_overflow_count;
+    };
+};
+)";
+}
+
+/** @brief Writes the trace-prohibited PC-sampling marker declaration. */
+static void writePcSampleProhibitedEvent(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId)
+{
+  out << R"(
+event {
+    id = )"
+      << CtfSchema::value(CtfSchema::EventId::PcSampleProhibited) << R"(;
+    name = ")"
+      << CtfSchema::eventName(CtfSchema::EventId::PcSampleProhibited) << R"(";
+    stream_id = )"
+      << streamClassId << R"(;
+    fields := struct {
         uint8_t cmsis_sample_flags;
         uint32_t cmsis_overflow_count;
     };
@@ -419,7 +588,8 @@ event {
 }
 
 /** @brief Writes status, exception, and global timestamp declarations. */
-static void writeStatusEvents(std::ostream& out)
+static void writeStatusEvents(std::ostream& out, std::uint32_t streamClassId = CtfSchema::SwoStreamId,
+                              std::string_view exceptionType = "cmsis_exception_number_t")
 {
   out << R"(
 event {
@@ -428,7 +598,7 @@ event {
     name = ")"
       << CtfSchema::eventName(CtfSchema::EventId::TraceStatus) << R"(";
     stream_id = )"
-      << CtfSchema::SwoStreamId << R"(;
+      << streamClassId << R"(;
     fields := struct {
         cmsis_trace_status_reason_t cmsis_trace_status_reason;
         uint32_t cmsis_overflow_count;
@@ -441,11 +611,13 @@ event {
     name = ")"
       << CtfSchema::eventName(CtfSchema::EventId::Exception) << R"(";
     stream_id = )"
-      << CtfSchema::SwoStreamId << R"(;
+      << streamClassId << R"(;
     fields := struct {
-        cmsis_exception_number_t cmsis_exception_number;
+        )"
+      << exceptionType << R"( cmsis_exception_number;
         cmsis_exception_action_t cmsis_exception_action;
         uint16_t cmsis_exception_number_value;
+        cmsis_exception_origin_t cmsis_exception_origin;
     };
 };
 
@@ -455,7 +627,7 @@ event {
     name = ")"
       << CtfSchema::eventName(CtfSchema::EventId::GlobalTimestamp) << R"(";
     stream_id = )"
-      << CtfSchema::SwoStreamId << R"(;
+      << streamClassId << R"(;
     fields := struct {
         uint64_t cmsis_global_timestamp;
         uint8_t cmsis_clock_change;
@@ -464,26 +636,184 @@ event {
 )";
 }
 
-void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const std::string& uuidString,
-                              std::uint64_t coreClockHz, const std::vector<ResolvedTraceSource>& sources,
-                              const std::vector<std::uint32_t>& observedExceptionNumbers)
+/** @brief Returns source metadata attached to one exact stream route. */
+static std::vector<CtfSourceDescriptor> sourcesForStream(const CtfMetadataModel& model,
+                                                         const CtfStreamDescriptor& stream)
+{
+  std::vector<CtfSourceDescriptor> sources;
+  for (const auto& source : model.topology().sources) {
+    if (source.route == stream.route) {
+      sources.push_back(source);
+    }
+  }
+  return sources;
+}
+
+/** @brief Returns the unique TSDL namespace prefix of one non-legacy stream. */
+static std::string streamSymbolPrefix(const CtfStreamDescriptor& stream)
+{
+  return "cmsis_stream_" + std::to_string(stream.streamClassId.value());
+}
+
+/** @brief Returns the Trace Compass route label carried by one stream context. */
+static std::string streamRouteLabel(const CtfStreamDescriptor& stream)
+{
+  if (stream.processorName.has_value() && !stream.processorName->empty()) {
+    return *stream.processorName;
+  }
+  return std::to_string(stream.streamClassId.value());
+}
+
+/** @brief Writes common trace, environment, and clock declarations for a generalized topology. */
+static void writeGeneralTraceEnvironment(std::ostream& out, const CtfMetadataModel& model)
+{
+  out << R"(/* CTF 1.8 */
+trace {
+    major = 1;
+    minor = 8;
+    uuid = ")"
+      << model.traceUuid().toString() << R"(";
+    byte_order = le;
+    packet.header := struct {
+        integer { size = 32; align = 8; signed = false; } magic;
+        integer { size = 8; align = 8; signed = false; } uuid[16];
+        integer { size = 32; align = 8; signed = false; } stream_id;
+    };
+};
+
+env {
+    cmsis_ctf_profile = "cmsis.ctf";
+    cmsis_ctf_profile_version = 1;
+)";
+  for (const auto& stream : model.topology().streams) {
+    const auto prefix = streamSymbolPrefix(stream);
+    const auto symbols = collectMetadataSymbols(sourcesForStream(model, stream));
+    if (stream.processorName.has_value() && !stream.processorName->empty()) {
+      out << "    " << prefix << "_processor_name = " << tsdlString(*stream.processorName) << ";\n";
+    }
+    for (const auto& entry : symbols.dwtValueTypes) {
+      out << "    " << prefix << "_dwt" << entry.first << "_value_type = " << tsdlString(entry.second) << ";\n";
+    }
+    for (const auto& entry : symbols.dwtAddressStarts) {
+      out << "    " << prefix << "_dwt" << entry.first
+          << "_address_start = " << tsdlString("0x" + hexValue(entry.second)) << ";\n";
+    }
+    for (const auto& entry : symbols.dwtAddressEnds) {
+      out << "    " << prefix << "_dwt" << entry.first << "_address_end = " << tsdlString("0x" + hexValue(entry.second))
+          << ";\n";
+    }
+  }
+  out << "};\n";
+  for (const auto& clock : model.topology().clockDomains) {
+    out << "\nclock {\n"
+        << "    name = " << clock.name << ";\n";
+    if (clock.uuid.has_value()) {
+      out << "    uuid = \"" << clock.uuid->toString() << "\";\n";
+    }
+    out << "    precision = 0;\n"
+        << "    offset_s = 0;\n"
+        << "    offset = 0;\n"
+        << "    absolute = " << (clock.absolute ? "true" : "false") << ";\n"
+        << "    freq = " << clock.frequencyHz << ";\n"
+        << "};\n";
+  }
+}
+
+/** @brief Writes primitive and fixed CMSIS types shared by all generalized streams. */
+static void writeGeneralCommonTypes(std::ostream& out, const CtfMetadataModel& model)
+{
+  writePrimitiveTypeDefinitions(out);
+  for (const auto& clock : model.topology().clockDomains) {
+    out << "typealias integer { size = 64; align = 8; signed = false; map = clock." << clock.name
+        << ".value; } := " << clock.name << "_t;\n";
+  }
+  writeFixedCmsisEnumerationDefinitions(out);
+}
+
+/** @brief Writes route-specific channel, comparator, and exception types. */
+static void writeGeneralStreamTypes(std::ostream& out, const CtfMetadataModel& model, const CtfStreamDescriptor& stream,
+                                    const MetadataSymbols& symbols)
+{
+  const auto prefix = streamSymbolPrefix(stream);
+  const auto traceBusId = static_cast<unsigned>(stream.route.traceBusId.value_or(0U));
+  out << "typealias enum : uint8_t {\n"
+      << "    " << tsdlString(streamRouteLabel(stream)) << " = " << traceBusId << ",\n"
+      << "} := " << prefix << "_route_t;\n"
+      << "typealias enum : uint8_t {\n";
+  std::set<std::string> itmLabels;
+  for (std::uint32_t channel = 1U; channel < 32U; ++channel) {
+    const auto fallback = "ITM" + std::to_string(channel);
+    out << "    " << tsdlString(uniqueEnumLabel(mapValueOrEmpty(symbols.itmNames, channel), fallback, itmLabels))
+        << " = " << channel << ",\n";
+  }
+  out << "} := " << prefix << "_itm_channel_t;\n"
+      << "typealias enum : uint8_t {\n";
+  std::set<std::string> dwtLabels;
+  for (std::uint32_t comparator = 0U; comparator < 4U; ++comparator) {
+    const auto fallback = "DWT" + std::to_string(comparator);
+    out << "    " << tsdlString(uniqueEnumLabel(mapValueOrEmpty(symbols.dwtNames, comparator), fallback, dwtLabels))
+        << " = " << comparator << ",\n";
+  }
+  out << "} := " << prefix << "_dwt_comparator_t;\n"
+      << "typealias enum : uint16_t {\n";
+  for (const auto number : exceptionNumbersWithDefaults(model.observedExceptions(stream.streamClassId))) {
+    out << "    " << tsdlString(exceptionName(number)) << " = " << number << ",\n";
+  }
+  out << "} := " << prefix << "_exception_number_t;\n";
+}
+
+/** @brief Writes every stream and event declaration of a generalized topology. */
+static void writeGeneralStreamSchemas(std::ostream& out, const CtfMetadataModel& model)
+{
+  for (const auto& stream : model.topology().streams) {
+    const auto* clock = model.clockDomain(stream.clockDomainId);
+    const auto prefix = streamSymbolPrefix(stream);
+    const auto streamClassId = stream.streamClassId.value();
+    const auto symbols = collectMetadataSymbols(sourcesForStream(model, stream));
+    writeGeneralStreamTypes(out, model, stream, symbols);
+    writeStreamDefinition(out, streamClassId, clock->name + "_t", prefix + "_route_t");
+    writeItmEvent(out, streamClassId, prefix + "_itm_channel_t");
+    writeDwtValueEvent(out, streamClassId, prefix + "_dwt_comparator_t");
+    writeDwtAddressEvent(out, streamClassId, prefix + "_dwt_comparator_t");
+    writeDwtMatchEvent(out, streamClassId, prefix + "_dwt_comparator_t");
+    writeDwtEvent(out, streamClassId);
+    writePmuEvent(out, streamClassId);
+    writeStatusEvents(out, streamClassId, prefix + "_exception_number_t");
+    writePcSampleEvent(out, streamClassId);
+    writePcSampleProhibitedEvent(out, streamClassId);
+  }
+}
+
+void CtfMetadataWriter::write(const std::filesystem::path& outputDir, const CtfMetadataModel& model)
 {
   const auto metadataPath = outputDir / "metadata";
-  std::ofstream out(metadataPath, std::ios::out | std::ios::trunc);
+  std::ofstream out(metadataPath, std::ios::out | std::ios::binary | std::ios::trunc);
   if (!out) {
-    throw std::runtime_error("Failed to write CTF metadata " + metadataPath.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CtfMetadataWrite, metadataPath.string()));
   }
 
-  const auto symbols = collectMetadataSymbols(sources);
-  writeTraceEnvironment(out, uuidString, coreClockHz, symbols);
-  writeTypeDefinitions(out, symbols, observedExceptionNumbers);
-  writeStreamDefinition(out);
-  writeItmEvent(out);
-  writeDwtValueEvent(out);
-  writeDwtAddressEvent(out);
-  writeStatusEvents(out);
+  const auto& topology = model.topology();
+  if (model.isLegacySingleStreamLayout()) {
+    const auto symbols = collectMetadataSymbols(topology.sources);
+    writeTraceEnvironment(out, model.traceUuid().toString(), topology.clockDomains.front(), symbols);
+    writeTypeDefinitions(out, symbols, model.observedExceptions(topology.streams.front().streamClassId));
+    writeStreamDefinition(out);
+    writeItmEvent(out);
+    writeDwtValueEvent(out);
+    writeDwtAddressEvent(out);
+    writeDwtMatchEvent(out);
+    writeDwtEvent(out);
+    writePmuEvent(out);
+    writeStatusEvents(out);
+    writePcSampleEvent(out);
+    writePcSampleProhibitedEvent(out);
+  } else {
+    writeGeneralTraceEnvironment(out, model);
+    writeGeneralCommonTypes(out, model);
+    writeGeneralStreamSchemas(out, model);
+  }
   out.close();
   if (!out) {
-    throw std::runtime_error("Failed to write CTF metadata " + metadataPath.string());
+    throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::CtfMetadataWrite, metadataPath.string()));
   }
 }

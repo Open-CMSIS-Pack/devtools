@@ -12,6 +12,7 @@
 #include "TraceEvent.h"
 
 #include <cstdint>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -54,7 +55,8 @@ inline OpenCsdTraceElement openCsdElement(OpenCsdTraceElement::Kind kind, std::u
   OpenCsdTraceElement element;
   element.kind = kind;
   element.sourceIndex = index;
-  element.traceBusId = stream;
+  element.route = stream == 0U ? TraceRouteIdentity{}
+                               : TraceRouteIdentity{TraceRouteId{stream}, std::optional<std::uint8_t>(stream)};
   return element;
 }
 

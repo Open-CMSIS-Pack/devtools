@@ -7,26 +7,30 @@
 
 #include "CsvRowMapper.h"
 
+#include "CsvField.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 #include "TraceSelection.h"
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <variant>
 
 /** @brief Identifies columns in the stable ctrace CSV schema. */
 enum class CsvColumn : std::size_t {
   Cycles,
   Stream,
   Type,
-  Source,
+  Index,
   Value,
   Pc,
-  Offset,
+  Address,
   Note,
   Count,
 };
@@ -35,10 +39,10 @@ constexpr std::array<std::string_view, static_cast<std::size_t>(CsvColumn::Count
     "cycles",
     "stream",
     "type",
-    "source",
+    "index",
     "value",
     "pc",
-    "offset",
+    "address",
     "note",
 }};
 
@@ -62,24 +66,6 @@ static std::size_t column(CsvColumn value)
   return static_cast<std::size_t>(value);
 }
 
-/** @brief Applies RFC-style quoting to one CSV field when required. */
-static std::string escapeCsvField(const std::string& value)
-{
-  if (value.find_first_of("\",\r\n") == std::string::npos) {
-    return value;
-  }
-  std::string escaped = "\"";
-  for (const auto ch : value) {
-    if (ch == '"') {
-      escaped += "\"\"";
-    } else {
-      escaped += ch;
-    }
-  }
-  escaped += "\"";
-  return escaped;
-}
-
 /** @brief Joins escaped fields into one CSV row. */
 static std::string renderCsvRow(const CsvRow& fields)
 {
@@ -88,7 +74,7 @@ static std::string renderCsvRow(const CsvRow& fields)
     if (index != 0U) {
       out << ",";
     }
-    out << escapeCsvField(fields[index]);
+    out << Csv::escapeField(fields[index]);
   }
   return out.str();
 }
@@ -104,6 +90,15 @@ static std::string hexValue(std::uint64_t value, std::uint32_t widthBytes)
     value >>= 4U;
   }
   return "0x" + out;
+}
+
+/** @brief Writes one optional raw DWT address fragment using its original width. */
+static void writeDwtAddressFragment(CsvRow& row, CsvColumn target,
+                                    const std::optional<DwtAddressFragment>& fragment)
+{
+  if (fragment.has_value()) {
+    row[column(target)] = hexValue(fragment->value, fragment->size);
+  }
 }
 
 /** @brief Maps a semantic exception action to its CSV value. */
@@ -122,6 +117,100 @@ static std::string_view exceptionActionCsvValue(ExceptionAction action)
   return "0x0";
 }
 
+/** @brief Writes one ITM software packet to the CSV event columns. */
+static void writePayloadColumns(CsvRow& row, const SoftwareTraceEvent& event)
+{
+  row[column(CsvColumn::Index)] = std::to_string(event.channel);
+  row[column(CsvColumn::Value)] = hexValue(event.value, event.size);
+}
+
+/** @brief Writes one DWT data packet to the CSV event columns. */
+static void writePayloadColumns(CsvRow& row, const DwtDataTraceEvent& event)
+{
+  row[column(CsvColumn::Index)] = std::to_string(event.comparator);
+  row[column(CsvColumn::Value)] = hexValue(event.value, event.size);
+  writeDwtAddressFragment(row, CsvColumn::Pc, event.pc);
+  writeDwtAddressFragment(row, CsvColumn::Address, event.address);
+}
+
+/** @brief Writes one DWT address packet to the CSV event columns. */
+static void writePayloadColumns(CsvRow& row, const DwtAddressTraceEvent& event)
+{
+  row[column(CsvColumn::Index)] = std::to_string(event.comparator);
+  writeDwtAddressFragment(row, CsvColumn::Pc, dwtAddressPc(event));
+  writeDwtAddressFragment(row, CsvColumn::Address, dwtDataAddress(event));
+}
+
+/** @brief Writes one comparator-only DWT match to the CSV event columns. */
+static void writePayloadColumns(CsvRow& row, const DwtMatchTraceEvent& event)
+{
+  row[column(CsvColumn::Index)] = std::to_string(event.comparator);
+}
+
+/** @brief Writes one exception transition to the CSV event columns. */
+static void writePayloadColumns(CsvRow& row, const ExceptionTraceEvent& event)
+{
+  row[column(CsvColumn::Index)] = std::to_string(event.number);
+  row[column(CsvColumn::Value)] = exceptionActionCsvValue(event.action);
+}
+
+/** @brief Writes one DWT event-counter packet to the CSV event columns. */
+static void writePayloadColumns(CsvRow& row, const DwtEventTraceEvent& event)
+{
+  row[column(CsvColumn::Index)] = "0";
+  row[column(CsvColumn::Value)] = hexValue(event.counterMask, 1U);
+}
+
+/** @brief Writes one PMU trace-on-overflow packet to the CSV event columns. */
+static void writePayloadColumns(CsvRow& row, const PmuTraceEvent& event)
+{
+  row[column(CsvColumn::Index)] = "3";
+  row[column(CsvColumn::Value)] = hexValue(event.overflowMask, 1U);
+}
+
+/** @brief Writes one periodic PC sample to the CSV event columns. */
+static void writePayloadColumns(CsvRow& row, const PcSampleTraceEvent& event)
+{
+  switch (event.kind) {
+  case PcSampleKind::Pc:
+    row[column(CsvColumn::Pc)] = hexValue(event.pc, 4U);
+    break;
+  case PcSampleKind::Sleep:
+    row[column(CsvColumn::Note)] = "CPU Sleeping";
+    break;
+  case PcSampleKind::TraceProhibited:
+    row[column(CsvColumn::Note)] = "Trace prohibited";
+    break;
+  }
+}
+
+/** @brief Leaves local timestamp control packets without payload-specific CSV columns. */
+static void writePayloadColumns(CsvRow&, const LocalTimestampTraceEvent&)
+{
+}
+
+/** @brief Writes one global timestamp to the CSV cycle column. */
+static void writePayloadColumns(CsvRow& row, const GlobalTimestampTraceEvent& event)
+{
+  row[column(CsvColumn::Cycles)] = std::to_string(event.value);
+}
+
+/** @brief Writes one overflow diagnostic to the CSV note column. */
+static void writePayloadColumns(CsvRow& row, const OverflowTraceEvent& event)
+{
+  row[column(CsvColumn::Note)] = formatTraceMessage(event, TraceMessageStyle::Compact);
+}
+
+/** @brief Leaves synchronization control packets without payload-specific CSV columns. */
+static void writePayloadColumns(CsvRow&, const SyncTraceEvent&)
+{
+}
+
+/** @brief Defers issue text until the enclosing event supplies its raw position. */
+static void writePayloadColumns(CsvRow&, const TraceIssueEvent&)
+{
+}
+
 /** @brief Maps one semantic trace event to all CSV columns. */
 static CsvRow eventToCsvRow(const TraceEvent& event)
 {
@@ -129,49 +218,20 @@ static CsvRow eventToCsvRow(const TraceEvent& event)
   if (event.tcyc.has_value()) {
     row[column(CsvColumn::Cycles)] = std::to_string(*event.tcyc);
   }
-  if (event.traceBusId != 0U) {
-    row[column(CsvColumn::Stream)] = std::to_string(event.traceBusId);
+  if (event.route.traceBusId.has_value()) {
+    row[column(CsvColumn::Stream)] = std::to_string(*event.route.traceBusId);
   }
   if (const auto type = traceEventType(event)) {
     row[column(CsvColumn::Type)] = traceEventTypeName(*type);
   }
 
-  if (const auto* software = traceEventPayload<SoftwareTraceEvent>(event)) {
-    row[column(CsvColumn::Source)] = std::to_string(software->channel);
-    row[column(CsvColumn::Value)] = hexValue(software->value, software->size);
-  } else if (const auto* data = traceEventPayload<DwtDataTraceEvent>(event)) {
-    row[column(CsvColumn::Source)] = std::to_string(data->comparator);
-    row[column(CsvColumn::Value)] = hexValue(data->value, data->size);
-    if (data->pc.has_value()) {
-      row[column(CsvColumn::Pc)] = hexValue(*data->pc, 4);
-    }
-    if (data->addressLo16.has_value()) {
-      row[column(CsvColumn::Offset)] = hexValue(*data->addressLo16, 2);
-    }
-  } else if (const auto* address = traceEventPayload<DwtAddressTraceEvent>(event)) {
-    row[column(CsvColumn::Source)] = std::to_string(address->comparator);
-    if (const auto pc = dwtAddressPc(*address)) {
-      row[column(CsvColumn::Pc)] = hexValue(*pc, 4);
-    }
-    if (const auto offset = dwtAddressOffset(*address)) {
-      row[column(CsvColumn::Offset)] = hexValue(*offset, 2);
-    }
-  } else if (const auto* exception = traceEventPayload<ExceptionTraceEvent>(event)) {
-    row[column(CsvColumn::Source)] = std::to_string(exception->number);
-    row[column(CsvColumn::Value)] = exceptionActionCsvValue(exception->action);
-  } else if (const auto* timestamp = traceEventPayload<GlobalTimestampTraceEvent>(event)) {
-    row[column(CsvColumn::Cycles)] = std::to_string(timestamp->value);
-  } else if (const auto* overflow = traceEventPayload<OverflowTraceEvent>(event)) {
-    row[column(CsvColumn::Note)] = overflow->message.empty()
-                                       ? "overflow: new timestamp segment; time across boundary may be unreliable"
-                                       : overflow->message;
-  } else if (const auto* issue = traceEventPayload<TraceIssueEvent>(event)) {
-    row[column(CsvColumn::Note)] = issue->message;
+  std::visit([&row](const auto& payload) { writePayloadColumns(row, payload); }, event.payload);
+  if (const auto* issue = traceEventPayload<TraceIssueEvent>(event)) {
+    row[column(CsvColumn::Note)] = formatTraceIssue(*issue, event.index, TraceMessageStyle::Compact);
   }
 
   return row;
 }
-
 
 std::string CsvRowMapper::header()
 {
@@ -181,4 +241,23 @@ std::string CsvRowMapper::header()
 std::string CsvRowMapper::row(const TraceEvent& event)
 {
   return renderCsvRow(eventToCsvRow(event));
+}
+
+std::string CsvRowMapper::byteSkipRow(const TraceByteSkip& skipped)
+{
+  CsvRow row{};
+  if (skipped.traceId.has_value()) {
+    row[column(CsvColumn::Stream)] = std::to_string(*skipped.traceId);
+  }
+  row[column(CsvColumn::Type)] = "info";
+  row[column(CsvColumn::Note)] = formatTraceMessage(skipped, TraceMessageStyle::Compact);
+  return renderCsvRow(row);
+}
+
+std::string CsvRowMapper::decodeAbortRow(const TraceDecodeAbort& failure)
+{
+  CsvRow row{};
+  row[column(CsvColumn::Type)] = "error";
+  row[column(CsvColumn::Note)] = formatTraceMessage(failure, TraceMessageStyle::Compact);
+  return renderCsvRow(row);
 }

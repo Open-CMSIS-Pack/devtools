@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <streambuf>
 #include <stdexcept>
@@ -91,7 +92,7 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
 
   for (const auto stream : {3U, 0U}) {
     auto excluded = accepted;
-    excluded.traceBusId = static_cast<std::uint8_t>(stream);
+    excluded = onStream(std::move(excluded), static_cast<std::uint8_t>(stream));
     output.writeEvent(excluded);
   }
 
@@ -99,11 +100,11 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
   std::get<SoftwareTraceEvent>(excludedChannel.payload).channel = 0U;
   output.writeEvent(excludedChannel);
 
-  output.writeEvent(onStream(issuePacket(TraceIssueCode::DecodeError), accepted.traceBusId));
+  output.writeEvent(onRoute(issuePacket(TraceIssueCode::DecodeError), accepted.route));
   output.stop();
 
   ASSERT_TRUE(
-      (readTestTextFile(outputPath.path()) == "cycles,stream,type,source,value,pc,offset,note\n,2,itm,1,0x41,,,\n"))
+      (readTestTextFile(outputPath.path()) == "cycles,stream,type,index,value,pc,address,note\n,2,itm,1,0x41,,,\n"))
       << "CsvFileOutput criteria mismatch";
 
   const TemporaryTestPath errorOutputPath("ctrace-filtered-errors.csv");
@@ -111,8 +112,35 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
   errorOutput.start();
   errorOutput.writeEvent(issuePacket(TraceIssueCode::DecodeError, "decoder warning", TraceIssueSeverity::Warning));
   errorOutput.stop();
-  ASSERT_TRUE(readTestTextFile(errorOutputPath.path()).find(",,error,,,,,decoder warning\n") != std::string::npos)
+  ASSERT_TRUE(readTestTextFile(errorOutputPath.path()).find(",,error,,,,,Trace decode error\n") != std::string::npos)
       << "the error selector must include warning-severity decoder issue packets";
+}
+
+TEST(CtraceUnitTests, testCsvFileOutputRetainsAllByteSkipReasonsOutsideSelection)
+{
+  const TemporaryTestPath temporaryPath("ctrace-csv-byte-skip-test.csv");
+  CsvFileOutput output(temporaryPath.path(), TraceSelection{{"itm"}, {7U}});
+  output.writeByteSkip({0U, 9U});
+  EXPECT_FALSE(std::filesystem::exists(temporaryPath.path()));
+  output.start();
+  output.writeByteSkip({16U, 5U});
+  output.writeByteSkip({32U, 6U, TraceByteSkipReason::NullSourceId, 0U});
+  output.writeByteSkip({48U, 7U, TraceByteSkipReason::ReservedSourceId, 127U});
+  output.writeByteSkip({64U, 8U, TraceByteSkipReason::UnconfiguredSourceId, 42U});
+  output.writeByteSkip({80U, 9U, TraceByteSkipReason::MissingSync, 1U});
+  output.writeEvent(onStream(softwarePacket(1U, 1U, 'A'), 7U));
+  output.writeEvent(onStream(softwarePacket(1U, 1U, 'B'), 1U));
+  output.stop();
+  output.writeByteSkip({96U, 2U});
+
+  const auto lines = readTestLines(temporaryPath.path());
+  ASSERT_EQ(lines.size(), 7U);
+  EXPECT_EQ(lines[1], ",,info,,,,,5 bytes skipped: no source ID");
+  EXPECT_EQ(lines[2], ",0,info,,,,,6 bytes skipped: null source ID");
+  EXPECT_EQ(lines[3], ",127,info,,,,,7 bytes skipped: reserved source ID");
+  EXPECT_EQ(lines[4], ",42,info,,,,,8 bytes skipped: unconfigured source ID");
+  EXPECT_EQ(lines[5], ",1,info,,,,,9 bytes skipped: no SYNC");
+  EXPECT_EQ(lines[6], ",7,itm,1,0x41,,,");
 }
 
 TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
@@ -128,20 +156,50 @@ TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
                                 4U,
                                 0xfffffdf9U,
                                 AccessType::Read,
-                                0xfdf9U,
-                                0x08001234U,
+                                DwtAddressFragment{2U, 0xfdf9U},
+                                DwtAddressFragment{4U, 0x08001234U},
                             }},
                             949338400U));
   output.writeEvent(atCycle(TraceEvent{ExceptionTraceEvent{11U, ExceptionAction::Entered}}, 950364820U));
+  output.writeEvent(atCycle(TraceEvent{PcSampleTraceEvent{0x08000100U}}, 950364900U));
+  output.writeEvent(atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::Sleep}}, 950365000U));
+  output.writeEvent(atCycle(TraceEvent{PcSampleTraceEvent{0U, PcSampleKind::TraceProhibited}}, 950365100U));
 
   output.stop();
 
   const auto lines = readTestLines(csvPath);
 
-  ASSERT_TRUE(lines.size() == 3U) << "CSV specification row count mismatch";
-  ASSERT_TRUE(lines[0] == "cycles,stream,type,source,value,pc,offset,note") << "CSV specification header mismatch";
+  ASSERT_TRUE(lines.size() == 6U) << "CSV specification row count mismatch";
+  ASSERT_TRUE(lines[0] == "cycles,stream,type,index,value,pc,address,note") << "CSV specification header mismatch";
   ASSERT_TRUE(lines[1] == "949338400,,dwt,2,0xfffffdf9,0x08001234,0xfdf9,") << "CSV DWT row schema mismatch";
   ASSERT_TRUE(lines[2] == "950364820,,exception,11,0x1,,,") << "CSV exception state schema mismatch";
+  ASSERT_TRUE(lines[3] == "950364900,,pcsample,,,0x08000100,,") << "CSV PC-sample row schema mismatch";
+  EXPECT_EQ(lines[4], "950365000,,pcsample,,,,,CPU Sleeping");
+  EXPECT_EQ(lines[5], "950365100,,pcsample,,,,,Trace prohibited");
+}
+
+TEST(CtraceUnitTests, testCsvFileOutputPreservesInterleavedRouteOrderAndOnlyWritesArchitecturalIds)
+{
+  const TemporaryTestPath temporaryPath("ctrace-csv-routes-test.csv");
+  CsvFileOutput output(temporaryPath.path());
+  const TraceRouteIdentity firstRoute{TraceRouteId{90U}, 7U};
+  const TraceRouteIdentity secondRoute{TraceRouteId{4U}, 2U};
+  const TraceRouteIdentity unformattedRoute{TraceRouteId{17U}, std::nullopt};
+
+  output.start();
+  output.writeEvent(onRoute(softwarePacket(1U, 1U, 'A'), firstRoute));
+  output.writeEvent(onRoute(softwarePacket(2U, 1U, 'B'), secondRoute));
+  output.writeEvent(onRoute(softwarePacket(3U, 1U, 'C'), firstRoute));
+  output.writeEvent(onRoute(softwarePacket(4U, 1U, 'D'), unformattedRoute));
+  output.stop();
+
+  const auto lines = readTestLines(temporaryPath.path());
+  ASSERT_EQ(lines.size(), 5U);
+  EXPECT_EQ(lines[0], "cycles,stream,type,index,value,pc,address,note");
+  EXPECT_EQ(lines[1], ",7,itm,1,0x41,,,");
+  EXPECT_EQ(lines[2], ",2,itm,2,0x42,,,");
+  EXPECT_EQ(lines[3], ",7,itm,3,0x43,,,");
+  EXPECT_EQ(lines[4], ",,itm,4,0x44,,,");
 }
 
 TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
@@ -159,11 +217,11 @@ TEST(CtraceUnitTests, testCsvFileOutputWritesTraceIssues)
   const auto lines = readTestLines(csvPath);
 
   ASSERT_TRUE(lines.size() == 3U) << "CSV issue row count mismatch";
-  ASSERT_TRUE(lines[0] == "cycles,stream,type,source,value,pc,offset,note") << "CSV issue header mismatch";
+  ASSERT_TRUE(lines[0] == "cycles,stream,type,index,value,pc,address,note") << "CSV issue header mismatch";
   ASSERT_TRUE(
-      (lines[1] == "1234,,overflow,,,,,overflow: new timestamp segment; time across boundary may be unreliable"))
+      (lines[1] == "1234,,overflow,,,,,Trace overflow; timestamp discontinuity"))
       << "CSV overflow issue row mismatch";
-  ASSERT_TRUE(lines[2] == "1235,,error,,,,,trace data lost before resynchronization")
+  ASSERT_TRUE(lines[2] == "1235,,error,,,,,ITM data loss")
       << "CSV data-loss issue row mismatch";
 }
 
@@ -313,4 +371,48 @@ TEST(CtraceUnitTests, testCsvFileOutputReportsPermissionFailures)
   CsvFileOutput createFailure(root / "missing" / "output.csv");
   EXPECT_THROW(createFailure.start(), std::runtime_error);
   std::filesystem::permissions(root, std::filesystem::perms::owner_all);
+}
+
+TEST(CtraceUnitTests, testCsvFileOutputRetainsFilteredPrefixAndGlobalDecodeAbortOnce)
+{
+  for (const bool selectErrors : {false, true}) {
+    const TemporaryTestPath outputPath("ctrace-partial-output.csv");
+    const TraceDecodeAbort failure{0x100000001ULL, "bad \"header\", trace stopped"};
+    CsvFileOutput output(outputPath.path(), TraceSelection{{selectErrors ? "error" : "itm"}, {7U}});
+    output.stop(&failure);
+    EXPECT_FALSE(std::filesystem::exists(outputPath.path()));
+    output.start();
+    output.writeEvent(onStream(softwarePacket(1U, 1U, 'A'), 7U));
+    output.writeEvent(onStream(issuePacket(TraceIssueCode::DecodeError, "selected stream error"), 7U));
+    output.writeEvent(onStream(issuePacket(TraceIssueCode::DecodeError, "excluded stream error"), 8U));
+    output.stop(&failure);
+    output.stop(&failure);
+    output.abort();
+
+    const auto lines = readTestLines(outputPath.path());
+    ASSERT_EQ(lines.size(), 3U);
+    EXPECT_EQ(lines[1], selectErrors ? ",7,error,,,,,Trace decode error" : ",7,itm,1,0x41,,,");
+    EXPECT_EQ(lines[2], ",,error,,,,,Decode aborted; trace incomplete");
+  }
+}
+
+TEST(CtraceUnitTests, testCsvFileOutputReportsFailureWritingOrClosingDecodeAbort)
+{
+  const TraceDecodeAbort failure{16U, "fatal decoder error"};
+  for (const bool failWrite : {false, true}) {
+    const TemporaryTestPath outputPath("ctrace-partial-output-failure.csv");
+    FailingCsvStream* stream = nullptr;
+    CsvFileOutput output(outputPath.path(), {}, [&](const std::filesystem::path&) {
+      auto result = std::make_unique<FailingCsvStream>(CsvStreamFailure::Flush);
+      stream = result.get();
+      return result;
+    });
+    output.start();
+    if (failWrite) {
+      stream->output().setstate(std::ios::badbit);
+    }
+    EXPECT_THROW(output.stop(&failure), std::runtime_error);
+    EXPECT_FALSE(std::filesystem::exists(outputPath.path()));
+    EXPECT_NO_THROW(output.stop(&failure));
+  }
 }

@@ -36,7 +36,9 @@ build:
     - type: comp-db
       file: compile_commands.json
     - type: comp-db
-      file: compile_macros.h
+      file: compile_macros_c.h
+    - type: comp-db
+      file: compile_macros_cxx.h
   linker:
     script: ../data/TestSolution/LinkerOptions/linkerScript.sct
     regions: ../data/TestSolution/LinkerOptions/RTE/Device/RteTest_ARMCM3/regions_RteTest_ARMCM3.h

@@ -13,11 +13,11 @@
 #include "TraceIssueReporter.h"
 #include "TraceOutput.h"
 #include "TraceOutputLifecycle.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <optional>
 #include <set>
 #include <utility>
 #include <vector>
@@ -27,28 +27,26 @@ class DecodeConsumers final : public TraceEventSink {
 public:
   /** @brief Creates the consumers for one raw trace input. */
   DecodeConsumers(std::vector<std::unique_ptr<TraceOutput>> outputs, DiagnosticSink& diagnostics,
-                  std::optional<std::uint32_t> itmEnableMask = std::nullopt,
-                  std::map<std::uint8_t, std::uint32_t> itmEnableMasksByTraceBusId = {});
+                  std::map<TraceRouteId, std::uint32_t> itmEnableMasksByRoute = {});
 
   /** @brief Forwards one decoded event to all configured consumers. */
   void append(const TraceEvent& event) override;
-  /** @brief Returns the number of events observed during decoding. */
+  /** @brief Reports skipped input payload without assigning a synthetic trace route. */
+  void appendByteSkip(const TraceByteSkip& skipped) override;
+  /** @brief Returns the number of trace/diagnostic records observed before output filtering. */
   std::uint64_t eventCount() const;
   /** @brief Completes deferred issue reporting. */
   void finishIssues();
-  /** @brief Completes all output artifacts without throwing. */
-  void finishOutputs() noexcept;
-  /** @brief Aborts and removes partial output artifacts without throwing. */
-  void abortOutputs() noexcept;
+  /** @brief Completes output artifacts using each backend's optional fatal-input policy. */
+  void finishOutputs(const TraceDecodeAbort* decodeAbort = nullptr) noexcept;
 
 private:
   /** @brief Reports an ITM event that contradicts the configured enable mask. */
   void reportItmConfigurationMismatch(const TraceEvent& event);
 
   DiagnosticSink& m_diagnostics;
-  std::optional<std::uint32_t> m_itmEnableMask;
-  std::map<std::uint8_t, std::uint32_t> m_itmEnableMasksByTraceBusId;
-  std::set<std::pair<std::uint8_t, std::uint32_t>> m_reportedDisabledItmChannels;
+  std::map<TraceRouteId, std::uint32_t> m_itmEnableMasksByRoute;
+  std::set<std::pair<TraceRouteId, std::uint32_t>> m_reportedDisabledItmChannels;
   TraceIssueReporter m_issueReporter;
   TraceOutputLifecycle m_outputLifecycle;
   std::uint64_t m_eventCount = 0;

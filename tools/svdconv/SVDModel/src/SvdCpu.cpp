@@ -29,7 +29,7 @@ SvdCpu::SvdCpu(SvdItem* parent):
   m_dcachePresent(false),
   m_itcmPresent(false),
   m_dtcmPresent(false),
-  m_vtorPresent(false),
+  m_vtorPresent(true),
   m_dspPresent(false),
   m_pmuPresent(false),
   m_mvePresent(false),
@@ -52,7 +52,6 @@ SvdCpu::~SvdCpu()
     delete value;
 
   delete m_sauRegionsConfig;
-  //m_interruptList.clear();
 }
 
 bool SvdCpu::Calculate()

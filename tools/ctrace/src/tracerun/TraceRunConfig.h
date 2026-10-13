@@ -18,6 +18,12 @@
 #include <string_view>
 #include <vector>
 
+/** @brief Identifies the byte format declared for one trace-run group. */
+enum class TraceRunFormat {
+  Unformatted,
+  Formatted,
+};
+
 namespace TraceRunSchema {
 
 inline constexpr std::array<std::uint32_t, 4> kTimestampPrescalers{{
@@ -27,8 +33,14 @@ inline constexpr std::array<std::uint32_t, 4> kTimestampPrescalers{{
     64U,
 }};
 inline constexpr std::uint32_t kDefaultTimestampPrescaler = 1U;
-inline constexpr std::string_view kDefaultDwtDataType = "unsigned int";
+inline constexpr std::string_view kDefaultDwtDataType = "unsigned";
 inline constexpr std::uint8_t kDefaultDwtDataSize = 4U;
+
+/** @brief Supplies the unformatted compatibility default when no input channel has been resolved yet. */
+constexpr TraceRunFormat effectiveTraceFormat(const std::optional<TraceRunFormat>& traceFormat)
+{
+  return traceFormat.value_or(TraceRunFormat::Unformatted);
+}
 
 /** @brief Tests whether a fixed array contains a value. */
 template <typename Value, std::size_t Size>
@@ -51,7 +63,7 @@ constexpr bool isTimestampPrescaler(std::uint32_t prescaler)
 /** @brief Tests whether a DWT data type is supported. */
 constexpr bool isDwtDataType(const std::string_view& type)
 {
-  return type == "unsigned int" || type == "signed int" || type == "float";
+  return type == "unsigned" || type == "signed" || type == "float";
 }
 
 /** @brief Tests whether a DWT data size is supported. */
@@ -69,13 +81,14 @@ constexpr bool supportsSource(const std::string_view& type)
 /** @brief Tests whether ctrace consumes metadata for a reference type. */
 constexpr bool consumesReferenceMetadata(const std::string_view& type)
 {
-  return type == "dwt" || type == "itm" || type == "event" || type == "pmu" || type == "pcsample";
+  return type == "dwt" || type == "event" || type == "exception" || type == "itm" || type == "pmu" ||
+         type == "overflow" || type == "pcsample" || type == "global_ts";
 }
 
 /** @brief Tests whether an ITM stimulus port number is valid. */
-constexpr bool isItmSource(std::uint32_t source)
+constexpr bool isItmIndex(std::uint32_t index)
 {
-  return CoreSight::isItmStimulusPort(source);
+  return CoreSight::isItmStimulusPort(index);
 }
 
 /** @brief Converts empty processor names to an absent value. */
@@ -99,20 +112,26 @@ inline bool processorNamesMayBind(const std::optional<std::string>& left, const 
 
 /** @brief Stores one parsed ctrace reference and its resolved routing metadata. */
 struct TraceRunReference {
-  std::string ctraceRef;
+  std::string ref;
   std::string type;
   std::optional<std::string> processorName;
-  std::optional<std::string> info;
-  std::optional<std::string> warning;
-  std::optional<std::string> error;
-  std::optional<std::uint64_t> symbolAddress;
+  std::vector<std::string> info;
+  std::vector<std::string> warning;
+  std::vector<std::string> error;
+  std::optional<std::uint64_t> address;
+  std::optional<std::string> dataType;
+  std::optional<std::uint64_t> dataSize;
+  std::optional<std::string> addressError;
+  std::optional<std::string> dataTypeError;
+  std::optional<std::string> dataSizeError;
   std::optional<std::string> label;
   // The reader retains the complete YAML value. CtraceRunMeta validates and
   // narrows it to the CoreSight ATB trace-ID domain.
   std::optional<std::uint32_t> stream;
-  std::vector<std::uint32_t> sources;
+  // ITM channel or DWT comparator indices from the scalar/list index field.
+  std::vector<std::uint32_t> indices;
   // Index of the referenced ctrace-setup.data entry, derived from the
-  // specified ctrace-ref path form [<pname>/]data#<index>.
+  // specified ref path form [<pname>/]data#<index>.
   std::optional<std::size_t> dataSetupIndex;
   std::size_t line = 0U;
 };
@@ -122,37 +141,43 @@ namespace TraceRunSchema {
 /** @brief Classifies structural problems in a parsed trace reference. */
 enum class ReferenceProblem {
   None,
-  DuplicateSource,
+  DuplicateIndex,
   InvalidStream,
-  InvalidItmSource,
+  InvalidItmIndex,
 };
 
 /** @brief Tests whether a reference selects ITM stimulus port zero, which is excluded from output. */
 inline bool isItmChannelZero(const TraceRunReference& reference)
 {
-  return reference.type == "itm" && reference.sources.size() == 1U &&
-         reference.sources.front() == CoreSight::kExcludedItmStimulusPort;
+  return reference.type == "itm" && reference.indices.size() == 1U &&
+         reference.indices.front() == CoreSight::kExcludedItmStimulusPort;
+}
+
+/** @brief Tests whether a DWT reference describes a generated data route. */
+inline bool isDwtDataReference(const TraceRunReference& reference)
+{
+  return reference.type == "dwt" && reference.dataSetupIndex.has_value();
 }
 
 /** @brief Tests whether a reference has the fields needed for a decoded route. */
 inline bool hasConsumedRouteShape(const TraceRunReference& reference)
 {
-  if (!supportsSource(reference.type) || reference.sources.empty()) {
+  if (!supportsSource(reference.type) || reference.indices.empty()) {
     return false;
   }
   if (reference.type == "itm") {
     return !isItmChannelZero(reference);
   }
-  return true;
+  return isDwtDataReference(reference);
 }
 
 /** @brief Tests whether a reference represents timestamp configuration. */
 inline bool isTimestampReference(const TraceRunReference& reference)
 {
   constexpr std::string_view name = "timestamps";
-  const auto separator = reference.ctraceRef.rfind('/');
-  const auto leaf = separator == std::string::npos ? std::string_view(reference.ctraceRef)
-                                                   : std::string_view(reference.ctraceRef).substr(separator + 1U);
+  const auto separator = reference.ref.rfind('/');
+  const auto leaf = separator == std::string::npos ? std::string_view(reference.ref)
+                                                   : std::string_view(reference.ref).substr(separator + 1U);
   return leaf == name;
 }
 
@@ -160,9 +185,9 @@ inline bool isTimestampReference(const TraceRunReference& reference)
 inline bool isProcessorItmReference(const TraceRunReference& reference)
 {
   constexpr std::string_view name = "itm";
-  const auto separator = reference.ctraceRef.rfind('/');
-  const auto leaf = separator == std::string::npos ? std::string_view(reference.ctraceRef)
-                                                   : std::string_view(reference.ctraceRef).substr(separator + 1U);
+  const auto separator = reference.ref.rfind('/');
+  const auto leaf = separator == std::string::npos ? std::string_view(reference.ref)
+                                                   : std::string_view(reference.ref).substr(separator + 1U);
   return reference.type == "itm" && leaf == name;
 }
 
@@ -170,26 +195,27 @@ inline bool isProcessorItmReference(const TraceRunReference& reference)
 inline bool contributesStreamBinding(const TraceRunReference& reference)
 {
   return (reference.type == "dwt" || reference.type == "itm") &&
-         (!reference.sources.empty() || isTimestampReference(reference) || isProcessorItmReference(reference));
+         (!reference.indices.empty() || isDwtDataReference(reference) || isTimestampReference(reference) ||
+          isProcessorItmReference(reference));
 }
 
 /** @brief Returns the first structural problem detected in a reference. */
 inline ReferenceProblem referenceProblem(const TraceRunReference& reference)
 {
-  for (std::size_t left = 0U; left < reference.sources.size(); ++left) {
-    for (std::size_t right = left + 1U; right < reference.sources.size(); ++right) {
-      if (reference.sources[left] == reference.sources[right]) {
-        return ReferenceProblem::DuplicateSource;
-      }
-    }
-  }
   if (reference.stream.has_value() && !CoreSight::isAtbTraceId(*reference.stream)) {
     return ReferenceProblem::InvalidStream;
   }
+  for (std::size_t left = 0U; left < reference.indices.size(); ++left) {
+    for (std::size_t right = left + 1U; right < reference.indices.size(); ++right) {
+      if (reference.indices[left] == reference.indices[right]) {
+        return ReferenceProblem::DuplicateIndex;
+      }
+    }
+  }
   if (reference.type == "itm") {
-    for (const auto source : reference.sources) {
-      if (!isItmSource(source)) {
-        return ReferenceProblem::InvalidItmSource;
+    for (const auto index : reference.indices) {
+      if (!isItmIndex(index)) {
+        return ReferenceProblem::InvalidItmIndex;
       }
     }
   }
@@ -210,19 +236,20 @@ struct TraceRunTimestampSetup {
   std::optional<std::uint32_t> timestampPrescaler = std::nullopt;
   std::optional<std::string> clockError = std::nullopt;
   std::size_t line = 0U;
+  std::optional<std::string> prescalerError = std::nullopt;
 };
 
-/** @brief Stores data-type fields copied from one DWT data setup. */
+/** @brief Stores size metadata copied from one DWT data setup. */
 struct TraceRunDataSetup {
-  std::optional<std::string> symbolType = std::nullopt;
-  std::optional<std::uint64_t> symbolSize = std::nullopt;
-  std::optional<std::string> symbolTypeError = std::nullopt;
-  std::optional<std::string> symbolSizeError = std::nullopt;
+  std::optional<std::uint64_t> size = std::nullopt;
+  std::optional<std::string> sizeError = std::nullopt;
+  bool present = true;
 };
 
 /** @brief Stores ITM stimulus-port configuration copied from one trace setup. */
 struct TraceRunItmSetup {
-  std::uint32_t enableMask = 0U;
+  std::optional<std::uint32_t> enableMask;
+  std::optional<std::string> enableError;
 };
 
 /** @brief Stores the ctrace setup metadata consumed by the decoder. */
@@ -231,12 +258,17 @@ struct TraceRunSetup {
   std::optional<TraceRunTimestampSetup> timestamps;
   std::optional<TraceRunItmSetup> itm;
   std::vector<TraceRunDataSetup> data;
+  std::optional<std::string> dataError;
   std::size_t line = 0U;
+  bool disabled = false;
+  std::size_t ordinal = 0U;
+  std::vector<std::string> featurePaths;
 };
 
 /** @brief Stores a parsed `*.ctrace-run.yml` input. */
 struct TraceRunConfig {
   std::string path;
+  std::optional<TraceRunFormat> traceFormat;
   std::vector<TraceRunReference> references;
   std::vector<TraceRunSetup> setups;
 };

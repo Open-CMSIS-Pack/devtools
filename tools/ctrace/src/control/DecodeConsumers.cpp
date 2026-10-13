@@ -7,10 +7,13 @@
 
 #include "DecodeConsumers.h"
 
+#include "DiagnosticMessages.h"
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 #include "TraceOutput.h"
 #include "TraceOutputLifecycle.h"
+#include "TraceRoute.h"
 #include "TraceStreamId.h"
 
 #include <cstdint>
@@ -33,11 +36,9 @@ static std::string hexMask(std::uint32_t value)
 }
 
 DecodeConsumers::DecodeConsumers(std::vector<std::unique_ptr<TraceOutput>> outputs, DiagnosticSink& diagnostics,
-                                 std::optional<std::uint32_t> itmEnableMask,
-                                 std::map<std::uint8_t, std::uint32_t> itmEnableMasksByTraceBusId)
+                                 std::map<TraceRouteId, std::uint32_t> itmEnableMasksByRoute)
   : m_diagnostics(diagnostics),
-    m_itmEnableMask(itmEnableMask),
-    m_itmEnableMasksByTraceBusId(std::move(itmEnableMasksByTraceBusId)),
+    m_itmEnableMasksByRoute(std::move(itmEnableMasksByRoute)),
     m_issueReporter(diagnostics),
     m_outputLifecycle(std::move(outputs), diagnostics)
 {
@@ -51,6 +52,23 @@ void DecodeConsumers::append(const TraceEvent& event)
   m_issueReporter.append(event);
 }
 
+void DecodeConsumers::appendByteSkip(const TraceByteSkip& skipped)
+{
+  ++m_eventCount;
+  m_outputLifecycle.appendByteSkip(skipped);
+  std::vector<std::pair<std::string, std::string>> context;
+  if (skipped.traceId.has_value()) {
+    context.emplace_back("stream", std::to_string(*skipped.traceId));
+  }
+  DiagnosticSink::Event diagnostic{DiagnosticSink::Severity::Info,
+                                   formatTraceMessage(skipped, TraceMessageStyle::Compact), std::move(context)};
+  diagnostic.detailedMessage = formatTraceMessage(skipped, TraceMessageStyle::Detailed);
+  diagnostic.rawLocation = RawDiagnosticLocation{};
+  diagnostic.rawLocation->offset = skipped.formatterOffset;
+  diagnostic.rawLocation->kind = RawDiagnosticLocation::Kind::FormatterGroup;
+  m_diagnostics.report(diagnostic);
+}
+
 void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
 {
   const auto* software = traceEventPayload<SoftwareTraceEvent>(event);
@@ -59,25 +77,27 @@ void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
     return;
   }
 
-  auto enableMask = m_itmEnableMask;
-  const auto streamMask = m_itmEnableMasksByTraceBusId.find(event.traceBusId);
-  if (streamMask != m_itmEnableMasksByTraceBusId.end()) {
-    enableMask = streamMask->second;
-  }
-  if (!enableMask.has_value() || ((*enableMask & (1U << software->channel)) != 0U) ||
-      !m_reportedDisabledItmChannels.emplace(event.traceBusId, software->channel).second) {
+  const auto streamMask = m_itmEnableMasksByRoute.find(event.route.id);
+  if (streamMask == m_itmEnableMasksByRoute.end() ||
+      ((streamMask->second & (1U << software->channel)) != 0U) ||
+      !m_reportedDisabledItmChannels.emplace(event.route.id, software->channel).second) {
     return;
   }
 
-  m_diagnostics.report({
+  std::vector<std::pair<std::string, std::string>> context;
+  if (event.route.traceBusId.has_value()) {
+    context.emplace_back("stream", std::to_string(*event.route.traceBusId));
+  }
+  context.emplace_back("channel", std::to_string(software->channel));
+  DiagnosticSink::Event diagnostic{
       DiagnosticSink::Severity::Warning,
-      "ITM data was received on a channel not enabled by ctrace-setup.itm.enable",
-      {
-          {"stream", std::to_string(event.traceBusId)},
-          {"channel", std::to_string(software->channel)},
-          {"enable", hexMask(*enableMask)},
-      },
-  });
+      formatMessage(MessageId::ItmDisabledChannel),
+      std::move(context),
+  };
+  diagnostic.detailedContext.emplace_back("enable", hexMask(streamMask->second));
+  diagnostic.rawLocation = RawDiagnosticLocation{};
+  diagnostic.rawLocation->offset = event.index;
+  m_diagnostics.report(diagnostic);
 }
 
 std::uint64_t DecodeConsumers::eventCount() const
@@ -90,12 +110,7 @@ void DecodeConsumers::finishIssues()
   m_issueReporter.finish();
 }
 
-void DecodeConsumers::finishOutputs() noexcept
+void DecodeConsumers::finishOutputs(const TraceDecodeAbort* decodeAbort) noexcept
 {
-  m_outputLifecycle.finish();
-}
-
-void DecodeConsumers::abortOutputs() noexcept
-{
-  m_outputLifecycle.abort();
+  m_outputLifecycle.finish(decodeAbort);
 }

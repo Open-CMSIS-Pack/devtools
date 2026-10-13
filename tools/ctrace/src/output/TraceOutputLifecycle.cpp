@@ -7,6 +7,7 @@
 
 #include "TraceOutputLifecycle.h"
 
+#include "DiagnosticMessages.h"
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
 #include "TraceOutput.h"
@@ -29,7 +30,7 @@ static std::string exceptionMessage(const std::exception_ptr& error)
     // Preserve noexcept error reporting even for non-standard exceptions.
     (void)0;
   }
-  return "unknown exception";
+  return formatMessage(MessageId::UnknownException);
 }
 
 TraceOutputLifecycle::TraceOutputLifecycle(std::vector<std::unique_ptr<TraceOutput>> outputs,
@@ -54,14 +55,14 @@ TraceOutputLifecycle::~TraceOutputLifecycle() noexcept
   abortActiveNoexcept();
 }
 
-void TraceOutputLifecycle::append(const TraceEvent& event)
+template <typename Write> void TraceOutputLifecycle::writeActiveOutputs(const Write& write)
 {
   for (std::size_t index = 0; index < m_outputs.size(); ++index) {
     if (m_states[index] != State::Active) {
       continue;
     }
     try {
-      m_outputs[index]->writeEvent(event);
+      write(*m_outputs[index]);
     } catch (...) {
       fail(index, "write", std::current_exception());
       abortNoexcept(index);
@@ -69,12 +70,17 @@ void TraceOutputLifecycle::append(const TraceEvent& event)
   }
 }
 
-void TraceOutputLifecycle::abort() noexcept
+void TraceOutputLifecycle::append(const TraceEvent& event)
 {
-  abortActiveNoexcept();
+  writeActiveOutputs([&](TraceOutput& output) { output.writeEvent(event); });
 }
 
-void TraceOutputLifecycle::finish() noexcept
+void TraceOutputLifecycle::appendByteSkip(const TraceByteSkip& skipped)
+{
+  writeActiveOutputs([&](TraceOutput& output) { output.writeByteSkip(skipped); });
+}
+
+void TraceOutputLifecycle::finish(const TraceDecodeAbort* decodeAbort) noexcept
 {
   if (m_finished) {
     return;
@@ -86,10 +92,10 @@ void TraceOutputLifecycle::finish() noexcept
       continue;
     }
     try {
-      m_outputs[outputIndex]->stop();
+      m_outputs[outputIndex]->stop(decodeAbort);
       m_states[outputIndex] = State::Completed;
     } catch (...) {
-      fail(outputIndex, "stop", std::current_exception());
+      fail(outputIndex, decodeAbort == nullptr ? "stop" : "decode-abort", std::current_exception());
       abortNoexcept(outputIndex);
     }
   }
@@ -104,8 +110,7 @@ void TraceOutputLifecycle::fail(std::size_t index, const char* phase, const std:
     const auto backend = std::string(m_outputs[index]->backendName());
     const auto target = m_outputs[index]->targetPath();
     const auto displayMessage =
-        backend + " output" + (target.empty() ? std::string() : " '" + target + "'") + " failed during " + phase +
-        ": " + message;
+        backendFailureMessage(backend, target, phase, message);
     m_diagnostics.report({
         DiagnosticSink::Severity::Error,
         displayMessage,

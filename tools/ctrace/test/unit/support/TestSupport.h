@@ -10,6 +10,7 @@
 
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -179,7 +180,7 @@ inline std::vector<unsigned char> readTestBinaryFile(const std::filesystem::path
 }
 
 /** @brief Creates a timestamped exception event for a test. */
-inline TraceEvent exceptionPacket(std::uint32_t number, ExceptionAction action, std::uint64_t tcyc = 0)
+inline TraceEvent exceptionPacket(ExceptionNumber number, ExceptionAction action, std::uint64_t tcyc = 0)
 {
   TraceEvent packet{ExceptionTraceEvent{number, action}};
   packet.tcyc = tcyc;
@@ -211,7 +212,16 @@ inline TraceEvent atCycle(TraceEvent event, std::uint64_t tcyc)
 /** @brief Assigns a Trace Bus ID to a copied event. */
 inline TraceEvent onStream(TraceEvent event, std::uint8_t traceBusId)
 {
-  event.traceBusId = traceBusId;
+  event.route = traceBusId == 0U
+                    ? TraceRouteIdentity{}
+                    : TraceRouteIdentity{TraceRouteId{traceBusId}, std::optional<std::uint8_t>(traceBusId)};
+  return event;
+}
+
+/** @brief Assigns an exact normalized route to a copied event. */
+inline TraceEvent onRoute(TraceEvent event, TraceRouteIdentity route)
+{
+  event.route = std::move(route);
   return event;
 }
 

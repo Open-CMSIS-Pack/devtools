@@ -353,7 +353,6 @@ bool SvdPeripheral::CopyItem(SvdItem *from)
   // Check if values are already set (override from derived)
   const auto& version          = GetVersion          ();
   const auto& groupName        = GetGroupName        ();
-//const auto& headerStructName = GetHeaderStructName ();
   const auto& alternate        = GetAlternate        ();
   const auto& prependToName    = GetPrependToName    ();
   const auto& appendToName     = GetAppendToName     ();
@@ -365,7 +364,6 @@ bool SvdPeripheral::CopyItem(SvdItem *from)
 
   if(version          == "")                      { SetVersion             (pFrom->GetVersion             ()); }
   if(groupName        == "")                      { SetGroupName           (pFrom->GetGroupName           ()); }
-//if(headerStructName == "")                      { SetHeaderStructName    (pFrom->GetHeaderStructName    ()); }
   if(alternate        == "")                      { SetAlternate           (pFrom->GetAlternate           ()); }
   if(prependToName    == "")                      { SetPrependToName       (pFrom->GetPrependToName       ()); }
   if(appendToName     == "")                      { SetAppendToName        (pFrom->GetAppendToName        ()); }
@@ -738,7 +736,6 @@ bool SvdPeripheral::AddToMap(SvdRegister* reg, map<uint32_t, list<SvdRegister*> 
       } else {
         LogMsg("M339", NAME(name), ADDRSIZE(offs, size), ACCESS(accStr), NAME2(nam), ACCESS2(aStr), ADDRSIZE2(off, siz), LINE2(r->GetLineNumber()), lineNo);      // error
       }
-      //reg->Invalidate();
     }
   }
 

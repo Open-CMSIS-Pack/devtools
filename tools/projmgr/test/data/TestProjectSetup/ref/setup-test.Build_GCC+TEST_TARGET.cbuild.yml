@@ -32,9 +32,11 @@ build:
     - SETUP_GCC
     - SETUP_COMMON
     - ARMCM0
+    - ARM_DEVICE_TZ_DISABLED
     - _RTE_
   define-asm:
     - ARMCM0
+    - ARM_DEVICE_TZ_DISABLED
     - _RTE_
   add-path:
     - ../../../../../data/TestProjectSetup/setup/GCC
@@ -54,7 +56,9 @@ build:
     - type: comp-db
       file: compile_commands.json
     - type: comp-db
-      file: compile_macros.h
+      file: compile_macros_c.h
+    - type: comp-db
+      file: compile_macros_cxx.h
   components:
     - component: ARM::RteTest:CORE@0.1.1
       condition: Cortex-M Device

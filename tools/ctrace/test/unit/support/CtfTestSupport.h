@@ -9,22 +9,47 @@
 #define CTRACE_TEST_UNIT_SUPPORT_CTFTESTSUPPORT_H
 
 #include "TestSupport.h"
+#include "TraceEvent.h"
+#include "ctf/CtfMetadataModel.h"
 #include "ctf/CtfSchema.h"
+#include "ctf/CtfStreamWriter.h"
+#include "ctf/CtfUuid.h"
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace CtfTestSupport {
 
+/** @brief Returns a deterministic RFC 4122 version-4 UUID for CTF tests. */
+inline CtfUuid testUuid(std::uint8_t discriminator = 0U)
+{
+  return CtfUuid{{0x10U, discriminator, 0x22U, 0x33U, 0x44U, 0x55U, 0x46U, 0x77U, 0x88U, 0x99U, 0xaaU, 0xbbU, 0xccU,
+                  0xddU, 0xeeU, 0xffU}};
+}
+
+/** @brief Creates the explicit metadata topology used by the legacy SINGLE runtime. */
+inline CtfMetadataTopology legacyTopology(std::uint64_t clockHz, TraceRouteIdentity route = {},
+                                          std::vector<CtfSourceDescriptor> sources = {})
+{
+  return {
+      {{CtfClockDomainId{0U}, "swo_clock", std::nullopt, clockHz, false}},
+      {{CtfStreamClassId{0U}, route, std::nullopt, CtfClockDomainId{0U}}},
+      std::move(sources),
+  };
+}
+
 inline constexpr std::size_t kCtfPacketHeaderSize = 24U;
 inline constexpr std::size_t kCtfPacketContextSize = 32U;
 inline constexpr std::size_t kCtfEventHeaderSize = 13U;
+inline constexpr std::size_t kCtfRouteLabelContextSize = 1U;
 inline constexpr std::size_t kCtfEventOffset = kCtfPacketHeaderSize + kCtfPacketContextSize;
 inline constexpr std::size_t kCtfPacketSize = 65536U;
 
@@ -33,8 +58,34 @@ struct CtfRecord {
   std::uint32_t id;
   std::uint64_t timestamp;
   std::uint8_t traceBusId;
+  std::optional<std::uint8_t> routeLabelId;
   std::vector<unsigned char> payload;
 };
+
+/** @brief Stores the decoded fields of one CTF exception event. */
+struct CtfExceptionRecord {
+  ExceptionNumber number;
+  std::uint8_t action;
+  std::uint8_t origin;
+};
+
+/** @brief Compares decoded CTF exception records. */
+inline bool operator==(const CtfExceptionRecord& lhs, const CtfExceptionRecord& rhs)
+{
+  return lhs.number == rhs.number && lhs.action == rhs.action && lhs.origin == rhs.origin;
+}
+
+/** @brief Stores one decoded CTF exception event with its event timestamp. */
+struct TimestampedCtfExceptionRecord {
+  std::uint64_t timestamp;
+  CtfExceptionRecord exception;
+};
+
+/** @brief Compares timestamped CTF exception records. */
+inline bool operator==(const TimestampedCtfExceptionRecord& lhs, const TimestampedCtfExceptionRecord& rhs)
+{
+  return lhs.timestamp == rhs.timestamp && lhs.exception == rhs.exception;
+}
 
 /** @brief Reads an unsigned little-endian integer from test stream bytes. */
 template <typename Integer> inline Integer readLittleEndian(const std::vector<unsigned char>& bytes, std::size_t offset)
@@ -74,6 +125,23 @@ inline std::size_t ctfValueSize(std::uint8_t tag)
   return sizes[tag];
 }
 
+/** @brief Returns the encoded payload size of a width-tagged DWT address fragment. */
+inline std::size_t ctfDwtAddressSize(std::uint8_t tag)
+{
+  if (tag == CtfSchema::value(CtfSchema::DwtAddressTag::None) ||
+      tag == CtfSchema::value(CtfSchema::DwtAddressTag::U8)) {
+    return 1U;
+  }
+  if (tag == CtfSchema::value(CtfSchema::DwtAddressTag::U16)) {
+    return 2U;
+  }
+  if (tag == CtfSchema::value(CtfSchema::DwtAddressTag::U32)) {
+    return 4U;
+  }
+  require(false, "CTF test parser encountered an invalid DWT address tag");
+  return 0U;
+}
+
 /** @brief Determines one encoded CTF event payload size. */
 inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::size_t payloadOffset,
                                   std::size_t contentEnd, std::uint32_t eventId)
@@ -91,34 +159,57 @@ inline std::size_t ctfPayloadSize(const std::vector<unsigned char>& bytes, std::
     requirePayload(3U);
     auto size = 3U + ctfValueSize(bytes[payloadOffset + 2U]);
     requirePayload(size + 1U);
-    const auto hasPc = bytes[payloadOffset + size];
-    require(hasPc <= 1U, "CTF test parser encountered an invalid DWT PC presence flag");
-    size += 1U + (hasPc != 0U ? 4U : 0U);
+    size += 1U + ctfDwtAddressSize(bytes[payloadOffset + size]);
     requirePayload(size + 1U);
-    const auto hasAddress = bytes[payloadOffset + size];
-    require(hasAddress <= 1U, "CTF test parser encountered an invalid DWT address presence flag");
-    size += 1U + (hasAddress != 0U ? 2U : 0U);
+    size += 1U + ctfDwtAddressSize(bytes[payloadOffset + size]);
     return size + 5U;
   }
-  if (eventId == CtfSchema::value(CtfSchema::EventId::TraceStatus) ||
-      eventId == CtfSchema::value(CtfSchema::EventId::Exception)) {
+  if (eventId == CtfSchema::value(CtfSchema::EventId::TraceStatus)) {
     return 5U;
   }
+  if (eventId == CtfSchema::value(CtfSchema::EventId::Exception)) {
+    return 6U;
+  }
   if (eventId == CtfSchema::value(CtfSchema::EventId::DwtAddress)) {
-    return 14U;
+    requirePayload(2U);
+    const auto addressTagPosition = 2U + ctfDwtAddressSize(bytes[payloadOffset + 1U]);
+    requirePayload(addressTagPosition + 1U);
+    return addressTagPosition + 1U + ctfDwtAddressSize(bytes[payloadOffset + addressTagPosition]) + 5U;
   }
   if (eventId == CtfSchema::value(CtfSchema::EventId::GlobalTimestamp)) {
     return 9U;
+  }
+  if (eventId == CtfSchema::value(CtfSchema::EventId::PcSample)) {
+    requirePayload(1U);
+    const auto state = bytes[payloadOffset];
+    require(state <= CtfSchema::value(CtfSchema::PcSampleState::Pc),
+            "CTF test parser encountered an invalid PC-sample state");
+    return 1U + (state == CtfSchema::value(CtfSchema::PcSampleState::Pc) ? 4U : 0U) + 5U;
+  }
+  if (eventId == CtfSchema::value(CtfSchema::EventId::PcSampleProhibited)) {
+    return 5U;
+  }
+  if (eventId == CtfSchema::value(CtfSchema::EventId::DwtEvent)) {
+    return 6U;
+  }
+  if (eventId == CtfSchema::value(CtfSchema::EventId::PmuEvent)) {
+    return 6U;
+  }
+  if (eventId == CtfSchema::value(CtfSchema::EventId::DwtMatch)) {
+    return 6U;
   }
   require(false, "CTF test parser encountered an unknown event ID");
   return 0U;
 }
 
-/** @brief Parses all records from an encoded test CTF stream. */
-inline std::vector<CtfRecord> parseCtfRecords(const std::vector<unsigned char>& bytes)
+/** @brief Parses all records from an encoded test CTF stream using its declared event-context layout. */
+inline std::vector<CtfRecord> parseCtfRecords(const std::vector<unsigned char>& bytes,
+                                              CtfStreamWriter::EventContextLayout eventContextLayout)
 {
   std::vector<CtfRecord> records;
   for (std::size_t packetStart = 0U; packetStart + kCtfEventOffset <= bytes.size(); packetStart += kCtfPacketSize) {
+    const auto routeContextSize =
+        eventContextLayout == CtfStreamWriter::EventContextLayout::RouteLabeled ? kCtfRouteLabelContextSize : 0U;
     const auto contentBits = readLe32(bytes, packetStart + kCtfPacketHeaderSize + 4U);
     require(contentBits % 8U == 0U, "CTF packet content size must be byte-aligned");
     const auto contentEnd = packetStart + static_cast<std::size_t>(contentBits / 8U);
@@ -132,13 +223,18 @@ inline std::vector<CtfRecord> parseCtfRecords(const std::vector<unsigned char>& 
       const auto id = readLe32(bytes, offset);
       const auto timestamp = readLe64(bytes, offset + 4U);
       const auto traceBusId = bytes[offset + 12U];
-      const auto payloadOffset = offset + kCtfEventHeaderSize;
+      require(kCtfEventHeaderSize + routeContextSize <= contentEnd - offset,
+              "CTF test parser encountered a truncated event context");
+      const auto routeLabelId =
+          routeContextSize == 0U ? std::optional<std::uint8_t>{} : std::optional<std::uint8_t>{bytes[offset + 13U]};
+      const auto payloadOffset = offset + kCtfEventHeaderSize + routeContextSize;
       const auto payloadSize = ctfPayloadSize(bytes, payloadOffset, contentEnd, id);
       require(payloadSize <= contentEnd - payloadOffset, "CTF event payload exceeds packet content");
       records.push_back({
           id,
           timestamp,
           traceBusId,
+          routeLabelId,
           {bytes.begin() + static_cast<std::ptrdiff_t>(payloadOffset),
            bytes.begin() + static_cast<std::ptrdiff_t>(payloadOffset + payloadSize)},
       });
@@ -149,9 +245,54 @@ inline std::vector<CtfRecord> parseCtfRecords(const std::vector<unsigned char>& 
 }
 
 /** @brief Reads and parses records from a test CTF stream file. */
-inline std::vector<CtfRecord> readCtfRecords(const std::filesystem::path& streamPath)
+inline std::vector<CtfRecord>
+readCtfRecords(const std::filesystem::path& streamPath,
+               CtfStreamWriter::EventContextLayout eventContextLayout = CtfStreamWriter::EventContextLayout::Legacy)
 {
-  return parseCtfRecords(readTestBinaryFile(streamPath));
+  return parseCtfRecords(readTestBinaryFile(streamPath), eventContextLayout);
+}
+
+/** @brief Decodes and validates one CTF exception record payload. */
+inline CtfExceptionRecord decodeCtfExceptionRecord(const CtfRecord& record)
+{
+  require(record.id == CtfSchema::value(CtfSchema::EventId::Exception), "expected a CTF exception record");
+  require(record.payload.size() == 6U, "CTF exception record has an invalid payload size");
+  const auto number = readLe16(record.payload, 0U);
+  require(number == readLe16(record.payload, 3U), "CTF exception record contains inconsistent exception numbers");
+  return {number, record.payload[2U], record.payload[5U]};
+}
+
+/** @brief Decodes all exception events in parsed CTF records. */
+inline std::vector<CtfExceptionRecord> ctfExceptionRecords(const std::vector<CtfRecord>& records)
+{
+  std::vector<CtfExceptionRecord> exceptions;
+  for (const auto& record : records) {
+    if (record.id == CtfSchema::value(CtfSchema::EventId::Exception)) {
+      exceptions.push_back(decodeCtfExceptionRecord(record));
+    }
+  }
+  return exceptions;
+}
+
+/** @brief Decodes all exception events and timestamps in parsed CTF records. */
+inline std::vector<TimestampedCtfExceptionRecord>
+timestampedCtfExceptionRecords(const std::vector<CtfRecord>& records)
+{
+  std::vector<TimestampedCtfExceptionRecord> exceptions;
+  for (const auto& record : records) {
+    if (record.id == CtfSchema::value(CtfSchema::EventId::Exception)) {
+      exceptions.push_back({record.timestamp, decodeCtfExceptionRecord(record)});
+    }
+  }
+  return exceptions;
+}
+
+/** @brief Reads and decodes all exception events from a test CTF stream file. */
+inline std::vector<CtfExceptionRecord> readCtfExceptionRecords(
+    const std::filesystem::path& streamPath,
+    CtfStreamWriter::EventContextLayout eventContextLayout = CtfStreamWriter::EventContextLayout::Legacy)
+{
+  return ctfExceptionRecords(readCtfRecords(streamPath, eventContextLayout));
 }
 
 /** @brief Returns the first record with a required CTF event ID. */

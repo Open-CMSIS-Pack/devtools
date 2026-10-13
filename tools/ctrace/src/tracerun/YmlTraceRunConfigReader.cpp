@@ -7,6 +7,7 @@
 
 #include "YmlTraceRunConfigReader.h"
 
+#include "DiagnosticMessages.h"
 #include "TraceRunConfig.h"
 #include "yaml-cpp/exceptions.h"
 #include "yaml-cpp/node/node.h"
@@ -14,13 +15,14 @@
 #include "yaml-cpp/node/type.h"
 #include "yaml-cpp/yaml.h" // IWYU pragma: keep
 
+#include <algorithm>
+#include <array>
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <optional>
 #include <set>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -39,13 +41,7 @@ static std::size_t lineNumber(const Node& node)
 /** @brief Formats a YAML validation error with file and line. */
 static std::string errorMessage(const std::string& path, const Node& node, const std::string& message)
 {
-  std::ostringstream out;
-  out << path;
-  if (lineNumber(node) > 0U) {
-    out << '(' << lineNumber(node) << ')';
-  }
-  out << ": " << message;
-  return out.str();
+  return locatedDiagnosticMessage(path, lineNumber(node), message);
 }
 
 [[noreturn]] static void fail(const std::string& path, const Node& node, const std::string& message)
@@ -76,11 +72,8 @@ static Node childContainer(const Node& element, const std::string_view& tag)
 static std::optional<std::string> optionalAttribute(const Node& element, const std::string_view& name)
 {
   const auto node = childNode(element, name);
-  if (!node) {
+  if (!node || node.IsNull()) {
     return std::nullopt;
-  }
-  if (node.IsNull()) {
-    return std::string{};
   }
   if (!node.IsScalar()) {
     return std::nullopt;
@@ -96,7 +89,7 @@ static std::optional<std::string> processorNameAttribute(const std::string& path
     return std::nullopt;
   }
   if (!node.IsScalar()) {
-    fail(path, node, "'pname' must be a scalar string");
+    fail(path, node, configFieldMessage("pname", ConfigFieldProblem::ScalarString));
   }
   return TraceRunSchema::normalizedProcessorName(std::optional<std::string>(node.Scalar()));
 }
@@ -122,13 +115,13 @@ static std::uint64_t unsignedValue(const std::string& path, const Node& element,
     digits.remove_prefix(2);
   }
   if (digits.empty()) {
-    fail(path, element, "'" + std::string(name) + "' must be an unsigned integer");
+    fail(path, element, configFieldMessage(name, ConfigFieldProblem::Unsigned));
   }
 
   std::uint64_t parsed = 0;
   const auto result = std::from_chars(digits.data(), digits.data() + digits.size(), parsed, base);
   if (result.ec != std::errc{} || result.ptr != digits.data() + digits.size() || parsed > maximum) {
-    fail(path, element, "'" + std::string(name) + "' must be an unsigned integer in range");
+    fail(path, element, configFieldMessage(name, ConfigFieldProblem::UnsignedRange));
   }
   return parsed;
 }
@@ -157,28 +150,54 @@ static std::optional<std::uint64_t> deferredUnsignedAttribute(const std::string&
   }
 }
 
-/** @brief Parses an optional unsigned value only when its setup is consumed. */
-static std::optional<std::uint64_t> bestEffortUnsignedAttribute(const std::string& path, const Node& element,
-                                                                const std::string_view& name, std::uint64_t maximum)
+/** @brief Parses an optional unsigned reference field and defers validation errors. */
+static std::optional<std::uint64_t> deferredReferenceUnsignedAttribute(const std::string& path, const Node& element,
+                                                                       const std::string_view& name,
+                                                                       std::uint64_t maximum,
+                                                                       std::optional<std::string>& error)
 {
+  const auto node = childNode(element, name);
+  if (!node || node.IsNull()) {
+    return std::nullopt;
+  }
+  if (!node.IsScalar()) {
+    error = configFieldMessage(name, ConfigFieldProblem::ScalarUnsigned);
+    return std::nullopt;
+  }
   try {
-    return optionalUnsignedAttribute(path, element, name, maximum);
-  } catch (const std::runtime_error&) {
+    return unsignedValue(path, node, name, node.Scalar(), maximum);
+  } catch (const std::runtime_error& ex) {
+    error = ex.what();
     return std::nullopt;
   }
 }
 
-// ctrace-ref identifies the originating ctrace.yml node. The data index links
-// a generated DWT route to its copied ctrace-setup.data metadata.
-/** @brief Extracts a DWT data setup index from a ctrace reference path. */
-static std::optional<std::size_t> dwtDataIndex(const std::string_view& ctraceRef)
+/** @brief Parses an optional scalar reference field and defers shape errors. */
+static std::optional<std::string> deferredReferenceStringAttribute(const Node& element, const std::string_view& name,
+                                                                   std::optional<std::string>& error)
 {
-  constexpr std::string_view marker = "data#";
-  const auto markerPosition = ctraceRef.rfind(marker);
-  if (markerPosition == std::string_view::npos || (markerPosition != 0U && ctraceRef[markerPosition - 1U] != '/')) {
+  const auto node = childNode(element, name);
+  if (!node || node.IsNull()) {
     return std::nullopt;
   }
-  const auto value = ctraceRef.substr(markerPosition + marker.size());
+  if (!node.IsScalar()) {
+    error = configFieldMessage(name, ConfigFieldProblem::ScalarString);
+    return std::nullopt;
+  }
+  return node.Scalar();
+}
+
+// ref identifies the originating ctrace.yml node. The data index links
+// a generated DWT route to its copied ctrace-setup.data metadata.
+/** @brief Extracts a DWT data setup index from a ctrace reference path. */
+static std::optional<std::size_t> dwtDataIndex(const std::string_view& ref)
+{
+  constexpr std::string_view marker = "data#";
+  const auto markerPosition = ref.rfind(marker);
+  if (markerPosition == std::string_view::npos || (markerPosition != 0U && ref[markerPosition - 1U] != '/')) {
+    return std::nullopt;
+  }
+  const auto value = ref.substr(markerPosition + marker.size());
   if (value.empty()) {
     return std::nullopt;
   }
@@ -190,6 +209,20 @@ static std::optional<std::size_t> dwtDataIndex(const std::string_view& ctraceRef
   return index;
 }
 
+/** @brief Resolves the processor named explicitly or by `[pname/]data#<index>`. */
+static std::optional<std::string> dataReferenceProcessorName(const TraceRunReference& reference)
+{
+  const auto explicitName = TraceRunSchema::normalizedProcessorName(reference.processorName);
+  if (explicitName.has_value() || !reference.dataSetupIndex.has_value()) {
+    return explicitName;
+  }
+  const auto separator = reference.ref.find('/');
+  if (separator == 0U || separator == std::string::npos || separator != reference.ref.rfind('/')) {
+    return std::nullopt;
+  }
+  return reference.ref.substr(0U, separator);
+}
+
 /** @brief Collects data setup indices consumed by matching references. */
 static std::set<std::size_t> referencedDataSetupIndices(const std::vector<TraceRunReference>& references,
                                                         const std::optional<std::string>& setupProcessorName)
@@ -199,7 +232,7 @@ static std::set<std::size_t> referencedDataSetupIndices(const std::vector<TraceR
     if (reference.type != "dwt" || !TraceRunSchema::isUsableReference(reference)) {
       continue;
     }
-    if (!TraceRunSchema::processorNamesMayBind(setupProcessorName, reference.processorName)) {
+    if (!TraceRunSchema::processorNamesMayBind(setupProcessorName, dataReferenceProcessorName(reference))) {
       continue;
     }
     const auto index = reference.dataSetupIndex;
@@ -214,7 +247,7 @@ static std::set<std::size_t> referencedDataSetupIndices(const std::vector<TraceR
 static void requireSequence(const std::string& path, const Node& element, const std::string_view& name)
 {
   if (!element.IsSequence()) {
-    fail(path, element, "'" + std::string(name) + "' must be an array");
+    fail(path, element, configFieldMessage(name, ConfigFieldProblem::Array));
   }
 }
 
@@ -222,80 +255,120 @@ static void requireSequence(const std::string& path, const Node& element, const 
 static Node traceRunRoot(const std::string& path, const Node& document)
 {
   if (!document.IsMap()) {
-    fail(path, document, "expected a YAML map containing 'ctrace-run'");
+    fail(path, document, formatMessage(MessageId::YamlRootMapRequired));
   }
 
   const auto root = childNode(document, "ctrace-run");
   if (!root) {
-    fail(path, document, "missing top-level 'ctrace-run' node");
+    fail(path, document, formatMessage(MessageId::YamlRootMissing));
   }
   if (!root.IsMap()) {
-    fail(path, root, "top-level 'ctrace-run' node must be a map");
+    fail(path, root, formatMessage(MessageId::YamlRootMapInvalid));
   }
   return root;
 }
 
-/** @brief Parses scalar or sequence source identifiers from one reference. */
-static std::vector<std::uint32_t> parseSources(const std::string& path, const Node& reference)
+/** @brief Parses the optional trace byte-format declaration. */
+static std::optional<TraceRunFormat> parseTraceFormat(const std::string& path, const Node& root)
 {
-  const auto sourceNode = childNode(reference, "source");
-  if (!sourceNode) {
+  const auto node = childNode(root, "trace-format");
+  if (!node || node.IsNull()) {
+    return std::nullopt;
+  }
+  if (!node.IsScalar()) {
+    fail(path, node, configFieldMessage("trace-format", ConfigFieldProblem::Scalar));
+  }
+  if (node.Scalar() == "unformatted") {
+    return TraceRunFormat::Unformatted;
+  }
+  if (node.Scalar() == "formatted") {
+    return TraceRunFormat::Formatted;
+  }
+  fail(path, node, formatMessage(MessageId::TraceFormatInvalid));
+}
+
+/** @brief Parses scalar or sequence ITM channel or DWT comparator indices from one reference. */
+static std::vector<std::uint32_t> parseIndices(const std::string& path, const Node& reference)
+{
+  const auto indexNode = childNode(reference, "index");
+  if (!indexNode || indexNode.IsNull()) {
     return {};
   }
-  if (sourceNode.IsScalar() || sourceNode.IsNull()) {
-    const auto scalarSource = sourceNode.IsScalar() ? sourceNode.Scalar() : std::string{};
+  if (indexNode.IsScalar()) {
     return {static_cast<std::uint32_t>(
-        unsignedValue(path, sourceNode, "source", scalarSource, std::numeric_limits<std::uint32_t>::max()))};
+        unsignedValue(path, indexNode, "index", indexNode.Scalar(), std::numeric_limits<std::uint32_t>::max()))};
   }
 
-  requireSequence(path, sourceNode, "source");
-  std::vector<std::uint32_t> sources;
-  for (const auto& item : sourceNode) {
-    if (!item.IsScalar() || item.Scalar().empty()) {
-      fail(path, item, "each 'source' entry must be an unsigned integer");
+  requireSequence(path, indexNode, "index");
+  std::vector<std::uint32_t> indices;
+  for (const auto& item : indexNode) {
+    if (item.IsNull()) {
+      continue;
     }
-    const auto source = static_cast<std::uint32_t>(
-        unsignedValue(path, item, "source", item.Scalar(), std::numeric_limits<std::uint32_t>::max()));
-    sources.push_back(source);
+    if (!item.IsScalar() || item.Scalar().empty()) {
+      fail(path, item, configFieldMessage("index", ConfigFieldProblem::UnsignedEntry));
+    }
+    const auto index = static_cast<std::uint32_t>(
+        unsignedValue(path, item, "index", item.Scalar(), std::numeric_limits<std::uint32_t>::max()));
+    indices.push_back(index);
   }
-  return sources;
+  return indices;
 }
 
 /** @brief Stores diagnostics copied from one parsed trace reference. */
 struct ReferenceDiagnostics {
-  std::optional<std::string> info;
-  std::optional<std::string> warning;
-  std::optional<std::string> error;
+  std::vector<std::string> info;
+  std::vector<std::string> warning;
+  std::vector<std::string> error;
 };
 
 /** @brief Parses optional informational diagnostics attached to a reference. */
 static ReferenceDiagnostics parseReferenceDiagnostics(const std::string& path, const Node& element)
 {
-  const auto message = [&](const std::string_view& name) {
-    const auto value = optionalAttribute(element, name);
-    if (childContainer(element, name)) {
-      fail(path, element, "'" + std::string(name) + "' must be a scalar message");
+  const auto messages = [&](const std::string_view& name) {
+    const auto node = childNode(element, name);
+    if (!node || node.IsNull()) {
+      return std::vector<std::string>{};
     }
-    return value;
+    if (node.IsScalar()) {
+      return std::vector<std::string>{node.Scalar()};
+    }
+    if (!node.IsSequence()) {
+      fail(path, node, configFieldMessage(name, ConfigFieldProblem::StringOrList));
+    }
+    std::vector<std::string> result;
+    for (const auto& item : node) {
+      if (item.IsNull()) {
+        continue;
+      }
+      if (!item.IsScalar()) {
+        fail(path, item, configFieldMessage(name, ConfigFieldProblem::StringEntry));
+      }
+      result.push_back(item.Scalar());
+    }
+    return result;
   };
   return {
-      message("info"),
-      message("warning"),
-      message("error"),
+      messages("info"),
+      messages("warning"),
+      messages("error"),
   };
 }
 
 /** @brief Parses one relevant trace-run reference. */
 static std::optional<TraceRunReference> parseReference(const std::string& path, const Node& element)
 {
+  if (element.IsNull()) {
+    return std::nullopt;
+  }
   if (!element.IsMap()) {
-    fail(path, element, "each 'ctrace-refs' entry must be a map");
+    fail(path, element, configFieldMessage("ctrace-refs", ConfigFieldProblem::MapEntry));
   }
 
   const auto requiredScalar = [&](const std::string_view& name) {
     const auto node = childNode(element, name);
     if (!node || !node.IsScalar() || node.Scalar().empty()) {
-      fail(path, node ? node : element, "missing required '" + std::string(name) + "' scalar in ctrace-ref entry");
+      fail(path, node ? node : element, configFieldMessage(name, ConfigFieldProblem::RequiredReferenceScalar));
     }
     return node.Scalar();
   };
@@ -305,10 +378,10 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
   if (!TraceRunSchema::consumesReferenceMetadata(reference.type)) {
     return std::nullopt;
   }
-  reference.ctraceRef = requiredScalar("ctrace-ref");
+  reference.ref = requiredScalar("ref");
   reference.line = lineNumber(element);
   if (reference.type == "dwt") {
-    reference.dataSetupIndex = dwtDataIndex(reference.ctraceRef);
+    reference.dataSetupIndex = dwtDataIndex(reference.ref);
   }
 
   const auto diagnostics = parseReferenceDiagnostics(path, element);
@@ -318,7 +391,7 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
 
   const auto parseStream = [&]() -> std::optional<std::uint32_t> {
     if (childContainer(element, "stream")) {
-      fail(path, element, "'stream' must be a scalar unsigned integer");
+      fail(path, element, configFieldMessage("stream", ConfigFieldProblem::ScalarUnsigned));
     }
     const auto stream = optionalUnsignedAttribute(path, element, "stream", std::numeric_limits<std::uint32_t>::max());
     if (!stream.has_value()) {
@@ -327,40 +400,28 @@ static std::optional<TraceRunReference> parseReference(const std::string& path, 
     return static_cast<std::uint32_t>(*stream);
   };
 
-  const auto parseRoute = [&]() {
-    reference.processorName = processorNameAttribute(path, element);
-    reference.stream = parseStream();
-    reference.sources = parseSources(path, element);
-    if (reference.type == "dwt") {
-      reference.symbolAddress =
-          bestEffortUnsignedAttribute(path, element, "symbol-address", std::numeric_limits<std::uint64_t>::max());
+  reference.processorName = processorNameAttribute(path, element);
+  reference.stream = parseStream();
+  if (TraceRunSchema::supportsSource(reference.type)) {
+    try {
+      reference.indices = parseIndices(path, element);
+    } catch (const std::runtime_error&) {
+      if (diagnostics.error.empty()) {
+        throw;
+      }
     }
-    reference.label = optionalAttribute(element, "label");
-  };
-
-  if (!TraceRunSchema::supportsSource(reference.type)) {
-    // These source types currently contribute diagnostics only. Preserve
-    // a valid processor name for log context, but do not validate fields
-    // that no ctrace decoder or output consumes.
-    reference.processorName = bestEffortProcessorName(element);
+  }
+  if (!TraceRunSchema::isUsableReference(reference)) {
     return reference;
   }
-
-  if (diagnostics.error.has_value()) {
-    auto diagnosticReference = reference;
-    diagnosticReference.processorName = bestEffortProcessorName(element);
-    try {
-      parseRoute();
-      if (TraceRunSchema::isUsableReference(reference) || TraceRunSchema::isItmChannelZero(reference)) {
-        return reference;
-      }
-      return diagnosticReference;
-    } catch (const std::runtime_error&) {
-      return diagnosticReference;
-    }
+  if (reference.type == "dwt") {
+    reference.address = deferredReferenceUnsignedAttribute(
+        path, element, "address", std::numeric_limits<std::uint64_t>::max(), reference.addressError);
+    reference.dataType = deferredReferenceStringAttribute(element, "data-type", reference.dataTypeError);
+    reference.dataSize = deferredReferenceUnsignedAttribute(
+        path, element, "size", std::numeric_limits<std::uint64_t>::max(), reference.dataSizeError);
   }
-
-  parseRoute();
+  reference.label = optionalAttribute(element, "label");
   return reference;
 }
 
@@ -369,7 +430,7 @@ static std::vector<TraceRunReference> parseReferences(const std::string& path, c
 {
   const auto referencesNode = childNode(root, "ctrace-refs");
   if (!referencesNode) {
-    fail(path, root, "missing required 'ctrace-refs' array");
+    fail(path, root, formatMessage(MessageId::ReferenceArrayMissing));
   }
   requireSequence(path, referencesNode, "ctrace-refs");
 
@@ -394,14 +455,14 @@ static std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::stri
     TraceRunTimestampSetup timestamps;
     timestamps.line = lineNumber(timestampsNode);
     if (timestampsNode.IsScalar() && !timestampsNode.Scalar().empty()) {
-      timestamps.clockError = "'timestamps' must be empty or a map";
+      timestamps.clockError = formatMessage(MessageId::TimestampsMapRequired);
     }
     return timestamps;
   }
   if (!timestampsNode.IsMap()) {
     TraceRunTimestampSetup timestamps;
     timestamps.line = lineNumber(timestampsNode);
-    timestamps.clockError = "'timestamps' must be empty or a map";
+    timestamps.clockError = formatMessage(MessageId::TimestampsMapRequired);
     return timestamps;
   }
 
@@ -409,47 +470,69 @@ static std::optional<TraceRunTimestampSetup> parseTimestampSetup(const std::stri
   timestamps.line = lineNumber(timestampsNode);
   const auto clock = childNode(timestampsNode, "clock");
   if (clock && !clock.IsScalar() && !clock.IsNull()) {
-    timestamps.clockError = "'timestamps.clock' must be a scalar unsigned integer";
+    timestamps.clockError = configFieldMessage("timestamps.clock", ConfigFieldProblem::ScalarUnsigned);
   } else {
     timestamps.clockHz = deferredUnsignedAttribute(path, timestampsNode, "clock",
                                                    std::numeric_limits<std::uint64_t>::max(), timestamps.clockError);
   }
   if (childContainer(timestampsNode, "itm-prescaler")) {
-    fail(path, timestampsNode, "'timestamps.itm-prescaler' must be a scalar unsigned integer");
-  }
-  const auto prescaler =
-      optionalUnsignedAttribute(path, timestampsNode, "itm-prescaler", std::numeric_limits<std::uint32_t>::max());
-  if (prescaler.has_value()) {
-    timestamps.timestampPrescaler = static_cast<std::uint32_t>(*prescaler);
+    timestamps.prescalerError =
+        errorMessage(path, timestampsNode,
+                     configFieldMessage("timestamps.itm-prescaler", ConfigFieldProblem::ScalarUnsigned));
+  } else {
+    const auto prescaler = deferredUnsignedAttribute(path, timestampsNode, "itm-prescaler",
+                                                     std::numeric_limits<std::uint32_t>::max(),
+                                                     timestamps.prescalerError);
+    if (prescaler.has_value()) {
+      timestamps.timestampPrescaler = static_cast<std::uint32_t>(*prescaler);
+    }
   }
   return timestamps;
 }
 
-/** @brief Parses ITM enable-mask metadata from one consumed setup. */
+/** @brief Parses ITM enable-mask metadata from one consumed setup, if available. */
 static std::optional<TraceRunItmSetup> parseItmSetup(const std::string& path, const Node& element)
 {
   const auto itmNode = childNode(element, "itm");
-  if (!itmNode) {
+  if (!itmNode || itmNode.IsNull()) {
     return std::nullopt;
   }
   if (!itmNode.IsMap()) {
-    fail(path, itmNode, "'itm' must be a map containing 'enable'");
+    TraceRunItmSetup setup;
+    setup.enableError = errorMessage(path, itmNode, formatMessage(MessageId::ItmEnableMapRequired));
+    return setup;
   }
   const auto enableNode = childNode(itmNode, "enable");
-  if (!enableNode || !enableNode.IsScalar() || enableNode.Scalar().empty()) {
-    fail(path, enableNode ? enableNode : itmNode, "'itm.enable' is required and must be a scalar unsigned integer");
+  if (!enableNode || enableNode.IsNull()) {
+    return std::nullopt;
   }
-  return TraceRunItmSetup{static_cast<std::uint32_t>(
-      unsignedValue(path, enableNode, "itm.enable", enableNode.Scalar(), std::numeric_limits<std::uint32_t>::max()))};
+  if (!enableNode.IsScalar() || enableNode.Scalar().empty()) {
+    TraceRunItmSetup setup;
+    setup.enableError =
+        errorMessage(path, enableNode, configFieldMessage("itm.enable", ConfigFieldProblem::ScalarUnsigned));
+    return setup;
+  }
+  TraceRunItmSetup setup;
+  try {
+    setup.enableMask = static_cast<std::uint32_t>(
+        unsignedValue(path, enableNode, "itm.enable", enableNode.Scalar(), std::numeric_limits<std::uint32_t>::max()));
+  } catch (const std::runtime_error& error) {
+    setup.enableError = error.what();
+  }
+  return setup;
 }
 
 /** @brief Parses only DWT data setups referenced by consumed routes. */
 static std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::string& path, const Node& element,
-                                                                const std::set<std::size_t>& referencedIndices)
+                                                                const std::set<std::size_t>& referencedIndices,
+                                                                std::optional<std::string>& dataError)
 {
-  const auto dataNode =
-      referencedIndices.empty() ? Node(YAML::NodeType::Undefined) : childNode(element, "data");
-  if (!dataNode || !dataNode.IsSequence()) {
+  const auto dataNode = referencedIndices.empty() ? Node(YAML::NodeType::Undefined) : childNode(element, "data");
+  if (!dataNode || dataNode.IsNull()) {
+    return {};
+  }
+  if (!dataNode.IsSequence()) {
+    dataError = configFieldMessage("data", ConfigFieldProblem::Array);
     return {};
   }
 
@@ -458,44 +541,118 @@ static std::vector<TraceRunDataSetup> parseReferencedDataSetups(const std::strin
   bool foundReferencedEntry = false;
   for (const auto& item : dataNode) {
     if (referencedIndices.find(index++) == referencedIndices.end()) {
-      dataSetups.emplace_back();
-      continue;
-    }
-    foundReferencedEntry = true;
-    TraceRunDataSetup data;
-    if (!item.IsMap()) {
+      TraceRunDataSetup data;
+      data.present = false;
       dataSetups.push_back(std::move(data));
       continue;
     }
-    const auto type = childNode(item, "symbol-type");
-    if (type && !type.IsScalar() && !type.IsNull()) {
-      data.symbolTypeError = "'data.symbol-type' must be a scalar string";
-    } else if (type && !type.IsNull()) {
-      data.symbolType = optionalAttribute(item, "symbol-type");
+    TraceRunDataSetup data;
+    if (item.IsNull()) {
+      data.present = false;
+      dataSetups.push_back(std::move(data));
+      continue;
     }
-    const auto size = childNode(item, "symbol-size");
+    foundReferencedEntry = true;
+    if (!item.IsMap()) {
+      data.sizeError = configFieldMessage("data", ConfigFieldProblem::MapEntry);
+      dataSetups.push_back(std::move(data));
+      continue;
+    }
+    const auto size = childNode(item, "size");
     if (size && !size.IsScalar() && !size.IsNull()) {
-      data.symbolSizeError = "'data.symbol-size' must be a scalar unsigned integer";
+      data.sizeError = configFieldMessage("data.size", ConfigFieldProblem::ScalarUnsigned);
     } else if (size && !size.IsNull()) {
-      data.symbolSize = deferredUnsignedAttribute(path, item, "symbol-size", std::numeric_limits<std::uint64_t>::max(),
-                                                  data.symbolSizeError);
+      data.size =
+          deferredUnsignedAttribute(path, item, "size", std::numeric_limits<std::uint64_t>::max(), data.sizeError);
     }
     dataSetups.push_back(std::move(data));
   }
   return foundReferencedEntry ? dataSetups : std::vector<TraceRunDataSetup>{};
 }
 
+/** @brief Returns the generated reference paths represented by one setup fragment. */
+static std::vector<std::string> setupFeaturePaths(const Node& element, const std::optional<std::string>& processorName)
+{
+  struct Feature {
+    std::string_view name;
+    bool repeated;
+  };
+  constexpr std::array<Feature, 10U> features{{
+      {"timestamps", false},
+      {"timesync", false},
+      {"data", true},
+      {"exceptions", false},
+      {"events", true},
+      {"itm", false},
+      {"pcsampling", false},
+      {"synchronization", false},
+      {"instructions", false},
+      {"tracehalt", false},
+  }};
+
+  const auto prefix = processorName.has_value() ? *processorName + "/" : std::string{};
+  std::vector<std::string> paths;
+  for (const auto& feature : features) {
+    const auto node = childNode(element, feature.name);
+    if (!node || ((feature.name == "data" || feature.name == "itm") && node.IsNull())) {
+      continue;
+    }
+    if (feature.repeated && node.IsSequence()) {
+      for (std::size_t index = 0U; index < node.size(); ++index) {
+        if (node[index].IsNull()) {
+          continue;
+        }
+        paths.push_back(prefix + std::string(feature.name) + "#" + std::to_string(index));
+      }
+      continue;
+    }
+    paths.push_back(prefix + std::string(feature.name));
+  }
+  return paths;
+}
+
+/** @brief Tests whether an active setup contains metadata or a feature reference consumed by ctrace. */
+static bool hasRelevantSetupContent(const Node& element, const std::vector<TraceRunReference>& references)
+{
+  if (childNode(element, "timestamps")) {
+    return true;
+  }
+  const auto itm = childNode(element, "itm");
+  const auto itmEnable = itm && itm.IsMap() ? childNode(itm, "enable") : Node(YAML::NodeType::Undefined);
+  if (itm && !itm.IsNull() && (!itm.IsMap() || (itmEnable && !itmEnable.IsNull()))) {
+    return true;
+  }
+
+  const auto featurePaths = setupFeaturePaths(element, std::nullopt);
+  const auto matches = [](const std::string_view featurePath, std::string_view referencePath) {
+    const auto processorSeparator = referencePath.find('/');
+    if (processorSeparator != std::string_view::npos) {
+      referencePath.remove_prefix(processorSeparator + 1U);
+    }
+    return referencePath == featurePath ||
+           (referencePath.size() > featurePath.size() && referencePath.substr(0U, featurePath.size()) == featurePath &&
+            (referencePath[featurePath.size()] == '/' || referencePath[featurePath.size()] == '#'));
+  };
+  return std::any_of(featurePaths.begin(), featurePaths.end(), [&](const std::string& featurePath) {
+    return std::any_of(references.begin(), references.end(), [&](const TraceRunReference& reference) {
+      return TraceRunSchema::consumesReferenceMetadata(reference.type) && matches(featurePath, reference.ref);
+    });
+  });
+}
+
 /** @brief Parses one trace setup and its consumed metadata groups. */
 static TraceRunSetup parseSetup(const std::string& path, const Node& element,
-                                const std::vector<TraceRunReference>& references)
+                                const std::vector<TraceRunReference>& references, std::size_t ordinal)
 {
   TraceRunSetup setup;
   setup.line = lineNumber(element);
+  setup.ordinal = ordinal;
   setup.processorName = processorNameAttribute(path, element);
+  setup.featurePaths = setupFeaturePaths(element, setup.processorName);
   const auto referencedDataIndices = referencedDataSetupIndices(references, setup.processorName);
   setup.timestamps = parseTimestampSetup(path, element);
   setup.itm = parseItmSetup(path, element);
-  setup.data = parseReferencedDataSetups(path, element, referencedDataIndices);
+  setup.data = parseReferencedDataSetups(path, element, referencedDataIndices, setup.dataError);
   return setup;
 }
 
@@ -504,27 +661,39 @@ static std::vector<TraceRunSetup> parseSetups(const std::string& path, const Nod
                                               const std::vector<TraceRunReference>& references)
 {
   const auto setupNode = childNode(root, "ctrace-setup");
-  if (!setupNode) {
+  if (!setupNode || setupNode.IsNull()) {
     return {};
   }
   requireSequence(path, setupNode, "ctrace-setup");
 
   std::vector<TraceRunSetup> setups;
+  std::size_t ordinal = 0U;
   for (const auto& item : setupNode) {
+    const auto currentOrdinal = ordinal++;
+    if (item.IsNull()) {
+      continue;
+    }
     if (!item.IsMap()) {
-      fail(path, item, "each 'ctrace-setup' entry must be a map");
+      fail(path, item, configFieldMessage("ctrace-setup", ConfigFieldProblem::MapEntry));
     }
     // The copied ctrace.yml setup semantics define the presence of
     // 'disable' itself as sufficient to ignore the complete list entry.
     // Its value therefore has no schema that ctrace needs to validate.
     const auto disable = childNode(item, "disable");
     if (disable) {
+      TraceRunSetup setup;
+      setup.line = lineNumber(item);
+      setup.disabled = true;
+      setup.ordinal = currentOrdinal;
+      setup.processorName = bestEffortProcessorName(item);
+      setup.featurePaths = setupFeaturePaths(item, setup.processorName);
+      setups.push_back(std::move(setup));
       continue;
     }
-    auto setup = parseSetup(path, item, references);
-    if (!setup.timestamps.has_value() && !setup.itm.has_value() && setup.data.empty()) {
+    if (!hasRelevantSetupContent(item, references)) {
       continue;
     }
+    auto setup = parseSetup(path, item, references, currentOrdinal);
     setups.push_back(std::move(setup));
   }
   return setups;
@@ -533,34 +702,27 @@ static std::vector<TraceRunSetup> parseSetups(const std::string& path, const Nod
 TraceRunConfig YmlTraceRunConfigReader::read(const std::string& path) const
 {
   if (path.empty()) {
-    throw std::runtime_error("trace-run configuration path is empty");
+    throw std::runtime_error(formatMessage(MessageId::TraceConfigurationPathEmpty));
   }
 
   std::vector<Node> documents;
   try {
     documents = YAML::LoadAllFromFile(path);
   } catch (const YAML::Exception& error) {
-    std::ostringstream message;
-    message << "failed to parse trace-run configuration: " << path;
-    if (error.mark.line >= 0) {
-      message << '(' << (error.mark.line + 1);
-      if (error.mark.column >= 0) {
-        message << ',' << (error.mark.column + 1);
-      }
-      message << ')';
-    }
-    message << ": " << error.msg;
-    throw std::runtime_error(message.str());
+    const auto line = error.mark.line >= 0 ? std::optional<std::size_t>(error.mark.line + 1) : std::nullopt;
+    const auto column = error.mark.column >= 0 ? std::optional<std::size_t>(error.mark.column + 1) : std::nullopt;
+    throw std::runtime_error(yamlParseMessage(path, line, column, error.msg));
   }
   if (documents.size() != 1U) {
     const auto location = documents.size() > 1U ? documents[1] : Node(YAML::NodeType::Undefined);
-    fail(path, location, "expected exactly one YAML document");
+    fail(path, location, formatMessage(MessageId::YamlDocumentCount));
   }
 
   const auto root = traceRunRoot(path, documents.front());
 
   TraceRunConfig config;
   config.path = path;
+  config.traceFormat = parseTraceFormat(path, root);
   config.references = parseReferences(path, root);
   config.setups = parseSetups(path, root, config.references);
   return config;

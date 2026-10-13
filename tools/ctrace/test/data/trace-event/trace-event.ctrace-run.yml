@@ -1,0 +1,5 @@
+ctrace-run:
+  ctrace-setup:
+    - timestamps:
+        clock: 280000000
+  ctrace-refs: []

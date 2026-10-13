@@ -63,7 +63,7 @@ void ProjMgrCbuildMlops::SetModelNode(YAML::Node node, const MlopsModelType& mod
   if (!model.clayer.empty()) {
     SetNodeValue(node[YAML_CLAYER], FormatPath(model.clayer, m_directory));
   }
-  SetNodeValue(node[YAML_NAME], model.name);
+  SetCustomNodes(node, model.custom);
 }
 
 void ProjMgrCbuildMlops::SetRunNode(YAML::Node node, const MlopsRunType& run) {

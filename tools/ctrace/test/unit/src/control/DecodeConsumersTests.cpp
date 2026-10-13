@@ -10,10 +10,13 @@
 #include "DecodeConsumers.h"
 #include "DiagnosticSink.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 #include "TraceOutput.h"
+#include "TraceRoute.h"
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <utility>
@@ -65,8 +68,54 @@ TEST(CtraceUnitTests, testDecodeConsumersForwardsWarningsAndFailsOnErrorsWithOut
   EXPECT_EQ(2U, consumers.eventCount());
   EXPECT_EQ(1U, diagnostics.failureCount());
 
-  consumers.abortOutputs();
+  const TraceDecodeAbort decodeAbort{16U, "fatal decode error"};
+  consumers.finishOutputs(&decodeAbort);
   EXPECT_EQ((std::vector<std::string>{"start", "write", "diagnostic", "write", "diagnostic", "abort"}), calls);
+}
+
+TEST(CtraceUnitTests, testDecodeConsumersRetainsSkippedBytesAsNonFailingInfo)
+{
+  std::vector<std::string> calls;
+  std::vector<std::unique_ptr<TraceOutput>> outputs;
+  outputs.push_back(std::make_unique<TestTraceOutput>(calls));
+  CollectingDiagnosticSink diagnostics;
+  DecodeConsumers consumers(std::move(outputs), diagnostics);
+
+  const std::vector<TraceByteSkip> skipped{
+      {0U, 1U},
+      {16U, 5U, TraceByteSkipReason::NullSourceId, 0U},
+      {32U, 3U, TraceByteSkipReason::ReservedSourceId, 127U},
+      {48U, 2U, TraceByteSkipReason::UnconfiguredSourceId, 42U},
+      {64U, 8U, TraceByteSkipReason::MissingSync, 1U},
+  };
+  for (const auto& item : skipped) {
+    consumers.appendByteSkip(item);
+  }
+  consumers.append(softwarePacket(1U));
+  consumers.finishIssues();
+  consumers.finishOutputs();
+
+  EXPECT_EQ((std::vector<std::string>{"start", "write-byte-skip", "write-byte-skip", "write-byte-skip",
+                                     "write-byte-skip", "write-byte-skip", "write", "stop"}), calls);
+  EXPECT_EQ(consumers.eventCount(), 6U);
+  ASSERT_EQ(diagnostics.events().size(), skipped.size());
+  for (std::size_t index = 0U; index < skipped.size(); ++index) {
+    const auto& diagnostic = diagnostics.events()[index];
+    EXPECT_EQ(diagnostic.message, formatTraceMessage(skipped[index], TraceMessageStyle::Compact));
+    EXPECT_EQ(diagnostic.detailedMessage, formatTraceMessage(skipped[index], TraceMessageStyle::Detailed));
+    EXPECT_EQ(diagnostic.visibility, DiagnosticSink::Visibility::Always);
+    EXPECT_EQ(diagnostic.severity, DiagnosticSink::Severity::Info);
+    EXPECT_EQ(diagnostic.impact, DiagnosticSink::Impact::NonFailing);
+    if (skipped[index].traceId.has_value()) {
+      const std::vector<std::pair<std::string, std::string>> expectedContext{
+          {"stream", std::to_string(*skipped[index].traceId)},
+      };
+      EXPECT_EQ(diagnostic.context, expectedContext);
+    } else {
+      EXPECT_TRUE(diagnostic.context.empty());
+    }
+  }
+  EXPECT_EQ(diagnostics.failureCount(), 0U);
 }
 
 TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
@@ -77,7 +126,8 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
   EXPECT_TRUE(unknownDiagnostics.events().empty());
 
   CollectingDiagnosticSink diagnostics;
-  DecodeConsumers consumers({}, diagnostics, 0x00000002U, {{2U, 0x00000004U}});
+  const TraceRouteIdentity stream2{TraceRouteId{20U}, 2U};
+  DecodeConsumers consumers({}, diagnostics, {{TraceRouteId{0U}, 0x00000002U}, {stream2.id, 0x00000004U}});
 
   auto enabled = softwarePacket(1U);
   consumers.append(enabled);
@@ -92,12 +142,10 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
   auto invalidChannel = softwarePacket(32U);
   consumers.append(invalidChannel);
 
-  auto streamSpecificDisabled = softwarePacket(1U);
-  streamSpecificDisabled.traceBusId = 2U;
+  auto streamSpecificDisabled = onRoute(softwarePacket(1U), stream2);
   consumers.append(streamSpecificDisabled);
 
-  auto streamSpecificEnabled = softwarePacket(2U);
-  streamSpecificEnabled.traceBusId = 2U;
+  auto streamSpecificEnabled = onRoute(softwarePacket(2U), stream2);
   consumers.append(streamSpecificEnabled);
 
   ASSERT_EQ(2U, diagnostics.events().size());
@@ -105,4 +153,25 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
     EXPECT_EQ(DiagnosticSink::Severity::Warning, event.severity);
     EXPECT_EQ(DiagnosticSink::Impact::NonFailing, event.impact);
   }
+}
+
+TEST(CtraceUnitTests, testDecodeConsumersTracksEnableWarningsByInternalRouteIdentity)
+{
+  CollectingDiagnosticSink diagnostics;
+  const TraceRouteIdentity noBusA{TraceRouteId{30U}, std::nullopt};
+  const TraceRouteIdentity noBusB{TraceRouteId{31U}, std::nullopt};
+  DecodeConsumers consumers({}, diagnostics, {{noBusA.id, 0U}, {noBusB.id, 0U}});
+
+  const auto disabledA = onRoute(softwarePacket(3U), noBusA);
+  const auto disabledB = onRoute(softwarePacket(3U), noBusB);
+  consumers.append(disabledA);
+  consumers.append(disabledA);
+  consumers.append(disabledB);
+  consumers.append(disabledB);
+
+  ASSERT_EQ(diagnostics.events().size(), 2U) << "warning-once state must be independent for distinct no-bus route IDs";
+  EXPECT_TRUE(diagnostics.events()[0].context.size() == 1U && diagnostics.events()[1].context.size() == 1U)
+      << "an internal route ordinal must not be exposed as public stream context";
+  EXPECT_EQ(diagnostics.events()[0].context.front(), (std::pair<std::string, std::string>{"channel", "3"}));
+  EXPECT_EQ(diagnostics.events()[1].context.front(), (std::pair<std::string, std::string>{"channel", "3"}));
 }

@@ -296,8 +296,6 @@ protected:
     const std::map<std::string, RteDeviceProperty*>& pnames);
   void CollectSystemViewOptions(const SystemViewItem& context);
   void SetTelnetPort(TelnetOptionsItem& item, unsigned long long& port, std::set<unsigned long long>& usedPorts);
-  CustomItem& CustomMapFind(std::vector<std::pair<std::string, CustomItem>>& customMap, const std::string& key);
-  void MergeCustomItems(const CustomItem& src, CustomItem& dst);
 };
 
 #endif  // PROJMGRRUNDEBUG_H

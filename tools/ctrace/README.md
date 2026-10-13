@@ -2,13 +2,7 @@
 
 `ctrace` converts CMSIS Cortex-M trace captures into outputs that can be inspected or processed by other tools. It
 combines a `<solution-set>.ctrace-run.yml` description with matching raw trace files from one trace directory.
-
-The current implementation decodes SWO/ITM and DWT data. Trace Bus (`*.TB.raw`) files are discovered and reported,
-but deliberately skipped until that decoder is implemented.
-ITM payload output supports stimulus ports `1` through `31`. Port `0` remains part of stream decoding but is
-deliberately excluded from CSV and CTF event output. Trace Compass observes the same filtered CTF stream.
-
-![ctrace architecture](docs/architecture.svg)
+The [architecture description](docs/architecture.md) documents the supported feature profile and internal design.
 
 ## Usage
 
@@ -20,7 +14,8 @@ ctrace <trace-dir> [options]
       --ctf                 Generate CTF and Trace Compass XML output
   -a, --all                 Generate all output formats
       --type <type ...>     Select event types
-      --stream <id ...>     Select CoreSight Trace Bus IDs (0 to 111)
+      --stream <id ...>     Select streams (0 for unformatted; ATB IDs 1 to 111)
+  -v, --verbose             Show detailed CLI diagnostics and run information
   -h, --help                Print command-line help
   -V, --version             Print the version
 ```
@@ -28,19 +23,20 @@ ctrace <trace-dir> [options]
 Values for `--type` and `--stream` are space-separated, so place the trace directory before these multi-value options.
 If the directory follows them, terminate option parsing explicitly, for example
 `ctrace --type itm dwt -- .trace`. With no output option, `ctrace` validates and decodes the capture without writing
-output files.
+output files. Run `ctrace --help` for the current option details.
 
-The `--type` option accepts the specification-defined selectors `itm`, `dwt`, `event`, `pmu`, `exception`,
-`pcsample`, `global_ts`, `overflow`, and `error`. Decoded DWT event counters, PMU packets, and PC samples remain
-disabled until their output semantics are implemented, so their selectors currently produce no rows.
+Normal CLI diagnostics use the same compact trace messages as CSV. Add `--verbose` (or `-v`) to include detailed
+reasons, raw positions with bounded inspection windows, native decoder codes, packet previews and technical run
+information on stderr. This option does not change CSV or CTF output, event selection or the exit status.
 
-A trace directory uses solution-set-based file names:
+## Trace directory
+
+Input and output files share a solution-set base name:
 
 ```text
 .trace/
   Board.ctrace-run.yml
   Board.SWO.raw
-  Board.TB.raw              # discovered, currently not decoded
 ```
 
 For `ctrace .trace --target Board --all`, the supported input produces:
@@ -48,35 +44,138 @@ For `ctrace .trace --target Board --all`, the supported input produces:
 ```text
 .trace/
   Board.SWO.csv
-  Board.ctf/
+  Board.SWO.ctf/
     metadata
     stream_0
-  Board.SWO.traceanalysis.xml
+  Board.traceanalysis.xml     # graphical views from eligible completed CTF bundles
 ```
 
-The YAML reader validates fields consumed by `ctrace` and ignores unrelated or unknown fields. A malformed consumed
-field is an error; an unneeded extension to the trace-run format does not break the tool.
+Discovery processes every existing `Board.SWO.raw`, `Board.TB.raw`, and `Board.TB_<name>.raw` input independently,
+one after another. `--target Board` selects the solution set and all its supported inputs. Each input gets its own
+CSV and CTF bundle, using `<solution-set>.<channel>` as their common base name. CTF uses
+this channel-qualified name even for a single input; older `Board.ctf` bundles are neither reused nor removed.
+The [CTF profile](docs/ctf-format.md#files-and-common-structure) records the required specification alignment.
 
-## Project structure
+Trace references use `index:` for ITM channel and DWT comparator numbers, as a scalar or array. The YAML reader
+ignores fields it does not consume. The fourth CSV column is also named `index`; its values are unchanged.
 
-| Path | Responsibility |
-|---|---|
-| `src/CtraceMain.h` | Platform-independent entry point used by the executable trampoline |
-| `src/cli` | Command-line parsing and validation |
-| `src/control` | Trace-directory orchestration, raw-file access, and per-file decode jobs |
-| `src/tracerun` | Trace-run discovery, YAML parsing, and normalized metadata |
-| `src/decode` | OpenCSD adapter, recovery, and Cortex-M semantic decoding |
-| `src/model` | Backend-independent trace events and selections |
-| `src/output/csv` | CSV schema and writer |
-| `src/output/ctf` | CTF bundle and Trace Compass XML writers |
-| `src/diagnostics` | Structured diagnostics and trace-issue reporting |
-| `test/unit` | GoogleTest cases, arranged like the production modules |
-| `test/integration` | GoogleTest integration suite for the application entry point and stable fixtures |
-| `test/data` | Stable fixtures and expected output |
+One optional `Board.traceanalysis.xml` collects graphical views from all eligible CTF bundles completed for that
+target in the current invocation. Each contributing bundle must retain exactly one clock domain. A multi-clock bundle
+remains valid CTF but is omitted from the XML with a warning. Independent single-clock bundles can contribute together;
+their clock UUIDs keep sources separate without synchronizing or rebasing their timestamps. No old per-channel XML
+files are migrated or deleted. An XML failure leaves completed CSV and CTF outputs intact.
 
-The module boundaries, dependency direction, runtime flow, and extension points are described in the
-[architecture documentation](docs/architecture.md). See also the [verified constraints](docs/constraints.md) and the
-compact [remaining TODO list](docs/todo.md).
+Without a format declaration, each SWO input defaults to unformatted ITM and each TB or named-TB input defaults to
+formatted CoreSight. Missing or null `trace-format` uses these channel-based defaults; an explicit value overrides
+the format for every supported input in that trace-run:
+
+```yaml
+ctrace-run:
+  trace-format: formatted  # formatted or unformatted
+  # ctrace-setup and ctrace-refs follow here
+```
+
+This optional, ctrace-private provisional field does not select a file. The channel-based default is a heuristic, not
+byte-content detection. Formatted input currently requires complete 16-byte
+memory-aligned CoreSight frames; there is no public `trace-framing` field yet. See the
+[constraints](docs/constraints.md) for the full discovery, routing, and
+compatibility contract.
+
+Event Recorder (`Board.ER.raw`) remains unsupported and is skipped with a warning. A solution set without a supported
+input reports an error. A failure in one input leaves the remaining inputs and solution sets available for processing;
+the command returns non-zero if any input fails. This also applies when validating without output options.
+
+## Incomplete captures
+
+Formatted input accounts for payload skipped because its source ID is missing, NULL, reserved, or unconfigured,
+and for initial protocol bytes skipped while seeking hardware synchronization. Each accounting record is CLI Info and a
+CSV `info` row, retained regardless of type or stream filters. `info` is an input annotation, not a new `--type`
+selector. The row has no time; `stream` contains the observed formatter ID, including `0` or `127`, or is empty when
+no ID is known. These observations do not create decoded routes.
+
+The note counts **deformatted payload bytes**, not formatter control bytes or differences between raw offsets.
+CSV and normal CLI use `N bytes skipped: reason`; `--verbose` also reports the first formatter output group's raw offset.
+No raw bytes are rewritten and no synchronization is invented.
+Before synchronization, the skipped bytes cannot be classified as ITM software packets or DWT hardware packets
+(including exception trace), so the CSV note uses `N bytes skipped: no SYNC`.
+This accounting covers formatter skips and initial ITM synchronization, not every possible decoder-recovery loss.
+
+If a configured formatted route receives bytes but never reaches a real ITM hardware synchronization, ctrace reports
+an Error at end of input and exits non-zero. Completed diagnostic and decoded outputs are retained, including data
+from healthy routes. Continuing past an unassigned prefix therefore does not guarantee decodable payload.
+
+A fatal OpenCSD error, including a framing error, aborts decoding and returns a non-zero status. A CSV output that
+has already started retains the previously committed rows and ends with a global `type=error` row. Its `note` starts
+with `Decode aborted; trace incomplete` and adds a compact structured cause when available;
+all other fields are empty. Normal CLI uses the same message; `--verbose` adds the processed-byte count and detailed
+abort reason. This final record describes the entire input,
+so it bypasses both `--type` and `--stream`. The incomplete CTF bundle is removed
+and contributes no views to the target XML; completed bundles from other inputs remain eligible. A failure before
+CSV starts creates no CSV, and a CSV write or close failure still
+removes the unreliable file. Preserving partial CSV with this global marker is an explicit ctrace contract; the
+published CSV specification does not define fatal-abort handling.
+
+## Packet diagnostics
+
+CLI trace diagnostics are independent of event filters. Ordinary route-bound error and warning rows in CSV follow
+`--stream` and `--type`: their output type is `error`, so `--type dwt error` retains both DWT data and selected-stream diagnostics,
+whereas `--type dwt` omits those diagnostic rows. The global fatal-abort record described above is the exception.
+The [published CSV specification](https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#csv-format)
+defines `error` and its free-text `note`, but no `warning` type or severity column; ctrace adds neither.
+
+CSV notes and normal CLI messages state what happened, retaining the cause and meaningful byte counts. They omit raw
+positions, intervals, native error/response codes and packet data. For example, the captured SWO errors produce:
+
+```csv
+cycles,stream,type,index,value,pc,address,note
+29249610,,error,,,,,Invalid ITM packet sequence
+29249610,,error,,,,,2179 raw bytes without usable ITM packets
+39449474,,error,,,,,Incomplete ITM packet at EOF
+```
+
+Normal CLI adds severity and input/stream identity so diagnostics can be attributed across inputs. `--verbose`
+additionally shows native OpenCSD details, the structured `raw_offset` and known recovery timestamps. Raw positions
+are zero-based byte offsets in the original input file. `position_kind=exact` identifies an unformatted location,
+`formatter_hint` a formatted source-position group, and `input_progress` a progress boundary rather than a packet start.
+`read_offset` and `read_length` identify an inspection window of at most 128 bytes, with nearby context and clipping
+at the file boundaries. Formatted windows start at a 16-byte frame boundary. For example, a window with `read_offset=0`
+and `read_length=64` can be inspected with `xxd -g 1 -s 0 -l 64 capture.SWO.raw`. This is a hex-inspection window;
+independent decoding may require earlier synchronization and decoder state.
+
+When the raw-packet callback identifies the failing packet, the verbose CLI diagnostic also
+includes `packet=ASYNC, packet_size=2, packet_bytes=[00 fe], packet_bytes_truncated=false`, for example. Sizes count
+bytes; previews contain at most 16 bytes, with `packet_bytes_truncated=true` when shortened. Unavailable bytes use
+`packet_bytes=unavailable`; this remains distinct from an empty packet. Incomplete packets
+at end of input receive the same context even when OpenCSD reports them only
+through the packet monitor, without a logger error.
+
+For formatted input, the reported raw index can identify a deformatter output
+group rather than the exact physical position of the failing byte. `packet_bytes_kind=deformatted` identifies ITM
+payload bytes that need not be contiguous in the file; unformatted previews use `packet_bytes_kind=file`. A recovery
+message distinguishes a later hardware SYNC from reaching end of input without resynchronization. Compact wording
+reports `N raw bytes affected`; `--verbose` also gives the raw interval and synchronization position. The interval
+includes formatter control and potentially other routes: its length is not a count of
+zero bytes or discarded ITM payload bytes. `raw_end` is exclusive; unknown `previous_sync_offset` and
+`next_sync_offset` values are explicitly `unknown`. Errors still make the invocation
+fail even when decoding resumes and completed outputs are retained.
+
+Overflow warnings remain aggregated once per route: `Trace overflow; timestamp discontinuity`, followed by
+`N more occurred` when needed. `--verbose` also reports the first known timestamp, first and last raw positions,
+up to three sample positions and the number of omitted samples. Overflow alone does not make the command fail.
+
+Each input emits a verbose-only inspection Info with `input_path` (absolute path), `input_size` (bytes), effective
+`format`, `framing`, selected `config`, `ctrace_version`, `offset_unit=byte` and `offset_base=0`. Configuration selection,
+trace-run metadata, prescalers and processing statistics also appear only with `--verbose`; byte-skip information,
+warnings and errors remain visible normally. File and configuration failures retain the file, field and cause needed
+to act on them in either mode.
+
+The input size is measured from the retained file handle during preflight. The absolute path keeps symbolic links
+and `..` intact.
+
+CSV diagnostic notes and default CLI wording intentionally change. Consumers that compare complete diagnostic
+strings must update those expectations. Columns, event types and filters are unchanged. Use `type` and `stream` for
+selection and `--verbose` for full diagnostic context. Internal message IDs are not additional CSV fields.
+See the [message-system design](docs/message-system-design.md) for catalog and parameter handling.
 
 ## Build and test
 
@@ -91,33 +190,35 @@ cmake --build build --target ctrace CtraceUnitTests CtraceIntegTests
 Run the GoogleTest unit and integration suites plus the executable smoke tests:
 
 ```bash
-ctest --test-dir build -C Debug -R '^(CtraceUnitTests|CtraceIntegTests|ctrace-)'
+ctest --test-dir build -C Debug -R '^(CtraceUnitTests|CtraceIntegTests|CtraceFixtureIntegrity|ctrace-)'
 ```
+
+On native Linux, installing exactly Babeltrace `2.0.5` before configuration
+also registers the external consumer gate:
+
+```bash
+ctest --test-dir build -C Debug --no-tests=error -L '^linux-consumer$'
+```
+
+CI installs the pinned consumer and treats a missing labelled test as a
+failure. The separate versioned Trace Compass acceptance record is documented
+with the [integration tests](test/integration/README.md).
 
 Editors using `clangd` should open the devtools repository root and configure into `build`. The tool-local
 `.clangd` file points clangd at that compilation database.
 
-## Dependencies and releases
+## Further documentation
 
-`ctrace` uses the devtools copies of `cxxopts`, `yaml-cpp`, GoogleTest, and the `external/OpenCSD` submodule. It does
-not carry private copies below `tools/ctrace`.
-Known defects in the pinned OpenCSD revision that can affect ctrace are recorded
-in the [OpenCSD issue notes](docs/opencsd-issues.md).
-
-Publishing a GitHub Release for a tag named `tools/ctrace/<version>`, for example `tools/ctrace/0.0.1`, runs the ctrace
-workflow. It builds Windows AMD64/Arm64, Linux AMD64/Arm64, and macOS Arm64 variants and attaches `ctrace.zip` to the
-release. Unit and integration tests run on Windows AMD64 and Linux AMD64; ARM64 targets are compiled but not executed,
-matching the other devtools workflows. Coverage runs on Linux AMD64. The executable version is derived from the same
-tool-specific tag.
-
-The project is licensed under Apache-2.0. Product dependencies and their licenses are recorded in the repository's
-top-level `LICENSE.md`. The release archive contains the project license, third-party notices, OpenCSD copyright
-notices, the application-dependency license texts, and checksums for all included files. Compiler and operating-system
-runtime contents must still be inspected for each production build; the application dependency list does not claim to
-cover them. Release artifacts are currently unsigned; signing, archive checksums, macOS notarization, and a formal
-SBOM remain explicit release-hardening decisions.
-
-The code, build, test, and packaging structure is ready for release-candidate validation. The Blinky SWO and TB
-captures are approved redistributable test assets, as documented in the [fixture README](test/data/README.md).
-Publishing the current statically linked Linux artifacts additionally requires the runtime-license and relinking work
-tracked in the [release TODO](docs/todo.md).
+- [Architecture](docs/architecture.md): supported features, runtime flow, module boundaries, dependencies, tests,
+  and CI.
+- [CTF profile](docs/ctf-format.md): generated CTF structure, event groups, field semantics, and Trace Compass
+  representation.
+- [Constraints](docs/constraints.md): contracts that implementation changes must preserve.
+- [Message system](docs/message-system-design.md): central message IDs, parameter handling, and CLI/CSV wording.
+- [Multi-source design](docs/multi-source-design.md): rationale and migration from single-source SWO to routed
+  CoreSight input, with later contract changes identified separately.
+- [TODO](docs/todo.md): planned work and pull-request boundaries.
+- [OpenCSD issues](docs/opencsd-issues.md): known issues in the pinned decoder revision.
+- [Third-party notices](docs/THIRD_PARTY_NOTICES.md): dependency versions, licenses, and build configuration.
+- [Test data](test/data/README.md) and [integration tests](test/integration/README.md): fixture provenance and test
+  scope.

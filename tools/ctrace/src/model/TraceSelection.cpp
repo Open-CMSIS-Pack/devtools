@@ -36,22 +36,34 @@ static std::optional<TraceEventType> typeFor(const DwtAddressTraceEvent&)
   return TraceEventType::Dwt;
 }
 
+/** @brief Maps a comparator-only DWT match payload to data trace output. */
+static std::optional<TraceEventType> typeFor(const DwtMatchTraceEvent&)
+{
+  return TraceEventType::Dwt;
+}
+
 /** @brief Maps an exception payload to its selectable event type. */
 static std::optional<TraceEventType> typeFor(const ExceptionTraceEvent&)
 {
   return TraceEventType::Exception;
 }
 
-/** @brief Keeps DWT counter payloads disabled until their output semantics are implemented. */
+/** @brief Exposes DWT event-counter payloads through their public output selector. */
 static std::optional<TraceEventType> typeFor(const DwtEventTraceEvent&)
 {
-  return std::nullopt;
+  return TraceEventType::Event;
 }
 
-/** @brief Keeps PMU payloads disabled until their output semantics are implemented. */
+/** @brief Exposes PMU trace-on-overflow payloads through their public output selector. */
 static std::optional<TraceEventType> typeFor(const PmuTraceEvent&)
 {
-  return std::nullopt;
+  return TraceEventType::Pmu;
+}
+
+/** @brief Exposes periodic DWT PC samples through their public output selector. */
+static std::optional<TraceEventType> typeFor(const PcSampleTraceEvent&)
+{
+  return TraceEventType::PcSample;
 }
 
 /** @brief Excludes local timestamp control packets from type selection. */
@@ -127,6 +139,13 @@ bool TraceSelection::includesStream(std::uint8_t traceBusId) const
   return streams.empty() || std::find(streams.begin(), streams.end(), traceBusId) != streams.end();
 }
 
+bool TraceSelection::includesRoute(const TraceRouteIdentity& route) const
+{
+  // Public stream selector 0 retains the legacy spelling for a route whose
+  // unformatted bytes carry no architectural Trace Bus ID.
+  return includesStream(route.traceBusId.value_or(0U));
+}
+
 bool traceEventSelectedForOutput(const TraceEvent& event, const TraceSelection& selection)
 {
   const auto type = traceEventType(event);
@@ -134,7 +153,7 @@ bool traceEventSelectedForOutput(const TraceEvent& event, const TraceSelection& 
   if (software != nullptr && software->channel == CoreSight::kExcludedItmStimulusPort) {
     return false;
   }
-  if (!selection.includesStream(event.traceBusId)) {
+  if (!selection.includesRoute(event.route)) {
     return false;
   }
   return type.has_value() && selection.includesType(traceEventTypeName(*type));

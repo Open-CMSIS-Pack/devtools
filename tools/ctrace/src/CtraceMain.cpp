@@ -37,6 +37,7 @@ int CtraceMain(const std::vector<std::string>& arguments)
       return 0;
     }
     options = CliParser::parse(arguments);
+    diagnostics.setVerbose(options.verbose);
     if (options.help) {
       std::cout << CliParser::helpString();
       return 0;

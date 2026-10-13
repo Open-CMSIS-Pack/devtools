@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/main/tools/projmgr/schemas/csolution.schema.json
+
+solution:
+  compiler: AC6
+
+  mlops:
+    description: explicit npu configuration without DFP npu information
+    npu:
+      type: Ethos-U55
+      macs: 128
+
+  target-types:
+    - type: Hardware
+      device: RteTest_ARMCM0_Test
+      target-set:
+        - set:
+          images:
+            - project-context: core2
+
+    - type: Simulator
+      device: RteTest_ARMCM0_Test
+      target-set:
+        - set: FVP-Test
+          debugger:
+            name: Arm-FVP
+          images:
+            - project-context: core2
+
+  projects:
+    - project: core2/core2.cproject.yml

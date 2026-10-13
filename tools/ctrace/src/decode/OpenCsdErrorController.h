@@ -13,6 +13,7 @@
 #include "opencsd/ocsd_if_types.h"
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -23,6 +24,8 @@ struct OpenCsdErrorRecord {
   ocsd_err_t code = OCSD_OK;
   std::uint64_t index = 0;
   bool hasIndex = false;
+  std::optional<std::uint8_t> channel;
+  std::optional<std::uint64_t> callbackOrder;
   std::string message;
 };
 
@@ -50,6 +53,8 @@ public:
 
   /** @brief Clears errors before invoking one OpenCSD data-path operation. */
   void beginDataPathCall();
+  /** @brief Binds the operation-local order source shared with trace callbacks. */
+  void setCallbackOrderSource(std::function<std::optional<std::uint64_t>()> callbackOrderSource);
   /** @brief Classifies the response and errors from the current data-path operation. */
   Decision decide(ocsd_datapath_resp_t response) const;
 
@@ -63,8 +68,8 @@ public:
   static TraceIssueCode issueCode(const Decision& decision);
   /** @brief Formats an OpenCSD API setup failure. */
   static std::string describeApiError(ocsd_err_t code, const std::string& message);
-  /** @brief Formats the user-facing summary for a decoder decision. */
-  static std::string describeSummary(const Decision& decision);
+  /** @brief Retains native classification and detail until a consumer selects a message style. */
+  static TraceMessage diagnosticMessage(const Decision& decision);
 
   /** @brief Captures an OpenCSD callback while preserving default logging behavior. */
   void LogError(ocsd_hndl_err_log_t handle, const ocsdError* error) override;
@@ -74,6 +79,7 @@ private:
   static OpenCsdErrorRecord makeRecord(const ocsdError& error);
 
   std::vector<OpenCsdErrorRecord> m_callErrors;
+  std::function<std::optional<std::uint64_t>()> m_callbackOrderSource;
 };
 
 #endif // CTRACE_SRC_DECODE_OPENCSDERRORCONTROLLER_H

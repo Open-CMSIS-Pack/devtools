@@ -9,12 +9,26 @@
 #define CTRACE_SRC_DECODE_OPENCSDITMDECODER_H
 
 #include "OpenCsdTraceElement.h"
+#include "TraceRoute.h"
 
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
+
+/** @brief Selects the root transport presented to the OpenCSD ITM decoders. */
+enum class OpenCsdItmInputMode {
+  Single,
+  CoreSightFormatted,
+};
+
+/** @brief Receives one observed but unconfigured normal CoreSight Trace Bus ID. */
+using OpenCsdUnsupportedTraceIdObserver = std::function<void(std::uint8_t, std::uint64_t)>;
+
+/** @brief Receives skipped payload-byte accounting independently of semantic trace routes. */
+using OpenCsdSkippedBytesObserver = std::function<void(const TraceByteSkip&)>;
 
 /** @brief Summarizes raw input consumed by an OpenCSD ITM decoder. */
 struct OpenCsdItmDecodeResult {
@@ -37,8 +51,9 @@ public:
    * @param message Human-readable failure description.
    * @param bytesProcessed Raw bytes consumed before the failure.
    */
-  OpenCsdFatalError(const std::string& message, std::uint64_t bytesProcessed)
-    : std::runtime_error(message),
+  OpenCsdFatalError(TraceMessage message, std::uint64_t bytesProcessed)
+    : std::runtime_error(formatTraceMessage(message, TraceMessageStyle::Detailed)),
+      m_message(std::move(message)),
       m_bytesProcessed(bytesProcessed)
   {
   }
@@ -52,7 +67,11 @@ public:
     return m_bytesProcessed;
   }
 
+  /** @brief Returns the structured cause retained for output-specific rendering. */
+  const TraceMessage& message() const noexcept { return m_message; }
+
 private:
+  TraceMessage m_message;
   std::uint64_t m_bytesProcessed = 0;
 };
 
@@ -62,16 +81,26 @@ class OpenCsdItmDecoderImpl;
 class OpenCsdItmDecoder {
 public:
   /**
-   * @brief Creates a decoder using the production OpenCSD session.
+   * @brief Creates a decoder for one SINGLE route or several formatted routes.
+   * @param routes Normalized routes accepted by the input frontend.
+   * @param inputMode OpenCSD root transport used for the raw bytes.
    * @param elementSink Sink receiving decoded and recovery elements.
+   * @param unsupportedTraceIdSink Observer for unconfigured normal formatted IDs.
+   * @param skippedBytesSink Observer for skipped formatter or unsynchronized ITM payload.
    */
-  OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink);
+  OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
+                    OpenCsdTraceElementSink& elementSink,
+                    OpenCsdUnsupportedTraceIdObserver unsupportedTraceIdSink = {},
+                    OpenCsdSkippedBytesObserver skippedBytesSink = {});
   /**
-   * @brief Creates a decoder with an injected OpenCSD session factory.
+   * @brief Creates a configured decoder with an injected external session.
+   * @param routes Normalized routes accepted by the input frontend.
+   * @param inputMode Policy mode applied around the injected session.
    * @param elementSink Sink receiving decoded and recovery elements.
    * @param sessionFactory Factory used to construct the external session.
    */
-  OpenCsdItmDecoder(OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory);
+  OpenCsdItmDecoder(std::vector<TraceRouteIdentity> routes, OpenCsdItmInputMode inputMode,
+                    OpenCsdTraceElementSink& elementSink, const OpenCsdItmSessionFactory& sessionFactory);
   /** @brief Destroys the decoder implementation and external session. */
   ~OpenCsdItmDecoder();
 
@@ -98,4 +127,4 @@ private:
   std::unique_ptr<OpenCsdItmDecoderImpl> m_impl;
 };
 
-#endif  // CTRACE_SRC_DECODE_OPENCSDITMDECODER_H
+#endif // CTRACE_SRC_DECODE_OPENCSDITMDECODER_H

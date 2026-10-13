@@ -369,7 +369,7 @@ bool SvdDevice::GatherClusters(SvdItem *item)
       }
 #endif
 
-      const auto name = cluster->GetHeaderTypeNameHierarchical();//GetHeaderTypeName();
+      const auto name = cluster->GetHeaderTypeNameHierarchical();
 
       m_clusterList.push_back(cluster);    // build reverse sorted list to keep dependencies cluster2cluster
     }
@@ -388,9 +388,7 @@ bool SvdDevice::AddToMap(SvdItem *item, const string& name, const string& tagUse
     }
 
     if(orig && orig == mapItem) {
-      //int ctrap = 0;
     } else if(mapItem == item) {
-      //int ctrap = 0;
     }
     else {
       const auto lineNo = item->GetLineNumber();
@@ -859,7 +857,6 @@ bool SvdDevice::CheckForItemsPeri(const list<SvdItem*> &childs)
           const auto& subChilds = clust->GetChildren();
           const auto dim = clust->GetDimension();
           if(dim) {
-            //if(dim->GetExpression()->GetType() == SvdTypes::Expression::EXTEND) {
               const auto& dimChilds = dim->GetChildren();
               for(const auto dimChild : dimChilds) {
                 SvdCluster* dimClust = dynamic_cast<SvdCluster*>(dimChild);
@@ -870,7 +867,6 @@ bool SvdDevice::CheckForItemsPeri(const list<SvdItem*> &childs)
                 const auto& dimClustChilds = dimClust->GetChildren();
                 CheckForItemsCluster(dimClustChilds);
               }
-            //}
           }
 
           if(CheckForItemsCluster(subChilds)) {

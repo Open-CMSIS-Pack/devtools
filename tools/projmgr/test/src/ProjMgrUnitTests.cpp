@@ -4503,6 +4503,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_help) {
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
   argv[1] = (char*)"list";
+  argv[2] = (char*)"targets";
+  argv[3] = (char*)"-h";
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+
+  argv[1] = (char*)"list";
   argv[2] = (char*)"target-sets";
   argv[3] = (char*)"-h";
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
@@ -7434,7 +7439,7 @@ TEST_F(ProjMgrUnitTests, ListTargetSets) {
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestTargetSet/solution.csolution.yml";
   argv[1] = (char*)"list";
-  argv[2] = (char*)"target-sets";
+  argv[2] = (char*)"targets";
   argv[3] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(4, argv, 0));
 
@@ -7442,6 +7447,14 @@ TEST_F(ProjMgrUnitTests, ListTargetSets) {
   EXPECT_STREQ(outStr.c_str(), "Type1\nType1@Custom2\nType1@Custom3\nType2@Default2\n");
 
   streamRedirect.ClearStringStreams();
+  argv[2] = (char*)"target-sets";
+  EXPECT_EQ(0, RunProjMgr(4, argv, 0));
+
+  outStr = streamRedirect.GetOutString();
+  EXPECT_STREQ(outStr.c_str(), "Type1\nType1@Custom2\nType1@Custom3\nType2@Default2\n");
+
+  streamRedirect.ClearStringStreams();
+  argv[2] = (char*)"targets";
   argv[4] = (char*)"--filter";
   argv[5] = (char*)"TYPE2";
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
@@ -7562,11 +7575,11 @@ TEST_F(ProjMgrUnitTests, ListTemplates) {
   argv[2] = (char*)"templates";
   EXPECT_EQ(0, RunProjMgr(3, argv, 0));
   auto outStr = streamRedirect.GetOutString();
-  EXPECT_STREQ(outStr.c_str(), "\
-Board1Template (ARM::RteTest_DFP@0.2.0)\n\
-Board2 (ARM::RteTest_DFP@0.2.0)\n\
-Board3 (ARM::RteTest_DFP@0.2.0)\n\
-");
+  EXPECT_TRUE(regex_match(outStr, regex("\
+.*/ARM/RteTest_DFP/0.2.0/Templates/board1.csolution.yml \\(Board1Template\\)\\n\
+.*/ARM/RteTest_DFP/0.2.0/Templates/board2.csolution.yml \\(Board2\\)\\n\
+.*/ARM/RteTest_DFP/0.2.0/Templates/board3.csolution.yml \\(Board3\\)\\n\
+")));
 
   // test filter
   argv[3] = (char*)"--filter";
@@ -7574,9 +7587,9 @@ Board3 (ARM::RteTest_DFP@0.2.0)\n\
   streamRedirect.ClearStringStreams();
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
   outStr = streamRedirect.GetOutString();
-  EXPECT_STREQ(outStr.c_str(), "\
-Board1Template (ARM::RteTest_DFP@0.2.0)\n\
-");
+  EXPECT_TRUE(regex_match(outStr, regex("\
+.*/ARM/RteTest_DFP/0.2.0/Templates/board1.csolution.yml \\(Board1Template\\)\\n\
+")));
 
   // test filter (description)
   argv[4] = (char*)"Template one";
@@ -7585,8 +7598,10 @@ Board1Template (ARM::RteTest_DFP@0.2.0)\n\
   EXPECT_EQ(0, RunProjMgr(6, argv, 0));
   outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_search(outStr, regex("\
-Board1Template \\(ARM::RteTest_DFP@0.2.0\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Templates/board1.csolution.yml \\(Board1Template\\)\n\
   description: \"Test board Template one\"\n\
+  pack: ARM::RteTest_DFP@0.2.0\n\
+  path: .*/ARM/RteTest_DFP/0.2.0\n\
 ")));
 
   // list board's compatible template
@@ -7600,10 +7615,10 @@ Board1Template \\(ARM::RteTest_DFP@0.2.0\\)\n\
   EXPECT_EQ(0, RunProjMgr(7, argv, 0));
   outStr = streamRedirect.GetOutString();
   EXPECT_TRUE(regex_search(outStr, regex("\
-Board3 \\(ARM::RteTest_DFP@0.2.0\\)\n\
+.*/ARM/RteTest_DFP/0.2.0/Templates/board3.csolution.yml \\(Board3\\)\n\
   description: \"Test board Template three\"\n\
+  pack: ARM::RteTest_DFP@0.2.0\n\
   path: .*/ARM/RteTest_DFP/0.2.0/Templates\n\
-  file: .*/ARM/RteTest_DFP/0.2.0/Templates/board3.csolution.yml\n\
   copy-to: Template3\n\
 ")));
 }
@@ -7617,11 +7632,15 @@ TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   argv[3] = (char*)"--active";
   argv[4] = (char*)"Type1@Custom2";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuildIdx1 = YAML::LoadFile(testinput_folder + "/TestTargetSet/solution.cbuild-idx.yml");
+  EXPECT_EQ("Type1@Custom2", cbuildIdx1["build-idx"]["target"].as<string>());
   const YAML::Node& cbuildRun1 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type1.cbuild-run.yml");
   EXPECT_EQ("Custom2", cbuildRun1["cbuild-run"]["target-set"].as<string>());
 
   argv[4] = (char*)"Type1";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  const YAML::Node& cbuildIdx2 = YAML::LoadFile(testinput_folder + "/TestTargetSet/solution.cbuild-idx.yml");
+  EXPECT_EQ("Type1", cbuildIdx2["build-idx"]["target"].as<string>());
   const YAML::Node& cbuildRun2 = YAML::LoadFile(testinput_folder + "/TestTargetSet/out/solution+Type1.cbuild-run.yml");
   EXPECT_EQ("<default>", cbuildRun2["cbuild-run"]["target-set"].as<string>());
 
@@ -7934,11 +7953,20 @@ TEST_F(ProjMgrUnitTests, GenerateMLOps) {
   csolution = testinput_folder + "/MLOps/npu_mismatch.csolution.yml";
   argv[2] = (char*)csolution.c_str();
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
-  const string warningStr = streamRedirect.GetErrorString();
+  string warningStr = streamRedirect.GetErrorString();
   EXPECT_EQ(string::npos, warningStr.find("npu_mismatch.csolution.yml - warning csolution: "
     "mlops.npu.type value does not match DFP device information"));
   EXPECT_NE(string::npos, warningStr.find("npu_mismatch.csolution.yml - warning csolution: "
     "mlops.npu.macs value does not match DFP device information"));
+
+  // the configured NPU is retained without warnings when the DFP has no NPU metadata
+  streamRedirect.ClearStringStreams();
+  csolution = testinput_folder + "/MLOps/no_npu_info.csolution.yml";
+  argv[2] = (char*)csolution.c_str();
+  EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  warningStr = streamRedirect.GetErrorString();
+  EXPECT_EQ(string::npos, warningStr.find("mlops.npu.type value does not match DFP device information"));
+  EXPECT_EQ(string::npos, warningStr.find("mlops.npu.macs value does not match DFP device information"));
 
   // hardware target is not present
   csolution = testinput_folder + "/MLOps/no_hardware.csolution.yml";

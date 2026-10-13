@@ -5,7 +5,7 @@
  * Generated with AI
  */
 
-// DWT packet decoding and explicitly deferred DWT feature tests.
+// DWT packet decoding, including event-counter and PMU output semantics.
 #include "TestSupport.h"
 
 #include <gtest/gtest.h>
@@ -13,63 +13,229 @@
 #include "csv/CsvRowMapper.h"
 #include "DwtPacketDecoder.h"
 #include "TraceEvent.h"
+#include "TraceMessages.h"
 #include "TraceSelection.h"
 
+#include <array>
 #include <cstdint>
 #include <optional>
+#include <string>
 
 /** @brief Creates a DWT payload packet with test defaults. */
 static DwtPayloadPacket dwtPayload(std::uint8_t discriminator, std::uint8_t size = 0U, std::uint32_t value = 0U,
                                    std::uint64_t index = 0U, std::uint8_t traceBusId = 0U, std::uint64_t tcyc = 0U)
 {
-  return {index, traceBusId, discriminator, size, value, tcyc, {}};
+  const auto route = traceBusId == 0U
+                         ? TraceRouteIdentity{}
+                         : TraceRouteIdentity{TraceRouteId{traceBusId}, std::optional<std::uint8_t>(traceBusId)};
+  return {index, route, discriminator, size, value, tcyc, {}};
 }
 
-TEST(CtraceUnitTests, testDwtPcSampleIsSuppressedUntilDedicatedEventExists)
+TEST(CtraceUnitTests, testDwtPcSampleProducesDedicatedEvent)
 {
   DwtPacketDecoder decoder;
   auto payload = dwtPayload(2U, 4U, 0x08001234U, 19U, 3U, 949339000U);
   payload.quality.timestampReliable = true;
 
   const auto packets = decoder.decode(payload);
-  ASSERT_TRUE(packets.empty()) << "DWT PC samples must remain suppressed until their output event is defined";
+  ASSERT_EQ(packets.size(), 1U) << "DWT PC sample event count mismatch";
+  const auto* sample = traceEventPayload<PcSampleTraceEvent>(packets.front());
+  ASSERT_NE(sample, nullptr);
+  EXPECT_EQ(sample->pc, 0x08001234U) << "DWT PC sample payload mismatch";
+  EXPECT_EQ(sample->kind, PcSampleKind::Pc) << "DWT PC sample payload mismatch";
+  EXPECT_EQ(packets.front().index, 19U) << "DWT PC sample identity mismatch";
+  EXPECT_EQ(packets.front().route.traceBusId, 3U) << "DWT PC sample identity mismatch";
+  EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(949339000U))
+      << "DWT PC sample identity mismatch";
+  ASSERT_TRUE(packets.front().quality.has_value()) << "DWT PC sample quality mismatch";
+  EXPECT_TRUE(packets.front().quality->timestampReliable) << "DWT PC sample quality mismatch";
+  EXPECT_EQ(traceEventType(packets.front()), TraceEventType::PcSample)
+      << "DWT PC sample selector mapping mismatch";
 }
 
-TEST(CtraceUnitTests, testDwtCounterPacketsArePreservedUntilOutputSemanticsExist)
+TEST(CtraceUnitTests, testDwtPcSampleDistinguishesZeroPcFromProcessorSleep)
 {
-  const auto verify = [](std::uint8_t discriminator, const char* selector) {
-    DwtPacketDecoder decoder;
-    auto payload = dwtPayload(discriminator, 1U, 0x21U, 23U, 4U, 949339100U);
-    payload.quality.overflow = true;
-    payload.quality.timestampReliable = false;
-    payload.quality.overflowCount = 7U;
+  DwtPacketDecoder decoder;
+  const auto packets = decoder.decode(dwtPayload(2U, 1U, 0U, 20U, 4U, 949339100U));
+  ASSERT_EQ(packets.size(), 1U) << "DWT PC sleep event count mismatch";
+  const auto* sample = traceEventPayload<PcSampleTraceEvent>(packets.front());
+  ASSERT_NE(sample, nullptr);
+  EXPECT_EQ(sample->pc, 0U) << "DWT PC sleep indication mismatch";
+  EXPECT_EQ(sample->kind, PcSampleKind::Sleep) << "DWT PC sleep indication mismatch";
+  EXPECT_EQ(CsvRowMapper::row(packets.front()), "949339100,4,pcsample,,,,,CPU Sleeping");
 
+  const auto following = decoder.decode(dwtPayload(2U, 4U, 0U, 21U, 4U, 949339200U));
+  ASSERT_EQ(following.size(), 1U);
+  const auto* pc = traceEventPayload<PcSampleTraceEvent>(following.front());
+  ASSERT_NE(pc, nullptr);
+  EXPECT_EQ(pc->kind, PcSampleKind::Pc) << "a four-byte zero is a PC, not a sleep marker";
+  EXPECT_EQ(pc->pc, 0U);
+  EXPECT_EQ(CsvRowMapper::row(following.front()), "949339200,4,pcsample,,,0x00000000,,");
+}
+
+TEST(CtraceUnitTests, testDwtPcSamplePreservesTraceProhibitedWithoutDataLoss)
+{
+  DwtPacketDecoder decoder;
+  auto payload = dwtPayload(2U, 1U, 0xffU, 21U, 4U, 949339200U);
+  payload.quality.timestampReliable = true;
+  payload.quality.overflowCount = 3U;
+  const auto packets = decoder.decode(payload);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto& event = packets.front();
+  const auto* sample = traceEventPayload<PcSampleTraceEvent>(event);
+  ASSERT_NE(sample, nullptr);
+  EXPECT_EQ(sample->kind, PcSampleKind::TraceProhibited);
+  EXPECT_EQ(sample->pc, 0U) << "a status marker must not fabricate a PC address";
+  EXPECT_EQ(event.index, payload.index);
+  EXPECT_EQ(event.route.id, payload.route.id);
+  EXPECT_EQ(event.route.traceBusId, payload.route.traceBusId);
+  EXPECT_EQ(event.tcyc, payload.tcyc);
+  ASSERT_TRUE(event.quality.has_value());
+  EXPECT_TRUE(event.quality->timestampReliable);
+  EXPECT_FALSE(event.quality->overflow);
+  EXPECT_EQ(event.quality->overflowCount, 3U);
+  EXPECT_EQ(traceEventType(event), TraceEventType::PcSample);
+
+  const auto following = decoder.decode(dwtPayload(2U, 4U, 0xffU));
+  ASSERT_EQ(following.size(), 1U);
+  const auto* pc = traceEventPayload<PcSampleTraceEvent>(following.front());
+  ASSERT_NE(pc, nullptr);
+  EXPECT_EQ(pc->kind, PcSampleKind::Pc);
+  EXPECT_EQ(pc->pc, 0xffU) << "a four-byte 0xff is a PC, not a trace-prohibited marker";
+}
+
+TEST(CtraceUnitTests, testDwtPcSampleRejectsUnsupportedPayloads)
+{
+  const auto verify = [](const DwtPayloadPacket& payload, const char* expectedMessage) {
+    DwtPacketDecoder decoder;
     const auto packets = decoder.decode(payload);
-    ASSERT_TRUE(packets.size() == 1U) << "DWT counter packet must be preserved internally";
-    const auto& packet = packets.front();
-    const auto* event = traceEventPayload<DwtEventTraceEvent>(packet);
-    const auto* pmu = traceEventPayload<PmuTraceEvent>(packet);
-    ASSERT_TRUE((discriminator == 0U && event != nullptr && pmu == nullptr) ||
-                (discriminator == 3U && event == nullptr && pmu != nullptr))
-        << "DWT counter semantic event type mismatch";
-    const auto actualDiscriminator = event != nullptr ? event->discriminator : pmu->discriminator;
-    const auto actualSize = event != nullptr ? event->size : pmu->size;
-    const auto actualValue = event != nullptr ? event->value : pmu->value;
-    ASSERT_TRUE(actualDiscriminator == discriminator) << "DWT counter discriminator mismatch";
-    ASSERT_TRUE(actualSize == 1U && actualValue == 0x21U) << "DWT counter payload mismatch";
-    ASSERT_TRUE(packet.index == 23U && packet.traceBusId == 4U) << "DWT counter identity mismatch";
-    ASSERT_TRUE(packet.tcyc == 949339100U) << "DWT counter timestamp mismatch";
-    ASSERT_TRUE(packet.quality.has_value() && packet.quality->overflow) << "DWT counter overflow status mismatch";
-    ASSERT_TRUE(packet.quality->overflowCount == 7U) << "DWT counter overflow count mismatch";
-    ASSERT_TRUE(!traceEventType(packet).has_value()) << "unimplemented DWT counter must not expose an output type";
-    ASSERT_TRUE(!traceEventSelectedForOutput(packet, TraceSelection{}))
-        << "DWT counter packet must remain disabled by default";
-    ASSERT_TRUE(!traceEventSelectedForOutput(packet, TraceSelection{{selector}, {}}))
-        << "DWT counter selector must remain disabled until output semantics exist";
+    ASSERT_EQ(packets.size(), 1U) << "unsupported DWT PC sample must emit one error";
+    const auto* issue = traceEventPayload<TraceIssueEvent>(packets.front());
+    ASSERT_NE(issue, nullptr);
+    EXPECT_EQ(issue->code, TraceIssueCode::UnsupportedDwtPcSamplePayload)
+        << "unsupported DWT PC sample error mismatch";
+    EXPECT_EQ(formatTraceMessage(issue->message, TraceMessageStyle::Detailed), expectedMessage)
+        << "unsupported DWT PC sample diagnostic mismatch";
   };
 
-  verify(0U, "event");
-  verify(3U, "pmu");
+  verify(dwtPayload(2U, 1U, 1U),
+         "unsupported DWT PC-sample payload: size 1, value 1; expected a 4-byte PC or a 1-byte marker "
+         "(0x00: CPU Sleeping, 0xff: Trace prohibited)");
+  verify(dwtPayload(2U, 2U, 0x1234U),
+         "unsupported DWT PC-sample payload: size 2, value 4660; expected a 4-byte PC or a 1-byte marker "
+         "(0x00: CPU Sleeping, 0xff: Trace prohibited)");
+}
+
+TEST(CtraceUnitTests, testDwtEventCounterPacketIsValidatedAndExposed)
+{
+  DwtPacketDecoder decoder;
+  auto payload = dwtPayload(0U, 1U, 0x21U, 23U, 4U, 949339100U);
+  payload.quality.overflow = true;
+  payload.quality.timestampReliable = false;
+  payload.quality.overflowCount = 7U;
+
+  const auto packets = decoder.decode(payload);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto& packet = packets.front();
+  const auto* event = traceEventPayload<DwtEventTraceEvent>(packet);
+  ASSERT_NE(event, nullptr);
+  EXPECT_EQ(event->counterMask, 0x21U);
+  EXPECT_EQ(packet.index, 23U);
+  EXPECT_EQ(packet.route.traceBusId, 4U);
+  EXPECT_EQ(packet.tcyc, std::optional<std::uint64_t>(949339100U));
+  ASSERT_TRUE(packet.quality.has_value());
+  EXPECT_TRUE(packet.quality->overflow);
+  EXPECT_EQ(packet.quality->overflowCount, 7U);
+  EXPECT_EQ(traceEventType(packet), TraceEventType::Event);
+  EXPECT_TRUE(traceEventSelectedForOutput(packet, TraceSelection{}));
+  EXPECT_TRUE(traceEventSelectedForOutput(packet, TraceSelection{{"event"}, {}}));
+  EXPECT_FALSE(traceEventSelectedForOutput(packet, TraceSelection{{"pmu"}, {}}));
+  EXPECT_EQ(CsvRowMapper::row(packet), "949339100,4,event,0,0x21,,,");
+}
+
+TEST(CtraceUnitTests, testDwtPmuPacketIsExposed)
+{
+  DwtPacketDecoder decoder;
+  const auto packets = decoder.decode(dwtPayload(3U, 1U, 0x21U, 23U, 4U, 949339100U));
+  ASSERT_EQ(packets.size(), 1U);
+  const auto* pmu = traceEventPayload<PmuTraceEvent>(packets.front());
+  ASSERT_NE(pmu, nullptr);
+  EXPECT_EQ(pmu->overflowMask, 0x21U);
+  EXPECT_EQ(traceEventType(packets.front()), TraceEventType::Pmu);
+  EXPECT_TRUE(traceEventSelectedForOutput(packets.front(), TraceSelection{}));
+  EXPECT_TRUE(traceEventSelectedForOutput(packets.front(), TraceSelection{{"pmu"}, {}}));
+  EXPECT_FALSE(traceEventSelectedForOutput(packets.front(), TraceSelection{{"event"}, {}}));
+  EXPECT_EQ(CsvRowMapper::row(packets.front()), "949339100,4,pmu,3,0x21,,,");
+}
+
+TEST(CtraceUnitTests, testDwtPmuPacketRejectsUnsupportedPayloads)
+{
+  struct InvalidPayload {
+    std::uint8_t size;
+    std::uint32_t value;
+  };
+  constexpr std::array<InvalidPayload, 4U> invalidPayloads{{
+      {1U, 0x00U},
+      {1U, 0x100U},
+      {2U, 0xffU},
+      {4U, 0xffU},
+  }};
+
+  for (const auto& invalid : invalidPayloads) {
+    DwtPacketDecoder decoder;
+    auto payload = dwtPayload(3U, invalid.size, invalid.value, 23U, 4U, 949339100U);
+    payload.quality = TraceQuality{true, false, 7U};
+    const auto packets = decoder.decode(payload);
+    ASSERT_EQ(packets.size(), 1U) << "invalid value " << invalid.value;
+    const auto* issue = traceEventPayload<TraceIssueEvent>(packets.front());
+    ASSERT_NE(issue, nullptr) << "invalid value " << invalid.value;
+    EXPECT_EQ(issue->code, TraceIssueCode::UnsupportedPmuEventCounterPayload);
+    EXPECT_NE(formatTraceMessage(issue->message, TraceMessageStyle::Detailed)
+                  .find("expected a non-zero 1-byte mask using bits 0..7"), std::string::npos);
+    EXPECT_EQ(packets.front().index, 23U);
+    EXPECT_EQ(packets.front().route.traceBusId, 4U);
+    EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(949339100U));
+    EXPECT_TRUE(packets.front().quality.has_value());
+    EXPECT_EQ(traceEventType(packets.front()), TraceEventType::Error);
+    EXPECT_EQ(traceEventPayload<PmuTraceEvent>(packets.front()), nullptr);
+  }
+}
+
+TEST(CtraceUnitTests, testDwtEventCounterRejectsUnsupportedPayloadsWithoutPartialDecode)
+{
+  struct InvalidPayload {
+    std::uint8_t size;
+    std::uint32_t value;
+  };
+  constexpr std::array<InvalidPayload, 7U> invalidPayloads{{
+      {1U, 0x00U},
+      {1U, 0x40U},
+      {1U, 0x80U},
+      {1U, 0xc0U},
+      {1U, 0x41U},
+      {2U, 0x3fU},
+      {4U, 0x3fU},
+  }};
+
+  for (const auto& invalid : invalidPayloads) {
+    DwtPacketDecoder decoder;
+    auto payload = dwtPayload(0U, invalid.size, invalid.value, 23U, 4U, 949339100U);
+    payload.quality = TraceQuality{true, false, 7U};
+    const auto packets = decoder.decode(payload);
+    ASSERT_EQ(packets.size(), 1U) << "invalid value " << invalid.value;
+    const auto* issue = traceEventPayload<TraceIssueEvent>(packets.front());
+    ASSERT_NE(issue, nullptr) << "invalid value " << invalid.value;
+    EXPECT_EQ(issue->code, TraceIssueCode::UnsupportedDwtEventCounterPayload);
+    EXPECT_NE(formatTraceMessage(issue->message, TraceMessageStyle::Detailed)
+                  .find("expected a non-zero 1-byte mask using bits 0..5 only"), std::string::npos);
+    EXPECT_EQ(packets.front().index, 23U);
+    EXPECT_EQ(packets.front().route.traceBusId, 4U);
+    EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(949339100U));
+    EXPECT_TRUE(packets.front().quality.has_value());
+    EXPECT_EQ(traceEventType(packets.front()), TraceEventType::Error);
+    EXPECT_EQ(traceEventPayload<DwtEventTraceEvent>(packets.front()), nullptr)
+        << "a packet mixing valid and reserved bits must not be partially decoded";
+  }
 }
 
 TEST(CtraceUnitTests, testDwtPacketDecoderRejectsReservedExceptionAction)
@@ -84,13 +250,14 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsReservedExceptionAction)
   ASSERT_TRUE(issue != nullptr) << "DwtPacketDecoder reserved exception action should emit only an error";
   ASSERT_TRUE(issue->code == TraceIssueCode::InvalidExceptionAction)
       << "DwtPacketDecoder reserved exception action code mismatch";
-  ASSERT_TRUE(issue->message == "invalid exception action 0x0 for exception 11")
+  ASSERT_TRUE(formatTraceMessage(issue->message, TraceMessageStyle::Detailed) ==
+              "invalid exception action 0x0 for exception 11")
       << "DwtPacketDecoder reserved exception action message mismatch";
-  ASSERT_TRUE(packets[0].index == 17U && packets[0].traceBusId == 3U)
+  ASSERT_TRUE(packets[0].index == 17U && packets[0].route.traceBusId == 3U)
       << "DwtPacketDecoder reserved exception action identity mismatch";
   ASSERT_TRUE(packets[0].tcyc.has_value() && *packets[0].tcyc == 1234U)
       << "DwtPacketDecoder reserved exception action timestamp mismatch";
-  ASSERT_TRUE(CsvRowMapper::row(packets[0]) == "1234,3,error,,,,,invalid exception action 0x0 for exception 11")
+  ASSERT_TRUE(CsvRowMapper::row(packets[0]) == "1234,3,error,,,,,Invalid exception action")
       << "DwtPacketDecoder reserved exception error CSV mismatch";
 }
 
@@ -112,7 +279,8 @@ TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingEventsInRawOrder)
   ASSERT_TRUE(packets.size() == 3U) << "DWT flush must emit all pending comparator events";
   ASSERT_TRUE(packets[0].index == 10U && packets[1].index == 10U && packets[2].index == 20U)
       << "DWT flush must preserve raw-stream order across comparators";
-  ASSERT_TRUE(packets[0].traceBusId == 3U && packets[1].traceBusId == 3U && packets[2].traceBusId == 4U)
+  ASSERT_TRUE(packets[0].route.traceBusId == 3U && packets[1].route.traceBusId == 3U &&
+              packets[2].route.traceBusId == 4U)
       << "DWT flush must preserve the identity of each pending event";
   const auto* first = traceEventPayload<DwtAddressTraceEvent>(packets[0]);
   const auto* second = traceEventPayload<DwtAddressTraceEvent>(packets[1]);
@@ -133,30 +301,74 @@ TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRepeatedAddressFragments)
     auto packets = decoder.decode(dwtPayload(discriminator, size, secondValue, 20U, 4U, 200U));
     ASSERT_TRUE(packets.size() == 1U) << "a repeated DWT address fragment must flush its predecessor";
     const auto* firstAddress = traceEventPayload<DwtAddressTraceEvent>(packets.front());
-    ASSERT_TRUE(firstAddress != nullptr && packets.front().index == 10U && packets.front().traceBusId == 3U)
+    ASSERT_TRUE(firstAddress != nullptr && packets.front().index == 10U && packets.front().route.traceBusId == 3U)
         << "the first repeated DWT address fragment lost its identity";
     const auto firstPc = dwtAddressPc(*firstAddress);
-    const auto firstOffset = dwtAddressOffset(*firstAddress);
+    const auto firstDataAddress = dwtDataAddress(*firstAddress);
 
     packets = decoder.flush({}, 300U);
     ASSERT_TRUE(packets.size() == 1U) << "the second DWT address fragment must remain available";
     const auto* secondAddress = traceEventPayload<DwtAddressTraceEvent>(packets.front());
-    ASSERT_TRUE(secondAddress != nullptr && packets.front().index == 20U && packets.front().traceBusId == 4U)
+    ASSERT_TRUE(secondAddress != nullptr && packets.front().index == 20U && packets.front().route.traceBusId == 4U)
         << "the second repeated DWT address fragment lost its identity";
 
     if (discriminator == 8U) {
-      ASSERT_TRUE(firstPc == std::optional<std::uint32_t>(firstValue) &&
-                  dwtAddressPc(*secondAddress) == std::optional<std::uint32_t>(secondValue))
+      ASSERT_TRUE(firstPc == std::optional<DwtAddressFragment>(DwtAddressFragment{size, firstValue}) &&
+                  dwtAddressPc(*secondAddress) ==
+                      std::optional<DwtAddressFragment>(DwtAddressFragment{size, secondValue}))
           << "repeated DWT PC fragments were overwritten";
     } else {
-      ASSERT_TRUE(firstOffset == std::optional<std::uint32_t>(firstValue) &&
-                  dwtAddressOffset(*secondAddress) == std::optional<std::uint32_t>(secondValue))
-          << "repeated DWT offset fragments were overwritten";
+      ASSERT_TRUE(firstDataAddress == std::optional<DwtAddressFragment>(DwtAddressFragment{size, firstValue}) &&
+                  dwtDataAddress(*secondAddress) ==
+                      std::optional<DwtAddressFragment>(DwtAddressFragment{size, secondValue}))
+          << "repeated DWT data-address fragments were overwritten";
     }
   };
 
   verify(8U, 0x08001000U, 0x08002000U);
   verify(9U, 0x1000U, 0x2000U);
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderEmitsComparatorOnlyMatch)
+{
+  DwtPacketDecoder decoder;
+  auto payload = dwtPayload(12U, 1U, 1U, 17U, 3U, 99U);
+  payload.quality = TraceQuality{true, false, 7U};
+
+  const auto packets = decoder.decode(payload);
+  ASSERT_EQ(packets.size(), 1U);
+  const auto* match = traceEventPayload<DwtMatchTraceEvent>(packets.front());
+  ASSERT_NE(match, nullptr);
+  EXPECT_EQ(match->comparator, 2U);
+  EXPECT_EQ(packets.front().index, 17U);
+  EXPECT_EQ(packets.front().route.traceBusId, 3U);
+  EXPECT_EQ(packets.front().tcyc, std::optional<std::uint64_t>(99U));
+  ASSERT_TRUE(packets.front().quality.has_value());
+  EXPECT_TRUE(packets.front().quality->overflow);
+  EXPECT_FALSE(packets.front().quality->timestampReliable);
+  EXPECT_EQ(packets.front().quality->overflowCount, 7U);
+  EXPECT_EQ(traceEventType(packets.front()), TraceEventType::Dwt);
+  EXPECT_EQ(CsvRowMapper::row(packets.front()), "99,3,dwt,2,,,,");
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingComparatorBeforeMatch)
+{
+  DwtPacketDecoder decoder;
+  auto pc = dwtPayload(8U, 4U, 0x08001234U, 10U, 3U, 90U);
+  pc.quality.timestampReliable = true;
+  EXPECT_TRUE(decoder.decode(pc).empty());
+
+  auto match = dwtPayload(8U, 1U, 1U, 11U, 3U, 100U);
+  match.quality.timestampReliable = true;
+  const auto packets = decoder.decode(match);
+  ASSERT_EQ(packets.size(), 2U);
+  ASSERT_NE(traceEventPayload<DwtAddressTraceEvent>(packets[0]), nullptr);
+  EXPECT_EQ(dwtAddressPc(*traceEventPayload<DwtAddressTraceEvent>(packets[0])),
+            std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001234U}));
+  EXPECT_NE(traceEventPayload<DwtMatchTraceEvent>(packets[1]), nullptr);
+  EXPECT_EQ(packets[0].tcyc, std::optional<std::uint64_t>(100U));
+  EXPECT_EQ(packets[1].tcyc, std::optional<std::uint64_t>(100U));
+  EXPECT_TRUE(decoder.flush({}, 101U).empty());
 }
 
 TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
@@ -172,13 +384,50 @@ TEST(CtraceUnitTests, testDwtPacketDecoderRejectsUnsupportedAddressWidths)
     ASSERT_TRUE(issue != nullptr && issue->code == TraceIssueCode::UnsupportedDwtAddressPayload &&
                 issue->severity == TraceIssueSeverity::Error)
         << "unsupported DWT address width diagnostic mismatch";
-    ASSERT_TRUE(packets.front().index == 17U && packets.front().traceBusId == 3U &&
+    ASSERT_TRUE(packets.front().index == 17U && packets.front().route.traceBusId == 3U &&
                 packets.front().tcyc == std::optional<std::uint64_t>(99U))
         << "unsupported DWT address width diagnostic lost packet identity";
   };
 
-  verify(8U, 1U);
-  verify(9U, 4U);
+  verify(9U, 3U);
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRawDataAddressWidths)
+{
+  const auto verify = [](std::uint8_t size, std::uint32_t value, const char* expectedCsv) {
+    DwtPacketDecoder decoder;
+    EXPECT_TRUE(decoder.decode(dwtPayload(9U, size, value, 17U, 3U, 99U)).empty());
+
+    const auto packets = decoder.flush({}, 100U);
+    ASSERT_EQ(packets.size(), 1U);
+    const auto* address = traceEventPayload<DwtAddressTraceEvent>(packets.front());
+    ASSERT_NE(address, nullptr);
+    EXPECT_EQ(dwtDataAddress(*address), std::optional<DwtAddressFragment>(DwtAddressFragment{size, value}));
+    EXPECT_EQ(CsvRowMapper::row(packets.front()), expectedCsv);
+  };
+
+  verify(1U, 0x58U, "100,3,dwt,0,,,0x58,");
+  verify(2U, 0x7858U, "100,3,dwt,0,,,0x7858,");
+  verify(4U, 0x20007858U, "100,3,dwt,0,,,0x20007858,");
+}
+
+TEST(CtraceUnitTests, testDwtPacketDecoderPreservesRawPcWidths)
+{
+  const auto verify = [](std::uint8_t size, std::uint32_t value, const char* expectedCsv) {
+    DwtPacketDecoder decoder;
+    EXPECT_TRUE(decoder.decode(dwtPayload(8U, size, value, 17U, 3U, 99U)).empty());
+
+    const auto packets = decoder.flush({}, 100U);
+    ASSERT_EQ(packets.size(), 1U);
+    const auto* address = traceEventPayload<DwtAddressTraceEvent>(packets.front());
+    ASSERT_NE(address, nullptr);
+    EXPECT_EQ(dwtAddressPc(*address), std::optional<DwtAddressFragment>(DwtAddressFragment{size, value}));
+    EXPECT_EQ(CsvRowMapper::row(packets.front()), expectedCsv);
+  };
+
+  verify(1U, 0x58U, "100,3,dwt,0,,0x58,,");
+  verify(2U, 0x7858U, "100,3,dwt,0,,0x7858,,");
+  verify(4U, 0x08007858U, "100,3,dwt,0,,0x08007858,,");
 }
 
 TEST(CtraceUnitTests, testDwtPacketDecoderMapsAllExceptionActions)
@@ -220,7 +469,7 @@ TEST(CtraceUnitTests, testDwtPacketDecoderFlushesPendingTraceForUnknownSource)
   EXPECT_TRUE(decoder.decode(unknown).empty());
 }
 
-TEST(CtraceUnitTests, testDwtPacketDecoderCombinesPcOffsetAndValue)
+TEST(CtraceUnitTests, testDwtPacketDecoderCombinesPcAddressAndValue)
 {
   DwtPacketDecoder decoder;
 
@@ -228,12 +477,12 @@ TEST(CtraceUnitTests, testDwtPacketDecoderCombinesPcOffsetAndValue)
   pc.quality.timestampReliable = true;
   EXPECT_TRUE(decoder.decode(pc).empty());
 
-  auto offset = pc;
-  offset.index = 11U;
-  offset.discriminator = 9U;
-  offset.size = 2U;
-  offset.value = 0x20U;
-  EXPECT_TRUE(decoder.decode(offset).empty());
+  auto dataAddress = pc;
+  dataAddress.index = 11U;
+  dataAddress.discriminator = 9U;
+  dataAddress.size = 2U;
+  dataAddress.value = 0x20U;
+  EXPECT_TRUE(decoder.decode(dataAddress).empty());
 
   auto value = pc;
   value.index = 12U;
@@ -245,16 +494,16 @@ TEST(CtraceUnitTests, testDwtPacketDecoderCombinesPcOffsetAndValue)
   const auto* data = traceEventPayload<DwtDataTraceEvent>(packets.front());
   ASSERT_NE(data, nullptr);
   EXPECT_EQ(data->access, AccessType::Read);
-  EXPECT_EQ(data->pc, std::optional<std::uint32_t>(0x08001234U));
-  EXPECT_EQ(data->addressLo16, std::optional<std::uint32_t>(0x20U));
+  EXPECT_EQ(data->pc, std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001234U}));
+  EXPECT_EQ(data->address, std::optional<DwtAddressFragment>(DwtAddressFragment{2U, 0x20U}));
 
   DwtPacketDecoder addressDecoder;
   EXPECT_TRUE(addressDecoder.decode(pc).empty());
-  EXPECT_TRUE(addressDecoder.decode(offset).empty());
+  EXPECT_TRUE(addressDecoder.decode(dataAddress).empty());
   const auto addresses = addressDecoder.flush({}, 100U);
   ASSERT_EQ(addresses.size(), 1U);
   const auto* address = traceEventPayload<DwtAddressTraceEvent>(addresses.front());
   ASSERT_NE(address, nullptr);
-  EXPECT_EQ(dwtAddressPc(*address), std::optional<std::uint32_t>(0x08001234U));
-  EXPECT_EQ(dwtAddressOffset(*address), std::optional<std::uint32_t>(0x20U));
+  EXPECT_EQ(dwtAddressPc(*address), std::optional<DwtAddressFragment>(DwtAddressFragment{4U, 0x08001234U}));
+  EXPECT_EQ(dwtDataAddress(*address), std::optional<DwtAddressFragment>(DwtAddressFragment{2U, 0x20U}));
 }

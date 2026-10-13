@@ -21,8 +21,8 @@ may show no failure, but checked standard-library implementations, sanitizers,
 or compiler optimizations can expose the undefined behavior as an assertion,
 crash, or other incorrect behavior.
 
-devtools does not apply a downstream source patch. A possible upstream fix is
-to use the vector data pointer, which is valid to pass with a zero size:
+The pinned revision still contains this issue. A possible upstream fix is to
+use the vector data pointer, which is valid to pass with a zero size:
 
 ```cpp
 outputRawPacketToMonitor(

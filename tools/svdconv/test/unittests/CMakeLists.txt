@@ -1,4 +1,15 @@
-set(TEST_SOURCE_FILES SvdUtilsTest.cpp GeneratorTest.cpp)
+set(TEST_SOURCE_FILES
+  SvdUtilsTest.cpp
+  SvdUtilsConversionTest.cpp
+  GeneratorTest.cpp
+  SvdInterruptTest.cpp
+  SvdCpuModelTest.cpp
+  SvdCExpressionParserTest.cpp
+  SvdOptionsTest.cpp
+  SvdModelValidationTest.cpp
+  SvdSentinelModelTest.cpp
+  SvdSentinelConsumerTest.cpp
+)
 
 list(TRANSFORM TEST_SOURCE_FILES PREPEND src/)
 list(TRANSFORM TEST_HEADER_FILES PREPEND src/)

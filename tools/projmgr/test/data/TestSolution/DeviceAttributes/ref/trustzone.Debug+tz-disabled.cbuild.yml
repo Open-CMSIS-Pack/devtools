@@ -21,9 +21,11 @@ build:
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest_DFP/0.2.0
   define:
     - ARMCM0
+    - ARM_DEVICE_TZ_DISABLED
     - _RTE_
   define-asm:
     - ARMCM0
+    - ARM_DEVICE_TZ_DISABLED
     - _RTE_
   add-path:
     - ../data/TestSolution/DeviceAttributes/trustzone/RTE/_Debug_tz-disabled
@@ -41,7 +43,9 @@ build:
     - type: comp-db
       file: compile_commands.json
     - type: comp-db
-      file: compile_macros.h
+      file: compile_macros_c.h
+    - type: comp-db
+      file: compile_macros_cxx.h
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM0 RteTest

@@ -1,0 +1,47 @@
+ctrace-run:
+  generated-by: synthetic Armv8-M DWT match fixture
+  ctrace-setup:
+    - timestamps:
+        clock: 1000000
+      data:
+        - location: 0x20000000
+          label: Match Comparator 0
+          output: match
+        - location: 0x20000004
+          label: Match Comparator 1
+          output: match
+        - location: 0x20000008
+          label: Match Comparator 2
+          output: match
+        - location: 0x2000000C
+          label: Match Comparator 3
+          output: match
+  ctrace-refs:
+    - ref: data#0
+      type: dwt
+      label: Match Comparator 0
+      address: 0x20000000
+      size: 4
+      data-type: unsigned
+      index: 0
+    - ref: data#1
+      type: dwt
+      label: Match Comparator 1
+      address: 0x20000004
+      size: 4
+      data-type: unsigned
+      index: 1
+    - ref: data#2
+      type: dwt
+      label: Match Comparator 2
+      address: 0x20000008
+      size: 4
+      data-type: unsigned
+      index: 2
+    - ref: data#3
+      type: dwt
+      label: Match Comparator 3
+      address: 0x2000000C
+      size: 4
+      data-type: unsigned
+      index: 3

@@ -188,6 +188,21 @@ public:
   */
   static void SetOutputType(const std::string typeString, OutputTypes& type);
 
+  /**
+   * @brief merge custom item values
+   * @param src source custom item
+   * @param dst destination custom item
+  */
+  static void MergeCustomItems(const CustomItem& src, CustomItem& dst);
+
+  /**
+   * @brief get a top-level custom scalar value by key
+   * @param custom custom item to search
+   * @param key custom property key
+   * @return scalar value if found, otherwise an empty string
+  */
+  static std::string GetCustomScalar(const CustomItem& custom, const std::string& key);
+
   struct Error {
     Error(std::string errMsg = RteUtils::EMPTY_STRING) {
       m_errMsg = errMsg;

@@ -78,36 +78,32 @@ bool SvdCExpression::LinkSymbols(SvdItem* item, const SvdCExpressionParser::Toke
   auto& regList = device->GetExpressionRegistersList();
 
   for(auto& foundSymbol : m_symbolsList) {
-    switch(foundSymbol.token.type) {
-      case SvdCExpressionParser::xme_identi: {
-        SvdItem* from = 0;
-        string lastSearchName;
-        item->GetDeriveItem(from, foundSymbol.searchname, L_UNDEF, lastSearchName);
-        if(!from) {
-          LogMsg("M244", NAME(lastSearchName), MSG(errText), lineNo);
+    if(foundSymbol.token.type == SvdCExpressionParser::xme_identi) {
+      SvdItem* from = 0;
+      string lastSearchName;
+      item->GetDeriveItem(from, foundSymbol.searchname, L_UNDEF, lastSearchName);
+      if(!from) {
+        LogMsg("M244", NAME(lastSearchName), MSG(errText), lineNo);
+        return false;
+      }
+      foundSymbol.svdItem = from;
+
+      string name = foundSymbol.svdItem->GetHierarchicalNameResulting();
+      if(!name.empty()) {
+        if(foundSymbol.svdItem->GetSvdLevel() == L_Register) {
+          regList[name] = foundSymbol.svdItem;
+        }
+        else if(foundSymbol.svdItem->GetSvdLevel() == L_Field) {
+          SvdItem* symbolItem = foundSymbol.svdItem->GetParent()->GetParent();
+          if(item) {
+            regList[name] = symbolItem;
+          }
+        }
+        else {
+          LogMsg("M248", lineNo);
           return false;
         }
-        foundSymbol.svdItem = from;
-
-        string name = foundSymbol.svdItem->GetHierarchicalNameResulting();
-        if(!name.empty()) {
-          if(foundSymbol.svdItem->GetSvdLevel() == L_Register) {
-            regList[name] = foundSymbol.svdItem;
-          }
-          else if(foundSymbol.svdItem->GetSvdLevel() == L_Field) {
-            SvdItem* symbolItem = foundSymbol.svdItem->GetParent()->GetParent();
-            if(item) {
-              regList[name] = symbolItem;
-            }
-          }
-          else {
-            LogMsg("M248", lineNo);
-            return false;
-          }
-        }
-      } break;
-      default:
-        break;
+      }
     }
   }
 
@@ -124,19 +120,16 @@ string SvdCExpression::GetExpressionString()
   }
 
   for(const auto& symbol : symbols) {
-    switch(symbol.token.type) {
-      case SvdCExpressionParser::xme_identi: {
-        SvdItem* item = symbol.svdItem;
-        if(!item) {
-          return SvdUtils::EMPTY_STRING;     // skip generating disable condition. Should not be reached, as LinkSymbols() already generates an error
-        }
-
-        expression += CreateObjectExpression(item);
-        break;
+    if(symbol.token.type == SvdCExpressionParser::xme_identi) {
+      SvdItem* item = symbol.svdItem;
+      if(!item) {
+        return SvdUtils::EMPTY_STRING;     // skip generating disable condition. Should not be reached, as LinkSymbols() already generates an error
       }
-      default:
-        expression += symbol.token.text;
-        break;
+
+      expression += CreateObjectExpression(item);
+    }
+    else {
+      expression += symbol.token.text;
     }
 
     if(!expression.empty()) {
@@ -205,9 +198,6 @@ bool SvdCExpression::CheckItem()
   if(!IsValid()) {
     return true;
   }
-
-  //const auto& name = GetName();
-  //const auto lineNo = GetLineNumber();
 
   // currently no checks done
 

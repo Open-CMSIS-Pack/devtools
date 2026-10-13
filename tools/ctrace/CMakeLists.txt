@@ -39,6 +39,26 @@ target_link_libraries(ctrace PRIVATE
   ctracelib
 )
 
+# GCC/gcov attributes optional NRVO cleanup and return epilogues to otherwise
+# covered source lines. Stabilize that attribution only in coverage-instrumented
+# ctrace objects; release, debug, and external-dependency builds stay unchanged.
+if(COVERAGE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set(CTRACE_COVERAGE_TARGETS
+    ctrace-model
+    ctrace-cli
+    ctrace-trace-run
+    ctrace-diagnostics
+    ctrace-decode
+    ctrace-output
+    ctrace-control
+    ctracelib
+    ctrace
+  )
+  foreach(target IN LISTS CTRACE_COVERAGE_TARGETS)
+    target_compile_options(${target} PRIVATE -fno-elide-constructors)
+  endforeach()
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
    (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
     CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))

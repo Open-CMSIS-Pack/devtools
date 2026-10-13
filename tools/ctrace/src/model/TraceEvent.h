@@ -8,6 +8,10 @@
 #ifndef CTRACE_SRC_MODEL_TRACEEVENT_H
 #define CTRACE_SRC_MODEL_TRACEEVENT_H
 
+#include "TraceRoute.h"
+#include "TraceMessages.h"
+
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -39,11 +43,15 @@ enum class TraceIssueCode {
   DecodeError,
   DataLoss,
   InvalidExceptionAction,
+  UnsupportedDwtEventCounterPayload,
+  UnsupportedPmuEventCounterPayload,
   UnsupportedDwtAddressPayload,
+  UnsupportedDwtPcSamplePayload,
   OpenCsdDecodeError,
   OpenCsdBadPacketSequence,
   OpenCsdInvalidPacketHeader,
   OpenCsdIncompleteTail,
+  OpenCsdMissingSync,
   OpenCsdNoProgress,
   OpenCsdWaitTimeout,
   OpenCsdInitializationError,
@@ -56,83 +64,171 @@ struct SoftwareTraceEvent {
   std::uint32_t value = 0;
 };
 
-/** @brief Contains a reconstructed DWT data access event. */
+/** @brief Stores the raw address fragment and width carried by a DWT packet. */
+struct DwtAddressFragment {
+  std::uint8_t size = 0;
+  std::uint32_t value = 0;
+};
+
+constexpr bool operator==(const DwtAddressFragment& left, const DwtAddressFragment& right)
+{
+  return left.size == right.size && left.value == right.value;
+}
+
+/** @brief Contains an assembled DWT data access event. */
 struct DwtDataTraceEvent {
   std::uint32_t comparator = 0;
   std::uint8_t size = 0;
   std::uint32_t value = 0;
   AccessType access = AccessType::Read;
-  std::optional<std::uint32_t> addressLo16 = std::nullopt;
-  std::optional<std::uint32_t> pc = std::nullopt;
+  std::optional<DwtAddressFragment> address = std::nullopt;
+  std::optional<DwtAddressFragment> pc = std::nullopt;
 };
 
 /** @brief Identifies a DWT address event by program counter. */
 struct DwtPcTraceLocation {
-  std::uint32_t pc;
+  DwtAddressFragment pc;
 };
 
-/** @brief Identifies a DWT address event by its low address bits. */
-struct DwtOffsetTraceLocation {
-  std::uint32_t addressLo16;
+/** @brief Identifies a DWT address event by its raw address fragment. */
+struct DwtDataAddressTraceLocation {
+  DwtAddressFragment address;
 };
 
-/** @brief Identifies a DWT address event by program counter and address offset. */
-struct DwtPcAndOffsetTraceLocation {
-  std::uint32_t pc;
-  std::uint32_t addressLo16;
+/** @brief Identifies a DWT address event by program counter and data address. */
+struct DwtPcAndDataAddressTraceLocation {
+  DwtAddressFragment pc;
+  DwtAddressFragment address;
 };
 
 /** @brief Stores one of the supported DWT address location representations. */
-using DwtAddressTraceLocation = std::variant<DwtPcTraceLocation, DwtOffsetTraceLocation, DwtPcAndOffsetTraceLocation>;
+using DwtAddressTraceLocation =
+    std::variant<DwtPcTraceLocation, DwtDataAddressTraceLocation, DwtPcAndDataAddressTraceLocation>;
 
-/** @brief Contains a reconstructed DWT address event. */
+/** @brief Contains an assembled DWT address event. */
 struct DwtAddressTraceEvent {
   std::uint32_t comparator;
   DwtAddressTraceLocation location;
 };
 
+/** @brief Reports that one DWT comparator generated a match without additional trace data. */
+struct DwtMatchTraceEvent {
+  std::uint32_t comparator = 0;
+};
+
 /** @brief Returns the program counter carried by a DWT address event, if present. */
-inline std::optional<std::uint32_t> dwtAddressPc(const DwtAddressTraceEvent& event)
+inline std::optional<DwtAddressFragment> dwtAddressPc(const DwtAddressTraceEvent& event)
 {
   if (const auto* pc = std::get_if<DwtPcTraceLocation>(&event.location)) {
     return pc->pc;
   }
-  if (const auto* combined = std::get_if<DwtPcAndOffsetTraceLocation>(&event.location)) {
+  if (const auto* combined = std::get_if<DwtPcAndDataAddressTraceLocation>(&event.location)) {
     return combined->pc;
   }
   return std::nullopt;
 }
 
-/** @brief Returns the address offset carried by a DWT address event, if present. */
-inline std::optional<std::uint32_t> dwtAddressOffset(const DwtAddressTraceEvent& event)
+/** @brief Returns the raw address fragment carried by a DWT address event, if present. */
+inline std::optional<DwtAddressFragment> dwtDataAddress(const DwtAddressTraceEvent& event)
 {
-  if (const auto* offset = std::get_if<DwtOffsetTraceLocation>(&event.location)) {
-    return offset->addressLo16;
+  if (const auto* address = std::get_if<DwtDataAddressTraceLocation>(&event.location)) {
+    return address->address;
   }
-  if (const auto* combined = std::get_if<DwtPcAndOffsetTraceLocation>(&event.location)) {
-    return combined->addressLo16;
+  if (const auto* combined = std::get_if<DwtPcAndDataAddressTraceLocation>(&event.location)) {
+    return combined->address;
   }
   return std::nullopt;
 }
 
+/** @brief Stores a decoded Cortex-M exception number (9 bits on the wire). */
+using ExceptionNumber = std::uint16_t;
+
 /** @brief Contains a decoded exception transition. */
 struct ExceptionTraceEvent {
-  std::uint32_t number = 0;
+  ExceptionNumber number = 0;
   ExceptionAction action = ExceptionAction::Unknown;
 };
 
-/** @brief Contains a decoded DWT event-counter packet. */
-struct DwtEventTraceEvent {
-  std::uint32_t discriminator = 0;
-  std::uint8_t size = 0;
-  std::uint32_t value = 0;
+/** @brief Identifies one counter reported by a DWT event-counter packet. */
+enum class DwtEventCounter : std::uint8_t {
+  Cpi = 0U,
+  Exception = 1U,
+  Sleep = 2U,
+  LoadStore = 3U,
+  Fold = 4U,
+  Cycle = 5U,
 };
 
-/** @brief Contains a decoded PMU overflow packet. */
+inline constexpr std::array<DwtEventCounter, 6U> kDwtEventCounters{{
+    DwtEventCounter::Cpi,
+    DwtEventCounter::Exception,
+    DwtEventCounter::Sleep,
+    DwtEventCounter::LoadStore,
+    DwtEventCounter::Fold,
+    DwtEventCounter::Cycle,
+}};
+
+/** @brief Returns the wire bit represented by one DWT event counter. */
+constexpr std::uint8_t dwtEventCounterBit(DwtEventCounter counter)
+{
+  return static_cast<std::uint8_t>(1U << static_cast<std::uint8_t>(counter));
+}
+
+inline constexpr std::uint8_t kDwtEventCounterValidMask =
+    dwtEventCounterBit(DwtEventCounter::Cpi) | dwtEventCounterBit(DwtEventCounter::Exception) |
+    dwtEventCounterBit(DwtEventCounter::Sleep) | dwtEventCounterBit(DwtEventCounter::LoadStore) |
+    dwtEventCounterBit(DwtEventCounter::Fold) | dwtEventCounterBit(DwtEventCounter::Cycle);
+
+/** @brief Contains the counter-overflow mask from one decoded DWT event packet. */
+struct DwtEventTraceEvent {
+  std::uint8_t counterMask = 0;
+};
+
+/** @brief Identifies one programmable counter reported by a PMU trace packet. */
+enum class PmuEventCounter : std::uint8_t {
+  Event0 = 0U,
+  Event1 = 1U,
+  Event2 = 2U,
+  Event3 = 3U,
+  Event4 = 4U,
+  Event5 = 5U,
+  Event6 = 6U,
+  Event7 = 7U,
+};
+
+inline constexpr std::array<PmuEventCounter, 8U> kPmuEventCounters{{
+    PmuEventCounter::Event0,
+    PmuEventCounter::Event1,
+    PmuEventCounter::Event2,
+    PmuEventCounter::Event3,
+    PmuEventCounter::Event4,
+    PmuEventCounter::Event5,
+    PmuEventCounter::Event6,
+    PmuEventCounter::Event7,
+}};
+
+/** @brief Returns the wire bit represented by one programmable PMU event counter. */
+constexpr std::uint8_t pmuEventCounterBit(PmuEventCounter counter)
+{
+  return static_cast<std::uint8_t>(1U << static_cast<std::uint8_t>(counter));
+}
+
+/** @brief Contains the OVn counter mask from a decoded PMU trace-on-overflow packet. */
 struct PmuTraceEvent {
-  std::uint32_t discriminator = 0;
-  std::uint8_t size = 0;
-  std::uint32_t value = 0;
+  std::uint8_t overflowMask = 0;
+};
+
+/** @brief Distinguishes a sampled PC from the status markers carried by the same DWT packet. */
+enum class PcSampleKind {
+  Pc,
+  Sleep,
+  TraceProhibited,
+};
+
+/** @brief Contains a periodic DWT PC sample or status marker; pc is meaningful only for kind Pc. */
+struct PcSampleTraceEvent {
+  std::uint32_t pc = 0;
+  PcSampleKind kind = PcSampleKind::Pc;
 };
 
 /** @brief Marks a decoded local timestamp packet. */
@@ -156,15 +252,42 @@ struct SyncTraceEvent {};
 struct TraceIssueEvent {
   TraceIssueCode code = TraceIssueCode::DecodeError;
   TraceIssueSeverity severity = TraceIssueSeverity::Error;
-  std::string message;
+  TraceMessage message;
   std::optional<std::uint64_t> rawBytesConsumed = std::nullopt;
   std::optional<std::uint64_t> lastValidTcyc = std::nullopt;
 };
 
+/** @brief Describes a fatal end to the entire raw input, independently of any trace route. */
+struct TraceDecodeAbort {
+  std::uint64_t bytesProcessed = 0;
+  TraceMessage reason;
+};
+
+/** @brief Identifies why formatter or initial ITM payload was skipped. */
+enum class TraceByteSkipReason {
+  NoSourceId,
+  NullSourceId,
+  ReservedSourceId,
+  UnconfiguredSourceId,
+  MissingSync,
+};
+
+/** @brief Accounts for skipped payload without inventing a semantic route or clock. */
+struct TraceByteSkip {
+  // Start of the first formatter output group, not the exact discarded raw byte.
+  std::uint64_t formatterOffset = 0;
+  // Deformatted payload bytes, excluding formatter control bytes.
+  std::uint64_t byteCount = 0;
+  TraceByteSkipReason reason = TraceByteSkipReason::NoSourceId;
+  // An observed formatter ID, including NULL/reserved IDs; not a decoded route.
+  std::optional<std::uint8_t> traceId = std::nullopt;
+};
+
 /** @brief Stores the semantic payload of a decoded trace event. */
-using TraceEventPayload = std::variant<SoftwareTraceEvent, DwtDataTraceEvent, DwtAddressTraceEvent, ExceptionTraceEvent,
-                                       DwtEventTraceEvent, PmuTraceEvent, LocalTimestampTraceEvent,
-                                       GlobalTimestampTraceEvent, OverflowTraceEvent, SyncTraceEvent, TraceIssueEvent>;
+using TraceEventPayload =
+    std::variant<SoftwareTraceEvent, DwtDataTraceEvent, DwtAddressTraceEvent, DwtMatchTraceEvent, ExceptionTraceEvent,
+                 DwtEventTraceEvent, PmuTraceEvent, PcSampleTraceEvent, LocalTimestampTraceEvent,
+                 GlobalTimestampTraceEvent, OverflowTraceEvent, SyncTraceEvent, TraceIssueEvent>;
 
 /** @brief Describes timestamp and data-loss quality at an event. */
 struct TraceQuality {
@@ -183,8 +306,8 @@ struct TraceEvent {
   }
 
   std::uint64_t index = 0;
-  // CoreSight Trace Bus ID. ID 0 identifies unformatted single-source input.
-  std::uint8_t traceBusId = 0U;
+  // Normalized route identity; an unformatted route has no architectural ID.
+  TraceRouteIdentity route;
   std::optional<std::uint64_t> tcyc;
 
   // Quality is assigned atomically by the post-decoder. Wire/control events
@@ -219,6 +342,8 @@ public:
   virtual ~TraceEventSink() = default;
   /** @brief Appends one decoded event to the sink. */
   virtual void append(const TraceEvent& event) = 0;
+  /** @brief Reports skipped-byte accounting when this sink supports input annotations. */
+  virtual void appendByteSkip(const TraceByteSkip&) {}
 };
 
 #endif // CTRACE_SRC_MODEL_TRACEEVENT_H

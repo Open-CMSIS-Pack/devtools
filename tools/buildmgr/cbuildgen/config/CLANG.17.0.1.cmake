@@ -40,7 +40,7 @@ function(cbuild_set_defines lang defines)
 endfunction()
 
 set(OPTIMIZE_VALUES       "debug" "none" "balanced" "size" "speed")
-set(OPTIMIZE_CC_FLAGS     "-Og"   "-O0"  "-O2"      "-Os" "-O3")
+set(OPTIMIZE_CC_FLAGS     "-Og"   "-O0"  "-O2"      "-Oz"  "-O3")
 set(OPTIMIZE_ASM_FLAGS    ${OPTIMIZE_CC_FLAGS})
 set(OPTIMIZE_CXX_FLAGS    ${OPTIMIZE_CC_FLAGS})
 set(OPTIMIZE_LD_FLAGS     ${OPTIMIZE_CC_FLAGS})

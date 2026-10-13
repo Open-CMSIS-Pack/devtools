@@ -30,6 +30,7 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
   const set<string>& failedContexts, const map<string, ExecutesItem>& executes) : ProjMgrCbuildBase(false) {
   error_code ec;
   SetNodeValue(node[YAML_GENERATED_BY], ORIGINAL_FILENAME + string(" version ") + VERSION_STRING);
+  SetNodeValue(node[YAML_TARGET], worker->GetActiveTarget());
   if (!processedContexts.empty()) {
     const auto& context = processedContexts.front();
     SetNodeValue(node[YAML_DESCRIPTION], context->csolution->description);

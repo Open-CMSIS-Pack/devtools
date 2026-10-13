@@ -164,8 +164,6 @@ bool SvdEnum::ProcessXmlElement(XMLTreeElement* xmlElement)
     }
 
     if(!m_isDefault) {
-      //LogMsg("M232", xmlElement->GetLineNumber());
-      //Invalidate();
     } else {
       const auto parent = (SvdEnumContainer*)(GetParent());
       if(parent) {

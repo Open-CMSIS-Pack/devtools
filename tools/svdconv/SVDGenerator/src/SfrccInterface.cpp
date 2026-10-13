@@ -114,6 +114,9 @@ bool SfrccInterface::Compile(const string& fileName, bool bCleanup /*= true*/)
   else if(ret >= 1) {
     LogMsg("M128");   // Warnings
   }
-#endif
   return true;
+#else
+  LogMsg("M133");
+  return false;
+#endif
 }

@@ -31,7 +31,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderUsesLocalTimestampRelations)
 
   for (const auto& [relation, expectedReliable] : cases) {
     CollectingEventSink sink;
-    CortexMPostDecoder decoder(sink);
+    CortexMPostDecoder decoder({}, sink);
 
     decoder.append(openCsdSoftwareElement(1U));
 
@@ -48,7 +48,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderUsesLocalTimestampRelations)
 TEST(CtraceUnitTests, testCortexMPostDecoderOffsetsTimestampsAfterOverflow)
 {
   CollectingEventSink sink;
-  CortexMPostDecoder decoder(sink);
+  CortexMPostDecoder decoder({}, sink);
 
   decoder.append(openCsdTimestampElement(100U));
 
@@ -66,7 +66,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderOffsetsTimestampsAfterOverflow)
 TEST(CtraceUnitTests, testCortexMPostDecoderLeavesInitialOverflowTimestampUnknown)
 {
   CollectingEventSink sink;
-  CortexMPostDecoder decoder(sink);
+  CortexMPostDecoder decoder({}, sink);
 
   decoder.append(openCsdElement(OpenCsdTraceElement::Kind::Overflow));
 
@@ -77,7 +77,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderLeavesInitialOverflowTimestampUnknow
 TEST(CtraceUnitTests, testCortexMPostDecoderUsesTimestampOverflowFlag)
 {
   CollectingEventSink sink;
-  CortexMPostDecoder decoder(sink);
+  CortexMPostDecoder decoder({}, sink);
 
   decoder.append(openCsdTimestampElement(100U));
 
@@ -92,7 +92,7 @@ TEST(CtraceUnitTests, testCortexMPostDecoderUsesTimestampOverflowFlag)
 TEST(CtraceUnitTests, testCortexMPostDecoderMapsDiscontinuityTimestamp)
 {
   CollectingEventSink sink;
-  CortexMPostDecoder decoder(sink);
+  CortexMPostDecoder decoder({}, sink);
 
   decoder.append(openCsdTimestampElement(200U));
   decoder.append(openCsdElement(OpenCsdTraceElement::Kind::Discontinuity));
@@ -100,4 +100,29 @@ TEST(CtraceUnitTests, testCortexMPostDecoderMapsDiscontinuityTimestamp)
 
   ASSERT_TRUE(sink.events().size() == 3) << "timestamp discontinuity event count mismatch";
   ASSERT_TRUE(sink.events()[2].tcyc == 207U) << "post-decoder explicit discontinuity timestamp mismatch";
+}
+
+TEST(CtraceUnitTests, testCortexMPostDecoderLabelsPmuTraceOnOverflowPacket)
+{
+  CollectingEventSink sink;
+  const TraceRouteIdentity route{TraceRouteId{2U}, 5U};
+  CortexMPostDecoder decoder(route, sink);
+
+  decoder.append(openCsdTimestampElement(100U, 10U, 5U));
+  auto pmuElement = openCsdElement(OpenCsdTraceElement::Kind::Hardware, 24U, 5U);
+  pmuElement.discriminator = 3U;
+  pmuElement.size = 1U;
+  pmuElement.value = 0x81U;
+  decoder.append(pmuElement);
+  decoder.finish();
+
+  ASSERT_TRUE(sink.events().size() == 2U) << "post-decoder PMU event count mismatch";
+  const auto& packet = sink.events().back();
+  const auto* pmu = traceEventPayload<PmuTraceEvent>(packet);
+  ASSERT_TRUE(pmu != nullptr && pmu->overflowMask == 0x81U)
+      << "post-decoder must label discriminator 3 as a PMU trace-on-overflow event";
+  ASSERT_TRUE(packet.index == 24U && packet.route == route && packet.tcyc == 100U)
+      << "post-decoder PMU event context mismatch";
+  ASSERT_TRUE(packet.quality.has_value() && packet.quality->timestampReliable)
+      << "post-decoder PMU timestamp quality mismatch";
 }

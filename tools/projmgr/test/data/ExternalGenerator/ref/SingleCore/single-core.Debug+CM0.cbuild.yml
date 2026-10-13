@@ -13,6 +13,9 @@ build:
       path: ${CMSIS_PACK_ROOT}/ARM/RteTest/0.1.0
     - pack: ARM::RteTestGenerator@0.1.0
       path: ${CMSIS_PACK_ROOT}/ARM/RteTestGenerator/0.1.0
+  misc:
+    C:
+      - --setup-misc=../../../../single/relative/from-setup
   define:
     - _RTE_
   define-asm:
@@ -39,7 +42,9 @@ build:
     - type: comp-db
       file: compile_commands.json
     - type: comp-db
-      file: compile_macros.h
+      file: compile_macros_c.h
+    - type: comp-db
+      file: compile_macros_cxx.h
   components:
     - component: ARM::RteTest:GlobalLevel@0.0.2
       from-pack: ARM::RteTest@0.1.0

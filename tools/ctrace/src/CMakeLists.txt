@@ -3,7 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set(CTRACE_MODEL_HEADER_FILES
+  model/CoreSightFormatter.h
+  model/DiagnosticMessages.h
+  model/MessageCatalog.inc
+  model/Messages.h
   model/TraceEvent.h
+  model/TraceMessages.h
+  model/TraceRoute.h
   model/TraceSelection.h
   model/TraceStreamId.h
 )
@@ -20,6 +26,8 @@ set(CTRACE_TRACE_RUN_HEADER_FILES
 )
 set(CTRACE_DIAGNOSTICS_HEADER_FILES
   diagnostics/DiagnosticSink.h
+  diagnostics/RawDiagnosticLocation.h
+  diagnostics/RawDiagnosticSink.h
   diagnostics/TraceIssueReporter.h
 )
 set(CTRACE_DECODE_HEADER_FILES
@@ -28,26 +36,34 @@ set(CTRACE_DECODE_HEADER_FILES
   decode/DecodePipeline.h
   decode/DwtPacketDecoder.h
   decode/OpenCsdErrorController.h
+  decode/OpenCsdFormattedItmSession.h
   decode/OpenCsdItmDecoder.h
   decode/OpenCsdItmSession.h
   decode/OpenCsdPacketCollector.h
   decode/OpenCsdTraceElement.h
+  decode/OpenCsdTreeSession.h
   decode/SaturatingArithmetic.h
 )
 set(CTRACE_OUTPUT_HEADER_FILES
+  output/OutputPath.h
   output/OutputRequirements.h
   output/TraceOutput.h
   output/TraceOutputConfig.h
   output/TraceOutputLifecycle.h
+  output/csv/CsvField.h
   output/csv/CsvFileOutput.h
   output/csv/CsvRowMapper.h
   output/ctf/CtfBundleOutput.h
   output/ctf/CtfEncoder.h
   output/ctf/CtfExceptionLaneTracker.h
+  output/ctf/CtfGraphicalTopic.h
+  output/ctf/CtfMetadataModel.h
   output/ctf/CtfMetadataWriter.h
   output/ctf/CtfSchema.h
   output/ctf/CtfStreamWriter.h
+  output/ctf/CtfUuid.h
   output/ctf/TraceCompassXmlWriter.h
+  output/ctf/TraceCompassXmlOutput.h
 )
 set(CTRACE_CONTROL_HEADER_FILES
   control/DecodeConsumers.h
@@ -68,6 +84,9 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 add_library(ctrace-model STATIC
+  model/DiagnosticMessages.cpp
+  model/Messages.cpp
+  model/TraceMessages.cpp
   model/TraceSelection.cpp
   ${CTRACE_MODEL_HEADER_FILES}
 )
@@ -110,6 +129,7 @@ target_link_libraries(ctrace-trace-run
 
 add_library(ctrace-diagnostics STATIC
   diagnostics/DiagnosticSink.cpp
+  diagnostics/RawDiagnosticSink.cpp
   diagnostics/TraceIssueReporter.cpp
   ${CTRACE_DIAGNOSTICS_HEADER_FILES}
 )
@@ -127,9 +147,11 @@ add_library(ctrace-decode STATIC
   decode/DecodePipeline.cpp
   decode/DwtPacketDecoder.cpp
   decode/OpenCsdErrorController.cpp
+  decode/OpenCsdFormattedItmSession.cpp
   decode/OpenCsdItmDecoder.cpp
   decode/OpenCsdItmSession.cpp
   decode/OpenCsdPacketCollector.cpp
+  decode/OpenCsdTreeSession.cpp
   ${CTRACE_DECODE_HEADER_FILES}
 )
 add_library(ctrace::decode ALIAS ctrace-decode)
@@ -144,14 +166,18 @@ target_link_libraries(ctrace-decode PUBLIC
 )
 
 add_library(ctrace-output STATIC
+  output/OutputPath.cpp
   output/csv/CsvFileOutput.cpp
   output/csv/CsvRowMapper.cpp
   output/ctf/CtfBundleOutput.cpp
   output/ctf/CtfEncoder.cpp
   output/ctf/CtfExceptionLaneTracker.cpp
+  output/ctf/CtfMetadataModel.cpp
   output/ctf/CtfMetadataWriter.cpp
   output/ctf/CtfStreamWriter.cpp
+  output/ctf/CtfUuid.cpp
   output/ctf/TraceCompassXmlWriter.cpp
+  output/ctf/TraceCompassXmlOutput.cpp
   output/OutputRequirements.cpp
   output/TraceOutputLifecycle.cpp
   ${CTRACE_OUTPUT_HEADER_FILES}
@@ -178,6 +204,7 @@ add_library(ctrace::control ALIAS ctrace-control)
 target_include_directories(ctrace-control PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/control"
 )
+target_include_directories(ctrace-control PRIVATE "${PROJECT_BINARY_DIR}")
 # FileDecodeJob.h exposes decoder types to build-tree consumers.
 target_link_libraries(ctrace-control PUBLIC
   ctrace::cli

@@ -8,72 +8,80 @@
 #include "CortexMStreamDecoder.h"
 
 #include "CortexMPostDecoder.h"
+#include "DiagnosticMessages.h"
 #include "OpenCsdTraceElement.h"
 #include "SaturatingArithmetic.h"
 #include "TraceEvent.h"
+#include "TraceRoute.h"
+#include "TraceStreamId.h"
 
 #include <cstdint>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
-CortexMStreamDecoder::CortexMStreamDecoder(ItmTimestampPrescalers prescalers, TraceEventSink& eventSink)
-  : m_prescalers(std::move(prescalers)),
-    m_eventSink(eventSink)
+CortexMStreamDecoder::CortexMStreamDecoder(const std::vector<CortexMDecodeRoute>& routes, TraceEventSink& eventSink)
 {
+  if (routes.empty()) {
+    throw std::invalid_argument(formatMessage(MessageId::CortexRoutesRequired));
+  }
+
+  std::set<std::uint8_t> traceBusIds;
+  for (const auto& route : routes) {
+    if (route.timestampPrescaler == 0U) {
+      throw std::invalid_argument(formatMessage(MessageId::TimestampPrescalerPositive));
+    }
+    if (route.identity.traceBusId.has_value() && !CoreSight::isAtbTraceId(*route.identity.traceBusId)) {
+      throw std::invalid_argument(formatMessage(MessageId::CortexTraceBusIdRange));
+    }
+    if (route.identity.traceBusId.has_value() && !traceBusIds.insert(*route.identity.traceBusId).second) {
+      throw std::invalid_argument(formatMessage(MessageId::CortexDuplicateTraceBusId));
+    }
+    RouteDecoder state;
+    state.identity = route.identity;
+    state.timestampPrescaler = route.timestampPrescaler;
+    state.decoder = std::make_unique<CortexMPostDecoder>(route.identity, eventSink);
+    if (!m_decoders.emplace(route.identity.id, std::move(state)).second) {
+      throw std::invalid_argument(formatMessage(MessageId::CortexDuplicateRouteId));
+    }
+  }
 }
 
 CortexMStreamDecoder::~CortexMStreamDecoder() = default;
 
 void CortexMStreamDecoder::append(OpenCsdTraceElement element)
 {
-  if (element.kind == OpenCsdTraceElement::Kind::LocalTimestamp && element.tcyc.has_value()) {
-    element.tcyc = SaturatingArithmetic::multiply(*element.tcyc, prescaler(element.traceBusId));
+  const auto found = m_decoders.find(element.route.id);
+  if (found == m_decoders.end()) {
+    throw std::runtime_error(unknownNormalizedRouteMessage(element.route.id.value()));
   }
-  decoder(element.traceBusId).append(std::move(element));
+  auto& route = found->second;
+  if (element.route != route.identity) {
+    throw std::runtime_error(formatMessage(MessageId::CortexRouteIdentityMismatch));
+  }
+  if (element.kind == OpenCsdTraceElement::Kind::LocalTimestamp && element.tcyc.has_value()) {
+    element.tcyc = SaturatingArithmetic::multiply(*element.tcyc, route.timestampPrescaler);
+  }
+  route.decoder->append(std::move(element));
 }
 
 void CortexMStreamDecoder::finish()
 {
-  for (auto& [stream, decoder] : m_decoders) {
-    (void)stream;
-    decoder->finish();
+  for (auto& [routeId, route] : m_decoders) {
+    (void)routeId;
+    route.decoder->finish();
   }
 }
 
 std::uint64_t CortexMStreamDecoder::eventCount() const
 {
   std::uint64_t count = 0U;
-  for (const auto& [stream, decoder] : m_decoders) {
-    (void)stream;
-    count += decoder->eventCount();
+  for (const auto& [routeId, route] : m_decoders) {
+    (void)routeId;
+    count += route.decoder->eventCount();
   }
   return count;
-}
-
-std::uint32_t CortexMStreamDecoder::prescaler(std::uint8_t traceBusId) const
-{
-  const auto found = m_prescalers.byTraceBusId.find(traceBusId);
-  if (found != m_prescalers.byTraceBusId.end()) {
-    return found->second;
-  }
-  if (m_prescalers.fallback.has_value()) {
-    return *m_prescalers.fallback;
-  }
-  if (traceBusId == 0U) {
-    throw std::runtime_error("ITM timestamps with Trace Bus ID 0 cannot be assigned to "
-                             "different processor prescalers; a formatted source ID is required");
-  }
-  throw std::runtime_error("CoreSight Trace Bus ID " + std::to_string(traceBusId) +
-                           " has no unambiguous processor timestamp prescaler");
-}
-
-CortexMPostDecoder& CortexMStreamDecoder::decoder(std::uint8_t traceBusId)
-{
-  auto& result = m_decoders[traceBusId];
-  if (!result) {
-    result = std::make_unique<CortexMPostDecoder>(m_eventSink);
-  }
-  return *result;
 }

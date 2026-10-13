@@ -2,26 +2,34 @@
 
 ## DWT
 
-- [ ] Preserve DWT reference, group, and setup-binding identities when expanding source arrays.
+- [ ] Preserve logical DWT reference and setup identities when expanding comparator index arrays.
 - [ ] Complete Armv7-M linked-comparator, range, and value-match decoding.
-- [ ] Add Armv8-M and Armv8.1-M DWT decoding.
-- [ ] Add `event`, `pmu`, and `pcsample` events to CSV, CTF, and Trace Compass output.
+- [ ] Resolve programmable PMU event-counter names from trace-run configuration.
 
-## Multiple streams
+## Inputs and time correlation
 
-- [ ] Propagate processor identity into decoded events and outputs.
-- [ ] Support separate trace clock domains and cross-stream synchronization in CTF.
+- [ ] Align caller-facing raw-input/channel selection and transport format/framing with the outcome of
+      [cmsis-toolbox #699](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/pull/699), also tracked by
+      [vscode-cmsis-debugger #1150](https://github.com/Open-CMSIS-Pack/vscode-cmsis-debugger/issues/1150).
+      TB input/CSV naming support tracked by
+      [devtools #2573](https://github.com/Open-CMSIS-Pack/devtools/issues/2573) is complete and that issue is closed;
+      public channel selection and format/framing remain separate follow-up work. Keep trace communication separate
+      from trace-source setup and decide how to replace the temporary `trace-format` override without assuming its
+      standardization.
+- [ ] Align the published CTF bundle path with ctrace's `<solution-set>.<channel>.ctf` naming, including single-input runs.
+- [ ] Support FSYNC and FSYNC+HSYNC formatted input after a public framing contract is specified.
+- [ ] Define cross-stream clock correlation and offsets once a common producer time reference is available.
+- [ ] Add per-clock-domain Trace Compass bundles/experiments for uncorrelated streams when required.
 
 ## Additional decoders
 
-- [ ] Decode formatted `*.TB.raw` input by Trace Bus ID.
-- [ ] Add ETM instruction trace decoding and output.
-- [ ] Add MTB instruction trace decoding and output.
+- [ ] Add ETM/ETE/PTM instruction trace decoding and output in its own PR.
+- [ ] Add MTB instruction trace decoding and output in its own PR.
+- [ ] Add Event Recorder decoding and output when it enters the implementation scope.
 
 ## Dependencies and release
 
 - [ ] Replace private OpenCSD `common/` and `interfaces/` headers with supported public APIs.
 - [ ] Update OpenCSD after the [empty-buffer issue](opencsd-issues.md) is fixed upstream.
-- [ ] Verify the first release archive and hosted Windows, Linux, and macOS build/test matrix.
-- [ ] Complete runtime-license, source-provenance, and relinking requirements for statically linked releases.
-- [ ] Decide the signing, macOS notarization, SBOM, and archive-checksum requirements for production releases.
+- [ ] Decide the signing, macOS notarization, and SBOM requirements for production releases. The release archive
+      already includes `SHA256SUMS` for its binaries and license material.

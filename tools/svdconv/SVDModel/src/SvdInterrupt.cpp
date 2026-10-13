@@ -97,7 +97,6 @@ bool SvdInterrupt::CalculateDim()
 
     newIrq->CopyItem            (this);
     newIrq->SetName             (dim->CreateName(dimIndex));
-    //newIrq->SetDisplayName    (dim->CreateDisplayName(dimIndex));
     newIrq->SetDescription      (dim->CreateDescription(dimIndex));
     newIrq->SetValue            (value);
     newIrq->SetDimElementIndex  (dimElementIndex++);
@@ -119,7 +118,7 @@ bool SvdInterrupt::CheckItem()
   const auto& name = GetName();
   const auto lineNo = GetLineNumber();
   uint32_t deviceNumInterrupts = 0;
-  uint32_t maxExtIrq = 0;
+  uint32_t maxExtIrq = CpuFeature::NO_CPU_INTERRUPT_LIMIT;
   string cpuName = "<unknown>";
 
   const auto device = GetDevice();
@@ -144,8 +143,9 @@ bool SvdInterrupt::CheckItem()
     return false;
   }
 
-  if(deviceNumInterrupts) {                     // check against <deviceNumInterrupts>
-    if(deviceNumInterrupts > maxExtIrq) {       // check <deviceNumInterrupts> against architecture
+  const bool hasCpuLimit = maxExtIrq != CpuFeature::NO_CPU_INTERRUPT_LIMIT;
+  if(deviceNumInterrupts) {                     // check against <deviceNumInterrupts>, even without a CPU limit
+    if(hasCpuLimit && deviceNumInterrupts > maxExtIrq) { // check <deviceNumInterrupts> against known CPU limit
       LogMsg("M389", NUM(deviceNumInterrupts), NAME(cpuName), NUM2(maxExtIrq), lineNo);      // "Specified <deviceNumInterrupts>: '%NUM%' greater or equal '%NAME%': '%NUM2%'."
       Invalidate();
     }
@@ -156,7 +156,7 @@ bool SvdInterrupt::CheckItem()
     }
   }
 
-  if(val >= maxExtIrq) {      // check against architecture
+  if(hasCpuLimit && val >= maxExtIrq) {      // check against known CPU limit
     LogMsg("M331", NAME(name), NUM(val), NAME2(cpuName), NUM2(maxExtIrq-1), lineNo);
     Invalidate();
   }

@@ -476,7 +476,7 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
   CollectSystemViewOptions(context.debugger.systemView);
 
   // merge custom options
-  MergeCustomItems(context.debugger.custom, m_runDebug.debugger.custom);
+  ProjMgrUtils::MergeCustomItems(context.debugger.custom, m_runDebug.debugger.custom);
 }
 
 void ProjMgrRunDebug::CollectTelnetOptions(const ContextItem& context, DebugAdapterItem& adapter,
@@ -876,26 +876,3 @@ bool ProjMgrRunDebug::GetDebugAdapter(const string& name, const DebugAdaptersIte
   return false;
 }
 
-CustomItem& ProjMgrRunDebug::CustomMapFind(vector<pair<string, CustomItem>>& customMap, const string& key) {
-  for (auto& [k, v] : customMap) {
-    if (key == k) {
-      return v;
-    }
-  }
-  customMap.push_back({ key, CustomItem() });
-  return customMap.back().second;
-}
-
-void ProjMgrRunDebug::MergeCustomItems(const CustomItem& src, CustomItem& dst) {
-  if (!src.scalar.empty()) {
-    dst.scalar = src.scalar;
-  }
-  else if (!src.vec.empty()) {
-    dst.vec = src.vec;
-  }
-  else if (!src.map.empty()) {
-    for (const auto& [k, v] : src.map) {
-      CustomMapFind(dst.map, k) = v;
-    }
-  }
-}

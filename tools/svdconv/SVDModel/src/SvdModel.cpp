@@ -39,7 +39,7 @@ bool SvdModel::Construct(XMLTreeElement* xmlTree)
     }
 
     SetLineNumber(xmlElement->GetLineNumber());
-    SetColNumber(0); // xmlElement->GetColNumber());
+    SetColNumber(0);
 	  SetTag(xmlElement->GetTag());
     SetText(xmlElement->GetText());
 

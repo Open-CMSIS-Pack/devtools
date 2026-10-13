@@ -8,6 +8,7 @@
 #include "TestSupport.h"
 #include <gtest/gtest.h>
 #include "TraceEvent.h"
+#include "TraceRoute.h"
 #include "TraceSelection.h"
 #include "TraceStreamId.h"
 #include "TraceRunConfig.h"
@@ -22,18 +23,22 @@ TEST(CtraceUnitTests, testTraceSelection)
   EXPECT_TRUE(CoreSight::isItmStimulusPort(0U));
   EXPECT_TRUE(CoreSight::isItmStimulusPort(31U));
   EXPECT_FALSE(CoreSight::isItmStimulusPort(32U));
-  EXPECT_TRUE(TraceRunSchema::isDwtDataType("unsigned int"));
-  EXPECT_TRUE(TraceRunSchema::isDwtDataType("signed int"));
+  EXPECT_TRUE(TraceRunSchema::isDwtDataType("unsigned"));
+  EXPECT_TRUE(TraceRunSchema::isDwtDataType("signed"));
   EXPECT_TRUE(TraceRunSchema::isDwtDataType("float"));
   TraceRunReference timestampReference;
-  timestampReference.ctraceRef = "timestamps";
+  timestampReference.ref = "timestamps";
   EXPECT_TRUE(TraceRunSchema::isTimestampReference(timestampReference));
   TraceRunReference itmReference;
   itmReference.type = "itm";
-  itmReference.ctraceRef = "itm";
+  itmReference.ref = "itm";
   EXPECT_TRUE(TraceRunSchema::isProcessorItmReference(itmReference));
   TraceEvent itm = softwarePacket(1U);
-  itm.traceBusId = 1;
+  const TraceRouteIdentity stream1{TraceRouteId{17U}, 1U};
+  const TraceRouteIdentity stream111{TraceRouteId{23U}, 111U};
+  const TraceRouteIdentity unformattedA{TraceRouteId{41U}, std::nullopt};
+  const TraceRouteIdentity unformattedB{TraceRouteId{42U}, std::nullopt};
+  itm.route = stream1;
   ASSERT_TRUE(traceEventSelectedForOutput(itm, TraceSelection{{"itm"}, {}})) << "TraceSelection ITM type mismatch";
   ASSERT_TRUE(!traceEventSelectedForOutput(itm, TraceSelection{{"dwt"}, {}}))
       << "TraceSelection should reject unrelated DWT type";
@@ -45,13 +50,27 @@ TEST(CtraceUnitTests, testTraceSelection)
   ASSERT_TRUE(!traceEventSelectedForOutput(itm, TraceSelection{{"itm"}, {2U}}))
       << "TraceSelection combined stream mismatch";
 
-  itm.traceBusId = 0U;
+  itm.route = unformattedA;
   ASSERT_TRUE(traceEventSelectedForOutput(itm, TraceSelection{{"itm"}, {}}))
-      << "TraceSelection type selector must retain Trace Bus ID 0 input";
+      << "TraceSelection type selector must retain input without a Trace Bus ID";
   ASSERT_TRUE(!traceEventSelectedForOutput(itm, TraceSelection{{}, {1U}}))
-      << "a non-zero stream selector must not match Trace Bus ID 0 input";
+      << "a non-zero stream selector must not match input without a Trace Bus ID";
   ASSERT_TRUE(traceEventSelectedForOutput(itm, TraceSelection{{}, {0U}}))
       << "stream selector 0 must match unformatted single-source input";
+  itm.route = unformattedB;
+  ASSERT_TRUE(traceEventSelectedForOutput(itm, TraceSelection{{}, {0U}}))
+      << "public stream selector 0 must not depend on an internal route ordinal";
+  EXPECT_NE(unformattedA.id, unformattedB.id) << "distinct no-bus routes must retain distinct internal identities";
+
+  itm.route = stream111;
+  EXPECT_TRUE(traceEventSelectedForOutput(itm, TraceSelection{{"itm", "dwt"}, {1U, 111U}}))
+      << "multiple types and streams must each form a union";
+  EXPECT_FALSE(traceEventSelectedForOutput(itm, TraceSelection{{"dwt", "event"}, {1U, 111U}}))
+      << "type and stream unions must still form an intersection";
+  EXPECT_FALSE(traceEventSelectedForOutput(itm, TraceSelection{{"itm", "dwt"}, {1U}}))
+      << "the route ordinal must never substitute for the architectural Trace Bus ID";
+
+  itm.route = unformattedB;
   std::get<SoftwareTraceEvent>(itm.payload).channel = 0;
   ASSERT_TRUE(!traceEventSelectedForOutput(itm, TraceSelection{}))
       << "TraceSelection must exclude software channel zero without selectors";
@@ -67,7 +86,29 @@ TEST(CtraceUnitTests, testTraceSelection)
   ASSERT_TRUE(traceEventSelectedForOutput(dwt, TraceSelection{{"itm", "dwt"}, {}}))
       << "TraceSelection type OR mismatch";
 
+  TraceEvent dwtMatch{DwtMatchTraceEvent{2U}};
+  ASSERT_TRUE(traceEventSelectedForOutput(dwtMatch, TraceSelection{{"dwt"}, {}}))
+      << "TraceSelection DWT match type mismatch";
+
   TraceEvent exception{ExceptionTraceEvent{11U, ExceptionAction::Entered}};
   ASSERT_TRUE(traceEventSelectedForOutput(exception, TraceSelection{{"exception"}, {}}))
       << "TraceSelection exception type mismatch";
+
+  TraceEvent pcSample{PcSampleTraceEvent{0x08001234U}};
+  ASSERT_TRUE(traceEventSelectedForOutput(pcSample, TraceSelection{{"pcsample"}, {}}))
+      << "TraceSelection PC-sample type mismatch";
+  ASSERT_FALSE(traceEventSelectedForOutput(pcSample, TraceSelection{{"dwt"}, {}}))
+      << "TraceSelection must keep PC samples separate from DWT data trace";
+}
+
+TEST(CtraceUnitTests, testTraceSelectionTreatsPcSampleMarkersAsSamplesNotErrors)
+{
+  for (const auto kind : {PcSampleKind::Sleep, PcSampleKind::TraceProhibited}) {
+    TraceEvent marker{PcSampleTraceEvent{0U, kind}};
+    marker.route = {TraceRouteId{5U}, 7U};
+    EXPECT_TRUE(traceEventSelectedForOutput(marker, TraceSelection{}));
+    EXPECT_TRUE(traceEventSelectedForOutput(marker, TraceSelection{{"pcsample"}, {7U}}));
+    EXPECT_FALSE(traceEventSelectedForOutput(marker, TraceSelection{{"pcsample"}, {5U}}));
+    EXPECT_FALSE(traceEventSelectedForOutput(marker, TraceSelection{{"error"}, {7U}}));
+  }
 }

@@ -17,7 +17,7 @@
 
 class DiagnosticSink;
 
-/** @brief Owns a CTF directory and its companion Trace Compass XML file. */
+/** @brief Owns the lifecycle of one independently completed CTF directory. */
 class CtfBundleOutput final : public TraceOutput {
 public:
   /**
@@ -29,27 +29,31 @@ public:
   /** @brief Aborts an active bundle before destruction. */
   ~CtfBundleOutput() override;
 
-  /** @brief Prepares empty CTF and XML targets. */
-  void start() override;
-  /** @brief Completes metadata, stream, and XML output. */
-  void stop() override;
-  /** @brief Removes incomplete CTF and XML targets. */
-  void abort() override;
-  /**
-   * @brief Encodes one selected semantic event.
-   * @param event Event evaluated and encoded by the CTF backend.
-   */
-  void writeEvent(const TraceEvent& event) override;
   /** @brief Returns the CTF backend name. */
   std::string_view backendName() const noexcept override;
   /** @brief Returns the CTF output directory path. */
   std::string targetPath() const override;
+  /** @brief Returns emitted metadata after a successful stop, or nullptr otherwise. */
+  const CtfMetadataModel* completedMetadata() const noexcept;
+
+protected:
+  /** @brief Prepares an empty CTF target. */
+  void prepareOutput() override;
+  /** @brief Starts the CTF encoder for the prepared target. */
+  void startOutput() override;
+  /** @brief Completes the CTF bundle and publishes its emitted metadata. */
+  void stopOutput() override;
+  /** @brief Aborts the encoder and removes the incomplete CTF target. */
+  void abortOutput() override;
+  /**
+   * @brief Encodes one selected semantic event.
+   * @param event Event evaluated and encoded by the CTF backend.
+   */
+  void writeOutput(const TraceEvent& event) override;
 
 private:
   std::filesystem::path m_ctfOutputDirectory;
-  std::filesystem::path m_traceCompassXmlPath;
   CtfEncoder m_encoder;
-  bool m_active = false;
 };
 
 #endif  // CTRACE_SRC_OUTPUT_CTF_CTFBUNDLEOUTPUT_H

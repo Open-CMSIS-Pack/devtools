@@ -27,10 +27,10 @@ public:
 
   /** @brief Writes one event to every active output. */
   void append(const TraceEvent& event) override;
-  /** @brief Completes all active outputs without propagating failures. */
-  void finish() noexcept;
-  /** @brief Aborts all active outputs without propagating failures. */
-  void abort() noexcept;
+  /** @brief Writes skipped-byte accounting to every active output that supports it. */
+  void appendByteSkip(const TraceByteSkip& skipped) override;
+  /** @brief Completes active outputs, optionally applying their fatal-input policy. */
+  void finish(const TraceDecodeAbort* decodeAbort = nullptr) noexcept;
 
   /** @brief Disables copying because the lifecycle owns output backends. */
   TraceOutputLifecycle(const TraceOutputLifecycle&) = delete;
@@ -38,6 +38,9 @@ public:
   TraceOutputLifecycle& operator=(const TraceOutputLifecycle&) = delete;
 
 private:
+  /** @brief Delivers either kind of write while isolating backend failures. */
+  template <typename Write> void writeActiveOutputs(const Write& write);
+
   /** @brief Tracks the lifecycle state of one output backend. */
   enum class State {
     Inactive,

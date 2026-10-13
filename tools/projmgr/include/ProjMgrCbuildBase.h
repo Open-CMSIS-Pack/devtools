@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -17,6 +17,8 @@ namespace YAML {
   class Node;
 }
 
+struct CustomItem;
+
 /**
   * @brief projmgr base class for output yaml files
 */
@@ -26,6 +28,8 @@ protected:
   void SetNodeValue(YAML::Node node, const std::string& value);
   void SetNodeValue(YAML::Node node, const std::vector<std::string>& vec);
   void SetNodeValueUniquely(YAML::Node node, const std::string& value);
+  void SetCustomNodes(YAML::Node node, const CustomItem& custom);
+  YAML::Node GetCustomNode(const CustomItem& value);
   const std::string FormatPath(const std::string& original, const std::string& directory);
 
   bool m_useAbsolutePaths;

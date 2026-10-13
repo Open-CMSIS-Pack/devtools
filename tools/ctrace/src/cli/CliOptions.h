@@ -29,6 +29,7 @@ struct CliOptions {
   TraceSelection selection;
   bool help = false;
   bool version = false;
+  bool verbose = false;
 };
 
 #endif  // CTRACE_SRC_CLI_CLIOPTIONS_H

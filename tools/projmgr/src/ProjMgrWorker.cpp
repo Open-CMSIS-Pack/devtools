@@ -310,6 +310,8 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
           m_undefLayerVars.insert(string(variable));
           continue;
         }
+        m_missingFiles.insert({ clayerFile, FileNode() });
+        continue;
       }
       if (m_parser->ParseClayer(clayerFile, m_checkSchema)) {
         context.clayers[clayerFile] = &m_parser->GetClayers().at(clayerFile);
@@ -4119,6 +4121,10 @@ bool ProjMgrWorker::ProcessContext(ContextItem& context, bool loadGenFiles, bool
     ret &= ProcessGpdsc(context);
     ret &= ProcessGeneratedLayers(context);
   }
+  // Add compiler define for TrustZone disabled
+  if (context.controls.processed.processor.trustzone == RteConstants::YAML_OFF) {
+    context.rteActiveTarget->InsertDefine("ARM_DEVICE_TZ_DISABLED");
+  }
   // Check regions header, generate it if needed
   if (!context.linker.regions.empty()) {
     CheckAndGenerateRegionsHeader(context);
@@ -4781,11 +4787,11 @@ bool ProjMgrWorker::ListTemplates(vector<string>& templates, const string& filte
     if (!filter.empty() && !CheckFilter(filter, templateItem)) {
       continue;
     }
-    string templateStr = templateItem.name + " (" + templateItem.pack + ")";
+    string templateStr = templateItem.file + " (" + templateItem.name + ")";
     if (m_verbose) {
       templateStr += "\n  description: " + templateItem.description;
+      templateStr += "\n  pack: " + templateItem.pack;
       templateStr += "\n  path: " + templateItem.path;
-      templateStr += "\n  file: " + templateItem.file;
       if (!templateItem.copyTo.empty()) {
         templateStr += "\n  copy-to: " + templateItem.copyTo;
       }
@@ -5048,6 +5054,7 @@ bool ProjMgrWorker::GetTypeContent(ContextItem& context) {
 }
 
 bool ProjMgrWorker::GetProjectSetup(ContextItem& context) {
+  context.controls.setups.clear();
   for (const auto& setup : context.cproject->setups) {
     if (CheckContextFilters(setup.type, context) && CheckCompiler(setup.forCompiler, context.compiler)) {
       context.controls.setups.push_back(setup.build);
@@ -6315,6 +6322,10 @@ bool ProjMgrWorker::PopulateActiveTargetSet(const string& activeTargetSet) {
     return false;
   }
   return true;
+}
+
+string ProjMgrWorker::GetActiveTarget() const {
+  return m_activeTargetType + (m_activeTargetSet.set.empty() ? "" : "@" + m_activeTargetSet.set);
 }
 
 bool ProjMgrWorker::IsLibOnly(const std::vector<ContextItem*>& contexts) {

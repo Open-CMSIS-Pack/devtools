@@ -17,6 +17,8 @@
 
 
 struct CpuFeature {
+  static constexpr uint16_t NO_CPU_INTERRUPT_LIMIT = 0;
+
   const bool VTOR;
   const bool MPU;
   const bool FPU;
@@ -30,7 +32,7 @@ struct CpuFeature {
   const bool PMU;
   const bool MVE;
   const bool MVEFP;
-  const uint16_t NUMEXTIRQ;
+  const uint16_t NUMEXTIRQ; // Exclusive IRQ-number limit; 0 means no CPU-based limit is known.
 public:
   CpuFeature(const bool vtor, const bool mpu, const bool fpu, const bool fpudp,
                const bool icache, const bool dcache, const bool itcm, const bool dtcm,

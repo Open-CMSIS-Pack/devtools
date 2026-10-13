@@ -49,11 +49,11 @@ struct MlopsVelaType {
 /**
  * @brief mlops model type containing
  *        path to AI clayer,
- *        model name
+ *        custom properties
 */
 struct MlopsModelType {
   std::string clayer;
-  std::string name;
+  CustomItem custom;
 };
 
 /**
@@ -133,7 +133,6 @@ private:
   bool GetTargetSetItemRef(const TargetType& targetType, std::optional<const std::string> targetSetName,
     bool simulatorDefault, TargetSetItem& targetSet) const;
   std::string BuildActive(const std::string& targetType, const std::string& targetSet) const;
-  std::string GetCustomScalar(const CustomItem& custom, const std::string& key) const;
   std::string BuildVelaOptions(const MlopsNpuType& npu, const MlopsVelaItem& vela) const;
   bool SetMlopsRunType(MlopsRunType& run, const std::string& targetType, const TargetSetItem& targetSet,
     const std::vector<ContextItem>& contexts, const std::string& outBaseDir, const std::string& solutionName) const;

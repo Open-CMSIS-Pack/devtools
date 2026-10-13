@@ -52,7 +52,9 @@ build:
     - type: comp-db
       file: compile_commands.json
     - type: comp-db
-      file: compile_macros.h
+      file: compile_macros_c.h
+    - type: comp-db
+      file: compile_macros_cxx.h
   components:
     - component: ARM::Device:Startup&RteTest Startup@2.0.3
       condition: ARMCM3 RteTest

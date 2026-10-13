@@ -53,9 +53,6 @@ void Sighandler(int signum)
     case SIGTERM:
       criticalErrMsg += "Software termination signal from kill";
       break;
-    //case SIGBREAK:
-    //  criticalErrMsg += "Ctrl-Break sequence";
-    //  break;
     case SIGABRT:
     //case SIGABRT_COMPAT:
       criticalErrMsg += "abnormal termination triggered by abort call";

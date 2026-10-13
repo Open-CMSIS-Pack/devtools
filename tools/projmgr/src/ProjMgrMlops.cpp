@@ -94,15 +94,6 @@ string ProjMgrMlops::BuildActive(const string& targetType, const string& targetS
   return targetSet.empty() ? targetType : targetType + "@" + targetSet;
 }
 
-string ProjMgrMlops::GetCustomScalar(const CustomItem& custom, const string& key) const {
-  for (const auto& [customKey, value] : custom.map) {
-    if (customKey == key) {
-      return value.scalar;
-    }
-  }
-  return RteUtils::EMPTY_STRING;
-}
-
 string ProjMgrMlops::BuildVelaOptions(const MlopsNpuType& npu, const MlopsVelaItem& vela) const {
   string options;
   if (!npu.type.empty() && !npu.macs.empty()) {
@@ -226,6 +217,19 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   // mlops description
   mlops.description = solutionMlops.description;
 
+  const auto expand = [&context](string& value) {
+    value = RteUtils::ExpandAccessSequences(value, context.variables);
+    // unresolved variables are empty in MLOps settings
+    size_t start = 0;
+    while ((start = value.find('$', start)) != string::npos) {
+      const size_t end = value.find('$', start + 1);
+      if (end == string::npos) {
+        break;
+      }
+      value.erase(start, end - start + 1);
+    }
+  };
+
   // get hardware processor type ("Dcore")
   if (context.targetAttributes.find("Dcore") != context.targetAttributes.end()) {
     mlops.processor.type = context.targetAttributes.at("Dcore");
@@ -234,6 +238,8 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   // npu type and macs
   mlops.npu.type = solutionMlops.npu.type;
   mlops.npu.macs = solutionMlops.npu.macs;
+  expand(mlops.npu.type);
+  expand(mlops.npu.macs);
 
   // filter npu info items
   vector<NpuInfoItem> npuInfoItems;
@@ -269,18 +275,18 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   }
 
   // print warnings if the required NPU type and/or MACs do not match the DFP device information
-  if (!solutionMlops.npu.type.empty()) {
-    const auto matchesType = [&solutionMlops](const NpuInfoItem& npu) {
-      return npu.type == solutionMlops.npu.type;
+  if (!npuInfoItems.empty() && !mlops.npu.type.empty()) {
+    const auto matchesType = [&mlops](const NpuInfoItem& npu) {
+      return npu.type == mlops.npu.type;
     };
     if (find_if(npuInfoItems.begin(), npuInfoItems.end(), matchesType) == npuInfoItems.end()) {
       ProjMgrLogger::Get().Warn("mlops.npu.type value does not match DFP device information", "", csolution.path);
     }
   }
-  if (!solutionMlops.npu.macs.empty()) {
-    const auto matchesMacs = [&solutionMlops](const NpuInfoItem& npu) {
-      return (solutionMlops.npu.type.empty() || npu.type == solutionMlops.npu.type) &&
-        RteUtils::StringToULL(npu.macs) == RteUtils::StringToULL(solutionMlops.npu.macs);
+  if (!npuInfoItems.empty() && !mlops.npu.macs.empty()) {
+    const auto matchesMacs = [&mlops](const NpuInfoItem& npu) {
+      return (mlops.npu.type.empty() || npu.type == mlops.npu.type) &&
+        RteUtils::StringToULL(npu.macs) == RteUtils::StringToULL(mlops.npu.macs);
     };
     if (find_if(npuInfoItems.begin(), npuInfoItems.end(), matchesMacs) == npuInfoItems.end()) {
       ProjMgrLogger::Get().Warn("mlops.npu.macs value does not match DFP device information", "", csolution.path);
@@ -288,7 +294,11 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
   }
 
   // vela options
-  mlops.vela.options = BuildVelaOptions(mlops.npu, solutionMlops.vela);
+  MlopsVelaItem vela = solutionMlops.vela;
+  expand(vela.system);
+  expand(vela.memory);
+  expand(vela.misc);
+  mlops.vela.options = BuildVelaOptions(mlops.npu, vela);
 
   // vela ini
   if (solutionMlops.vela.ini.empty()) {
@@ -315,10 +325,10 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
     }
   }
 
-  // model name and clayer
+  // model clayer
   if (!solutionMlops.model.clayer.empty()) {
-    mlops.model.name = solutionMlops.model.name.empty() ? "Algorithm" : solutionMlops.model.name;
     mlops.model.clayer = solutionMlops.model.clayer;
+    expand(mlops.model.clayer);
     if (!m_worker->ProcessSequenceRelative(context, mlops.model.clayer, csolution.directory, false)) {
       return false;
     }
@@ -326,6 +336,19 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
       RteFsUtils::NormalizePath(mlops.model.clayer, context.directories.cprj);
     }    
   }
+  mlops.model.custom = solutionMlops.model.custom;
+  const auto expandCustom = [&expand](CustomItem& custom, const auto& expandCustomRef) -> void {
+    if (!custom.scalar.empty()) {
+      expand(custom.scalar);
+    }
+    for (auto& item : custom.vec) {
+      expandCustomRef(item, expandCustomRef);
+    }
+    for (auto& [key, value] : custom.map) {
+      expandCustomRef(value, expandCustomRef);
+    }
+  };
+  expandCustom(mlops.model.custom, expandCustom);
   
   if (hardwareFound) {
     // set hardware run types
@@ -343,8 +366,8 @@ bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& ml
     }
 
     // get debugger model and config-file
-    mlops.simulator.model = GetCustomScalar(simulatorTargetSet.debugger.custom, "model");
-    mlops.simulator.configFile = GetCustomScalar(simulatorTargetSet.debugger.custom, "config-file");
+    mlops.simulator.model = ProjMgrUtils::GetCustomScalar(simulatorTargetSet.debugger.custom, "model");
+    mlops.simulator.configFile = ProjMgrUtils::GetCustomScalar(simulatorTargetSet.debugger.custom, "config-file");
     if (!mlops.simulator.configFile.empty()) {
       if (!m_worker->ProcessSequenceRelative(simulatorContext, mlops.simulator.configFile, csolution.directory, false)) {
         return false;

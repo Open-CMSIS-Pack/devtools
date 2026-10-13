@@ -33,7 +33,9 @@ build:
     - type: comp-db
       file: compile_commands.json
     - type: comp-db
-      file: compile_macros.h
+      file: compile_macros_c.h
+    - type: comp-db
+      file: compile_macros_cxx.h
   components:
     - component: ARM::Device:RteTest Generated Component:RteTest@1.1.0
       condition: RteDevice

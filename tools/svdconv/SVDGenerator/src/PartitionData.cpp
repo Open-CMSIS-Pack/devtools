@@ -73,7 +73,6 @@ bool PartitionData::Create(SvdItem *item, const string& fileName)
 
   const auto cpu = device->GetCpu();
   if(!cpu) {
-    //LogMsg("M209");
     return false;
   }
 
@@ -269,7 +268,7 @@ bool PartitionData::CreateSauInitControl(SvdCpu *cpu)
 
   uint32_t value = 1;
   const string name  = "SAU_INIT_CTRL";
-  const string descr = ""; //SAU CTRL register enable";
+  const string descr = "";
 
   CreateHeadingEnableBegin("Initialize Secure Attribute Unit (SAU) CTRL register");
   m_genH->Generate<c_header::MAKE|c_header::MK_DEFINE>("%s", value, 10, -1, descr.c_str(), name.c_str());
@@ -350,8 +349,6 @@ bool PartitionData::CreateInitSauRegions(SvdCpu *cpu)
     return true;
   }
 
-  //m_genH->Generate<c_header::DESCR|c_header::PART>("SAU Regions");
-  //CreateHeadingBegin("Initialize Secure Attribute Unit (SAU) Address Regions");
 
   int i=0;
   for(const auto child : childs) {
@@ -466,7 +463,6 @@ bool PartitionData::CreateSleepAndExceptionBegin(SvdCpu *cpu)
 
   CreateCCommentBegin();
   m_genSfd->Generate<sfd::HEADINGENABLE|sfd::BEGIN        >("Setup behaviour of Sleep and Exception Handling");
-  //m_genSfd->Generate<sfd::INFO|sfd::SINGLE              >("%s", descr.c_str());
   CreateCCommentEnd();
   m_genH->Generate<c_header::MAKE|c_header::MK_DEFINE     >("%s", value, 10, -1, descr.c_str(), name.c_str());
 
@@ -638,7 +634,6 @@ bool PartitionData::CreateFloatingPointUnitBegin(SvdCpu *cpu)
 
   CreateCCommentBegin();
   m_genSfd->Generate<sfd::HEADINGENABLE|sfd::BEGIN        >("Setup behavior of Floating Point Unit");
-  //m_genSfd->Generate<sfd::INFO|sfd::SINGLE              >("%s", descr.c_str());
   CreateCCommentEnd();
   m_genH->Generate<c_header::MAKE|c_header::MK_DEFINE     >("%s", value, 10, -1, descr.c_str(), name.c_str());
 
@@ -772,7 +767,6 @@ bool PartitionData::CreateInterruptBlockBegin(int32_t num)
 
   CreateCCommentBegin();
   m_genSfd->Generate<sfd::HEADINGENABLE|sfd::BEGIN        >("Initialize ITNS %i (Interrupts %d..%d)", num, num*32, ((num+1)*32)-1);
-  //m_genSfd->Generate<sfd::INFO|sfd::SINGLE              >("%s", descr.c_str());
   CreateCCommentEnd();
   m_genH->Generate<c_header::MAKE|c_header::MK_DEFINE     >("%s%i", value, 10, -1, descr.c_str(), name.c_str(), num);
 
