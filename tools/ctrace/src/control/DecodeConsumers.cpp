@@ -69,10 +69,10 @@ void DecodeConsumers::appendByteSkip(const TraceByteSkip& skipped)
   m_diagnostics.report(diagnostic);
 }
 
-void DecodeConsumers::appendRawTail(const TraceRawTail& tail)
+void DecodeConsumers::appendRawTailDiagnostic(const TraceRawTail& tail)
 {
   ++m_eventCount;
-  m_outputLifecycle.appendRawTail(tail);
+  m_outputLifecycle.appendRawTailDiagnostic(tail);
   DiagnosticSink::Event diagnostic{DiagnosticSink::Severity::Error,
                                    formatTraceMessage(tail, TraceMessageStyle::Compact)};
   diagnostic.detailedMessage = formatTraceMessage(tail, TraceMessageStyle::Detailed);

@@ -127,7 +127,7 @@ TEST(CtraceUnitTests, testDecodeConsumersReportsRawTailAsAnInputWideError)
   DecodeConsumers consumers(std::move(outputs), diagnostics);
 
   consumers.append(softwarePacket(1U, 1U, 'A'));
-  consumers.appendRawTail({0x100000000ULL, {0x00U, 0xffU}});
+  consumers.appendRawTailDiagnostic({0x100000000ULL, {0x00U, 0xffU}});
   consumers.finishIssues();
   consumers.finishOutputs();
 

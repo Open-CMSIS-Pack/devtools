@@ -30,7 +30,7 @@ public:
   /** @brief Writes skipped-byte accounting to every active output that supports it. */
   void appendByteSkip(const TraceByteSkip& skipped) override;
   /** @brief Writes an incomplete-frame error to every active output that supports it. */
-  void appendRawTail(const TraceRawTail& tail);
+  void appendRawTailDiagnostic(const TraceRawTail& tail);
   /** @brief Completes active outputs, optionally applying their fatal-input policy. */
   void finish(const TraceDecodeAbort* decodeAbort = nullptr) noexcept;
 

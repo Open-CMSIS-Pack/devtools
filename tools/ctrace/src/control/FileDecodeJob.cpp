@@ -336,7 +336,7 @@ std::optional<CtfMetadataModel> FileDecodeJob::run()
     decode.bytesIn = error.bytesProcessed();
   }
   if (!tail.bytes.empty()) {
-    consumers.appendRawTail(tail);
+    consumers.appendRawTailDiagnostic(tail);
   }
   decode.eventsOut = consumers.eventCount() + (decodeAbort.has_value() ? 1U : 0U);
   consumers.finishIssues();

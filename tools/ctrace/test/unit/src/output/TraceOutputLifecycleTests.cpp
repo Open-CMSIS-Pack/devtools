@@ -281,9 +281,9 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleIsolatesRawTailWriteFailures)
   TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
 
   lifecycle.append(softwarePacket(1U, 1U, 'A'));
-  lifecycle.appendRawTail({16U, {0x00U, 0xffU}});
+  lifecycle.appendRawTailDiagnostic({16U, {0x00U, 0xffU}});
   lifecycle.finish();
-  lifecycle.appendRawTail({32U, {0xffU}});
+  lifecycle.appendRawTailDiagnostic({32U, {0xffU}});
 
   EXPECT_EQ(failingCalls, (std::vector<std::string>{"start", "write", "write-raw-tail", "abort"}));
   ASSERT_EQ(diagnostics.events().size(), 1U);
@@ -314,7 +314,7 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleKeepsCtfPrefixWhenOnlyFinalFrameIs
   TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
 
   lifecycle.append(onRoute(softwarePacket(1U, 1U, 'A'), route));
-  lifecycle.appendRawTail({16U, {0xffU}});
+  lifecycle.appendRawTailDiagnostic({16U, {0xffU}});
   lifecycle.finish();
 
   EXPECT_EQ(diagnostics.failureCount(), 0U);
