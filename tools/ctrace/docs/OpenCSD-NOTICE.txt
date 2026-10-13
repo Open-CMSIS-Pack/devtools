@@ -1,8 +1,9 @@
 OpenCSD 1.8.3
 https://github.com/Linaro/OpenCSD
 
-The ctrace executable incorporates unmodified OpenCSD source code from the
-pinned revision. The following copyright notices are retained from the pinned
+The ctrace executable incorporates OpenCSD source code from the pinned
+revision with a local fix for an empty ITM unsynchronized-data buffer access.
+The following copyright notices are retained from the pinned
 OpenCSD source tree (capitalization and punctuation are preserved):
 
 Copyright (c) 2015, ARM Limited. All Rights Reserved.

@@ -1630,6 +1630,54 @@ TEST(CtraceUnitTests, testOpenCsdItmSessionUsesRouteLocalResetForSingleInput)
   EXPECT_NE(errors.decide(session.endOfTrace()).action, OpenCsdErrorController::Action::Abort);
 }
 
+TEST(CtraceUnitTests, testOpenCsdItmSessionRecoversAfterUnsynchronizedBlockEndsAtFlushBoundary)
+{
+  for (const auto prefixSize : {8U, 16U}) {
+    SCOPED_TRACE(prefixSize);
+    CollectingOpenCsdElementSink sink;
+    OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
+    OpenCsdErrorController errors;
+    OpenCsdItmSession session(collector, errors);
+
+    // OpenCSD flushes eight unsynchronized bytes at a time. Ending a block here
+    // also flushes an empty packet buffer before the next block supplies SYNC.
+    const std::vector<std::uint8_t> prefix(prefixSize, 0x55U);
+    std::uint32_t processed = 0U;
+    errors.beginDataPathCall();
+    auto response = session.pushData(0U, prefixSize, prefix.data(), processed);
+    ASSERT_EQ(response, OCSD_RESP_CONT);
+    EXPECT_EQ(processed, prefixSize);
+    EXPECT_TRUE(errors.decide(response).errors.empty());
+    EXPECT_TRUE(sink.elements().empty());
+
+    auto synchronized = itmHardwareSync();
+    const auto syncSize = synchronized.size();
+    const auto software = itmSoftwarePacket(1U, 'A');
+    synchronized.insert(synchronized.end(), software.begin(), software.end());
+    errors.beginDataPathCall();
+    response = session.pushData(prefixSize, static_cast<std::uint32_t>(synchronized.size()),
+                                 synchronized.data(), processed);
+    ASSERT_EQ(response, OCSD_RESP_CONT);
+    EXPECT_EQ(processed, synchronized.size());
+    EXPECT_TRUE(errors.decide(response).errors.empty());
+    errors.beginDataPathCall();
+    response = session.endOfTrace();
+    EXPECT_EQ(response, OCSD_RESP_CONT);
+    EXPECT_TRUE(errors.decide(response).errors.empty());
+
+    ASSERT_EQ(sink.elements().size(), 2U);
+    EXPECT_EQ(sink.elements()[0].kind, OpenCsdTraceElement::Kind::Sync);
+    EXPECT_EQ(sink.elements()[0].sourceIndex, prefixSize);
+    const auto& decoded = sink.elements()[1];
+    EXPECT_EQ(decoded.kind, OpenCsdTraceElement::Kind::Software);
+    EXPECT_EQ(decoded.sourceIndex, prefixSize + syncSize);
+    EXPECT_EQ(decoded.route, TraceRouteIdentity{});
+    EXPECT_EQ(decoded.channel, 1U);
+    EXPECT_EQ(decoded.size, 1U);
+    EXPECT_EQ(decoded.value, 'A');
+  }
+}
+
 TEST(CtraceUnitTests, testEmptySessionSetupErrorRetainsInitializationIssueFallback)
 {
   CollectingOpenCsdElementSink sink;
