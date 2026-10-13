@@ -81,8 +81,8 @@ to its own CTF clock UUID, even when the stream ID and processor name match.
 They also check unique provider/view IDs across targets and remove stale XML
 when filters leave no graphical events.
 
-Failure variants first generate valid outputs, then replace TB input with an
-unaligned frame, an incomplete final packet, or a recoverable malformed packet.
+Failure variants first generate valid outputs, then replace TB input with a
+directory, an incomplete final packet, or a recoverable malformed packet.
 Only freshly finalized CTF bundles contribute views: preserved old output from
 a preflight failure and removed output from a fatal decode are excluded;
 successfully finalized output after recovery is included despite a failing
@@ -92,13 +92,23 @@ These fixtures are generated only in the build tree and add no binary assets.
 ## Generated negative and recovery inputs
 
 The integration test also creates focused formatted inputs as byte literals in
-[CtraceIntegTests.cpp](../integration/src/CtraceIntegTests.cpp). They are
+[CtraceIntegTests.cpp](../integration/src/CtraceIntegTests.cpp). Most are
 hand-authored from the CoreSight memory-aligned formatter and ITM packet
-encodings; they are not hardware captures and make no claim about pyTS or
-pyOCD producer output:
+encodings; these synthetic inputs make no claim about pyTS or pyOCD producer
+output. The bad-start `Tail.TB.raw` variant reproduces a supplied 56-byte capture:
 
-- `Partial.TB.raw` is 15 arbitrary bytes and exists only to prove alignment
-  preflight before output creation.
+- `Partial.TB.raw` is 15 arbitrary bytes. It produces a fresh CSV with an
+  input-wide error for the incomplete formatter frame, even though no complete
+  formatter frame can be decoded.
+- `Tail.TB.raw` variants exercise all terminal lengths from 1 to 15 bytes,
+  inputs shorter than one frame, read-buffer boundaries, invalid initial ITM
+  data, missing SYNC, reserved source IDs, and a packet spanning the discarded
+  frame. Decoding always starts at raw offset zero and uses only complete
+  16-byte frames. The original RAW remains unchanged. The terminal bytes are
+  reported once as an unfiltered CSV/CLI error:
+  `Incomplete formatter frame at end of file; discarded bytes: <count>`.
+  Native decoder errors remain separate. Complete prefix events and
+  CTF output survive unless the decoder itself fails fatally.
 - `Mixed.TB.raw` is two frames containing clean ID-1 ITM software packets and
   two opaque ID-42 runs; it proves one compatibility warning, skipped-byte
   Info, and no guessed decoder or semantic payload for an unsupported ID.

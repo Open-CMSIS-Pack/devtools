@@ -17,6 +17,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 /** @brief Identifies whether a data-trace event represents a read or write. */
 enum class AccessType {
@@ -261,6 +262,12 @@ struct TraceIssueEvent {
 struct TraceDecodeAbort {
   std::uint64_t bytesProcessed = 0;
   TraceMessage reason;
+};
+
+/** @brief Retains an incomplete final formatter frame without assigning a route or clock. */
+struct TraceRawTail {
+  std::uint64_t rawOffset = 0;
+  std::vector<std::uint8_t> bytes;
 };
 
 /** @brief Identifies why formatter or initial ITM payload was skipped. */

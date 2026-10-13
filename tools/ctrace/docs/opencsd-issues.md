@@ -21,8 +21,9 @@ may show no failure, but checked standard-library implementations, sanitizers,
 or compiler optimizations can expose the undefined behavior as an assertion,
 crash, or other incorrect behavior.
 
-The pinned revision still contains this issue. A possible upstream fix is to
-use the vector data pointer, which is valid to pass with a zero size:
+The pinned revision still contains this issue. The ctrace build applies
+[`OpenCSD.patch`](../cmake/dependencies/OpenCSD.patch) to use the vector data
+pointer, which is valid to pass with a zero size:
 
 ```cpp
 outputRawPacketToMonitor(
@@ -32,8 +33,13 @@ outputRawPacketToMonitor(
     m_packet_data.data());
 ```
 
-Alternatively, OpenCSD can skip the call when `m_dump_unsynced_bytes` is zero.
-An upstream regression test should exercise sync recovery with an input block
-ending immediately after an eight-byte unsynchronized flush. Once OpenCSD
-contains and releases the fix, devtools can update the pinned submodule
-revision without carrying a local modification.
+The regression test
+`testOpenCsdItmSessionRecoversAfterUnsynchronizedBlockEndsAtFlushBoundary`
+exercises eight- and sixteen-byte unsynchronized input blocks followed by
+hardware sync and a software packet. With checked standard-library access,
+both this test and the malformed formatted-input integration test abort before
+the patch and pass afterward.
+
+The patch is applied idempotently without resetting the submodule or discarding
+unrelated local changes. Once OpenCSD releases the fix, update the pinned
+submodule revision and remove the local patch.

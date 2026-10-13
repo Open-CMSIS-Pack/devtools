@@ -8,7 +8,6 @@
 #include "TraceRunDiscovery.h"
 
 #include "DiagnosticMessages.h"
-#include "CoreSightFormatter.h"
 
 #include <algorithm>
 #include <cctype>
@@ -249,11 +248,6 @@ TraceRunInputDescriptor TraceRunDiscovery::resolveInput(TraceRunConfig config, c
   readable.exceptions(std::ios::badbit | std::ios::failbit);
   const auto endPosition = readable.tellg();
   const auto fileSize = static_cast<std::uintmax_t>(static_cast<std::streamoff>(endPosition));
-  if (format == TraceRunFormat::Formatted && fileSize % CoreSightFormatter::kMemoryAlignedFrameSize != 0U) {
-    throw std::runtime_error(
-        rawInputAlignmentMessage(CoreSightFormatter::kMemoryAlignedFrameSize, selected.path.string(), fileSize));
-  }
-
   readable.seekg(0U, std::ios::beg);
   readable.exceptions(std::ios::goodbit);
 

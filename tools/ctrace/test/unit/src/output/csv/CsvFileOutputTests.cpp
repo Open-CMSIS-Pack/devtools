@@ -143,6 +143,25 @@ TEST(CtraceUnitTests, testCsvFileOutputRetainsAllByteSkipReasonsOutsideSelection
   EXPECT_EQ(lines[6], ",7,itm,1,0x41,,,");
 }
 
+TEST(CtraceUnitTests, testCsvFileOutputRetainsRawTailOutsideSelection)
+{
+  const TemporaryTestPath temporaryPath("ctrace-csv-raw-tail-test.csv");
+  CsvFileOutput output(temporaryPath.path(), TraceSelection{{"itm"}, {7U}});
+  output.writeRawTail({0U, {0xffU}});
+  EXPECT_FALSE(std::filesystem::exists(temporaryPath.path()));
+  output.start();
+  output.writeEvent(onStream(softwarePacket(1U, 1U, 'A'), 7U));
+  output.writeEvent(onStream(softwarePacket(1U, 1U, 'B'), 1U));
+  output.writeRawTail({16U, {0x00U, 0xabU, 0xffU}});
+  output.stop();
+  output.writeRawTail({32U, {0xffU}});
+
+  const auto lines = readTestLines(temporaryPath.path());
+  ASSERT_EQ(lines.size(), 3U);
+  EXPECT_EQ(lines[1], ",7,itm,1,0x41,,,");
+  EXPECT_EQ(lines[2], ",,error,,,,,Incomplete formatter frame at end of file; discarded bytes: 3");
+}
+
 TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)
 {
   const TemporaryTestPath temporaryPath("ctrace-csv-test.csv");

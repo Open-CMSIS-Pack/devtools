@@ -44,19 +44,22 @@ TEST(CtraceUnitTests, testTraceOutputOwnsBackendTransaction)
 
   output.writeEvent(softwarePacket(1U));
   output.writeByteSkip({0U, 1U});
+  output.writeRawTail({0U, {0xffU}});
   output.stop();
   output.abort();
   output.start();
   output.writeEvent(softwarePacket(2U));
   output.writeByteSkip({16U, 5U});
+  output.writeRawTail({16U, {0xffU}});
   output.start();
   output.stop();
   output.stop();
   output.abort();
   output.writeEvent(softwarePacket(3U));
   output.writeByteSkip({32U, 2U});
+  output.writeRawTail({32U, {0xffU}});
 
-  EXPECT_EQ(calls, (std::vector<std::string>{"start", "write", "write-byte-skip", "abort", "start", "stop"}));
+  EXPECT_EQ(calls, (std::vector<std::string>{"start", "write", "write-byte-skip", "write-raw-tail", "abort", "start", "stop"}));
 }
 
 TEST(CtraceUnitTests, testTraceOutputCleansUpFailuresAfterActivation)
@@ -78,6 +81,11 @@ TEST(CtraceUnitTests, testTraceOutputCleansUpFailuresAfterActivation)
   skipWriteFailure.start();
   EXPECT_THROW(skipWriteFailure.writeByteSkip({0U, 1U}), std::runtime_error);
   EXPECT_TRUE(skipWriteFailure.aborted());
+
+  TestTraceOutput tailWriteFailure(TestTraceOutputFailure::RawTailWrite);
+  tailWriteFailure.start();
+  EXPECT_THROW(tailWriteFailure.writeRawTail({16U, {0xffU}}), std::runtime_error);
+  EXPECT_TRUE(tailWriteFailure.aborted());
 
   TestTraceOutput stopFailure(TestTraceOutputFailure::Stop);
   stopFailure.start();
@@ -258,6 +266,61 @@ TEST(CtraceUnitTests, testTraceOutputLifecycleIsolatesByteSkipWriteFailures)
   EXPECT_NE(lines[1].find("1 bytes skipped: no source ID"), std::string::npos);
   EXPECT_NE(lines[2].find("2 bytes skipped: no source ID"), std::string::npos);
   EXPECT_EQ(lines[3], ",,itm,1,0x41,,,");
+}
+
+TEST(CtraceUnitTests, testTraceOutputLifecycleIsolatesRawTailWriteFailures)
+{
+  const TemporaryTestPath temporaryPath("ctrace-output-lifecycle-raw-tail-test.csv");
+  std::vector<std::unique_ptr<TraceOutput>> outputs;
+  std::vector<std::string> failingCalls;
+  auto failing = std::make_unique<TestTraceOutput>(failingCalls);
+  failing->setFailure(TestTraceOutputFailure::RawTailWrite);
+  outputs.push_back(std::move(failing));
+  outputs.push_back(std::make_unique<CsvFileOutput>(temporaryPath.path()));
+  CollectingDiagnosticSink diagnostics;
+  TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
+
+  lifecycle.append(softwarePacket(1U, 1U, 'A'));
+  lifecycle.appendRawTailDiagnostic({16U, {0x00U, 0xffU}});
+  lifecycle.finish();
+  lifecycle.appendRawTailDiagnostic({32U, {0xffU}});
+
+  EXPECT_EQ(failingCalls, (std::vector<std::string>{"start", "write", "write-raw-tail", "abort"}));
+  ASSERT_EQ(diagnostics.events().size(), 1U);
+  EXPECT_EQ(diagnostics.failureCount(), 1U);
+  EXPECT_TRUE(diagnostics.containsContext("phase", "write"));
+  EXPECT_TRUE(diagnostics.containsMessage("intentional raw-tail write failure"));
+  const auto lines = readTestLines(temporaryPath.path());
+  ASSERT_EQ(lines.size(), 3U);
+  EXPECT_EQ(lines[1], ",,itm,1,0x41,,,");
+  EXPECT_EQ(lines[2], ",,error,,,,,Incomplete formatter frame at end of file; discarded bytes: 2");
+}
+
+TEST(CtraceUnitTests, testTraceOutputLifecycleKeepsCtfPrefixWhenOnlyFinalFrameIsIncomplete)
+{
+  const TemporaryTestPath temporaryPath("ctrace-output-lifecycle-raw-tail-ctf-test");
+  const auto& root = temporaryPath.createDirectory();
+  const auto ctfDirectory = root / "output.ctf";
+  const TraceRouteIdentity route{TraceRouteId{10U}, 7U};
+  CtfMetadataTopology topology{
+      {{CtfClockDomainId{1U}, "core_clock", CtfTestSupport::testUuid(1U), 1000000U, false}},
+      {{CtfStreamClassId{7U}, route, "core", CtfClockDomainId{1U}}},
+      {},
+  };
+  CollectingDiagnosticSink diagnostics;
+  std::vector<std::unique_ptr<TraceOutput>> outputs;
+  outputs.push_back(std::make_unique<CtfBundleOutput>(
+      CtfOutputConfig(ctfDirectory, {}, std::move(topology), {route}), &diagnostics));
+  TraceOutputLifecycle lifecycle(std::move(outputs), diagnostics);
+
+  lifecycle.append(onRoute(softwarePacket(1U, 1U, 'A'), route));
+  lifecycle.appendRawTailDiagnostic({16U, {0xffU}});
+  lifecycle.finish();
+
+  EXPECT_EQ(diagnostics.failureCount(), 0U);
+  EXPECT_TRUE(std::filesystem::is_regular_file(ctfDirectory / "metadata"));
+  EXPECT_TRUE(std::filesystem::is_regular_file(ctfDirectory / "stream_7"));
+  EXPECT_FALSE(std::filesystem::exists(ctfDirectory / "stream_0"));
 }
 
 TEST(CtraceUnitTests, testTraceOutputLifecycleDoesNotInventCtfStreamForSkippedBytes)

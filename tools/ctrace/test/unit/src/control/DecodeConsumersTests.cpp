@@ -118,6 +118,37 @@ TEST(CtraceUnitTests, testDecodeConsumersRetainsSkippedBytesAsNonFailingInfo)
   EXPECT_EQ(diagnostics.failureCount(), 0U);
 }
 
+TEST(CtraceUnitTests, testDecodeConsumersReportsRawTailAsAnInputWideError)
+{
+  std::vector<std::string> calls;
+  std::vector<std::unique_ptr<TraceOutput>> outputs;
+  outputs.push_back(std::make_unique<TestTraceOutput>(calls));
+  CollectingDiagnosticSink diagnostics;
+  DecodeConsumers consumers(std::move(outputs), diagnostics);
+
+  consumers.append(softwarePacket(1U, 1U, 'A'));
+  consumers.appendRawTailDiagnostic({0x100000000ULL, {0x00U, 0xffU}});
+  consumers.finishIssues();
+  consumers.finishOutputs();
+
+  EXPECT_EQ(calls, (std::vector<std::string>{"start", "write", "write-raw-tail", "stop"}));
+  EXPECT_EQ(consumers.eventCount(), 2U);
+  EXPECT_EQ(diagnostics.failureCount(), 1U);
+  ASSERT_EQ(diagnostics.events().size(), 1U);
+  const auto& diagnostic = diagnostics.events().front();
+  EXPECT_EQ(diagnostic.severity, DiagnosticSink::Severity::Error);
+  EXPECT_EQ(diagnostic.impact, DiagnosticSink::Impact::Failing);
+  EXPECT_EQ(diagnostic.visibility, DiagnosticSink::Visibility::Always);
+  EXPECT_EQ(diagnostic.message, "Incomplete formatter frame at end of file; discarded bytes: 2");
+  EXPECT_EQ(diagnostic.detailedMessage, diagnostic.message);
+  EXPECT_TRUE(diagnostic.context.empty());
+  ASSERT_TRUE(diagnostic.rawLocation.has_value());
+  EXPECT_EQ(diagnostic.rawLocation->kind, RawDiagnosticLocation::Kind::Exact);
+  EXPECT_EQ(diagnostic.rawLocation->offset, 0x100000000ULL);
+  EXPECT_EQ(diagnostic.rawLocation->endOffset, 0x100000002ULL);
+  EXPECT_FALSE(diagnostic.rawLocation->packetSize.has_value());
+}
+
 TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
 {
   CollectingDiagnosticSink unknownDiagnostics;

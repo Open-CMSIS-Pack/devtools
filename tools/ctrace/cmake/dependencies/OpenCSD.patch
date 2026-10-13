@@ -1,0 +1,12 @@
+diff --git a/decoder/source/itm/trc_pkt_proc_itm.cpp b/decoder/source/itm/trc_pkt_proc_itm.cpp
+--- a/decoder/source/itm/trc_pkt_proc_itm.cpp
++++ b/decoder/source/itm/trc_pkt_proc_itm.cpp
+@@ -625,7 +625,7 @@ ocsd_datapath_resp_t TrcPktProcItm::flushUnsyncedBytes()
+     ocsd_datapath_resp_t resp = OCSD_RESP_CONT;
+
+     // we need to dump unsynced bytes to raw monitor if in use, and send a not sync packet if this is the first time.
+-    outputRawPacketToMonitor(m_packet_index, &m_curr_packet, m_dump_unsynced_bytes, &m_packet_data[0]);
++    outputRawPacketToMonitor(m_packet_index, &m_curr_packet, m_dump_unsynced_bytes, m_packet_data.data());
+
+     if (!m_sent_notsync_packet)
+     {

@@ -156,6 +156,12 @@ TEST(CtraceUnitTests, testCsvRowMapperFormatsCompactIssuesWithoutTechnicalContex
   EXPECT_EQ(CsvRowMapper::row(atCycle(TraceEvent{GlobalTimestampTraceEvent{123U, false}}, 99U)), "123,,global_ts,,,,,");
 }
 
+TEST(CtraceUnitTests, testCsvRowMapperMapsRawTailWithoutInventingTimeOrRoute)
+{
+  EXPECT_EQ(CsvRowMapper::rawTailRow({16U, {0x00U, 0xabU, 0xffU}}),
+            ",,error,,,,,Incomplete formatter frame at end of file; discarded bytes: 3");
+}
+
 TEST(CtraceUnitTests, testCsvRowMapperMapsByteSkipReasonsWithoutInventingTimeOrRoute)
 {
   EXPECT_EQ(CsvRowMapper::byteSkipRow({0U, 1U}),
