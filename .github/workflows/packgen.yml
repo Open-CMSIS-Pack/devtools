@@ -66,7 +66,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -108,7 +108,7 @@ jobs:
           fi
 
       - name: Archive packgen
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: packgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/packgen/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}
@@ -137,31 +137,31 @@ jobs:
           cp -r tools/packgen/test/data/CMakeTestMultipleBuilds/ tools/packgen/distribution/doc/examples/
 
       - name: Download packgen linux-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: packgen-linux-amd64
           path: tools/packgen/distribution/bin/linux-amd64/
 
       - name: Download packgen linux arm64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: packgen-linux-arm64
           path: tools/packgen/distribution/bin/linux-arm64/
 
       - name: Download packgen macos-arm64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: packgen-darwin-arm64
           path: tools/packgen/distribution/bin/darwin-arm64/
 
       - name: Download packgen windows-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: packgen-windows-amd64
           path: tools/packgen/distribution/bin/windows-amd64/
 
       - name: Download packgen windows-arm64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: packgen-windows-arm64
           path: tools/packgen/distribution/bin/windows-arm64/
@@ -190,7 +190,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -215,7 +215,7 @@ jobs:
 
       - name: Archive unit tests results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unit_test_result_packgen-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/packgenunittests-*.xml
@@ -234,7 +234,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -269,7 +269,7 @@ jobs:
 
       - name: Archive unit tests results
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unit_test_result_packgen-linux-amd64
           path: ./build/test_reports/packgenunittests-*.xml
@@ -300,7 +300,7 @@ jobs:
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           files: ./build/tools/packgen/coverage_packgen.info
           disable_search: true
@@ -311,7 +311,7 @@ jobs:
           verbose: true
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-report-packgen
           path: |
@@ -328,12 +328,12 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
       - name: Event File
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Event File packgen
           path: ${{ github.event_path }}

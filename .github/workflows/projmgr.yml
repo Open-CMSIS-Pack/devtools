@@ -71,7 +71,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -112,7 +112,7 @@ jobs:
           fi
 
       - name: Archive projmgr
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/tools/projmgr/${{ matrix.target }}-${{ matrix.arch }}/Release/${{ matrix.binary }}
@@ -121,7 +121,7 @@ jobs:
 
       - name: Archive projmgr schemas
         if: matrix.arch == 'amd64' && matrix.target == 'linux'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: projmgr-schemas
           path: ./tools/projmgr/schemas
@@ -130,7 +130,7 @@ jobs:
 
       - name: Archive projmgr templates
         if: matrix.arch == 'amd64' && matrix.target == 'linux'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: projmgr-templates
           path: ./tools/projmgr/templates
@@ -149,7 +149,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -185,7 +185,7 @@ jobs:
 
       - name: Archive projmgr swig python libs
         if: always() && matrix.pyswig
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: projmgr-swig-python-${{ matrix.target }}-${{ matrix.arch }}
           path: |
@@ -196,7 +196,7 @@ jobs:
 
       - name: Archive projmgr swig go libs
         if: always() && matrix.goswig
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: projmgr-swig-go-${{ matrix.target }}-${{ matrix.arch }}
           path: |
@@ -224,61 +224,61 @@ jobs:
           cp tools/projmgr/docs/LICENSE.txt tools/projmgr/distribution/
 
       - name: Download projmgr schemas
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-schemas
           path: tools/projmgr/distribution/etc/
 
       - name: Download projmgr templates
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-templates
           path: tools/projmgr/distribution/etc/
 
       - name: Download projmgr linux-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-linux-amd64
           path: tools/projmgr/distribution/bin/linux-amd64/
 
       - name: Download projmgr linux-arm64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-linux-arm64
           path: tools/projmgr/distribution/bin/linux-arm64/
 
       - name: Download projmgr macos-arm64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-darwin-arm64
           path: tools/projmgr/distribution/bin/darwin-arm64/
 
       - name: Download projmgr windows-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-windows-amd64
           path: tools/projmgr/distribution/bin/windows-amd64/
 
       - name: Download projmgr windows-arm64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-windows-arm64
           path: tools/projmgr/distribution/bin/windows-arm64/
 
       - name: Download projmgr-swig-python linux-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-swig-python-linux-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/python/
 
       - name: Download projmgr-swig-python windows-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-swig-python-windows-amd64
           path: tools/projmgr/distribution/lib/windows-amd64/python/
 
       - name: Download projmgr-swig-go linux-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: projmgr-swig-go-linux-amd64
           path: tools/projmgr/distribution/lib/linux-amd64/go/
@@ -297,13 +297,13 @@ jobs:
           asset_name: projmgr.zip
 
       - name: Download test report windows-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: unit_test_result_projmgr-windows-amd64
           path: tools/testreport/windows-amd64/
 
       - name: Download test report linux-amd64
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: unit_test_result_projmgr-linux-amd64
           path: tools/testreport/linux-amd64/
@@ -322,7 +322,7 @@ jobs:
           asset_name: testreport.zip
 
       - name: Download coverage report
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: coverage-report-projmgr
           path: tools/coverage/
@@ -352,7 +352,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -377,7 +377,7 @@ jobs:
 
       - name: Archive unit tests results
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unittest-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/Testing/Temporary/LastTest.log
@@ -386,7 +386,7 @@ jobs:
 
       - name: Archive gtest report
         if: always() && (matrix.arch != 'arm64')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unit_test_result_projmgr-${{ matrix.target }}-${{ matrix.arch }}
           path: ./build/test_reports/projmgrunittests-*.xml
@@ -405,7 +405,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -440,7 +440,7 @@ jobs:
 
       - name: Archive test report
         if: (github.event_name == 'push')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unit_test_result_projmgr-linux-amd64
           path: ./build/test_reports/projmgrunittests-*.xml
@@ -471,7 +471,7 @@ jobs:
 
       - name: Upload Report to Codecov
         if: ${{ !github.event.repository.private }}
-        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           files: ./build/tools/projmgr/coverage_projmgr.info
           disable_search: true
@@ -482,7 +482,7 @@ jobs:
           verbose: true
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-report-projmgr
           path: |
@@ -499,12 +499,12 @@ jobs:
     steps:
       - name: Harden Runner
         if: ${{ !github.event.repository.private }}
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
       - name: Event File
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Event File projmgr
           path: ${{ github.event_path }}
