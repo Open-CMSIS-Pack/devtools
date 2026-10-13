@@ -128,7 +128,7 @@ public:
   template<uint32_t element, typename ...Args>
   void Generate(const std::string& text, Args&&... args)
   {
-    constexpr sfd::Index elementIndex  = (sfd::Index)  (element & sfd::INDEX_MASK   );
+    [[maybe_unused]] constexpr sfd::Index elementIndex = (sfd::Index)(element & sfd::INDEX_MASK);
     constexpr sfd::Options elementType = (sfd::Options)(element & sfd::OPTIONS_MASK );
     constexpr sfd::Special specialType = (sfd::Special)(element & sfd::SPECIAL_MASK );
 
