@@ -2857,7 +2857,7 @@ RteItem::ConditionResult ProjMgrWorker::ValidateContext(ContextItem& context) {
     validation.id = item->ConstructComponentID(true);
 
     for (const auto& aggregate : componentResult.GetComponentAggregates()) {
-      validation.aggregates.insert(aggregate->ConstructComponentID(true));
+      validation.aggregates.emplace(aggregate->ConstructComponentID(true), aggregate->GetDescription());
     }
 
     const auto& depResults = componentResult.GetResults();
@@ -2870,7 +2870,7 @@ RteItem::ConditionResult ProjMgrWorker::ValidateContext(ContextItem& context) {
       condition.result = conditionRes;
       condition.expression = item->GetDependencyExpressionID();
       for (const auto& aggregate : result.GetComponentAggregates()) {
-        condition.aggregates.insert(aggregate->ConstructComponentID(true));
+        condition.aggregates.emplace(aggregate->ConstructComponentID(true), aggregate->GetDescription());
       }
       validation.conditions.push_back(condition);
     }
@@ -4801,11 +4801,15 @@ bool ProjMgrWorker::ListTemplates(vector<string>& templates, const string& filte
   return true;
 }
 
-static string FormatAggregates(RteItem::ConditionResult result, const StrSet& aggregates, unsigned indent) {
+static string FormatAggregates(RteItem::ConditionResult result, const StrMap& aggregates, unsigned indent) {
   stringstream ss;
-  for(const auto& id : aggregates) {
+  for(const auto& [id, desc] : aggregates) {
     ss << endl << RteUtils::GetIndent(indent);
-    ss << "- component " <<  id << " - "  << RteDependencyResult::GetAggregateExplanationText(result);
+    auto explanation = RteDependencyResult::GetAggregateExplanationText(result, desc);
+    ss << "- component " << id;
+    if (!explanation.empty()) {
+      ss << " # " << explanation;
+    }
   }
   return ss.str();
 }
@@ -4822,7 +4826,7 @@ bool ProjMgrWorker::FormatValidationResults(set<string>& results, const ContextI
     ss << validation.id << " : " << RteDependencyResult::GetComponentExplanationText(validation.result);
 
     for(const auto& condition : validation.conditions) {
-      ss << "\n  failed '" << condition.expression << "' : " << RteDependencyResult::GetExpressionExplanationText(condition.result);
+      ss << "\n  " << condition.expression << " : " << RteDependencyResult::GetExpressionExplanationText(condition.result);
       ss << FormatAggregates(condition.result, condition.aggregates, 4);
     }
     ss << FormatAggregates(validation.result, validation.aggregates, 2); // API aggregates
