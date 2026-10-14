@@ -15,7 +15,7 @@
  * @param envp command line argument (not used)
  * @return 0: ok, 1: error
 */
-int main(int argc, const char* argv [], const char* envp [])
+int main(int argc, const char** argv, const char** envp)
 {
   PackChk packChk;
 
