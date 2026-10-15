@@ -220,7 +220,10 @@ bool HeaderData::CreateFieldPosMask(SvdField* field, PosMaskNames *posMaskNames)
   const auto  fieldName       = field->GetHierarchicalNameResulting();
   uint32_t firstBit           = (uint32_t)field->GetOffset();
   uint32_t bitWidth           = field->GetEffectiveBitWidth();
-  uint32_t bitMaxNum          = (uint32_t) ((((uint64_t)(1) << bitWidth) -1));
+  const auto bitMaxNum        = SvdUtils::CreateBitMask(bitWidth);
+  if(!SvdUtils::CreateBitMask(bitWidth, field->GetOffset())) {
+    return false;
+  }
 
   if(!alternateGroup.empty()) 
     m_gen->Generate<MAKE|MK_FIELD_POSMASK3  >("%s_%s", name.c_str(), firstBit, bitMaxNum, fieldName.c_str(), alternateGroup.c_str());

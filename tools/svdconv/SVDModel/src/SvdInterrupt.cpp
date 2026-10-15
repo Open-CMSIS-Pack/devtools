@@ -65,7 +65,7 @@ bool SvdInterrupt::CalculateDim()
       if(parent) {  
         const auto parentDim = parent->GetDimension();
         if(parentDim) {
-          CopyDim(this, parent);
+          if(!CopyDim(this, parent)) { return false; }
           dim = GetDimension();
           dim->SetDimIncrement(1);
         }
@@ -83,24 +83,36 @@ bool SvdInterrupt::CalculateDim()
     dim->ClearChildren();
   }
   
-  dim->CalculateDim();
+  if(!dim->CalculateDim()) { return false; }
 
   const auto& dimIndexList = dim->GetDimIndexList();
   uint32_t value = GetValue();
   uint32_t dimElementIndex = 0;
   string dimIndexText;
+  const auto increment = dim->GetDimIncrement();
+  const auto count = dimIndexList.size();
+  if(value == SvdItem::VALUE32_NOT_INIT ||
+     (count > 1 && increment > (uint64_t(UINT32_MAX - 1) - value) / (count - 1))) {
+    LogMsg("M250", NAME(GetName()), GetLineNumber());
+    Invalidate();
+    return false;
+  }
 
   for(const auto& dimIndex : dimIndexList) {
+    if(!dim->ReserveExpansion(1)) { return false; }
     const auto newIrq = new SvdInterrupt(dim);
     dim->AddItem(newIrq);
-    CopyChilds(this, newIrq);
+    if(!CopyChilds(this, newIrq)) { return false; }
 
     newIrq->CopyItem            (this);
+    if(HasExpansionError()) { return false; }
     newIrq->SetName             (dim->CreateName(dimIndex));
     newIrq->SetDescription      (dim->CreateDescription(dimIndex));
     newIrq->SetValue            (value);
     newIrq->SetDimElementIndex  (dimElementIndex++);
-    value += dim->GetDimIncrement();
+    if(dimElementIndex < dimIndexList.size()) {
+      value += increment;
+    }
   }
 
   string description = dim->CreateDescription("");

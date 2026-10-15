@@ -446,6 +446,16 @@ bool SvdUtils::ConvertNumber(const string &text, set<uint64_t> &numbers)
   return true;
 }
 
+uint64_t SvdUtils::CreateBitMask(uint32_t width, uint64_t offset)
+{
+  if(width == 0 || width > 64 || offset >= 64 || width > 64 - offset) {
+    return 0;
+  }
+
+  const auto mask = width == 64 ? UINT64_MAX : (uint64_t{1} << width) - 1;
+  return mask << offset;
+}
+
 bool SvdUtils::ConvertNumber(const string &text, uint32_t &number)
 {
   uint64_t num = 0;

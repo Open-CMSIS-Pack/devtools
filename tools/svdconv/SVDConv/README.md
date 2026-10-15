@@ -48,6 +48,13 @@ due to backward compatibility reasons. All newly developed/updated SVD files sho
 in the same directory as `svdconv.exe`. On Linux and macOS, SVDConv reports error M133 and
 returns exit code 2. The intermediate `.sfd` file may still be generated.
 Use `--generate=sfd` to generate SFD output on any supported platform.
+SFD/SFR output supports register and field ranges within 32 bits. Wider ranges report M226 before SFD file creation;
+SFR compilation is skipped when SFD generation fails. Header masks support valid ranges up to 64 bits.
+
+Dimension expansion has a cumulative limit of 100,000 generated indices and model copies per input file.
+Nested arrays, inherited content, and repeated expansion share this limit. Exceeding it reports M249 and stops
+processing that input before any output generator runs. This bounds expansion work, not the XML file size or total
+process memory. Invalid dimension index ranges and overflowing expansion addresses report M250.
 
 ## Return Codes
 
@@ -287,6 +294,8 @@ The following table shows the errors and warnings issued by svdconv.
 | M241 |  ERROR |  Parse Error: 'VALUE' invalid for Array generation |  Correct SVD.|
 | M242 |  WARNING |  'LEVEL' 'NAME' `<dimArrayIndex>` found, but no `<dim>` |  Correct SVD.|
 | M243 |  WARNING |  'LEVEL' 'NAME' `<dimArrayIndex>` found, but `<dim>` does not describe an array |  Correct SVD.|
+| M249 |  ERROR |  Dimension expansion exceeds the per-input limit of 'NUM' generated indices and model copies. |  Reduce the total expanded model size.|
+| M250 |  ERROR |  Dimension 'NAME' has an invalid or overflowing index/address range. |  Correct the dimension range or increment.|
 
 ### Data Check Errors
 

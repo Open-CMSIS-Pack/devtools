@@ -75,9 +75,12 @@ bool HeaderData::AddFields(SvdItem* container, FIELDMAPLIST& sortedFields)
     }
 
     const auto name = field->GetNameCalculated();
-    uint32_t offs = (uint32_t) field->GetOffset();
+    const auto offs = field->GetOffset();
     uint32_t width = (uint32_t) field->GetBitWidth();
-    uint32_t mask = ((1<<width)-1) << offs;
+    const auto mask = SvdUtils::CreateBitMask(width, offs);
+    if(!mask) {
+      continue;
+    }
 
     ONESTRUCT* oneStruct = nullptr;
     for(auto& oneStr : sortedFields) {
@@ -94,7 +97,7 @@ bool HeaderData::AddFields(SvdItem* container, FIELDMAPLIST& sortedFields)
     }
 
     oneStruct->mask |= mask;
-    oneStruct->fields[offs] = field;
+    oneStruct->fields[static_cast<uint32_t>(offs)] = field;
   }
 
   return true;

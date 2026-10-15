@@ -174,12 +174,19 @@ string SvdCExpression::CreateFieldExpression(SvdItem* item)
   }
 
   const auto regName = field->GetParentRegisterNameHierarchical();
-  const auto firstBit = (uint32_t)field->GetOffset();
+  const auto firstBit = field->GetOffset();
   const auto bitWidth = field->GetEffectiveBitWidth();
-  const auto bitMaxNum = (uint32_t) ((((uint64_t)(1) << bitWidth) -1));
+  const auto fieldMask = SvdUtils::CreateBitMask(bitWidth, firstBit);
+  if(!field->IsValid() || !fieldMask) {
+    return SvdUtils::EMPTY_STRING;
+  }
+  const auto bitMaxNum = SvdUtils::CreateBitMask(bitWidth);
 
   std::stringstream ss;
   ss << "0x" << std::hex << bitMaxNum;
+  if(fieldMask > UINT32_MAX) {
+    ss << "ULL";
+  }
 
   string expression;
   expression += "(";
