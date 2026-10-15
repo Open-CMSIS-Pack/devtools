@@ -22,6 +22,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -519,17 +520,18 @@ TEST_F(SvdBitWidthTest, HeaderRejectsInvalidShiftRangesWithoutPartialMacros) {
 
 TEST_F(SvdBitWidthTest, SfdRejectsUnsupportedExpressionReferenceOutsideDeviceChildren) {
   CreateOutputDirectory();
+  // The separate owner outlives the device's non-owning expression-reference map.
+  const auto reg = make_unique<SvdRegister>(nullptr);
   SvdDevice device(nullptr);
-  SvdRegister reg(&device);
-  reg.SetName("CTRL");
-  reg.SetBitWidth(64);
-  device.GetExpressionRegistersList()["CTRL"] = &reg;
+  reg->SetName("CTRL");
+  reg->SetBitWidth(64);
+  device.GetExpressionRegistersList()["CTRL"] = reg.get();
   SvdOptions options;
   FileHeaderInfo info;
   SfdData sfd(info, options);
   const auto output = m_outputDirectory / "device.sfd";
 
-  ASSERT_TRUE(reg.IsValid());
+  ASSERT_TRUE(reg->IsValid());
   ASSERT_TRUE(device.GetChildren().empty());
   EXPECT_FALSE(sfd.Create(&device, output.string()));
   EXPECT_TRUE(HasMessage("M226"));
