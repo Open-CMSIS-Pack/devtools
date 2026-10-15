@@ -271,7 +271,7 @@ TEST_F(SvdConvIntegTests, RejectedSfdDoesNotCompileStaleOutput) {
     ASSERT_TRUE(file.good());
   }
   {
-    ofstream file(output);
+    ofstream file(output, ios::binary);
     file << previousOutput;
     ASSERT_TRUE(file.good());
   }
