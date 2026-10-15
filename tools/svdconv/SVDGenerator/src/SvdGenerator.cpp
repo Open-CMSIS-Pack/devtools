@@ -110,11 +110,11 @@ bool SvdGenerator::SfdFile(SvdDevice *device, const string &path)
   SetFileHeader(fileHeaderInfo, device);
 
   const auto sfdData = new SfdData(fileHeaderInfo, m_options);
-  sfdData->Create(device, fileName);
+  const bool success = sfdData->Create(device, fileName);
 
   delete sfdData;
 
-  return true;
+  return success;
 }
 
 bool SvdGenerator::SfrFile(SvdDevice *device, const string &path)

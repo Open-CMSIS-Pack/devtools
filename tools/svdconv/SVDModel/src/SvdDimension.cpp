@@ -10,6 +10,8 @@
 #include "XMLTree.h"
 #include "ErrLog.h"
 
+#include <limits>
+
 using namespace std;
 
 map<SVD_LEVEL, list<string> > SvdDimension::m_allowedTagsDim;
@@ -180,7 +182,14 @@ bool SvdDimension::Construct(XMLTreeElement* xmlElement)
 
 bool SvdDimension::CalculateDimIndex()
 {
-  const auto lineNo = GetParent()->GetLineNumber();
+  const auto parent = GetParent();
+  const auto lineNo = parent ? parent->GetLineNumber() : GetLineNumber();
+  if(m_dim == 0 || m_dim == SvdItem::VALUE32_NOT_INIT) {
+    return false;
+  }
+  if(m_dim > MAX_EXPANSION_ITEMS) {
+    return ReserveExpansion(m_dim);
+  }
 
   if(m_dim == 1) {
     const auto& name = GetExpression()->GetName();
@@ -188,6 +197,8 @@ bool SvdDimension::CalculateDimIndex()
   }
 
   m_dimIndexList.clear();
+  m_from.clear();
+  m_to.clear();
 
   // Read the Value
   const auto& value = GetDimIndex();
@@ -201,7 +212,9 @@ bool SvdDimension::CalculateDimIndex()
       }
       m_to = value.substr(pos, value.length());
       SvdUtils::TrimWhitespace(m_to);
-      CalculateDimIndexFromTo();
+      if(!CalculateDimIndexFromTo()) {
+        return false;
+      }
     }
     else {
       string index = "";
@@ -211,6 +224,10 @@ bool SvdDimension::CalculateDimIndex()
         }
         if(val == ',') {
           if(!index.empty()) {
+            if(!ReserveExpansion(1)) {
+              m_dimIndexList.clear();
+              return false;
+            }
             m_dimIndexList.push_back(index);
           }
           index = "";
@@ -220,6 +237,10 @@ bool SvdDimension::CalculateDimIndex()
         }
       }
       if(!index.empty()) {
+        if(!ReserveExpansion(1)) {
+          m_dimIndexList.clear();
+          return false;
+        }
         m_dimIndexList.push_back(index);    // last one
       }
     }
@@ -246,7 +267,14 @@ bool SvdDimension::CalculateDimIndexFromTo()
     return true;
   }
 
-  int32_t numFrom=0, numTo=0;
+  if(m_dim == 0 || m_dim == SvdItem::VALUE32_NOT_INIT) {
+    return false;
+  }
+  if(m_dim > MAX_EXPANSION_ITEMS) {
+    return ReserveExpansion(m_dim);
+  }
+
+  uint32_t numFrom=0, numTo=0;
   bool numOk = true;
   if(!m_from.empty()) {
     if(!SvdUtils::ConvertNumber(m_from, numFrom)) {
@@ -271,14 +299,16 @@ bool SvdDimension::CalculateDimIndexFromTo()
   }
 
   if(numOk) {
-    int32_t len = numTo - numFrom +1;
-    if(len < 0 || (uint32_t)len != m_dim) {
+    const uint64_t len = uint64_t(numTo) - numFrom + 1;
+    if(numTo < numFrom || len != m_dim) {
+      return false;
+    }
+    if(!ReserveExpansion(m_dim)) {
       return false;
     }
 
-    for(int32_t i=numFrom; i<=numTo; i++) {
-      auto numStr = SvdUtils::CreateDecNum(i);
-      m_dimIndexList.push_back(numStr);
+    for(uint64_t i = 0; i < len; i++) {
+      m_dimIndexList.push_back(SvdUtils::CreateDecNum(uint64_t(numFrom) + i));
     }
   }
   else {
@@ -291,6 +321,9 @@ bool SvdDimension::CalculateDimIndexFromTo()
       return false;
     }
 
+    if(!ReserveExpansion(m_dim)) {
+      return false;
+    }
     char res[2] = { 0 };
     for(int32_t i=0; i<len; i++) {
       res[0] = char(from + i);
@@ -301,7 +334,7 @@ bool SvdDimension::CalculateDimIndexFromTo()
   return true;
 }
 
-int32_t SvdDimension::GetAddressBitsUnits()
+uint32_t SvdDimension::GetAddressBitsUnits()
 {
   if(m_addressBitsUnitsCache == SvdItem::VALUE32_NOT_INIT) {
     SvdItem* parent = this;
@@ -321,12 +354,12 @@ int32_t SvdDimension::GetAddressBitsUnits()
   return m_addressBitsUnitsCache;
 }
 
-int32_t SvdDimension::CalcAddressIncrement()
+uint64_t SvdDimension::CalcAddressIncrement()
 {
   const auto addressBitsUnits  = GetAddressBitsUnits();
   const auto dimIncrement      = GetDimIncrement();
 
-  return (addressBitsUnits * dimIncrement) / 8;
+  return (uint64_t(addressBitsUnits) * dimIncrement) / 8;
 }
 
 bool SvdDimension::CalculateDim()
@@ -334,10 +367,37 @@ bool SvdDimension::CalculateDim()
   CalculateNameFromExpression();
   CalculateDisplayNameFromExpression();
   CalculateDescriptionFromExpression();
-  CalculateDimIndex();
+  // Validate required attributes before using them to allocate index entries.
+  m_dimIndexList.clear();
   CheckItem();
+  const auto parent = GetParent();
+  if(!IsValid() || (parent && !parent->IsValid())) {
+    return false;
+  }
+  if(!CalculateDimIndex()) {
+    if(!HasExpansionError()) {
+      LogMsg("M250", NAME(parent ? parent->GetName() : GetName()), GetLineNumber());
+    }
+    Invalidate();
+    if(parent) { parent->Invalidate(); }
+    m_dimIndexList.clear();
+    return false;
+  }
+  CheckItem();
+  return IsValid() && (!parent || parent->IsValid());
+}
 
-  return true;
+bool SvdDimension::CheckExpansionRange(uint64_t start, uint64_t increment)
+{
+  const auto count = m_dimIndexList.size();
+  if(count > 1 && increment > (numeric_limits<uint64_t>::max() - start) / (count - 1)) {
+    const auto parent = GetParent();
+    LogMsg("M250", NAME(parent ? parent->GetName() : GetName()), GetLineNumber());
+    Invalidate();
+    if(parent) { parent->Invalidate(); }
+    return false;
+  }
+  return !HasExpansionError();
 }
 
 bool SvdDimension::CalculateNameFromExpression()

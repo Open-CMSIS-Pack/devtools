@@ -873,10 +873,16 @@ bool SfdData::CreateFieldItem(SvdField* field)
   const auto dispName   = field->GetDisplayNameCalculated();
   const auto fieldDescr = SvdUtils::CheckTextGeneric_SfrCC2(field->GetDescriptionCalculated());
   const auto  regName   = field->GetParentRegisterNameHierarchical();
-  const auto firstBit   = (uint32_t)field->GetOffset();
+  const auto offset     = field->GetOffset();
   const auto bitWidth   = (uint32_t)field->GetEffectiveBitWidth();
   const auto accessType = field->GetEffectiveAccess();
   const auto regAddress = (uint32_t)field->GetAbsoluteAddress();
+  const auto fieldMask  = SvdUtils::CreateBitMask(bitWidth, offset);
+  if(!fieldMask || fieldMask > UINT32_MAX) {
+    LogMsg("M226", MSG("SFD supports only bit ranges within 32 bits: '" + fieldName + "'"), field->GetLineNumber());
+    return false;
+  }
+  const auto firstBit = static_cast<uint32_t>(offset);
 
   uint32_t regBitWidth = 32;
   const auto parent = field->GetParent();
@@ -895,7 +901,7 @@ bool SfdData::CreateFieldItem(SvdField* field)
   valuesDescr = SvdUtils::CheckTextGeneric_SfrCC2(valuesDescr);
 
   uint32_t lastBit = firstBit + bitWidth -1;
-  uint32_t bitMaxNum = (uint32_t) (((uint64_t)(1) << bitWidth) -1);
+  const auto bitMaxNum = static_cast<uint32_t>(SvdUtils::CreateBitMask(bitWidth));
 
   CreateItemDescription(field, "Item");
   m_gen->Generate<ITEM|BEGIN>("SFDITEM_FIELD__%s", itemName.c_str());
@@ -1006,6 +1012,11 @@ bool SfdData::CreateEnumValues(const list<SvdEnumContainer*>& conts, SvdField* f
 
 bool SfdData::CreateEnumValueSet(SvdEnumContainer *cont, SvdField* field)
 {
+  const auto bitWidth = field->GetEffectiveBitWidth();
+  if(bitWidth == 0 || bitWidth > MAX_BITWIDTH_FOR_COMBO) {
+    return false;
+  }
+
   const auto& childs = cont->GetChildren();
   if(childs.empty()) {
     return true;
@@ -1028,8 +1039,7 @@ bool SfdData::CreateEnumValueSet(SvdEnumContainer *cont, SvdField* field)
     enumValues[val.u32] = enu;
   }
 
-  const auto bitWidth = field->GetEffectiveBitWidth();
-  const auto bitMaxNum = (uint32_t)((1UL << (uint64_t)bitWidth));
+  const auto bitMaxNum = uint32_t{1} << bitWidth;
 
   for(uint32_t bitNum=0; bitNum<bitMaxNum; bitNum++) {
     auto element = enumValues.find(bitNum);

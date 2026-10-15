@@ -804,9 +804,12 @@ void HeaderGenerator::MakeFieldPosMask2(const std::string& field, const std::str
   }
 }
 
-void HeaderGenerator::MakeFieldPosMask3(const std::string& pName, const std::string& field, uint32_t pos, uint32_t mask)
+void HeaderGenerator::MakeFieldPosMask3(const std::string& pName, const std::string& field, uint32_t pos, uint64_t mask)
 {
-  uint32_t calcMask;
+  if(pos >= 64 || mask > (UINT64_MAX >> pos)) {
+    LogMsg("M220", MSG("Field mask exceeds 64 bits"));
+    return;
+  }
 
   Generate<DIRECT>("#define %s%s ", pName, m_definePosStr);
   GenerateH_CRTabOffset(HEADER_POSMAK_VAL_OFFSET);
@@ -818,14 +821,19 @@ void HeaderGenerator::MakeFieldPosMask3(const std::string& pName, const std::str
   GenerateH_CRTabOffset(HEADER_POSMAK_COMMENTEND_OFFSET2);
   Generate<DOXY_COMMENT|END>("");
 
-  calcMask = mask << pos;
+  const auto calcMask = mask << pos;
   Generate<DIRECT>("#define %s%s ", pName, m_defineMaskStr);
   GenerateH_CRTabOffset(HEADER_POSMAK_VAL_OFFSET);
-  Generate<RAW>("(0x%xUL) ", calcMask);
+  if(calcMask <= UINT32_MAX) {
+    Generate<RAW>("(0x%xUL) ", static_cast<uint32_t>(calcMask));
+  }
+  else {
+    Generate<RAW>("(0x%llxULL) ", static_cast<unsigned long long>(calcMask));
+  }
 
   // Doxy Comment
   GenerateH_CRTabOffset(HEADER_POSMAK_COMMENT_OFFSET2);
-  Generate<DOXY_COMMENT_POSMSK|BEGIN>("%s (Bitfield-Mask: 0x%02x)", field, mask);
+  Generate<DOXY_COMMENT_POSMSK|BEGIN>("%s (Bitfield-Mask: 0x%02llx)", field, static_cast<unsigned long long>(mask));
   GenerateH_CRTabOffset(HEADER_POSMAK_COMMENTEND_OFFSET2);
   Generate<DOXY_COMMENT|END>("");
 

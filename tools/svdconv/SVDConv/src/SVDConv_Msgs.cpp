@@ -114,6 +114,9 @@ const MsgTable SvdConv::msgTable = {
   { "M247", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "C Expression: Error occurred during generation!"                             } },
   { "M248", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "C Expression: Referenced Object must be Register or Field!"                  } },
 
+  { "M249", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "Dimension expansion exceeds the per-input limit of %NUM% generated indices and model copies." } },
+  { "M250", { MsgLevel::LEVEL_ERROR,    CRLF_B,   "Dimension '%NAME%' has an invalid or overflowing index/address range."     } },
+
 
   // 300... Data Check Errors
   { "M300", { MsgLevel::LEVEL_ERROR,    CRLF_B,   ""                                                                            } },

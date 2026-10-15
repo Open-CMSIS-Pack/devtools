@@ -1,0 +1,465 @@
+/*
+ * Copyright (c) 2026 Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+#include "SvdItem.h"
+#include "SvdCExpression.h"
+#include "SvdDevice.h"
+#include "SvdEnum.h"
+#include "SvdField.h"
+#include "SvdRegister.h"
+#include "HeaderData.h"
+#include "SfdData.h"
+#include "ErrLog.h"
+#include "XMLTree.h"
+
+#include "gtest/gtest.h"
+#include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <sstream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+namespace {
+
+class BitWidthHeaderData : public HeaderData {
+public:
+  using HeaderData::HeaderData;
+  using HeaderData::AddFields;
+  using HeaderData::CreateFieldPosMask;
+};
+
+class BitWidthHeaderGenerator : public HeaderGenerator {
+public:
+  using HeaderGenerator::HeaderGenerator;
+  using HeaderGenerator::MakeFieldPosMask3;
+};
+
+class BitWidthSfdData : public SfdData {
+public:
+  using SfdData::SfdData;
+  using SfdData::CreateFieldItem;
+};
+
+class SvdBitWidthTest : public testing::Test, public IErrConsumer {
+protected:
+  void SetUp() override {
+    const auto log = ErrLog::Get();
+    m_previousConsumer = log->SetErrConsumer(this);
+    m_previousQuiet = log->IsQuietMode();
+    m_previousErrors = log->GetErrCnt();
+    m_previousWarnings = log->GetWarnCnt();
+    log->SetQuietMode(false);
+    log->ResetMsgCount();
+  }
+
+  void TearDown() override {
+    const auto log = ErrLog::Get();
+    log->SetErrConsumer(m_previousConsumer);
+    log->SetQuietMode(m_previousQuiet);
+    log->ResetMsgCount();
+    for(int i = 0; i < m_previousErrors; i++) {
+      log->IncErrCnt();
+    }
+    for(int i = 0; i < m_previousWarnings; i++) {
+      log->IncWarnCnt();
+    }
+    if(!m_outputDirectory.empty()) {
+      error_code ec;
+      filesystem::remove(m_outputDirectory / "masks.h", ec);
+      filesystem::remove(m_outputDirectory / "device.sfd", ec);
+      filesystem::remove(m_outputDirectory, ec);
+    }
+  }
+
+  bool Consume(const PdscMsg& msg, const string&) override {
+    m_messages.push_back(msg.GetMsgNum());
+    return true;
+  }
+
+  bool HasMessage(const string& id) const {
+    return find(m_messages.begin(), m_messages.end(), id) != m_messages.end();
+  }
+
+  void CreateOutputDirectory() {
+    const auto nonce = chrono::steady_clock::now().time_since_epoch().count();
+    for(unsigned i = 0; i < 100; i++) {
+      const auto candidate = filesystem::temp_directory_path() /
+        ("svdconv-bit-width-" + to_string(nonce) + "-" + to_string(i));
+      if(filesystem::create_directory(candidate)) {
+        m_outputDirectory = candidate;
+        break;
+      }
+    }
+    ASSERT_FALSE(m_outputDirectory.empty());
+  }
+
+  static string DefineValue(const string& text, const string& name) {
+    istringstream lines(text);
+    string line;
+    while(getline(lines, line)) {
+      istringstream tokens(line);
+      string directive, symbol, value;
+      if(tokens >> directive >> symbol >> value && directive == "#define" && symbol == name) {
+        return value;
+      }
+    }
+    return {};
+  }
+
+  static XMLTreeElement* ConfigureRegister(XMLTreeElement& element, const string& width) {
+    element.CreateElement("name", "CTRL");
+    element.CreateElement("description", "Control register.");
+    element.CreateElement("size", width);
+    element.CreateElement("addressOffset", "0");
+    element.CreateElement("access", "read-write");
+    return element.CreateElement("fields");
+  }
+
+  static XMLTreeElement* AddField(XMLTreeElement* fields, const string& name,
+                                  const string& offset, const string& width) {
+    const auto field = fields->CreateElement("field");
+    field->CreateElement("name", name);
+    field->CreateElement("description", "Control field.");
+    field->CreateElement("bitOffset", offset);
+    field->CreateElement("bitWidth", width);
+    return field;
+  }
+
+  static void AddEnum(XMLTreeElement* field, const string& value) {
+    const auto container = field->CreateElement("enumeratedValues");
+    const auto entry = container->CreateElement("enumeratedValue");
+    entry->CreateElement("name", "VALUE");
+    entry->CreateElement("description", "Control value.");
+    entry->CreateElement("value", value);
+  }
+
+  static SvdField* AddUncheckedField(SvdRegister& reg, uint64_t offset, int32_t width) {
+    auto fields = reg.GetFieldContainer();
+    if(!fields) {
+      fields = new SvdFieldContainer(&reg);
+      reg.AddItem(fields);
+    }
+    const auto field = new SvdField(fields);
+    fields->AddItem(field);
+    field->SetName("FIELD");
+    field->SetOffset(offset);
+    field->SetBitWidth(width);
+    field->SetAccess(SvdTypes::Access::READWRITE);
+    return field;
+  }
+
+  vector<string> m_messages;
+  filesystem::path m_outputDirectory;
+
+private:
+  IErrConsumer* m_previousConsumer = nullptr;
+  bool m_previousQuiet = false;
+  int m_previousErrors = 0;
+  int m_previousWarnings = 0;
+};
+
+TEST_F(SvdBitWidthTest, FullWidthFieldsPreserveEnumsAndAccessMasks) {
+  for(const auto width : {32, 64}) {
+    SCOPED_TRACE(width);
+    m_messages.clear();
+    XMLTreeElement element(nullptr, "register");
+    const auto fields = ConfigureRegister(element, to_string(width));
+    const auto fieldElement = AddField(fields, "FULL", "0", to_string(width));
+    fieldElement->CreateElement("access", "read-only");
+    AddEnum(fieldElement, "4294967295");
+    SvdRegister reg(nullptr);
+
+    ASSERT_TRUE(reg.Construct(&element));
+    ASSERT_TRUE(reg.IsValid());
+    ASSERT_NE(nullptr, reg.GetFieldContainer());
+    ASSERT_EQ(1U, reg.GetFieldContainer()->GetChildCount());
+    const auto field = dynamic_cast<SvdField*>(reg.GetFieldContainer()->GetChildren().front());
+    ASSERT_NE(nullptr, field);
+    EXPECT_TRUE(field->IsValid());
+    ASSERT_EQ(1U, field->GetEnumContainer().size());
+    const auto enumContainer = field->GetEnumContainer().front();
+    ASSERT_EQ(1U, enumContainer->GetChildCount());
+    EXPECT_TRUE(enumContainer->GetChildren().front()->IsValid());
+    EXPECT_FALSE(HasMessage("M335"));
+
+    const uint64_t expectedMask = width == 64 ? UINT64_MAX : UINT32_MAX;
+    EXPECT_EQ(expectedMask, reg.GetAccessMask());
+    EXPECT_EQ(expectedMask, reg.GetAccessMaskRead());
+    EXPECT_EQ(0U, reg.GetAccessMaskWrite());
+    EXPECT_EQ(SvdTypes::Access::READONLY, reg.GetAccessCalculated());
+  }
+}
+
+TEST_F(SvdBitWidthTest, UpperBoundaryFieldsProduceOnlyTheirOwnWriteBit) {
+  for(const auto width : {32, 64}) {
+    SCOPED_TRACE(width);
+    XMLTreeElement element(nullptr, "register");
+    const auto fields = ConfigureRegister(element, to_string(width));
+    AddField(fields, "TOP", to_string(width - 1), "1");
+    SvdRegister reg(nullptr);
+
+    ASSERT_TRUE(reg.Construct(&element));
+    ASSERT_TRUE(reg.IsValid());
+    ASSERT_NE(nullptr, reg.GetFieldContainer());
+    EXPECT_TRUE(reg.GetFieldContainer()->GetChildren().front()->IsValid());
+    EXPECT_EQ(uint64_t{1} << (width - 1), reg.GetAccessMaskWrite());
+    EXPECT_EQ(width == 64 ? UINT64_MAX : uint64_t{UINT32_MAX}, reg.GetAccessMaskRead());
+  }
+}
+
+TEST_F(SvdBitWidthTest, InvalidFieldWidthsAreRejectedBeforeEnumChecks) {
+  struct WidthCase {
+    const char* width;
+    const char* diagnostic;
+  };
+  for(const auto& input : {WidthCase{"0", "M310"}, WidthCase{"65", "M310"},
+                           WidthCase{"129", "M310"}, WidthCase{"4294967294", "M313"},
+                           WidthCase{"-2", "M310"}}) {
+    SCOPED_TRACE(input.width);
+    m_messages.clear();
+    XMLTreeElement element(nullptr, "register");
+    const auto fields = ConfigureRegister(element, "64");
+    AddEnum(AddField(fields, "BAD", "0", input.width), "1");
+    AddField(fields, "VALID", "1", "1");
+    SvdRegister reg(nullptr);
+
+    ASSERT_TRUE(reg.Construct(&element));
+    ASSERT_TRUE(reg.IsValid());
+    ASSERT_NE(nullptr, reg.GetFieldContainer());
+    ASSERT_EQ(2U, reg.GetFieldContainer()->GetChildCount());
+    EXPECT_FALSE(reg.GetFieldContainer()->GetChildren().front()->IsValid());
+    EXPECT_TRUE(reg.GetFieldContainer()->GetChildren().back()->IsValid());
+    EXPECT_TRUE(HasMessage(input.diagnostic));
+    EXPECT_FALSE(HasMessage("M335"));
+    EXPECT_EQ(2U, reg.GetAccessMaskWrite());
+  }
+}
+
+TEST_F(SvdBitWidthTest, FieldsOutsideOffsetAndRegisterBoundsAreRejected) {
+  struct RangeCase {
+    const char* registerWidth;
+    const char* offset;
+    const char* width;
+    const char* diagnostic;
+  };
+  for(const auto& input : {RangeCase{"64", "64", "1", "M309"},
+                           RangeCase{"64", "18446744073709551614", "1", "M309"},
+                           RangeCase{"64", "63", "2", "M324"},
+                           RangeCase{"32", "31", "2", "M324"}}) {
+    SCOPED_TRACE(input.offset);
+    SCOPED_TRACE(input.width);
+    m_messages.clear();
+    XMLTreeElement element(nullptr, "register");
+    const auto fields = ConfigureRegister(element, input.registerWidth);
+    AddEnum(AddField(fields, "BAD", input.offset, input.width), "1");
+    AddField(fields, "VALID", "0", "1");
+    SvdRegister reg(nullptr);
+
+    ASSERT_TRUE(reg.Construct(&element));
+    ASSERT_NE(nullptr, reg.GetFieldContainer());
+    ASSERT_EQ(2U, reg.GetFieldContainer()->GetChildCount());
+    EXPECT_FALSE(reg.GetFieldContainer()->GetChildren().front()->IsValid());
+    EXPECT_TRUE(reg.GetFieldContainer()->GetChildren().back()->IsValid());
+    EXPECT_TRUE(HasMessage(input.diagnostic));
+    EXPECT_FALSE(HasMessage("M335"));
+    EXPECT_EQ(1U, reg.GetAccessMaskWrite());
+  }
+}
+
+TEST_F(SvdBitWidthTest, AccessMaskSkipsInvalidAndUncheckedFieldRanges) {
+  SvdRegister reg(nullptr);
+  reg.SetBitWidth(64);
+  reg.SetAccess(SvdTypes::Access::READWRITE);
+  AddUncheckedField(reg, 63, 1);
+  AddUncheckedField(reg, 0, 0);
+  AddUncheckedField(reg, 0, 65);
+  AddUncheckedField(reg, 0, -2);
+  AddUncheckedField(reg, 64, 1);
+  AddUncheckedField(reg, UINT64_MAX - 1, 1);
+  AddUncheckedField(reg, 63, 2);
+  AddUncheckedField(reg, 0, 64)->Invalidate();
+
+  EXPECT_TRUE(reg.CalcAccessMask());
+  EXPECT_EQ(uint64_t{1} << 63, reg.GetAccessMaskWrite());
+  EXPECT_EQ(UINT64_MAX, reg.GetAccessMaskRead());
+  EXPECT_EQ(SvdTypes::Access::READWRITE, reg.GetAccessCalculated());
+}
+
+TEST_F(SvdBitWidthTest, InvalidRegisterWidthsAreRejectedBeforeMaskCalculations) {
+  for(const auto* width : {"0", "65", "4294967294"}) {
+    SCOPED_TRACE(width);
+    m_messages.clear();
+    XMLTreeElement element(nullptr, "register");
+    const auto fields = ConfigureRegister(element, width);
+    AddField(fields, "BIT", "0", "1");
+    SvdRegister reg(nullptr);
+
+    ASSERT_TRUE(reg.Construct(&element));
+    EXPECT_FALSE(reg.IsValid());
+    EXPECT_EQ(1, count(m_messages.begin(), m_messages.end(), "M302"));
+    EXPECT_EQ(0U, reg.GetAccessMask());
+    EXPECT_EQ(0U, reg.GetAccessMaskRead());
+    EXPECT_EQ(0U, reg.GetAccessMaskWrite());
+  }
+}
+
+TEST_F(SvdBitWidthTest, MaskQueriesHandleUncheckedInvalidRegisterWidths) {
+  for(const auto width : {0, 65, -2}) {
+    SCOPED_TRACE(width);
+    SvdRegister reg(nullptr);
+    reg.SetBitWidth(width);
+    reg.SetAccess(SvdTypes::Access::READWRITE);
+    AddUncheckedField(reg, 0, 1);
+
+    EXPECT_EQ(0U, reg.GetAccessMask());
+    EXPECT_FALSE(reg.CalcAccessMask());
+    EXPECT_EQ(0U, reg.GetAccessMaskRead());
+    EXPECT_EQ(0U, reg.GetAccessMaskWrite());
+    EXPECT_EQ(SvdTypes::Access::READWRITE, reg.GetAccessCalculated());
+  }
+}
+
+TEST_F(SvdBitWidthTest, EnumValuesAboveTheFieldWidthRemainInvalid) {
+  XMLTreeElement element(nullptr, "register");
+  const auto fields = ConfigureRegister(element, "32");
+  AddEnum(AddField(fields, "VALUE", "0", "31"), "2147483648");
+  SvdRegister reg(nullptr);
+
+  ASSERT_TRUE(reg.Construct(&element));
+  ASSERT_NE(nullptr, reg.GetFieldContainer());
+  const auto field = dynamic_cast<SvdField*>(reg.GetFieldContainer()->GetChildren().front());
+  ASSERT_NE(nullptr, field);
+  ASSERT_EQ(1U, field->GetEnumContainer().size());
+  const auto enumContainer = field->GetEnumContainer().front();
+  ASSERT_EQ(1U, enumContainer->GetChildCount());
+  EXPECT_FALSE(enumContainer->GetChildren().front()->IsValid());
+  EXPECT_TRUE(HasMessage("M335"));
+}
+
+TEST_F(SvdBitWidthTest, FullWidthRegisterWithoutFieldsPreservesAllAccessBits) {
+  SvdRegister reg(nullptr);
+  reg.SetBitWidth(64);
+  EXPECT_EQ(UINT64_MAX, reg.GetAccessMaskRead());
+  EXPECT_EQ(UINT64_MAX, reg.GetAccessMaskWrite());
+}
+
+TEST_F(SvdBitWidthTest, HeaderFieldGroupsDetectFullWidthAndUpperBitOverlaps) {
+  SvdOptions options;
+  FileHeaderInfo info;
+  BitWidthHeaderData header(info, options);
+  for(const auto width : {32, 64}) {
+    SCOPED_TRACE(width);
+    SvdRegister reg(nullptr);
+    reg.SetBitWidth(width);
+    const auto full = AddUncheckedField(reg, 0, width);
+    const auto upper = AddUncheckedField(reg, width - 1, 1);
+    FIELDMAPLIST groups;
+    ASSERT_TRUE(header.AddFields(reg.GetFieldContainer(), groups));
+    ASSERT_EQ(2U, groups.size());
+    EXPECT_EQ(width == 64 ? UINT64_MAX : uint64_t{UINT32_MAX}, groups.front().mask);
+    EXPECT_EQ(full, groups.front().fields.at(0));
+    EXPECT_EQ(uint64_t{1} << (width - 1), groups.back().mask);
+    EXPECT_EQ(upper, groups.back().fields.at(width - 1));
+  }
+}
+
+TEST_F(SvdBitWidthTest, HeaderMasksPreserve32BitTextAndRepresent64BitBoundaries) {
+  CreateOutputDirectory();
+  FileIo output;
+  output.SetFileName((m_outputDirectory / "masks.h").string());
+  BitWidthHeaderGenerator generator(&output);
+  generator.MakeFieldPosMask3("FULL32", "Full 32-bit field", 0, UINT32_MAX);
+  generator.MakeFieldPosMask3("TOP32", "Top 32-bit field", 31, 1);
+  generator.MakeFieldPosMask3("FULL64", "Full 64-bit field", 0, UINT64_MAX);
+  generator.MakeFieldPosMask3("TOP64", "Top 64-bit field", 63, 1);
+  ASSERT_TRUE(output.Flush());
+  ifstream input(m_outputDirectory / "masks.h");
+  ASSERT_TRUE(input.is_open());
+  const string text{istreambuf_iterator<char>(input), istreambuf_iterator<char>()};
+  EXPECT_EQ("(0xffffffffUL)", DefineValue(text, "FULL32_Msk"));
+  EXPECT_EQ("(0x80000000UL)", DefineValue(text, "TOP32_Msk"));
+  EXPECT_EQ("(0xffffffffffffffffULL)", DefineValue(text, "FULL64_Msk"));
+  EXPECT_EQ("(0x8000000000000000ULL)", DefineValue(text, "TOP64_Msk"));
+
+  SvdOptions options;
+  FileHeaderInfo info;
+  BitWidthHeaderData header(info, options);
+  SvdRegister reg(nullptr);
+  reg.SetBitWidth(64);
+  const auto full = AddUncheckedField(reg, 0, 64);
+  PosMaskNames names;
+  EXPECT_TRUE(header.CreateFieldPosMask(full, &names));
+  EXPECT_FALSE(HasMessage("M220"));
+  EXPECT_FALSE(header.CreateFieldPosMask(AddUncheckedField(reg, 63, 2), &names));
+}
+
+TEST_F(SvdBitWidthTest, FieldExpressionsUse64BitLiteralsOnlyWhenNeeded) {
+  SvdRegister reg(nullptr);
+  reg.SetName("CTRL");
+  reg.SetBitWidth(64);
+  SvdCExpression expression;
+  EXPECT_EQ("(CTRL & (0xffffffff << 0))", expression.CreateFieldExpression(AddUncheckedField(reg, 0, 32)));
+  EXPECT_EQ("(CTRL & (0xffffffffffffffffULL << 0))", expression.CreateFieldExpression(AddUncheckedField(reg, 0, 64)));
+  EXPECT_EQ("(CTRL & (0x1ULL << 63))", expression.CreateFieldExpression(AddUncheckedField(reg, 63, 1)));
+  EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 64, 1)).empty());
+  EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 0, 65)).empty());
+  EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 0, 0)).empty());
+}
+
+TEST_F(SvdBitWidthTest, SfdRejectsUnsupported64BitRegisterBeforeCreatingOutput) {
+  CreateOutputDirectory();
+  SvdDevice device(nullptr);
+  const auto reg = new SvdRegister(&device);
+  device.AddItem(reg);
+  reg->SetName("CTRL");
+  reg->SetBitWidth(64);
+  SvdOptions options;
+  FileHeaderInfo info;
+  SfdData sfd(info, options);
+  const auto output = m_outputDirectory / "device.sfd";
+  EXPECT_FALSE(sfd.Create(&device, output.string()));
+  EXPECT_TRUE(HasMessage("M226"));
+  EXPECT_FALSE(filesystem::exists(output));
+}
+
+TEST_F(SvdBitWidthTest, SfdFieldMasksAccept32BitsAndRejectWiderRanges) {
+  SvdOptions options;
+  FileHeaderInfo info;
+  BitWidthSfdData sfd(info, options);
+  SvdRegister reg(nullptr);
+  reg.SetBitWidth(32);
+  EXPECT_TRUE(sfd.CreateFieldItem(AddUncheckedField(reg, 0, 32)));
+  EXPECT_TRUE(sfd.CreateFieldItem(AddUncheckedField(reg, 31, 1)));
+  EXPECT_FALSE(HasMessage("M226"));
+  EXPECT_FALSE(sfd.CreateFieldItem(AddUncheckedField(reg, 0, 64)));
+  EXPECT_FALSE(sfd.CreateFieldItem(AddUncheckedField(reg, 32, 1)));
+  EXPECT_TRUE(HasMessage("M226"));
+}
+
+TEST_F(SvdBitWidthTest, SfdRejectsInvalidExpressionReferencesBeforeCreatingOutput) {
+  CreateOutputDirectory();
+  SvdDevice device(nullptr);
+  const auto reg = new SvdRegister(&device);
+  device.AddItem(reg);
+  reg->SetName("CTRL");
+  reg->SetBitWidth(1024);
+  reg->Invalidate();
+  device.GetExpressionRegistersList()["CTRL"] = reg;
+  SvdOptions options;
+  FileHeaderInfo info;
+  SfdData sfd(info, options);
+  const auto output = m_outputDirectory / "device.sfd";
+  EXPECT_FALSE(sfd.Create(&device, output.string()));
+  EXPECT_TRUE(HasMessage("M226"));
+  EXPECT_FALSE(filesystem::exists(output));
+}
+
+} // namespace
