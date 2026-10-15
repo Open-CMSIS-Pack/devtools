@@ -6,6 +6,7 @@
 #include "SvdItem.h"
 #include "SvdCExpression.h"
 #include "SvdDevice.h"
+#include "SvdDimension.h"
 #include "SvdEnum.h"
 #include "SvdField.h"
 #include "SvdRegister.h"
@@ -349,6 +350,19 @@ TEST_F(SvdBitWidthTest, FullWidthRegisterWithoutFieldsPreservesAllAccessBits) {
   reg.SetBitWidth(64);
   EXPECT_EQ(UINT64_MAX, reg.GetAccessMaskRead());
   EXPECT_EQ(UINT64_MAX, reg.GetAccessMaskWrite());
+}
+
+TEST_F(SvdBitWidthTest, FieldValidationHandlesMissingRegisterAncestors) {
+  SvdFieldContainer fields(nullptr);
+  SvdDimension dimension(nullptr);
+  for(SvdItem* parent : {static_cast<SvdItem*>(&fields), static_cast<SvdItem*>(&dimension)}) {
+    SvdField field(parent);
+    field.SetName("BIT");
+    field.SetOffset(0);
+    field.SetBitWidth(1);
+    EXPECT_TRUE(field.CheckItem());
+    EXPECT_TRUE(field.IsValid());
+  }
 }
 
 TEST_F(SvdBitWidthTest, HeaderFieldGroupsDetectFullWidthAndUpperBitOverlaps) {

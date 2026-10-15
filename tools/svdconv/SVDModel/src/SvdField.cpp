@@ -530,7 +530,7 @@ bool SvdField::CheckItem()
         parent = parent->GetParent();
       }
     }
-    const auto reg = dynamic_cast<SvdRegister*>(parent->GetParent());
+    const auto reg = parent ? dynamic_cast<SvdRegister*>(parent->GetParent()) : nullptr;
     if(reg) {
       const auto regWidth = reg->GetEffectiveBitWidth();
       const auto l = reg->GetLineNumber();
@@ -539,13 +539,12 @@ bool SvdField::CheckItem()
         Invalidate();
         return true;
       }
-    }
+      const auto regAccess    = reg->GetEffectiveAccess();
+      const auto fieldAccess  = GetEffectiveAccess();
 
-    const auto regAccess    = reg->GetEffectiveAccess();
-    const auto fieldAccess  = GetEffectiveAccess();
-
-    if(!SvdUtils::IsMatchAccess(fieldAccess, regAccess)) {
-      LogMsg("M367", lineNo);
+      if(!SvdUtils::IsMatchAccess(fieldAccess, regAccess)) {
+        LogMsg("M367", lineNo);
+      }
     }
   }
 
