@@ -47,6 +47,7 @@ class BitWidthSfdData : public SfdData {
 public:
   using SfdData::SfdData;
   using SfdData::CreateFieldItem;
+  using SfdData::CreateEnumValueSet;
 };
 
 class SvdBitWidthTest : public testing::Test, public IErrConsumer {
@@ -474,6 +475,121 @@ TEST_F(SvdBitWidthTest, SfdRejectsInvalidExpressionReferencesBeforeCreatingOutpu
   EXPECT_FALSE(sfd.Create(&device, output.string()));
   EXPECT_TRUE(HasMessage("M226"));
   EXPECT_FALSE(filesystem::exists(output));
+}
+
+TEST_F(SvdBitWidthTest, HeaderFieldGroupsSkipUncheckedInvalidRanges) {
+  SvdOptions options;
+  FileHeaderInfo info;
+  BitWidthHeaderData header(info, options);
+  SvdRegister reg(nullptr);
+  reg.SetBitWidth(64);
+  AddUncheckedField(reg, 0, 0);
+  AddUncheckedField(reg, 0, 65);
+  AddUncheckedField(reg, 64, 1);
+  AddUncheckedField(reg, 63, 2);
+  const auto upper = AddUncheckedField(reg, 63, 1);
+
+  FIELDMAPLIST groups;
+  ASSERT_TRUE(header.AddFields(reg.GetFieldContainer(), groups));
+  ASSERT_EQ(1U, groups.size());
+  EXPECT_EQ(uint64_t{1} << 63, groups.front().mask);
+  ASSERT_EQ(1U, groups.front().fields.size());
+  EXPECT_EQ(upper, groups.front().fields.at(63));
+}
+
+TEST_F(SvdBitWidthTest, HeaderRejectsInvalidShiftRangesWithoutPartialMacros) {
+  CreateOutputDirectory();
+  FileIo output;
+  output.SetFileName((m_outputDirectory / "masks.h").string());
+  BitWidthHeaderGenerator generator(&output);
+  generator.MakeFieldPosMask3("INVALID_POSITION", "Position outside register", 64, 1);
+  generator.MakeFieldPosMask3("INVALID_MASK", "Mask crosses register boundary", 63, 3);
+  EXPECT_EQ(2, count(m_messages.begin(), m_messages.end(), "M220"));
+  generator.MakeFieldPosMask3("VALID", "Top 64-bit field", 63, 1);
+  ASSERT_TRUE(output.Flush());
+
+  ifstream input(m_outputDirectory / "masks.h");
+  ASSERT_TRUE(input.is_open());
+  const string text{istreambuf_iterator<char>(input), istreambuf_iterator<char>()};
+  EXPECT_EQ(string::npos, text.find("INVALID_POSITION"));
+  EXPECT_EQ(string::npos, text.find("INVALID_MASK"));
+  EXPECT_EQ("(63UL)", DefineValue(text, "VALID_Pos"));
+  EXPECT_EQ("(0x8000000000000000ULL)", DefineValue(text, "VALID_Msk"));
+}
+
+TEST_F(SvdBitWidthTest, SfdRejectsUnsupportedExpressionReferenceOutsideDeviceChildren) {
+  CreateOutputDirectory();
+  SvdDevice device(nullptr);
+  SvdRegister reg(&device);
+  reg.SetName("CTRL");
+  reg.SetBitWidth(64);
+  device.GetExpressionRegistersList()["CTRL"] = &reg;
+  SvdOptions options;
+  FileHeaderInfo info;
+  SfdData sfd(info, options);
+  const auto output = m_outputDirectory / "device.sfd";
+
+  ASSERT_TRUE(reg.IsValid());
+  ASSERT_TRUE(device.GetChildren().empty());
+  EXPECT_FALSE(sfd.Create(&device, output.string()));
+  EXPECT_TRUE(HasMessage("M226"));
+  EXPECT_FALSE(filesystem::exists(output));
+}
+
+TEST_F(SvdBitWidthTest, SfdEnumSetsRejectWidthsOutsideComboRange) {
+  SvdOptions options;
+  FileHeaderInfo info;
+  BitWidthSfdData sfd(info, options);
+  SvdRegister reg(nullptr);
+  reg.SetBitWidth(64);
+  const auto field = AddUncheckedField(reg, 0, 6);
+  SvdEnumContainer values(field);
+  const auto entry = new SvdEnum(&values);
+  values.AddItem(entry);
+  entry->SetName("LAST");
+  entry->SetValue(63);
+  EXPECT_TRUE(sfd.CreateEnumValueSet(&values, field));
+
+  for(const auto width : {0, 7, 64}) {
+    SCOPED_TRACE(width);
+    field->SetBitWidth(width);
+    EXPECT_FALSE(sfd.CreateEnumValueSet(&values, field));
+  }
+  EXPECT_TRUE(entry->IsValid());
+  EXPECT_EQ(63U, entry->GetValue().u32);
+}
+
+TEST_F(SvdBitWidthTest, FullWidthFieldsStillReportIncompatibleRegisterAccess) {
+  for(const auto width : {32, 64}) {
+    SCOPED_TRACE(width);
+    m_messages.clear();
+    SvdRegister reg(nullptr);
+    reg.SetName("CTRL");
+    reg.SetBitWidth(width);
+    reg.SetAccess(SvdTypes::Access::READONLY);
+    const auto field = AddUncheckedField(reg, 0, width);
+
+    EXPECT_TRUE(field->CheckItem());
+    EXPECT_TRUE(field->IsValid());
+    EXPECT_TRUE(HasMessage("M367"));
+    EXPECT_EQ(SvdTypes::Access::READWRITE, field->GetAccess());
+  }
+}
+
+TEST_F(SvdBitWidthTest, RegisterSkipsRejectedRangesBeforeCheckingSiblingConflicts) {
+  SvdRegister reg(nullptr);
+  reg.SetName("CTRL");
+  reg.SetBitWidth(64);
+  const auto invalid = AddUncheckedField(reg, 63, 2);
+  const auto valid = AddUncheckedField(reg, 63, 1);
+
+  EXPECT_TRUE(reg.CheckFields(reg.GetFieldContainer(), 64, reg.GetName()));
+  EXPECT_FALSE(invalid->IsValid());
+  EXPECT_TRUE(valid->IsValid());
+  EXPECT_EQ(1, count(m_messages.begin(), m_messages.end(), "M345"));
+  EXPECT_FALSE(HasMessage("M336"));
+  EXPECT_FALSE(HasMessage("M338"));
+  EXPECT_EQ(uint64_t{1} << 63, reg.GetAccessMaskWrite());
 }
 
 } // namespace

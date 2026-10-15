@@ -5,8 +5,10 @@
  */
 #include "SvdItem.h"
 #include "SvdCluster.h"
+#include "SvdDerivedFrom.h"
 #include "SvdDevice.h"
 #include "SvdDimension.h"
+#include "SvdField.h"
 #include "SvdInterrupt.h"
 #include "SvdPeripheral.h"
 #include "SvdRegister.h"
@@ -112,6 +114,139 @@ TEST_F(SvdDimensionBoundsTest, OversizedExplicitListIsStoppedBeforeExpansion) {
   EXPECT_TRUE(dim->GetDimIndexList().empty());
   EXPECT_TRUE(dim->GetChildren().empty());
   EXPECT_EQ(1, count(m_messages.begin(), m_messages.end(), "M249"));
+}
+
+TEST_F(SvdDimensionBoundsTest, FinalExplicitIndexCannotExceedTheSharedBudget) {
+  SvdRegister reg(nullptr);
+  ASSERT_TRUE(reg.ReserveExpansion(SvdItem::MAX_EXPANSION_ITEMS - 1));
+  const auto dim = Dimension(reg, 2, 4, "A,B");
+
+  EXPECT_FALSE(reg.CalculateDim());
+  EXPECT_TRUE(reg.HasExpansionError());
+  EXPECT_TRUE(dim->GetDimIndexList().empty());
+  EXPECT_TRUE(dim->GetChildren().empty());
+  EXPECT_EQ(1, count(m_messages.begin(), m_messages.end(), "M249"));
+}
+
+TEST_F(SvdDimensionBoundsTest, DirectRangeCalculationRejectsInvalidCountsBeforeAllocation) {
+  for(const uint32_t count : {0U, UINT32_MAX, uint32_t(SvdItem::MAX_EXPANSION_ITEMS + 1)}) {
+    SCOPED_TRACE(count);
+    SvdRegister reg(nullptr);
+    const auto dim = Dimension(reg, count);
+
+    EXPECT_FALSE(dim->CalculateDimIndexFromTo());
+    EXPECT_TRUE(dim->GetDimIndexList().empty());
+    EXPECT_EQ(count == SvdItem::MAX_EXPANSION_ITEMS + 1, reg.HasExpansionError());
+  }
+}
+
+TEST_F(SvdDimensionBoundsTest, AlphabeticRangeIsReservedBeforeAnyIndexIsAdded) {
+  for(const size_t remaining : {size_t{1}, size_t{2}}) {
+    SCOPED_TRACE(remaining);
+    SvdRegister reg(nullptr);
+    ASSERT_TRUE(reg.ReserveExpansion(SvdItem::MAX_EXPANSION_ITEMS - remaining));
+    const auto dim = Dimension(reg, 2, 4, "A-B");
+
+    EXPECT_EQ(remaining == 2, dim->CalculateDim());
+    EXPECT_EQ(remaining == 1, reg.HasExpansionError());
+    if(remaining == 2) {
+      ASSERT_EQ(2U, dim->GetDimIndexList().size());
+      EXPECT_EQ("A", dim->GetDimIndexList().front());
+      EXPECT_EQ("B", dim->GetDimIndexList().back());
+    }
+    else {
+      EXPECT_TRUE(dim->GetDimIndexList().empty());
+    }
+  }
+}
+
+TEST_F(SvdDimensionBoundsTest, ExhaustedBudgetRemainsStickyAcrossDescendants) {
+  SvdItem root(nullptr);
+  SvdRegister reg(&root);
+  ASSERT_TRUE(root.ReserveExpansion(SvdItem::MAX_EXPANSION_ITEMS));
+  EXPECT_FALSE(reg.ReserveExpansion(1));
+  EXPECT_FALSE(root.ReserveExpansion(0));
+  EXPECT_FALSE(reg.ReserveExpansion(1));
+  EXPECT_TRUE(root.HasExpansionError());
+  EXPECT_TRUE(reg.HasExpansionError());
+  EXPECT_EQ(1, count(m_messages.begin(), m_messages.end(), "M249"));
+}
+
+TEST_F(SvdDimensionBoundsTest, InheritedMetadataMustFitTheDestinationBudget) {
+  SvdItem source(nullptr);
+  Dimension(source, 2);
+  source.SetDerivedFrom(new SvdDerivedFrom(&source));
+
+  for(const size_t remaining : {size_t{0}, size_t{1}, size_t{2}}) {
+    SCOPED_TRACE(remaining);
+    SvdItem target(nullptr);
+    ASSERT_TRUE(target.ReserveExpansion(SvdItem::MAX_EXPANSION_ITEMS - remaining));
+
+    EXPECT_EQ(remaining == 2, target.CopyItem(&source));
+    EXPECT_EQ(remaining < 2, target.HasExpansionError());
+    if(remaining > 0) {
+      ASSERT_NE(nullptr, target.GetDerivedFrom());
+      EXPECT_EQ(&source, target.GetDerivedFrom()->GetDerivedFromItem());
+    }
+    else {
+      EXPECT_EQ(nullptr, target.GetDerivedFrom());
+    }
+    if(remaining == 2) {
+      ASSERT_NE(nullptr, target.GetDimension());
+      EXPECT_EQ(2U, target.GetDimension()->GetDim());
+      EXPECT_EQ(&source, target.GetCopiedFrom());
+    }
+    else {
+      EXPECT_EQ(nullptr, target.GetDimension());
+      EXPECT_EQ(nullptr, target.GetCopiedFrom());
+    }
+  }
+}
+
+TEST_F(SvdDimensionBoundsTest, CopiedPeripheralDescendantsShareOneBudget) {
+  SvdPeripheralContainer source(nullptr);
+  const auto peripheral = new SvdPeripheral(&source);
+  source.AddItem(peripheral);
+  peripheral->SetName("PERIPHERAL");
+  peripheral->SetAddress(0x40000000);
+  const auto registers = new SvdRegisterContainer(peripheral);
+  peripheral->AddItem(registers);
+  const auto cluster = new SvdCluster(registers);
+  registers->AddItem(cluster);
+  cluster->SetName("GROUP");
+  cluster->SetOffset(0);
+  const auto reg = new SvdRegister(cluster);
+  cluster->AddItem(reg);
+  reg->SetName("DATA");
+  reg->SetOffset(4);
+  reg->SetBitWidth(32);
+
+  for(const size_t remaining : {size_t{3}, size_t{4}}) {
+    SCOPED_TRACE(remaining);
+    SvdPeripheralContainer target(nullptr);
+    ASSERT_TRUE(target.ReserveExpansion(SvdItem::MAX_EXPANSION_ITEMS - remaining));
+
+    EXPECT_EQ(remaining == 4, target.CopyChilds(&source, &target));
+    EXPECT_EQ(remaining == 3, target.HasExpansionError());
+    ASSERT_EQ(1U, target.GetChildCount());
+    const auto copiedPeripheral = target.GetChildren().front();
+    ASSERT_EQ(1U, copiedPeripheral->GetChildCount());
+    const auto copiedRegisters = copiedPeripheral->GetChildren().front();
+    ASSERT_EQ(1U, copiedRegisters->GetChildCount());
+    const auto copiedCluster = copiedRegisters->GetChildren().front();
+    if(remaining == 4) {
+      ASSERT_EQ(1U, copiedCluster->GetChildCount());
+      const auto copiedRegister = dynamic_cast<SvdRegister*>(copiedCluster->GetChildren().front());
+      ASSERT_NE(nullptr, copiedRegister);
+      EXPECT_EQ("DATA", copiedRegister->GetName());
+      EXPECT_EQ(4U, copiedRegister->GetOffset());
+      EXPECT_EQ(32U, copiedRegister->GetEffectiveBitWidth());
+      EXPECT_EQ(0x40000004U, copiedRegister->GetAbsoluteAddress());
+    }
+    else {
+      EXPECT_TRUE(copiedCluster->GetChildren().empty());
+    }
+  }
 }
 
 TEST_F(SvdDimensionBoundsTest, IndexBudgetIsSharedBySiblingDimensions) {
@@ -237,6 +372,92 @@ TEST_F(SvdDimensionBoundsTest, ClusterAndPeripheralAddressWrapIsRejected) {
   const auto peripheralDim = Dimension(peripheral, 2, 4);
   EXPECT_FALSE(peripheral.CalculateDim());
   EXPECT_TRUE(peripheralDim->GetChildren().empty());
+}
+
+TEST_F(SvdDimensionBoundsTest, FieldDimensionsRejectInvalidCountsAndAddressWrapBeforeCopying) {
+  for(const bool invalidCount : {false, true}) {
+    SCOPED_TRACE(invalidCount);
+    SvdField field(nullptr);
+    field.SetOffset(invalidCount ? 0 : UINT64_MAX - 1);
+    field.SetBitWidth(1);
+    const auto dim = Dimension(field, invalidCount ? 0 : 2, 4);
+
+    EXPECT_FALSE(field.CalculateDim());
+    EXPECT_FALSE(field.IsValid());
+    EXPECT_TRUE(dim->GetChildren().empty());
+    EXPECT_FALSE(field.HasExpansionError());
+  }
+}
+
+TEST_F(SvdDimensionBoundsTest, FieldAndRegisterExpansionStopsWhenInheritedMetadataCannotBeCopied) {
+  for(const bool isField : {false, true}) {
+    SCOPED_TRACE(isField);
+    SvdRegister reg(nullptr);
+    reg.SetBitWidth(32);
+    reg.SetOffset(0);
+    SvdFieldContainer fields(&reg);
+    SvdField field(&fields);
+    field.SetOffset(0);
+    field.SetBitWidth(1);
+    SvdItem& source = isField ? static_cast<SvdItem&>(field) : static_cast<SvdItem&>(reg);
+    const auto dim = Dimension(source, 2, isField ? 1 : 4);
+    source.SetDerivedFrom(new SvdDerivedFrom(&source));
+    // Two indices and one copied item fit; its inherited metadata does not.
+    ASSERT_TRUE(source.ReserveExpansion(SvdItem::MAX_EXPANSION_ITEMS - 3));
+
+    EXPECT_FALSE(source.CalculateDim());
+    EXPECT_TRUE(source.HasExpansionError());
+    ASSERT_EQ(1U, dim->GetChildCount());
+    EXPECT_EQ(nullptr, dim->GetChildren().front()->GetDerivedFrom());
+    EXPECT_EQ(nullptr, dim->GetChildren().front()->GetCopiedFrom());
+  }
+}
+
+TEST_F(SvdDimensionBoundsTest, PeripheralExpansionPreservesAddressesAndStopsAtTheBudgetBoundary) {
+  for(const size_t remaining : {size_t{3}, size_t{4}}) {
+    SCOPED_TRACE(remaining);
+    SvdPeripheral peripheral(nullptr);
+    peripheral.SetAddress(0x40000000);
+    const auto dim = Dimension(peripheral, 2, 0x1000);
+    ASSERT_TRUE(peripheral.ReserveExpansion(SvdItem::MAX_EXPANSION_ITEMS - remaining));
+
+    EXPECT_EQ(remaining == 4, peripheral.CalculateDim());
+    EXPECT_EQ(remaining == 3, peripheral.HasExpansionError());
+    ASSERT_EQ(remaining - 2, dim->GetChildCount());
+    const auto first = dynamic_cast<SvdPeripheral*>(dim->GetChildren().front());
+    ASSERT_NE(nullptr, first);
+    EXPECT_EQ("ITEM0", first->GetName());
+    EXPECT_EQ(0x40000000U, first->GetAddress());
+    if(remaining == 4) {
+      const auto last = dynamic_cast<SvdPeripheral*>(dim->GetChildren().back());
+      ASSERT_NE(nullptr, last);
+      EXPECT_EQ("ITEM1", last->GetName());
+      EXPECT_EQ(0x40001000U, last->GetAddress());
+    }
+  }
+}
+
+TEST_F(SvdDimensionBoundsTest, InterruptDimensionPreservesTheLargestInitializedValue) {
+  SvdPeripheral peripheral(nullptr);
+  Dimension(peripheral, 2, 4);
+  SvdInterrupt irq(&peripheral);
+  irq.SetName("IRQ%s");
+  irq.SetValue(UINT32_MAX - 2);
+
+  ASSERT_TRUE(irq.CalculateDim());
+  EXPECT_FALSE(irq.HasExpansionError());
+  ASSERT_NE(nullptr, irq.GetDimension());
+  const auto dim = irq.GetDimension();
+  ASSERT_EQ(2U, dim->GetChildCount());
+  const auto first = dynamic_cast<SvdInterrupt*>(dim->GetChildren().front());
+  const auto last = dynamic_cast<SvdInterrupt*>(dim->GetChildren().back());
+  ASSERT_NE(nullptr, first);
+  ASSERT_NE(nullptr, last);
+  EXPECT_EQ("IRQ0", first->GetName());
+  EXPECT_EQ("IRQ1", last->GetName());
+  EXPECT_EQ(UINT32_MAX - 2, first->GetValue());
+  EXPECT_EQ(UINT32_MAX - 1, last->GetValue());
+  EXPECT_FALSE(HasMessage("M250"));
 }
 
 TEST_F(SvdDimensionBoundsTest, InterruptDimensionCannotWrapItsValue) {
