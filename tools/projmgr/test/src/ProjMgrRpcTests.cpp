@@ -1197,7 +1197,9 @@ TEST_F(ProjMgrRpcTests, PackReferenceMissing) {
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfoSimple) {
   string context = "selectable+CM0";
 
-  const auto& responses = RunPackInfoRequests("/Validation/dependencies.csolution.yml", context);
+  auto requests = FormatPackInfoRequests("/Validation/dependencies.csolution.yml", context, true);
+  requests += FormatRequest(++m_id, "GetPacksInfo", json({{ "context", "" }, { "all", false }}));
+  const auto& responses = RunRpcMethods(requests);
 
   EXPECT_TRUE(responses[2]["result"]["success"]);
   auto packs = responses[2]["result"]["packs"];
@@ -1223,6 +1225,37 @@ TEST_F(ProjMgrRpcTests, RpcGetPacksInfoSimple) {
   EXPECT_EQ(packInfos.size(), 8);
   EXPECT_EQ(packInfos[7]["id"], "SomeVendor::RteTest@0.0.1");
   EXPECT_EQ(packInfos[7]["references"].size(), 0);
+
+  packInfos = responses[5]["result"]["packs"];
+  EXPECT_TRUE(responses[5]["result"]["success"]);
+  EXPECT_GT(packInfos.size(), responses[3]["result"]["packs"].size());
+  auto globalPack = find_item_by_id(packInfos, "SomeVendor::RteTest@0.0.1");
+  ASSERT_TRUE(!!globalPack);
+  EXPECT_FALSE(globalPack->get().contains("used"));
+}
+
+TEST_F(ProjMgrRpcTests, RpcGetPacksInfoGlobal) {
+  // Explicit LoadPacks is not required
+  auto requests = FormatRequest(1, "GetPacksInfo", json({{ "context", "" }, { "all", false }}));
+  requests += FormatRequest(2, "LoadPacks");
+  requests += FormatRequest(3, "GetPacksInfo", json({{ "context", "" }, { "all", false }}));
+  requests += FormatRequest(4, "GetPacksInfo", json({{ "context", "" }, { "all", true }}));
+
+  const auto& responses = RunRpcMethods(requests);
+  ASSERT_EQ(responses.size(), 4);
+  EXPECT_TRUE(responses[0]["result"]["success"]);
+  EXPECT_TRUE(responses[0]["result"]["packs"].empty());
+  EXPECT_TRUE(responses[1]["result"]["success"]);
+  // Without a context the 'all' flag has no impact
+  for(size_t index = 2; index < responses.size(); ++index) {
+    ASSERT_TRUE(responses[index]["result"]["success"]);
+    auto packs = responses[index]["result"]["packs"];
+    EXPECT_FALSE(packs.empty());
+    auto pack = find_item_by_id(packs, "SomeVendor::RteTest@0.0.1");
+    ASSERT_TRUE(!!pack);
+    EXPECT_FALSE(pack->get().contains("used"));
+  }
+  EXPECT_EQ(responses[2]["result"]["packs"], responses[3]["result"]["packs"]);
 }
 
 TEST_F(ProjMgrRpcTests, RpcGetPacksInfo) {
