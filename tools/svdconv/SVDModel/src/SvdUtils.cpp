@@ -446,6 +446,13 @@ bool SvdUtils::ConvertNumber(const string &text, set<uint64_t> &numbers)
   return true;
 }
 
+// SvdUtils::GetBitRange32() preserves the existing raw getter contracts:
+// GetBitWidth() is already signed 32-bit with -1 meaning unset; SvdField::GetOffset()
+// retains wide values and its unset sentinel for inheritance and diagnostics.
+// Validate the complete range before narrowing: offset 31 with width 2 is invalid,
+// and a large offset must not wrap to a valid position. A checked SvdField accessor
+// could own this check; changing the raw getters instead requires coordinated
+// changes to parsing, storage, setters, dimensions, inheritance and sentinels.
 bool SvdUtils::GetBitRange32(uint64_t rawOffset, int64_t rawWidth, uint32_t& offset, uint32_t& width)
 {
   if(rawOffset >= 32 || rawWidth <= 0 || rawWidth > 32 || rawWidth > 32 - rawOffset) {
