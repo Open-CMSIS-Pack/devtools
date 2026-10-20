@@ -1,0 +1,4 @@
+- queries: .
+  from: codeql/cpp-queries
+- include:
+    id: cpp/alert-suppression
