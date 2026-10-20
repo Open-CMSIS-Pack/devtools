@@ -459,8 +459,8 @@ bool SvdUtils::GetBitRange32(uint64_t rawOffset, int64_t rawWidth, uint32_t& off
     return false;
   }
 
-  offset = static_cast<uint32_t>(rawOffset);
-  width = static_cast<uint32_t>(rawWidth);
+  offset = rawOffset;
+  width = rawWidth;
   return true;
 }
 
