@@ -97,6 +97,8 @@ public:
   void SetDebugHeaderfile(bool debugHeaderfile = true) { m_debugHeaderfile = debugHeaderfile; }
 
   template<uint32_t element, typename ...Args>
+  // args is forwarded by the selected generator branch; argumentless calls have an empty pack.
+  // codeql[cpp/unused-static-variable]
   void Generate(const std::string& text, Args&&... args) {
     uint32_t  noNewLine=0;
 

@@ -6,6 +6,8 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/codeql-analysis.yml'
+      - '.github/codeql-config.yml'
+      - '.github/codeql-svdconv-suppressions.qls'
       - '**/*.c'
       - '**/*.cpp'
       - '**/*.h'
@@ -64,7 +66,7 @@ jobs:
           output: sarif-results
           upload: never
 
-      - name: Exclude third-party CodeQL results
+      - name: Filter external results and SVDConv source suppressions
         run: |
           set -euo pipefail
           mkdir sarif-results-filtered
@@ -72,6 +74,16 @@ jobs:
             jq '
               def is_external_path:
                 (. // "" | gsub("\\\\"; "/") | test("(^|/)(\\./)?external(/|$)"));
+              def is_svdconv_unused_suppression:
+                (.ruleId == "cpp/unused-local-variable" or .ruleId == "cpp/unused-static-variable")
+                and (
+                  (.locations[0].physicalLocation.artifactLocation.uri // "")
+                  | gsub("\\\\"; "/")
+                  | test("^(\\./)?tools/svdconv/")
+                )
+                and any(.suppressions[]?;
+                  .kind == "inSource" and ((.status // "accepted") == "accepted")
+                );
               .runs |= map(
                 .results |= map(
                   select(
@@ -79,6 +91,7 @@ jobs:
                     | is_external_path
                     | not
                   )
+                  | select(is_svdconv_unused_suppression | not)
                 )
               )
             ' "$sarif_file" > "sarif-results-filtered/$(basename "$sarif_file")"
