@@ -339,15 +339,14 @@ SVD_ERR SvdConv::CheckSvdFile()
   }
 
   // ----------------------  Generate SFD File  ----------------------
-  bool sfdGenerated = false;
   if(m_svdOptions.IsGenerateSfd()) {
     t1 = CrossPlatformUtils::ClockInMsec();
+    success = false;
     if(device) {
       generator->SetSvdFileName(path);
       generator->SetProgramInfo(version, descr, copyright);
-      sfdGenerated = generator->SfdFile(device, outDir);
+      success = generator->SfdFile(device, outDir);
     }
-    success = sfdGenerated;
     t2 = CrossPlatformUtils::ClockInMsec() - t1;
 
     if(success) { LogMsg("M040", NAME("Generate System Viewer SFD File"), TIME(t2)); }
@@ -355,7 +354,7 @@ SVD_ERR SvdConv::CheckSvdFile()
   }
 
   // ----------------------  Generate SFR File  ----------------------
-  if(m_svdOptions.IsGenerateSfr() && sfdGenerated) {
+  if(m_svdOptions.IsGenerateSfr() && success) {
     t1 = CrossPlatformUtils::ClockInMsec();
     if(device) {
       generator->SetSvdFileName(path);
