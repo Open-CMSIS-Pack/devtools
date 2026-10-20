@@ -166,6 +166,52 @@ TEST_F(SvdConvIntegTests, CheckSfdDescriptionWhitespace) {
   }
 }
 
+TEST_F(SvdConvIntegTests, CheckSfdDescriptionEscapes) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/sfdEscapes/SfdEscapes.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/sfdEscapes";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=sfd", "--create-folder" });
+
+  SvdConv svdConv;
+  ASSERT_EQ(1, svdConv.Check(args, args, nullptr));
+
+  string messages;
+  for(const auto& msg : ErrLog::Get()->GetLogMessages()) {
+    messages += msg;
+  }
+  EXPECT_NE(string::npos, messages.find("M218"));
+  EXPECT_NE(string::npos, messages.find("M518"));
+
+  string sfd;
+  ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/SfdEscapes.sfd", sfd));
+  const struct {
+    const char* item;
+    const char* prefix;
+    const char* text;
+  } descriptions[] = {
+    {"SFDITEM_REG__TEST_CTRL", "<i>",
+     "<i> [Bits 31..0] RW (@ 0x40000000) Register text\\nRegister line </i>"},
+    {"SFDITEM_FIELD__TEST_CTRL_ENABLE", "<i>",
+     "<i> [Bit 0] RW (@ 0x40000000) \\nField text\\nField line"
+     "\\n0 : OFF = Disabled state\\nOff line\\n1 : ON = Enabled state </i>"},
+    {"SFDITEM_FIELD__TEST_CTRL_ENABLE", "<0=>",
+     "<0=> 0: OFF = Disabled state\\nOff line"},
+  };
+  for(const auto& expected : descriptions) {
+    SCOPED_TRACE(string(expected.item) + " " + expected.prefix);
+    const auto item = sfd.find(expected.item);
+    ASSERT_NE(string::npos, item);
+    const auto text = sfd.find(expected.prefix, item);
+    ASSERT_NE(string::npos, text);
+    const auto lineEnd = sfd.find_first_of("\r\n", text);
+    ASSERT_NE(string::npos, lineEnd);
+    // Escape cleanup preserves display breaks within one physical SFD line.
+    EXPECT_EQ(expected.text, sfd.substr(text, lineEnd - text));
+  }
+}
+
 TEST_F(SvdConvIntegTests, GeneratesMemoryMapsAtRequestedDetailLevel) {
   const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
   const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/memoryMaps";
