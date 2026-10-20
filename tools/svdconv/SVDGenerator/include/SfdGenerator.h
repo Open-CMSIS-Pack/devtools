@@ -10,7 +10,6 @@
 #include "SfdGenAPI.h"
 #include "FileIo.h"
 
-#include <cinttypes>
 #include <string>
 #include <set>
 #include <list>
@@ -40,10 +39,10 @@ const std::string LOC_STRING_EDIT2 = "( (%s)((%s >> %i) & 0x%X), ((%s = (%s & (%
 // Write exp.        : RegisterName, RegisterName, (cast),    Mask,          UpShift, (cast), guiEditSizeString, AND-Operation, UpShift
 
 //( (unsigned char)((NVIC_IP0>>16) & 0xFF), ((NVIC_IP0 = (NVIC_IP0 & ~(0xFFUL<<16 )) | ((unsigned int)(Gui_u8:GuiVal & 0xFF) << 16 ) ) ))
-const std::string LOC_STRING_EDIT3 = "( (%s)((%s >> %" PRIu64 ") & 0x%" PRIX64 "), ((%s = (%s & ~(0x%" PRIX64 "UL << %" PRIu64 " )) | ((%s)(%s:GuiVal & 0x%" PRIX64 ") << %" PRIu64 " ) ) ))";
+const std::string LOC_STRING_EDIT3 = "( (%s)((%s >> %i) & 0x%X), ((%s = (%s & ~(0x%XUL << %i )) | ((%s)(%s:GuiVal & 0x%X) << %i ) ) ))";
 
 //( (unsigned char)((NVIC_IP0>>16) & 0xFF)
-const std::string LOC_STRING_EDIT3_RO = "( (%s)((%s >> %" PRIu64 ") & 0x%" PRIX64 ") )";
+const std::string LOC_STRING_EDIT3_RO = "( (%s)((%s >> %i) & 0x%X) )";
 
 
 const std::string LOC_STRING_OBIT = "( (%s) %s )";
@@ -95,7 +94,7 @@ public:
   void Generate_OptionSelectText(const std::string& text, uint32_t value);
 
   // Location
-  void  MakeLocationEdit        (const std::string& regName, uint64_t firstBit, uint64_t lastBit, uint64_t accRead, uint64_t accWrite);
+  void  MakeLocationEdit        (const std::string& regName, uint32_t firstBit, uint32_t lastBit, uint32_t accRead, uint32_t accWrite);
   void  MakeLocationObit        (const std::string& regName, uint32_t bitWidth);
 
   // Interrupts
@@ -114,15 +113,15 @@ public:
   void CreateCItemTextonly      (const std::string& text, uint32_t num);
   void CreateCItem              (const std::string& text, uint32_t num);
   void CreateCItemEnd           (const std::string& text, sfd::Index elementIndex);
-  void CreateOBit               (const std::string& text, uint64_t num);
+  void CreateOBit               (const std::string& text, uint32_t num);
   void CreateOBitNoRange        (const std::string& text, uint32_t num);
-  void CreateORange             (const std::string& text, uint64_t num1, uint64_t num2);
+  void CreateORange             (const std::string& text, uint32_t num1, uint32_t num2);
   void CreateIBit               (const std::string& text, uint32_t num);
   void CreateIBitAddr           (const std::string& text, uint32_t num1, uint32_t num2);
-  void CreateIBitAddrAcc        (const std::string& text, uint64_t num1, uint32_t num2, SvdTypes::Access acc);
+  void CreateIBitAddrAcc        (const std::string& text, uint32_t num1, uint32_t num2, SvdTypes::Access acc);
   void CreateIRange             (const std::string& text, uint32_t num1, uint32_t num2);
   void CreateIRangeAddr         (const std::string& text, uint32_t num1, uint32_t num2, uint32_t num3);
-  void CreateIRangeAddrAcc      (const std::string& text, uint64_t num1, uint64_t num2, uint32_t num3, SvdTypes::Access acc);
+  void CreateIRangeAddrAcc      (const std::string& text, uint32_t num1, uint32_t num2, uint32_t num3, SvdTypes::Access acc);
   void CreateInfoAddr           (const std::string& text, uint32_t num1);
   void CreateTextonly           (const std::string& text);
 

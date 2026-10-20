@@ -19,8 +19,8 @@
 #include <list>
 
 struct ONESTRUCT {
-  uint64_t mask;
-  std::map<uint64_t, SvdField*> fields;
+  uint32_t mask;
+  std::map<uint32_t, SvdField*> fields;
 
   ONESTRUCT() : mask(0) {}
 };
@@ -142,7 +142,7 @@ protected:
   void            GenerateReserved                  (int32_t resBytes,  uint32_t address, bool bGenerate = true);
   void            GenerateReserved                  ();
   void            GenerateReservedWidth             (int32_t nMany, uint32_t width);
-  void            GenerateReservedField             (uint64_t resBits, uint32_t regSize);
+  void            GenerateReservedField             (int32_t resBits, uint32_t regSize);
   void            AddReservedBytesLater             (int32_t reservedBytes);
   uint32_t        NodeHasChilds                     (RegTreeNode *node, uint32_t pos);
   bool            NodeHasRegs                       (RegTreeNode *node);
@@ -159,7 +159,7 @@ protected:
   void            Init_OpenCloseStructUnion         ();
 
   // HeaderData_Fields
-  uint64_t        CreateField                       (SvdField* field, uint32_t regSize, uint64_t offsCnt);
+  uint32_t        CreateField                       (SvdField* field, uint32_t regSize, uint32_t offsCnt);
   bool            CreateSortedFields                (const FIELDMAPLIST& sortedFields, uint32_t regSize, std::string structName);
   bool            AddFields                         (SvdItem* container, FIELDMAPLIST& sortedFields);
   bool            CreateFields                      (SvdRegister* reg, std::string structName);

@@ -205,11 +205,13 @@ void SfdGenerator::Generate_OptionSelectText(const std::string& text, uint32_t v
 }
 
 
-void SfdGenerator::MakeLocationEdit(const std::string& regName, uint64_t firstBit, uint64_t lastBit, uint64_t accRead, uint64_t accWrite)
+void SfdGenerator::MakeLocationEdit(const std::string& regName, uint32_t firstBit, uint32_t lastBit, uint32_t accRead, uint32_t accWrite)
 {
   string guiEditSizeString;
   string castString;
-  const auto bitWidth = lastBit - firstBit + 1;
+  uint32_t bitWidth = 0;
+
+  bitWidth = lastBit - firstBit + 1;
 
        if(bitWidth < 9)  { guiEditSizeString = GuiEditItems[GUI_EDIT_ITEM_8];  castString = CastItems[CAST_CHAR];  }
   else if(bitWidth < 17) { guiEditSizeString = GuiEditItems[GUI_EDIT_ITEM_16]; castString = CastItems[CAST_SHORT]; }
@@ -428,9 +430,9 @@ void SfdGenerator::CreateCItemEnd(const std::string& text, sfd::Index elementInd
   Generate<RAW>(" </%s>", items[elementIndex].c_str());
 }
 
-void SfdGenerator::CreateOBit(const std::string& text, uint64_t num)
+void SfdGenerator::CreateOBit(const std::string& text, uint32_t num)
 {
-  Generate<RAW>("<o.%" PRIu64 "..%" PRIu64 "> %s", num, num, text.c_str());
+  Generate<RAW>("<o.%i..%i> %s", num, num, text.c_str());
 }
 
 void SfdGenerator::CreateOBitNoRange(const std::string& text, uint32_t num)
@@ -438,9 +440,9 @@ void SfdGenerator::CreateOBitNoRange(const std::string& text, uint32_t num)
   Generate<RAW>("<o.%i> %s", num, text.c_str());
 }
 
-void SfdGenerator::CreateORange(const std::string& text, uint64_t num1, uint64_t num2)
+void SfdGenerator::CreateORange(const std::string& text, uint32_t num1, uint32_t num2)
 {
-  Generate<RAW>("<o.%" PRIu64 "..%" PRIu64 "> %s", num1, num2, text.c_str());
+  Generate<RAW>("<o.%i..%i> %s", num1, num2, text.c_str());
 }
 
 void SfdGenerator::CreateIBit(const std::string& text, uint32_t num)
@@ -453,10 +455,10 @@ void SfdGenerator::CreateIBitAddr(const std::string& text, uint32_t num1, uint32
   Generate<APPENDTEXT>(" [Bit %i] (@ 0x%08X) %s", num1, num2, text.c_str());
 }
 
-void SfdGenerator::CreateIBitAddrAcc(const std::string& text, uint64_t num1, uint32_t num2, SvdTypes::Access acc)
+void SfdGenerator::CreateIBitAddrAcc(const std::string& text, uint32_t num1, uint32_t num2, SvdTypes::Access acc)
 {
   const std::string &accStr = SvdTypes::GetAccessTypeSfd(acc);
-  Generate<APPENDTEXT>(" [Bit %" PRIu64 "] %s (@ 0x%08X) %s", num1, accStr.c_str(), num2, text.c_str());
+  Generate<APPENDTEXT>(" [Bit %i] %s (@ 0x%08X) %s", num1, accStr.c_str(), num2, text.c_str());
 }
 
 void SfdGenerator::CreateIRange(const std::string& text, uint32_t num1, uint32_t num2)
@@ -469,10 +471,10 @@ void SfdGenerator::CreateIRangeAddr(const std::string& text, uint32_t num1, uint
   Generate<APPENDTEXT>(" [Bits %i..%i] (@ 0x%08X) %s", num1, num2, num3, text.c_str());
 }
 
-void SfdGenerator::CreateIRangeAddrAcc(const std::string& text, uint64_t num1, uint64_t num2, uint32_t num3, SvdTypes::Access acc)
+void SfdGenerator::CreateIRangeAddrAcc(const std::string& text, uint32_t num1, uint32_t num2, uint32_t num3, SvdTypes::Access acc)
 {
   const std::string &accStr = SvdTypes::GetAccessTypeSfd(acc);
-  Generate<APPENDTEXT>(" [Bits %" PRIu64 "..%" PRIu64 "] %s (@ 0x%08X) %s", num1, num2, accStr.c_str(), num3, text.c_str());
+  Generate<APPENDTEXT>(" [Bits %i..%i] %s (@ 0x%08X) %s", num1, num2, accStr.c_str(), num3, text.c_str());
 }
 
 void SfdGenerator::CreateInfoAddr(const std::string& text, uint32_t num1)

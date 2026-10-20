@@ -446,6 +446,26 @@ bool SvdUtils::ConvertNumber(const string &text, set<uint64_t> &numbers)
   return true;
 }
 
+bool SvdUtils::GetBitRange32(uint64_t rawOffset, int64_t rawWidth, uint32_t& offset, uint32_t& width)
+{
+  if(rawOffset >= 32 || rawWidth <= 0 || rawWidth > 32 || rawWidth > 32 - rawOffset) {
+    return false;
+  }
+
+  offset = static_cast<uint32_t>(rawOffset);
+  width = static_cast<uint32_t>(rawWidth);
+  return true;
+}
+
+uint32_t SvdUtils::CreateBitMask32(uint32_t width, uint32_t offset)
+{
+  if(width == 0 || width > 32 || offset >= 32 || width > 32 - offset) {
+    return 0;
+  }
+
+  return (UINT32_MAX >> (32 - width)) << offset;
+}
+
 uint64_t SvdUtils::CreateBitMask(int64_t width, uint64_t offset)
 {
   if(width <= 0 || width > 64 || offset >= 64 || width + offset > 64) {

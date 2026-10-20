@@ -26,9 +26,8 @@ bool CheckSfdBitRange(SvdItem* item)
   const auto reg = dynamic_cast<SvdRegister*>(item);
   const auto field = dynamic_cast<SvdField*>(item);
   if(reg || field) {
-    const auto width = item->GetEffectiveBitWidth();
-    const auto mask = SvdUtils::CreateBitMask(width, field ? field->GetOffset() : 0);
-    if(!mask || mask > UINT32_MAX) {
+    uint32_t offset, width;
+    if(!SvdUtils::GetBitRange32(field ? field->GetOffset() : 0, item->GetEffectiveBitWidth(), offset, width)) {
       LogMsg("M226", MSG("SFD supports only bit ranges within 32 bits: '" + item->GetNameCalculated() + "'"), item->GetLineNumber());
       return false;
     }

@@ -56,6 +56,10 @@ class SvdUtils {
   static bool                     ConvertNumberXBin               (const std::string &text, std::set<uint32_t>& numbers);
 
   static bool                     ConvertBitRange                 (const std::string &text, uint32_t& m_offset, uint32_t& m_size);
+  // Validate model values before converting them to a 32-bit output range.
+  static bool                     GetBitRange32                   (uint64_t rawOffset, int64_t rawWidth, uint32_t& offset, uint32_t& width);
+  // Returns zero when the bit range is empty or does not fit in 32 bits.
+  static uint32_t                  CreateBitMask32                 (uint32_t width, uint32_t offset = 0);
   // Returns zero when the bit range is empty or does not fit in 64 bits.
   static uint64_t                  CreateBitMask                   (int64_t width, uint64_t offset = 0);
   static bool                     DoConvertNumberXBin             (const std::string &text, uint32_t value, std::set<uint32_t>& numbers);

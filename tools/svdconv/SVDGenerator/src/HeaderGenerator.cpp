@@ -11,7 +11,6 @@
 
 #include "ErrLog.h"
 
-#include <cinttypes>
 #include <string>
 #include <set>
 #include <list>
@@ -288,10 +287,10 @@ void HeaderGenerator::MakeRegisterStruct(const std::string& text, SvdTypes::Acce
   Generate<DIRECT>("%s %s \r\t\t\t\t\t\t\t\t\t\t%s;", ioType, dataType, text.c_str());
 }
 
-void HeaderGenerator::MakeFieldStruct(const std::string& text, SvdTypes::Access accessType, const std::string& dataType, uint32_t size, uint64_t bitWidth)
+void HeaderGenerator::MakeFieldStruct(const std::string& text, SvdTypes::Access accessType, const std::string& dataType, uint32_t size, uint32_t bitWidth)
 {
   const std::string& ioType = SvdTypes::GetAccessTypeIo(accessType);
-  Generate<DIRECT>("%s %s \r\t\t\t\t\t\t\t\t\t\t%s \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: %" PRIu64 ";", ioType, dataType, text.c_str(), bitWidth);
+  Generate<DIRECT>("%s %s \r\t\t\t\t\t\t\t\t\t\t%s \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: %d;", ioType, dataType, text.c_str(), bitWidth);
 }
 
 void HeaderGenerator::MakeFieldUnion(const std::string& text, SvdTypes::Access accessType, const std::string& dataType, uint32_t size)
@@ -688,7 +687,7 @@ void HeaderGenerator::MakeDoxyComment(const std::string& text)
   Generate<DOXY_COMMENT|END>("");
 }
 
-void HeaderGenerator::MakeDoxyCommentBitField(const std::string& text, uint64_t firstBit, uint64_t lastBit)
+void HeaderGenerator::MakeDoxyCommentBitField(const std::string& text, uint32_t firstBit, uint32_t lastBit)
 {
   uint32_t extraSpaces = m_extraSpaces;
 
@@ -696,7 +695,7 @@ void HeaderGenerator::MakeDoxyCommentBitField(const std::string& text, uint64_t 
   GenerateH_CRTabOffset(HEADER_INLINE_COMMENT_DISTANCE);
 
   if(m_debugHeaderfile) {
-    Generate<DOXY_COMMENT|BEGIN>("[%" PRIu64 "..%" PRIu64 "] %s", lastBit, firstBit, text.c_str());
+    Generate<DOXY_COMMENT|BEGIN>("[%i..%i] %s", lastBit, firstBit, text.c_str());
   }
   else {
     Generate<DOXY_COMMENT|BEGIN>("%s", text.c_str());
@@ -805,31 +804,28 @@ void HeaderGenerator::MakeFieldPosMask2(const std::string& field, const std::str
   }
 }
 
-void HeaderGenerator::MakeFieldPosMask3(const std::string& pName, const std::string& field, uint64_t pos, uint64_t mask)
+void HeaderGenerator::MakeFieldPosMask3(const std::string& pName, const std::string& field, uint32_t pos, uint32_t mask)
 {
-  if(pos >= 32 || mask > (UINT32_MAX >> pos)) {
-    LogMsg("M220", MSG("Field mask exceeds 32 bits"));
-    return;
-  }
+  uint32_t calcMask;
 
   Generate<DIRECT>("#define %s%s ", pName, m_definePosStr);
   GenerateH_CRTabOffset(HEADER_POSMAK_VAL_OFFSET);
-  Generate<RAW>("(%" PRIu64 "UL) ", pos);
+  Generate<RAW>("(%iUL) ", pos);
 
   // Doxy Comment
   GenerateH_CRTabOffset(HEADER_POSMAK_COMMENT_OFFSET2);
-  Generate<DOXY_COMMENT_POSMSK|BEGIN>("%s (Bit %" PRIu64 ")", field, pos);
+  Generate<DOXY_COMMENT_POSMSK|BEGIN>("%s (Bit %i)", field, pos);
   GenerateH_CRTabOffset(HEADER_POSMAK_COMMENTEND_OFFSET2);
   Generate<DOXY_COMMENT|END>("");
 
-  const auto calcMask = mask << pos;
+  calcMask = mask << pos;
   Generate<DIRECT>("#define %s%s ", pName, m_defineMaskStr);
   GenerateH_CRTabOffset(HEADER_POSMAK_VAL_OFFSET);
-  Generate<RAW>("(0x%" PRIx64 "UL) ", calcMask);
+  Generate<RAW>("(0x%xUL) ", calcMask);
 
   // Doxy Comment
   GenerateH_CRTabOffset(HEADER_POSMAK_COMMENT_OFFSET2);
-  Generate<DOXY_COMMENT_POSMSK|BEGIN>("%s (Bitfield-Mask: 0x%02" PRIx64 ")", field, mask);
+  Generate<DOXY_COMMENT_POSMSK|BEGIN>("%s (Bitfield-Mask: 0x%02x)", field, mask);
   GenerateH_CRTabOffset(HEADER_POSMAK_COMMENTEND_OFFSET2);
   Generate<DOXY_COMMENT|END>("");
 

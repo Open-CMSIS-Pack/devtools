@@ -748,8 +748,8 @@ bool SfdData::CreateRegisterItem(SvdRegister* reg)
   const auto address    = (uint32_t)reg->GetAbsoluteAddress();
   const auto accessType = reg->GetEffectiveAccess();
         auto regWidth   = reg->GetEffectiveBitWidth();
-  const auto accRead    = reg->GetAccessMaskRead();
-  const auto accWrite   = reg->GetAccessMaskWrite();
+  const auto accRead    = (uint32_t)reg->GetAccessMaskRead();
+  const auto accWrite   = (uint32_t)reg->GetAccessMaskWrite();
 
   if(regWidth < 8) {
     regWidth = 8;
@@ -768,7 +768,7 @@ bool SfdData::CreateRegisterItem(SvdRegister* reg)
   if(cont && cont->IsValid() && cont->GetChildCount()) {
     list<SvdItem*> fieldsList;
     CreateFields(cont, fieldsList);
-    const auto accMaskReadRtree = reg->GetAccessMask();
+    const auto accMaskReadRtree = (uint32_t) reg->GetAccessMask();
 
     CreateItemDescription(reg, "RTree");
     m_gen->Generate<RTREE|BEGIN            >("SFDITEM_REG__%s", itemName.c_str());
@@ -814,8 +814,8 @@ bool SfdData::CreateRegisterArrayItem(SvdRegister* reg)
   const auto address    = (uint32_t)reg->GetAbsoluteAddress();
   const auto accessType = reg->GetEffectiveAccess();
         auto regWidth   = reg->GetEffectiveBitWidth();
-  const auto accRead    = reg->GetAccessMaskRead();
-  const auto accWrite   = reg->GetAccessMaskWrite();
+  const auto accRead    = (uint32_t)reg->GetAccessMaskRead();
+  const auto accWrite   = (uint32_t)reg->GetAccessMaskWrite();
 
   if(regWidth < 8) {
     regWidth = 8;
@@ -873,15 +873,15 @@ bool SfdData::CreateFieldItem(SvdField* field)
   const auto dispName   = field->GetDisplayNameCalculated();
   const auto fieldDescr = SvdUtils::CheckTextGeneric_SfrCC2(field->GetDescriptionCalculated());
   const auto  regName   = field->GetParentRegisterNameHierarchical();
-  const auto firstBit   = field->GetOffset();
-  const auto bitWidth   = field->GetEffectiveBitWidth();
   const auto accessType = field->GetEffectiveAccess();
   const auto regAddress = (uint32_t)field->GetAbsoluteAddress();
-  const auto fieldMask  = SvdUtils::CreateBitMask(bitWidth, firstBit);
-  if(!fieldMask || fieldMask > UINT32_MAX) {
+  uint32_t firstBit = 0;
+  uint32_t bitWidth = 0;
+  if(!SvdUtils::GetBitRange32(field->GetOffset(), field->GetEffectiveBitWidth(), firstBit, bitWidth)) {
     LogMsg("M226", MSG("SFD supports only bit ranges within 32 bits: '" + fieldName + "'"), field->GetLineNumber());
     return false;
   }
+
   uint32_t regBitWidth = 32;
   const auto parent = field->GetParent();
   if(parent) {
@@ -899,13 +899,13 @@ bool SfdData::CreateFieldItem(SvdField* field)
   valuesDescr = SvdUtils::CheckTextGeneric_SfrCC2(valuesDescr);
 
   const auto lastBit = firstBit + bitWidth -1;
-  const auto bitMaxNum = SvdUtils::CreateBitMask(bitWidth);
+  const auto bitMaxNum = SvdUtils::CreateBitMask32(bitWidth);
 
   CreateItemDescription(field, "Item");
   m_gen->Generate<ITEM|BEGIN>("SFDITEM_FIELD__%s", itemName.c_str());
   m_gen->Generate<NAME      >("%s", dispName.c_str());
 
-  uint64_t accRead, accWrite;
+  uint32_t accRead, accWrite;
   switch(accessType) {
     case SvdTypes::Access::READONLY:
       accRead  = bitMaxNum;

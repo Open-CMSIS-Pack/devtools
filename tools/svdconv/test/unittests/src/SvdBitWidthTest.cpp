@@ -205,6 +205,19 @@ TEST_F(SvdBitWidthTest, BitMasksUseWideIntermediatesWithoutAcceptingInvalidRange
   }
 }
 
+TEST_F(SvdBitWidthTest, OutputMasksStayWithin32Bits) {
+  EXPECT_EQ(UINT32_MAX, SvdUtils::CreateBitMask32(32));
+  EXPECT_EQ(UINT32_C(0x7fffffff), SvdUtils::CreateBitMask32(31));
+  EXPECT_EQ(UINT32_C(0x80000000), SvdUtils::CreateBitMask32(1, 31));
+  EXPECT_EQ(UINT32_C(0xfffffffe), SvdUtils::CreateBitMask32(31, 1));
+  EXPECT_EQ(0U, SvdUtils::CreateBitMask32(0));
+  EXPECT_EQ(0U, SvdUtils::CreateBitMask32(33));
+  EXPECT_EQ(0U, SvdUtils::CreateBitMask32(UINT32_MAX));
+  EXPECT_EQ(0U, SvdUtils::CreateBitMask32(2, 31));
+  EXPECT_EQ(0U, SvdUtils::CreateBitMask32(1, 32));
+  EXPECT_EQ(0U, SvdUtils::CreateBitMask32(1, UINT32_MAX));
+}
+
 TEST_F(SvdBitWidthTest, FullWidthFieldsPreserveEnumsAndAccessMasks) {
   constexpr int32_t width = 32;
   XMLTreeElement element(nullptr, "register");
@@ -442,7 +455,7 @@ TEST_F(SvdBitWidthTest, HeaderFieldPaddingRejectsOverlapsAndOutOfRangePositions)
 
   FIELDMAPLIST groups(1);
   auto& fields = groups.front().fields;
-  fields.emplace(UINT64_C(0x100000000), AddUncheckedField(reg, UINT64_C(0x100000000), 1));
+  fields.emplace(UINT32_MAX, AddUncheckedField(reg, UINT32_MAX, 1));
   EXPECT_FALSE(header.CreateSortedFields(groups, 4, "bits"));
 
   fields.clear();
@@ -453,6 +466,7 @@ TEST_F(SvdBitWidthTest, HeaderFieldPaddingRejectsOverlapsAndOutOfRangePositions)
   fields.clear();
   fields.emplace(0, AddUncheckedField(reg, 0, 9));
   EXPECT_FALSE(header.CreateSortedFields(groups, 1, "bits"));
+  EXPECT_FALSE(header.CreateSortedFields(groups, 8, "bits"));
 }
 
 TEST_F(SvdBitWidthTest, HeaderMasksPreserve32BitBoundaryTextAndRejectWiderRanges) {
@@ -484,6 +498,8 @@ TEST_F(SvdBitWidthTest, HeaderMasksPreserve32BitBoundaryTextAndRejectWiderRanges
   EXPECT_FALSE(header.CreateFieldPosMask(AddUncheckedField(reg, 0, 33), &names));
   EXPECT_FALSE(header.CreateFieldPosMask(AddUncheckedField(reg, 0, 64), &names));
   EXPECT_FALSE(header.CreateFieldPosMask(AddUncheckedField(reg, UINT64_C(0x100000000), 1), &names));
+  EXPECT_FALSE(header.CreateFieldPosMask(AddUncheckedField(reg, UINT64_C(0x10000001f), 1), &names));
+  EXPECT_FALSE(header.CreateFieldPosMask(AddUncheckedField(reg, UINT64_MAX, 1), &names));
 }
 
 TEST_F(SvdBitWidthTest, FieldExpressionsPreserve32BitBoundaryTextAndRejectWiderRanges) {
@@ -705,28 +721,26 @@ TEST_F(SvdBitWidthTest, HeaderFieldGroupsSkipUncheckedInvalidRanges) {
   EXPECT_EQ(upper, groups.front().fields.at(31));
 }
 
-TEST_F(SvdBitWidthTest, HeaderRejectsInvalidShiftRangesWithoutPartialMacros) {
-  CreateOutputDirectory();
-  FileIo output;
-  output.SetFileName((m_outputDirectory / "masks.h").string());
-  BitWidthHeaderGenerator generator(&output);
-  generator.MakeFieldPosMask3("INVALID_POSITION", "Position outside register", 32, 1);
-  generator.MakeFieldPosMask3("INVALID_MASK", "Mask crosses register boundary", 31, 3);
-  generator.MakeFieldPosMask3("INVALID_WIDE_POSITION", "Position must not wrap", UINT64_C(0x10000001f), 1);
-  generator.MakeFieldPosMask3("INVALID_WIDE_MASK", "Mask must not wrap", 0, UINT64_C(0x100000000));
-  EXPECT_EQ(4, count(m_messages.begin(), m_messages.end(), "M220"));
-  generator.MakeFieldPosMask3("VALID", "Top 32-bit field", 31, 1);
-  ASSERT_TRUE(output.Flush());
+TEST_F(SvdBitWidthTest, OutputRangesRejectInvalidModelValuesBeforeConversion) {
+  uint32_t offset = 0, width = 0;
+  ASSERT_TRUE(SvdUtils::GetBitRange32(0, 32, offset, width));
+  EXPECT_EQ(0U, offset);
+  EXPECT_EQ(32U, width);
+  ASSERT_TRUE(SvdUtils::GetBitRange32(31, 1, offset, width));
+  EXPECT_EQ(31U, offset);
+  EXPECT_EQ(1U, width);
 
-  ifstream input(m_outputDirectory / "masks.h");
-  ASSERT_TRUE(input.is_open());
-  const string text{istreambuf_iterator<char>(input), istreambuf_iterator<char>()};
-  EXPECT_EQ(string::npos, text.find("INVALID_POSITION"));
-  EXPECT_EQ(string::npos, text.find("INVALID_MASK"));
-  EXPECT_EQ(string::npos, text.find("INVALID_WIDE_POSITION"));
-  EXPECT_EQ(string::npos, text.find("INVALID_WIDE_MASK"));
-  EXPECT_EQ("(31UL)", DefineValue(text, "VALID_Pos"));
-  EXPECT_EQ("(0x80000000UL)", DefineValue(text, "VALID_Msk"));
+  const pair<uint64_t, int64_t> invalidRanges[] = {
+    {0, 0}, {0, -1}, {0, INT64_MIN}, {0, 33}, {0, INT64_MAX},
+    {0, int64_t{UINT32_MAX} + 2}, {31, 2}, {32, 1},
+    {UINT64_C(0x100000000), 1}, {UINT64_C(0x10000001f), 1}, {UINT64_MAX, 1},
+  };
+  for(const auto& [rawOffset, rawWidth] : invalidRanges) {
+    SCOPED_TRACE(to_string(rawOffset) + ":" + to_string(rawWidth));
+    EXPECT_FALSE(SvdUtils::GetBitRange32(rawOffset, rawWidth, offset, width));
+    EXPECT_EQ(31U, offset);
+    EXPECT_EQ(1U, width);
+  }
 }
 
 TEST_F(SvdBitWidthTest, SfdRejectsUnsupportedExpressionReferenceOutsideDeviceChildren) {

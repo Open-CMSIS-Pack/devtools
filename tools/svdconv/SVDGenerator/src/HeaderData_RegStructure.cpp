@@ -464,7 +464,7 @@ void HeaderData::GenerateReservedWidth(int32_t nMany, uint32_t width)
   }
 }
 
-void HeaderData::GenerateReservedField(uint64_t resBits, uint32_t regSize)
+void HeaderData::GenerateReservedField(int32_t resBits, uint32_t regSize)
 {
   if(!resBits) {
     return;
@@ -473,6 +473,10 @@ void HeaderData::GenerateReservedField(uint64_t resBits, uint32_t regSize)
   const auto& dataType = SvdUtils::GetDataTypeString(regSize);
 
   m_gen->Generate<MAKE|MK_FIELD_STRUCT    >("", SvdTypes::Access::UNDEF, dataType.c_str(), regSize, resBits);          // experimental: type and size only
+
+  if(resBits < 0) {
+    m_gen->Generate<C_ERROR>("Reserved bits calculation negative: %i", -1, resBits);
+  }
 
   m_reservedFieldCnt++;
 

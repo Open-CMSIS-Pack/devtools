@@ -76,12 +76,11 @@ bool HeaderData::AddFields(SvdItem* container, FIELDMAPLIST& sortedFields)
       }
     }
 
-    const auto offset = field->GetOffset();
-    const auto bitWidth = field->GetBitWidth();
-    if(offset >= 32 || bitWidth <= 0 || bitWidth > 32 || offset + bitWidth > 32) {
+    uint32_t offset, bitWidth;
+    if(!SvdUtils::GetBitRange32(field->GetOffset(), field->GetBitWidth(), offset, bitWidth)) {
       continue;
     }
-    const auto mask = SvdUtils::CreateBitMask(bitWidth, offset);
+    const auto mask = SvdUtils::CreateBitMask32(bitWidth, offset);
 
     ONESTRUCT* oneStruct = nullptr;
     for(auto& oneStr : sortedFields) {
@@ -108,10 +107,14 @@ bool HeaderData::AddFields(SvdItem* container, FIELDMAPLIST& sortedFields)
 bool HeaderData::CreateSortedFields(const FIELDMAPLIST& sortedFields, uint32_t regSize, string structName)
 {
   m_reservedFieldCnt = 0;
-  const auto registerBits = uint64_t{regSize} * 8;
+  if(regSize > sizeof(uint32_t)) {
+    m_gen->Generate<C_ERROR>("Register bitfields exceed 32 bits", -1);
+    return false;
+  }
+  const auto registerBits = regSize * 8;
 
   for(const auto& oneStruct : sortedFields) {
-    uint64_t offsCnt = 0;
+    uint32_t offsCnt = 0;
     m_gen->Generate<STRUCT|BEGIN>("");
 
     for(const auto& [newOffs, field] : oneStruct.fields) {
@@ -136,7 +139,7 @@ bool HeaderData::CreateSortedFields(const FIELDMAPLIST& sortedFields, uint32_t r
   return true;
 }
 
-uint64_t HeaderData::CreateField(SvdField* field, uint32_t regSize, uint64_t offsCnt)
+uint32_t HeaderData::CreateField(SvdField* field, uint32_t regSize, uint32_t offsCnt)
 {
   if(!field) {
     return false;
@@ -146,9 +149,8 @@ uint64_t HeaderData::CreateField(SvdField* field, uint32_t regSize, uint64_t off
   const auto name       = field->GetNameCalculated();
   const auto descr      = field->GetDescriptionCalculated();
   const auto accType    = field->GetEffectiveAccess();
-  const auto fieldWidth = field->GetBitWidth();
-  const auto fieldPos   = field->GetOffset();
-  if(fieldPos >= 32 || fieldWidth <= 0 || fieldWidth > 32 || fieldPos + fieldWidth > 32) {
+  uint32_t fieldPos, fieldWidth;
+  if(!SvdUtils::GetBitRange32(field->GetOffset(), field->GetBitWidth(), fieldPos, fieldWidth)) {
     return 0;
   }
 
