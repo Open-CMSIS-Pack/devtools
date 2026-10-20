@@ -130,6 +130,42 @@ TEST_F(SvdConvIntegTests, CheckSfdGeneration) {
   EXPECT_FALSE(sfd.empty());
 }
 
+TEST_F(SvdConvIntegTests, CheckSfdDescriptionWhitespace) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/sfdWhitespace/SfdWhitespace.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/sfdWhitespace";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=sfd", "--create-folder" });
+
+  SvdConv svdConv;
+  ASSERT_EQ(0, svdConv.Check(args, args, nullptr));
+
+  string sfd;
+  ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/SfdWhitespace.sfd", sfd));
+  const struct {
+    const char* item;
+    const char* info;
+  } descriptions[] = {
+    {"SFDITEM_REG__TEST_CTRL",
+     "<i> [Bits 31..0] RW (@ 0x40000000) Register description\\nExplicit register line </i>"},
+    {"SFDITEM_FIELD__TEST_CTRL_ENABLE",
+     "<i> [Bit 0] RW (@ 0x40000000) \\nField text\\nExplicit field line"
+     "\\n0 : OFF = Disabled state\\n1 : ON = Enabled state\\nExplicit enum line </i>"},
+  };
+  for(const auto& expected : descriptions) {
+    SCOPED_TRACE(expected.item);
+    const auto item = sfd.find(expected.item);
+    ASSERT_NE(string::npos, item);
+    const auto info = sfd.find("<i>", item);
+    ASSERT_NE(string::npos, info);
+    const auto lineEnd = sfd.find_first_of("\r\n", info);
+    ASSERT_NE(string::npos, lineEnd);
+    // Display breaks remain literal \\n sequences within one physical SFD line.
+    EXPECT_EQ(expected.info, sfd.substr(info, lineEnd - info));
+  }
+}
+
 TEST_F(SvdConvIntegTests, GeneratesMemoryMapsAtRequestedDetailLevel) {
   const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
   const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/memoryMaps";

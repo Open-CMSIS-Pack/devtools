@@ -1251,17 +1251,13 @@ string SvdUtils::CheckTextGeneric_SfrCC2(const string& value, uint32_t lineNo)
       }
     }
 
-    if(c == ' ' && cPrev == ' ') {      // delete double whitespace
-      continue;
+    // Normalize first so skipped line breaks and tabs remain spaces on the next iteration.
+    if(c == '\n' || c == '\r' || c == '\t') {
+      c = ' ';
     }
 
-    if(c == '\n' || c == '\r' || c == '\t') {   // convert all additional whitespace characters
-      if(cPrev == ' ') {
-        continue;
-      }
-      else {
-        c = ' ';
-      }
+    if(c == ' ' && cPrev == ' ') {
+      continue;
     }
 
     if(cPrev == '?' && cPrev2 == '?') {
