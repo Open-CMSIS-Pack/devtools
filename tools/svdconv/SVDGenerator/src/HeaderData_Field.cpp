@@ -123,13 +123,12 @@ bool HeaderData::CreateSortedFields(const FIELDMAPLIST& sortedFields, uint32_t r
         return false;
       }
       GenerateReservedField(newOffs - offsCnt, regSize);
-      offsCnt = newOffs;
-      offsCnt += CreateField(field, regSize, offsCnt);
-    }
-
-    if(offsCnt > registerBits) {
-      m_gen->Generate<C_ERROR>("Reserved bits calculation error", -1);
-      return false;
+      const auto fieldWidth = CreateField(field, regSize, newOffs);
+      if(fieldWidth > registerBits - newOffs) {
+        m_gen->Generate<C_ERROR>("Reserved bits calculation error", -1);
+        return false;
+      }
+      offsCnt = newOffs + fieldWidth;
     }
     GenerateReservedField(registerBits - offsCnt, regSize);  // fill up (pad) bitfields
 
