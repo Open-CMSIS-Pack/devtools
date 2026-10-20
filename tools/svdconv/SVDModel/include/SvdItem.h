@@ -306,7 +306,10 @@ bool SvdItem::GetDeriveItem(T *&item, const std::list<std::string>& searchName, 
       switch(lv) {
         case L_Peripheral:
         case L_Register:
-          parent = *(childs.begin());
+          if(childs.empty()) {
+            return false;
+          }
+          parent = childs.front();
           break;
         default:
           break;

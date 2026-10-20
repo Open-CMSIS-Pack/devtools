@@ -500,6 +500,34 @@ TEST_F(SvdBitWidthTest, InvalidRegisterOperandsRejectTheWholeExpression) {
   EXPECT_TRUE(expression.GetExpressionString().empty());
 }
 
+TEST_F(SvdBitWidthTest, ExpressionLookupRejectsRegistersWithoutFieldContainers) {
+  SvdDevice device(nullptr);
+  const auto [peripheral, reg] = AddExpressionRegister(device);
+  ASSERT_TRUE(reg->GetChildren().empty());
+
+  SvdCExpression expression;
+  expression.SetText("TEST.CTRL.FIELD == 0");
+  EXPECT_FALSE(expression.CalcExpression(peripheral));
+  EXPECT_FALSE(expression.IsValid());
+  EXPECT_TRUE(HasMessage("M244"));
+}
+
+TEST_F(SvdBitWidthTest, ExpressionLookupRejectsPeripheralsWithoutRegisterContainers) {
+  SvdDevice device(nullptr);
+  const auto peripheral = AddExpressionRegister(device).first;
+  const auto peripherals = peripheral->GetParent();
+  const auto empty = new SvdPeripheral(peripherals);
+  peripherals->AddItem(empty);
+  empty->SetName("EMPTY");
+  ASSERT_TRUE(empty->GetChildren().empty());
+
+  SvdCExpression expression;
+  expression.SetText("EMPTY.CTRL == 0");
+  EXPECT_FALSE(expression.CalcExpression(peripheral));
+  EXPECT_FALSE(expression.IsValid());
+  EXPECT_TRUE(HasMessage("M244"));
+}
+
 TEST_F(SvdBitWidthTest, SfdChecksActualFieldReferencesBeforeCreatingOutput) {
   CreateOutputDirectory();
   for(const bool invalid : {false, true}) {
