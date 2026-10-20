@@ -1037,7 +1037,7 @@ bool SfdData::CreateEnumValueSet(SvdEnumContainer *cont, SvdField* field)
     enumValues[val.u32] = enu;
   }
 
-  const uint64_t bitMaxNum = 1ULL << bitWidth;
+  const uint32_t bitMaxNum = 1U << bitWidth;
 
   for(uint32_t bitNum=0; bitNum<bitMaxNum; bitNum++) {
     auto element = enumValues.find(bitNum);
