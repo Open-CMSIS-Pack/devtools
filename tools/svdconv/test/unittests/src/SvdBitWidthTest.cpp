@@ -38,6 +38,8 @@ class BitWidthHeaderData : public HeaderData {
 public:
   using HeaderData::HeaderData;
   using HeaderData::AddFields;
+  using HeaderData::CreateField;
+  using HeaderData::CreateFields;
   using HeaderData::CreateSortedFields;
   using HeaderData::CreateFieldPosMask;
 };
@@ -468,6 +470,82 @@ TEST_F(SvdBitWidthTest, HeaderFieldPaddingRejectsOverlapsAndOutOfRangePositions)
   fields.emplace(0, AddUncheckedField(reg, 0, 9));
   EXPECT_FALSE(header.CreateSortedFields(groups, 1, "bits"));
   EXPECT_FALSE(header.CreateSortedFields(groups, 8, "bits"));
+}
+
+TEST_F(SvdBitWidthTest, HeaderFieldsPropagateRejectedRegisterLayouts) {
+  SvdOptions options;
+  FileHeaderInfo info;
+  BitWidthHeaderData header(info, options);
+  SvdRegister reg(nullptr);
+  AddUncheckedField(reg, 7, 2);
+
+  reg.SetBitWidth(8);
+  EXPECT_FALSE(header.CreateFields(&reg, "bits"));
+  reg.SetBitWidth(64);
+  EXPECT_FALSE(header.CreateFields(&reg, "bits"));
+  reg.SetBitWidth(32);
+  EXPECT_TRUE(header.CreateFields(&reg, "bits"));
+}
+
+TEST_F(SvdBitWidthTest, HeaderFieldsEmitBoundedPaddingAndRejectInvalidFieldFragments) {
+  CreateOutputDirectory();
+  const auto inputFile = m_outputDirectory / "input.svd";
+  {
+    ofstream input(inputFile);
+    input << "<device/>\n";
+    ASSERT_TRUE(input.good());
+  }
+  SvdDevice device(nullptr);
+  device.SetName("TEST");
+  SvdRegister reg(nullptr);
+  reg.SetBitWidth(32);
+  AddUncheckedField(reg, 2, 3)->SetName("ACTIVE");
+  SvdOptions options;
+  FileHeaderInfo info;
+  info.svdFileName = inputFile.string();
+  const auto output = m_outputDirectory / "masks.h";
+  {
+    BitWidthHeaderData header(info, options);
+    ASSERT_TRUE(header.Create(&device, output.string()));
+    EXPECT_TRUE(header.CreateFields(&reg, "bits"));
+
+    SvdField field(nullptr);
+    field.SetName("REJECTED");
+    const pair<uint64_t, int32_t> invalidRanges[] = {
+      {0, 0}, {0, -1}, {0, 33}, {0, 64}, {31, 2}, {32, 1},
+      {UINT64_C(0x10000001f), 1},
+    };
+    for(const auto& [offset, width] : invalidRanges) {
+      SCOPED_TRACE(to_string(offset) + ":" + to_string(width));
+      field.SetOffset(offset);
+      field.SetBitWidth(width);
+      EXPECT_EQ(0U, header.CreateField(&field, 4, 0));
+    }
+    field.SetName("UPPER");
+    field.SetOffset(31);
+    field.SetBitWidth(1);
+    field.SetAccess(SvdTypes::Access::READWRITE);
+    EXPECT_EQ(1U, header.CreateField(&field, 4, 31));
+  }
+  ifstream input(output);
+  ASSERT_TRUE(input.is_open());
+  const string text{istreambuf_iterator<char>(input), istreambuf_iterator<char>()};
+  istringstream tokens(text);
+  string token, compact;
+  while(tokens >> token) {
+    compact += token;
+  }
+  const auto leading = compact.find("uint32_t:2;");
+  const auto active = compact.find("__IOMuint32_tACTIVE:3;");
+  const auto trailing = compact.find("uint32_t:27;");
+  ASSERT_NE(string::npos, leading);
+  ASSERT_NE(string::npos, active);
+  ASSERT_NE(string::npos, trailing);
+  EXPECT_LT(leading, active);
+  EXPECT_LT(active, trailing);
+  EXPECT_NE(string::npos, compact.find("__IOMuint32_tUPPER:1;"));
+  EXPECT_EQ(string::npos, text.find("REJECTED"));
+  EXPECT_EQ(string::npos, text.find("Reserved bits calculation error"));
 }
 
 TEST_F(SvdBitWidthTest, HeaderMasksPreserve32BitBoundaryTextAndRejectWiderRanges) {

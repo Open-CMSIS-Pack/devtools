@@ -455,7 +455,7 @@ bool SvdUtils::ConvertNumber(const string &text, set<uint64_t> &numbers)
 // changes to parsing, storage, setters, dimensions, inheritance and sentinels.
 bool SvdUtils::GetBitRange32(uint64_t rawOffset, int64_t rawWidth, uint32_t& offset, uint32_t& width)
 {
-  if(rawOffset >= 32 || rawWidth <= 0 || rawWidth > 32 || rawWidth > 32 - rawOffset) {
+  if(rawOffset >= 32 || rawWidth <= 0 || rawWidth > 32 || rawOffset + rawWidth > 32) {
     return false;
   }
 

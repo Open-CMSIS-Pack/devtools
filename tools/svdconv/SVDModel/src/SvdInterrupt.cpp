@@ -113,9 +113,6 @@ bool SvdInterrupt::CalculateDim()
     }
 
     newIrq->CopyItem            (this);
-    if(HasExpansionError()) {
-      return false;
-    }
     newIrq->SetName             (dim->CreateName(dimIndex));
     newIrq->SetDescription      (dim->CreateDescription(dimIndex));
     newIrq->SetValue            (value);
