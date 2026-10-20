@@ -12,6 +12,7 @@
 #include "SvdDevice.h"
 #include "SvdDimension.h"
 #include "SvdField.h"
+#include "SvdPeripheral.h"
 #include "SvdRegister.h"
 #include "SvdUtils.h"
 #include "ErrLog.h"
@@ -20,12 +21,8 @@ using namespace std;
 
 namespace {
 
-bool CheckSfdBitRanges(SvdItem* item)
+bool CheckSfdBitRange(SvdItem* item)
 {
-  if(!item->IsValid()) {
-    return true;
-  }
-
   const auto reg = dynamic_cast<SvdRegister*>(item);
   const auto field = dynamic_cast<SvdField*>(item);
   if(reg || field) {
@@ -34,6 +31,35 @@ bool CheckSfdBitRanges(SvdItem* item)
     if(!mask || mask > UINT32_MAX) {
       LogMsg("M226", MSG("SFD supports only bit ranges within 32 bits: '" + item->GetNameCalculated() + "'"), item->GetLineNumber());
       return false;
+    }
+  }
+  return true;
+}
+
+bool CheckSfdBitRanges(SvdItem* item)
+{
+  if(!item->IsValid()) {
+    return true;
+  }
+  if(!CheckSfdBitRange(item)) {
+    return false;
+  }
+
+  const auto peripheral = dynamic_cast<SvdPeripheral*>(item);
+  const auto condition = peripheral ? peripheral->GetDisableCondition() : nullptr;
+  if(condition && condition->IsValid()) {
+    for(const auto& symbol : condition->GetSymbolsList()) {
+      if(symbol.token.type != SvdCExpressionParser::xme_identi) {
+        continue;
+      }
+      const auto referenced = symbol.svdItem;
+      if(!referenced || !referenced->IsValid()) {
+        LogMsg("M226", MSG("Invalid item referenced by an SFD expression: '" + condition->GetText() + "'"), condition->GetLineNumber());
+        return false;
+      }
+      if(!CheckSfdBitRange(referenced)) {
+        return false;
+      }
     }
   }
 
@@ -94,7 +120,9 @@ bool SfdData::Create(SvdItem *item, const string &fileName)
     }
   }
 
-  m_fileIo->Create(fileName);
+  if(!m_fileIo->Create(fileName)) {
+    return false;
+  }
 
   CreateDevice(device);
 

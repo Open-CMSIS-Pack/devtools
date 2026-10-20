@@ -122,11 +122,15 @@ string SvdCExpression::GetExpressionString()
   for(const auto& symbol : symbols) {
     if(symbol.token.type == SvdCExpressionParser::xme_identi) {
       SvdItem* item = symbol.svdItem;
-      if(!item) {
-        return SvdUtils::EMPTY_STRING;     // skip generating disable condition. Should not be reached, as LinkSymbols() already generates an error
+      if(!item || !item->IsValid()) {
+        return SvdUtils::EMPTY_STRING;
       }
 
-      expression += CreateObjectExpression(item);
+      const auto operand = CreateObjectExpression(item);
+      if(operand.empty()) {
+        return SvdUtils::EMPTY_STRING;
+      }
+      expression += operand;
     }
     else {
       expression += symbol.token.text;

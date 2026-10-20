@@ -9,6 +9,7 @@
 #include "SvdDimension.h"
 #include "SvdEnum.h"
 #include "SvdField.h"
+#include "SvdPeripheral.h"
 #include "SvdRegister.h"
 #include "HeaderData.h"
 #include "SfdData.h"
@@ -25,6 +26,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -78,6 +80,7 @@ protected:
       error_code ec;
       filesystem::remove(m_outputDirectory / "masks.h", ec);
       filesystem::remove(m_outputDirectory / "device.sfd", ec);
+      filesystem::remove(m_outputDirectory / "input.svd", ec);
       filesystem::remove(m_outputDirectory, ec);
     }
   }
@@ -157,6 +160,23 @@ protected:
     field->SetBitWidth(width);
     field->SetAccess(SvdTypes::Access::READWRITE);
     return field;
+  }
+
+  static pair<SvdPeripheral*, SvdRegister*> AddExpressionRegister(SvdDevice& device) {
+    const auto peripherals = new SvdPeripheralContainer(&device);
+    device.AddItem(peripherals);
+    const auto peripheral = new SvdPeripheral(peripherals);
+    peripherals->AddItem(peripheral);
+    peripheral->SetName("TEST");
+    const auto registers = new SvdRegisterContainer(peripheral);
+    peripheral->AddItem(registers);
+    const auto reg = new SvdRegister(registers);
+    registers->AddItem(reg);
+    reg->SetName("CTRL");
+    reg->SetBitWidth(32);
+    reg->SetOffset(0);
+    reg->SetAccess(SvdTypes::Access::READWRITE);
+    return {peripheral, reg};
   }
 
   vector<string> m_messages;
@@ -428,6 +448,103 @@ TEST_F(SvdBitWidthTest, FieldExpressionsUse64BitLiteralsOnlyWhenNeeded) {
   EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 64, 1)).empty());
   EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 0, 65)).empty());
   EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 0, 0)).empty());
+}
+
+TEST_F(SvdBitWidthTest, InvalidFieldOperandsRejectTheWholeExpression) {
+  for(const auto text : {"TEST.CTRL.FIELD == 0", "0 == TEST.CTRL.FIELD",
+                         "TEST.CTRL == 0 || TEST.CTRL.FIELD == 0"}) {
+    SCOPED_TRACE(text);
+    SvdDevice device(nullptr);
+    const auto [peripheral, reg] = AddExpressionRegister(device);
+    const auto field = AddUncheckedField(*reg, 0, 1);
+    SvdCExpression expression;
+    expression.SetText(text);
+    ASSERT_TRUE(expression.CalcExpression(peripheral));
+    ASSERT_FALSE(expression.GetExpressionString().empty());
+
+    field->SetBitWidth(0);
+    ASSERT_TRUE(field->IsValid());
+    EXPECT_TRUE(expression.GetExpressionString().empty());
+
+    field->SetBitWidth(1);
+    field->Invalidate();
+    EXPECT_TRUE(expression.GetExpressionString().empty());
+  }
+}
+
+TEST_F(SvdBitWidthTest, InvalidRegisterOperandsRejectTheWholeExpression) {
+  SvdDevice device(nullptr);
+  const auto [peripheral, reg] = AddExpressionRegister(device);
+  SvdCExpression expression;
+  expression.SetText("0 == TEST.CTRL");
+  ASSERT_TRUE(expression.CalcExpression(peripheral));
+  ASSERT_EQ("0 == TEST_CTRL ", expression.GetExpressionString());
+  reg->Invalidate();
+  EXPECT_TRUE(expression.GetExpressionString().empty());
+}
+
+TEST_F(SvdBitWidthTest, SfdChecksActualFieldReferencesBeforeCreatingOutput) {
+  CreateOutputDirectory();
+  for(const bool invalid : {false, true}) {
+    SCOPED_TRACE(invalid);
+    m_messages.clear();
+    SvdDevice device(nullptr);
+    const auto [peripheral, reg] = AddExpressionRegister(device);
+    const auto field = AddUncheckedField(*reg, invalid ? 0 : 32, 1);
+    if(invalid) {
+      field->Invalidate();
+    }
+    XMLTreeElement condition(nullptr, "disableCondition");
+    condition.SetText("TEST.CTRL.FIELD == 0");
+    ASSERT_TRUE(peripheral->ProcessXmlElement(&condition));
+    ASSERT_TRUE(peripheral->CalcDisableCondition());
+    ASSERT_TRUE(peripheral->GetDisableCondition()->IsValid());
+    ASSERT_TRUE(reg->IsValid());
+
+    SvdOptions options;
+    FileHeaderInfo info;
+    SfdData sfd(info, options);
+    const auto output = m_outputDirectory / "device.sfd";
+    EXPECT_FALSE(sfd.Create(&device, output.string()));
+    EXPECT_TRUE(HasMessage("M226"));
+    EXPECT_FALSE(filesystem::exists(output));
+  }
+}
+
+TEST_F(SvdBitWidthTest, SfdPreservesValidConditionsWithUnreferencedInvalidFields) {
+  CreateOutputDirectory();
+  const auto inputFile = m_outputDirectory / "input.svd";
+  {
+    ofstream input(inputFile);
+    input << "<device/>\n";
+    ASSERT_TRUE(input.good());
+  }
+  SvdDevice device(nullptr);
+  const auto [peripheral, reg] = AddExpressionRegister(device);
+  AddUncheckedField(*reg, 0, 1);
+  const auto unused = AddUncheckedField(*reg, 0, 0);
+  unused->SetName("UNUSED");
+  unused->Invalidate();
+  XMLTreeElement condition(nullptr, "disableCondition");
+  condition.SetText("TEST.CTRL.FIELD == 0");
+  ASSERT_TRUE(peripheral->ProcessXmlElement(&condition));
+  ASSERT_TRUE(peripheral->CalcDisableCondition());
+  ASSERT_TRUE(peripheral->GetDisableCondition()->IsValid());
+  EXPECT_EQ("(TEST_CTRL & (0x1 << 0)) == 0 ", peripheral->GetDisableCondition()->GetExpressionString());
+
+  SvdOptions options;
+  FileHeaderInfo info;
+  info.svdFileName = inputFile.string();
+  const auto output = m_outputDirectory / "device.sfd";
+  {
+    SfdData sfd(info, options);
+    EXPECT_TRUE(sfd.Create(&device, output.string()));
+  }
+  EXPECT_FALSE(HasMessage("M226"));
+  ifstream input(output);
+  ASSERT_TRUE(input.is_open());
+  const string text{istreambuf_iterator<char>(input), istreambuf_iterator<char>()};
+  EXPECT_NE(string::npos, text.find("<disableCond> (TEST_CTRL & (0x1 << 0)) == 0"));
 }
 
 TEST_F(SvdBitWidthTest, SfdRejectsUnsupported64BitRegisterBeforeCreatingOutput) {

@@ -329,6 +329,112 @@ TEST_F(SvdConvIntegTests, RejectedSfdDoesNotCompileStaleOutput) {
   EXPECT_FALSE(RteFsUtils::Exists(directory + "/EnumComboWidth.sfr"));
 }
 
+TEST_F(SvdConvIntegTests, InvalidExpressionFieldDoesNotCompileStaleOutput) {
+  string xml;
+  ASSERT_TRUE(RteFsUtils::ReadFile(SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd", xml));
+  const auto field = xml.find("<name>CDS</name>");
+  ASSERT_NE(string::npos, field);
+  const string width = "<bitWidth>1</bitWidth>";
+  const auto position = xml.find(width, field);
+  ASSERT_NE(string::npos, position);
+  ASSERT_LT(position, xml.find("</field>", field));
+  xml.replace(position, width.size(), "<bitWidth>0</bitWidth>");
+
+  const string directory = SvdConvIntegTestEnv::testoutput_dir + "/invalidExpressionField";
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(directory));
+  const string input = directory + "/option_n.svd";
+  const string output = directory + "/option_n.sfd";
+  const string previousOutput = "Previous SFD output\n";
+  {
+    ofstream file(input);
+    file << xml;
+    ASSERT_TRUE(file.good());
+  }
+  {
+    ofstream file(output, ios::binary);
+    file << previousOutput;
+    ASSERT_TRUE(file.good());
+  }
+
+  Arguments args("SVDConv.exe", input);
+  args.add({"-o", directory, "--generate=sfr", "--nocleanup", "--verbose"});
+  SvdConv converter;
+  EXPECT_EQ(2, converter.Check(args, args, nullptr));
+  string messages;
+  for(const auto& message : ErrLog::Get()->GetLogMessages()) { messages += message; }
+  EXPECT_NE(string::npos, messages.find("M310"));
+  EXPECT_NE(string::npos, messages.find("M226"));
+  EXPECT_NE(string::npos, messages.find("M111"));
+  EXPECT_EQ(string::npos, messages.find("Generate System Viewer SFR File"));
+  EXPECT_EQ(string::npos, messages.find("M133"));
+  EXPECT_EQ(string::npos, messages.find("SfrCC2"));
+  string retained;
+  ASSERT_TRUE(RteFsUtils::ReadFile(output, retained));
+  EXPECT_EQ(previousOutput, retained);
+  EXPECT_FALSE(RteFsUtils::Exists(directory + "/option_n.sfr"));
+}
+
+TEST_F(SvdConvIntegTests, FailedSfdCreationDoesNotCompileOutput) {
+  const string input = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
+  const string directory = SvdConvIntegTestEnv::testoutput_dir + "/failedSfdCreation";
+  const string output = directory + "/option_n.sfd";
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(output));
+
+  Arguments args("SVDConv.exe", input);
+  args.add({"-o", directory, "--generate=sfr", "--nocleanup", "--verbose"});
+  SvdConv converter;
+  EXPECT_EQ(2, converter.Check(args, args, nullptr));
+  string messages;
+  for(const auto& message : ErrLog::Get()->GetLogMessages()) { messages += message; }
+  EXPECT_NE(string::npos, messages.find("M130"));
+  EXPECT_NE(string::npos, messages.find("M111"));
+  EXPECT_EQ(string::npos, messages.find("Generate System Viewer SFR File"));
+  EXPECT_EQ(string::npos, messages.find("M133"));
+  EXPECT_EQ(string::npos, messages.find("SfrCC2"));
+  EXPECT_TRUE(RteFsUtils::IsDirectory(output));
+  EXPECT_FALSE(RteFsUtils::Exists(directory + "/option_n.sfr"));
+}
+
+TEST_F(SvdConvIntegTests, ReadOnlySfdDoesNotCompileStaleOutput) {
+  const string input = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
+  const string directory = SvdConvIntegTestEnv::testoutput_dir + "/readOnlySfd";
+  const string output = directory + "/option_n.sfd";
+  const string previousOutput = "Previous SFD output\n";
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(directory));
+  {
+    ofstream file(output, ios::binary);
+    file << previousOutput;
+    ASSERT_TRUE(file.good());
+  }
+  ASSERT_TRUE(RteFsUtils::SetFileReadOnly(output, true));
+  {
+    ofstream probe(output, ios::binary | ios::app);
+    if(probe.good()) {
+      probe.close();
+      EXPECT_TRUE(RteFsUtils::SetFileReadOnly(output, false));
+      GTEST_SKIP() << "The current process can write read-only files";
+    }
+  }
+
+  Arguments args("SVDConv.exe", input);
+  args.add({"-o", directory, "--generate=sfr", "--nocleanup", "--verbose"});
+  SvdConv converter;
+  const auto result = converter.Check(args, args, nullptr);
+  EXPECT_TRUE(RteFsUtils::SetFileReadOnly(output, false));
+  EXPECT_EQ(2, result);
+  string messages;
+  for(const auto& message : ErrLog::Get()->GetLogMessages()) { messages += message; }
+  EXPECT_NE(string::npos, messages.find("M130"));
+  EXPECT_NE(string::npos, messages.find("M111"));
+  EXPECT_EQ(string::npos, messages.find("Generate System Viewer SFR File"));
+  EXPECT_EQ(string::npos, messages.find("M133"));
+  EXPECT_EQ(string::npos, messages.find("SfrCC2"));
+  string retained;
+  ASSERT_TRUE(RteFsUtils::ReadFile(output, retained));
+  EXPECT_EQ(previousOutput, retained);
+  EXPECT_FALSE(RteFsUtils::Exists(directory + "/option_n.sfr"));
+}
+
 #ifndef _WIN32
 TEST_F(SvdConvIntegTests, CheckSfrUnsupportedPlatform) {
   const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
