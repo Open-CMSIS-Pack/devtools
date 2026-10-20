@@ -48,8 +48,9 @@ due to backward compatibility reasons. All newly developed/updated SVD files sho
 in the same directory as `svdconv.exe`. On Linux and macOS, SVDConv reports error M133 and
 returns exit code 2. The intermediate `.sfd` file may still be generated.
 Use `--generate=sfd` to generate SFD output on any supported platform.
-SFD/SFR output supports register and field ranges within 32 bits. Wider ranges report M226 before SFD file creation;
-SFR compilation is skipped when SFD generation fails. Header masks support valid ranges up to 64 bits.
+SVDConv supports Cortex-M devices with register and field ranges within 32 bits. Wider intermediate arithmetic
+prevents overflow; it does not add support for 64-bit input or output. SFD/SFR rejects wider ranges with M226 before
+SFD file creation. SFR compilation is skipped when SFD generation fails.
 
 Dimension expansion has a cumulative limit of 100,000 generated indices and model copies per input file.
 Nested arrays, inherited content, and repeated expansion share this limit. Exceeding it reports M249 and stops

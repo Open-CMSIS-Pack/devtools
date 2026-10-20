@@ -440,10 +440,6 @@ bool SvdRegister::CalcAccessMask()
     m_accessMaskValid = true;
     return false;
   }
-  if(regWidth == 64) {
-    m_accessMaskRead = m_accessMaskWrite = regMask;
-  }
-
   const auto fields = GetFieldContainer();
   if(!fields) {
     return true;

@@ -218,12 +218,14 @@ bool HeaderData::CreateFieldPosMask(SvdField* field, PosMaskNames *posMaskNames)
   const auto& alternateGroup  = posMaskNames->alternate;
   const auto  name            = field->GetNameCalculated();
   const auto  fieldName       = field->GetHierarchicalNameResulting();
-  uint32_t firstBit           = (uint32_t)field->GetOffset();
+  const auto offset           = field->GetOffset();
   uint32_t bitWidth           = field->GetEffectiveBitWidth();
-  const auto bitMaxNum        = SvdUtils::CreateBitMask(bitWidth);
-  if(!SvdUtils::CreateBitMask(bitWidth, field->GetOffset())) {
+  const auto fieldMask        = SvdUtils::CreateBitMask(bitWidth, offset);
+  if(!fieldMask || fieldMask > UINT32_MAX) {
     return false;
   }
+  const auto firstBit = static_cast<uint32_t>(offset);
+  const auto bitMaxNum = static_cast<uint32_t>(SvdUtils::CreateBitMask(bitWidth));
 
   if(!alternateGroup.empty()) 
     m_gen->Generate<MAKE|MK_FIELD_POSMASK3  >("%s_%s", name.c_str(), firstBit, bitMaxNum, fieldName.c_str(), alternateGroup.c_str());

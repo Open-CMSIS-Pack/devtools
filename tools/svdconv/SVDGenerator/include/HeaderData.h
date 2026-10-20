@@ -19,7 +19,7 @@
 #include <list>
 
 struct ONESTRUCT {
-  uint64_t mask;
+  uint32_t mask;
   std::map<uint32_t, SvdField*> fields;
 
   ONESTRUCT() : mask(0) {}

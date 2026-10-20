@@ -74,7 +74,7 @@ protected:
   void  MakeEnumStructUnionEndArray       (const std::string& textBuf, c_header::Index elementIndex, c_header::Special specialType, c_header::Additional langAdditional, uint32_t num);
   void  MakeFieldPosMask                  (const std::string& field, const std::string& peri, const std::string& reg, uint32_t pos, uint32_t mask);
   void  MakeFieldPosMask2                 (const std::string& field, const std::string& peri, const std::string& reg, uint32_t pos, uint32_t mask);
-  void  MakeFieldPosMask3                 (const std::string& name, const std::string& field, uint32_t pos, uint64_t mask);
+  void  MakeFieldPosMask3                 (const std::string& name, const std::string& field, uint32_t pos, uint32_t mask);
   void  CreateDoxyComment                 (const std::string& str);
   void  CreateDoxyCommentStar             (const std::string& str);
   void  CreateDoxyCommentLineBreak        (const std::string& str);

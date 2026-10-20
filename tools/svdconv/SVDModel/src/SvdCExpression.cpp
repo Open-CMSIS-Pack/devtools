@@ -181,16 +181,13 @@ string SvdCExpression::CreateFieldExpression(SvdItem* item)
   const auto firstBit = field->GetOffset();
   const auto bitWidth = field->GetEffectiveBitWidth();
   const auto fieldMask = SvdUtils::CreateBitMask(bitWidth, firstBit);
-  if(!field->IsValid() || !fieldMask) {
+  if(!field->IsValid() || !fieldMask || fieldMask > UINT32_MAX) {
     return SvdUtils::EMPTY_STRING;
   }
   const auto bitMaxNum = SvdUtils::CreateBitMask(bitWidth);
 
   std::stringstream ss;
   ss << "0x" << std::hex << bitMaxNum;
-  if(fieldMask > UINT32_MAX) {
-    ss << "ULL";
-  }
 
   string expression;
   expression += "(";

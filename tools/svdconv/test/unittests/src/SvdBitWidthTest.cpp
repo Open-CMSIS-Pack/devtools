@@ -189,6 +189,8 @@ private:
   int m_previousWarnings = 0;
 };
 
+// The model retains preliminary 64-bit support. These arithmetic checks do not
+// imply support for 64-bit input or generated output.
 TEST_F(SvdBitWidthTest, FullWidthFieldsPreserveEnumsAndAccessMasks) {
   for(const auto width : {32, 64}) {
     SCOPED_TRACE(width);
@@ -236,6 +238,19 @@ TEST_F(SvdBitWidthTest, UpperBoundaryFieldsProduceOnlyTheirOwnWriteBit) {
     EXPECT_EQ(uint64_t{1} << (width - 1), reg.GetAccessMaskWrite());
     EXPECT_EQ(width == 64 ? UINT64_MAX : uint64_t{UINT32_MAX}, reg.GetAccessMaskRead());
   }
+}
+
+TEST_F(SvdBitWidthTest, FullWidth32BitWriteMaskDoesNotSignExtend) {
+  XMLTreeElement element(nullptr, "register");
+  const auto fields = ConfigureRegister(element, "32");
+  AddField(fields, "FULL", "0", "32");
+  SvdRegister reg(nullptr);
+
+  ASSERT_TRUE(reg.Construct(&element));
+  ASSERT_TRUE(reg.IsValid());
+  EXPECT_EQ(uint64_t{UINT32_MAX}, reg.GetAccessMask());
+  EXPECT_EQ(uint64_t{UINT32_MAX}, reg.GetAccessMaskRead());
+  EXPECT_EQ(uint64_t{UINT32_MAX}, reg.GetAccessMaskWrite());
 }
 
 TEST_F(SvdBitWidthTest, InvalidFieldWidthsAreRejectedBeforeEnumChecks) {
@@ -367,11 +382,11 @@ TEST_F(SvdBitWidthTest, EnumValuesAboveTheFieldWidthRemainInvalid) {
   EXPECT_TRUE(HasMessage("M335"));
 }
 
-TEST_F(SvdBitWidthTest, FullWidthRegisterWithoutFieldsPreservesAllAccessBits) {
+TEST_F(SvdBitWidthTest, FullWidth32BitRegisterWithoutFieldsPreservesAllAccessBits) {
   SvdRegister reg(nullptr);
-  reg.SetBitWidth(64);
-  EXPECT_EQ(UINT64_MAX, reg.GetAccessMaskRead());
-  EXPECT_EQ(UINT64_MAX, reg.GetAccessMaskWrite());
+  reg.SetBitWidth(32);
+  EXPECT_EQ(uint64_t{UINT32_MAX}, reg.GetAccessMaskRead());
+  EXPECT_EQ(uint64_t{UINT32_MAX}, reg.GetAccessMaskWrite());
 }
 
 TEST_F(SvdBitWidthTest, FieldValidationHandlesMissingRegisterAncestors) {
@@ -391,63 +406,65 @@ TEST_F(SvdBitWidthTest, HeaderFieldGroupsDetectFullWidthAndUpperBitOverlaps) {
   SvdOptions options;
   FileHeaderInfo info;
   BitWidthHeaderData header(info, options);
-  for(const auto width : {32, 64}) {
-    SCOPED_TRACE(width);
-    SvdRegister reg(nullptr);
-    reg.SetBitWidth(width);
-    const auto full = AddUncheckedField(reg, 0, width);
-    const auto upper = AddUncheckedField(reg, width - 1, 1);
-    FIELDMAPLIST groups;
-    ASSERT_TRUE(header.AddFields(reg.GetFieldContainer(), groups));
-    ASSERT_EQ(2U, groups.size());
-    EXPECT_EQ(width == 64 ? UINT64_MAX : uint64_t{UINT32_MAX}, groups.front().mask);
-    EXPECT_EQ(full, groups.front().fields.at(0));
-    EXPECT_EQ(uint64_t{1} << (width - 1), groups.back().mask);
-    EXPECT_EQ(upper, groups.back().fields.at(width - 1));
-  }
+  SvdRegister reg(nullptr);
+  reg.SetBitWidth(32);
+  const auto full = AddUncheckedField(reg, 0, 32);
+  const auto upper = AddUncheckedField(reg, 31, 1);
+  FIELDMAPLIST groups;
+  ASSERT_TRUE(header.AddFields(reg.GetFieldContainer(), groups));
+  ASSERT_EQ(2U, groups.size());
+  EXPECT_EQ(UINT32_MAX, groups.front().mask);
+  EXPECT_EQ(full, groups.front().fields.at(0));
+  EXPECT_EQ(UINT32_C(0x80000000), groups.back().mask);
+  EXPECT_EQ(upper, groups.back().fields.at(31));
 }
 
-TEST_F(SvdBitWidthTest, HeaderMasksPreserve32BitTextAndRepresent64BitBoundaries) {
+TEST_F(SvdBitWidthTest, HeaderMasksPreserve32BitBoundaryTextAndRejectWiderRanges) {
   CreateOutputDirectory();
   FileIo output;
   output.SetFileName((m_outputDirectory / "masks.h").string());
   BitWidthHeaderGenerator generator(&output);
   generator.MakeFieldPosMask3("FULL32", "Full 32-bit field", 0, UINT32_MAX);
   generator.MakeFieldPosMask3("TOP32", "Top 32-bit field", 31, 1);
-  generator.MakeFieldPosMask3("FULL64", "Full 64-bit field", 0, UINT64_MAX);
-  generator.MakeFieldPosMask3("TOP64", "Top 64-bit field", 63, 1);
   ASSERT_TRUE(output.Flush());
   ifstream input(m_outputDirectory / "masks.h");
   ASSERT_TRUE(input.is_open());
   const string text{istreambuf_iterator<char>(input), istreambuf_iterator<char>()};
   EXPECT_EQ("(0xffffffffUL)", DefineValue(text, "FULL32_Msk"));
   EXPECT_EQ("(0x80000000UL)", DefineValue(text, "TOP32_Msk"));
-  EXPECT_EQ("(0xffffffffffffffffULL)", DefineValue(text, "FULL64_Msk"));
-  EXPECT_EQ("(0x8000000000000000ULL)", DefineValue(text, "TOP64_Msk"));
+  EXPECT_EQ("(0UL)", DefineValue(text, "FULL32_Pos"));
+  EXPECT_EQ("(31UL)", DefineValue(text, "TOP32_Pos"));
 
   SvdOptions options;
   FileHeaderInfo info;
   BitWidthHeaderData header(info, options);
   SvdRegister reg(nullptr);
-  reg.SetBitWidth(64);
-  const auto full = AddUncheckedField(reg, 0, 64);
+  reg.SetBitWidth(32);
+  const auto full = AddUncheckedField(reg, 0, 32);
   PosMaskNames names;
   EXPECT_TRUE(header.CreateFieldPosMask(full, &names));
   EXPECT_FALSE(HasMessage("M220"));
-  EXPECT_FALSE(header.CreateFieldPosMask(AddUncheckedField(reg, 63, 2), &names));
+  EXPECT_FALSE(header.CreateFieldPosMask(AddUncheckedField(reg, 31, 2), &names));
+  EXPECT_FALSE(header.CreateFieldPosMask(AddUncheckedField(reg, 0, 33), &names));
+  EXPECT_FALSE(header.CreateFieldPosMask(AddUncheckedField(reg, 0, 64), &names));
+  EXPECT_FALSE(header.CreateFieldPosMask(AddUncheckedField(reg, UINT64_C(0x100000000), 1), &names));
 }
 
-TEST_F(SvdBitWidthTest, FieldExpressionsUse64BitLiteralsOnlyWhenNeeded) {
+TEST_F(SvdBitWidthTest, FieldExpressionsPreserve32BitBoundaryTextAndRejectWiderRanges) {
   SvdRegister reg(nullptr);
   reg.SetName("CTRL");
-  reg.SetBitWidth(64);
+  reg.SetBitWidth(32);
   SvdCExpression expression;
   EXPECT_EQ("(CTRL & (0xffffffff << 0))", expression.CreateFieldExpression(AddUncheckedField(reg, 0, 32)));
-  EXPECT_EQ("(CTRL & (0xffffffffffffffffULL << 0))", expression.CreateFieldExpression(AddUncheckedField(reg, 0, 64)));
-  EXPECT_EQ("(CTRL & (0x1ULL << 63))", expression.CreateFieldExpression(AddUncheckedField(reg, 63, 1)));
+  EXPECT_EQ("(CTRL & (0x1 << 31))", expression.CreateFieldExpression(AddUncheckedField(reg, 31, 1)));
+  EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 31, 2)).empty());
+  EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 32, 1)).empty());
+  EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 0, 33)).empty());
+  EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 0, 64)).empty());
   EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 64, 1)).empty());
   EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 0, 65)).empty());
   EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, 0, 0)).empty());
+  EXPECT_TRUE(expression.CreateFieldExpression(AddUncheckedField(reg, UINT64_C(0x100000000), 1)).empty());
 }
 
 TEST_F(SvdBitWidthTest, InvalidFieldOperandsRejectTheWholeExpression) {
@@ -600,19 +617,23 @@ TEST_F(SvdBitWidthTest, HeaderFieldGroupsSkipUncheckedInvalidRanges) {
   FileHeaderInfo info;
   BitWidthHeaderData header(info, options);
   SvdRegister reg(nullptr);
-  reg.SetBitWidth(64);
+  reg.SetBitWidth(32);
   AddUncheckedField(reg, 0, 0);
+  AddUncheckedField(reg, 0, 33);
+  AddUncheckedField(reg, 0, 64);
   AddUncheckedField(reg, 0, 65);
+  AddUncheckedField(reg, 32, 1);
   AddUncheckedField(reg, 64, 1);
-  AddUncheckedField(reg, 63, 2);
-  const auto upper = AddUncheckedField(reg, 63, 1);
+  AddUncheckedField(reg, 31, 2);
+  AddUncheckedField(reg, UINT64_C(0x100000000), 1);
+  const auto upper = AddUncheckedField(reg, 31, 1);
 
   FIELDMAPLIST groups;
   ASSERT_TRUE(header.AddFields(reg.GetFieldContainer(), groups));
   ASSERT_EQ(1U, groups.size());
-  EXPECT_EQ(uint64_t{1} << 63, groups.front().mask);
+  EXPECT_EQ(UINT32_C(0x80000000), groups.front().mask);
   ASSERT_EQ(1U, groups.front().fields.size());
-  EXPECT_EQ(upper, groups.front().fields.at(63));
+  EXPECT_EQ(upper, groups.front().fields.at(31));
 }
 
 TEST_F(SvdBitWidthTest, HeaderRejectsInvalidShiftRangesWithoutPartialMacros) {
@@ -620,10 +641,10 @@ TEST_F(SvdBitWidthTest, HeaderRejectsInvalidShiftRangesWithoutPartialMacros) {
   FileIo output;
   output.SetFileName((m_outputDirectory / "masks.h").string());
   BitWidthHeaderGenerator generator(&output);
-  generator.MakeFieldPosMask3("INVALID_POSITION", "Position outside register", 64, 1);
-  generator.MakeFieldPosMask3("INVALID_MASK", "Mask crosses register boundary", 63, 3);
+  generator.MakeFieldPosMask3("INVALID_POSITION", "Position outside register", 32, 1);
+  generator.MakeFieldPosMask3("INVALID_MASK", "Mask crosses register boundary", 31, 3);
   EXPECT_EQ(2, count(m_messages.begin(), m_messages.end(), "M220"));
-  generator.MakeFieldPosMask3("VALID", "Top 64-bit field", 63, 1);
+  generator.MakeFieldPosMask3("VALID", "Top 32-bit field", 31, 1);
   ASSERT_TRUE(output.Flush());
 
   ifstream input(m_outputDirectory / "masks.h");
@@ -631,8 +652,8 @@ TEST_F(SvdBitWidthTest, HeaderRejectsInvalidShiftRangesWithoutPartialMacros) {
   const string text{istreambuf_iterator<char>(input), istreambuf_iterator<char>()};
   EXPECT_EQ(string::npos, text.find("INVALID_POSITION"));
   EXPECT_EQ(string::npos, text.find("INVALID_MASK"));
-  EXPECT_EQ("(63UL)", DefineValue(text, "VALID_Pos"));
-  EXPECT_EQ("(0x8000000000000000ULL)", DefineValue(text, "VALID_Msk"));
+  EXPECT_EQ("(31UL)", DefineValue(text, "VALID_Pos"));
+  EXPECT_EQ("(0x80000000UL)", DefineValue(text, "VALID_Msk"));
 }
 
 TEST_F(SvdBitWidthTest, SfdRejectsUnsupportedExpressionReferenceOutsideDeviceChildren) {
