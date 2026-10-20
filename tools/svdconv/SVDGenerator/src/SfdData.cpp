@@ -19,9 +19,7 @@
 
 using namespace std;
 
-namespace {
-
-bool CheckSfdBitRange(SvdItem* item)
+bool SfdData::CheckBitRange(SvdItem* item)
 {
   const auto reg = dynamic_cast<SvdRegister*>(item);
   const auto field = dynamic_cast<SvdField*>(item);
@@ -35,12 +33,12 @@ bool CheckSfdBitRange(SvdItem* item)
   return true;
 }
 
-bool CheckSfdBitRanges(SvdItem* item)
+bool SfdData::CheckBitRanges(SvdItem* item)
 {
   if(!item->IsValid()) {
     return true;
   }
-  if(!CheckSfdBitRange(item)) {
+  if(!CheckBitRange(item)) {
     return false;
   }
 
@@ -56,22 +54,20 @@ bool CheckSfdBitRanges(SvdItem* item)
         LogMsg("M226", MSG("Invalid item referenced by an SFD expression: '" + condition->GetText() + "'"), condition->GetLineNumber());
         return false;
       }
-      if(!CheckSfdBitRange(referenced)) {
+      if(!CheckBitRange(referenced)) {
         return false;
       }
     }
   }
 
   for(const auto child : item->GetChildren()) {
-    if(!CheckSfdBitRanges(child)) {
+    if(!CheckBitRanges(child)) {
       return false;
     }
   }
   const auto dim = item->GetDimension();
-  return !dim || CheckSfdBitRanges(dim);
+  return !dim || CheckBitRanges(dim);
 }
-
-} // namespace
 
 
 SfdData::SfdData(const FileHeaderInfo &fileHeaderInfo, const SvdOptions& options):
@@ -106,7 +102,7 @@ bool SfdData::Create(SvdItem *item, const string &fileName)
   }
 
   const auto device = dynamic_cast<SvdDevice*>(item);
-  if(!device || !CheckSfdBitRanges(device)) {
+  if(!device || !CheckBitRanges(device)) {
     return false;
   }
   for(const auto& [name, reg] : device->GetExpressionRegistersList()) {
@@ -114,7 +110,7 @@ bool SfdData::Create(SvdItem *item, const string &fileName)
       LogMsg("M226", MSG("Invalid register referenced by an SFD expression: '" + name + "'"));
       return false;
     }
-    if(!CheckSfdBitRanges(reg)) {
+    if(!CheckBitRanges(reg)) {
       return false;
     }
   }
