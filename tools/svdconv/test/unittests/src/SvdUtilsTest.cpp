@@ -36,11 +36,54 @@ TEST(SvdUtilsUnitTests, CheckTextGeneric_SfrCC2_whitespace) {
   ASSERT_EQ("test  test", s);
 }
 
-TEST(SvdUtilsUnitTests, DISABLED_CheckTextGeneric_SfrCC2_escape) {
-  // An escape char other than \\n is removed
+TEST(SvdUtilsUnitTests, CheckTextGeneric_SfrCC2_escape) {
+  // Unsupported escape pairs are removed while display breaks are preserved.
   auto s = SvdUtils::CheckTextGeneric_SfrCC2("test\\n\\rtest", 0);
 
-  ASSERT_EQ("test\\ntest", s); // FIXME: current result is "test\\n\\test"
+  ASSERT_EQ("test\\ntest", s);
+}
+
+TEST(SvdUtilsUnitTests, CheckTextGeneric_SfrCC2_escapePairs) {
+  const struct {
+    const char* input;
+    const char* expected;
+  } cases[] = {
+    {R"(\n)", R"(\n)"},
+    {R"(\n\n)", R"(\n\n)"},
+    {R"(\r)", ""},
+    {R"(\tstart)", "start"},
+    {R"(end\r)", "end"},
+    {R"(\r\n\t)", R"(\n)"},
+    {R"(\)", ""},
+    {R"(end\)", "end"},
+    {R"(\n\)", R"(\n)"},
+    {R"(\\)", ""},
+    {R"(a\\nb)", "anb"},
+    {R"(a\\\nb)", R"(a\nb)"},
+    {R"(\"text)", "text"},
+    {R"(\?text)", "text"},
+    {R"("text")", R"(\"text\")"},
+  };
+  for(const auto& test : cases) {
+    SCOPED_TRACE(::testing::PrintToString(test.input));
+    EXPECT_EQ(test.expected, SvdUtils::CheckTextGeneric_SfrCC2(test.input, 0));
+  }
+}
+
+TEST(SvdUtilsUnitTests, CheckTextGeneric_SfrCC2_escapeState) {
+  EXPECT_EQ("first second", SvdUtils::CheckTextGeneric_SfrCC2(R"(first \r second)", 0));
+  EXPECT_EQ("?x", SvdUtils::CheckTextGeneric_SfrCC2(R"(\??x)", 0));
+  EXPECT_EQ("??", SvdUtils::CheckTextGeneric_SfrCC2(R"(?\r?/)", 0));
+  EXPECT_EQ("??", SvdUtils::CheckTextGeneric_SfrCC2(R"(??\r)", 0));
+  EXPECT_EQ("??n", SvdUtils::CheckTextGeneric_SfrCC2(R"(??\n)", 0));
+}
+
+TEST(SvdUtilsUnitTests, CheckTextGeneric_SfrCC2_escapeControls) {
+  for(const char escaped : {' ', '\t', '\r', '\n', '\0', '\x10', '\x7f'}) {
+    const string input = string("first\\") + escaped + "second";
+    SCOPED_TRACE(::testing::PrintToString(input));
+    EXPECT_EQ("firstsecond", SvdUtils::CheckTextGeneric_SfrCC2(input, 0));
+  }
 }
 
 TEST(SvdUtilsUnitTests, CheckTextGeneric_SfrCC2_ctrl) {

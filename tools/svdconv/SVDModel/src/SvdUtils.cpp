@@ -1228,18 +1228,11 @@ string SvdUtils::CheckTextGeneric_SfrCC2(const string& value, uint32_t lineNo)
   string descr;
   unsigned char c=0, cPrev=0, cPrev2=0;
 
-  for(auto it = value.begin(); it != value.end(); it++) {
+  auto it = value.begin();
+  while(it != value.end()) {
     cPrev2  = cPrev;
     cPrev   = c;
-    c       = *it;
-
-    if(c == '%') {
-      auto tmpIt = it;
-      tmpIt++;
-      if(tmpIt != value.end() && *tmpIt == 's') {
-        ;
-      }
-    }
+    c       = *it++;
 
     if(c == ' ' && cPrev == ' ') {      // delete double whitespace
       continue;
@@ -1254,11 +1247,15 @@ string SvdUtils::CheckTextGeneric_SfrCC2(const string& value, uint32_t lineNo)
       }
     }
 
-    if(cPrev == '?' && cPrev2 == '?') {
+    const bool followsQuestionMarks = cPrev == '?' && cPrev2 == '?';
+    if(followsQuestionMarks) {
       string str;
       str += c;
       LogMsg("M517", NAME(value), VAL("CHAR", str), lineNo);
-      continue;
+      // A rejected backslash still belongs to the escape pair below.
+      if(c != '\\') {
+        continue;
+      }
     }
 
     if(c < 0x20 || c > 0x7e) {
@@ -1282,14 +1279,27 @@ string SvdUtils::CheckTextGeneric_SfrCC2(const string& value, uint32_t lineNo)
       continue;
     }
 
-    if(cPrev == '\\') {     // Test on supported ESC sequences
-      if(c != 'n') {
-        // FIXME: The escape sequence is messed up, e.g. "\\rtest" converts to "\\test"
-        string str;
-        str += c;
-        LogMsg("M518", NAME(value), VAL("CHAR", str), lineNo);
-        continue;
+    // Consume escape pairs before emitting a backslash.
+    if(c == '\\') {
+      if(it != value.end()) {
+        c = *it++;
+        if(c == 'n') {
+          if(!followsQuestionMarks) {
+            descr += '\\';
+          }
+          descr += c;
+          cPrev = '\\';
+          continue;
+        }
       }
+
+      string str;
+      str += c;
+      LogMsg("M518", NAME(value), VAL("CHAR", str), lineNo);
+      // Removed pairs must not affect whitespace or trigraph checks that follow.
+      c = cPrev;
+      cPrev = cPrev2;
+      continue;
     }
 
     descr += c;
