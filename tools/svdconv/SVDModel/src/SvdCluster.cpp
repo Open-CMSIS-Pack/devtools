@@ -294,9 +294,13 @@ bool SvdCluster::CalculateDim()
     }
     const auto newClust = new SvdCluster(dim);
     dim->AddItem(newClust);
-    if(!CopyChilds(this, newClust)) { return false; }
+    if(!CopyChilds(this, newClust)) {
+      return false;
+    }
     newClust->CopyItem(this);
-    if(HasExpansionError()) { return false; }
+    if(HasExpansionError()) {
+      return false;
+    }
     newClust->SetName(dim->CreateName(dimIndexname));
     newClust->SetDisplayName(dim->CreateDisplayName(dimIndexname));
     newClust->SetDescription(dim->CreateDescription(dimIndexname));

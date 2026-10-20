@@ -65,7 +65,9 @@ bool SvdInterrupt::CalculateDim()
       if(parent) {  
         const auto parentDim = parent->GetDimension();
         if(parentDim) {
-          if(!CopyDim(this, parent)) { return false; }
+          if(!CopyDim(this, parent)) {
+            return false;
+          }
           dim = GetDimension();
           dim->SetDimIncrement(1);
         }
@@ -83,7 +85,9 @@ bool SvdInterrupt::CalculateDim()
     dim->ClearChildren();
   }
   
-  if(!dim->CalculateDim()) { return false; }
+  if(!dim->CalculateDim()) {
+    return false;
+  }
 
   const auto& dimIndexList = dim->GetDimIndexList();
   uint32_t value = GetValue();
@@ -99,13 +103,19 @@ bool SvdInterrupt::CalculateDim()
   }
 
   for(const auto& dimIndex : dimIndexList) {
-    if(!dim->ReserveExpansion(1)) { return false; }
+    if(!dim->ReserveExpansion(1)) {
+      return false;
+    }
     const auto newIrq = new SvdInterrupt(dim);
     dim->AddItem(newIrq);
-    if(!CopyChilds(this, newIrq)) { return false; }
+    if(!CopyChilds(this, newIrq)) {
+      return false;
+    }
 
     newIrq->CopyItem            (this);
-    if(HasExpansionError()) { return false; }
+    if(HasExpansionError()) {
+      return false;
+    }
     newIrq->SetName             (dim->CreateName(dimIndex));
     newIrq->SetDescription      (dim->CreateDescription(dimIndex));
     newIrq->SetValue            (value);

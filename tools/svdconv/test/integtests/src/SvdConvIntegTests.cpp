@@ -320,7 +320,9 @@ TEST_F(SvdConvIntegTests, ExpansionLimitStopsAllGeneratorsAndNextInputStillWorks
     SvdConv converter;
     EXPECT_EQ(2, converter.Check(args, args, nullptr));
     string messages;
-    for(const auto& message : ErrLog::Get()->GetLogMessages()) { messages += message; }
+    for(const auto& message : ErrLog::Get()->GetLogMessages()) {
+      messages += message;
+    }
     EXPECT_NE(string::npos, messages.find("M249"));
     for(const auto* suffix : {".h", ".sfd", "_MapFields.txt"}) {
       EXPECT_FALSE(RteFsUtils::Exists(output + "/PosMaskDim" + suffix));
@@ -363,7 +365,9 @@ TEST_F(SvdConvIntegTests, RejectedSfdDoesNotCompileStaleOutput) {
   SvdConv converter;
   EXPECT_EQ(2, converter.Check(args, args, nullptr));
   string messages;
-  for(const auto& message : ErrLog::Get()->GetLogMessages()) { messages += message; }
+  for(const auto& message : ErrLog::Get()->GetLogMessages()) {
+    messages += message;
+  }
   EXPECT_NE(string::npos, messages.find("M226"));
   EXPECT_NE(string::npos, messages.find("M111"));
   EXPECT_EQ(string::npos, messages.find("Generate System Viewer SFR File"));
@@ -407,7 +411,9 @@ TEST_F(SvdConvIntegTests, InvalidExpressionFieldDoesNotCompileStaleOutput) {
   SvdConv converter;
   EXPECT_EQ(2, converter.Check(args, args, nullptr));
   string messages;
-  for(const auto& message : ErrLog::Get()->GetLogMessages()) { messages += message; }
+  for(const auto& message : ErrLog::Get()->GetLogMessages()) {
+    messages += message;
+  }
   EXPECT_NE(string::npos, messages.find("M310"));
   EXPECT_NE(string::npos, messages.find("M226"));
   EXPECT_NE(string::npos, messages.find("M111"));
@@ -431,7 +437,9 @@ TEST_F(SvdConvIntegTests, FailedSfdCreationDoesNotCompileOutput) {
   SvdConv converter;
   EXPECT_EQ(2, converter.Check(args, args, nullptr));
   string messages;
-  for(const auto& message : ErrLog::Get()->GetLogMessages()) { messages += message; }
+  for(const auto& message : ErrLog::Get()->GetLogMessages()) {
+    messages += message;
+  }
   EXPECT_NE(string::npos, messages.find("M130"));
   EXPECT_NE(string::npos, messages.find("M111"));
   EXPECT_EQ(string::npos, messages.find("Generate System Viewer SFR File"));
@@ -469,7 +477,9 @@ TEST_F(SvdConvIntegTests, ReadOnlySfdDoesNotCompileStaleOutput) {
   EXPECT_TRUE(RteFsUtils::SetFileReadOnly(output, false));
   EXPECT_EQ(2, result);
   string messages;
-  for(const auto& message : ErrLog::Get()->GetLogMessages()) { messages += message; }
+  for(const auto& message : ErrLog::Get()->GetLogMessages()) {
+    messages += message;
+  }
   EXPECT_NE(string::npos, messages.find("M130"));
   EXPECT_NE(string::npos, messages.find("M111"));
   EXPECT_EQ(string::npos, messages.find("Generate System Viewer SFR File"));

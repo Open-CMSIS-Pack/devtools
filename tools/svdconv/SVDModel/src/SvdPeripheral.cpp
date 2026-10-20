@@ -373,7 +373,9 @@ bool SvdPeripheral::CopyItem(SvdItem *from)
   if(resetMask        == 0 )                      { SetResetMask           (pFrom->GetResetMask           ()); }
   if(access           == SvdTypes::Access::UNDEF) { SetAccess              (pFrom->GetAccess              ()); }
 
-  if(!CopyAddressBlocks(pFrom) || HasExpansionError()) { return false; }
+  if(!CopyAddressBlocks(pFrom) || HasExpansionError()) {
+    return false;
+  }
   SvdItem::CopyItem(pFrom);
   CalculateDim();
 
@@ -391,7 +393,9 @@ bool SvdPeripheral::CopyAddressBlocks(SvdPeripheral *from)
       continue;
     }
 
-    if(!ReserveExpansion(1)) { return false; }
+    if(!ReserveExpansion(1)) {
+      return false;
+    }
     const auto addressBlock = new SvdAddressBlock(this);
     addressBlock->CopyItem(addrBlock);
     AddAddressBlock(addressBlock);
@@ -434,7 +438,9 @@ bool SvdPeripheral::CopyDisableCondition(SvdCExpression* from)
     return true;
   }
 
-  if(!ReserveExpansion(1)) { return false; }
+  if(!ReserveExpansion(1)) {
+    return false;
+  }
   m_disableCondition = new SvdCExpression(*from);
 
   return true; 
@@ -477,10 +483,14 @@ bool SvdPeripheral::CalculateDim()
     }
     const auto newPeri = new SvdPeripheral(dim);
     dim->AddItem(newPeri);
-    if(!CopyDerivedFrom(newPeri, this) || !CopyChilds(parent, newPeri)) { return false; }
+    if(!CopyDerivedFrom(newPeri, this) || !CopyChilds(parent, newPeri)) {
+      return false;
+    }
 
     newPeri->CopyItem               (parent);
-    if(HasExpansionError()) { return false; }
+    if(HasExpansionError()) {
+      return false;
+    }
     newPeri->SetName                (dim->CreateName(dimIndexname));
     newPeri->SetDisplayName         (dim->CreateDisplayName(dimIndexname));
     newPeri->SetDescription         (dim->CreateDescription(dimIndexname));
@@ -1285,7 +1295,9 @@ bool SvdPeripheral::SortAddressBlocks(map<uint64_t, SvdAddressBlock*>& addrBlock
       continue;       // only use "register" addressBlocks
     }
 
-    if(!ReserveExpansion(1)) { return false; }
+    if(!ReserveExpansion(1)) {
+      return false;
+    }
     const auto block = new SvdAddressBlock(this);
     block->CopyItem(addrBlock);
 

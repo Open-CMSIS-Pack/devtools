@@ -116,11 +116,15 @@ bool SvdDerivedFrom::DeriveItem(SvdItem *from)
   SetDerivedFromItem(from);
 
   // Also copy all element's childs
-  if(!CopyChilds(from, parent)) { return false; }
+  if(!CopyChilds(from, parent)) {
+    return false;
+  }
 
   // Create a copy
   parent->CopyItem(from);
-  if(HasExpansionError()) { return false; }
+  if(HasExpansionError()) {
+    return false;
+  }
 
   const auto dim = parent->GetDimension();
   if(dim) {

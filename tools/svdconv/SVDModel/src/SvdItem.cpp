@@ -985,7 +985,9 @@ bool SvdItem::CopyChilds(SvdItem *from, SvdItem *hook)
     if(lv == L_EnumeratedValues) {      // more <enumeratedValues> containers can be set!
       const auto nItem = new SvdEnumContainer(hook);
       hook->AddItem(nItem);
-      if(!CopyChilds(copy, nItem)) { return false; }
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
     else if(lv == L_Fields) {
@@ -998,7 +1000,9 @@ bool SvdItem::CopyChilds(SvdItem *from, SvdItem *hook)
       else {
         nItem = (SvdFieldContainer *)*(hook->GetChildren().begin());
       }
-      if(!CopyChilds(copy, nItem)) { return false; }
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
     }
     else if(lv == L_Registers) {
       SvdRegisterContainer *nItem;
@@ -1010,38 +1014,50 @@ bool SvdItem::CopyChilds(SvdItem *from, SvdItem *hook)
       else {
         nItem = (SvdRegisterContainer *)*(hook->GetChildren().begin());
       }
-      if(!CopyChilds(copy, nItem)) { return false; }
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
     }
 
     // Elements
     else if(lv == L_EnumeratedValue) {
       const auto nItem = new SvdEnum(hook);
       hook->AddItem(nItem);
-      if(!CopyChilds(copy, nItem)) { return false; }
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
     else if(lv == L_Field) {
       const auto nItem = new SvdField(hook);
       hook->AddItem(nItem);
-      if(!CopyChilds(copy, nItem)) { return false; }
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
     else if(lv == L_Register) {
       const auto nItem = new SvdRegister(hook);
       hook->AddItem(nItem);
-      if(!CopyChilds(copy, nItem)) { return false; }
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
     else if(lv == L_Peripheral) {
       const auto nItem = new SvdPeripheral(hook);
       hook->AddItem(nItem);
-      if(!CopyChilds(copy, nItem)) { return false; }
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
     else if(lv == L_Cluster) {
       const auto nItem = new SvdCluster(hook);
       hook->AddItem(nItem);
-      if(!CopyChilds(copy, nItem)) { return false; }
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
     if(hook->HasExpansionError()) {

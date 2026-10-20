@@ -379,7 +379,9 @@ bool SvdDimension::CalculateDim()
       LogMsg("M250", NAME(parent ? parent->GetName() : GetName()), GetLineNumber());
     }
     Invalidate();
-    if(parent) { parent->Invalidate(); }
+    if(parent) {
+      parent->Invalidate();
+    }
     m_dimIndexList.clear();
     return false;
   }
@@ -394,7 +396,9 @@ bool SvdDimension::CheckExpansionRange(uint64_t start, uint64_t increment)
     const auto parent = GetParent();
     LogMsg("M250", NAME(parent ? parent->GetName() : GetName()), GetLineNumber());
     Invalidate();
-    if(parent) { parent->Invalidate(); }
+    if(parent) {
+      parent->Invalidate();
+    }
     return false;
   }
   return !HasExpansionError();

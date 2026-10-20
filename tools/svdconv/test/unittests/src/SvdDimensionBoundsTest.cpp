@@ -42,8 +42,12 @@ protected:
     log->SetErrConsumer(m_previousConsumer);
     log->SetQuietMode(m_previousQuiet);
     log->ResetMsgCount();
-    for(int i = 0; i < m_previousErrors; i++) { log->IncErrCnt(); }
-    for(int i = 0; i < m_previousWarnings; i++) { log->IncWarnCnt(); }
+    for(int i = 0; i < m_previousErrors; i++) {
+      log->IncErrCnt();
+    }
+    for(int i = 0; i < m_previousWarnings; i++) {
+      log->IncWarnCnt();
+    }
   }
 
   bool Consume(const PdscMsg& msg, const string&) override {
@@ -107,7 +111,9 @@ TEST_F(SvdDimensionBoundsTest, InvalidAndOversizedCountsDoNotAllocateIndices) {
 TEST_F(SvdDimensionBoundsTest, OversizedExplicitListIsStoppedBeforeExpansion) {
   SvdRegister reg(nullptr);
   string indices;
-  for(size_t i = 0; i <= SvdItem::MAX_EXPANSION_ITEMS; i++) { indices += "A,"; }
+  for(size_t i = 0; i <= SvdItem::MAX_EXPANSION_ITEMS; i++) {
+    indices += "A,";
+  }
   const auto dim = Dimension(reg, 2, 4, indices);
   EXPECT_FALSE(reg.CalculateDim());
   EXPECT_TRUE(reg.HasExpansionError());
