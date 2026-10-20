@@ -40,7 +40,9 @@ bool HeaderData::CreateFields(SvdRegister* reg, string structName)
     FIELDMAPLIST sortedFields;
     AddFields(fieldCont, sortedFields);
 
-    CreateSortedFields(sortedFields, regSize, structName);
+    if(!CreateSortedFields(sortedFields, regSize, structName)) {
+      return false;
+    }
   }
 
   return true;
@@ -76,16 +78,10 @@ bool HeaderData::AddFields(SvdItem* container, FIELDMAPLIST& sortedFields)
 
     const auto offset = field->GetOffset();
     const auto bitWidth = field->GetBitWidth();
-    if(offset >= 32 || bitWidth <= 0 || bitWidth > 32) {
+    if(offset >= 32 || bitWidth <= 0 || bitWidth > 32 || offset + bitWidth > 32) {
       continue;
     }
-
-    const auto position = static_cast<uint32_t>(offset);
-    const auto width = static_cast<uint32_t>(bitWidth);
-    if(width > 32 - position) {
-      continue;
-    }
-    const auto mask = static_cast<uint32_t>(SvdUtils::CreateBitMask(width, position));
+    const auto mask = SvdUtils::CreateBitMask(bitWidth, offset);
 
     ONESTRUCT* oneStruct = nullptr;
     for(auto& oneStr : sortedFields) {
@@ -101,7 +97,7 @@ bool HeaderData::AddFields(SvdItem* container, FIELDMAPLIST& sortedFields)
       oneStruct = &*sortedFields.rbegin();
     }
 
-    oneStruct->fields.emplace(position, field);
+    oneStruct->fields.emplace(offset, field);
     oneStruct->mask |= mask;
   }
 
@@ -112,20 +108,27 @@ bool HeaderData::AddFields(SvdItem* container, FIELDMAPLIST& sortedFields)
 bool HeaderData::CreateSortedFields(const FIELDMAPLIST& sortedFields, uint32_t regSize, string structName)
 {
   m_reservedFieldCnt = 0;
+  const auto registerBits = uint64_t{regSize} * 8;
 
   for(const auto& oneStruct : sortedFields) {
-    uint32_t offsCnt = 0;
+    uint64_t offsCnt = 0;
     m_gen->Generate<STRUCT|BEGIN>("");
 
     for(const auto& [newOffs, field] : oneStruct.fields) {
-      int32_t res = newOffs - offsCnt;
-
-      GenerateReservedField(res, regSize);
-      offsCnt += res;
+      if(newOffs < offsCnt || newOffs > registerBits) {
+        m_gen->Generate<C_ERROR>("Reserved bits calculation error", -1);
+        return false;
+      }
+      GenerateReservedField(newOffs - offsCnt, regSize);
+      offsCnt = newOffs;
       offsCnt += CreateField(field, regSize, offsCnt);
     }
 
-    GenerateReservedField((regSize * 8) - offsCnt, regSize);  // fill up (pad) bitfields
+    if(offsCnt > registerBits) {
+      m_gen->Generate<C_ERROR>("Reserved bits calculation error", -1);
+      return false;
+    }
+    GenerateReservedField(registerBits - offsCnt, regSize);  // fill up (pad) bitfields
 
     m_gen->Generate<STRUCT|END>("%s", structName.c_str());
   }
@@ -133,33 +136,30 @@ bool HeaderData::CreateSortedFields(const FIELDMAPLIST& sortedFields, uint32_t r
   return true;
 }
 
-uint32_t HeaderData::CreateField(SvdField* field, uint32_t regSize, uint32_t offsCnt)
+uint64_t HeaderData::CreateField(SvdField* field, uint32_t regSize, uint64_t offsCnt)
 {
   if(!field) {
     return false;
   }
 
-  uint32_t sizeNeeded = 0;
-
   const auto& dataType  = SvdUtils::GetDataTypeString(regSize);
   const auto name       = field->GetNameCalculated();
   const auto descr      = field->GetDescriptionCalculated();
   const auto accType    = field->GetEffectiveAccess();
-  uint32_t   fieldWidth = field->GetBitWidth();
-  uint32_t   fieldPos   = (uint32_t)field->GetOffset();
+  const auto fieldWidth = field->GetBitWidth();
+  const auto fieldPos   = field->GetOffset();
+  if(fieldPos >= 32 || fieldWidth <= 0 || fieldWidth > 32 || fieldPos + fieldWidth > 32) {
+    return 0;
+  }
 
   m_gen->Generate<MAKE|MK_FIELD_STRUCT>("%s", accType, dataType.c_str(), regSize, fieldWidth, name.c_str());
-  uint32_t lastBit = fieldPos + fieldWidth -1;
+  const auto lastBit = fieldPos + fieldWidth -1;
   m_gen->Generate<MAKE|MK_DOXY_COMMENT_BITFIELD>("%s", fieldPos, lastBit, !descr.empty()? descr.c_str() : name.c_str());
-
-  if(sizeNeeded < fieldWidth) {
-    sizeNeeded = fieldWidth;
-  }
 
   if(offsCnt != fieldPos) {
     m_gen->Generate<C_ERROR>("Reserved bits calculation error", -1);
   }
 
-  return sizeNeeded;
+  return fieldWidth;
 }
 

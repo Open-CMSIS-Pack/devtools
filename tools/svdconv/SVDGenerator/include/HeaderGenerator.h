@@ -53,7 +53,7 @@ protected:
   void  MakeDoxyCommentAddress            (const std::string& text,     uint32_t address);
   void  MakeDoxyCommentNumber             (const std::string& text,     uint32_t number);
   void  MakeDoxyComment                   (const std::string& text);
-  void  MakeDoxyCommentBitField           (const std::string& text, uint32_t firstBit, uint32_t lastBit);
+  void  MakeDoxyCommentBitField           (const std::string& text, uint64_t firstBit, uint64_t lastBit);
   void  MakeDoxyCommentBitPos             (const std::string& text, uint32_t pos);
   void  MakeInterruptStruct               (const std::string& text, int32_t number, bool lastEnum);
   void  MakeDoxygenAddPeripheral          (const std::string& text);
@@ -62,7 +62,7 @@ protected:
   void  MakeAnnonUnionCompiler            (const std::string& text, bool bStart);
   void  MakeCMSISConfig                   (const std::string& text, const std::string& MCUName, const CmsisCfg& cmsisCfg);
   void  MakeRegisterStruct                (const std::string& text, SvdTypes::Access, const std::string& dataType, uint32_t size);
-  void  MakeFieldStruct                   (const std::string& text, SvdTypes::Access, const std::string& dataType, uint32_t size, uint32_t bitWidth);
+  void  MakeFieldStruct                   (const std::string& text, SvdTypes::Access, const std::string& dataType, uint32_t size, uint64_t bitWidth);
   void  MakeFieldUnion                    (const std::string& text, SvdTypes::Access accessType, const std::string& dataType, uint32_t size);
   void  MakeEnumValue                     (const std::string& enumName, uint32_t val, const std::string& name, const std::string& descr);
   void  MakeDefine                        (const std::string& name, uint32_t val, uint32_t base, uint32_t tabOffs, const std::string& descr);
@@ -74,7 +74,7 @@ protected:
   void  MakeEnumStructUnionEndArray       (const std::string& textBuf, c_header::Index elementIndex, c_header::Special specialType, c_header::Additional langAdditional, uint32_t num);
   void  MakeFieldPosMask                  (const std::string& field, const std::string& peri, const std::string& reg, uint32_t pos, uint32_t mask);
   void  MakeFieldPosMask2                 (const std::string& field, const std::string& peri, const std::string& reg, uint32_t pos, uint32_t mask);
-  void  MakeFieldPosMask3                 (const std::string& name, const std::string& field, uint32_t pos, uint32_t mask);
+  void  MakeFieldPosMask3                 (const std::string& name, const std::string& field, uint64_t pos, uint64_t mask);
   void  CreateDoxyComment                 (const std::string& str);
   void  CreateDoxyCommentStar             (const std::string& str);
   void  CreateDoxyCommentLineBreak        (const std::string& str);

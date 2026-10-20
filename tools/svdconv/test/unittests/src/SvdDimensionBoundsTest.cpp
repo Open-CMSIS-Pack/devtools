@@ -399,7 +399,9 @@ TEST_F(SvdDimensionBoundsTest, FieldAndRegisterExpansionStopsWhenInheritedMetada
     SvdField field(&fields);
     field.SetOffset(0);
     field.SetBitWidth(1);
-    SvdItem& source = isField ? static_cast<SvdItem&>(field) : static_cast<SvdItem&>(reg);
+    SvdItem& fieldItem = field;
+    SvdItem& registerItem = reg;
+    SvdItem& source = isField ? fieldItem : registerItem;
     const auto dim = Dimension(source, 2, isField ? 1 : 4);
     source.SetDerivedFrom(new SvdDerivedFrom(&source));
     // Two indices and one copied item fit; its inherited metadata does not.

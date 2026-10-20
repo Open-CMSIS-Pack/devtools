@@ -57,7 +57,7 @@ class SvdUtils {
 
   static bool                     ConvertBitRange                 (const std::string &text, uint32_t& m_offset, uint32_t& m_size);
   // Returns zero when the bit range is empty or does not fit in 64 bits.
-  static uint64_t                  CreateBitMask                   (uint32_t width, uint64_t offset = 0);
+  static uint64_t                  CreateBitMask                   (int64_t width, uint64_t offset = 0);
   static bool                     DoConvertNumberXBin             (const std::string &text, uint32_t value, std::set<uint32_t>& numbers);
   static bool                     ConvertCpuRevision              (const std::string &text, uint32_t& rev);
   static bool                     ConvertProtectionStringType     (const std::string &text, SvdTypes::ProtectionType& protection, uint32_t lineNo);
