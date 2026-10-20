@@ -410,12 +410,17 @@ TEST_F(SvdBitWidthTest, HeaderFieldGroupsDetectFullWidthAndUpperBitOverlaps) {
   reg.SetBitWidth(32);
   const auto full = AddUncheckedField(reg, 0, 32);
   const auto upper = AddUncheckedField(reg, 31, 1);
+  const auto lower = AddUncheckedField(reg, 0, 1);
   FIELDMAPLIST groups;
   ASSERT_TRUE(header.AddFields(reg.GetFieldContainer(), groups));
   ASSERT_EQ(2U, groups.size());
   EXPECT_EQ(UINT32_MAX, groups.front().mask);
   EXPECT_EQ(full, groups.front().fields.at(0));
-  EXPECT_EQ(UINT32_C(0x80000000), groups.back().mask);
+  EXPECT_EQ(UINT32_C(0x80000001), groups.back().mask);
+  ASSERT_EQ(2U, groups.back().fields.size());
+  EXPECT_EQ(lower, groups.back().fields.begin()->second);
+  EXPECT_EQ(upper, groups.back().fields.rbegin()->second);
+  EXPECT_EQ(lower, groups.back().fields.at(0));
   EXPECT_EQ(upper, groups.back().fields.at(31));
 }
 
@@ -647,6 +652,8 @@ TEST_F(SvdBitWidthTest, HeaderFieldGroupsSkipUncheckedInvalidRanges) {
   SvdRegister reg(nullptr);
   reg.SetBitWidth(32);
   AddUncheckedField(reg, 0, 0);
+  AddUncheckedField(reg, 0, -1);
+  AddUncheckedField(reg, 0, INT32_MIN);
   AddUncheckedField(reg, 0, 33);
   AddUncheckedField(reg, 0, 64);
   AddUncheckedField(reg, 0, 65);
@@ -654,6 +661,8 @@ TEST_F(SvdBitWidthTest, HeaderFieldGroupsSkipUncheckedInvalidRanges) {
   AddUncheckedField(reg, 64, 1);
   AddUncheckedField(reg, 31, 2);
   AddUncheckedField(reg, UINT64_C(0x100000000), 1);
+  AddUncheckedField(reg, UINT64_C(0x10000001f), 1);
+  AddUncheckedField(reg, UINT64_MAX, 1);
   const auto upper = AddUncheckedField(reg, 31, 1);
 
   FIELDMAPLIST groups;
