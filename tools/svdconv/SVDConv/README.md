@@ -52,7 +52,7 @@ SVDConv supports Cortex-M devices with register and field ranges within 32 bits.
 prevents overflow; it does not add support for 64-bit input or output. SFD/SFR rejects wider ranges with M226 before
 SFD file creation. SFR compilation is skipped when SFD generation fails.
 
-Dimension expansion has a cumulative limit of 100,000 generated indices and model copies per input file.
+Dimension expansion has a cumulative limit of 1,000,000 generated indices and model copies per input file.
 Nested arrays, inherited content, and repeated expansion share this limit. Exceeding it reports M249 and stops
 processing that input before any output generator runs. This bounds expansion work, not the XML file size or total
 process memory. Invalid dimension index ranges and overflowing expansion addresses report M250.

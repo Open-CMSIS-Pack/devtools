@@ -122,7 +122,7 @@ public:
   static const uint64_t VALUE64_NOT_INIT;
 
   // Cumulative expansion work per input tree, including indices and copied items.
-  static constexpr size_t MAX_EXPANSION_ITEMS = 100000;
+  static constexpr size_t MAX_EXPANSION_ITEMS = 1000000;
   bool                                  ReserveExpansion                  (size_t count);
   bool                                  HasExpansionError                 () const;
 

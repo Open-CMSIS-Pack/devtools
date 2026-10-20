@@ -7,6 +7,7 @@
 #include "SvdConvTestUtils.h"
 
 #include "SVDConv.h"
+#include "SvdItem.h"
 #include "SfrccInterface.h"
 #include "ErrLog.h"
 
@@ -301,7 +302,8 @@ TEST_F(SvdConvIntegTests, ExpansionLimitStopsAllGeneratorsAndNextInputStillWorks
   const auto position = xml.find(marker);
   ASSERT_NE(string::npos, position);
 
-  for(const auto* dimension : {"100001", "50000"}) {
+  for(const auto count : {SvdItem::MAX_EXPANSION_ITEMS + 1, SvdItem::MAX_EXPANSION_ITEMS / 2}) {
+    const auto dimension = to_string(count);
     SCOPED_TRACE(dimension);
     const string directory = SvdConvIntegTestEnv::testoutput_dir + "/expansionLimit/" + dimension;
     ASSERT_TRUE(RteFsUtils::CreateDirectories(directory));
