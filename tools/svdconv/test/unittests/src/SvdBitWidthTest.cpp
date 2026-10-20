@@ -52,6 +52,7 @@ class BitWidthSfdData : public SfdData {
 public:
   using SfdData::SfdData;
   using SfdData::CreateFieldItem;
+  using SfdData::CreateEnumValueSet;
 };
 
 class SvdBitWidthTest : public testing::Test, public IErrConsumer {
@@ -673,6 +674,30 @@ TEST_F(SvdBitWidthTest, SfdFieldMasksAccept32BitsAndRejectWiderRanges) {
   EXPECT_FALSE(sfd.CreateFieldItem(AddUncheckedField(reg, 0, 64)));
   EXPECT_FALSE(sfd.CreateFieldItem(AddUncheckedField(reg, 32, 1)));
   EXPECT_TRUE(HasMessage("M226"));
+}
+
+TEST_F(SvdBitWidthTest, SfdEnumListsCheckWidthsBeforeEnumeratingValues) {
+  SvdOptions options;
+  FileHeaderInfo info;
+  BitWidthSfdData sfd(info, options);
+  SvdField field(nullptr);
+  SvdEnumContainer values(&field);
+  field.SetBitWidth(32);
+  EXPECT_TRUE(sfd.CreateEnumValueSet(&values, &field));
+
+  const auto value = new SvdEnum(&values);
+  values.AddItem(value);
+  value->SetValue(0);
+  for(const auto width : {0, 7, 31, 32, 64}) {
+    SCOPED_TRACE(width);
+    field.SetBitWidth(width);
+    ASSERT_FALSE(sfd.CreateEnumValueSet(&values, &field));
+  }
+  for(const auto width : {1, 6}) {
+    SCOPED_TRACE(width);
+    field.SetBitWidth(width);
+    EXPECT_TRUE(sfd.CreateEnumValueSet(&values, &field));
+  }
 }
 
 TEST_F(SvdBitWidthTest, SfdRejectsInvalidExpressionReferencesBeforeCreatingOutput) {

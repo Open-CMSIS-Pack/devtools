@@ -1015,6 +1015,11 @@ bool SfdData::CreateEnumValueSet(SvdEnumContainer *cont, SvdField* field)
     return true;
   }
 
+  const auto bitWidth = field->GetEffectiveBitWidth();
+  if(bitWidth == 0 || bitWidth > MAX_BITWIDTH_FOR_COMBO) {
+    return false;
+  }
+
   const auto defaultValue = cont->GetDefaultValue();
   map<uint32_t, SvdEnum*> enumValues;
 
@@ -1032,8 +1037,7 @@ bool SfdData::CreateEnumValueSet(SvdEnumContainer *cont, SvdField* field)
     enumValues[val.u32] = enu;
   }
 
-  const auto bitWidth = field->GetEffectiveBitWidth();
-  const uint32_t bitMaxNum = 1U << bitWidth;
+  const uint64_t bitMaxNum = 1ULL << bitWidth;
 
   for(uint32_t bitNum=0; bitNum<bitMaxNum; bitNum++) {
     auto element = enumValues.find(bitNum);
