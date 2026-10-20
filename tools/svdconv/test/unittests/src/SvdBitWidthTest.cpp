@@ -521,6 +521,7 @@ TEST_F(SvdBitWidthTest, ExpressionLookupRejectsPeripheralsWithoutRegisterContain
   SvdDevice device(nullptr);
   const auto peripheral = AddExpressionRegister(device).first;
   const auto peripherals = peripheral->GetParent();
+  ASSERT_NE(peripherals, nullptr);
   const auto empty = new SvdPeripheral(peripherals);
   peripherals->AddItem(empty);
   empty->SetName("EMPTY");
