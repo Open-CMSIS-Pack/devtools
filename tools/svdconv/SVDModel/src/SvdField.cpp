@@ -552,7 +552,7 @@ bool SvdField::CheckItem()
   const auto fieldMaxVal = SvdUtils::CreateBitMask(width);
 
   const auto& enumConts = GetEnumContainer();
-  if(enumConts.empty() && width < 6) {        // message "please add enum values"
+  if(enumConts.empty() && width < MAX_BITWIDTH_FOR_COMBO) {        // message "please add enum values"
     LogMsg("M347", NAME(name), lineNo);
   }
 
