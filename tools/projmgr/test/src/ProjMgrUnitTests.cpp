@@ -4282,24 +4282,24 @@ TEST_F(ProjMgrUnitTests, Convert_ValidationResults_Dependencies) {
 
   map<string, string> testData = {
     {"conflict+CM0", "warning csolution: dependency validation for context 'conflict+CM0' failed:\n\
-API RteTest:ApiExclusive@1.0.0 : Conflict, select exactly one of available matches\n\
-  - component ARM::RteTest:ApiExclusive:S1 - conflicted selection\n\
-  - component ARM::RteTest:ApiExclusive:S2 - conflicted selection" },
+API RteTest:ApiExclusive@1.0.0 : Conflict, select exactly one\n\
+  - component ARM::RteTest:ApiExclusive:S1 # RteTest Exclusive API component S1\n\
+  - component ARM::RteTest:ApiExclusive:S2 # RteTest Exclusive API component S2\n" },
     {"incompatible+CM0", "warning csolution: dependency validation for context 'incompatible+CM0' failed:\n\
-component ARM::RteTest:Check:Incompatible@0.9.9 : Incompatible dependency selection\n\
-  failed 'deny RteTest:Dependency:Incompatible_component' : Select compatible component\n\
-    - component ARM::RteTest:Dependency:Incompatible_component - incompatible selection" },
+component ARM::RteTest:Check:Incompatible@0.9.9 : Incompatible dependency\n\
+  deny RteTest:Dependency:Incompatible_component : Select a compatible component\n\
+    - component ARM::RteTest:Dependency:Incompatible_component # incompatible\n" },
     {"incompatible-variant+CM0", "warning csolution: dependency validation for context 'incompatible-variant+CM0' failed:\n\
-component ARM::RteTest:Check:IncompatibleVariant@0.9.9 : Incompatible dependency selection\n\
-  failed 'require RteTest:Dependency:Variant&Compatible' : Select compatible component variant\n\
-    - component ARM::RteTest:Dependency:Variant - incompatible variant selection" },
+component ARM::RteTest:Check:IncompatibleVariant@0.9.9 : Incompatible dependency\n\
+  require RteTest:Dependency:Variant&Compatible : Select a compatible variant\n\
+    - component ARM::RteTest:Dependency:Variant # incompatible variant\n" },
     {"missing+CM0", "warning csolution: dependency validation for context 'missing+CM0' failed:\n\
 component ARM::RteTest:Check:Missing@0.9.9 : Unresolved dependencies\n\
-  failed 'require RteTest:Dependency:Missing' : Install missing component" },
+  require RteTest:Dependency:Missing : Install missing component\n" },
     {"selectable+CM0", "warning csolution: dependency validation for context 'selectable+CM0' failed:\n\
 component ARM::Device:Startup&RteTest Startup@2.0.3 : Unresolved dependencies\n\
-  failed 'require RteTest:CORE' : Select component from list\n\
-    - component ARM::RteTest:CORE - available selection" }
+  require RteTest:CORE : Select a component\n\
+    - component ARM::RteTest:CORE # RteTest CORE component for Cortex-M\n" }
   };
 
   for (const auto& [context, expected] : testData) {
@@ -4308,7 +4308,10 @@ component ARM::Device:Startup&RteTest Startup@2.0.3 : Unresolved dependencies\n\
     argv[6] = (char*)context.c_str();
     EXPECT_EQ(0, RunProjMgr(7, argv, m_envp));
     auto errorStr = streamRedirect.GetErrorString();
-    EXPECT_NE(string::npos, errorStr.find(expected));
+    auto pos = errorStr.find("warning csolution: dependency validation");
+    EXPECT_NE(string::npos, pos);
+    auto s = errorStr.substr(pos);
+    EXPECT_EQ(s, expected);
   }
 }
 
