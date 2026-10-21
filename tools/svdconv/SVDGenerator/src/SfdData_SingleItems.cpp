@@ -768,7 +768,7 @@ bool SfdData::CreateRegisterItem(SvdRegister* reg)
   if(cont && cont->IsValid() && cont->GetChildCount()) {
     list<SvdItem*> fieldsList;
     CreateFields(cont, fieldsList);
-    const auto accMaskReadRtree = (uint32_t) reg->GetAccessMask();
+    const auto accMaskReadRtree = reg->GetAccessMask();
 
     CreateItemDescription(reg, "RTree");
     m_gen->Generate<RTREE|BEGIN            >("SFDITEM_REG__%s", itemName.c_str());

@@ -84,7 +84,7 @@ public:
   bool                          CalcAccessMask          ();
   uint64_t                      GetAccessMaskRead       ();
   uint64_t                      GetAccessMaskWrite      ();
-  uint64_t                      GetAccessMask           ();
+  uint32_t                      GetAccessMask           ();
   SvdTypes::Access              GetAccessCalculated     ();
   bool                          CheckEnumeratedValues   ();
   bool                          AddToMap                (SvdEnum *enu, std::map<std::string, SvdEnum*> &map);

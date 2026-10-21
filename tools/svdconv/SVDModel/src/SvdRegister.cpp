@@ -508,9 +508,9 @@ uint64_t SvdRegister::GetAccessMaskWrite()
   return m_accessMaskWrite;
 }
 
-uint64_t SvdRegister::GetAccessMask()
+uint32_t SvdRegister::GetAccessMask()
 {
-  return SvdUtils::CreateBitMask(GetEffectiveBitWidth());
+  return static_cast<uint32_t>(SvdUtils::CreateBitMask(GetEffectiveBitWidth()));
 }
 
 bool SvdRegister::AddToMap(SvdField *field, map<uint32_t, SvdField*> &map)
