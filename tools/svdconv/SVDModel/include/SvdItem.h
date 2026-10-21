@@ -121,6 +121,11 @@ public:
   static const uint32_t VALUE32_NOT_INIT;
   static const uint64_t VALUE64_NOT_INIT;
 
+  // Cumulative expansion work per input tree, including indices and copied items.
+  static constexpr size_t MAX_EXPANSION_ITEMS = 1000000;
+  bool                                  ReserveExpansion                  (size_t count);
+  bool                                  HasExpansionError                 () const;
+
 
   virtual bool                          Construct                         (XMLTreeElement* xmlElement);
   virtual bool                          ProcessXmlChildren                (XMLTreeElement* xmlElement);
@@ -249,6 +254,8 @@ private:
   std::string               m_description;
 
   std::map<std::string, std::string> m_attributes;
+  size_t                    m_expansionItems = 0;
+  bool                      m_expansionError = false;
 };
 
 
@@ -299,7 +306,10 @@ bool SvdItem::GetDeriveItem(T *&item, const std::list<std::string>& searchName, 
       switch(lv) {
         case L_Peripheral:
         case L_Register:
-          parent = *(childs.begin());
+          if(childs.empty()) {
+            return false;
+          }
+          parent = childs.front();
           break;
         default:
           break;

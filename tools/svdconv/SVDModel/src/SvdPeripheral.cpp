@@ -373,7 +373,9 @@ bool SvdPeripheral::CopyItem(SvdItem *from)
   if(resetMask        == 0 )                      { SetResetMask           (pFrom->GetResetMask           ()); }
   if(access           == SvdTypes::Access::UNDEF) { SetAccess              (pFrom->GetAccess              ()); }
 
-  CopyAddressBlocks(pFrom);
+  if(!CopyAddressBlocks(pFrom) || HasExpansionError()) {
+    return false;
+  }
   SvdItem::CopyItem(pFrom);
   CalculateDim();
 
@@ -391,6 +393,9 @@ bool SvdPeripheral::CopyAddressBlocks(SvdPeripheral *from)
       continue;
     }
 
+    if(!ReserveExpansion(1)) {
+      return false;
+    }
     const auto addressBlock = new SvdAddressBlock(this);
     addressBlock->CopyItem(addrBlock);
     AddAddressBlock(addressBlock);
@@ -433,6 +438,9 @@ bool SvdPeripheral::CopyDisableCondition(SvdCExpression* from)
     return true;
   }
 
+  if(!ReserveExpansion(1)) {
+    return false;
+  }
   m_disableCondition = new SvdCExpression(*from);
 
   return true; 
@@ -457,7 +465,9 @@ bool SvdPeripheral::CalculateDim()
     dim->ClearChildren();
   }
 
-  dim->CalculateDim();
+  if(!dim->CalculateDim() || !dim->CheckExpansionRange(GetAbsoluteAddress(), dim->GetDimIncrement())) {
+    return false;
+  }
 
   const auto& dimIndexList = dim->GetDimIndexList();
   const auto parent = dynamic_cast<SvdPeripheral*>(dim->GetParent());
@@ -468,18 +478,27 @@ bool SvdPeripheral::CalculateDim()
   auto address = parent->GetAbsoluteAddress();
   uint32_t dimElementIndex = 0;
   for(const auto& dimIndexname : dimIndexList) {
+    if(!dim->ReserveExpansion(1)) {
+      return false;
+    }
     const auto newPeri = new SvdPeripheral(dim);
     dim->AddItem(newPeri);
-    CopyDerivedFrom(newPeri, this);
-    CopyChilds(parent, newPeri);
+    if(!CopyDerivedFrom(newPeri, this) || !CopyChilds(parent, newPeri)) {
+      return false;
+    }
 
     newPeri->CopyItem               (parent);
+    if(HasExpansionError()) {
+      return false;
+    }
     newPeri->SetName                (dim->CreateName(dimIndexname));
     newPeri->SetDisplayName         (dim->CreateDisplayName(dimIndexname));
     newPeri->SetDescription         (dim->CreateDescription(dimIndexname));
     newPeri->SetDimElementIndex     (dimElementIndex++);
     newPeri->SetAddress             (address);
-    address += dim->GetDimIncrement();
+    if(dimElementIndex < dimIndexList.size()) {
+      address += dim->GetDimIncrement();
+    }
   }
 
   string dimIndexText;
@@ -1276,6 +1295,9 @@ bool SvdPeripheral::SortAddressBlocks(map<uint64_t, SvdAddressBlock*>& addrBlock
       continue;       // only use "register" addressBlocks
     }
 
+    if(!ReserveExpansion(1)) {
+      return false;
+    }
     const auto block = new SvdAddressBlock(this);
     block->CopyItem(addrBlock);
 
