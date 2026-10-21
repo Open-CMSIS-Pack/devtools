@@ -7,6 +7,7 @@
 #include "SvdConvTestUtils.h"
 
 #include "SVDConv.h"
+#include "SvdItem.h"
 #include "SfrccInterface.h"
 #include "ErrLog.h"
 
@@ -130,6 +131,88 @@ TEST_F(SvdConvIntegTests, CheckSfdGeneration) {
   EXPECT_FALSE(sfd.empty());
 }
 
+TEST_F(SvdConvIntegTests, CheckSfdDescriptionWhitespace) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/sfdWhitespace/SfdWhitespace.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/sfdWhitespace";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=sfd", "--create-folder" });
+
+  SvdConv svdConv;
+  ASSERT_EQ(0, svdConv.Check(args, args, nullptr));
+
+  string sfd;
+  ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/SfdWhitespace.sfd", sfd));
+  const struct {
+    const char* item;
+    const char* info;
+  } descriptions[] = {
+    {"SFDITEM_REG__TEST_CTRL",
+     "<i> [Bits 31..0] RW (@ 0x40000000) Register description\\nExplicit register line </i>"},
+    {"SFDITEM_FIELD__TEST_CTRL_ENABLE",
+     "<i> [Bit 0] RW (@ 0x40000000) \\nField text\\nExplicit field line"
+     "\\n0 : OFF = Disabled state\\n1 : ON = Enabled state\\nExplicit enum line </i>"},
+  };
+  for(const auto& expected : descriptions) {
+    SCOPED_TRACE(expected.item);
+    const auto item = sfd.find(expected.item);
+    ASSERT_NE(string::npos, item);
+    const auto info = sfd.find("<i>", item);
+    ASSERT_NE(string::npos, info);
+    const auto lineEnd = sfd.find_first_of("\r\n", info);
+    ASSERT_NE(string::npos, lineEnd);
+    // Display breaks remain literal \\n sequences within one physical SFD line.
+    EXPECT_EQ(expected.info, sfd.substr(info, lineEnd - info));
+  }
+}
+
+TEST_F(SvdConvIntegTests, CheckSfdDescriptionEscapes) {
+  const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/sfdEscapes/SfdEscapes.svd";
+  const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/sfdEscapes";
+  ASSERT_TRUE(RteFsUtils::Exists(inFile));
+
+  Arguments args("SVDConv.exe", inFile);
+  args.add({ "-o", testOut, "--generate=sfd", "--create-folder" });
+
+  SvdConv svdConv;
+  ASSERT_EQ(1, svdConv.Check(args, args, nullptr));
+
+  string messages;
+  for(const auto& msg : ErrLog::Get()->GetLogMessages()) {
+    messages += msg;
+  }
+  EXPECT_NE(string::npos, messages.find("M218"));
+  EXPECT_NE(string::npos, messages.find("M518"));
+
+  string sfd;
+  ASSERT_TRUE(RteFsUtils::ReadFile(testOut + "/SfdEscapes.sfd", sfd));
+  const struct {
+    const char* item;
+    const char* prefix;
+    const char* text;
+  } descriptions[] = {
+    {"SFDITEM_REG__TEST_CTRL", "<i>",
+     "<i> [Bits 31..0] RW (@ 0x40000000) Register text\\nRegister line </i>"},
+    {"SFDITEM_FIELD__TEST_CTRL_ENABLE", "<i>",
+     "<i> [Bit 0] RW (@ 0x40000000) \\nField text\\nField line"
+     "\\n0 : OFF = Disabled state\\nOff line\\n1 : ON = Enabled state </i>"},
+    {"SFDITEM_FIELD__TEST_CTRL_ENABLE", "<0=>",
+     "<0=> 0: OFF = Disabled state\\nOff line"},
+  };
+  for(const auto& expected : descriptions) {
+    SCOPED_TRACE(string(expected.item) + " " + expected.prefix);
+    const auto item = sfd.find(expected.item);
+    ASSERT_NE(string::npos, item);
+    const auto text = sfd.find(expected.prefix, item);
+    ASSERT_NE(string::npos, text);
+    const auto lineEnd = sfd.find_first_of("\r\n", text);
+    ASSERT_NE(string::npos, lineEnd);
+    // Escape cleanup preserves display breaks within one physical SFD line.
+    EXPECT_EQ(expected.text, sfd.substr(text, lineEnd - text));
+  }
+}
+
 TEST_F(SvdConvIntegTests, GeneratesMemoryMapsAtRequestedDetailLevel) {
   const string inFile = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
   const string testOut = SvdConvIntegTestEnv::testoutput_dir + "/memoryMaps";
@@ -209,6 +292,205 @@ TEST_F(SvdConvIntegTests, ExpandsRegisterAndFieldDimensionsInMemoryMap) {
     const auto matches = SvdConvTestUtils::FindRegex(listing, field);
     EXPECT_EQ(256U, matches.size());
   }
+}
+
+TEST_F(SvdConvIntegTests, ExpansionLimitStopsAllGeneratorsAndNextInputStillWorks) {
+  const string original = SvdConvIntegTestEnv::localtestdata_dir + "/posMaskDim/PosMaskDim.svd";
+  string xml;
+  ASSERT_TRUE(RteFsUtils::ReadFile(original, xml));
+  const string marker = "<dim>256</dim>";
+  const auto position = xml.find(marker);
+  ASSERT_NE(string::npos, position);
+
+  for(const auto count : {SvdItem::MAX_EXPANSION_ITEMS + 1, SvdItem::MAX_EXPANSION_ITEMS / 2}) {
+    const auto dimension = to_string(count);
+    SCOPED_TRACE(dimension);
+    const string directory = SvdConvIntegTestEnv::testoutput_dir + "/expansionLimit/" + dimension;
+    ASSERT_TRUE(RteFsUtils::CreateDirectories(directory));
+    const string input = directory + "/PosMaskDim.svd";
+    string oversized = xml;
+    oversized.replace(position, marker.size(), string("<dim>") + dimension + "</dim>");
+    {
+      ofstream file(input);
+      ASSERT_TRUE(file.good());
+      file << oversized;
+      ASSERT_TRUE(file.good());
+    }
+    const string output = directory + "/out";
+    Arguments args("SVDConv.exe", input);
+    args.add({"-o", output, "--generate=header", "--generate=sfd", "--generate=fieldMap", "--create-folder"});
+    SvdConv converter;
+    EXPECT_EQ(2, converter.Check(args, args, nullptr));
+    string messages;
+    for(const auto& message : ErrLog::Get()->GetLogMessages()) {
+      messages += message;
+    }
+    EXPECT_NE(string::npos, messages.find("M249"));
+    for(const auto* suffix : {".h", ".sfd", "_MapFields.txt"}) {
+      EXPECT_FALSE(RteFsUtils::Exists(output + "/PosMaskDim" + suffix));
+    }
+    ErrLog::Get()->ClearLogMessages();
+  }
+
+  // A rejected conversion must not poison the expansion budget of a new input.
+  const string output = SvdConvIntegTestEnv::testoutput_dir + "/expansionLimit/valid";
+  Arguments args("SVDConv.exe", original);
+  args.add({"-o", output, "--generate=header", "--create-folder"});
+  SvdConv converter;
+  EXPECT_EQ(0, converter.Check(args, args, nullptr));
+  EXPECT_TRUE(RteFsUtils::Exists(output + "/PosMaskDim.h"));
+}
+
+TEST_F(SvdConvIntegTests, RejectedSfdDoesNotCompileStaleOutput) {
+  string xml;
+  ASSERT_TRUE(RteFsUtils::ReadFile(SvdConvIntegTestEnv::localtestdata_dir + "/enumComboWidth/EnumComboWidth.svd", xml));
+  xml = regex_replace(xml, regex("<size>0x20</size>"), "<size>64</size>");
+  xml = regex_replace(xml, regex("<size>0x4</size>"), "<size>0x8</size>");
+  const string directory = SvdConvIntegTestEnv::testoutput_dir + "/rejectedSfd";
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(directory));
+  const string input = directory + "/EnumComboWidth.svd";
+  const string output = directory + "/EnumComboWidth.sfd";
+  const string previousOutput = "Previous SFD output\n";
+  {
+    ofstream file(input);
+    file << xml;
+    ASSERT_TRUE(file.good());
+  }
+  {
+    ofstream file(output, ios::binary);
+    file << previousOutput;
+    ASSERT_TRUE(file.good());
+  }
+
+  Arguments args("SVDConv.exe", input);
+  args.add({"-o", directory, "--generate=sfr", "--nocleanup", "--verbose"});
+  SvdConv converter;
+  EXPECT_EQ(2, converter.Check(args, args, nullptr));
+  string messages;
+  for(const auto& message : ErrLog::Get()->GetLogMessages()) {
+    messages += message;
+  }
+  EXPECT_NE(string::npos, messages.find("M226"));
+  EXPECT_NE(string::npos, messages.find("M111"));
+  EXPECT_EQ(string::npos, messages.find("Generate System Viewer SFR File"));
+  EXPECT_EQ(string::npos, messages.find("M133"));
+  EXPECT_EQ(string::npos, messages.find("SfrCC2"));
+  string retained;
+  ASSERT_TRUE(RteFsUtils::ReadFile(output, retained));
+  EXPECT_EQ(previousOutput, retained);
+  EXPECT_FALSE(RteFsUtils::Exists(directory + "/EnumComboWidth.sfr"));
+}
+
+TEST_F(SvdConvIntegTests, InvalidExpressionFieldDoesNotCompileStaleOutput) {
+  string xml;
+  ASSERT_TRUE(RteFsUtils::ReadFile(SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd", xml));
+  const auto field = xml.find("<name>CDS</name>");
+  ASSERT_NE(string::npos, field);
+  const string width = "<bitWidth>1</bitWidth>";
+  const auto position = xml.find(width, field);
+  ASSERT_NE(string::npos, position);
+  ASSERT_LT(position, xml.find("</field>", field));
+  xml.replace(position, width.size(), "<bitWidth>0</bitWidth>");
+
+  const string directory = SvdConvIntegTestEnv::testoutput_dir + "/invalidExpressionField";
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(directory));
+  const string input = directory + "/option_n.svd";
+  const string output = directory + "/option_n.sfd";
+  const string previousOutput = "Previous SFD output\n";
+  {
+    ofstream file(input);
+    file << xml;
+    ASSERT_TRUE(file.good());
+  }
+  {
+    ofstream file(output, ios::binary);
+    file << previousOutput;
+    ASSERT_TRUE(file.good());
+  }
+
+  Arguments args("SVDConv.exe", input);
+  args.add({"-o", directory, "--generate=sfr", "--nocleanup", "--verbose"});
+  SvdConv converter;
+  EXPECT_EQ(2, converter.Check(args, args, nullptr));
+  string messages;
+  for(const auto& message : ErrLog::Get()->GetLogMessages()) {
+    messages += message;
+  }
+  EXPECT_NE(string::npos, messages.find("M310"));
+  EXPECT_NE(string::npos, messages.find("M226"));
+  EXPECT_NE(string::npos, messages.find("M111"));
+  EXPECT_EQ(string::npos, messages.find("Generate System Viewer SFR File"));
+  EXPECT_EQ(string::npos, messages.find("M133"));
+  EXPECT_EQ(string::npos, messages.find("SfrCC2"));
+  string retained;
+  ASSERT_TRUE(RteFsUtils::ReadFile(output, retained));
+  EXPECT_EQ(previousOutput, retained);
+  EXPECT_FALSE(RteFsUtils::Exists(directory + "/option_n.sfr"));
+}
+
+TEST_F(SvdConvIntegTests, FailedSfdCreationDoesNotCompileOutput) {
+  const string input = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
+  const string directory = SvdConvIntegTestEnv::testoutput_dir + "/failedSfdCreation";
+  const string output = directory + "/option_n.sfd";
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(output));
+
+  Arguments args("SVDConv.exe", input);
+  args.add({"-o", directory, "--generate=sfr", "--nocleanup", "--verbose"});
+  SvdConv converter;
+  EXPECT_EQ(2, converter.Check(args, args, nullptr));
+  string messages;
+  for(const auto& message : ErrLog::Get()->GetLogMessages()) {
+    messages += message;
+  }
+  EXPECT_NE(string::npos, messages.find("M130"));
+  EXPECT_NE(string::npos, messages.find("M111"));
+  EXPECT_EQ(string::npos, messages.find("Generate System Viewer SFR File"));
+  EXPECT_EQ(string::npos, messages.find("M133"));
+  EXPECT_EQ(string::npos, messages.find("SfrCC2"));
+  EXPECT_TRUE(RteFsUtils::IsDirectory(output));
+  EXPECT_FALSE(RteFsUtils::Exists(directory + "/option_n.sfr"));
+}
+
+TEST_F(SvdConvIntegTests, ReadOnlySfdDoesNotCompileStaleOutput) {
+  const string input = SvdConvIntegTestEnv::localtestdata_dir + "/option_n/option_n.svd";
+  const string directory = SvdConvIntegTestEnv::testoutput_dir + "/readOnlySfd";
+  const string output = directory + "/option_n.sfd";
+  const string previousOutput = "Previous SFD output\n";
+  ASSERT_TRUE(RteFsUtils::CreateDirectories(directory));
+  {
+    ofstream file(output, ios::binary);
+    file << previousOutput;
+    ASSERT_TRUE(file.good());
+  }
+  ASSERT_TRUE(RteFsUtils::SetFileReadOnly(output, true));
+  {
+    ofstream probe(output, ios::binary | ios::app);
+    if(probe.good()) {
+      probe.close();
+      EXPECT_TRUE(RteFsUtils::SetFileReadOnly(output, false));
+      GTEST_SKIP() << "The current process can write read-only files";
+    }
+  }
+
+  Arguments args("SVDConv.exe", input);
+  args.add({"-o", directory, "--generate=sfr", "--nocleanup", "--verbose"});
+  SvdConv converter;
+  const auto result = converter.Check(args, args, nullptr);
+  EXPECT_TRUE(RteFsUtils::SetFileReadOnly(output, false));
+  EXPECT_EQ(2, result);
+  string messages;
+  for(const auto& message : ErrLog::Get()->GetLogMessages()) {
+    messages += message;
+  }
+  EXPECT_NE(string::npos, messages.find("M130"));
+  EXPECT_NE(string::npos, messages.find("M111"));
+  EXPECT_EQ(string::npos, messages.find("Generate System Viewer SFR File"));
+  EXPECT_EQ(string::npos, messages.find("M133"));
+  EXPECT_EQ(string::npos, messages.find("SfrCC2"));
+  string retained;
+  ASSERT_TRUE(RteFsUtils::ReadFile(output, retained));
+  EXPECT_EQ(previousOutput, retained);
+  EXPECT_FALSE(RteFsUtils::Exists(directory + "/option_n.sfr"));
 }
 
 #ifndef _WIN32

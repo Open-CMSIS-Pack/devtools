@@ -57,6 +57,8 @@ public:
   void writeEvent(const TraceEvent& event);
   /** @brief Writes skipped-byte accounting without an associated timestamp. */
   void writeByteSkip(const TraceByteSkip& skipped);
+  /** @brief Writes an input-wide incomplete-frame error without a timestamp or route. */
+  void writeRawTail(const TraceRawTail& tail);
 
 protected:
   /** @brief Validates and prepares targets before this output owns incomplete artifacts. */
@@ -73,12 +75,14 @@ protected:
   virtual void writeOutput(const TraceEvent& event) = 0;
   /** @brief Optionally retains skipped-byte accounting in an active backend. */
   virtual void writeByteSkipOutput(const TraceByteSkip&) {}
+  /** @brief Optionally retains incomplete final formatter bytes in an active backend. */
+  virtual void writeRawTailOutput(const TraceRawTail&) {}
 
   /** @brief Aborts an active output while suppressing every cleanup exception. */
   void abortNoexcept() noexcept;
 
 private:
-  /** @brief Applies the active-output guard and cleanup to either kind of write. */
+  /** @brief Applies the active-output guard and cleanup to every kind of write. */
   template <typename Write> void writeActive(const Write& write);
 
   bool m_active = false;
@@ -132,6 +136,11 @@ inline void TraceOutput::writeEvent(const TraceEvent& event)
 inline void TraceOutput::writeByteSkip(const TraceByteSkip& skipped)
 {
   writeActive([&] { writeByteSkipOutput(skipped); });
+}
+
+inline void TraceOutput::writeRawTail(const TraceRawTail& tail)
+{
+  writeActive([&] { writeRawTailOutput(tail); });
 }
 
 template <typename Write> inline void TraceOutput::writeActive(const Write& write)

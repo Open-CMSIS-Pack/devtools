@@ -214,6 +214,9 @@ const ContextItem& RpcHandler::GetContext(const string& context) const {
 
 RteTarget* RpcHandler::GetActiveTarget(const string& context) const {
   const auto& contextItem = GetContext(context);
+  if(!contextItem.rteActiveTarget) {
+    throw JsonRpcException(CONTEXT_NOT_VALID, context + " has no active target");
+  }
   return contextItem.rteActiveTarget;
 }
 
@@ -546,14 +549,17 @@ RpcArgs::PackReference& RpcHandler::EnsurePackReference(const string& context, c
 
 RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& all) {
 
-  RteTarget* rteTarget = GetActiveTarget(context);
+  RteTarget* rteTarget = context.empty() ? nullptr : GetActiveTarget(context);
+  set<string> usedPacks;
+  if(rteTarget) {
+    UpdateFilter(context, rteTarget, all);
+    RpcDataCollector dc(rteTarget);
+    usedPacks = dc.GetUsedPacks();
+  }
 
-  UpdateFilter(context, rteTarget, all);
-  RpcDataCollector dc(GetActiveTarget(context));
-  auto usedPacks = dc.GetUsedPacks();
-
+  RteModel* rteModel = rteTarget ? rteTarget->GetFilteredModel() : ProjMgrKernel::Get()->GetGlobalModel();
   map<string, RpcArgs::Pack> packsMap;
-  for(auto& [packId, rtePackage] : rteTarget->GetFilteredModel()->GetPackages()) {
+  for(auto& [packId, rtePackage] : rteModel->GetPackages()) {
     RpcArgs::Pack p;
     p.id = rtePackage->GetPackageID(true);
     const auto& description = rtePackage->GetDescription();
@@ -567,7 +573,7 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& a
     if(contains_key(usedPacks, p.id)) {
       p.used = true;
     }
-    auto packRefs = GetPackReferencesForPack(context, rtePackage);
+    auto packRefs = rteTarget ? GetPackReferencesForPack(context, rtePackage) : PackReferenceVector{};
 
     if(!packRefs.empty()) {
       p.references = packRefs;
@@ -576,7 +582,7 @@ RpcArgs::PacksInfo RpcHandler::GetPacksInfo(const string& context, const bool& a
   }
 
   // add unresolved packs from unresolved references
-  for(auto& ref : GetPackReferences(context)) {
+  for(auto& ref : rteTarget ? GetPackReferences(context) : PackReferenceVector{}) {
     if(!ref.resolvedPack.has_value() && !ref.path.has_value()) {
       auto it = packsMap.find(ref.pack);
       if(it != packsMap.end()) {

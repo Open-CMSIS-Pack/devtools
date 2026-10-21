@@ -13,10 +13,11 @@
 
 /** @brief Keeps input positions typed until the input format and size are known. */
 struct RawDiagnosticLocation {
-  /** @brief Distinguishes decoder indexes, formatter groups, and input progress. */
+  /** @brief Distinguishes decoder indexes, formatter groups, exact file positions, and input progress. */
   enum class Kind {
     Decoder,
     FormatterGroup,
+    Exact,
     InputProgress,
   };
 

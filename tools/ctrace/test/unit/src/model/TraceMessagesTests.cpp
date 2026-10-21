@@ -226,6 +226,15 @@ TEST(TraceMessagesTests, CompactRecoveryKeepsAffectedByteCountWithoutOffsetsOrTi
   EXPECT_EQ(formatTraceIssue(consumed, wideValue, compact), "9 raw bytes without usable ITM packets");
 }
 
+TEST(TraceMessagesTests, RawTailKeepsCountButOmitsOffsetAndDataInBothStyles)
+{
+  const TraceRawTail tail{0x100000001ULL, {0x00U, 0x09U, 0x80U, 0xffU}};
+  for (const auto style : {compact, detailed}) {
+    EXPECT_EQ(formatTraceMessage(tail, style),
+              "Incomplete formatter frame at end of file; discarded bytes: 4");
+  }
+}
+
 TEST(TraceMessagesTests, ByteSkipsKeepCountsAndReasonsButNoCsvOffsets)
 {
   struct SkipCase { TraceByteSkipReason reason; const char* detailed; const char* compact; };

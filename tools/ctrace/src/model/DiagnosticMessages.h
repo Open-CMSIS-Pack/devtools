@@ -61,7 +61,6 @@ std::string pathDiagnosticMessage(PathDiagnosticCode code, std::string_view path
                                   std::optional<std::string_view> nativeDetail = std::nullopt);
 std::string configurationFilesMissingMessage(std::string_view suffix, std::string_view directory);
 std::string configurationFilenameMessage(std::string_view suffix, std::string_view path);
-std::string rawInputAlignmentMessage(std::uint64_t alignment, std::string_view path, std::uint64_t size);
 std::string specificOutputTargetMessage(std::string_view description);
 std::string outputParentMessage(std::string_view description, std::string_view parent);
 

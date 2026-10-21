@@ -122,11 +122,15 @@ string SvdCExpression::GetExpressionString()
   for(const auto& symbol : symbols) {
     if(symbol.token.type == SvdCExpressionParser::xme_identi) {
       SvdItem* item = symbol.svdItem;
-      if(!item) {
-        return SvdUtils::EMPTY_STRING;     // skip generating disable condition. Should not be reached, as LinkSymbols() already generates an error
+      if(!item || !item->IsValid()) {
+        return SvdUtils::EMPTY_STRING;
       }
 
-      expression += CreateObjectExpression(item);
+      const auto operand = CreateObjectExpression(item);
+      if(operand.empty()) {
+        return SvdUtils::EMPTY_STRING;
+      }
+      expression += operand;
     }
     else {
       expression += symbol.token.text;
@@ -174,9 +178,11 @@ string SvdCExpression::CreateFieldExpression(SvdItem* item)
   }
 
   const auto regName = field->GetParentRegisterNameHierarchical();
-  const auto firstBit = (uint32_t)field->GetOffset();
-  const auto bitWidth = field->GetEffectiveBitWidth();
-  const auto bitMaxNum = (uint32_t) ((((uint64_t)(1) << bitWidth) -1));
+  uint32_t firstBit, bitWidth;
+  if(!field->IsValid() || !SvdUtils::GetBitRange32(field->GetOffset(), field->GetEffectiveBitWidth(), firstBit, bitWidth)) {
+    return SvdUtils::EMPTY_STRING;
+  }
+  const auto bitMaxNum = SvdUtils::CreateBitMask32(bitWidth);
 
   std::stringstream ss;
   ss << "0x" << std::hex << bitMaxNum;

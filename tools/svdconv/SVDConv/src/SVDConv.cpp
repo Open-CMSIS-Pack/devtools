@@ -253,6 +253,13 @@ SVD_ERR SvdConv::CheckSvdFile()
   if(success) { LogMsg("M040", NAME("Deleting XML Tree"), TIME(t2));  }
 	else        { LogMsg("M111", NAME("Deleting XML Tree"));            }
 
+  // A partial model from an exhausted expansion budget must never reach a generator.
+  if(m_svdModel->HasExpansionError()) {
+    delete m_svdModel;
+    m_svdModel = nullptr;
+    return SVD_ERR_VERIFY;
+  }
+
   // ----------------------  Calculate Model  ----------------------
   t1 = CrossPlatformUtils::ClockInMsec();
   success = m_svdModel->CalculateModel();
@@ -334,6 +341,7 @@ SVD_ERR SvdConv::CheckSvdFile()
   // ----------------------  Generate SFD File  ----------------------
   if(m_svdOptions.IsGenerateSfd()) {
     t1 = CrossPlatformUtils::ClockInMsec();
+    success = false;
     if(device) {
       generator->SetSvdFileName(path);
       generator->SetProgramInfo(version, descr, copyright);
@@ -346,7 +354,7 @@ SVD_ERR SvdConv::CheckSvdFile()
   }
 
   // ----------------------  Generate SFR File  ----------------------
-  if(m_svdOptions.IsGenerateSfr()) {
+  if(m_svdOptions.IsGenerateSfr() && success) {
     t1 = CrossPlatformUtils::ClockInMsec();
     if(device) {
       generator->SetSvdFileName(path);

@@ -49,19 +49,19 @@ public:
   using HeaderData::CreateRegisterPosMask;
 };
 
-SvdField* AddField(SvdItem* parent, const string& name, uint32_t offset) {
-  const auto field = new SvdField(parent);
-  field->SetName(name);
-  field->SetOffset(offset);
-  field->SetBitWidth(1);
-  parent->AddItem(field);
-  return field;
-}
-
 } // namespace
 
 
 TEST(HeaderData, CreateRegisterPosMaskHandlesDimensionVariants) {
+  const auto addField = [](SvdItem* parent, const string& name, uint32_t offset) {
+    const auto field = new SvdField(parent);
+    field->SetName(name);
+    field->SetOffset(offset);
+    field->SetBitWidth(1);
+    parent->AddItem(field);
+    return field;
+  };
+
   SvdOptions options;
   FileHeaderInfo fileHeaderInfo;
   TestHeaderData headerData(fileHeaderInfo, options);
@@ -73,20 +73,20 @@ TEST(HeaderData, CreateRegisterPosMaskHandlesDimensionVariants) {
 
   const auto fields = new SvdFieldContainer(reg);
   reg->AddItem(fields);
-  AddField(fields, "PLAIN", 0);
+  addField(fields, "PLAIN", 0);
 
-  const auto arrayField = AddField(fields, "ARRAY", 1);
+  const auto arrayField = addField(fields, "ARRAY", 1);
   const auto arrayDim = new SvdDimension(arrayField);
   arrayDim->GetExpression()->SetType(SvdTypes::Expression::ARRAY);
   arrayField->SetDimension(arrayDim);
 
-  const auto extendField = AddField(fields, "EXTEND%s", 2);
+  const auto extendField = addField(fields, "EXTEND%s", 2);
   const auto extendDim = new SvdDimension(extendField);
   extendDim->GetExpression()->SetType(SvdTypes::Expression::EXTEND);
   extendField->SetDimension(extendDim);
 
-  AddField(extendDim, "EXTEND0", 2);
-  const auto invalidField = AddField(extendDim, "EXTEND1", 3);
+  addField(extendDim, "EXTEND0", 2);
+  const auto invalidField = addField(extendDim, "EXTEND1", 3);
   invalidField->SetValid(false);
   extendDim->AddItem(new SvdItem(extendDim));
 

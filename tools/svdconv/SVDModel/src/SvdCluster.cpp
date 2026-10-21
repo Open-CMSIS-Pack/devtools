@@ -279,7 +279,9 @@ bool SvdCluster::CalculateDim()
     dim->ClearChildren();
   }
 
-  dim->CalculateDim();
+  if(!dim->CalculateDim() || !dim->CheckExpansionRange(GetOffset(), dim->GetDimIncrement())) {
+    return false;
+  }
   const auto& dimIndexList = dim->GetDimIndexList();
   auto offset = GetOffset();
   const auto bitWidth = GetBitWidth();
@@ -287,10 +289,18 @@ bool SvdCluster::CalculateDim()
   uint32_t dimElementIndex = 0;
 
   for(const auto& dimIndexname : dimIndexList) {
+    if(!dim->ReserveExpansion(1)) {
+      return false;
+    }
     const auto newClust = new SvdCluster(dim);
     dim->AddItem(newClust);
-    CopyChilds(this, newClust);
+    if(!CopyChilds(this, newClust)) {
+      return false;
+    }
     newClust->CopyItem(this);
+    if(HasExpansionError()) {
+      return false;
+    }
     newClust->SetName(dim->CreateName(dimIndexname));
     newClust->SetDisplayName(dim->CreateDisplayName(dimIndexname));
     newClust->SetDescription(dim->CreateDescription(dimIndexname));
@@ -298,7 +308,9 @@ bool SvdCluster::CalculateDim()
     newClust->SetBitWidth(bitWidth);
     newClust->SetDimElementIndex(dimElementIndex++);
 
-    offset += dim->GetDimIncrement();
+    if(dimElementIndex < dimIndexList.size()) {
+      offset += dim->GetDimIncrement();
+    }
 
     if(dimElementIndex < 8) {
       if(!dimIndexText.empty()) {

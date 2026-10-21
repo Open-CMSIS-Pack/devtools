@@ -19,7 +19,7 @@
 namespace TraceOutputTestSupport {
 
 /** @brief Selects the lifecycle operation where a test output fails. */
-enum class TestTraceOutputFailure { None, Prepare, Start, Stop, Abort, Write, ByteSkipWrite, NonStandardStart };
+enum class TestTraceOutputFailure { None, Prepare, Start, Stop, Abort, Write, ByteSkipWrite, RawTailWrite, NonStandardStart };
 
 /** @brief Implements a configurable trace output for lifecycle unit tests. */
 class TestTraceOutput final : public TraceOutput {
@@ -105,6 +105,13 @@ protected:
   {
     record("write-byte-skip");
     failAt(TestTraceOutputFailure::ByteSkipWrite, "intentional byte-skip write failure");
+  }
+
+  /** @brief Records an incomplete-frame diagnostic and optionally throws the configured failure. */
+  void writeRawTailOutput(const TraceRawTail&) override
+  {
+    record("write-raw-tail");
+    failAt(TestTraceOutputFailure::RawTailWrite, "intentional raw-tail write failure");
   }
 
 private:

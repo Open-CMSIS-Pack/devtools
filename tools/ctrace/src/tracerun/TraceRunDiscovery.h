@@ -104,7 +104,7 @@ public:
    * @param config Configuration copied so each input resolves its own effective format and routes.
    * @param selected Input returned by selectInputs().
    * @return Fully normalized input descriptor safe to pass to a decode job.
-   * @throws std::runtime_error If file access, formatted alignment, or route metadata is invalid.
+   * @throws std::runtime_error If file access or route metadata is invalid.
    */
   static TraceRunInputDescriptor resolveInput(TraceRunConfig config, const TraceRunRawInput& selected);
 

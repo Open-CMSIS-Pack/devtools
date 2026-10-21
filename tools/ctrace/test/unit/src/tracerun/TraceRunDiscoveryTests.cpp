@@ -171,20 +171,15 @@ TEST(CtraceUnitTests, testTraceRunDiscoveryResolvesOnePreflightedInput)
 
   const auto formattedConfig = root / "Formatted.ctrace-run.yml";
   const auto formatted = root / "Formatted.TB.raw";
-  for (const auto size : {0U, 16U, 32U}) {
+  for (const auto size : {0U, 1U, 15U, 16U, 17U, 31U, 32U}) {
     writeTestFile(formatted, std::string(size, 'f'));
     auto descriptor = resolveOnlyInput(inputConfig(formattedConfig, TraceRunFormat::Formatted));
     EXPECT_EQ(descriptor.path(), formatted);
     EXPECT_EQ(descriptor.format(), TraceRunFormat::Formatted);
+    EXPECT_EQ(descriptor.size(), size);
     EXPECT_EQ(descriptor.metadata().traceFormat(), TraceRunFormat::Formatted);
     ASSERT_EQ(descriptor.metadata().routes().size(), 1U);
     EXPECT_EQ(descriptor.metadata().routes().front().identity.traceBusId, 1U);
-  }
-  for (const auto size : {1U, 15U, 17U, 31U}) {
-    writeTestFile(formatted, std::string(size, 'f'));
-    EXPECT_TRUE(throwsWithMessage(
-        [&] { (void)resolveOnlyInput(inputConfig(formattedConfig, TraceRunFormat::Formatted)); },
-        "multiple of 16 bytes"));
   }
 }
 

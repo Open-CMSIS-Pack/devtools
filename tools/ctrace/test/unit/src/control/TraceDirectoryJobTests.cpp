@@ -291,15 +291,13 @@ TEST(CtraceUnitTests, testTraceDirectoryDecodesFormattedInputThroughRawFrontend)
   EXPECT_FALSE(std::filesystem::exists(traceDir / "Formatted.TB.traceanalysis.xml"));
 }
 
-TEST(CtraceUnitTests, testTraceDirectoryPreflightsFormattedAlignmentBeforeDecoderAndArtifacts)
+TEST(CtraceUnitTests, testTraceDirectoryReplacesStaleCsvWithIncompleteFormatterFrameError)
 {
   const TemporaryTestPath temporaryPath("ctrace-trace-directory-formatted-preflight-test");
   const auto traceDir = temporaryPath.path() / ".trace";
   writeTestFile(traceDir / "Partial.ctrace-run.yml", "ctrace-run:\n");
   writeTestFile(traceDir / "Partial.TB.raw", std::string(15U, 'f'));
   writeTestFile(traceDir / "Partial.TB.csv", "csv sentinel");
-  writeTestFile(traceDir / "Partial.TB.ctf" / "sentinel", "ctf sentinel");
-  writeTestFile(traceDir / "Partial.TB.traceanalysis.xml", "xml sentinel");
 
   TraceRunConfig config;
   config.traceFormat = TraceRunFormat::Formatted;
@@ -308,19 +306,19 @@ TEST(CtraceUnitTests, testTraceDirectoryPreflightsFormattedAlignmentBeforeDecode
   CliOptions options;
   options.traceDir = traceDir.string();
   options.targetName = "Partial";
-  options.outputFormat = OutputFormat::All;
+  options.outputFormat = OutputFormat::Csv;
 
   CollectingDiagnosticSink diagnostics;
   TestTraceRunConfigReader reader(config);
   TraceDirectoryJob(options, diagnostics, reader).run();
 
-  EXPECT_TRUE(diagnostics.containsMessage("formatted raw trace input size must be a multiple of 16 bytes"));
-  EXPECT_FALSE(diagnostics.containsMessage("formatted trace input is not enabled yet"));
+  const std::string message = "Incomplete formatter frame at end of file; discarded bytes: 15";
+  EXPECT_EQ(diagnostics.failureCount(), 1U);
+  EXPECT_TRUE(diagnostics.containsMessage(message));
   EXPECT_FALSE(diagnostics.containsMessage("CTF output requires timestamps.clock"));
-  EXPECT_FALSE(diagnostics.containsMessage("applied ctrace-run meta"));
-  EXPECT_EQ(readTestTextFile(traceDir / "Partial.TB.csv"), "csv sentinel");
-  EXPECT_EQ(readTestTextFile(traceDir / "Partial.TB.ctf" / "sentinel"), "ctf sentinel");
-  EXPECT_EQ(readTestTextFile(traceDir / "Partial.TB.traceanalysis.xml"), "xml sentinel");
+  EXPECT_EQ(readTestTextFile(traceDir / "Partial.TB.csv"),
+            "cycles,stream,type,index,value,pc,address,note\n,,error,,,,," + message + "\n");
+  EXPECT_EQ(readTestTextFile(traceDir / "Partial.TB.raw"), std::string(15U, 'f'));
 }
 
 TEST(CtraceUnitTests, testTraceDirectoryRejectsDirectoryInputBeforeArtifacts)
@@ -755,7 +753,6 @@ TEST(CtraceUnitTests, testInputSelectionAndPreflightNeverConstructDecoder)
   const TemporaryTestPath temporaryPath("ctrace-input-before-decoder-test");
   const auto& root = temporaryPath.createDirectory();
   std::filesystem::create_directory(root / "Directory.SWO.raw");
-  writeTestFile(root / "Partial.TB.raw", std::string(15U, 'f'));
 
   bool sessionCreated = false;
   const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
@@ -779,14 +776,9 @@ TEST(CtraceUnitTests, testInputSelectionAndPreflightNeverConstructDecoder)
   unformatted.traceFormat = TraceRunFormat::Unformatted;
   EXPECT_TRUE(throwsWithMessage([&] { run(root / "Directory.ctrace-run.yml", unformatted); },
                                 "not a regular file"));
-  TraceRunConfig formatted;
-  formatted.traceFormat = TraceRunFormat::Formatted;
-  formatted.references.push_back(TraceRunTestSupport::makeReference("itm", "core", 1U, {}, "core/itm"));
-  EXPECT_TRUE(throwsWithMessage([&] { run(root / "Partial.ctrace-run.yml", formatted); }, "multiple of 16 bytes"));
   EXPECT_FALSE(sessionCreated);
   EXPECT_FALSE(std::filesystem::exists(root / "Missing.SWO.ctf"));
   EXPECT_FALSE(std::filesystem::exists(root / "Directory.SWO.ctf"));
-  EXPECT_FALSE(std::filesystem::exists(root / "Partial.TB.ctf"));
 }
 
 /** @brief Checks the unfiltered final CSV row and matching route-independent CLI diagnostic. */
@@ -878,6 +870,48 @@ TEST(CtraceUnitTests, testFileDecodeJobRetainsCsvForDecoderInitializationFailure
   expectGlobalDecodeAbort(csvPath, diagnostics, 0U, "synthetic decoder initialization failure",
                           "OpenCSD initialization failed");
   EXPECT_EQ(readTestLines(csvPath).size(), 2U);
+}
+
+TEST(CtraceUnitTests, testFileDecodeJobRetainsFormatterTailAfterEarlyDecoderFailure)
+{
+  for (const bool failInitialization : {false, true}) {
+    SCOPED_TRACE(failInitialization);
+    const TemporaryTestPath temporaryPath("ctrace-file-decode-early-fatal-with-tail-test");
+    const auto rawPath = temporaryPath.path() / "Early.TB.raw";
+    std::string raw(65536U, 'f');
+    raw.append("\xde\xad\xbe", 3U);
+    writeTestFile(rawPath, raw);
+    TraceRunConfig config;
+    config.traceFormat = TraceRunFormat::Formatted;
+    config.references.push_back(TraceRunTestSupport::makeReference("itm", "core", 1U, {}, "core/itm"));
+    CliOptions options;
+    options.outputFormat = OutputFormat::Csv;
+    options.selection = TraceSelection{{"itm"}, {2U}};
+    CollectingDiagnosticSink diagnostics;
+    const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+    script->pushes = {{OCSD_RESP_FATAL_SYS_ERR, 16U}};
+    const auto scriptedFactory = OpenCsdSessionTestSupport::scriptedFactory(script);
+    OpenCsdItmSessionFactory factory = [&](OpenCsdPacketCollector& collector, OpenCsdErrorController& errors)
+        -> std::unique_ptr<OpenCsdItmSessionInterface> {
+      if (failInitialization) {
+        throw OpenCsdItmSessionError("synthetic decoder initialization failure");
+      }
+      return scriptedFactory(collector, errors);
+    };
+    FileDecodeJob job(options, testInput(rawPath, config), diagnostics, std::move(factory));
+    EXPECT_NO_THROW(job.run());
+    const std::string message = "Incomplete formatter frame at end of file; discarded bytes: 3";
+    const auto* tail = findDiagnostic(diagnostics, message);
+    ASSERT_NE(tail, nullptr);
+    EXPECT_EQ(tail->severity, DiagnosticSink::Severity::Error);
+    const auto csv = readTestTextFile(temporaryPath.path() / "Early.TB.csv");
+    EXPECT_NE(csv.find(",,error,,,,," + message + "\n"), std::string::npos);
+    EXPECT_NE(csv.find(",,error,,,,,Decode aborted; trace incomplete"), std::string::npos);
+    EXPECT_EQ(readTestLines(temporaryPath.path() / "Early.TB.csv").size(), 3U);
+    EXPECT_EQ(script->pushCalls, failInitialization ? 0U : 1U);
+    EXPECT_EQ(script->endCalls, 0U);
+    EXPECT_EQ(readTestTextFile(rawPath), raw);
+  }
 }
 
 TEST(CtraceUnitTests, testFileDecodeJobPreservesFatalPacketContextWithoutInventingPacketPosition)
@@ -996,6 +1030,35 @@ TEST(CtraceUnitTests, testFileDecodeJobReportsRawInputReadFailuresWithPath)
   const auto message = captureExceptionMessage([&] { job.run(); });
   ASSERT_TRUE(message.has_value());
   EXPECT_EQ(*message, "failed to read input file: " + rawPath.string());
+}
+
+TEST(CtraceUnitTests, testFileDecodeJobRejectsFormatterTailRemovedAfterPreflight)
+{
+  const TemporaryTestPath temporaryPath("ctrace-file-decode-missing-tail-test");
+  const auto rawPath = temporaryPath.path() / "Shrunk.TB.raw";
+  // Keep the terminal byte outside the stream buffer populated while preflighting the input.
+  writeTestFile(rawPath, std::string(65537U, 'f'));
+  TraceRunConfig config;
+  config.traceFormat = TraceRunFormat::Formatted;
+  config.references.push_back(TraceRunTestSupport::makeReference("itm", "core", 1U, {}, "core/itm"));
+  auto input = testInput(rawPath, config);
+  ASSERT_EQ(input.size(), 65537U);
+  std::filesystem::resize_file(rawPath, 65536U);
+
+  bool sessionCreated = false;
+  const auto script = std::make_shared<OpenCsdSessionTestSupport::SessionScript>();
+  const auto delegate = OpenCsdSessionTestSupport::scriptedFactory(script);
+  OpenCsdItmSessionFactory factory = [&](OpenCsdPacketCollector& collector, OpenCsdErrorController& errors) {
+    sessionCreated = true;
+    return delegate(collector, errors);
+  };
+  CollectingDiagnosticSink diagnostics;
+  FileDecodeJob job(CliOptions{}, std::move(input), diagnostics, std::move(factory));
+  const auto message = captureExceptionMessage([&] { job.run(); });
+  ASSERT_TRUE(message.has_value());
+  EXPECT_EQ(*message, "failed to read input file: " + rawPath.string());
+  EXPECT_FALSE(sessionCreated);
+  EXPECT_FALSE(diagnostics.containsMessage("Incomplete formatter frame at end of file"));
 }
 
 TEST(CtraceUnitTests, testFileDecodeJobConsumesPreflightedHandleAfterPathReplacement)

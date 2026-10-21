@@ -446,6 +446,43 @@ bool SvdUtils::ConvertNumber(const string &text, set<uint64_t> &numbers)
   return true;
 }
 
+// SvdUtils::GetBitRange32() preserves the existing raw getter contracts:
+// GetBitWidth() is already signed 32-bit with -1 meaning unset; SvdField::GetOffset()
+// retains wide values and its unset sentinel for inheritance and diagnostics.
+// Validate the complete range before narrowing: offset 31 with width 2 is invalid,
+// and a large offset must not wrap to a valid position. A checked SvdField accessor
+// could own this check; changing the raw getters instead requires coordinated
+// changes to parsing, storage, setters, dimensions, inheritance and sentinels.
+bool SvdUtils::GetBitRange32(uint64_t rawOffset, int64_t rawWidth, uint32_t& offset, uint32_t& width)
+{
+  if(rawOffset >= 32 || rawWidth <= 0 || rawWidth > 32 || rawOffset + rawWidth > 32) {
+    return false;
+  }
+
+  offset = rawOffset;
+  width = rawWidth;
+  return true;
+}
+
+uint32_t SvdUtils::CreateBitMask32(uint32_t width, uint32_t offset)
+{
+  if(width == 0 || width > 32 || offset >= 32 || width > 32 - offset) {
+    return 0;
+  }
+
+  return (UINT32_MAX >> (32 - width)) << offset;
+}
+
+uint64_t SvdUtils::CreateBitMask(int64_t width, uint64_t offset)
+{
+  if(width <= 0 || width > 64 || offset >= 64 || width + offset > 64) {
+    return 0;
+  }
+
+  const auto mask = width == 64 ? UINT64_MAX : (uint64_t{1} << width) - 1;
+  return mask << offset;
+}
+
 bool SvdUtils::ConvertNumber(const string &text, uint32_t &number)
 {
   uint64_t num = 0;
@@ -1228,37 +1265,30 @@ string SvdUtils::CheckTextGeneric_SfrCC2(const string& value, uint32_t lineNo)
   string descr;
   unsigned char c=0, cPrev=0, cPrev2=0;
 
-  for(auto it = value.begin(); it != value.end(); it++) {
+  auto it = value.begin();
+  while(it != value.end()) {
     cPrev2  = cPrev;
     cPrev   = c;
-    c       = *it;
+    c       = *it++;
 
-    if(c == '%') {
-      auto tmpIt = it;
-      tmpIt++;
-      if(tmpIt != value.end() && *tmpIt == 's') {
-        ;
-      }
+    // Normalize first so skipped line breaks and tabs remain spaces on the next iteration.
+    if(c == '\n' || c == '\r' || c == '\t') {
+      c = ' ';
     }
 
-    if(c == ' ' && cPrev == ' ') {      // delete double whitespace
+    if(c == ' ' && cPrev == ' ') {
       continue;
     }
 
-    if(c == '\n' || c == '\r' || c == '\t') {   // convert all additional whitespace characters
-      if(cPrev == ' ') {
-        continue;
-      }
-      else {
-        c = ' ';
-      }
-    }
-
-    if(cPrev == '?' && cPrev2 == '?') {
+    const bool followsQuestionMarks = cPrev == '?' && cPrev2 == '?';
+    if(followsQuestionMarks) {
       string str;
       str += c;
       LogMsg("M517", NAME(value), VAL("CHAR", str), lineNo);
-      continue;
+      // A rejected backslash still belongs to the escape pair below.
+      if(c != '\\') {
+        continue;
+      }
     }
 
     if(c < 0x20 || c > 0x7e) {
@@ -1282,14 +1312,27 @@ string SvdUtils::CheckTextGeneric_SfrCC2(const string& value, uint32_t lineNo)
       continue;
     }
 
-    if(cPrev == '\\') {     // Test on supported ESC sequences
-      if(c != 'n') {
-        // FIXME: The escape sequence is messed up, e.g. "\\rtest" converts to "\\test"
-        string str;
-        str += c;
-        LogMsg("M518", NAME(value), VAL("CHAR", str), lineNo);
-        continue;
+    // Consume escape pairs before emitting a backslash.
+    if(c == '\\') {
+      if(it != value.end()) {
+        c = *it++;
+        if(c == 'n') {
+          if(!followsQuestionMarks) {
+            descr += '\\';
+          }
+          descr += c;
+          cPrev = '\\';
+          continue;
+        }
       }
+
+      string str;
+      str += c;
+      LogMsg("M518", NAME(value), VAL("CHAR", str), lineNo);
+      // Removed pairs must not affect whitespace or trigraph checks that follow.
+      c = cPrev;
+      cPrev = cPrev2;
+      continue;
     }
 
     descr += c;

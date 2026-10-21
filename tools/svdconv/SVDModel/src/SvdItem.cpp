@@ -183,7 +183,13 @@ bool SvdItem::Construct(XMLTreeElement* xmlElement)
 	bool success = ProcessXmlAttributes(xmlElement);
   success = ProcessXmlChildren(xmlElement);
 
+  if(HasExpansionError()) {
+    return false;
+  }
   CalculateDim();
+  if(HasExpansionError()) {
+    return false;
+  }
   Calculate();
   CheckItem();
 
@@ -199,12 +205,42 @@ bool SvdItem::ProcessXmlChildren(XMLTreeElement* xmlElement)
 	// process children
 	const auto& childs = xmlElement->GetChildren();
 	for(const auto child : childs) {
+		if(HasExpansionError()) {
+			return false;
+    }
 		if(!ProcessXmlElement(child)) {
 			return false;
     }
 	}
 
 	return true;
+}
+
+bool SvdItem::ReserveExpansion(size_t count)
+{
+  auto root = this;
+  while(root->m_parent) {
+    root = root->m_parent;
+  }
+  if(root->m_expansionError) {
+    return false;
+  }
+  if(count > MAX_EXPANSION_ITEMS - root->m_expansionItems) {
+    root->m_expansionError = true;
+    LogMsg("M249", NUM(MAX_EXPANSION_ITEMS), GetLineNumber());
+    return false;
+  }
+  root->m_expansionItems += count;
+  return true;
+}
+
+bool SvdItem::HasExpansionError() const
+{
+  auto root = this;
+  while(root->m_parent) {
+    root = root->m_parent;
+  }
+  return root->m_expansionError;
 }
 
 bool SvdItem::ProcessXmlElement(XMLTreeElement* xmlElement)
@@ -919,8 +955,9 @@ bool SvdItem::CopyItem(SvdItem *from)
   }
 
   SetTag          (tag);
-  CopyDerivedFrom (this, from);
-  CopyDim         (this, from);
+  if(!CopyDerivedFrom(this, from) || !CopyDim(this, from)) {
+    return false;
+  }
   SetCopiedFrom   (      from);
 
   return true;
@@ -940,11 +977,17 @@ bool SvdItem::CopyChilds(SvdItem *from, SvdItem *hook)
 
     const auto lv = copy->GetSvdLevel();
 
+    if(!hook->ReserveExpansion(1)) {
+      return false;
+    }
+
     // Container
     if(lv == L_EnumeratedValues) {      // more <enumeratedValues> containers can be set!
       const auto nItem = new SvdEnumContainer(hook);
       hook->AddItem(nItem);
-      CopyChilds(copy, nItem);
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
     else if(lv == L_Fields) {
@@ -957,7 +1000,9 @@ bool SvdItem::CopyChilds(SvdItem *from, SvdItem *hook)
       else {
         nItem = (SvdFieldContainer *)*(hook->GetChildren().begin());
       }
-      CopyChilds(copy, nItem);
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
     }
     else if(lv == L_Registers) {
       SvdRegisterContainer *nItem;
@@ -969,41 +1014,54 @@ bool SvdItem::CopyChilds(SvdItem *from, SvdItem *hook)
       else {
         nItem = (SvdRegisterContainer *)*(hook->GetChildren().begin());
       }
-      CopyChilds(copy, nItem);
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
     }
 
     // Elements
     else if(lv == L_EnumeratedValue) {
       const auto nItem = new SvdEnum(hook);
       hook->AddItem(nItem);
-      CopyChilds(copy, nItem);
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
     else if(lv == L_Field) {
       const auto nItem = new SvdField(hook);
       hook->AddItem(nItem);
-      CopyChilds(copy, nItem);
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
     else if(lv == L_Register) {
       const auto nItem = new SvdRegister(hook);
       hook->AddItem(nItem);
-      CopyChilds(copy, nItem);
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
     else if(lv == L_Peripheral) {
       const auto nItem = new SvdPeripheral(hook);
       hook->AddItem(nItem);
-      CopyChilds(copy, nItem);
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
     else if(lv == L_Cluster) {
       const auto nItem = new SvdCluster(hook);
       hook->AddItem(nItem);
-      CopyChilds(copy, nItem);
+      if(!CopyChilds(copy, nItem)) {
+        return false;
+      }
       nItem->CopyItem(copy);
     }
-    else {
+    if(hook->HasExpansionError()) {
+      return false;
     }
   }
 
@@ -1020,6 +1078,9 @@ bool SvdItem::CopyDerivedFrom(SvdItem *item, SvdItem *from)
   if(copyDeriveFrom) {
     auto deriveFrom = item->GetDerivedFrom();
     if(!deriveFrom) {
+      if(!item->ReserveExpansion(1)) {
+        return false;
+      }
       deriveFrom = new SvdDerivedFrom(item);
       item->SetDerivedFrom(deriveFrom);
       auto derivedFromItem = copyDeriveFrom->GetDerivedFromItem();
@@ -1052,6 +1113,9 @@ bool SvdItem::CopyDim(SvdItem *item, SvdItem *from)
   if(copyDim) {
     auto dim = item->GetDimension();
     if(!dim) {
+      if(!item->ReserveExpansion(1)) {
+        return false;
+      }
       dim = new SvdDimension(item);
       item->SetDimension(dim);
       dim->CopyItem(copyDim);

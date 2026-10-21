@@ -80,6 +80,8 @@ protected:
   void writeOutput(const TraceEvent& event) override;
   /** @brief Retains skipped-byte accounting regardless of event or stream filters. */
   void writeByteSkipOutput(const TraceByteSkip& skipped) override;
+  /** @brief Retains incomplete final formatter bytes regardless of event or stream filters. */
+  void writeRawTailOutput(const TraceRawTail& tail) override;
 
 private:
   std::filesystem::path m_outputFile;

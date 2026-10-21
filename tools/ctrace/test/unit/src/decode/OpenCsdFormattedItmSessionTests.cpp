@@ -307,6 +307,79 @@ TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionRoutesBoundaryIdsIndependent
   EXPECT_EQ(packets.softwarePacketsFor(last), 1U);
 }
 
+TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionDecodesCompleteFramesBeforeTruncatedTail)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  auto protocol = itmHardwareSync();
+  for (const auto value : {'A', 'B', 'C', 'D'}) {
+    const auto packet = itmSoftwarePacket(1U, static_cast<std::uint8_t>(value));
+    protocol.insert(protocol.end(), packet.begin(), packet.end());
+  }
+  ASSERT_EQ(protocol.size(), 14U); // Source ID plus these packets exactly fill the first frame.
+  const auto finalPacket = itmSoftwarePacket(1U, 'Z');
+  protocol.insert(protocol.end(), finalPacket.begin(), finalPacket.end());
+  const auto complete = memoryAlignedFrames({{1U, protocol}});
+  ASSERT_EQ(complete.size(), 32U);
+
+  {
+    RecordingElementOutput elements;
+    RecordingPacketSink packets;
+    OpenCsdErrorController errors;
+    OpenCsdFormattedItmSession session({route}, elements, errors, packets);
+    feedCapture(session, complete);
+    ASSERT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+    ASSERT_EQ(elements.software().size(), 5U);
+    EXPECT_EQ(elements.software().back().value, static_cast<std::uint32_t>('Z'));
+  }
+
+  for (std::size_t tailSize = 1U; tailSize < 16U; ++tailSize) {
+    SCOPED_TRACE(tailSize);
+    const std::vector<std::uint8_t> capture(complete.begin(), complete.begin() + 16U + tailSize);
+    const auto completeBytes = static_cast<std::uint32_t>(capture.size() - capture.size() % 16U);
+    ASSERT_EQ(completeBytes, 16U);
+    ASSERT_EQ(capture.size() - completeBytes, tailSize);
+
+    {
+      // OpenCSD rejects the entire unaligned block before decoding its valid prefix.
+      RecordingElementOutput elements;
+      RecordingPacketSink packets;
+      OpenCsdErrorController errors;
+      OpenCsdFormattedItmSession session({route}, elements, errors, packets);
+      std::uint32_t processed = 0U;
+      errors.beginDataPathCall();
+      const auto response = session.pushData(0U, static_cast<std::uint32_t>(capture.size()), capture.data(), processed);
+      EXPECT_EQ(response, OCSD_RESP_FATAL_INVALID_DATA);
+      EXPECT_EQ(processed, 0U);
+      EXPECT_TRUE(elements.software().empty());
+      const auto decision = errors.decide(response);
+      ASSERT_TRUE(decision.error.has_value());
+      EXPECT_EQ(decision.error->code, OCSD_ERR_INVALID_PARAM_VAL);
+    }
+
+    {
+      // A caller can retain complete frames and report the withheld tail separately.
+      // Even fifteen remaining bytes lack the final formatter flags: do not pad them.
+      RecordingElementOutput elements;
+      RecordingPacketSink packets;
+      OpenCsdErrorController errors;
+      OpenCsdFormattedItmSession session({route}, elements, errors, packets);
+      std::uint32_t processed = 0U;
+      EXPECT_EQ(session.pushData(0U, completeBytes, capture.data(), processed), OCSD_RESP_CONT);
+      EXPECT_EQ(processed, completeBytes);
+      EXPECT_EQ(processed + tailSize, capture.size());
+      ASSERT_EQ(session.endOfTrace(), OCSD_RESP_CONT);
+      ASSERT_EQ(elements.software().size(), 4U);
+      const std::vector<std::uint32_t> expected{'A', 'B', 'C', 'D'};
+      for (std::size_t index = 0U; index < expected.size(); ++index) {
+        EXPECT_EQ(elements.software()[index].traceId, 1U);
+        EXPECT_EQ(elements.software()[index].channel, 1U);
+        EXPECT_EQ(elements.software()[index].value, expected[index]);
+      }
+      EXPECT_EQ(packets.softwarePacketsFor(route), 4U);
+    }
+  }
+}
+
 TEST(CtraceUnitTests, testOpenCsdFormattedItmSessionKeepsFormatterIdZeroSilent)
 {
   const TraceRouteIdentity route{TraceRouteId{10U}, 1U};

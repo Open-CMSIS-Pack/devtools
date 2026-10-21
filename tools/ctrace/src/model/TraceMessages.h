@@ -237,6 +237,7 @@ struct TraceMessage {
 };
 
 struct TraceByteSkip;
+struct TraceRawTail;
 struct TraceDecodeAbort;
 struct OverflowTraceEvent;
 struct TraceIssueEvent;
@@ -249,6 +250,7 @@ struct TraceOverflowSummary {
 
 std::string formatTraceMessage(const TraceMessage& message, TraceMessageStyle style);
 std::string formatTraceMessage(const TraceByteSkip& skipped, TraceMessageStyle style);
+std::string formatTraceMessage(const TraceRawTail& tail, TraceMessageStyle style);
 std::string formatTraceMessage(const TraceDecodeAbort& failure, TraceMessageStyle style);
 std::string formatTraceMessage(const OverflowTraceEvent& overflow, TraceMessageStyle style);
 std::string formatTraceIssue(const TraceIssueEvent& issue, std::uint64_t rawOffset, TraceMessageStyle style);

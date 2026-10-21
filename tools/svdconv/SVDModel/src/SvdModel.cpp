@@ -52,6 +52,7 @@ bool SvdModel::Construct(XMLTreeElement* xmlTree)
 
       if(!ok) {
 			  delete m_device;
+        m_device = nullptr;
         success = false;
 		  }
     }

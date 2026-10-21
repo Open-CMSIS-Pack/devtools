@@ -319,6 +319,10 @@ CTRACE_MESSAGE(TraceUnknownSourceId,
     "unknown",
     nullptr)
 
+CTRACE_MESSAGE(TraceRawTail,
+    "Incomplete formatter frame at end of file; discarded bytes: {0}",
+    nullptr)
+
 CTRACE_MESSAGE(TraceDecodeAbort,
     "decode aborted after processing {0} input bytes; trace is incomplete: {1}",
     "Decode aborted; trace incomplete; {1}")
@@ -694,7 +698,6 @@ CTRACE_MESSAGE(DiagnosticTraceBusConflictingProcessors, "CoreSight Trace Bus ID 
 CTRACE_MESSAGE(DiagnosticTraceBusMissingAnchor, "ref describes CoreSight Trace Bus ID {0} without an ITM route anchor or supported feature fallback", nullptr)
 CTRACE_MESSAGE(DiagnosticConfigurationFilesMissing, "no *{0} files found in trace directory: {1}", nullptr)
 CTRACE_MESSAGE(DiagnosticConfigurationFilename, "expected <solution-set>{0}, got {1}", nullptr)
-CTRACE_MESSAGE(DiagnosticRawInputAlignment, "formatted raw trace input size must be a multiple of {0} bytes: {1} (size={2})", nullptr)
 CTRACE_MESSAGE(DiagnosticSpecificOutputTarget, "{0} must identify a specific output path", nullptr)
 CTRACE_MESSAGE(DiagnosticOutputParent, "{0} parent is not a directory: {1}", nullptr)
 CTRACE_MESSAGE(DiagnosticCtfDataType, "CTF output cannot use ctrace-run data-type '{0}'; {1}", nullptr)

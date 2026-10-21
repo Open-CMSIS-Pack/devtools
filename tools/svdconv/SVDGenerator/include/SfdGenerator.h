@@ -126,9 +126,11 @@ public:
   void CreateTextonly           (const std::string& text);
 
   template<uint32_t element, typename ...Args>
+  // args is forwarded by the applicable branches; ENDGROUP calls have an empty pack.
+  // codeql[cpp/unused-local-variable]; codeql[cpp/unused-static-variable]
   void Generate(const std::string& text, Args&&... args)
   {
-    constexpr sfd::Index elementIndex  = (sfd::Index)  (element & sfd::INDEX_MASK   );
+    [[maybe_unused]] constexpr sfd::Index elementIndex = (sfd::Index)(element & sfd::INDEX_MASK);
     constexpr sfd::Options elementType = (sfd::Options)(element & sfd::OPTIONS_MASK );
     constexpr sfd::Special specialType = (sfd::Special)(element & sfd::SPECIAL_MASK );
 
