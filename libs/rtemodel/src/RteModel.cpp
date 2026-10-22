@@ -392,7 +392,7 @@ void RteModel::InsertPack(RtePackage* package)
     }
     auto state = package->GetPackageState();
     if(insertedPack->GetPackageState() == state) {
-      // Keep duplicate packages until validation.
+      // duplicate, kept it in a temporary collection till validate;
       m_packageDuplicates.push_back(package);
       return;
     } else if(state != PS_EXPLICIT_PATH) {
