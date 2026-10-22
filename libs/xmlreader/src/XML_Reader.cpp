@@ -616,7 +616,7 @@ bool XML_Reader::ReadNext()
             type = TagType::TAG_COMMENT;
           }
           else if (c_prev2 == '<') {
-            LogMsg("M415", GetLineNumber());   // printf("Line %d: '<--' found, should this be a comment '<!--' ?\n", GetLineNumber());
+            LogMsg("M415", GetLineNumber());   // '<--' found, should this be a comment '<!--'?
             type = TagType::TAG_COMMENT;
           }
         }
