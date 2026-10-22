@@ -190,6 +190,7 @@ bool SvdField::Calculate()
 
 bool SvdField::CalculateDim()
 {
+  // Expand dimension indices into individually named fields.
   const auto dim = GetDimension();
   if(!dim) {
     return true;
@@ -229,6 +230,7 @@ bool SvdField::CalculateDim()
   uint32_t dimElementIndex = 0;
   string dimIndexText;
 
+  // Reserve the shared expansion budget before cloning each field.
   for(const auto& index : dimIndexList) {
     if(!dim->ReserveExpansion(1)) {
       return false;
@@ -276,6 +278,7 @@ bool SvdField::CalculateDim()
     }
   }
 
+  // Use the index summary in the dimension's display name and description.
   string name = dim->CreateName("");
   dim->SetName(name);
 
