@@ -398,13 +398,18 @@ UTFCode XML_Reader::CheckUTF(const string& text)
   }
 
   const char* str = text.c_str();
+  const char* const end = str + text.size();
+  const auto nextByte = [&str, end]() {
+    // A truncated BOM must not advance the cursor past the string terminator.
+    return str != end ? *str++ : '\0';
+  };
 
   UTFCode utfDetected = UTFCode::UTF_NULL;
-  switch (*str++) {
+  switch (nextByte()) {
     case (char)0xEF: {
-      switch (*str++) {
+      switch (nextByte()) {
         case (char)0xBB: {
-          switch (*str++) {
+          switch (nextByte()) {
             case (char)0xBF: {
               utfDetected = UTFCode::UTF8;
             } break;
@@ -418,7 +423,7 @@ UTFCode XML_Reader::CheckUTF(const string& text)
     } break;
 
     case (char)0xFE: {
-      switch (*str++) {
+      switch (nextByte()) {
         case (char)0xFF: {
           utfDetected = UTFCode::UTF16_BE;
         } break;
@@ -428,7 +433,7 @@ UTFCode XML_Reader::CheckUTF(const string& text)
     } break;
 
     case (char)0xFF: {
-      switch (*str++) {
+      switch (nextByte()) {
         case (char)0xFE: {
           utfDetected = UTFCode::UTF16_LE;
         } break;
