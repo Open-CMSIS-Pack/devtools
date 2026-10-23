@@ -405,10 +405,13 @@ UTFCode XML_Reader::CheckUTF(const string& text)
   };
 
   UTFCode utfDetected = UTFCode::UTF_NULL;
+  // Keep the byte-decoding switch structure extensible for additional BOM variants.
   switch (nextByte()) {
     case (char)0xEF: {
+      // codeql[cpp/trivial-switch]
       switch (nextByte()) {
         case (char)0xBB: {
+          // codeql[cpp/trivial-switch]
           switch (nextByte()) {
             case (char)0xBF: {
               utfDetected = UTFCode::UTF8;
@@ -423,6 +426,7 @@ UTFCode XML_Reader::CheckUTF(const string& text)
     } break;
 
     case (char)0xFE: {
+      // codeql[cpp/trivial-switch]
       switch (nextByte()) {
         case (char)0xFF: {
           utfDetected = UTFCode::UTF16_BE;
@@ -433,6 +437,7 @@ UTFCode XML_Reader::CheckUTF(const string& text)
     } break;
 
     case (char)0xFF: {
+      // codeql[cpp/trivial-switch]
       switch (nextByte()) {
         case (char)0xFE: {
           utfDetected = UTFCode::UTF16_LE;
@@ -616,7 +621,7 @@ bool XML_Reader::ReadNext()
             type = TagType::TAG_COMMENT;
           }
           else if (c_prev2 == '<') {
-            LogMsg("M415", GetLineNumber());   // printf("Line %d: '<--' found, should this be a comment '<!--' ?\n", GetLineNumber());
+            LogMsg("M415", GetLineNumber());   // '<--' found, should this be a comment '<!--'?
             type = TagType::TAG_COMMENT;
           }
         }
