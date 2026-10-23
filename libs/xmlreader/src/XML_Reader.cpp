@@ -398,16 +398,21 @@ UTFCode XML_Reader::CheckUTF(const string& text)
   }
 
   const char* str = text.c_str();
+  const char* const end = str + text.size();
+  const auto nextByte = [&str, end]() {
+    // A truncated BOM must not advance the cursor past the string terminator.
+    return str != end ? *str++ : '\0';
+  };
 
   UTFCode utfDetected = UTFCode::UTF_NULL;
   // Keep the byte-decoding switch structure extensible for additional BOM variants.
-  switch (*str++) {
+  switch (nextByte()) {
     case (char)0xEF: {
       // codeql[cpp/trivial-switch]
-      switch (*str++) {
+      switch (nextByte()) {
         case (char)0xBB: {
           // codeql[cpp/trivial-switch]
-          switch (*str++) {
+          switch (nextByte()) {
             case (char)0xBF: {
               utfDetected = UTFCode::UTF8;
             } break;
@@ -422,7 +427,7 @@ UTFCode XML_Reader::CheckUTF(const string& text)
 
     case (char)0xFE: {
       // codeql[cpp/trivial-switch]
-      switch (*str++) {
+      switch (nextByte()) {
         case (char)0xFF: {
           utfDetected = UTFCode::UTF16_BE;
         } break;
@@ -433,7 +438,7 @@ UTFCode XML_Reader::CheckUTF(const string& text)
 
     case (char)0xFF: {
       // codeql[cpp/trivial-switch]
-      switch (*str++) {
+      switch (nextByte()) {
         case (char)0xFE: {
           utfDetected = UTFCode::UTF16_LE;
         } break;
