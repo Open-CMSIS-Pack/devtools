@@ -10,6 +10,7 @@ The [architecture description](docs/architecture.md) documents the supported fea
 ctrace <trace-dir> [options]
 
   -t, --target <name>       Process one solution set; otherwise process all
+  -c, --channel <name>      Select one input channel; repeat to select several
       --csv                 Generate CSV output
       --ctf                 Generate CTF and Trace Compass XML output
   -a, --all                 Generate all output formats
@@ -24,6 +25,10 @@ Values for `--type` and `--stream` are space-separated, so place the trace direc
 If the directory follows them, terminate option parsing explicitly, for example
 `ctrace --type itm dwt -- .trace`. With no output option, `ctrace` validates and decodes the capture without writing
 output files. Run `ctrace --help` for the current option details.
+
+`--channel` selects exact, case-sensitive names (`SWO`, `TB`, `TB_<name>`). Repeat it for multiple channels,
+e.g. `ctrace .trace --all -c SWO -c TB_ETB_0`; duplicates are ignored. Default: all supported channels.
+`TB` selects only the unnamed buffer; `--type` and `--stream` filter events within the selected inputs.
 
 Normal CLI diagnostics use the same compact trace messages as CSV. Add `--verbose` (or `-v`) to include detailed
 reasons, raw positions with bounded inspection windows, native decoder codes, packet previews and technical run
@@ -50,9 +55,9 @@ For `ctrace .trace --target Board --all`, the supported input produces:
   Board.traceanalysis.xml     # graphical views from eligible completed CTF bundles
 ```
 
-Discovery processes every existing `Board.SWO.raw`, `Board.TB.raw`, and `Board.TB_<name>.raw` input independently,
-one after another. `--target Board` selects the solution set and all its supported inputs. Each input gets its own
-CSV and CTF bundle, using `<solution-set>.<channel>` as their common base name. CTF uses
+Discovery processes selected `Board.SWO.raw`, `Board.TB.raw`, and `Board.TB_<name>.raw` inputs independently,
+one after another. `--target Board` selects the solution set; `--channel` further restricts its inputs. Each input gets
+its own CSV and CTF bundle, using `<solution-set>.<channel>` as their common base name. CTF uses
 this channel-qualified name even for a single input; older `Board.ctf` bundles are neither reused nor removed.
 The [CTF profile](docs/ctf-format.md#files-and-common-structure) records the required specification alignment.
 
@@ -64,6 +69,10 @@ target in the current invocation. Each contributing bundle must retain exactly o
 remains valid CTF but is omitted from the XML with a warning. Independent single-clock bundles can contribute together;
 their clock UUIDs keep sources separate without synchronizing or rebasing their timestamps. No old per-channel XML
 files are migrated or deleted. An XML failure leaves completed CSV and CTF outputs intact.
+
+With `--channel`, sets without matches are skipped and their outputs preserved. Each requested channel must exist
+in at least one selected set; otherwise ctrace returns `1` after processing available matches. Excluded CSV/CTF
+files remain untouched and are omitted from regenerated XML.
 
 Without a format declaration, each SWO input defaults to unformatted ITM and each TB or named-TB input defaults to
 formatted CoreSight. Missing or null `trace-format` uses these channel-based defaults; an explicit value overrides
@@ -81,8 +90,9 @@ memory-aligned CoreSight frames; there is no public `trace-framing` field yet. S
 [constraints](docs/constraints.md) for the full discovery, routing, and
 compatibility contract.
 
-Event Recorder (`Board.ER.raw`) remains unsupported and is skipped with a warning. A solution set without a supported
-input reports an error. A failure in one input leaves the remaining inputs and solution sets available for processing;
+Event Recorder (`Board.ER.raw`) remains unsupported: unfiltered discovery skips it with a warning, and `--channel ER`
+is rejected. Without a channel filter, a solution set without a supported input reports an error.
+A failure in one input leaves the remaining inputs and solution sets available for processing;
 the command returns non-zero if any input fails. This also applies when validating without output options.
 
 ## Incomplete captures

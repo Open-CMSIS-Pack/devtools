@@ -10,6 +10,7 @@
 #include "CliOptions.h"
 #include "CliParser.h"
 #include <cstdint>
+#include <exception>
 #include <initializer_list>
 #include <optional>
 #include <string>
@@ -44,7 +45,7 @@ static bool validationErrorContains(std::initializer_list<const char*> arguments
 /** @brief Tests whether parsing the supplied command line fails. */
 static bool parseFails(std::initializer_list<const char*> arguments)
 {
-  return throwsException([&arguments] { (void)parse(arguments); });
+  return throwsException<std::exception>([&arguments] { (void)parse(arguments); });
 }
 
 /** @brief Requires a command line to select the expected output format. */
@@ -89,6 +90,7 @@ TEST(CtraceUnitTests, testCliParserOutputOptions)
            "Filter output for specific packet types (default: all)",
            "Filter output for specific streams (default: all)",
            "Specify a trace solution-set (default: all)",
+           "Select an input channel (repeatable; default: all)",
            "Print version",
            "Show detailed diagnostics and processing information",
        }) {
@@ -102,6 +104,71 @@ TEST(CtraceUnitTests, testCliParserOutputOptions)
   ASSERT_TRUE(trailingTraceDirectory.selection.types == std::vector<std::string>({"dwt", "itm"}) &&
               trailingTraceDirectory.selection.streams == std::vector<std::uint8_t>({1U, 2U}))
       << "CliParser trailing trace directory must preserve selector values";
+}
+
+TEST(CtraceUnitTests, testCliParserRepeatsExactInputChannelsIndependentlyOfOutputFilters)
+{
+  EXPECT_TRUE(parseAndValidate({"ctrace", ".trace"}).channels.empty());
+
+  const auto selected = parseAndValidate(
+      {"ctrace", ".trace", "--target", "Board.Debug", "--type", "dwt", "itm", "-c", "SWO", "--stream", "1", "2",
+       "--channel=TB", "-c", "TB_ETB-0", "--channel", "TB_buffer_1", "-c", "SWO", "--all"});
+  EXPECT_EQ(selected.channels, (std::vector<std::string>{"SWO", "TB", "TB_ETB-0", "TB_buffer_1", "SWO"}));
+  EXPECT_EQ(selected.traceDir, std::optional<std::string>(".trace"));
+  EXPECT_EQ(selected.targetName, std::optional<std::string>("Board.Debug"));
+  EXPECT_EQ(selected.outputFormat, OutputFormat::All);
+  EXPECT_EQ(selected.selection.types, (std::vector<std::string>{"dwt", "itm"}));
+  EXPECT_EQ(selected.selection.streams, (std::vector<std::uint8_t>{1U, 2U}));
+
+  const auto trailingTraceDirectory =
+      parseAndValidate({"ctrace", "--channel", "TB_ETB_0", ".trace", "-c", "SWO"});
+  EXPECT_EQ(trailingTraceDirectory.traceDir, std::optional<std::string>(".trace"));
+  EXPECT_EQ(trailingTraceDirectory.channels, (std::vector<std::string>{"TB_ETB_0", "SWO"}));
+
+  const auto delimitedTraceDirectory = parseAndValidate({"ctrace", "-c", "SWO", "--", ".trace"});
+  EXPECT_EQ(delimitedTraceDirectory.traceDir, std::optional<std::string>(".trace"));
+  EXPECT_EQ(delimitedTraceDirectory.channels, (std::vector<std::string>{"SWO"}));
+  EXPECT_NE(CliParser::helpString().find("--channel"), std::string::npos);
+}
+
+TEST(CtraceUnitTests, testCliParserRejectsUnsupportedOrMalformedInputChannels)
+{
+  for (const auto* channel : {"ER", "swo", "SwO", "tb", "TB_", "TBish", "TB_bad.name", "TB_bad name",
+                             "TB_\xC3\x84", "TB_../other", "TB_bad/name", "TB_bad\\name", "TB_*", "SWO,TB",
+                             "TB_ETB_0,", " SWO", "SWO "}) {
+    SCOPED_TRACE(channel);
+    EXPECT_TRUE(validationErrorContains({"ctrace", ".trace", "--channel", channel}, "Invalid --channel value:"));
+  }
+  EXPECT_TRUE(validationErrorContains({"ctrace", ".trace", "-c", "ER", "-c", "SWO"},
+                                     "Invalid --channel value: ER"));
+  EXPECT_TRUE(validationErrorContains({"ctrace", ".trace", "--channel=SWO,TB", "-c", "SWO"},
+                                     "Invalid --channel value: SWO,TB"));
+}
+
+TEST(CtraceUnitTests, testCliParserRequiresOneValuePerInputChannelOption)
+{
+  EXPECT_TRUE(parseFails({"ctrace", ".trace", "--channel"}));
+  EXPECT_TRUE(parseFails({"ctrace", ".trace", "-c"}));
+  EXPECT_TRUE(validationErrorContains({"ctrace", ".trace", "--channel="}, "Missing value for --channel"));
+  EXPECT_TRUE(validationErrorContains({"ctrace", ".trace", "-c", ""}, "Missing value for --channel"));
+  EXPECT_TRUE(validationErrorContains({"ctrace", ".trace", "--channel", "--csv"}, "Missing value for --channel"));
+  EXPECT_TRUE(validationErrorContains({"ctrace", ".trace", "-c", "--"}, "Missing value for --channel"));
+  EXPECT_TRUE(validationErrorContains({"ctrace", ".trace", "-c", "SWO", "TB"},
+                                     "Unexpected positional argument: TB"));
+}
+
+TEST(CtraceUnitTests, testCliParserInputChannelsPreserveHelpAndVersionValidation)
+{
+  const auto help = parseAndValidate({"ctrace", "--help", "--channel", "ER"});
+  EXPECT_TRUE(help.help);
+  EXPECT_EQ(help.channels, (std::vector<std::string>{"ER"}));
+  EXPECT_TRUE(parseFails({"ctrace", "--help", "--channel="}));
+
+  const auto version = parseAndValidate({"ctrace", "--version", "-c", "SWO"});
+  EXPECT_TRUE(version.version);
+  EXPECT_EQ(version.channels, (std::vector<std::string>{"SWO"}));
+  EXPECT_TRUE(validationErrorContains({"ctrace", "--version", "--channel", "ER"},
+                                     "Invalid --channel value: ER"));
 }
 
 TEST(CtraceUnitTests, testCliParserVerboseDoesNotChangeVersionOrOutputSelection)
