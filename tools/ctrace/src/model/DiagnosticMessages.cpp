@@ -62,6 +62,16 @@ std::string targetArgumentMessage(std::string_view value)
   return formatMessage(MessageId::DiagnosticTargetArgument, MessageStyle::Detailed, {value});
 }
 
+std::string channelArgumentMessage(std::string_view value)
+{
+  return formatMessage(MessageId::DiagnosticChannelArgument, MessageStyle::Detailed, {value});
+}
+
+std::string missingChannelInputMessage(std::string_view value)
+{
+  return formatMessage(MessageId::DiagnosticMissingChannelInput, MessageStyle::Detailed, {value});
+}
+
 std::string configFieldMessage(std::string_view field, ConfigFieldProblem problem)
 {
   switch (problem) {

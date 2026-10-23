@@ -15,6 +15,8 @@
 
 #include <filesystem>
 #include <optional>
+#include <set>
+#include <string>
 #include <vector>
 
 struct TraceRunConfig;
@@ -40,8 +42,8 @@ public:
   void run();
 
 private:
-  /** @brief Reads one configuration and processes all its supported raw inputs. */
-  void processConfigFile(const std::filesystem::path& configFile);
+  /** @brief Processes matching inputs and records requested channels found. */
+  void processConfigFile(const std::filesystem::path& configFile, std::set<std::string>& unmatchedChannels);
   /** @brief Collects completed per-input CTF metadata into one target-level XML. */
   void processInputs(const TraceRunConfig& config, const std::vector<TraceRunRawInput>& inputs,
                       const std::filesystem::path& xmlPath);
