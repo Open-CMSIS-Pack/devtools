@@ -38,6 +38,18 @@ struct RunResult {
   std::string stderrText;
 };
 
+struct OutputModeCase {
+  std::string_view name;
+  std::string_view option;
+  bool csv;
+  bool ctf;
+};
+
+constexpr std::array<OutputModeCase, 4U> kOutputModes{{
+    {"check", {}, false, false}, {"csv", "--csv", true, false},
+    {"ctf", "--ctf", false, true}, {"all", "--all", true, true},
+}};
+
 class CtraceIntegTests : public testing::Test {
 protected:
   void SetUp() override
@@ -630,6 +642,28 @@ void expectChannelArtifacts(const std::filesystem::path& directory, std::string_
   if (ctf) {
     expectNonEmptyFile(ctfPath / "metadata");
     expectChannelCtf(ctfPath, fixture);
+  }
+}
+
+/** @brief Checks selected fixture channels and their shared target XML. */
+void expectTargetArtifacts(const std::filesystem::path& directory, std::string_view solutionSet,
+                           const std::set<std::string>& channels, const OutputModeCase& mode)
+{
+  SCOPED_TRACE(std::string(solutionSet));
+  for (const auto& fixture : kChannelFixtures) {
+    const bool selected = channels.count(std::string(fixture.channel)) != 0U;
+    expectChannelArtifacts(directory, solutionSet, fixture, selected && mode.csv, selected && mode.ctf);
+  }
+  const auto xmlPath = directory / (std::string(solutionSet) + ".traceanalysis.xml");
+  const bool xmlExpected = mode.ctf && !channels.empty();
+  EXPECT_EQ(std::filesystem::exists(xmlPath), xmlExpected);
+  if (xmlExpected) {
+    const auto xml = readTestTextFile(xmlPath);
+    for (const auto& channel : channels) {
+      const auto capture = std::string(solutionSet) + "." + channel + ".ctf";
+      expectCaptureView(xml, singleCtfClockUuid(directory / capture), channel == "SWO" ? 0U : 1U, "PC_SAMPLE");
+    }
+    EXPECT_EQ(traceCompassDefinitionIds(xml).size(), channels.size() + 1U);
   }
 }
 
@@ -1771,18 +1805,8 @@ TEST_F(CtraceIntegTests, ConvertsLegacyUnformattedSwoFixtureToGoldenOutputs)
 
 TEST_F(CtraceIntegTests, ProcessesEveryChannelOfSelectedTargetInEachOutputMode)
 {
-  struct Mode {
-    std::string_view name;
-    std::string_view option;
-    bool csv;
-    bool ctf;
-  };
-  constexpr std::array<Mode, 4U> modes{{
-      {"check", {}, false, false}, {"csv", "--csv", true, false},
-      {"ctf", "--ctf", false, true}, {"all", "--all", true, true},
-  }};
   for (const bool nullFormat : {false, true}) {
-    for (const auto& mode : modes) {
+    for (const auto& mode : kOutputModes) {
       const auto directory = workDirectory() / (nullFormat ? "null" : "absent") / mode.name;
       SCOPED_TRACE(directory.string());
       writeMultipleChannelFixture(directory, "Selected", nullFormat);
@@ -1794,22 +1818,8 @@ TEST_F(CtraceIntegTests, ProcessesEveryChannelOfSelectedTargetInEachOutputMode)
       const auto result = run(std::move(arguments));
       EXPECT_EQ(result.exitCode, 0) << result.stderrText;
       expectNotContains(result.stderrText, "[error]");
-      for (const auto& fixture : kChannelFixtures) {
-        expectChannelArtifacts(directory, "Selected", fixture, mode.csv, mode.ctf);
-        expectChannelArtifacts(directory, "Other", fixture, false, false);
-      }
-      const auto xmlPath = directory / "Selected.traceanalysis.xml";
-      EXPECT_EQ(std::filesystem::exists(xmlPath), mode.ctf);
-      EXPECT_FALSE(std::filesystem::exists(directory / "Other.traceanalysis.xml"));
-      if (mode.ctf) {
-        const auto xml = readTestTextFile(xmlPath);
-        for (const auto& fixture : kChannelFixtures) {
-          const auto capture = "Selected." + std::string(fixture.channel) + ".ctf";
-          expectCaptureView(xml, singleCtfClockUuid(directory / capture), fixture.channel == "SWO" ? 0U : 1U,
-                            "PC_SAMPLE");
-        }
-        traceCompassDefinitionIds(xml);
-      }
+      expectTargetArtifacts(directory, "Selected", {"SWO", "TB", "TB_ETB"}, mode);
+      expectTargetArtifacts(directory, "Other", {}, mode);
       EXPECT_FALSE(std::filesystem::exists(directory / "Selected.ctf"));
     }
   }
@@ -1851,23 +1861,13 @@ TEST_F(CtraceIntegTests, GeneratesAllChannelOutputsForAllTargets)
 
 TEST_F(CtraceIntegTests, SelectsExactChannelsInEveryOutputMode)
 {
-  struct Mode {
-    std::string_view name;
-    std::string_view option;
-    bool csv;
-    bool ctf;
-  };
-  constexpr std::array<Mode, 4U> modes{{
-      {"check", {}, false, false}, {"csv", "--csv", true, false},
-      {"ctf", "--ctf", false, true}, {"all", "--all", true, true},
-  }};
   const std::array<std::vector<std::string>, 4U> selections{{
       {"SWO"}, {"TB"}, {"TB_ETB"}, {"SWO", "TB_ETB", "SWO"},
   }};
   for (std::size_t selection = 0U; selection < selections.size(); ++selection) {
     const auto& channels = selections[selection];
     const std::set<std::string> uniqueChannels(channels.begin(), channels.end());
-    for (const auto& mode : modes) {
+    for (const auto& mode : kOutputModes) {
       const auto directory = workDirectory() / std::to_string(selection) / mode.name;
       SCOPED_TRACE(directory.string());
       writeMultipleChannelFixture(directory, "Selected");
@@ -1884,22 +1884,8 @@ TEST_F(CtraceIntegTests, SelectsExactChannelsInEveryOutputMode)
       EXPECT_EQ(result.exitCode, 0) << result.stderrText;
       expectNotContains(result.stderrText, "[error]");
       EXPECT_EQ(countOccurrences(result.stderrText, "[info] raw input inspection context"), uniqueChannels.size());
-      for (const auto& fixture : kChannelFixtures) {
-        const bool selected = uniqueChannels.count(std::string(fixture.channel)) != 0U;
-        expectChannelArtifacts(directory, "Selected", fixture, selected && mode.csv, selected && mode.ctf);
-        expectChannelArtifacts(directory, "Other", fixture, false, false);
-      }
-      const auto xmlPath = directory / "Selected.traceanalysis.xml";
-      EXPECT_EQ(std::filesystem::exists(xmlPath), mode.ctf);
-      EXPECT_FALSE(std::filesystem::exists(directory / "Other.traceanalysis.xml"));
-      if (mode.ctf) {
-        const auto xml = readTestTextFile(xmlPath);
-        for (const auto& channel : uniqueChannels) {
-          expectCaptureView(xml, singleCtfClockUuid(directory / ("Selected." + channel + ".ctf")),
-                            channel == "SWO" ? 0U : 1U, "PC_SAMPLE");
-        }
-        EXPECT_EQ(traceCompassDefinitionIds(xml).size(), uniqueChannels.size() + 1U);
-      }
+      expectTargetArtifacts(directory, "Selected", uniqueChannels, mode);
+      expectTargetArtifacts(directory, "Other", {}, mode);
     }
   }
 }
@@ -1950,17 +1936,17 @@ TEST_F(CtraceIntegTests, ReportsMissingChannelsWithinSelectedTargetAndCompletesM
 
 TEST_F(CtraceIntegTests, PreservesOutputsAndSkipsYamlWhenChannelSelectionIsEmpty)
 {
-  for (const auto option : {"", "--csv", "--ctf", "--all"}) {
-    const auto directory = workDirectory() / (std::string_view(option).empty() ? "check" : option);
-    SCOPED_TRACE(option);
+  for (const auto& mode : kOutputModes) {
+    const auto directory = workDirectory() / mode.name;
+    SCOPED_TRACE(mode.name);
     writeMultipleChannelFixture(directory, "Selected");
     writeTestFile(directory / "Selected.ctrace-run.yml", "ctrace-run: [");
     writeTestFile(directory / "Selected.SWO.csv", "existing CSV");
     writeTestFile(directory / "Selected.SWO.ctf" / "metadata", "existing metadata");
     writeTestFile(directory / "Selected.traceanalysis.xml", "existing XML");
     std::vector<std::string> arguments{"ctrace", directory.string(), "--target", "Selected", "-c", "TB_Missing"};
-    if (*option != '\0') {
-      arguments.emplace_back(option);
+    if (!mode.option.empty()) {
+      arguments.emplace_back(mode.option);
     }
     const auto result = run(std::move(arguments));
     EXPECT_EQ(result.exitCode, 1) << result.stderrText;
@@ -1982,14 +1968,16 @@ TEST_F(CtraceIntegTests, PreservesUnselectedArtifactsAndExcludesOldBundlesFromXm
     writeMultipleChannelFixture(directory, "Selected");
     auto result = run({"ctrace", directory.string(), "--all"});
     ASSERT_EQ(result.exitCode, 0) << result.stderrText;
-    const auto tbCsv = readTestTextFile(directory / "Selected.TB.csv");
-    const auto tbMetadata = readTestTextFile(directory / "Selected.TB.ctf" / "metadata");
-    const auto tbStream = readTestBinaryFile(directory / "Selected.TB.ctf" / "stream_1");
-    const auto namedCsv = readTestTextFile(directory / "Selected.TB_ETB.csv");
-    const auto namedMetadata = readTestTextFile(directory / "Selected.TB_ETB.ctf" / "metadata");
-    const auto namedStream = readTestBinaryFile(directory / "Selected.TB_ETB.ctf" / "stream_1");
-    const auto tbClock = singleCtfClockUuid(directory / "Selected.TB.ctf");
-    const auto namedClock = singleCtfClockUuid(directory / "Selected.TB_ETB.ctf");
+    std::vector<std::pair<std::filesystem::path, std::vector<unsigned char>>> previousArtifacts;
+    std::vector<std::string> previousClocks;
+    for (const auto channel : {"TB", "TB_ETB"}) {
+      const auto base = std::string("Selected.") + channel;
+      const auto ctfDirectory = directory / (base + ".ctf");
+      for (const auto& path : {directory / (base + ".csv"), ctfDirectory / "metadata", ctfDirectory / "stream_1"}) {
+        previousArtifacts.emplace_back(path, readTestBinaryFile(path));
+      }
+      previousClocks.push_back(singleCtfClockUuid(ctfDirectory));
+    }
     std::filesystem::rename(directory / "Selected.TB.raw", directory / "original.raw");
     ASSERT_TRUE(std::filesystem::create_directory(directory / "Selected.TB.raw"));
 
@@ -2007,16 +1995,14 @@ TEST_F(CtraceIntegTests, PreservesUnselectedArtifactsAndExcludesOldBundlesFromXm
       expectNotContains(result.stderrText, "[error]");
     }
     expectChannelArtifacts(directory, "Selected", kChannelFixtures[0U], true, true);
-    EXPECT_EQ(readTestTextFile(directory / "Selected.TB.csv"), tbCsv);
-    EXPECT_EQ(readTestTextFile(directory / "Selected.TB.ctf" / "metadata"), tbMetadata);
-    EXPECT_EQ(readTestBinaryFile(directory / "Selected.TB.ctf" / "stream_1"), tbStream);
-    EXPECT_EQ(readTestTextFile(directory / "Selected.TB_ETB.csv"), namedCsv);
-    EXPECT_EQ(readTestTextFile(directory / "Selected.TB_ETB.ctf" / "metadata"), namedMetadata);
-    EXPECT_EQ(readTestBinaryFile(directory / "Selected.TB_ETB.ctf" / "stream_1"), namedStream);
+    for (const auto& [path, bytes] : previousArtifacts) {
+      EXPECT_EQ(readTestBinaryFile(path), bytes) << path;
+    }
     const auto xml = readTestTextFile(directory / "Selected.traceanalysis.xml");
     expectCaptureView(xml, singleCtfClockUuid(directory / "Selected.SWO.ctf"), 0U, "PC_SAMPLE");
-    expectNotContains(xml, tbClock);
-    expectNotContains(xml, namedClock);
+    for (const auto& clock : previousClocks) {
+      expectNotContains(xml, clock);
+    }
     EXPECT_EQ(traceCompassDefinitionIds(xml).size(), 2U);
   }
 }

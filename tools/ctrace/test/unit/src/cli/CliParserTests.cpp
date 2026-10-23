@@ -35,10 +35,7 @@ static CliOptions parseAndValidate(std::initializer_list<const char*> arguments)
 static bool validationErrorContains(std::initializer_list<const char*> arguments, std::string_view expected)
 {
   return throwsWithMessage(
-      [&arguments] {
-        const auto options = parse(arguments);
-        CliParser::validate(options);
-      },
+      [&arguments] { (void)parseAndValidate(arguments); },
       expected);
 }
 
