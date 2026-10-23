@@ -66,7 +66,7 @@ jobs:
           output: sarif-results
           upload: never
 
-      - name: Filter external results and SVDConv source suppressions
+      - name: Filter external results and approved source suppressions
         run: |
           set -euo pipefail
           mkdir sarif-results-filtered
@@ -84,6 +84,16 @@ jobs:
                 and any(.suppressions[]?;
                   .kind == "inSource" and ((.status // "accepted") == "accepted")
                 );
+              def is_xmlreader_trivial_switch_suppression:
+                .ruleId == "cpp/trivial-switch"
+                and (
+                  (.locations[0].physicalLocation.artifactLocation.uri // "")
+                  | gsub("\\\\"; "/")
+                  | test("^(\\./)?libs/xmlreader/src/XML_Reader\\.cpp$")
+                )
+                and any(.suppressions[]?;
+                  .kind == "inSource" and ((.status // "accepted") == "accepted")
+                );
               .runs |= map(
                 .results |= map(
                   select(
@@ -92,6 +102,7 @@ jobs:
                     | not
                   )
                   | select(is_svdconv_unused_suppression | not)
+                  | select(is_xmlreader_trivial_switch_suppression | not)
                 )
               )
             ' "$sarif_file" > "sarif-results-filtered/$(basename "$sarif_file")"
