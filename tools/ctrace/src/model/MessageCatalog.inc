@@ -677,6 +677,8 @@ CTRACE_MESSAGE(DiagnosticPositionalArgument, "Unexpected positional argument: {0
 CTRACE_MESSAGE(DiagnosticStreamArgument, "--stream must be a CoreSight Trace Bus ID between 0 and 111, got {0}", nullptr)
 CTRACE_MESSAGE(DiagnosticTypeArgument, "Invalid --type value: {0} (accepted: {1})", nullptr)
 CTRACE_MESSAGE(DiagnosticTargetArgument, "--target must be a solution-set name, got {0}", nullptr)
+CTRACE_MESSAGE(DiagnosticChannelArgument, "Invalid --channel value: {0} (accepted: SWO, TB, TB_<name>; name uses letters, digits, '_' or '-')", nullptr)
+CTRACE_MESSAGE(DiagnosticMissingChannelInput, "no raw trace input found for requested channel {0}", nullptr)
 CTRACE_MESSAGE(DiagnosticConfigFieldScalarString, "'{0}' must be a scalar string", nullptr)
 CTRACE_MESSAGE(DiagnosticConfigFieldScalarUnsigned, "'{0}' must be a scalar unsigned integer", nullptr)
 CTRACE_MESSAGE(DiagnosticConfigFieldUnsigned, "'{0}' must be an unsigned integer", nullptr)

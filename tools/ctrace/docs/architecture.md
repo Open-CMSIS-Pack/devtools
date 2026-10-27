@@ -20,7 +20,7 @@ Backend-specific representations are documented in the [CTF profile](ctf-format.
 PC sampling accepts a four-byte PC or the one-byte status markers `0x00` (`CPU Sleeping`) and Armv8-M `0xff`
 (`Trace prohibited`). Status markers preserve route, timestamp, and sample quality without a PC address.
 
-Every matching SWO, TB, and named-TB raw input is processed independently and sequentially for each selected trace-run
+Every selected SWO, TB, and named-TB raw input is processed independently and sequentially for each selected trace-run
 configuration. Formatted input distributes bytes to configured ITM routes by Trace Bus ID; unformatted input uses
 one synthetic route. Other protocols require explicit decoder integration, not guesses based on observed IDs.
 Deferred inputs and decoders are tracked in the [TODO list](todo.md).
@@ -30,7 +30,7 @@ formats independent of OpenCSD and allows another raw trace channel to reuse the
 
 ## How it works at a glance
 
-`ctrace` processes one solution set at a time and runs a separate file job for each supported raw input in that set.
+`ctrace` processes one solution set at a time and runs a separate file job for each selected raw input in that set.
 The [README](../README.md#trace-directory) describes how configuration, raw inputs, and generated outputs are grouped
 by solution-set and channel names. The following path runs once per input, with fresh decoder and output state.
 
@@ -86,8 +86,9 @@ there is deliberately no common base class for all decode stages.
 
 Input selection and route binding belong to `tracerun` and complete before each input's decoder and output backends
 are constructed. Target-level XML preparation precedes these per-input jobs.
+With `--channel`, `TraceDirectoryJob` skips sets without matching inputs before YAML parsing and output preparation.
 The provisional, ctrace-private `trace-format` declaration describes effective capture bytes rather than target
-capability or file identity. Discovery collects every matching SWO, TB, and named-TB input, independently of whether
+capability or file identity. Discovery selects matching SWO, TB, and named-TB inputs independently of whether
 the format is declared. Each input is preflighted and normalized separately. An explicit format applies to every input;
 otherwise SWO defaults to `unformatted` and TB or named-TB to `formatted`. The format is resolved before
 `CtraceRunMeta` normalizes that input's routes, so the decoder and route model use the same effective format. This
@@ -219,8 +220,7 @@ byte. Packet rollback remains separate from the fatal-input output policy descri
 
 1. Start at [`CtraceMain.cpp`](../src/CtraceMain.cpp) for command-line handling and top-level error policy.
 2. Follow [`TraceDirectoryJob.cpp`](../src/control/TraceDirectoryJob.cpp) and
-   [`TraceRunDiscovery.cpp`](../src/tracerun/TraceRunDiscovery.cpp) to see how a solution set and YAML select all
-   matching SWO/TB inputs, each with its own preflighted descriptor and file job.
+   [`TraceRunDiscovery.cpp`](../src/tracerun/TraceRunDiscovery.cpp) for target/channel selection and input preflight.
 3. Read [`FileDecodeJob.cpp`](../src/control/FileDecodeJob.cpp) for output preflight, chunked input, pipeline
    construction, and finalization.
 4. Continue through [`DecodePipeline.cpp`](../src/decode/DecodePipeline.cpp),

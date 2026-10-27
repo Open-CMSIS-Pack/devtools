@@ -20,6 +20,7 @@
 #include "TraceDirectoryJob.h"
 #include "TraceRunConfig.h"
 #include "TraceRunConfigReader.h"
+#include "YmlTraceRunConfigReader.h"
 #include "opencsd/ocsd_if_types.h"
 #include <algorithm>
 #include <filesystem>
@@ -163,6 +164,162 @@ TEST(CtraceUnitTests, testTraceDirectoryTargetAndOutputNames)
   EXPECT_TRUE(diagnostics.containsContext("channel", "ER"));
   EXPECT_FALSE(std::filesystem::exists(traceDir / "Beta.TB_MTB.csv"));
   EXPECT_FALSE(std::filesystem::exists(traceDir / "Alpha.ER.csv"));
+}
+
+TEST(CtraceUnitTests, testTraceDirectoryChannelSelectionProcessesDisjointTargetsAndPreservesExcludedOutputs)
+{
+  const TemporaryTestPath temporaryPath("ctrace-directory-channel-selection-test");
+  const auto& traceDir = temporaryPath.path();
+  writeTraceInputs(traceDir, {"Alpha"});
+  writeTestFile(traceDir / "Beta.ctrace-run.yml", "ctrace-run:\n");
+  writeTestFile(traceDir / "Beta.TB.raw");
+  writeTestFile(traceDir / "Other.ctrace-run.yml", "unselected config");
+  writeTestFile(traceDir / "Other.TB_MTB.raw", "unselected raw");
+  writeTestFile(traceDir / "Other.traceanalysis.xml", "unselected XML");
+  std::filesystem::create_directory(traceDir / "Alpha.TB_MTB.raw");
+  writeTestFile(traceDir / "Alpha.TB_MTB.csv", "unselected CSV");
+  writeTestFile(traceDir / "Alpha.TB_MTB.ctf" / "sentinel", "unselected CTF");
+  writeTestFile(traceDir / "Alpha.ER.raw", "unsupported");
+
+  auto config = defaultTraceRunConfig();
+  config.traceFormat = TraceRunFormat::Unformatted;
+  CliOptions options;
+  options.traceDir = traceDir.string();
+  options.channels = {"TB", "SWO", "SWO"};
+  options.outputFormat = OutputFormat::All;
+  CollectingDiagnosticSink diagnostics;
+  TestTraceRunConfigReader reader(config);
+  TraceDirectoryJob(options, diagnostics, reader).run();
+
+  EXPECT_EQ(diagnostics.failureCount(), 0U);
+  EXPECT_EQ(reader.paths(), (std::vector<std::string>{(traceDir / "Alpha.ctrace-run.yml").string(),
+                                                     (traceDir / "Beta.ctrace-run.yml").string()}));
+  EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Alpha.SWO.csv"));
+  EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Beta.TB.csv"));
+  EXPECT_EQ(readTestTextFile(traceDir / "Alpha.TB_MTB.csv"), "unselected CSV");
+  EXPECT_EQ(readTestTextFile(traceDir / "Alpha.TB_MTB.ctf" / "sentinel"), "unselected CTF");
+  EXPECT_EQ(readTestTextFile(traceDir / "Other.traceanalysis.xml"), "unselected XML");
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Other.TB_MTB.csv"));
+  EXPECT_FALSE(diagnostics.containsMessage("skipping raw trace channel"));
+  EXPECT_EQ(std::count_if(diagnostics.events().begin(), diagnostics.events().end(), [](const auto& event) {
+              return event.message == "applied ctrace-run meta";
+            }), 2);
+}
+
+TEST(CtraceUnitTests, testTraceDirectoryChannelSelectionSkipsMalformedConfigsWithoutMatchingInputs)
+{
+  const TemporaryTestPath temporaryPath("ctrace-directory-channel-malformed-config-test");
+  const auto& traceDir = temporaryPath.path();
+  writeTestFile(traceDir / "Selected.ctrace-run.yml", "ctrace-run:\n  ctrace-refs: []\n");
+  writeTestFile(traceDir / "Selected.SWO.raw");
+  writeTestFile(traceDir / "Skipped.ctrace-run.yml", "ctrace-run: [");
+  writeTestFile(traceDir / "Skipped.TB.raw", "invalid raw");
+  writeTestFile(traceDir / "Skipped.traceanalysis.xml", "unselected XML");
+
+  CliOptions options;
+  options.traceDir = traceDir.string();
+  options.channels = {"SWO"};
+  options.outputFormat = OutputFormat::Csv;
+  CollectingDiagnosticSink diagnostics;
+  YmlTraceRunConfigReader reader;
+  TraceDirectoryJob(options, diagnostics, reader).run();
+
+  EXPECT_EQ(diagnostics.failureCount(), 0U);
+  EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Selected.SWO.csv"));
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Skipped.TB.csv"));
+  EXPECT_EQ(readTestTextFile(traceDir / "Skipped.traceanalysis.xml"), "unselected XML");
+  EXPECT_FALSE(diagnostics.containsContext("solutionSet", "Skipped"));
+}
+
+TEST(CtraceUnitTests, testTraceDirectoryChannelSelectionCountsInputsBeforeConfigAndPreflightFailures)
+{
+  for (const auto failure : {"configuration", "preflight"}) {
+    SCOPED_TRACE(failure);
+    const TemporaryTestPath temporaryPath("ctrace-directory-channel-failure-test");
+    const auto& traceDir = temporaryPath.path();
+    const std::string validConfig = "ctrace-run:\n  trace-format: unformatted\n  ctrace-refs: []\n";
+    const bool invalidConfig = std::string_view(failure) == "configuration";
+    writeTestFile(traceDir / "Alpha.ctrace-run.yml", invalidConfig ? "ctrace-run: [" : validConfig);
+    if (invalidConfig) {
+      writeTestFile(traceDir / "Alpha.SWO.raw");
+    } else {
+      std::filesystem::create_directory(traceDir / "Alpha.SWO.raw");
+    }
+    writeTestFile(traceDir / "Beta.ctrace-run.yml", validConfig);
+    writeTestFile(traceDir / "Beta.TB.raw");
+
+    CliOptions options;
+    options.traceDir = traceDir.string();
+    options.channels = {"SWO", "TB"};
+    options.outputFormat = OutputFormat::Csv;
+    CollectingDiagnosticSink diagnostics;
+    YmlTraceRunConfigReader reader;
+    TraceDirectoryJob(options, diagnostics, reader).run();
+
+    EXPECT_EQ(diagnostics.failureCount(), 1U);
+    EXPECT_FALSE(diagnostics.containsMessage("no raw trace input found for requested channel"));
+    EXPECT_FALSE(std::filesystem::exists(traceDir / "Alpha.SWO.csv"));
+    EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Beta.TB.csv"));
+    EXPECT_TRUE(diagnostics.containsMessage(invalidConfig ? "failed to parse trace-run configuration"
+                                                         : "not a regular file"));
+  }
+}
+
+TEST(CtraceUnitTests, testTraceDirectoryChannelSelectionReportsMissingChannelsWithinTargetScope)
+{
+  for (const auto& target : {std::optional<std::string>{}, {"Alpha"}}) {
+    SCOPED_TRACE(target.value_or("<all>"));
+    const TemporaryTestPath temporaryPath("ctrace-directory-channel-missing-scope-test");
+    const auto& traceDir = temporaryPath.path();
+    writeTraceInputs(traceDir, {"Alpha"});
+    writeTestFile(traceDir / "Beta.ctrace-run.yml", "ctrace-run:\n");
+    writeTestFile(traceDir / "Beta.TB.raw");
+    auto config = defaultTraceRunConfig();
+    config.traceFormat = TraceRunFormat::Unformatted;
+
+    CliOptions options;
+    options.traceDir = traceDir.string();
+    options.targetName = target;
+    options.channels = {"SWO", "TB", "TB_Absent", "TB_Absent"};
+    options.outputFormat = OutputFormat::Csv;
+    CollectingDiagnosticSink diagnostics;
+    TestTraceRunConfigReader reader(config);
+    TraceDirectoryJob(options, diagnostics, reader).run();
+
+    EXPECT_EQ(diagnostics.failureCount(), target.has_value() ? 2U : 1U);
+    EXPECT_EQ(reader.paths().size(), target.has_value() ? 1U : 2U);
+    EXPECT_TRUE(std::filesystem::is_regular_file(traceDir / "Alpha.SWO.csv"));
+    EXPECT_EQ(std::filesystem::exists(traceDir / "Beta.TB.csv"), !target.has_value());
+    const auto* missing = findDiagnostic(diagnostics, "no raw trace input found for requested channel TB_Absent");
+    ASSERT_NE(missing, nullptr);
+    EXPECT_EQ(missing->severity, DiagnosticSink::Severity::Error);
+    EXPECT_EQ(missing->impact, DiagnosticSink::Impact::Failing);
+    EXPECT_TRUE(diagnostics.containsContext("traceDir", traceDir.string()));
+    EXPECT_EQ(diagnostics.containsContext("target", "Alpha"), target.has_value());
+    EXPECT_EQ(diagnostics.containsContext("channel", "TB"), target.has_value());
+  }
+}
+
+TEST(CtraceUnitTests, testTraceDirectoryChannelSelectionDoesNotPrepareEmptyTargets)
+{
+  const TemporaryTestPath temporaryPath("ctrace-directory-channel-empty-selection-test");
+  const auto& traceDir = temporaryPath.path();
+  writeTestFile(traceDir / "Skipped.ctrace-run.yml", "invalid config");
+  writeTestFile(traceDir / "Skipped.TB.raw", "unselected raw");
+  writeTestFile(traceDir / "Skipped.traceanalysis.xml", "unselected XML");
+  CliOptions options;
+  options.traceDir = traceDir.string();
+  options.channels = {"SWO", "SWO"};
+  options.outputFormat = OutputFormat::All;
+  CollectingDiagnosticSink diagnostics;
+  TestTraceRunConfigReader reader({}, true);
+  TraceDirectoryJob(options, diagnostics, reader).run();
+
+  EXPECT_TRUE(reader.paths().empty());
+  EXPECT_EQ(diagnostics.failureCount(), 1U);
+  EXPECT_TRUE(diagnostics.containsMessage("no raw trace input found for requested channel SWO"));
+  EXPECT_EQ(readTestTextFile(traceDir / "Skipped.traceanalysis.xml"), "unselected XML");
+  EXPECT_FALSE(std::filesystem::exists(traceDir / "Skipped.TB.csv"));
 }
 
 TEST(CtraceUnitTests, testTraceDirectoryBatchCheckAndExplicitConfig)
@@ -766,7 +923,7 @@ TEST(CtraceUnitTests, testInputSelectionAndPreflightNeverConstructDecoder)
   options.outputFormat = OutputFormat::All;
   const auto run = [&](const std::filesystem::path& configFile, TraceRunConfig config) {
     config.path = configFile.string();
-    const auto inputs = TraceRunDiscovery::selectInputs(config);
+    const auto inputs = TraceRunDiscovery::selectInputs(config.path);
     auto input = TraceRunDiscovery::resolveInput(std::move(config), inputs.at(0U));
     FileDecodeJob(options, std::move(input), diagnostics, factory).run();
   };

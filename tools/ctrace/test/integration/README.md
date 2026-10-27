@@ -30,6 +30,8 @@ on two healthy three-channel targets. It checks successful completion and exactl
 six CSV files, six CTF bundles and two target XML files by name and file type;
 output contents are covered by the other tests.
 
+Channel-selection tests cover all output modes, combined filters, missing channels, error isolation and artifact preservation.
+
 ## Decode errors and retained output
 
 The formatted recovery tests verify that a damaged route can resynchronize
