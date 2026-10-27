@@ -41,18 +41,23 @@ configuration with trace communication, separate from trace-source setup.
   channel-based default. Missing or null selects `unformatted` for SWO and `formatted` for TB or named-TB without an
   Error. Discovery resolves this effective format separately for each input before route normalization. An explicit
   override applies to every supported input associated with that trace-run configuration.
-- Every existing `<set>.SWO.raw`, `<set>.TB.raw`, and `<set>.TB_<name>.raw` is processed independently and sequentially.
-  `--target` selects a solution set, including all its supported inputs. A set without an eligible input reports an error.
+- Selected `<set>.SWO.raw`, `<set>.TB.raw`, and `<set>.TB_<name>.raw` inputs are processed independently and sequentially.
+  `--target` selects a solution set. Without `--channel`, all its supported inputs are selected and a set without an
+  eligible input reports an error.
   Each input must be a regular, readable file and is opened during its own preflight, before that input's decoder and
-  output backends are constructed. Target XML preparation precedes these per-input jobs. Event Recorder input remains
-  diagnosed and excluded from processing.
+  output backends are constructed. Target XML preparation precedes these per-input jobs.
+- `--channel` / `-c` accepts exact, case-sensitive names: `SWO`, `TB`, or `TB_<name>` with suffix `[A-Za-z0-9_-]+`.
+  Repeated options form a union without duplicates; `TB` excludes named buffers. `ER` is unsupported:
+  the CLI rejects it, while unfiltered discovery warns and skips it.
+- With a channel filter, sets without matches are skipped before YAML parsing. Each requested channel must match
+  a filename within the selected target scope; missing channels cause exit status `1` after processing the matches.
+  Matched inputs report YAML/preflight failures without a missing-channel error. `--type` and `--stream` filter
+  events within selected inputs.
 - Input preflight, route normalization, decoding, and output failures do not prevent processing the remaining inputs
   or solution sets. Each input has independent decoder and output state; any failing input contributes to a non-zero
   command exit status. A configuration read failure prevents processing that set but does not stop later sets.
 - The standardized `trace-buffer` selection belongs to solution/build-run producer configuration, not to the
-  `*.ctrace-run.yml` file consumed by ctrace. The caller-facing selection and format/framing contract remains
-  follow-up work; this does not imply adding fields to `*.ctrace-run.yml`. Current discovery processes all supported
-  matching files and applies the channel-based defaults above.
+  `*.ctrace-run.yml` file consumed by ctrace. The caller-facing format/framing contract remains follow-up work.
 - Formatted input globally uses 16-byte memory-aligned CoreSight frames. Its length must be a multiple of 16, and it
   contains neither FSYNC nor HSYNC framing. Ctrace does not parse or emit a `trace-framing` YAML field; supporting
   another framing mode requires a public trace contract first.
@@ -199,8 +204,9 @@ configuration with trace communication, separate from trace-source setup.
   only CTF metadata successfully finalized in that invocation, never stale bundles discovered on disk. Recoverable
   decoder errors do not exclude an otherwise completed bundle. An XML failure does not remove completed CTF or CSV;
   an input failure does not remove other inputs' contributions. No per-channel XML is generated or cleaned up.
+  Excluded inputs retain their CSV/CTF files. Sets without selected inputs retain all outputs, including XML.
 - CTF timestamps never regress, and a global timestamp does not by itself establish local timestamp quality.
-- Validation-only mode creates no output. Unsupported trace channels are diagnosed and skipped.
+- Validation-only mode creates no output.
 - Apart from the explicitly retained CSV after a fatal decode abort, cleanup of incomplete output artifacts is
   attempted after failure, and cleanup failures are reported. Incompatible existing output filesystem types are
   rejected before replacement. CTF bundles and target XML use distinct sibling paths derived from the trace-run

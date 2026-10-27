@@ -12,6 +12,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 /** @brief Selects the trace output formats requested on the command line. */
 enum class OutputFormat {
@@ -25,6 +26,7 @@ enum class OutputFormat {
 struct CliOptions {
   std::optional<std::string> traceDir;
   std::optional<std::string> targetName;
+  std::vector<std::string> channels;
   OutputFormat outputFormat = OutputFormat::None;
   TraceSelection selection;
   bool help = false;

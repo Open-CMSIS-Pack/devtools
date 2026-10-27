@@ -69,7 +69,7 @@ generated raw hash, and test matrix.
 [CtraceIntegTests.cpp](../integration/src/CtraceIntegTests.cpp) creates one
 trace-run configuration per target with SWO, TB and TB_ETB captures. Distinct
 ITM values and timestamps verify independent decoding, default formats,
-type/stream filters, target selection, and continuation after channel errors.
+type/stream filters, target and exact channel selection, and continuation after channel errors.
 CSV and CTF retain channel-qualified names; graphical views are collected in
 one `<target>.traceanalysis.xml` without per-channel XML files.
 
