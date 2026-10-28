@@ -8,7 +8,6 @@
 #include "TraceSelection.h"
 
 #include "TraceEvent.h"
-#include "TraceStreamId.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -149,10 +148,6 @@ bool TraceSelection::includesRoute(const TraceRouteIdentity& route) const
 bool traceEventSelectedForOutput(const TraceEvent& event, const TraceSelection& selection)
 {
   const auto type = traceEventType(event);
-  const auto* software = traceEventPayload<SoftwareTraceEvent>(event);
-  if (software != nullptr && software->channel == CoreSight::kExcludedItmStimulusPort) {
-    return false;
-  }
   if (!selection.includesRoute(event.route)) {
     return false;
   }

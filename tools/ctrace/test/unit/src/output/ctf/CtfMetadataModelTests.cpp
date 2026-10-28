@@ -265,13 +265,19 @@ TEST(CtraceUnitTests, testCtfMetadataModelKeysSourcesByExactRouteTypeAndNumber)
   unsupportedType.sources.front().type = "future";
   expectRejected(std::move(unsupportedType), "type must be 'itm' or 'dwt'");
 
-  for (const auto invalidChannel : {0U, 32U}) {
-    auto invalidItm = independentModelTopology();
-    const auto itm = std::find_if(invalidItm.sources.begin(), invalidItm.sources.end(),
+  for (const auto channel : {0U, 31U}) {
+    auto boundaryItm = independentModelTopology();
+    const auto itm = std::find_if(boundaryItm.sources.begin(), boundaryItm.sources.end(),
                                   [](const CtfSourceDescriptor& source) { return source.type == "itm"; });
-    itm->source = invalidChannel;
-    expectRejected(std::move(invalidItm), "channel between 1 and 31");
+    itm->source = channel;
+    EXPECT_NO_THROW((void)CtfMetadataModel(CtfTestSupport::testUuid(), std::move(boundaryItm)));
   }
+
+  auto invalidItm = independentModelTopology();
+  const auto invalidItmSource = std::find_if(invalidItm.sources.begin(), invalidItm.sources.end(),
+                                             [](const CtfSourceDescriptor& source) { return source.type == "itm"; });
+  invalidItmSource->source = 32U;
+  expectRejected(std::move(invalidItm), "channel between 0 and 31");
 
   auto invalidComparator = independentModelTopology();
   invalidComparator.sources.front().source = 4U;

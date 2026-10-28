@@ -36,7 +36,7 @@ set(fixture_entries
   "Blinky+Arm/Blinky+Arm.TB.raw|b0fccabe1a326ffe9fadf12d5c3a205d87628985e5e75a99da23c97d7f33d13b|4096"
   "Blinky+Arm/Blinky+Arm.ctrace-run.yml|f15a4a11c382c66ebc371dd8cd826187daed1995ff41a7430247e065d0790bb2|1149"
   "Blinky+Arm/expected/Blinky+Arm.traceanalysis.xml|905fc1f458f87fe988aff698936d4b39b063770e4e2570ce5643f89996fa8655|6802"
-  "Blinky+Arm/expected/Blinky+Arm.ctf/metadata|2769285fcf6cc9731cebc317ace247c29bf32403c7593d877a4c5956ded2cd69|8098"
+  "Blinky+Arm/expected/Blinky+Arm.ctf/metadata|95293c5115de41ecd0d2a0ae6637abb30cd3eeb2a78f2020a30334616633bbda|8114"
   "Blinky+Arm/expected/Blinky+Arm.ctf/stream_0|2054d43163cf1ff8e921be92b397469e2eb75fb55f4f81c08c20382f38918ef6|65536"
   "TB-Trace/Blinky+Arm.TB.raw|aab49e56a07783b984fa7c6faeea101a51141423e66ba043dbd8d30702012639|4096"
   "TB-Trace/Blinky+Arm.ctrace-run.yml|74d7177f2d62a36a6079c2576506c3754ce961d1b860fe1f6c675f04a8464111|3009"
