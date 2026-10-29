@@ -78,6 +78,7 @@ typealias enum : uint8_t {
     "Event7" = 7,
 } := cmsis_pmu_event_counter_t;
 typealias enum : uint8_t {
+    "ITM0" = 0,
     "ITM1" = 1,
     "ITM2" = 2,
     "ITM3" = 3,

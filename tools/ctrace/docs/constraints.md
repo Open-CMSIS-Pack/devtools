@@ -83,8 +83,8 @@ configuration with trace communication, separate from trace-source setup.
   observed ID without a configured ITM route is diagnosed once and skipped without guessing its protocol.
   Skipped-byte Info may still expose the observed ID, including NULL/reserved IDs, without creating a decoded route.
 - Normalized route identity, processor binding, timestamp prescaler, source metadata, errors, synchronization,
-  overflow, and data-loss state remain route-local. ITM stimulus ports are restricted to `0` through `31`; port `0`
-  is decoded for stream integrity but excluded from payload output.
+  overflow, and data-loss state remain route-local. ITM stimulus ports are restricted to `0` through `31`, and all
+  supported ports are eligible for CSV and CTF payload output.
 
 ## Decode invariants
 

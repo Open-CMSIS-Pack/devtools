@@ -911,17 +911,25 @@ TEST_F(CtraceIntegTests, GeneratesCsvAndCtfWithoutEmptyGraphicalConfiguration)
   ctrace-refs: []
 )yml");
 
-  const std::string raw{"\0\0\0\0\0\x80\x17\x34\x12\x00\x08\x09\x41", 13U};
+  const std::string raw{"\0\0\0\0\0\x80\x17\x34\x12\x00\x08\x01\x41\x09\x42", 15U};
   writeTestFile(workDirectory() / "Minimal.SWO.raw", raw);
 
   const auto result = run({"ctrace", workDirectory().string(), "--target", "Minimal", "--all"});
   EXPECT_EQ(0, result.exitCode) << result.stderrText;
   EXPECT_EQ("cycles,stream,type,index,value,pc,address,note\n"
             "0,,pcsample,,,0x08001234,,\n"
-            "0,,itm,1,0x41,,,\n",
+            "0,,itm,0,0x41,,,\n"
+            "0,,itm,1,0x42,,,\n",
             readTestTextFile(workDirectory() / "Minimal.SWO.csv"));
   expectNonEmptyFile(workDirectory() / "Minimal.SWO.ctf" / "metadata");
   expectNonEmptyFile(workDirectory() / "Minimal.SWO.ctf" / "stream_0");
+  const auto records = CtfTestSupport::readCtfRecords(workDirectory() / "Minimal.SWO.ctf" / "stream_0");
+  const auto& channelZero = CtfTestSupport::requireFirstCtfRecord(records, CtfSchema::EventId::Itm,
+                                                                "decoded ITM channel zero is missing");
+  ASSERT_EQ(channelZero.payload.size(), 8U);
+  EXPECT_EQ(channelZero.payload[0U], 0U);
+  EXPECT_EQ(channelZero.payload[2U], 0x41U);
+  expectContains(readTestTextFile(workDirectory() / "Minimal.SWO.ctf" / "metadata"), "\"ITM0\" = 0");
   EXPECT_FALSE(std::filesystem::exists(workDirectory() / "Minimal.traceanalysis.xml"));
 }
 

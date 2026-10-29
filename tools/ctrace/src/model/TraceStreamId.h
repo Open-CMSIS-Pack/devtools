@@ -15,7 +15,6 @@ namespace CoreSight {
 inline constexpr std::uint8_t kMinAtbTraceId = 0x01U;
 inline constexpr std::uint8_t kMaxAtbTraceId = 0x6fU;
 inline constexpr std::uint8_t kUnformattedTraceBusId = 0x00U;
-inline constexpr std::uint8_t kExcludedItmStimulusPort = 0U;
 inline constexpr std::uint8_t kMaxItmStimulusPort = 31U;
 
 /** @brief Tests whether a value is an architectural ITM stimulus port. */

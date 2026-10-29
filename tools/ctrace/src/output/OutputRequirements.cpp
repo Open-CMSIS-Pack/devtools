@@ -338,8 +338,7 @@ static std::vector<CtfSourceDescriptor> resolveCtfSources(const CtraceRunMeta& c
   std::vector<CtfSourceDescriptor> sources;
   for (const auto& route : ctraceRunMeta.routes()) {
     for (const auto& source : route.sources) {
-      if ((source.type != "itm" && source.type != "dwt") || (source.type == "itm" && source.source == 0U) ||
-          !routeMatchesSelection(source, selection) ||
+      if ((source.type != "itm" && source.type != "dwt") || !routeMatchesSelection(source, selection) ||
           !resolvedKeys.emplace(source.type, source.source, source.route.id).second) {
         continue;
       }

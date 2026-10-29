@@ -86,8 +86,7 @@ void DecodeConsumers::appendRawTailDiagnostic(const TraceRawTail& tail)
 void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
 {
   const auto* software = traceEventPayload<SoftwareTraceEvent>(event);
-  if (software == nullptr || software->channel == CoreSight::kExcludedItmStimulusPort ||
-      !CoreSight::isItmStimulusPort(software->channel)) {
+  if (software == nullptr || !CoreSight::isItmStimulusPort(software->channel)) {
     return;
   }
 
