@@ -472,8 +472,8 @@ bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std:
   for(const auto& pdscFile : pdscFiles) {
     PackageState state = pdscFile.find(GetCmsisPackRoot()) == 0 ? PS_INSTALLED : PS_EXPLICIT_PATH;
     RtePackage* pack = LoadPack(pdscFile, state);
-    if(!pack) {
-      return false;
+    if (!pack) {
+      continue; // ignore packs with errors
     }
     newPacks.push_back(pack);
   }
