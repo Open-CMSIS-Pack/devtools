@@ -72,10 +72,14 @@ TEST(CtraceUnitTests, testTraceSelection)
 
   itm.route = unformattedB;
   std::get<SoftwareTraceEvent>(itm.payload).channel = 0;
-  ASSERT_TRUE(!traceEventSelectedForOutput(itm, TraceSelection{}))
-      << "TraceSelection must exclude software channel zero without selectors";
-  ASSERT_TRUE(!traceEventSelectedForOutput(itm, TraceSelection{{"itm"}, {1U}}))
-      << "TraceSelection selectors must not enable software channel zero";
+  ASSERT_TRUE(traceEventSelectedForOutput(itm, TraceSelection{}))
+      << "TraceSelection must retain software channel zero without selectors";
+  ASSERT_TRUE(traceEventSelectedForOutput(itm, TraceSelection{{"itm"}, {0U}}))
+      << "TraceSelection must retain software channel zero with matching selectors";
+  ASSERT_FALSE(traceEventSelectedForOutput(itm, TraceSelection{{"dwt"}, {0U}}))
+      << "software channel zero must obey the selected packet types";
+  ASSERT_FALSE(traceEventSelectedForOutput(itm, TraceSelection{{"itm"}, {1U}}))
+      << "software channel zero must obey the selected streams";
 
   TraceEvent softwareError = issuePacket(TraceIssueCode::DecodeError);
   ASSERT_TRUE(traceEventSelectedForOutput(softwareError, TraceSelection{}))

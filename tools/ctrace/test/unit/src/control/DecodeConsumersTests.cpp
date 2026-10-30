@@ -158,7 +158,7 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
 
   CollectingDiagnosticSink diagnostics;
   const TraceRouteIdentity stream2{TraceRouteId{20U}, 2U};
-  DecodeConsumers consumers({}, diagnostics, {{TraceRouteId{0U}, 0x00000002U}, {stream2.id, 0x00000004U}});
+  DecodeConsumers consumers({}, diagnostics, {{TraceRouteId{0U}, 0x00000002U}, {stream2.id, 0x00000005U}});
 
   auto enabled = softwarePacket(1U);
   consumers.append(enabled);
@@ -167,8 +167,9 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
   consumers.append(disabled);
   consumers.append(disabled);
 
-  auto printfChannel = softwarePacket(0U);
-  consumers.append(printfChannel);
+  auto disabledZero = softwarePacket(0U);
+  consumers.append(disabledZero);
+  consumers.append(disabledZero);
 
   auto invalidChannel = softwarePacket(32U);
   consumers.append(invalidChannel);
@@ -178,8 +179,11 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
 
   auto streamSpecificEnabled = onRoute(softwarePacket(2U), stream2);
   consumers.append(streamSpecificEnabled);
+  consumers.append(onRoute(softwarePacket(0U), stream2));
 
-  ASSERT_EQ(2U, diagnostics.events().size());
+  ASSERT_EQ(3U, diagnostics.events().size());
+  EXPECT_EQ(diagnostics.events()[1].context,
+            (std::vector<std::pair<std::string, std::string>>{{"channel", "0"}}));
   for (const auto& event : diagnostics.events()) {
     EXPECT_EQ(DiagnosticSink::Severity::Warning, event.severity);
     EXPECT_EQ(DiagnosticSink::Impact::NonFailing, event.impact);

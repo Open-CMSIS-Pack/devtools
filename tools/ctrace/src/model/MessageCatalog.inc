@@ -599,7 +599,7 @@ CTRACE_MESSAGE(CtfRouteBusIdRange, "CTF ITM stream route requires a CoreSight AT
 CTRACE_MESSAGE(CtfStreamRouteMismatch, "CTF stream-class ID does not match its normalized route identity", nullptr)
 CTRACE_MESSAGE(CtfUnreferencedClock, "CTF metadata contains a clock domain without a referencing stream class", nullptr)
 CTRACE_MESSAGE(CtfSourceRouteUnknown, "CTF source metadata references an unknown normalized route", nullptr)
-CTRACE_MESSAGE(CtfItmChannelRange, "CTF ITM source metadata requires a channel between 1 and 31", nullptr)
+CTRACE_MESSAGE(CtfItmChannelRange, "CTF ITM source metadata requires a channel between 0 and 31", nullptr)
 CTRACE_MESSAGE(CtfDwtComparatorRange, "CTF DWT source metadata requires a comparator between 0 and 3", nullptr)
 CTRACE_MESSAGE(CtfDataTypeSizeInvalid, "CTF DWT source metadata has an invalid data-type/size combination", nullptr)
 CTRACE_MESSAGE(CtfSourceAddressOverflow, "CTF DWT source address range exceeds the unsigned 64-bit metadata domain", nullptr)

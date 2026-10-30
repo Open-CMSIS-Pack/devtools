@@ -96,15 +96,16 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
     output.writeEvent(excluded);
   }
 
-  auto excludedChannel = accepted;
-  std::get<SoftwareTraceEvent>(excludedChannel.payload).channel = 0U;
-  output.writeEvent(excludedChannel);
+  auto channelZero = accepted;
+  std::get<SoftwareTraceEvent>(channelZero.payload).channel = 0U;
+  output.writeEvent(channelZero);
 
   output.writeEvent(onRoute(issuePacket(TraceIssueCode::DecodeError), accepted.route));
   output.stop();
 
   ASSERT_TRUE(
-      (readTestTextFile(outputPath.path()) == "cycles,stream,type,index,value,pc,address,note\n,2,itm,1,0x41,,,\n"))
+      (readTestTextFile(outputPath.path()) ==
+       "cycles,stream,type,index,value,pc,address,note\n,2,itm,1,0x41,,,\n,2,itm,0,0x41,,,\n"))
       << "CsvFileOutput criteria mismatch";
 
   const TemporaryTestPath errorOutputPath("ctrace-filtered-errors.csv");
