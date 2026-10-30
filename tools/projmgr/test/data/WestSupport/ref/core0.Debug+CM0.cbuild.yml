@@ -41,9 +41,14 @@ build:
     device: :cm0_core0
     west-defs:
       - CORE: 0
+      - PROJECT-PACK: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/
+      - EXTRA_ZEPHYR_MODULES: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/;${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/
+      - DTC_OVERLAY_FILE: ../../../../west/core0/app.overlay
       - CONFIG_BUILD_OUTPUT_HEX: y
       - TARGET-DEF: on
+      - TARGET-PACK: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/
       - CONFIG-DEBUG: y
+      - BUILD-PACK: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Config
   groups:
     - group: sources
       files:
