@@ -85,6 +85,9 @@ SvdRegister::~SvdRegister()
 bool SvdRegister::Construct(XMLTreeElement* xmlElement)
 {
   bool success = SvdItem::Construct(xmlElement);
+  if(!IsValid()) {
+    return success;
+  }
 
   const auto bitWidth = GetBitWidth();
   if(bitWidth == (int32_t)SvdItem::VALUE32_NOT_INIT) {       // default, derive from above levels
@@ -236,7 +239,9 @@ bool SvdRegister::CalculateDim()
     dim->ClearChildren();
   }
 
-  dim->CalculateDim();
+  if(!dim->CalculateDim() || !dim->CheckExpansionRange(GetOffset(), dim->CalcAddressIncrement())) {
+    return false;
+  }
 
   const auto& dimIndexList = dim->GetDimIndexList();
   auto offset = GetOffset();
@@ -244,18 +249,30 @@ bool SvdRegister::CalculateDim()
   string dimIndexText;
 
   for(const auto& dimIndex : dimIndexList) {
+    if(!dim->ReserveExpansion(1)) {
+      return false;
+    }
     const auto newReg = new SvdRegister(dim);
     dim->AddItem(newReg);
-    CopyChilds(this, newReg);
+    if(!CopyChilds(this, newReg)) {
+      return false;
+    }
 
     newReg->CopyItem            (this);
+    if(HasExpansionError()) {
+      return false;
+    }
     newReg->SetName             (dim->CreateName(dimIndex));
     newReg->SetDisplayName      (dim->CreateDisplayName(dimIndex));
     newReg->SetDescription      (dim->CreateDescription(dimIndex));
     newReg->SetOffset           (offset);
     newReg->SetDimElementIndex  (dimElementIndex++);
     newReg->CheckItem           ();
-    offset += dim->CalcAddressIncrement(); //GetDimIncrement();
+    // TODO: Register dimIncrement is already in bytes; CalcAddressIncrement() scales it again.
+    // With 16-bit address units, a requested 4-byte stride incorrectly becomes 8 bytes.
+    if(dimElementIndex < dimIndexList.size()) {
+      offset += dim->CalcAddressIncrement();
+    }
 
     if(dimElementIndex < 8) {
       if(!dimIndexText.empty()) {
@@ -382,18 +399,21 @@ SvdTypes::Access SvdRegister::GetAccessCalculated()
   }
 
   const auto regWidth = GetEffectiveBitWidth();
-  const auto mask = ((uint64_t)1 << regWidth) -1;
+  const auto mask = SvdUtils::CreateBitMask(regWidth);
+  if(!mask) {
+    return GetEffectiveAccess();
+  }
   auto bits = (uint64_t)0U;
-  auto access = SvdTypes::Access::UNDEF; //GetEffectiveAccess();
+  auto access = SvdTypes::Access::UNDEF;
 
   for(const auto child : childs) {
     const auto field = dynamic_cast<SvdField*>(child);
-    if(!field) {
+    if(!field || !field->IsValid()) {
       continue;
     }
 
     const auto fieldWidth = field->GetEffectiveBitWidth();
-    bits |= ((uint64_t)1 << fieldWidth) -1;
+    bits |= SvdUtils::CreateBitMask(fieldWidth);
 
     SvdTypes::Access acc = field->GetEffectiveAccess();
     access = SvdUtils::CalcAccessResult(acc, access);
@@ -413,6 +433,13 @@ SvdTypes::Access SvdRegister::GetAccessCalculated()
 
 bool SvdRegister::CalcAccessMask()
 {
+  const auto regWidth = GetEffectiveBitWidth();
+  const auto regMask = SvdUtils::CreateBitMask(regWidth);
+  if(!regMask) {
+    m_accessMaskRead = m_accessMaskWrite = 0;
+    m_accessMaskValid = true;
+    return false;
+  }
   const auto fields = GetFieldContainer();
   if(!fields) {
     return true;
@@ -423,36 +450,33 @@ bool SvdRegister::CalcAccessMask()
     return true;
   }
 
-  const auto regWidth = GetEffectiveBitWidth();
-  m_accessMaskRead  = (((uint32_t)((uint64_t)1 << regWidth)-1) << 0);
+  m_accessMaskRead  = regMask;
   m_accessMaskWrite = 0;
 
   for(const auto child : childs) {
     SvdField* field = dynamic_cast<SvdField*>(child);
-    if(!field) {
+    if(!field || !field->IsValid()) {
       continue;
     }
 
     const auto bitWidth = field->GetEffectiveBitWidth();
     const auto firstBit = field->GetOffset();
-    auto accessMask = 0;
-    accessMask  = (((uint32_t)((uint64_t)1 << bitWidth)-1) << firstBit);
-    accessMask &=  ((uint32_t)((uint64_t)1 << regWidth)-1);
+    if(bitWidth == 0 || bitWidth > 64 || firstBit >= regWidth || bitWidth > regWidth - firstBit) {
+      continue;
+    }
+    const auto accessMask = SvdUtils::CreateBitMask(bitWidth, firstBit) & regMask;
 
     const auto accType = field->GetEffectiveAccess();
     switch(accType) {
       case SvdTypes::Access::READONLY:
-      //m_accessMaskRead  |=  accessMask;
         m_accessMaskWrite &= ~accessMask;
         break;
       case SvdTypes::Access::WRITEONLY:
-      //m_accessMaskRead  &= ~accessMask;
         m_accessMaskWrite |=  accessMask;
         break;
       case SvdTypes::Access::READWRITE:
       case SvdTypes::Access::WRITEONCE:
       case SvdTypes::Access::READWRITEONCE:
-      //m_accessMaskRead  |=  accessMask;
         m_accessMaskWrite |=  accessMask;
         break;
       case SvdTypes::Access::UNDEF:
@@ -484,11 +508,9 @@ uint64_t SvdRegister::GetAccessMaskWrite()
   return m_accessMaskWrite;
 }
 
-uint64_t SvdRegister::GetAccessMask()
+uint32_t SvdRegister::GetAccessMask()
 {
-  uint64_t accessMask = ((uint32_t)((uint64_t)1 << GetEffectiveBitWidth())-1);
-
-  return accessMask;
+  return static_cast<uint32_t>(SvdUtils::CreateBitMask(GetEffectiveBitWidth()));
 }
 
 bool SvdRegister::AddToMap(SvdField *field, map<uint32_t, SvdField*> &map)
@@ -631,9 +653,10 @@ bool SvdRegister::CheckFields(SvdItem* fields, uint32_t regWidth, const string& 
     const auto fieldWidth = field->GetEffectiveBitWidth();
     const auto lineNo = field->GetLineNumber();
 
-    if(fieldOffs + fieldWidth > regWidth) {
+    if(fieldWidth == 0 || fieldWidth > 64 || fieldOffs >= regWidth || fieldWidth > regWidth - fieldOffs) {
       LogMsg("M345", NAME(fieldName), BITRANGE(fieldOffs + fieldWidth -1, fieldOffs, true), NAME2(name), NUM(regWidth), lineNo);
       field->Invalidate();
+      continue;
     }
 
     const auto accType = field->GetEffectiveAccess();
@@ -689,6 +712,12 @@ bool SvdRegister::CheckItem()
   const auto resetValue = GetResetValue();
   const auto resetMask = GetResetMask();
 
+  if(regWidth == 0 || regWidth > 64) {
+    LogMsg("M302", NAME(name), NUM(regWidth), lineNo);
+    Invalidate();
+    return true;
+  }
+
   if(offset == SvdItem::VALUE64_NOT_INIT) {
     const auto& svdLevelStr = GetSvdLevelStr(GetSvdLevel());
     LogMsg("M370", LEVEL(svdLevelStr), NAME(name), lineNo);
@@ -717,7 +746,7 @@ bool SvdRegister::CheckItem()
   if(dim) {
     const auto addressBitsUnits = dim->GetAddressBitsUnits();
     const auto dimInc = dim->GetDimIncrement();
-    const auto addressInc = addressBitsUnits * dimInc;
+    const auto addressInc = uint64_t{addressBitsUnits} * dimInc;
 
     if(addressInc < regWidth) {
       LogMsg("M366", NAME(name), NUM(regWidth), NUM2(dimInc), lineNo);
@@ -728,8 +757,9 @@ bool SvdRegister::CheckItem()
     if(expr) {
       const auto e = expr->GetType();
       if(e == SvdTypes::Expression::ARRAY) {
-        if(dimInc*8 != regWidth) {
-          LogMsg("M378", NAME(name), NUM(regWidth), NUM2(dimInc*8), lineNo);
+        const auto incrementBits = uint64_t{dimInc} * 8;
+        if(incrementBits != regWidth) {
+          LogMsg("M378", NAME(name), NUM(regWidth), NUM2(incrementBits), lineNo);
           Invalidate();
         }
       }

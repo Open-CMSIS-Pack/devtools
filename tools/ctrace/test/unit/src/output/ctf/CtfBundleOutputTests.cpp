@@ -499,7 +499,7 @@ TEST(CtraceUnitTests, testCtfGlobalTimestampEvent)
       << "CTF global timestamp metadata missing";
 }
 
-TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
+TEST(CtraceUnitTests, testCtfBundleOutputIncludesSoftwareChannelZero)
 {
   const TemporaryCtfOutput temporaryOutput("ctrace-ctf-channel-zero-test");
   const auto rawPath = temporaryOutput.outputDirectory().parent_path() / "output.SWO.raw";
@@ -512,9 +512,11 @@ TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
   CollectingDiagnosticSink preflightDiagnostics;
   auto outputPlan = planTraceOutputs({false, true, selection}, rawPath,
                                      CtraceRunMeta::fromConfig(traceRun), preflightDiagnostics);
-  ASSERT_TRUE(outputPlan.ctf.has_value() && outputPlan.ctf->metadata.sources.empty() &&
-              preflightDiagnostics.events().empty())
-      << "CTF preflight must exclude software channel zero metadata";
+  ASSERT_TRUE(outputPlan.ctf.has_value() && preflightDiagnostics.events().empty());
+  ASSERT_EQ(outputPlan.ctf->metadata.sources.size(), 1U);
+  EXPECT_EQ(outputPlan.ctf->metadata.sources.front().type, "itm");
+  EXPECT_EQ(outputPlan.ctf->metadata.sources.front().source, 0U);
+  EXPECT_EQ(outputPlan.ctf->metadata.sources.front().label, std::optional<std::string>("Console"));
   const auto outputDir = outputPlan.ctf->outputDirectory;
   auto options = std::move(*outputPlan.ctf);
   CtfBundleOutput output(std::move(options));
@@ -522,9 +524,15 @@ TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
   output.writeEvent(atCycle(softwarePacket(0U, 1U, 'A'), 100U));
   output.writeEvent(atCycle(issuePacket(TraceIssueCode::OpenCsdIncompleteTail), 101U));
   output.stop();
-  ASSERT_TRUE(readOnlyCtfTraceStatusReasons(outputDir / "stream_0") ==
-              std::vector<std::uint8_t>({CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError)}))
-      << "CTF must exclude software channel zero payload but retain its decoder errors";
+  const auto records = readCtfRecords(outputDir / "stream_0");
+  ASSERT_EQ(records.size(), 2U);
+  EXPECT_EQ(records[0].id, CtfSchema::value(CtfSchema::EventId::Itm));
+  ASSERT_EQ(records[0].payload.size(), 8U);
+  EXPECT_EQ(records[0].payload[0U], 0U);
+  EXPECT_EQ(records[0].payload[2U], 'A');
+  EXPECT_EQ(records[1].id, CtfSchema::value(CtfSchema::EventId::TraceStatus));
+  ASSERT_FALSE(records[1].payload.empty());
+  EXPECT_EQ(records[1].payload.front(), CtfSchema::value(CtfSchema::TraceStatusReason::DecodeError));
   std::vector<std::string> bundleEntries;
   for (const auto& entry : std::filesystem::directory_iterator(outputDir)) {
     bundleEntries.push_back(entry.path().filename().string());
@@ -534,10 +542,8 @@ TEST(CtraceUnitTests, testCtfBundleOutputExcludesSoftwareChannelZero)
       << "CTF bundle must contain only metadata and the primary stream";
 
   const auto metadata = readTestTextFile(outputDir / "metadata");
-  ASSERT_TRUE(metadata.find("ITM" + std::to_string(0)) == std::string::npos)
-      << "CTF metadata must not register software channel zero";
-  ASSERT_TRUE(metadata.find("cmsis_itm0_") == std::string::npos && metadata.find("Console") == std::string::npos)
-      << "CTF analysis metadata must not expose configured software channel zero";
+  ASSERT_TRUE(metadata.find("\"Console\" = 0") != std::string::npos)
+      << "CTF metadata must register the configured software channel zero label";
 }
 
 TEST(CtraceUnitTests, testCtfBundleOutputAbortRemovesOnlyItsPartialBundle)

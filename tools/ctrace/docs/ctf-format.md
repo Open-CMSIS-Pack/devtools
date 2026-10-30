@@ -176,9 +176,8 @@ uint8_t             cmsis_sample_flags
 uint32_t            cmsis_overflow_count
 ```
 
-The channel enumeration covers ITM stimulus ports 1 through 31. Labels from `ctrace-run.yml` replace the fallback
-names `ITM1` through `ITM31`; duplicate labels receive a unique fallback. Port 0 is decoded for stream integrity but
-is intentionally excluded from CTF payload output.
+The channel enumeration covers ITM stimulus ports 0 through 31. Labels from `ctrace-run.yml` replace the fallback
+names `ITM0` through `ITM31`; duplicate labels receive a unique fallback.
 
 Trace Compass exposes ITM as point events through its standard CTF event table. The generated XML does not invent a
 time graph for these values.

@@ -12,6 +12,7 @@
 
 struct TraceEvent;
 struct TraceByteSkip;
+struct TraceRawTail;
 struct TraceDecodeAbort;
 
 /** @brief Maps semantic trace events to the stable CSV representation. */
@@ -23,6 +24,8 @@ public:
   static std::string row(const TraceEvent& event);
   /** @brief Returns a skipped-byte info row with the observed ID, if any, and no timestamp. */
   static std::string byteSkipRow(const TraceByteSkip& skipped);
+  /** @brief Returns an incomplete-frame error row without a synthetic route or timestamp. */
+  static std::string rawTailRow(const TraceRawTail& tail);
   /** @brief Returns a global error row marking partial output, without a synthetic route or timestamp. */
   static std::string decodeAbortRow(const TraceDecodeAbort& failure);
 

@@ -52,7 +52,6 @@ SvdCpu::~SvdCpu()
     delete value;
 
   delete m_sauRegionsConfig;
-  //m_interruptList.clear();
 }
 
 bool SvdCpu::Calculate()

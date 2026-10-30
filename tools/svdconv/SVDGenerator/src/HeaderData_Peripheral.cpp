@@ -56,7 +56,6 @@ bool HeaderData::CreatePeripheralType(SvdPeripheral* peripheral)
 
   const auto regCont = peripheral->GetRegisterContainer();
   if(regCont) {
-    //CalculateMaxPaddingWidth(regCont);
     SetMaxBitWidth(peripheral->GetBitWidth());
     CreateRegisters(regCont);
   }
@@ -69,7 +68,6 @@ bool HeaderData::CreatePeripheralType(SvdPeripheral* peripheral)
 
 bool HeaderData::OpenPeripheral(SvdPeripheral* peripheral)
 {
-//const auto& headerTypeName = peripheral->GetHeaderTypeName();
   const auto peripheralName  = peripheral->GetNameCalculated();
   const auto descr           = peripheral->GetDescriptionCalculated();
 

@@ -47,7 +47,6 @@ bool HeaderData::CreateCluster(SvdCluster* cluster)
   m_addressCnt  = 0;
   m_reservedCnt = 0;
 
-  //CalculateMaxPaddingWidth(cluster);
   uint32_t maxWidth = cluster->GetBitWidth();
   SetMaxBitWidth(maxWidth);
 
@@ -60,10 +59,9 @@ bool HeaderData::CreateCluster(SvdCluster* cluster)
 
 bool HeaderData::OpenCluster(SvdCluster* cluster)
 {
-  const auto headerTypeName  = cluster->GetHeaderTypeNameHierarchical(); //GetHeaderTypeName();
+  const auto headerTypeName  = cluster->GetHeaderTypeNameHierarchical();
   const auto clusterName     = cluster->GetNameCalculated();
   const auto descr           = cluster->GetDescriptionCalculated();
-  //uint32_t baseAddress     = (uint32_t)cluster->GetAddress();
 
   m_reservedPad.clear();
 
@@ -85,7 +83,7 @@ bool HeaderData::OpenCluster(SvdCluster* cluster)
 
 bool HeaderData::CloseCluster(SvdCluster* cluster)
 {
-  const auto name = cluster->GetHeaderTypeNameHierarchical(); //GetHeaderTypeName();
+  const auto name = cluster->GetHeaderTypeNameHierarchical();
 
   uint32_t maxWidth = cluster->GetBitWidth();
   uint32_t remain = m_addressCnt % (maxWidth / 8);
@@ -102,7 +100,7 @@ bool HeaderData::CloseCluster(SvdCluster* cluster)
 
   SvdDimension* dim = cluster->GetDimension();
   if(dim) {
-    uint32_t clustSize = m_addressCnt; //cluster->GetSize();
+    uint32_t clustSize = m_addressCnt;
     uint32_t clustInc  = dim->GetDimIncrement();
     
     if(clustSize <= clustInc) {

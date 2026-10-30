@@ -146,13 +146,6 @@ enum class ReferenceProblem {
   InvalidItmIndex,
 };
 
-/** @brief Tests whether a reference selects ITM stimulus port zero, which is excluded from output. */
-inline bool isItmChannelZero(const TraceRunReference& reference)
-{
-  return reference.type == "itm" && reference.indices.size() == 1U &&
-         reference.indices.front() == CoreSight::kExcludedItmStimulusPort;
-}
-
 /** @brief Tests whether a DWT reference describes a generated data route. */
 inline bool isDwtDataReference(const TraceRunReference& reference)
 {
@@ -166,7 +159,7 @@ inline bool hasConsumedRouteShape(const TraceRunReference& reference)
     return false;
   }
   if (reference.type == "itm") {
-    return !isItmChannelZero(reference);
+    return true;
   }
   return isDwtDataReference(reference);
 }

@@ -10,6 +10,7 @@
 #include "DiagnosticMessages.h"
 #include "CliOptions.h"
 #include "ProductInfo.h"
+#include "TraceInputChannel.h"
 #include "TraceSelection.h"
 #include "TraceStreamId.h"
 
@@ -136,14 +137,23 @@ static void configureCliParser(cxxopts::Options& parser)
   parser.custom_help("<trace-dir> [options]");
   parser.set_width(100U);
   parser.allow_unrecognised_options();
-  parser.add_options()("csv", "Generate only CSV output")("ctf", "Generate only CTF / Trace Compass XML output")(
-      "a,all", "Generate CSV and CTF / XML output")("type", "Filter output for specific packet types (default: all)",
-                                                    cxxopts::value<SelectionValues>(), "sel [...]")(
-      "stream", "Filter output for specific streams (default: all)", cxxopts::value<SelectionValues>(),
-      "sel [...]")("t,target", "Specify a trace solution-set (default: all)",
-                   cxxopts::value<std::string>())("V,version", "Print version")(
-      "v,verbose", "Show detailed diagnostics and processing information");
-  parser.add_options("Hidden")("h,help", "Print help");
+  parser.add_options()
+      ("csv", "Generate only CSV output")
+      ("ctf", "Generate only CTF / Trace Compass XML output")
+      ("a,all", "Generate CSV and CTF / XML output")
+      ("type", "Filter output for specific packet types (default: all)",
+       cxxopts::value<SelectionValues>(), "sel [...]")
+      ("stream", "Filter output for specific streams (default: all)",
+       cxxopts::value<SelectionValues>(), "sel [...]")
+      ("t,target", "Specify a trace solution-set (default: all)",
+       cxxopts::value<std::string>())
+      ("c,channel", "Select an input channel (repeatable; default: all)",
+       cxxopts::value<std::string>(), "name")
+      ("V,version", "Print version")
+      ("v,verbose", "Show detailed diagnostics and processing information");
+
+  parser.add_options("Hidden")
+      ("h,help", "Print help");
 }
 
 /** @brief Parses normalized command-line arguments into ctrace options. */
@@ -175,6 +185,15 @@ static CliOptions parseCliArgs(const std::vector<std::string>& arguments)
   if (parsed.count("target") != 0U) {
     options.targetName = parsed["target"].as<std::string>();
   }
+  // Read repeated scalars without cxxopts' comma splitting.
+  for (const auto& argument : parsed.arguments()) {
+    if (argument.key() == "channel") {
+      if (argument.value().empty() || startsWithDash(argument.value())) {
+        throw std::runtime_error(missingArgumentValueMessage("--channel"));
+      }
+      options.channels.push_back(argument.value());
+    }
+  }
   if (parsed.count("type") != 0U) {
     for (const auto& type : parsed["type"].as<std::vector<std::string>>()) {
       options.selection.types.push_back(type);
@@ -200,6 +219,11 @@ static void validateCliOptions(const CliOptions& options)
 {
   if (options.help) {
     return;
+  }
+  for (const auto& channel : options.channels) {
+    if (!isSupportedTraceChannel(channel)) {
+      throw std::runtime_error(channelArgumentMessage(channel));
+    }
   }
   for (const auto& type : options.selection.types) {
     if (!parseTraceEventType(type).has_value()) {

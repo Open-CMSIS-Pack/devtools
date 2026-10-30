@@ -69,11 +69,24 @@ void DecodeConsumers::appendByteSkip(const TraceByteSkip& skipped)
   m_diagnostics.report(diagnostic);
 }
 
+void DecodeConsumers::appendRawTailDiagnostic(const TraceRawTail& tail)
+{
+  ++m_eventCount;
+  m_outputLifecycle.appendRawTailDiagnostic(tail);
+  DiagnosticSink::Event diagnostic{DiagnosticSink::Severity::Error,
+                                   formatTraceMessage(tail, TraceMessageStyle::Compact)};
+  diagnostic.detailedMessage = formatTraceMessage(tail, TraceMessageStyle::Detailed);
+  diagnostic.rawLocation = RawDiagnosticLocation{};
+  diagnostic.rawLocation->offset = tail.rawOffset;
+  diagnostic.rawLocation->endOffset = tail.rawOffset + tail.bytes.size();
+  diagnostic.rawLocation->kind = RawDiagnosticLocation::Kind::Exact;
+  m_diagnostics.report(diagnostic);
+}
+
 void DecodeConsumers::reportItmConfigurationMismatch(const TraceEvent& event)
 {
   const auto* software = traceEventPayload<SoftwareTraceEvent>(event);
-  if (software == nullptr || software->channel == CoreSight::kExcludedItmStimulusPort ||
-      !CoreSight::isItmStimulusPort(software->channel)) {
+  if (software == nullptr || !CoreSight::isItmStimulusPort(software->channel)) {
     return;
   }
 

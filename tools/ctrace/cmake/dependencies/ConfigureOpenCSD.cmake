@@ -10,6 +10,34 @@ if(NOT EXISTS "${CTRACE_OPENCSD_SOURCE_DIR}/CMakeLists.txt")
   )
 endif()
 
+function(ctrace_apply_opencsd_patch)
+  find_package(Git REQUIRED QUIET)
+  set(patch_file "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/OpenCSD.patch")
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${patch_file}")
+
+  # Reconfiguration must preserve both the patch and unrelated local edits.
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" apply --reverse --check "${patch_file}"
+    WORKING_DIRECTORY "${CTRACE_OPENCSD_SOURCE_DIR}"
+    RESULT_VARIABLE patch_applied
+    OUTPUT_QUIET ERROR_QUIET
+  )
+  if(patch_applied EQUAL 0)
+    return()
+  endif()
+
+  # git apply validates all hunks before changing any file; never reset the submodule.
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" apply "${patch_file}"
+    WORKING_DIRECTORY "${CTRACE_OPENCSD_SOURCE_DIR}"
+    RESULT_VARIABLE patch_result
+    ERROR_VARIABLE patch_error
+  )
+  if(NOT patch_result EQUAL 0)
+    message(FATAL_ERROR "Failed to apply the ctrace OpenCSD patch: ${patch_error}")
+  endif()
+endfunction()
+
 function(ctrace_remove_opencsd_clang_cl_option_for_msvc)
   if(NOT MSVC OR NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     return()
@@ -33,6 +61,7 @@ set(BUILD_TESTING OFF CACHE BOOL "Build the testing tree." FORCE)
 set(ctrace_saved_install_prefix_default "${CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT}")
 set(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT FALSE)
 
+ctrace_apply_opencsd_patch()
 add_subdirectory(
   "${CTRACE_OPENCSD_SOURCE_DIR}"
   "${CMAKE_BINARY_DIR}/external/OpenCSD"

@@ -27,12 +27,14 @@ protected:
   * Ts, Args: variadic template arguments
   */
   template<typename Fn, typename T, typename = std::enable_if_t<std::is_base_of_v<CodeGenerator, T>>, typename ...Ts, typename ...Args>
+  // args is forwarded to the helper arguments and format inputs below.
+  // codeql[cpp/unused-local-variable]; codeql[cpp/unused-static-variable]
   auto parse_and_call(Fn (T::*func)(const std::string&, Ts...), const std::string& format, Args&&... args) noexcept {
-      return ([this, &func, &format](Ts... args, auto ...format_args) {
+      return ([this, &func, &format](Ts... helperArgs, auto ...format_args) {
           // Use the last N args as format inputs
           auto text = fmt::sprintf(format, std::forward<decltype(format_args)>(format_args)...);
           // The first M args will be passed to the helper function
-          return (((T*)this)->*func)(text, std::forward<Ts>(args)...);
+          return (((T*)this)->*func)(text, std::forward<Ts>(helperArgs)...);
       })(std::forward<Args>(args)...);
   }
 

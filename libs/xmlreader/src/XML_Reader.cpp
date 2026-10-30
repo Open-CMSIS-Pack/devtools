@@ -398,13 +398,21 @@ UTFCode XML_Reader::CheckUTF(const string& text)
   }
 
   const char* str = text.c_str();
+  const char* const end = str + text.size();
+  const auto nextByte = [&str, end]() {
+    // A truncated BOM must not advance the cursor past the string terminator.
+    return str != end ? *str++ : '\0';
+  };
 
   UTFCode utfDetected = UTFCode::UTF_NULL;
-  switch (*str++) {
+  // Keep the byte-decoding switch structure extensible for additional BOM variants.
+  switch (nextByte()) {
     case (char)0xEF: {
-      switch (*str++) {
+      // codeql[cpp/trivial-switch]
+      switch (nextByte()) {
         case (char)0xBB: {
-          switch (*str++) {
+          // codeql[cpp/trivial-switch]
+          switch (nextByte()) {
             case (char)0xBF: {
               utfDetected = UTFCode::UTF8;
             } break;
@@ -418,7 +426,8 @@ UTFCode XML_Reader::CheckUTF(const string& text)
     } break;
 
     case (char)0xFE: {
-      switch (*str++) {
+      // codeql[cpp/trivial-switch]
+      switch (nextByte()) {
         case (char)0xFF: {
           utfDetected = UTFCode::UTF16_BE;
         } break;
@@ -428,7 +437,8 @@ UTFCode XML_Reader::CheckUTF(const string& text)
     } break;
 
     case (char)0xFF: {
-      switch (*str++) {
+      // codeql[cpp/trivial-switch]
+      switch (nextByte()) {
         case (char)0xFE: {
           utfDetected = UTFCode::UTF16_LE;
         } break;
@@ -611,7 +621,7 @@ bool XML_Reader::ReadNext()
             type = TagType::TAG_COMMENT;
           }
           else if (c_prev2 == '<') {
-            LogMsg("M415", GetLineNumber());   // printf("Line %d: '<--' found, should this be a comment '<!--' ?\n", GetLineNumber());
+            LogMsg("M415", GetLineNumber());   // '<--' found, should this be a comment '<!--'?
             type = TagType::TAG_COMMENT;
           }
         }

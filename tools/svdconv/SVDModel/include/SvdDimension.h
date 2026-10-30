@@ -95,8 +95,9 @@ public:
   bool                            SetDimIndexList       (const std::list<std::string>&  dimIndexList)  { m_dimIndexList = dimIndexList; return true; }
   bool                            SetDimName            (const std::string&             dimName     )  { m_dimName      = dimName     ; return true; }
 
-  int32_t                             GetAddressBitsUnits   ();
-  int32_t                             CalcAddressIncrement  ();
+  uint32_t                        GetAddressBitsUnits   ();
+  uint64_t                        CalcAddressIncrement  ();
+  bool                            CheckExpansionRange   (uint64_t start, uint64_t increment);
   bool                            IsTagAllowed          (const std::string& tag);
   bool                            InitAllowedTags       ();
     

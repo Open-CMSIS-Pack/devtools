@@ -21,6 +21,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -154,15 +155,35 @@ void TraceDirectoryJob::run()
     throw std::runtime_error(formatMessage(MessageId::TraceDirectoryRequired));
   }
 
+  std::set<std::string> unmatchedChannels(m_options.channels.begin(), m_options.channels.end());
   for (const auto& configFile : configFiles) {
-    processConfigFile(configFile);
+    processConfigFile(configFile, unmatchedChannels);
+  }
+  for (const auto& channel : unmatchedChannels) {
+    std::vector<std::pair<std::string, std::string>> context{
+        {"channel", channel}, {"traceDir", *m_options.traceDir}};
+    if (m_options.targetName.has_value()) {
+      context.emplace_back("target", *m_options.targetName);
+    }
+    m_diagnostics.report({DiagnosticSink::Severity::Error, missingChannelInputMessage(channel), std::move(context)});
   }
 }
 
-void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFile)
+void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFile,
+                                           std::set<std::string>& unmatchedChannels)
 {
   const auto solutionSet = TraceRunDiscovery::solutionSetName(configFile);
   try {
+    std::vector<TraceRunRawInput> inputs;
+    if (!m_options.channels.empty()) {
+      inputs = TraceRunDiscovery::selectInputs(configFile, m_options.channels);
+      for (const auto& input : inputs) {
+        unmatchedChannels.erase(input.channel);
+      }
+      if (inputs.empty()) {
+        return;
+      }
+    }
     auto config = m_configReader.read(configFile.string());
     DiagnosticSink::Event selected{
         DiagnosticSink::Severity::Info,
@@ -177,17 +198,19 @@ void TraceDirectoryJob::processConfigFile(const std::filesystem::path& configFil
     selected.visibility = DiagnosticSink::Visibility::Verbose;
     m_diagnostics.report(selected);
     reportConsumedReferenceDiagnostics(config, m_diagnostics);
-    const auto inputs = TraceRunDiscovery::selectInputs(config, [&](const auto& rawInput) {
-      m_diagnostics.report({
-          DiagnosticSink::Severity::Warning,
-          formatMessage(MessageId::SkippingExcludedTraceChannel),
-          {
-              {"solutionSet", solutionSet},
-              {"channel", rawInput.channel},
-              {"path", rawInput.path.string()},
-          },
+    if (m_options.channels.empty()) {
+      inputs = TraceRunDiscovery::selectInputs(config.path, {}, [&](const auto& rawInput) {
+        m_diagnostics.report({
+            DiagnosticSink::Severity::Warning,
+            formatMessage(MessageId::SkippingExcludedTraceChannel),
+            {
+                {"solutionSet", solutionSet},
+                {"channel", rawInput.channel},
+                {"path", rawInput.path.string()},
+            },
+        });
       });
-    });
+    }
     processInputs(config, inputs, configFile.parent_path() / (solutionSet + ".traceanalysis.xml"));
   } catch (const std::exception& error) {
     m_diagnostics.report({

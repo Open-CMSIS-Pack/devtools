@@ -39,7 +39,7 @@ bool SvdModel::Construct(XMLTreeElement* xmlTree)
     }
 
     SetLineNumber(xmlElement->GetLineNumber());
-    SetColNumber(0); // xmlElement->GetColNumber());
+    SetColNumber(0);
 	  SetTag(xmlElement->GetTag());
     SetText(xmlElement->GetText());
 
@@ -52,6 +52,7 @@ bool SvdModel::Construct(XMLTreeElement* xmlTree)
 
       if(!ok) {
 			  delete m_device;
+        m_device = nullptr;
         success = false;
 		  }
     }

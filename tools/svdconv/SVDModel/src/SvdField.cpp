@@ -171,9 +171,17 @@ bool SvdField::Calculate()
   }
 
   if(m_offset == SvdItem::VALUE64_NOT_INIT && GetBitWidth() == (int32_t)SvdItem::VALUE32_NOT_INIT) {
-    if(m_lsb != SvdItem::VALUE32_NOT_INIT && m_msb != SvdItem::VALUE32_NOT_INIT) { // && m_msb >= m_lsb) {
+    if(m_lsb != SvdItem::VALUE32_NOT_INIT && m_msb != SvdItem::VALUE32_NOT_INIT) {
       m_offset = m_lsb;
-      SetBitWidth(m_msb - m_lsb +1);
+      if(m_msb < m_lsb) {
+        const auto width = static_cast<int64_t>(m_msb) - m_lsb + 1;
+        LogMsg("M313", NAME(GetName()), NUMTXT(to_string(width)), GetLineNumber());
+        SetBitWidth(1);
+        Invalidate();
+      }
+      else {
+        SetBitWidth(m_msb - m_lsb +1);
+      }
     }
   }
 
@@ -182,19 +190,25 @@ bool SvdField::Calculate()
 
 bool SvdField::CalculateDim()
 {
+  // Expand dimension indices into individually named fields.
   const auto dim = GetDimension();
   if(!dim) {
     return true;
   }
 
   Calculate();
+  if(!IsValid()) {
+    return true;
+  }
 
   const auto& childs = dim->GetChildren();
   if(!childs.empty()) {
     dim->ClearChildren();
   }
 
-  dim->CalculateDim();
+  if(!dim->CalculateDim() || !dim->CheckExpansionRange(GetOffset(), dim->CalcAddressIncrement())) {
+    return false;
+  }
 
   const auto dimExpression = dim->GetExpression();
   SvdTypes::Expression exprType = SvdTypes::Expression::NONE;
@@ -216,18 +230,31 @@ bool SvdField::CalculateDim()
   uint32_t dimElementIndex = 0;
   string dimIndexText;
 
+  // Reserve the shared expansion budget before cloning each field.
   for(const auto& index : dimIndexList) {
+    if(!dim->ReserveExpansion(1)) {
+      return false;
+    }
     const auto newField = new SvdField(dim);
     dim->AddItem(newField);
-    CopyChilds(this, newField);
+    if(!CopyChilds(this, newField)) {
+      return false;
+    }
     newField->CopyItem            (this);
+    if(HasExpansionError()) {
+      return false;
+    }
     newField->SetName             (dim->CreateName(index));
     newField->SetDisplayName      (dim->CreateDisplayName(index));
     newField->SetDescription      (dim->CreateDescription(index));
     newField->SetOffset           (offset);
     newField->SetDimElementIndex  (dimElementIndex++);
     newField->CheckItem();
-    offset += dim->CalcAddressIncrement(); //GetDimIncrement();
+    // TODO: Field dimIncrement is in bits; CalcAddressIncrement() scales it by addressUnitBits / 8.
+    // With 16-bit address units, increment 1 incorrectly produces bit positions 0, 2, 4.
+    if(dimElementIndex < dimIndexList.size()) {
+      offset += dim->CalcAddressIncrement();
+    }
 
     if(dimElementIndex < 8) {
       if(!dimIndexText.empty()) dimIndexText += ",";
@@ -251,6 +278,7 @@ bool SvdField::CalculateDim()
     }
   }
 
+  // Use the index summary in the dimension's display name and description.
   string name = dim->CreateName("");
   dim->SetName(name);
 
@@ -364,7 +392,6 @@ bool SvdField::GetValuesDescriptionString(string &longDescr)
     }
     longDescr += SvdUtils::CreateDecNum(i);
     longDescr += " : ";
-    //longDescr += " = ";
     longDescr += "Reserved - do not use";
   }
 
@@ -483,7 +510,7 @@ bool SvdField::CheckItem()
     SetOffset(FIELD_MAX_OFFSET);
     Invalidate();
   }
-  if(width > FIELD_MAX_BITWIDTH) {
+  if(width == 0 || width > FIELD_MAX_BITWIDTH) {
     LogMsg("M310", NAME(name), NUM(width), lineNo);
     SetBitWidth(FIELD_MAX_BITWIDTH);
     Invalidate();
@@ -492,6 +519,9 @@ bool SvdField::CheckItem()
     LogMsg("M313", NAME(name), NUM(width), lineNo);
     SetBitWidth(1);
     Invalidate();
+  }
+  if(!IsValid()) {
+    return true;
   }
 
   auto parent = GetParent();
@@ -503,29 +533,29 @@ bool SvdField::CheckItem()
         parent = parent->GetParent();
       }
     }
-    const auto reg = dynamic_cast<SvdRegister*>(parent->GetParent());
+    const auto reg = parent ? dynamic_cast<SvdRegister*>(parent->GetParent()) : nullptr;
     if(reg) {
       const auto regWidth = reg->GetEffectiveBitWidth();
       const auto l = reg->GetLineNumber();
       if(width > (int64_t)regWidth || offs+width > regWidth) {
         LogMsg("M324", NAME(name), BITRANGE(offs+width-1, offs, true), NAME2(reg->GetName()), NUM(regWidth), LINE2(l), lineNo);
         Invalidate();
+        return true;
       }
-    }
+      const auto regAccess    = reg->GetEffectiveAccess();
+      const auto fieldAccess  = GetEffectiveAccess();
 
-    const auto regAccess    = reg->GetEffectiveAccess();
-    const auto fieldAccess  = GetEffectiveAccess();
-
-    if(!SvdUtils::IsMatchAccess(fieldAccess, regAccess)) {
-      LogMsg("M367", lineNo);
+      if(!SvdUtils::IsMatchAccess(fieldAccess, regAccess)) {
+        LogMsg("M367", lineNo);
+      }
     }
   }
 
   map<string, SvdEnumContainer*> enumContMap;
-  uint64_t fieldMaxVal = (1ULL << (uint64_t)width) -1;
+  const auto fieldMaxVal = SvdUtils::CreateBitMask(width);
 
   const auto& enumConts = GetEnumContainer();
-  if(enumConts.empty() && width < 6) {        // message "please add enum values"
+  if(enumConts.empty() && width < MAX_BITWIDTH_FOR_COMBO) {        // message "please add enum values"
     LogMsg("M347", NAME(name), lineNo);
   }
 

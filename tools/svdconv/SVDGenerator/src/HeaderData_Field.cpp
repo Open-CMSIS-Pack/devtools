@@ -40,7 +40,9 @@ bool HeaderData::CreateFields(SvdRegister* reg, string structName)
     FIELDMAPLIST sortedFields;
     AddFields(fieldCont, sortedFields);
 
-    CreateSortedFields(sortedFields, regSize, structName);
+    if(!CreateSortedFields(sortedFields, regSize, structName)) {
+      return false;
+    }
   }
 
   return true;
@@ -74,10 +76,11 @@ bool HeaderData::AddFields(SvdItem* container, FIELDMAPLIST& sortedFields)
       }
     }
 
-    const auto name = field->GetNameCalculated();
-    uint32_t offs = (uint32_t) field->GetOffset();
-    uint32_t width = (uint32_t) field->GetBitWidth();
-    uint32_t mask = ((1<<width)-1) << offs;
+    uint32_t offset, bitWidth;
+    if(!SvdUtils::GetBitRange32(field->GetOffset(), field->GetBitWidth(), offset, bitWidth)) {
+      continue;
+    }
+    const auto mask = SvdUtils::CreateBitMask32(bitWidth, offset);
 
     ONESTRUCT* oneStruct = nullptr;
     for(auto& oneStr : sortedFields) {
@@ -93,8 +96,8 @@ bool HeaderData::AddFields(SvdItem* container, FIELDMAPLIST& sortedFields)
       oneStruct = &*sortedFields.rbegin();
     }
 
+    oneStruct->fields.emplace(offset, field);
     oneStruct->mask |= mask;
-    oneStruct->fields[offs] = field;
   }
 
   return true;
@@ -104,20 +107,30 @@ bool HeaderData::AddFields(SvdItem* container, FIELDMAPLIST& sortedFields)
 bool HeaderData::CreateSortedFields(const FIELDMAPLIST& sortedFields, uint32_t regSize, string structName)
 {
   m_reservedFieldCnt = 0;
+  if(regSize > sizeof(uint32_t)) {
+    m_gen->Generate<C_ERROR>("Register bitfields exceed 32 bits", -1);
+    return false;
+  }
+  const auto registerBits = regSize * 8;
 
   for(const auto& oneStruct : sortedFields) {
     uint32_t offsCnt = 0;
     m_gen->Generate<STRUCT|BEGIN>("");
 
     for(const auto& [newOffs, field] : oneStruct.fields) {
-      int32_t res = newOffs - offsCnt;
-
-      GenerateReservedField(res, regSize);
-      offsCnt += res;
-      offsCnt += CreateField(field, regSize, offsCnt);
+      if(newOffs < offsCnt || newOffs > registerBits) {
+        m_gen->Generate<C_ERROR>("Reserved bits calculation error", -1);
+        return false;
+      }
+      GenerateReservedField(newOffs - offsCnt, regSize);
+      const auto fieldWidth = CreateField(field, regSize, newOffs);
+      if(fieldWidth > registerBits - newOffs) {
+        m_gen->Generate<C_ERROR>("Reserved bits calculation error", -1);
+        return false;
+      }
+      offsCnt = newOffs + fieldWidth;
     }
-
-    GenerateReservedField((regSize * 8) - offsCnt, regSize);  // fill up (pad) bitfields
+    GenerateReservedField(registerBits - offsCnt, regSize);  // fill up (pad) bitfields
 
     m_gen->Generate<STRUCT|END>("%s", structName.c_str());
   }
@@ -131,27 +144,23 @@ uint32_t HeaderData::CreateField(SvdField* field, uint32_t regSize, uint32_t off
     return false;
   }
 
-  uint32_t sizeNeeded = 0;
-
   const auto& dataType  = SvdUtils::GetDataTypeString(regSize);
   const auto name       = field->GetNameCalculated();
   const auto descr      = field->GetDescriptionCalculated();
   const auto accType    = field->GetEffectiveAccess();
-  uint32_t   fieldWidth = field->GetBitWidth();
-  uint32_t   fieldPos   = (uint32_t)field->GetOffset();
+  uint32_t fieldPos, fieldWidth;
+  if(!SvdUtils::GetBitRange32(field->GetOffset(), field->GetBitWidth(), fieldPos, fieldWidth)) {
+    return 0;
+  }
 
   m_gen->Generate<MAKE|MK_FIELD_STRUCT>("%s", accType, dataType.c_str(), regSize, fieldWidth, name.c_str());
-  uint32_t lastBit = fieldPos + fieldWidth -1;
+  const auto lastBit = fieldPos + fieldWidth -1;
   m_gen->Generate<MAKE|MK_DOXY_COMMENT_BITFIELD>("%s", fieldPos, lastBit, !descr.empty()? descr.c_str() : name.c_str());
-
-  if(sizeNeeded < fieldWidth) {
-    sizeNeeded = fieldWidth;
-  }
 
   if(offsCnt != fieldPos) {
     m_gen->Generate<C_ERROR>("Reserved bits calculation error", -1);
   }
 
-  return sizeNeeded;
+  return fieldWidth;
 }
 

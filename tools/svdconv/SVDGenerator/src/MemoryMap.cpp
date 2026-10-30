@@ -137,7 +137,6 @@ bool MemoryMap::ClusterInfo(SvdCluster *item)
   uint32_t      address = (uint32_t) item->GetAbsoluteAddress();
   uint32_t      offset  = (uint32_t) item->GetOffset();
   uint32_t      bitWidth = item->GetEffectiveBitWidth() / 8;
-  //const string &accType = SvdTypes::GetAccessType(item->GetAccess());
   const string &accType = m_access_str[(uint32_t)item->GetAccess()];
 
   m_fileIo->WriteLine("  %s \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: Address: 0x%08x, \tOffset: 0x%08x, \tWidth: %i, \tAccess: %s",
@@ -164,7 +163,6 @@ bool MemoryMap::RegisterInfo(SvdRegister *item)
   uint32_t   address    =  (uint32_t)item->GetAbsoluteAddress();
   uint32_t   offset     =  (uint32_t)item->GetOffset();
   uint32_t   bitWidth   = item->GetEffectiveBitWidth()/8;
-  //const string &accType = SvdTypes::GetAccessType(item->GetAccess());
   const string &accType = m_access_str[(uint32_t)item->GetAccess()];
 
   m_fileIo->WriteLine("");
@@ -180,7 +178,6 @@ bool MemoryMap::FieldInfo(SvdField *item)
   const auto& name      = item->GetName();
   uint32_t    offset    =  (uint32_t)item->GetOffset();
   uint32_t    bitWidth  = item->GetEffectiveBitWidth();
-  //const string &accType = SvdTypes::GetAccessType(item->GetAccess());
   const auto &accType   = m_access_str[(uint32_t)item->GetAccess()];
 
    m_fileIo->WriteLine("    %s \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: [%2i ... %2i] <%s> \r\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tBits: %i",
@@ -214,7 +211,6 @@ bool MemoryMap::PeripheralInfo(SvdItem* item)
     name =  item->GetName();
   }
 
-  //m_fileIo->WriteLine("%s", name.c_str());
   m_gen->Generate<sfd::DESCR|sfd::SUBPART>("%s", name.c_str());
   m_fileIo->WriteLine("Base Address: 0x%08x", (uint32_t) item->GetAbsoluteAddress());
 
@@ -236,9 +232,6 @@ bool MemoryMap::DimInfo(SvdItem* item)
   if(!dim || !parent)
     return false;
 
-  //const string &name  = item->GetName();
-  //SvdExpression* expr = dim->GetExpression();
-
   string index = "";
   uint32_t cnt=0;
   const auto& dimList = dim->GetDimIndexList();
@@ -254,8 +247,6 @@ bool MemoryMap::DimInfo(SvdItem* item)
 
     index += dimItem;
   }
-
-  //m_fileIo->WriteLine("Dimed from '%s' [%s]", name.c_str(), index.c_str());
 
   return true;
 }
@@ -429,9 +420,9 @@ bool MemoryMap::IterateClusterRegisters(SvdCluster *inClust, MapLevel mapLevel)
 
     // Dim
     const auto& dimChilds = dim->GetChildren();
-    for(const auto dimChilds : dimChilds) {
-      const auto dimReg   = dynamic_cast<SvdRegister*>(dimChilds);
-      const auto dimClust = dynamic_cast<SvdCluster*>(dimChilds);
+    for(const auto dimChild : dimChilds) {
+      const auto dimReg   = dynamic_cast<SvdRegister*>(dimChild);
+      const auto dimClust = dynamic_cast<SvdCluster*>(dimChild);
       if(!dimReg && !dimClust) {
         continue;
       }
@@ -476,7 +467,7 @@ bool MemoryMap::IterateRegisters(SvdPeripheral *peri, MapLevel mapLevel)
     if(reg) {
       dim = reg->GetDimension();
       if(dim) {
-         ; //m_fileIo->WriteLine("Dim Register:");
+         ;
       } else {
         Register(reg);
       }
@@ -585,7 +576,6 @@ bool MemoryMap::IterateEnums(SvdField *field, MapLevel mapLevel)
       continue;
     }
 
-    //EnumContainer(enumCont);
 #if 0
     SvdDimension *dim = enumCont->GetDimension();
     if(dim) {
@@ -624,7 +614,6 @@ bool MemoryMap::IterateEnums(SvdField *field, MapLevel mapLevel)
       if(dim) {
          m_fileIo->WriteLine("Dim Enum:");
       }
-      //EnumValue(enu);
 
       if(!dim) {
         continue;
@@ -638,7 +627,6 @@ bool MemoryMap::IterateEnums(SvdField *field, MapLevel mapLevel)
           continue;
         }
 
-        //EnumValue(dimEnu);
       }
     }
   }
@@ -654,7 +642,6 @@ bool MemoryMap::CreateMap(SvdItem *item, const string &fileName, MapLevel mapLev
     return false;
   }
 
-  //Generate(MAKE|MK_FILE, "%s %s_Peripheral.txt", devName, MEMORYMAP_FILENAME);
   const auto& devName = item->GetName();
   m_fileIo->WriteLine("%s Listing\n--------------------------------", devName.c_str());
   m_fileIo->WriteLine("Interrupts:");

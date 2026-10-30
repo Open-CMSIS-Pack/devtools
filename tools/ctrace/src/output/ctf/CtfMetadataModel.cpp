@@ -251,7 +251,7 @@ void CtfMetadataModel::validateSources() const
       throw std::invalid_argument(formatMessage(MessageId::CtfSourceRouteUnknown));
     }
     if (source.type == "itm") {
-      if (source.source == CoreSight::kExcludedItmStimulusPort || !CoreSight::isItmStimulusPort(source.source)) {
+      if (!CoreSight::isItmStimulusPort(source.source)) {
         throw std::invalid_argument(formatMessage(MessageId::CtfItmChannelRange));
       }
     } else if (source.type == "dwt") {

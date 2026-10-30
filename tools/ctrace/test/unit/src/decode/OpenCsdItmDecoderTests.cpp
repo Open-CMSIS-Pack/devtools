@@ -804,6 +804,74 @@ TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderPreservesRoutedIncompleteTai
   EXPECT_EQ(issues.front()->issueSeverity, TraceIssueSeverity::Error);
 }
 
+TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderPreservesEventsBeforePacketInTruncatedFrame)
+{
+  const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
+  const auto complete = memoryAlignedFrames({
+      {1U, itmHardwareSync()},
+      {1U, itmSoftwarePacket(1U, 'A')},
+      {1U, FormattedTraceTestSupport::itmLocalTimestampPacket(16U)},
+      {1U, itmSoftwarePacket(2U, 4U, 0x44332211U)},
+  });
+  ASSERT_EQ(complete.size(), 32U);
+
+  {
+    CollectingOpenCsdElementSink sink;
+    OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink);
+    decoder.push(complete.data(), static_cast<std::uint32_t>(complete.size()));
+    EXPECT_EQ(decoder.finish().bytesIn, complete.size());
+    std::vector<std::uint32_t> values;
+    for (const auto& element : sink.elements()) {
+      EXPECT_FALSE(element.issueCode.has_value());
+      if (element.kind == OpenCsdTraceElement::Kind::Software) {
+        values.push_back(element.value);
+      }
+    }
+    const std::vector<std::uint32_t> expected{'A', 0x44332211U};
+    EXPECT_EQ(values, expected);
+  }
+
+  for (std::size_t tailSize = 1U; tailSize < 16U; ++tailSize) {
+    SCOPED_TRACE(tailSize);
+    const std::vector<std::uint8_t> capture(complete.begin(), complete.begin() + 16U + tailSize);
+    const auto completeBytes = static_cast<std::uint32_t>(capture.size() - capture.size() % 16U);
+    ASSERT_EQ(completeBytes, 16U);
+
+    CollectingOpenCsdElementSink sink;
+    OpenCsdItmDecoder decoder({route}, OpenCsdItmInputMode::CoreSightFormatted, sink);
+    decoder.push(capture.data(), completeBytes);
+    try {
+      (void)decoder.finish();
+      FAIL() << "the ITM packet crossing into the withheld frame must remain incomplete";
+    } catch (const OpenCsdFatalError& error) {
+      EXPECT_EQ(error.bytesProcessed(), completeBytes);
+    }
+
+    std::vector<const OpenCsdTraceElement*> software;
+    std::vector<const OpenCsdTraceElement*> issues;
+    for (const auto& element : sink.elements()) {
+      if (element.kind == OpenCsdTraceElement::Kind::Software) {
+        software.push_back(&element);
+      }
+      if (element.issueCode.has_value()) {
+        issues.push_back(&element);
+      }
+    }
+    ASSERT_EQ(software.size(), 1U); // Never fabricate the second event from a partial frame.
+    EXPECT_EQ(software.front()->route, route);
+    EXPECT_EQ(software.front()->channel, 1U);
+    EXPECT_EQ(software.front()->value, static_cast<std::uint32_t>('A'));
+    ASSERT_EQ(issues.size(), 1U);
+    EXPECT_EQ(issues.front()->route, route);
+    EXPECT_EQ(issues.front()->issueCode, TraceIssueCode::OpenCsdIncompleteTail);
+    EXPECT_EQ(issues.front()->issueSeverity, TraceIssueSeverity::Error);
+    EXPECT_EQ(std::count_if(sink.elements().begin(), sink.elements().end(), [](const auto& element) {
+                return element.kind == OpenCsdTraceElement::Kind::LocalTimestamp && element.tcyc == 16U;
+              }),
+              1);
+  }
+}
+
 TEST(CtraceUnitTests, testFormattedOpenCsdItmDecoderSkipsInitialUnassignedDataAndDecodesLaterPayload)
 {
   const TraceRouteIdentity route{TraceRouteId{0U}, 1U};
@@ -1560,6 +1628,54 @@ TEST(CtraceUnitTests, testOpenCsdItmSessionUsesRouteLocalResetForSingleInput)
   EXPECT_THROW(session.resetRoute(1U, 38U), OpenCsdItmSessionError);
   EXPECT_NE(errors.decide(session.flush()).action, OpenCsdErrorController::Action::Abort);
   EXPECT_NE(errors.decide(session.endOfTrace()).action, OpenCsdErrorController::Action::Abort);
+}
+
+TEST(CtraceUnitTests, testOpenCsdItmSessionRecoversAfterUnsynchronizedBlockEndsAtFlushBoundary)
+{
+  for (const auto prefixSize : {8U, 16U}) {
+    SCOPED_TRACE(prefixSize);
+    CollectingOpenCsdElementSink sink;
+    OpenCsdPacketCollector collector(TraceRouteIdentity{}, sink);
+    OpenCsdErrorController errors;
+    OpenCsdItmSession session(collector, errors);
+
+    // OpenCSD flushes eight unsynchronized bytes at a time. Ending a block here
+    // also flushes an empty packet buffer before the next block supplies SYNC.
+    const std::vector<std::uint8_t> prefix(prefixSize, 0x55U);
+    std::uint32_t processed = 0U;
+    errors.beginDataPathCall();
+    auto response = session.pushData(0U, prefixSize, prefix.data(), processed);
+    ASSERT_EQ(response, OCSD_RESP_CONT);
+    EXPECT_EQ(processed, prefixSize);
+    EXPECT_TRUE(errors.decide(response).errors.empty());
+    EXPECT_TRUE(sink.elements().empty());
+
+    auto synchronized = itmHardwareSync();
+    const auto syncSize = synchronized.size();
+    const auto software = itmSoftwarePacket(1U, 'A');
+    synchronized.insert(synchronized.end(), software.begin(), software.end());
+    errors.beginDataPathCall();
+    response = session.pushData(prefixSize, static_cast<std::uint32_t>(synchronized.size()),
+                                 synchronized.data(), processed);
+    ASSERT_EQ(response, OCSD_RESP_CONT);
+    EXPECT_EQ(processed, synchronized.size());
+    EXPECT_TRUE(errors.decide(response).errors.empty());
+    errors.beginDataPathCall();
+    response = session.endOfTrace();
+    EXPECT_EQ(response, OCSD_RESP_CONT);
+    EXPECT_TRUE(errors.decide(response).errors.empty());
+
+    ASSERT_EQ(sink.elements().size(), 2U);
+    EXPECT_EQ(sink.elements()[0].kind, OpenCsdTraceElement::Kind::Sync);
+    EXPECT_EQ(sink.elements()[0].sourceIndex, prefixSize);
+    const auto& decoded = sink.elements()[1];
+    EXPECT_EQ(decoded.kind, OpenCsdTraceElement::Kind::Software);
+    EXPECT_EQ(decoded.sourceIndex, prefixSize + syncSize);
+    EXPECT_EQ(decoded.route, TraceRouteIdentity{});
+    EXPECT_EQ(decoded.channel, 1U);
+    EXPECT_EQ(decoded.size, 1U);
+    EXPECT_EQ(decoded.value, 'A');
+  }
 }
 
 TEST(CtraceUnitTests, testEmptySessionSetupErrorRetainsInitializationIssueFallback)

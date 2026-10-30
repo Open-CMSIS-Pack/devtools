@@ -26,13 +26,15 @@ void RawDiagnosticSink::write(const Event& event)
     const auto& location = *event.rawLocation;
     auto& context = contextual.detailedContext;
     const auto progress = location.kind == RawDiagnosticLocation::Kind::InputProgress;
-    const auto hint = !progress && (m_formatted || location.kind == RawDiagnosticLocation::Kind::FormatterGroup);
+    const auto hint = !progress && location.kind != RawDiagnosticLocation::Kind::Exact &&
+                      (m_formatted || location.kind == RawDiagnosticLocation::Kind::FormatterGroup);
     context.emplace_back("raw_offset", std::to_string(location.offset));
     context.emplace_back("position_kind", progress ? "input_progress" : hint ? "formatter_hint" : "exact");
 
     auto endOffset = location.endOffset;
     if (location.packetSize.has_value()) {
-      context.emplace_back("packet_bytes_kind", m_formatted ? "deformatted" : "file");
+      context.emplace_back("packet_bytes_kind",
+                           m_formatted && location.kind != RawDiagnosticLocation::Kind::Exact ? "deformatted" : "file");
       if (!hint && !progress && !endOffset.has_value() &&
           *location.packetSize <= std::numeric_limits<std::uint64_t>::max() - location.offset) {
         endOffset = location.offset + *location.packetSize;

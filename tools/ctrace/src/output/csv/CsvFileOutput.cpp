@@ -169,3 +169,8 @@ void CsvFileOutput::writeByteSkipOutput(const TraceByteSkip& skipped)
 {
   m_stream->output() << CsvRowMapper::byteSkipRow(skipped) << "\n";
 }
+
+void CsvFileOutput::writeRawTailOutput(const TraceRawTail& tail)
+{
+  m_stream->output() << CsvRowMapper::rawTailRow(tail) << "\n";
+}

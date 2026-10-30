@@ -356,7 +356,7 @@ static void writeTypeDefinitions(std::ostream& out, const MetadataSymbols& symbo
   out << R"(typealias enum : uint8_t {
 )";
   std::set<std::string> itmLabels;
-  for (std::uint32_t channel = 1U; channel < 32U; ++channel) {
+  for (std::uint32_t channel = 0U; channel < 32U; ++channel) {
     const auto fallback = "ITM" + std::to_string(channel);
     out << "    " << tsdlString(uniqueEnumLabel(mapValueOrEmpty(symbols.itmNames, channel), fallback, itmLabels))
         << " = " << channel << ",\n";
@@ -741,7 +741,7 @@ static void writeGeneralStreamTypes(std::ostream& out, const CtfMetadataModel& m
       << "} := " << prefix << "_route_t;\n"
       << "typealias enum : uint8_t {\n";
   std::set<std::string> itmLabels;
-  for (std::uint32_t channel = 1U; channel < 32U; ++channel) {
+  for (std::uint32_t channel = 0U; channel < 32U; ++channel) {
     const auto fallback = "ITM" + std::to_string(channel);
     out << "    " << tsdlString(uniqueEnumLabel(mapValueOrEmpty(symbols.itmNames, channel), fallback, itmLabels))
         << " = " << channel << ",\n";

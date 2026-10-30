@@ -45,9 +45,6 @@ TEST(CtraceUnitTests, testDiagnosticBackendPreservesEmptyAndExternalDetail)
 TEST(CtraceUnitTests, testOperationalDiagnosticRetains64BitValues)
 {
   const auto maximum = std::numeric_limits<std::uint64_t>::max();
-  EXPECT_EQ(rawInputAlignmentMessage(16U, "capture.raw", maximum),
-            "formatted raw trace input size must be a multiple of 16 bytes: "
-            "capture.raw (size=18446744073709551615)");
   EXPECT_EQ(unknownNormalizedRouteMessage(maximum),
             "OpenCSD element references unknown normalized route 18446744073709551615");
   EXPECT_EQ(ctfDataSizeMessage(maximum, "float"),

@@ -98,6 +98,27 @@ TEST(CtraceUnitTests, testRawDiagnosticFormattedLocationsRemainHints)
   EXPECT_FALSE(field(target.events().back(), "previous_sync_offset").has_value());
 }
 
+TEST(CtraceUnitTests, testRawDiagnosticKeepsPhysicalTailLocationsExactForFormattedInput)
+{
+  CollectingDiagnosticSink target;
+  RawDiagnosticSink sink(target, true, 167U);
+  auto event = located(160U);
+  event.rawLocation->kind = RawDiagnosticLocation::Kind::Exact;
+  event.rawLocation->endOffset = 167U;
+  sink.report(event);
+
+  ASSERT_EQ(target.events().size(), 1U);
+  const auto& actual = target.events().front();
+  EXPECT_EQ(field(actual, "position_kind"), "exact");
+  EXPECT_EQ(field(actual, "raw_offset"), "160");
+  EXPECT_EQ(field(actual, "raw_end"), "167");
+  EXPECT_EQ(field(actual, "read_offset"), "96");
+  EXPECT_EQ(field(actual, "read_length"), "71");
+  EXPECT_FALSE(field(actual, "packet_bytes_kind").has_value());
+  EXPECT_FALSE(field(actual, "previous_sync_offset").has_value());
+  EXPECT_FALSE(field(actual, "next_sync_offset").has_value());
+}
+
 TEST(CtraceUnitTests, testRawDiagnosticInspectionWindowsStayBoundedAtFileEdges)
 {
   constexpr auto maximum = std::numeric_limits<std::uint64_t>::max();

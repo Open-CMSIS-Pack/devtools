@@ -73,6 +73,9 @@ protected:
   bool IsValid                      (SvdItem* item);
 
 private:
+  static bool CheckBitRange         (SvdItem* item);
+  static bool CheckBitRanges        (SvdItem* item);
+
   const SvdOptions&   m_options;
   FileIo*             m_fileIo;
   SfdGenerator*       m_gen;

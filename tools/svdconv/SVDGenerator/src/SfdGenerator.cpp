@@ -417,13 +417,11 @@ void SfdGenerator::CreateCItemTextonly(const std::string& text, uint32_t num)
 
 void SfdGenerator::CreateTextonly(const std::string& text)
 {
-  //PrepareLineBreaks(genTextBuf);
   Generate<APPENDTEXT>(" %s", text.c_str());
 }
 
 void SfdGenerator::CreateCItem(const std::string& text, uint32_t num)
 {
-  //PrepareLineBreaks(genTextBuf);
   Generate<RAW>("<%i=> %i: %s", num, num, text.c_str());
 }
 
@@ -434,19 +432,16 @@ void SfdGenerator::CreateCItemEnd(const std::string& text, sfd::Index elementInd
 
 void SfdGenerator::CreateOBit(const std::string& text, uint32_t num)
 {
-  //PrepareLineBreaks(genTextBuf);
   Generate<RAW>("<o.%i..%i> %s", num, num, text.c_str());
 }
 
 void SfdGenerator::CreateOBitNoRange(const std::string& text, uint32_t num)
 {
-  //PrepareLineBreaks(genTextBuf);
   Generate<RAW>("<o.%i> %s", num, text.c_str());
 }
 
 void SfdGenerator::CreateORange(const std::string& text, uint32_t num1, uint32_t num2)
 {
-  //PrepareLineBreaks(genTextBuf);
   Generate<RAW>("<o.%i..%i> %s", num1, num2, text.c_str());
 }
 
@@ -457,38 +452,32 @@ void SfdGenerator::CreateIBit(const std::string& text, uint32_t num)
 
 void SfdGenerator::CreateIBitAddr(const std::string& text, uint32_t num1, uint32_t num2)
 {
-  //PrepareLineBreaks(genTextBuf);
   Generate<APPENDTEXT>(" [Bit %i] (@ 0x%08X) %s", num1, num2, text.c_str());
 }
 
 void SfdGenerator::CreateIBitAddrAcc(const std::string& text, uint32_t num1, uint32_t num2, SvdTypes::Access acc)
 {
-  //PrepareLineBreaks(genTextBuf);
   const std::string &accStr = SvdTypes::GetAccessTypeSfd(acc);
   Generate<APPENDTEXT>(" [Bit %i] %s (@ 0x%08X) %s", num1, accStr.c_str(), num2, text.c_str());
 }
 
 void SfdGenerator::CreateIRange(const std::string& text, uint32_t num1, uint32_t num2)
 {
-  //PrepareLineBreaks(genTextBuf);
   Generate<APPENDTEXT>(" [Bits %i..%i] %s", num1, num2, text.c_str());
 }
 
 void SfdGenerator::CreateIRangeAddr(const std::string& text, uint32_t num1, uint32_t num2, uint32_t num3)
 {
-  //PrepareLineBreaks(genTextBuf);
   Generate<APPENDTEXT>(" [Bits %i..%i] (@ 0x%08X) %s", num1, num2, num3, text.c_str());
 }
 
 void SfdGenerator::CreateIRangeAddrAcc(const std::string& text, uint32_t num1, uint32_t num2, uint32_t num3, SvdTypes::Access acc)
 {
-  //PrepareLineBreaks(genTextBuf);
   const std::string &accStr = SvdTypes::GetAccessTypeSfd(acc);
   Generate<APPENDTEXT>(" [Bits %i..%i] %s (@ 0x%08X) %s", num1, num2, accStr.c_str(), num3, text.c_str());
 }
 
 void SfdGenerator::CreateInfoAddr(const std::string& text, uint32_t num1)
 {
-  //PrepareLineBreaks(genTextBuf);
   Generate<APPENDTEXT>("(@ 0x%08X) %s", num1, text.c_str());
 }

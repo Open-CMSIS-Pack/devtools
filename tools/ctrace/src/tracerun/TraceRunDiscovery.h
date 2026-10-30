@@ -91,20 +91,22 @@ public:
    */
   static std::string solutionSetName(const std::filesystem::path& configFile);
   /**
-   * @brief Selects every supported raw input associated with one trace-run configuration.
-   * @param config Parsed trace-run configuration with its source path and optional format override.
-   * @param skippedInputSink Optional observer for recognized inputs excluded from selection.
-   * @return Deterministically ordered inputs for independent preflight and decoding.
-   * @throws std::runtime_error If the source path is missing or no eligible input exists.
+   * @brief Selects raw inputs for one trace-run configuration.
+   * @param configFile Trace-run configuration path.
+   * @param channels Exact names; empty selects all supported channels.
+   * @param skippedInputSink Receives matching unsupported inputs.
+   * @return Inputs in path order; may be empty with a channel filter.
+   * @throws std::runtime_error If configFile is empty or no unfiltered input is eligible.
    */
-  static std::vector<TraceRunRawInput> selectInputs(const TraceRunConfig& config,
+  static std::vector<TraceRunRawInput> selectInputs(const std::filesystem::path& configFile,
+                                                   const std::vector<std::string>& channels = {},
                                                    const SkippedTraceRunInputSink& skippedInputSink = {});
   /**
    * @brief Preflights one selected raw input, resolves its format, and normalizes its routes.
    * @param config Configuration copied so each input resolves its own effective format and routes.
    * @param selected Input returned by selectInputs().
    * @return Fully normalized input descriptor safe to pass to a decode job.
-   * @throws std::runtime_error If file access, formatted alignment, or route metadata is invalid.
+   * @throws std::runtime_error If file access or route metadata is invalid.
    */
   static TraceRunInputDescriptor resolveInput(TraceRunConfig config, const TraceRunRawInput& selected);
 

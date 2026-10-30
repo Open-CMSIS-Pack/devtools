@@ -7,6 +7,10 @@ set(TEST_SOURCE_FILES
   SvdCExpressionParserTest.cpp
   SvdOptionsTest.cpp
   SvdModelValidationTest.cpp
+  SvdBitWidthTest.cpp
+  SvdDimensionBoundsTest.cpp
+  SvdSentinelModelTest.cpp
+  SvdSentinelConsumerTest.cpp
 )
 
 list(TRANSFORM TEST_SOURCE_FILES PREPEND src/)

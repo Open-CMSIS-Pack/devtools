@@ -126,9 +126,13 @@ public:
   void CreateTextonly           (const std::string& text);
 
   template<uint32_t element, typename ...Args>
+  // args is forwarded by the applicable branches; ENDGROUP calls have an empty pack.
+  // codeql[cpp/unused-local-variable]; codeql[cpp/unused-static-variable]
   void Generate(const std::string& text, Args&&... args)
   {
-    constexpr sfd::Index elementIndex  = (sfd::Index)  (element & sfd::INDEX_MASK   );
+    // SFD generator core: decode element flags and dispatch to the output helpers.
+    // parse_and_call separates helper arguments from text-formatting arguments.
+    [[maybe_unused]] constexpr sfd::Index elementIndex = (sfd::Index)(element & sfd::INDEX_MASK);
     constexpr sfd::Options elementType = (sfd::Options)(element & sfd::OPTIONS_MASK );
     constexpr sfd::Special specialType = (sfd::Special)(element & sfd::SPECIAL_MASK );
 
@@ -241,6 +245,7 @@ public:
           parse_and_call(&SfdGenerator::CreateTextonly, text, std::forward<Args>(args)...);
         }
 
+        // Close ordinary items unless SINGLE output was requested.
         if constexpr (elementType != sfd::SINGLE) {
           CreateItemEnd(elementIndex);
         }

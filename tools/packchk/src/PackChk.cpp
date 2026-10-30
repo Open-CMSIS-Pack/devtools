@@ -172,7 +172,7 @@ bool PackChk::CheckPackage()
  * @param envp command line argument (not used)
  * @return passed / failed
 */
-int PackChk::Check(int argc, const char* argv[], const char* envp[])
+int PackChk::Check(int argc, const char** argv, const char** envp)
 {
   const string header = m_packOptions.GetHeader();
   cout << header << endl;

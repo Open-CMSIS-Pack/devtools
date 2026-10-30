@@ -31,6 +31,10 @@ std::string positionalArgumentMessage(std::string_view argument);
 std::string streamArgumentMessage(std::string_view value);
 std::string typeArgumentMessage(std::string_view value, std::string_view accepted);
 std::string targetArgumentMessage(std::string_view value);
+std::string channelArgumentMessage(std::string_view value);
+
+/** @brief Formats a missing-channel diagnostic. */
+std::string missingChannelInputMessage(std::string_view value);
 
 /** @brief Selects the validation applied to one named YAML field. */
 enum class ConfigFieldProblem {
@@ -61,7 +65,6 @@ std::string pathDiagnosticMessage(PathDiagnosticCode code, std::string_view path
                                   std::optional<std::string_view> nativeDetail = std::nullopt);
 std::string configurationFilesMissingMessage(std::string_view suffix, std::string_view directory);
 std::string configurationFilenameMessage(std::string_view suffix, std::string_view path);
-std::string rawInputAlignmentMessage(std::uint64_t alignment, std::string_view path, std::uint64_t size);
 std::string specificOutputTargetMessage(std::string_view description);
 std::string outputParentMessage(std::string_view description, std::string_view parent);
 

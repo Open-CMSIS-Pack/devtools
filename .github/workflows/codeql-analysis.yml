@@ -6,6 +6,8 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/codeql-analysis.yml'
+      - '.github/codeql-config.yml'
+      - '.github/codeql-svdconv-suppressions.qls'
       - '**/*.c'
       - '**/*.cpp'
       - '**/*.h'
@@ -27,9 +29,9 @@ jobs:
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
-      actions: read
       contents: read
       security-events: write
+      pull-requests: read
 
     steps:
       - name: Install packages
@@ -42,10 +44,10 @@ jobs:
           submodules: true
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           languages: cpp
-          queries: security-and-quality
+          build-mode: manual
           config-file: ./.github/codeql-config.yml
 
       - name: Create build folder
@@ -58,4 +60,56 @@ jobs:
         working-directory: ./build
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: .github/workflows/codeql-analysis.yml:analyze
+          output: sarif-results
+          upload: never
+
+      - name: Filter external results and approved source suppressions
+        run: |
+          set -euo pipefail
+          mkdir sarif-results-filtered
+          find sarif-results -type f -name '*.sarif' -print0 | while IFS= read -r -d '' sarif_file; do
+            jq '
+              def is_external_path:
+                (. // "" | gsub("\\\\"; "/") | test("(^|/)(\\./)?external(/|$)"));
+              def is_svdconv_unused_suppression:
+                (.ruleId == "cpp/unused-local-variable" or .ruleId == "cpp/unused-static-variable")
+                and (
+                  (.locations[0].physicalLocation.artifactLocation.uri // "")
+                  | gsub("\\\\"; "/")
+                  | test("^(\\./)?tools/svdconv/")
+                )
+                and any(.suppressions[]?;
+                  .kind == "inSource" and ((.status // "accepted") == "accepted")
+                );
+              def is_xmlreader_trivial_switch_suppression:
+                .ruleId == "cpp/trivial-switch"
+                and (
+                  (.locations[0].physicalLocation.artifactLocation.uri // "")
+                  | gsub("\\\\"; "/")
+                  | test("^(\\./)?libs/xmlreader/src/XML_Reader\\.cpp$")
+                )
+                and any(.suppressions[]?;
+                  .kind == "inSource" and ((.status // "accepted") == "accepted")
+                );
+              .runs |= map(
+                .results |= map(
+                  select(
+                    (.locations[0].physicalLocation.artifactLocation.uri // "")
+                    | is_external_path
+                    | not
+                  )
+                  | select(is_svdconv_unused_suppression | not)
+                  | select(is_xmlreader_trivial_switch_suppression | not)
+                )
+              )
+            ' "$sarif_file" > "sarif-results-filtered/$(basename "$sarif_file")"
+          done
+
+      - name: Upload filtered CodeQL results
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: .github/workflows/codeql-analysis.yml:analyze
+          sarif_file: sarif-results-filtered

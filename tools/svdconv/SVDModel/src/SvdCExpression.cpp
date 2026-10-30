@@ -78,36 +78,32 @@ bool SvdCExpression::LinkSymbols(SvdItem* item, const SvdCExpressionParser::Toke
   auto& regList = device->GetExpressionRegistersList();
 
   for(auto& foundSymbol : m_symbolsList) {
-    switch(foundSymbol.token.type) {
-      case SvdCExpressionParser::xme_identi: {
-        SvdItem* from = 0;
-        string lastSearchName;
-        item->GetDeriveItem(from, foundSymbol.searchname, L_UNDEF, lastSearchName);
-        if(!from) {
-          LogMsg("M244", NAME(lastSearchName), MSG(errText), lineNo);
+    if(foundSymbol.token.type == SvdCExpressionParser::xme_identi) {
+      SvdItem* from = 0;
+      string lastSearchName;
+      item->GetDeriveItem(from, foundSymbol.searchname, L_UNDEF, lastSearchName);
+      if(!from) {
+        LogMsg("M244", NAME(lastSearchName), MSG(errText), lineNo);
+        return false;
+      }
+      foundSymbol.svdItem = from;
+
+      string name = foundSymbol.svdItem->GetHierarchicalNameResulting();
+      if(!name.empty()) {
+        if(foundSymbol.svdItem->GetSvdLevel() == L_Register) {
+          regList[name] = foundSymbol.svdItem;
+        }
+        else if(foundSymbol.svdItem->GetSvdLevel() == L_Field) {
+          SvdItem* symbolItem = foundSymbol.svdItem->GetParent()->GetParent();
+          if(item) {
+            regList[name] = symbolItem;
+          }
+        }
+        else {
+          LogMsg("M248", lineNo);
           return false;
         }
-        foundSymbol.svdItem = from;
-
-        string name = foundSymbol.svdItem->GetHierarchicalNameResulting();
-        if(!name.empty()) {
-          if(foundSymbol.svdItem->GetSvdLevel() == L_Register) {
-            regList[name] = foundSymbol.svdItem;
-          }
-          else if(foundSymbol.svdItem->GetSvdLevel() == L_Field) {
-            SvdItem* symbolItem = foundSymbol.svdItem->GetParent()->GetParent();
-            if(item) {
-              regList[name] = symbolItem;
-            }
-          }
-          else {
-            LogMsg("M248", lineNo);
-            return false;
-          }
-        }
-      } break;
-      default:
-        break;
+      }
     }
   }
 
@@ -124,19 +120,20 @@ string SvdCExpression::GetExpressionString()
   }
 
   for(const auto& symbol : symbols) {
-    switch(symbol.token.type) {
-      case SvdCExpressionParser::xme_identi: {
-        SvdItem* item = symbol.svdItem;
-        if(!item) {
-          return SvdUtils::EMPTY_STRING;     // skip generating disable condition. Should not be reached, as LinkSymbols() already generates an error
-        }
-
-        expression += CreateObjectExpression(item);
-        break;
+    if(symbol.token.type == SvdCExpressionParser::xme_identi) {
+      SvdItem* item = symbol.svdItem;
+      if(!item || !item->IsValid()) {
+        return SvdUtils::EMPTY_STRING;
       }
-      default:
-        expression += symbol.token.text;
-        break;
+
+      const auto operand = CreateObjectExpression(item);
+      if(operand.empty()) {
+        return SvdUtils::EMPTY_STRING;
+      }
+      expression += operand;
+    }
+    else {
+      expression += symbol.token.text;
     }
 
     if(!expression.empty()) {
@@ -181,9 +178,11 @@ string SvdCExpression::CreateFieldExpression(SvdItem* item)
   }
 
   const auto regName = field->GetParentRegisterNameHierarchical();
-  const auto firstBit = (uint32_t)field->GetOffset();
-  const auto bitWidth = field->GetEffectiveBitWidth();
-  const auto bitMaxNum = (uint32_t) ((((uint64_t)(1) << bitWidth) -1));
+  uint32_t firstBit, bitWidth;
+  if(!field->IsValid() || !SvdUtils::GetBitRange32(field->GetOffset(), field->GetEffectiveBitWidth(), firstBit, bitWidth)) {
+    return SvdUtils::EMPTY_STRING;
+  }
+  const auto bitMaxNum = SvdUtils::CreateBitMask32(bitWidth);
 
   std::stringstream ss;
   ss << "0x" << std::hex << bitMaxNum;
@@ -205,9 +204,6 @@ bool SvdCExpression::CheckItem()
   if(!IsValid()) {
     return true;
   }
-
-  //const auto& name = GetName();
-  //const auto lineNo = GetLineNumber();
 
   // currently no checks done
 

@@ -8,7 +8,7 @@
 #include "TraceRunDiscovery.h"
 
 #include "DiagnosticMessages.h"
-#include "CoreSightFormatter.h"
+#include "TraceInputChannel.h"
 
 #include <algorithm>
 #include <cctype>
@@ -63,39 +63,6 @@ std::istream& TraceRunInputDescriptor::stream() noexcept
 static bool endsWith(const std::string_view& value, const std::string_view& suffix)
 {
   return value.size() >= suffix.size() && value.substr(value.size() - suffix.size()) == suffix;
-}
-
-/** @brief Tests whether a byte belongs to the CMSIS RestrictedString character set. */
-static bool isRestrictedStringCharacter(const char character)
-{
-  return (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z') ||
-         (character >= '0' && character <= '9') || character == '_' || character == '-';
-}
-
-/** @brief Tests whether a channel names one specification-defined Trace Buffer. */
-static bool isTraceBufferChannel(const std::string_view& value)
-{
-  constexpr std::string_view namedPrefix = "TB_";
-  if (value == "TB") {
-    return true;
-  }
-  if (value.size() <= namedPrefix.size() || value.substr(0U, namedPrefix.size()) != namedPrefix) {
-    return false;
-  }
-  const auto name = value.substr(namedPrefix.size());
-  return std::all_of(name.begin(), name.end(), isRestrictedStringCharacter);
-}
-
-/** @brief Tests whether a file extension names a recognized trace channel. */
-static bool isTraceChannel(const std::string_view& value)
-{
-  return value == "SWO" || value == "ER" || isTraceBufferChannel(value);
-}
-
-/** @brief Tests input eligibility independently of an optional byte-format override. */
-static bool isEligibleTraceChannel(const std::string_view& value)
-{
-  return value == "SWO" || isTraceBufferChannel(value);
 }
 
 /** @brief Tests whether a solution-set name is reserved by Windows. */
@@ -200,7 +167,7 @@ std::vector<TraceRunRawInput> TraceRunDiscovery::rawInputs(const std::filesystem
       continue;
     }
     const auto channel = filename.substr(prefix.size(), channelSize);
-    if (!isTraceChannel(channel)) {
+    if (channel != "ER" && !isSupportedTraceChannel(channel)) {
       continue;
     }
     inputs.push_back({entry.path(), channel});
@@ -210,17 +177,20 @@ std::vector<TraceRunRawInput> TraceRunDiscovery::rawInputs(const std::filesystem
   return inputs;
 }
 
-std::vector<TraceRunRawInput> TraceRunDiscovery::selectInputs(const TraceRunConfig& config,
+std::vector<TraceRunRawInput> TraceRunDiscovery::selectInputs(const std::filesystem::path& configFile,
+                                                             const std::vector<std::string>& channels,
                                                              const SkippedTraceRunInputSink& skippedInputSink)
 {
-  if (config.path.empty()) {
+  if (configFile.empty()) {
     throw std::runtime_error(formatMessage(MessageId::TraceConfigurationSourcePathMissing));
   }
-  const std::filesystem::path configFile(config.path);
   const auto rawInputs = TraceRunDiscovery::rawInputs(configFile);
   std::vector<TraceRunRawInput> eligible;
   for (const auto& rawInput : rawInputs) {
-    if (isEligibleTraceChannel(rawInput.channel)) {
+    if (!channels.empty() && std::find(channels.begin(), channels.end(), rawInput.channel) == channels.end()) {
+      continue;
+    }
+    if (isSupportedTraceChannel(rawInput.channel)) {
       eligible.push_back(rawInput);
     } else if (skippedInputSink) {
       skippedInputSink(rawInput);
@@ -228,7 +198,7 @@ std::vector<TraceRunRawInput> TraceRunDiscovery::selectInputs(const TraceRunConf
   }
 
   const auto solutionSet = solutionSetName(configFile);
-  if (eligible.empty()) {
+  if (eligible.empty() && channels.empty()) {
     throw std::runtime_error(pathDiagnosticMessage(PathDiagnosticCode::RawInputMissing, solutionSet));
   }
   return eligible;
@@ -249,11 +219,6 @@ TraceRunInputDescriptor TraceRunDiscovery::resolveInput(TraceRunConfig config, c
   readable.exceptions(std::ios::badbit | std::ios::failbit);
   const auto endPosition = readable.tellg();
   const auto fileSize = static_cast<std::uintmax_t>(static_cast<std::streamoff>(endPosition));
-  if (format == TraceRunFormat::Formatted && fileSize % CoreSightFormatter::kMemoryAlignedFrameSize != 0U) {
-    throw std::runtime_error(
-        rawInputAlignmentMessage(CoreSightFormatter::kMemoryAlignedFrameSize, selected.path.string(), fileSize));
-  }
-
   readable.seekg(0U, std::ios::beg);
   readable.exceptions(std::ios::goodbit);
 

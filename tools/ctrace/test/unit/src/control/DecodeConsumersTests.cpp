@@ -118,6 +118,37 @@ TEST(CtraceUnitTests, testDecodeConsumersRetainsSkippedBytesAsNonFailingInfo)
   EXPECT_EQ(diagnostics.failureCount(), 0U);
 }
 
+TEST(CtraceUnitTests, testDecodeConsumersReportsRawTailAsAnInputWideError)
+{
+  std::vector<std::string> calls;
+  std::vector<std::unique_ptr<TraceOutput>> outputs;
+  outputs.push_back(std::make_unique<TestTraceOutput>(calls));
+  CollectingDiagnosticSink diagnostics;
+  DecodeConsumers consumers(std::move(outputs), diagnostics);
+
+  consumers.append(softwarePacket(1U, 1U, 'A'));
+  consumers.appendRawTailDiagnostic({0x100000000ULL, {0x00U, 0xffU}});
+  consumers.finishIssues();
+  consumers.finishOutputs();
+
+  EXPECT_EQ(calls, (std::vector<std::string>{"start", "write", "write-raw-tail", "stop"}));
+  EXPECT_EQ(consumers.eventCount(), 2U);
+  EXPECT_EQ(diagnostics.failureCount(), 1U);
+  ASSERT_EQ(diagnostics.events().size(), 1U);
+  const auto& diagnostic = diagnostics.events().front();
+  EXPECT_EQ(diagnostic.severity, DiagnosticSink::Severity::Error);
+  EXPECT_EQ(diagnostic.impact, DiagnosticSink::Impact::Failing);
+  EXPECT_EQ(diagnostic.visibility, DiagnosticSink::Visibility::Always);
+  EXPECT_EQ(diagnostic.message, "Incomplete formatter frame at end of file; discarded bytes: 2");
+  EXPECT_EQ(diagnostic.detailedMessage, diagnostic.message);
+  EXPECT_TRUE(diagnostic.context.empty());
+  ASSERT_TRUE(diagnostic.rawLocation.has_value());
+  EXPECT_EQ(diagnostic.rawLocation->kind, RawDiagnosticLocation::Kind::Exact);
+  EXPECT_EQ(diagnostic.rawLocation->offset, 0x100000000ULL);
+  EXPECT_EQ(diagnostic.rawLocation->endOffset, 0x100000002ULL);
+  EXPECT_FALSE(diagnostic.rawLocation->packetSize.has_value());
+}
+
 TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
 {
   CollectingDiagnosticSink unknownDiagnostics;
@@ -127,7 +158,7 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
 
   CollectingDiagnosticSink diagnostics;
   const TraceRouteIdentity stream2{TraceRouteId{20U}, 2U};
-  DecodeConsumers consumers({}, diagnostics, {{TraceRouteId{0U}, 0x00000002U}, {stream2.id, 0x00000004U}});
+  DecodeConsumers consumers({}, diagnostics, {{TraceRouteId{0U}, 0x00000002U}, {stream2.id, 0x00000005U}});
 
   auto enabled = softwarePacket(1U);
   consumers.append(enabled);
@@ -136,8 +167,9 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
   consumers.append(disabled);
   consumers.append(disabled);
 
-  auto printfChannel = softwarePacket(0U);
-  consumers.append(printfChannel);
+  auto disabledZero = softwarePacket(0U);
+  consumers.append(disabledZero);
+  consumers.append(disabledZero);
 
   auto invalidChannel = softwarePacket(32U);
   consumers.append(invalidChannel);
@@ -147,8 +179,11 @@ TEST(CtraceUnitTests, testDecodeConsumersWarnsForDisabledItmChannelsOnce)
 
   auto streamSpecificEnabled = onRoute(softwarePacket(2U), stream2);
   consumers.append(streamSpecificEnabled);
+  consumers.append(onRoute(softwarePacket(0U), stream2));
 
-  ASSERT_EQ(2U, diagnostics.events().size());
+  ASSERT_EQ(3U, diagnostics.events().size());
+  EXPECT_EQ(diagnostics.events()[1].context,
+            (std::vector<std::pair<std::string, std::string>>{{"channel", "0"}}));
   for (const auto& event : diagnostics.events()) {
     EXPECT_EQ(DiagnosticSink::Severity::Warning, event.severity);
     EXPECT_EQ(DiagnosticSink::Impact::NonFailing, event.impact);

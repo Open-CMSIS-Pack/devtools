@@ -62,6 +62,16 @@ std::string targetArgumentMessage(std::string_view value)
   return formatMessage(MessageId::DiagnosticTargetArgument, MessageStyle::Detailed, {value});
 }
 
+std::string channelArgumentMessage(std::string_view value)
+{
+  return formatMessage(MessageId::DiagnosticChannelArgument, MessageStyle::Detailed, {value});
+}
+
+std::string missingChannelInputMessage(std::string_view value)
+{
+  return formatMessage(MessageId::DiagnosticMissingChannelInput, MessageStyle::Detailed, {value});
+}
+
 std::string configFieldMessage(std::string_view field, ConfigFieldProblem problem)
 {
   switch (problem) {
@@ -191,11 +201,6 @@ std::string configurationFilesMissingMessage(std::string_view suffix, std::strin
 std::string configurationFilenameMessage(std::string_view suffix, std::string_view path)
 {
   return formatMessage(MessageId::DiagnosticConfigurationFilename, MessageStyle::Detailed, {suffix, path});
-}
-
-std::string rawInputAlignmentMessage(std::uint64_t alignment, std::string_view path, std::uint64_t size)
-{
-  return formatMessage(MessageId::DiagnosticRawInputAlignment, MessageStyle::Detailed, {alignment, path, size});
 }
 
 std::string specificOutputTargetMessage(std::string_view description)

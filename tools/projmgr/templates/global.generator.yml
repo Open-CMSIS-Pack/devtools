@@ -24,3 +24,8 @@ generator:
     download-url: https://softwaretools.infineon.com/assets/com.ifx.tb.tool.ifxconfigwizardforembeddedpowerics
     run: ../bin/launch-Infineon_MCU_Config_Wizard
     path: $SolutionDir()$/InfineonMcuConfigWizard/$TargetType$
+  - id: RenesasRASC
+    description: Global Registered Generator for Renesas RA Smart Configurator
+    download-url: https://github.com/renesas/fsp/releases
+    run: ../bin/launch-Renesas_RASC
+    path: $ProjectDir()$

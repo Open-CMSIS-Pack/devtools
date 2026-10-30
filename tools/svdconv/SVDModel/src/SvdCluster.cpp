@@ -279,7 +279,9 @@ bool SvdCluster::CalculateDim()
     dim->ClearChildren();
   }
 
-  dim->CalculateDim();
+  if(!dim->CalculateDim() || !dim->CheckExpansionRange(GetOffset(), dim->GetDimIncrement())) {
+    return false;
+  }
   const auto& dimIndexList = dim->GetDimIndexList();
   auto offset = GetOffset();
   const auto bitWidth = GetBitWidth();
@@ -287,20 +289,28 @@ bool SvdCluster::CalculateDim()
   uint32_t dimElementIndex = 0;
 
   for(const auto& dimIndexname : dimIndexList) {
+    if(!dim->ReserveExpansion(1)) {
+      return false;
+    }
     const auto newClust = new SvdCluster(dim);
     dim->AddItem(newClust);
-    CopyChilds(this, newClust);
+    if(!CopyChilds(this, newClust)) {
+      return false;
+    }
     newClust->CopyItem(this);
+    if(HasExpansionError()) {
+      return false;
+    }
     newClust->SetName(dim->CreateName(dimIndexname));
     newClust->SetDisplayName(dim->CreateDisplayName(dimIndexname));
     newClust->SetDescription(dim->CreateDescription(dimIndexname));
-    //newClust->SetHeaderStructName(headerStructname);
     newClust->SetOffset(offset);
     newClust->SetBitWidth(bitWidth);
     newClust->SetDimElementIndex(dimElementIndex++);
-    //newClust->CheckItem();
 
-    offset += dim->GetDimIncrement();
+    if(dimElementIndex < dimIndexList.size()) {
+      offset += dim->GetDimIncrement();
+    }
 
     if(dimElementIndex < 8) {
       if(!dimIndexText.empty()) {
@@ -353,7 +363,6 @@ bool SvdCluster::CopyItem(SvdItem *from)
   }
 
   const auto& alternate           = GetAlternate            ();
-//const auto& headerStructName    = GetHeaderStructName     ();
   const auto  offset              = GetOffset               ();
   const auto  resetValue          = GetResetValue           ();
   const auto  resetMask           = GetResetMask            ();
@@ -362,7 +371,6 @@ bool SvdCluster::CopyItem(SvdItem *from)
   const auto  readAction          = GetReadAction           ();
 
   if(alternate           == "")                            { SetAlternate           (pFrom->GetAlternate            ()); }
-//if(headerStructName    == "")                            { SetHeaderStructName    (pFrom->GetHeaderStructName     ()); }
   if(offset              == 0 )                            { SetOffset              (pFrom->GetOffset               ()); }
   if(resetValue          == 0 )                            { SetResetValue          (pFrom->GetResetValue           ()); }
   if(resetMask           == 0 )                            { SetResetMask           (pFrom->GetResetMask            ()); }
@@ -563,20 +571,17 @@ bool SvdCluster::CheckItem()
     if(!headerStructname.compare(name)) {
       LogMsg("M318", THISLEVEL(), TAG("headerStructName"), NAME(name), lineNo);
       SetHeaderStructName("");
-      // Invalidate();
     }
 
     const string hierarchicalName = GetHierarchicalName();
     if(!headerStructname.compare(hierarchicalName)) {
       LogMsg("M371", THISLEVEL(), NAME(hierarchicalName), lineNo);
       SetHeaderStructName("");
-      // Invalidate();
     }
 
     if(headerStructname.find("%") != string::npos) {
       LogMsg("M232", TAG("headerStructName"), NAME(headerStructname), VAL("CHAR", "%"), lineNo);
       SetHeaderStructName("");
-      // Invalidate();
     }
 
 #if 0 // why was this check done?

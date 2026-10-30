@@ -768,7 +768,7 @@ bool SfdData::CreateRegisterItem(SvdRegister* reg)
   if(cont && cont->IsValid() && cont->GetChildCount()) {
     list<SvdItem*> fieldsList;
     CreateFields(cont, fieldsList);
-    const auto accMaskReadRtree = (uint32_t) reg->GetAccessMask();
+    const auto accMaskReadRtree = reg->GetAccessMask();
 
     CreateItemDescription(reg, "RTree");
     m_gen->Generate<RTREE|BEGIN            >("SFDITEM_REG__%s", itemName.c_str());
@@ -873,10 +873,14 @@ bool SfdData::CreateFieldItem(SvdField* field)
   const auto dispName   = field->GetDisplayNameCalculated();
   const auto fieldDescr = SvdUtils::CheckTextGeneric_SfrCC2(field->GetDescriptionCalculated());
   const auto  regName   = field->GetParentRegisterNameHierarchical();
-  const auto firstBit   = (uint32_t)field->GetOffset();
-  const auto bitWidth   = (uint32_t)field->GetEffectiveBitWidth();
   const auto accessType = field->GetEffectiveAccess();
   const auto regAddress = (uint32_t)field->GetAbsoluteAddress();
+  uint32_t firstBit = 0;
+  uint32_t bitWidth = 0;
+  if(!SvdUtils::GetBitRange32(field->GetOffset(), field->GetEffectiveBitWidth(), firstBit, bitWidth)) {
+    LogMsg("M226", MSG("SFD supports only bit ranges within 32 bits: '" + fieldName + "'"), field->GetLineNumber());
+    return false;
+  }
 
   uint32_t regBitWidth = 32;
   const auto parent = field->GetParent();
@@ -894,8 +898,8 @@ bool SfdData::CreateFieldItem(SvdField* field)
   field->GetValuesDescriptionString(valuesDescr);
   valuesDescr = SvdUtils::CheckTextGeneric_SfrCC2(valuesDescr);
 
-  uint32_t lastBit = firstBit + bitWidth -1;
-  uint32_t bitMaxNum = (uint32_t) (((uint64_t)(1) << bitWidth) -1);
+  const auto lastBit = firstBit + bitWidth -1;
+  const auto bitMaxNum = SvdUtils::CreateBitMask32(bitWidth);
 
   CreateItemDescription(field, "Item");
   m_gen->Generate<ITEM|BEGIN>("SFDITEM_FIELD__%s", itemName.c_str());
@@ -1011,6 +1015,11 @@ bool SfdData::CreateEnumValueSet(SvdEnumContainer *cont, SvdField* field)
     return true;
   }
 
+  const auto bitWidth = field->GetEffectiveBitWidth();
+  if(bitWidth == 0 || bitWidth > MAX_BITWIDTH_FOR_COMBO) {
+    return false;
+  }
+
   const auto defaultValue = cont->GetDefaultValue();
   map<uint32_t, SvdEnum*> enumValues;
 
@@ -1028,8 +1037,7 @@ bool SfdData::CreateEnumValueSet(SvdEnumContainer *cont, SvdField* field)
     enumValues[val.u32] = enu;
   }
 
-  const auto bitWidth = field->GetEffectiveBitWidth();
-  const auto bitMaxNum = (uint32_t)((1UL << (uint64_t)bitWidth));
+  const uint32_t bitMaxNum = 1U << bitWidth;
 
   for(uint32_t bitNum=0; bitNum<bitMaxNum; bitNum++) {
     auto element = enumValues.find(bitNum);

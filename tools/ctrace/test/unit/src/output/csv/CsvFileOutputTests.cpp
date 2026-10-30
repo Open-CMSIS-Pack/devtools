@@ -96,15 +96,16 @@ TEST(CtraceUnitTests, testCsvFileOutputCriteria)
     output.writeEvent(excluded);
   }
 
-  auto excludedChannel = accepted;
-  std::get<SoftwareTraceEvent>(excludedChannel.payload).channel = 0U;
-  output.writeEvent(excludedChannel);
+  auto channelZero = accepted;
+  std::get<SoftwareTraceEvent>(channelZero.payload).channel = 0U;
+  output.writeEvent(channelZero);
 
   output.writeEvent(onRoute(issuePacket(TraceIssueCode::DecodeError), accepted.route));
   output.stop();
 
   ASSERT_TRUE(
-      (readTestTextFile(outputPath.path()) == "cycles,stream,type,index,value,pc,address,note\n,2,itm,1,0x41,,,\n"))
+      (readTestTextFile(outputPath.path()) ==
+       "cycles,stream,type,index,value,pc,address,note\n,2,itm,1,0x41,,,\n,2,itm,0,0x41,,,\n"))
       << "CsvFileOutput criteria mismatch";
 
   const TemporaryTestPath errorOutputPath("ctrace-filtered-errors.csv");
@@ -141,6 +142,25 @@ TEST(CtraceUnitTests, testCsvFileOutputRetainsAllByteSkipReasonsOutsideSelection
   EXPECT_EQ(lines[4], ",42,info,,,,,8 bytes skipped: unconfigured source ID");
   EXPECT_EQ(lines[5], ",1,info,,,,,9 bytes skipped: no SYNC");
   EXPECT_EQ(lines[6], ",7,itm,1,0x41,,,");
+}
+
+TEST(CtraceUnitTests, testCsvFileOutputRetainsRawTailOutsideSelection)
+{
+  const TemporaryTestPath temporaryPath("ctrace-csv-raw-tail-test.csv");
+  CsvFileOutput output(temporaryPath.path(), TraceSelection{{"itm"}, {7U}});
+  output.writeRawTail({0U, {0xffU}});
+  EXPECT_FALSE(std::filesystem::exists(temporaryPath.path()));
+  output.start();
+  output.writeEvent(onStream(softwarePacket(1U, 1U, 'A'), 7U));
+  output.writeEvent(onStream(softwarePacket(1U, 1U, 'B'), 1U));
+  output.writeRawTail({16U, {0x00U, 0xabU, 0xffU}});
+  output.stop();
+  output.writeRawTail({32U, {0xffU}});
+
+  const auto lines = readTestLines(temporaryPath.path());
+  ASSERT_EQ(lines.size(), 3U);
+  EXPECT_EQ(lines[1], ",7,itm,1,0x41,,,");
+  EXPECT_EQ(lines[2], ",,error,,,,,Incomplete formatter frame at end of file; discarded bytes: 3");
 }
 
 TEST(CtraceUnitTests, testCsvFileOutputMatchesSpecification)

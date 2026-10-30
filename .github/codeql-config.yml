@@ -1,7 +1,6 @@
 name: "CodeQL config"
-paths-ignore:
-  - external
-  - docs
-  - test
-  - cmake
-debug: false
+queries:
+  - name: Run standard queries
+    uses: security-and-quality
+  - name: Read source suppression comments
+    uses: ./.github/codeql-svdconv-suppressions.qls

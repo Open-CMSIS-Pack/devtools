@@ -29,6 +29,8 @@ public:
   void append(const TraceEvent& event) override;
   /** @brief Writes skipped-byte accounting to every active output that supports it. */
   void appendByteSkip(const TraceByteSkip& skipped) override;
+  /** @brief Writes an incomplete-frame error to every active output that supports it. */
+  void appendRawTailDiagnostic(const TraceRawTail& tail);
   /** @brief Completes active outputs, optionally applying their fatal-input policy. */
   void finish(const TraceDecodeAbort* decodeAbort = nullptr) noexcept;
 
@@ -38,7 +40,7 @@ public:
   TraceOutputLifecycle& operator=(const TraceOutputLifecycle&) = delete;
 
 private:
-  /** @brief Delivers either kind of write while isolating backend failures. */
+  /** @brief Delivers every kind of write while isolating backend failures. */
   template <typename Write> void writeActiveOutputs(const Write& write);
 
   /** @brief Tracks the lifecycle state of one output backend. */

@@ -254,6 +254,14 @@ std::string CsvRowMapper::byteSkipRow(const TraceByteSkip& skipped)
   return renderCsvRow(row);
 }
 
+std::string CsvRowMapper::rawTailRow(const TraceRawTail& tail)
+{
+  CsvRow row{};
+  row[column(CsvColumn::Type)] = "error";
+  row[column(CsvColumn::Note)] = formatTraceMessage(tail, TraceMessageStyle::Compact);
+  return renderCsvRow(row);
+}
+
 std::string CsvRowMapper::decodeAbortRow(const TraceDecodeAbort& failure)
 {
   CsvRow row{};

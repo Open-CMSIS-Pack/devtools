@@ -83,7 +83,7 @@ bool HeaderData::CreatePeripheralPosMask(SvdPeripheral* peri)
   }
 
   PosMaskNames posMaskNames;
-  posMaskNames.name = peri->GetHeaderTypeName();  //GetNameCalculated();
+  posMaskNames.name = peri->GetHeaderTypeName();
 
   m_gen->Generate<DESCR|PART  >("%s", posMaskNames.name.c_str());
 
@@ -216,12 +216,13 @@ bool HeaderData::CreateRegisterPosMask(SvdRegister* reg, PosMaskNames *posMaskNa
 bool HeaderData::CreateFieldPosMask(SvdField* field, PosMaskNames *posMaskNames)
 {
   const auto& alternateGroup  = posMaskNames->alternate;
-  const auto  name            = field->GetNameCalculated(); // posMaskNames->name;
-  //const auto& regOutputName   = posMaskNames->reg;
-  const auto  fieldName       = field->GetHierarchicalNameResulting(); //field->GetNameCalculated();
-  uint32_t firstBit           = (uint32_t)field->GetOffset();
-  uint32_t bitWidth           = field->GetEffectiveBitWidth();
-  uint32_t bitMaxNum          = (uint32_t) ((((uint64_t)(1) << bitWidth) -1));
+  const auto  name            = field->GetNameCalculated();
+  const auto  fieldName       = field->GetHierarchicalNameResulting();
+  uint32_t firstBit, bitWidth;
+  if(!SvdUtils::GetBitRange32(field->GetOffset(), field->GetEffectiveBitWidth(), firstBit, bitWidth)) {
+    return false;
+  }
+  const auto bitMaxNum = SvdUtils::CreateBitMask32(bitWidth);
 
   if(!alternateGroup.empty()) 
     m_gen->Generate<MAKE|MK_FIELD_POSMASK3  >("%s_%s", name.c_str(), firstBit, bitMaxNum, fieldName.c_str(), alternateGroup.c_str());

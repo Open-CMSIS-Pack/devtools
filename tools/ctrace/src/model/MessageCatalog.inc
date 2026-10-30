@@ -319,6 +319,10 @@ CTRACE_MESSAGE(TraceUnknownSourceId,
     "unknown",
     nullptr)
 
+CTRACE_MESSAGE(TraceRawTail,
+    "Incomplete formatter frame at end of file; discarded bytes: {0}",
+    nullptr)
+
 CTRACE_MESSAGE(TraceDecodeAbort,
     "decode aborted after processing {0} input bytes; trace is incomplete: {1}",
     "Decode aborted; trace incomplete; {1}")
@@ -595,7 +599,7 @@ CTRACE_MESSAGE(CtfRouteBusIdRange, "CTF ITM stream route requires a CoreSight AT
 CTRACE_MESSAGE(CtfStreamRouteMismatch, "CTF stream-class ID does not match its normalized route identity", nullptr)
 CTRACE_MESSAGE(CtfUnreferencedClock, "CTF metadata contains a clock domain without a referencing stream class", nullptr)
 CTRACE_MESSAGE(CtfSourceRouteUnknown, "CTF source metadata references an unknown normalized route", nullptr)
-CTRACE_MESSAGE(CtfItmChannelRange, "CTF ITM source metadata requires a channel between 1 and 31", nullptr)
+CTRACE_MESSAGE(CtfItmChannelRange, "CTF ITM source metadata requires a channel between 0 and 31", nullptr)
 CTRACE_MESSAGE(CtfDwtComparatorRange, "CTF DWT source metadata requires a comparator between 0 and 3", nullptr)
 CTRACE_MESSAGE(CtfDataTypeSizeInvalid, "CTF DWT source metadata has an invalid data-type/size combination", nullptr)
 CTRACE_MESSAGE(CtfSourceAddressOverflow, "CTF DWT source address range exceeds the unsigned 64-bit metadata domain", nullptr)
@@ -673,6 +677,8 @@ CTRACE_MESSAGE(DiagnosticPositionalArgument, "Unexpected positional argument: {0
 CTRACE_MESSAGE(DiagnosticStreamArgument, "--stream must be a CoreSight Trace Bus ID between 0 and 111, got {0}", nullptr)
 CTRACE_MESSAGE(DiagnosticTypeArgument, "Invalid --type value: {0} (accepted: {1})", nullptr)
 CTRACE_MESSAGE(DiagnosticTargetArgument, "--target must be a solution-set name, got {0}", nullptr)
+CTRACE_MESSAGE(DiagnosticChannelArgument, "Invalid --channel value: {0} (accepted: SWO, TB, TB_<name>; name uses letters, digits, '_' or '-')", nullptr)
+CTRACE_MESSAGE(DiagnosticMissingChannelInput, "no raw trace input found for requested channel {0}", nullptr)
 CTRACE_MESSAGE(DiagnosticConfigFieldScalarString, "'{0}' must be a scalar string", nullptr)
 CTRACE_MESSAGE(DiagnosticConfigFieldScalarUnsigned, "'{0}' must be a scalar unsigned integer", nullptr)
 CTRACE_MESSAGE(DiagnosticConfigFieldUnsigned, "'{0}' must be an unsigned integer", nullptr)
@@ -694,7 +700,6 @@ CTRACE_MESSAGE(DiagnosticTraceBusConflictingProcessors, "CoreSight Trace Bus ID 
 CTRACE_MESSAGE(DiagnosticTraceBusMissingAnchor, "ref describes CoreSight Trace Bus ID {0} without an ITM route anchor or supported feature fallback", nullptr)
 CTRACE_MESSAGE(DiagnosticConfigurationFilesMissing, "no *{0} files found in trace directory: {1}", nullptr)
 CTRACE_MESSAGE(DiagnosticConfigurationFilename, "expected <solution-set>{0}, got {1}", nullptr)
-CTRACE_MESSAGE(DiagnosticRawInputAlignment, "formatted raw trace input size must be a multiple of {0} bytes: {1} (size={2})", nullptr)
 CTRACE_MESSAGE(DiagnosticSpecificOutputTarget, "{0} must identify a specific output path", nullptr)
 CTRACE_MESSAGE(DiagnosticOutputParent, "{0} parent is not a directory: {1}", nullptr)
 CTRACE_MESSAGE(DiagnosticCtfDataType, "CTF output cannot use ctrace-run data-type '{0}'; {1}", nullptr)

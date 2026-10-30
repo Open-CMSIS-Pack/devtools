@@ -34,7 +34,7 @@ bool HeaderData::AddNode_Register(SvdItem *reg, RegSorter* pRegSorter)
 
   uint32_t address      = (uint32_t)reg->GetAddress();
   pRegSorter->address   = (address & 0xfffffffc);
-  pRegSorter->unaligned = 0; //reg->pBlock->baseAddress & 0x03;
+  pRegSorter->unaligned = 0;
   uint32_t pos          = address & 0x03;
   uint32_t width        = reg->GetEffectiveBitWidth();
     
@@ -67,60 +67,64 @@ bool HeaderData::AddNode_Register(SvdItem *reg, RegSorter* pRegSorter)
 }
 
 
-/*
-//Structure:
-// the possibility of double-union is because of the generation process, 
-// e.g. multiple of the same and different sizes
-
-typedef struct {
-1   union {
-
-5       union {
-            uint32_t i0;
-            uint32_t i1;
-5       }
-
-2       struct {
-
-3           union {
-6               union {
-                    short s0;
-                    short s0a;
-6               }
-7               struct {
-8                   union {
-                        byte b0;
-                        byte b0a
-8                   }
-9                   union {
-                        byte b1;
-                        byte b1a;
-9                   }
-7               }
-3           }
-
-13          union {
-16              union {
-                    short s1;
-                    short s1a;
-16              }
-17              struct {
-18                  union {
-                        byte b2;
-                        byte b2a
-18                  }
-19                  union {
-                        byte b3;
-                        byte b3a;
-19                  }
-17              }
-13          }
-
-2       }
-
-1   }
-}
-*/
+/**
+ * Register layout example; the numbers identify structure and union levels.
+ *
+ * @code{.unparsed}
+ * //Structure:
+ * // the possibility of double-union is because of the generation process,
+ * // e.g. multiple of the same and different sizes
+ *
+ * typedef struct {
+ * 1   union {
+ *
+ * 5       union {
+ *             uint32_t i0;
+ *             uint32_t i1;
+ * 5       }
+ *
+ * 2       struct {
+ *
+ * 3           union {
+ * 6               union {
+ *                     short s0;
+ *                     short s0a;
+ * 6               }
+ * 7               struct {
+ * 8                   union {
+ *                         byte b0;
+ *                         byte b0a
+ * 8                   }
+ * 9                   union {
+ *                         byte b1;
+ *                         byte b1a;
+ * 9                   }
+ * 7               }
+ * 3           }
+ *
+ * 13          union {
+ * 16              union {
+ *                     short s1;
+ *                     short s1a;
+ * 16              }
+ * 17              struct {
+ * 18                  union {
+ *                         byte b2;
+ *                         byte b2a
+ * 18                  }
+ * 19                  union {
+ *                         byte b3;
+ *                         byte b3a;
+ * 19                  }
+ * 17              }
+ * 13          }
+ *
+ * 2       }
+ *
+ * 1   }
+ * }
+ * @endcode
+ */
 
 
 void HeaderData::Init_OpenCloseStructUnion()
@@ -133,9 +137,6 @@ void HeaderData::Push_structUnionStack(bool isUnion, uint32_t num)
 {
   if(m_structUnionPos < 31) {
     m_structUnionPos++;
-  }
-  else {
-    //Message(MSG_CRITICAL, "Struct/Union Stack full!");
   }
 
   m_structUnionStack[m_structUnionPos].isUnion  = isUnion;
@@ -153,9 +154,6 @@ void HeaderData::Pop_structUnionStack(bool &isUnion, uint32_t &num)
 
   if(m_structUnionPos) {
     m_structUnionPos--;
-  }
-  else {
-    //Message(MSG_CRITICAL, "Struct/Union Stack empty!");
   }
 }
 
@@ -500,7 +498,6 @@ uint32_t HeaderData::GenerateRegItems(RegTreeNode *node, uint32_t address, uint3
       regAddress   = (uint32_t)item->GetAddress()                       /* + localOffset*/;
       alignAddress = (uint32_t)item->GetParent()->GetAddress()          /* + localOffset*/;   // cluster elements can be relative to "any" address
     } else {
-      //regAddress = (uint32_t)item->GetAbsoluteOffset()                /* + localOffset*/;
       regAddress   = (uint32_t)item->GetAddress()                       /* + localOffset*/;
       alignAddress = (uint32_t)item->GetParent()->GetAbsoluteAddress()  /* + localOffset*/;
     }
@@ -590,7 +587,6 @@ uint32_t HeaderData::GenerateNode(RegTreeNode *node, uint32_t address, uint32_t 
       regAddress   = (uint32_t)item->GetAddress()                       /* + localOffset*/;
       alignAddress = (uint32_t)item->GetParent()->GetAddress()          /* + localOffset*/;   // cluster elements can be relative to "any" address
     } else {
-      //regAddress = (uint32_t)item->GetAbsoluteOffset()                /* + localOffset*/;
       regAddress   = (uint32_t)item->GetAddress()                       /* + localOffset*/;
       alignAddress = (uint32_t)item->GetParent()->GetAbsoluteAddress()  /* + localOffset*/;
     }
@@ -753,7 +749,6 @@ void HeaderData::GeneratePart(RegSorter *pRegSorter)
     m_gen->Generate<C_WARNING >("Peripheral unaligned address: 0x%08x", -1, pRegSorter->address + pRegSorter->unaligned);
   }
 
-  //uint32_t address = pRegSorter->address + pRegSorter->unaligned;
   uint32_t address  = m_addressCnt;
   uint32_t sizeMax = 0;
   GenerateNode(m_rootNode, address, 1, sizeMax);    // start level must be 1
