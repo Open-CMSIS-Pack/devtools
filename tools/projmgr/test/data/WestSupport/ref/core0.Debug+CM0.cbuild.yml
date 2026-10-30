@@ -41,9 +41,12 @@ build:
     device: :cm0_core0
     west-defs:
       - CORE: 0
+      - PROJECT-PACK: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/
       - CONFIG_BUILD_OUTPUT_HEX: y
       - TARGET-DEF: on
+      - TARGET-PACK: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/
       - CONFIG-DEBUG: y
+      - BUILD-PACK: ${DEVTOOLS(packs)}/ARM/RteTest_DFP/0.2.0/Config
   groups:
     - group: sources
       files:

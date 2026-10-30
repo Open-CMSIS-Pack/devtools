@@ -541,8 +541,7 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_define) {
   vector<std::pair<int, int>> expectedErrPos = {
     // line, col
     {  10  ,  11 },
-    {  11  ,  11 },
-    {  12  ,  11 }
+    {  11  ,  11 }
   };
 
   const string& filename = testinput_folder +

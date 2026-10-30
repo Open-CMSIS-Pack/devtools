@@ -3334,6 +3334,9 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
   // Merge west defines
   CollectionUtils::AddStringItemsUniquely(context.west.westDefs, context.controls.target.westDefs);
   CollectionUtils::AddStringItemsUniquely(context.west.westDefs, context.controls.build.westDefs);
+  if (!ProcessSequencesRelatives(context, context.west.westDefs)) {
+    return false;
+  }
 
   // Includes
   vector<string> projectAddPaths, projectDelPaths;
