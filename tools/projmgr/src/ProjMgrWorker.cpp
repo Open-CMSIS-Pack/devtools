@@ -127,6 +127,7 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
     context.westOn = true;
     context.west = descriptor.west;
     RteFsUtils::NormalizePath(context.west.app, context.csolution->directory);
+    context.cproject->directory = context.west.app;
     context.cproject->output.baseName = "zephyr/zephyr";
     context.cproject->name = context.west.projectId;
     context.cproject->output.type = { "elf", "hex" };
@@ -3706,8 +3707,7 @@ void ProjMgrWorker::ExpandPackDir(ContextItem& context, const string& pack, stri
     ProjMgrLogger::Get().Warn("access sequence pack was not loaded: '$Pack(" + pack + ")$'", context.name);
     return;
   }
-  regex regEx = regex(string("\\$") + RteConstants::AS_PACK_DIR + "\\(.*\\)\\$");
-  item = regex_replace(item, regEx, replacement);
+  RteUtils::ReplaceAll(item, string("$") + RteConstants::AS_PACK_DIR + "(" + pack + ")$", replacement);
 }
 
 bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref,

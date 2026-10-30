@@ -32,6 +32,8 @@ solution:
         west-defs:
           - CORE: 0
           - PROJECT-PACK: $Pack(ARM::RteTest_DFP)$
+          - EXTRA_ZEPHYR_MODULES: $Pack(ARM::RteTest_DFP)$;$Pack(ARM::RteTest_DFP@0.2.0)$
+          - DTC_OVERLAY_FILE: $ProjectDir()$/app.overlay
     - west:
         app-path: ./west/core1
         project-id: core1

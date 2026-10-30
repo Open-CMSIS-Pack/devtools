@@ -1,0 +1,12 @@
+solution:
+  compiler: AC6
+  packs:
+    - pack: ARM::RteTest_DFP@0.2.0
+  target-types:
+    - type: CM0
+  build-types:
+    - type: Debug
+  projects:
+    - project: ./TestProject1/test1.cproject.yml
+  define:
+    - DEF_SOLUTION_STRING_VALUE: std::value

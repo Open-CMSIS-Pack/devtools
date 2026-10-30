@@ -9,7 +9,7 @@ solution:
         - DEF_TARGET_NO_VALUE
         - TEST = 1      # invalid
         - 7             # invalid
-        - TEST_STRING:1 # valid
+        - TEST_STRING:1 # invalid
       undefine:
         - DEF_SOLUTION_NUM_VALUE
 

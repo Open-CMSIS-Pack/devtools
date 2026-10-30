@@ -429,7 +429,7 @@
                 "oneOf": [
                   {
                     "type": "string",
-                    "pattern": "^([^=:]+)$",
+                    "pattern": "^([^=]+)$",
                     "minLength": 1
                   },
                   {
@@ -484,7 +484,7 @@
           },
           {
             "type": "string",
-            "pattern": "^([^=]+)$"
+            "pattern": "^([^=:]+)$"
           }
         ]
       }

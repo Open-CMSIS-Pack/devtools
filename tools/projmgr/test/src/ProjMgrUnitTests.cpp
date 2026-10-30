@@ -7420,6 +7420,26 @@ error csolution: invalid define: \\\"Mixed_quotes\", improper quotes
   EXPECT_TRUE(regex_search(errStr, regex(expected)));
 }
 
+TEST_F(ProjMgrUnitTests, ColonDefineValue) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/colon_defines.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  ASSERT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  const auto cbuild = YAML::LoadFile(testoutput_folder + "/out/test1/CM0/Debug/test1.Debug+CM0.cbuild.yml");
+  bool found = false;
+  for (const auto& define : cbuild["build"]["define"]) {
+    if (define.IsMap() && define["DEF_SOLUTION_STRING_VALUE"].IsDefined()) {
+      EXPECT_EQ("std::value", define["DEF_SOLUTION_STRING_VALUE"].as<string>());
+      found = true;
+    }
+  }
+  EXPECT_TRUE(found);
+}
+
 TEST_F(ProjMgrUnitTests, ComponentVersions) {
   char* argv[5];
   const string& csolution = testinput_folder + "/TestSolution/ComponentSources/versions.csolution.yml";
