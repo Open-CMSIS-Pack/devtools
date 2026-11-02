@@ -212,7 +212,7 @@ ParseOptions::Result ParseOptions::Parse(int argc, const char** argv)
         {"s,xsd", "Specify PACK.xsd path.", cxxopts::value<string>()},
         {"v,verbose", "Verbose mode. Prints extra process information", cxxopts::value<bool>()->default_value("false")},
         {"w,warning", "Warning level [0|1|2|3|all]", cxxopts::value<string>()->default_value("all")},  /* -w0 .. -w3, -wall */
-        {"u,url", "Verifies that the specified URL matches with the <url> element in the *.PDSC file", cxxopts::value<string>()->default_value("")},
+        {"u,url", "Verifies that the specified URL matches the <url> element in the *.PDSC file (case-sensitive except scheme and host)", cxxopts::value<string>()->default_value("")},
         {"n,name", "Text file for pack file name", cxxopts::value<string>()->default_value("")},
         {"V,version", "Print version"},
         {"h,help", "Print usage"},

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -21,6 +21,56 @@
 #include <algorithm>
 
 using namespace std;
+
+namespace {
+
+// Compare the reference prefix using the complete package URL's component boundaries.
+bool MatchesUrlPrefix(const string& url, const string& reference, size_t length)
+{
+  if(url.size() < length) {
+    return false;
+  }
+  const auto foldCase = [](char c) {
+    return c >= 'A' && c <= 'Z' ? static_cast<char>(c + ('a' - 'A')) : c;
+  };
+
+  size_t schemeLength = 0;
+  size_t hostBegin = 0;
+  const size_t schemeEnd = url.find("://");
+  if(schemeEnd != string::npos && schemeEnd < url.find_first_of("/?#")) {
+    schemeLength = schemeEnd;
+    hostBegin = schemeEnd + 3;
+  }
+  else if(url.compare(0, 2, "//") == 0) {
+    hostBegin = 2;
+  }
+
+  // URLs without a scheme are supported by the existing pack URL check.
+  const size_t authorityEnd = url.find_first_of("/?#", hostBegin);
+  size_t hostEnd = authorityEnd == string::npos ? url.size() : authorityEnd;
+  const size_t userInfoEnd = url.rfind('@', hostEnd);
+  if(userInfoEnd != string::npos && userInfoEnd >= hostBegin) {
+    hostBegin = userInfoEnd + 1;
+  }
+  if(hostBegin < hostEnd && url[hostBegin] == '[') {
+    const size_t bracketEnd = url.find(']', hostBegin);
+    if(bracketEnd < hostEnd) {
+      hostEnd = bracketEnd + 1;
+    }
+  }
+  else {
+    hostEnd = min(hostEnd, url.find(':', hostBegin));
+  }
+  for(size_t i = 0; i < length; ++i) {
+    const bool ignoreCase = i < schemeLength || (i >= hostBegin && i < hostEnd);
+    if(ignoreCase ? foldCase(url[i]) != foldCase(reference[i]) : url[i] != reference[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+} // namespace
 
 
 const std::map<const RteDeviceItem::TYPE, const std::string> ValidateSyntax::m_rteTypeStr = {
@@ -531,7 +581,7 @@ bool ValidateSyntax::CheckPackageUrl(RtePackage* pKg)
     return true;   //reference doesn't make sense, don't blame the PDSC file
   }
 
-  if((pUrl.length() < nCheckLen) || (_strnicmp(pUrl.c_str(), pRefUrl.c_str(), (int)nCheckLen) != 0)) {
+  if(!MatchesUrlPrefix(pUrl, pRefUrl, nCheckLen)) {
     LogMsg("M301", VAL("URL1", pRefUrl), VAL("URL2", pUrl));
     return false;
   }

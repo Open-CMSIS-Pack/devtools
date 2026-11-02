@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -9,6 +9,7 @@
 #include "ErrLog.h"
 
 #include <fstream>
+#include <tuple>
 
 using namespace std;
 
@@ -260,22 +261,124 @@ TEST_F(PackChkIntegTests, WritePackFileName) {
   file.close();
 }
 
-// Verify that the specified URL matches the <url> element in the *.pdsc file
-TEST_F(PackChkIntegTests, CheckPackServerURL) {
-  const char* argv[4];
+struct PackUrlTestCase {
+  const char* name;
+  const char* url;
+  bool matches;
+  bool legacy;
+  const char* packageUrl = nullptr;
+};
 
-  const string& pdscFile = PackChkIntegTestEnv::globaltestdata_dir +
-    "/packs/ARM/RteTest/0.1.0/ARM.RteTest.pdsc";
+class PackChkUrlTests : public PackChkIntegTests,
+  public ::testing::WithParamInterface<tuple<const char*, PackUrlTestCase>> {
+};
+
+// Verify URL comparison through both command-line options, including M301 diagnostics.
+TEST_P(PackChkUrlTests, CheckPackServerURL) {
+  const auto& [option, testCase] = GetParam();
+  string pdscFile = testCase.legacy ?
+    PackChkIntegTestEnv::globaltestdata_dir + "/packs/ARM/RteTest/0.1.0/ARM.RteTest.pdsc" :
+    PackChkIntegTestEnv::localtestdata_dir + "/UrlReference/TestVendor.UrlReference.pdsc";
   ASSERT_TRUE(RteFsUtils::Exists(pdscFile));
 
-  argv[0] = (char*)"";
-  argv[1] = (char*)pdscFile.c_str();
-  argv[2] = (char*)"-u";
-  argv[3] = (char*)"www.keil.com/pack/";
+  if (testCase.packageUrl) {
+    ASSERT_FALSE(testCase.legacy);
+    string content;
+    ASSERT_TRUE(RteFsUtils::ReadFile(pdscFile, content));
+    const string originalUrl = "<url>https://Packs.Example.com/device-family-Pack/</url>";
+    const size_t urlPosition = content.find(originalUrl);
+    ASSERT_NE(string::npos, urlPosition);
+    content.replace(urlPosition, originalUrl.size(), string("<url>") + testCase.packageUrl + "</url>");
 
+    const string caseDir = PackChkIntegTestEnv::testoutput_dir + "/UrlReference/" + testCase.name +
+      (string(option) == "-u" ? "ShortOption" : "LongOption");
+    ASSERT_TRUE(RteFsUtils::CreateDirectories(caseDir));
+    pdscFile = caseDir + "/TestVendor.UrlReference.pdsc";
+    ASSERT_TRUE(RteFsUtils::CopyBufferToFile(pdscFile, content, false));
+  }
+
+  const char* argv[] = {"", pdscFile.c_str(), option, testCase.url};
   PackChk packChk;
-  EXPECT_EQ(0, packChk.Check(4, argv, nullptr));
+  EXPECT_EQ(testCase.matches ? 0 : 1, packChk.Check(4, argv, nullptr));
+
+  size_t mismatchCount = 0;
+  for (const auto& msg : ErrLog::Get()->GetLogMessages()) {
+    if (msg.find("M301") != string::npos) {
+      mismatchCount++;
+    }
+  }
+  EXPECT_EQ(testCase.matches ? 0u : 1u, mismatchCount);
 }
+
+INSTANTIATE_TEST_SUITE_P(UrlReference, PackChkUrlTests,
+  ::testing::Combine(
+    ::testing::Values("-u", "--url"),
+    ::testing::Values(
+      PackUrlTestCase{"Exact", "https://Packs.Example.com/device-family-Pack/", true, false},
+      PackUrlTestCase{"SchemeCase", "HTTPS://Packs.Example.com/device-family-Pack/", true, false},
+      PackUrlTestCase{"HostCase", "https://PACKS.EXAMPLE.COM/device-family-Pack/", true, false},
+      PackUrlTestCase{"SchemeAndHostCase", "HTTPS://packs.example.com/device-family-Pack/", true, false},
+      PackUrlTestCase{"PathLowercase", "https://Packs.Example.com/device-family-pack/", false, false},
+      PackUrlTestCase{"PathUppercase", "https://Packs.Example.com/Device-family-Pack/", false, false},
+      PackUrlTestCase{"NoTrailingSlash", "https://Packs.Example.com/device-family-Pack", true, false},
+      PackUrlTestCase{"MultipleTrailingSlashes", "https://Packs.Example.com/device-family-Pack///", true, false},
+      PackUrlTestCase{"Prefix", "https://Packs.Example.com/device-family-", true, false},
+      PackUrlTestCase{"HostMismatch", "https://Other.Example.com/device-family-Pack/", false, false},
+      PackUrlTestCase{"LongerReference", "https://Packs.Example.com/device-family-Pack/extra/", false, false},
+      PackUrlTestCase{"SchemeMismatch", "http://Packs.Example.com/device-family-Pack/", false, false},
+      PackUrlTestCase{"LegacyExact", "www.keil.com/pack/", true, true},
+      PackUrlTestCase{"LegacyHostCase", "WWW.KEIL.COM/pack/", true, true},
+      PackUrlTestCase{"LegacyPathCase", "www.keil.com/Pack/", false, true},
+      PackUrlTestCase{"LegacyNoTrailingSlash", "www.keil.com/pack", true, true},
+      PackUrlTestCase{"EmptyReference", "", true, false},
+      PackUrlTestCase{"SlashOnlyReference", "///", true, false},
+      PackUrlTestCase{"EmptyPackageUrl", "https://Packs.Example.com/Pack/", true, false, ""},
+      PackUrlTestCase{"FileUrlSchemeCase", "FILE:///opt/Packs/", true, false, "file:///opt/Packs/"},
+      PackUrlTestCase{"FileUrlPathCase", "file:///opt/packs/", false, false, "file:///opt/Packs/"},
+      PackUrlTestCase{"UserInfoExact", "HTTPS://User:Secret@PACKS.EXAMPLE.COM/Pack/", true, false,
+        "https://User:Secret@Packs.Example.com/Pack/"},
+      PackUrlTestCase{"UserInfoNameCase", "https://user:Secret@packs.example.com/Pack/", false, false,
+        "https://User:Secret@Packs.Example.com/Pack/"},
+      PackUrlTestCase{"UserInfoPasswordCase", "https://User:secret@packs.example.com/Pack/", false, false,
+        "https://User:Secret@Packs.Example.com/Pack/"},
+      PackUrlTestCase{"UserInfoPrefixExact", "https://User", true, false,
+        "https://User@Packs.Example.com/Pack/"},
+      PackUrlTestCase{"UserInfoPrefixCase", "https://user", false, false,
+        "https://User@Packs.Example.com/Pack/"},
+      PackUrlTestCase{"ExplicitPort", "https://PACKS.EXAMPLE.COM:8443/Pack/", true, false,
+        "https://Packs.Example.com:8443/Pack/"},
+      PackUrlTestCase{"PortMismatch", "https://packs.example.com:443/Pack/", false, false,
+        "https://Packs.Example.com:8443/Pack/"},
+      PackUrlTestCase{"Ipv6HostCase", "HTTPS://[2001:DB8:ABCD::1]:8443/Pack/", true, false,
+        "https://[2001:db8:abcd::1]:8443/Pack/"},
+      PackUrlTestCase{"Ipv6PathCase", "https://[2001:DB8:ABCD::1]/pack/", false, false,
+        "https://[2001:db8:abcd::1]/Pack/"},
+      PackUrlTestCase{"HostWithoutPath", "https://PACKS.EXAMPLE.COM", true, false,
+        "https://Packs.Example.com"},
+      PackUrlTestCase{"QueryWithoutPathExact", "https://PACKS.EXAMPLE.COM?Name=Value", true, false,
+        "https://Packs.Example.com?Name=Value"},
+      PackUrlTestCase{"QueryWithoutPathCase", "https://packs.example.com?name=Value", false, false,
+        "https://Packs.Example.com?Name=Value"},
+      PackUrlTestCase{"FragmentWithoutPathExact", "https://PACKS.EXAMPLE.COM#Part", true, false,
+        "https://Packs.Example.com#Part"},
+      PackUrlTestCase{"FragmentWithoutPathCase", "https://packs.example.com#part", false, false,
+        "https://Packs.Example.com#Part"},
+      PackUrlTestCase{"SchemeRelativeHostCase", "//PACKS.EXAMPLE.COM/Pack/", true, false,
+        "//Packs.Example.com/Pack/"},
+      PackUrlTestCase{"SchemeRelativePathCase", "//packs.example.com/pack/", false, false,
+        "//Packs.Example.com/Pack/"},
+      PackUrlTestCase{"SchemeSeparatorInPathExact", "PACKS.EXAMPLE.COM/https://Other/Pack/", true, false,
+        "Packs.Example.com/https://Other/Pack/"},
+      PackUrlTestCase{"SchemeSeparatorInPathCase", "packs.example.com/HTTPS://Other/Pack/", false, false,
+        "Packs.Example.com/https://Other/Pack/"}
+    )
+  ),
+  [](const ::testing::TestParamInfo<PackChkUrlTests::ParamType>& info) {
+    const auto& option = get<0>(info.param);
+    const auto& testCase = get<1>(info.param);
+    return string(testCase.name) + (string(option) == "-u" ? "ShortOption" : "LongOption");
+  }
+);
 
 // Suppress all listed validation messages
 TEST_F(PackChkIntegTests, SuppressValidationMsgs) {

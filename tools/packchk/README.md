@@ -32,8 +32,9 @@ packchk options:
  -s, --xsd arg               Specify PACK.xsd path.
  -v, --verbose               Verbose mode. Prints extra process information
  -w, --warning arg           Warning level [0|1|2|3|all] (default: all)
- -u, --url arg               Verifies that the specified URL matches with the 
-                             <url> element in the *.PDSC file (default: "")
+ -u, --url arg               Verifies that the specified URL matches the <url>
+                             element in the *.PDSC file (case-sensitive except
+                             scheme and host) (default: "")
  -n, --name arg              Text file for pack file name (default: "")
  -V, --version               Print version
  -h, --help                  Print usage
