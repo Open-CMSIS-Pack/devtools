@@ -29,3 +29,4 @@ solution:
   define:
     - DEF_SOLUTION
     - DEF_SOLUTION_NUM_VALUE: 2
+    - DEF_SOLUTION_STRING_VALUE: std::value

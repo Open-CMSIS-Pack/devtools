@@ -7388,7 +7388,6 @@ TEST_F(ProjMgrUnitTests, Test_Check_Define_Value) {
   // Test1: Check schema error
   string expected = "\
 .*test_invalid_defines.csolution.yml:33:7 - error csolution: schema check failed, verify syntax\n\
-.*test_invalid_defines.csolution.yml:34:7 - error csolution: schema check failed, verify syntax\n\
 .*test_invalid_defines.csolution.yml:85:7 - error csolution: schema check failed, verify syntax\n\
 .*test_invalid_defines.csolution.yml:86:7 - error csolution: schema check failed, verify syntax\n\
 .*test_invalid_defines.csolution.yml:87:7 - error csolution: schema check failed, verify syntax\n\
@@ -7419,6 +7418,26 @@ error csolution: invalid define: \\\"Mixed_quotes\", improper quotes
   EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
   errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_search(errStr, regex(expected)));
+}
+
+TEST_F(ProjMgrUnitTests, ColonDefineValue) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/colon_defines.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  ASSERT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  const auto cbuild = YAML::LoadFile(testoutput_folder + "/out/test1/CM0/Debug/test1.Debug+CM0.cbuild.yml");
+  bool found = false;
+  for (const auto& define : cbuild["build"]["define"]) {
+    if (define.IsMap() && define["DEF_SOLUTION_STRING_VALUE"].IsDefined()) {
+      EXPECT_EQ("std::value", define["DEF_SOLUTION_STRING_VALUE"].as<string>());
+      found = true;
+    }
+  }
+  EXPECT_TRUE(found);
 }
 
 TEST_F(ProjMgrUnitTests, ComponentVersions) {
@@ -7776,6 +7795,7 @@ CMSIS-DAP@Arm-Debugger\n\
 TEST_F(ProjMgrUnitTests, WestSupport) {
   char* argv[5];
   const string& csolution = testinput_folder + "/WestSupport/solution.csolution.yml";
+  RteFsUtils::RemoveFile(testinput_folder + "/WestSupport/solution.cbuild-pack.yml");
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"--active";
@@ -7786,10 +7806,10 @@ TEST_F(ProjMgrUnitTests, WestSupport) {
     testinput_folder + "/WestSupport/ref/solution.cbuild-idx.yml");
   ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/out/solution+CM0.cbuild-run.yml",
     testinput_folder + "/WestSupport/ref/solution+CM0.cbuild-run.yml");
-  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/out/core0/CM0/Debug/core0.Debug+CM0.cbuild.yml",
-    testinput_folder + "/WestSupport/ref/core0.Debug+CM0.cbuild.yml");
-  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/out/core1/CM0/Debug/core1.Debug+CM0.cbuild.yml",
-    testinput_folder + "/WestSupport/ref/core1.Debug+CM0.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/ref/core0.Debug+CM0.cbuild.yml",
+    testinput_folder + "/WestSupport/out/core0/CM0/Debug/core0.Debug+CM0.cbuild.yml", ProjMgrTestEnv::StripAbsoluteFunc);
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/ref/core1.Debug+CM0.cbuild.yml",
+    testinput_folder + "/WestSupport/out/core1/CM0/Debug/core1.Debug+CM0.cbuild.yml", ProjMgrTestEnv::StripAbsoluteFunc);
 }
 
 TEST_F(ProjMgrUnitTests, CmakeSupport) {
