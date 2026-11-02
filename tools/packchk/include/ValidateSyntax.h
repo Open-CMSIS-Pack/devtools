@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -10,6 +10,8 @@
 #include "Validate.h"
 #include "CheckFiles.h"
 #include "PackChk.h"
+
+#include <cstddef>
 
 #define PKG_FEXT               ".pack"
 #define COMMON_PROCESSORS_STR  "__COMMON__PROCESSORS__PROPMAP__"
@@ -54,6 +56,7 @@ private:
   bool CheckAllFiles(RtePackage* pKg);
   bool CheckInfo(RtePackage* pKg);
   bool CheckPackageUrl(RtePackage* pKg);
+  static bool MatchesUrlPrefix(const std::string& url, const std::string& reference, std::size_t length);
   bool CheckPackageReleaseDate(RtePackage* pKg);
   bool CheckDevices(RtePackage* pKg);
   bool CheckComponents(RtePackage* pKg);
