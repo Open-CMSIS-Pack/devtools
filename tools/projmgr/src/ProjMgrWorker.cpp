@@ -3133,15 +3133,15 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
     error |= true;
   }
 
-  // Output filenames must be processed after board, device and compiler precedences
-  // but before processing other access sequences
-  if (!ProcessOutputFilenames(context)) {
-    error |= true;
-  }
-
   // Process device and board
   if (process != BoardOrDevice::None && !ProcessDevice(context, process)) {
     CheckMissingPackRequirements(context.name);
+    error |= true;
+  }
+
+  // Output filenames must be processed after board, device and compiler precedences
+  // but before processing other access sequences
+  if (!ProcessOutputFilenames(context)) {
     error |= true;
   }
 
