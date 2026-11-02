@@ -7808,8 +7808,9 @@ TEST_F(ProjMgrUnitTests, CmakeSupport) {
   EXPECT_EQ("../../../../cmake/core0", cbuild0["build"]["cmake"]["source"].as<string>());
   EXPECT_EQ("Ninja", cbuild0["build"]["cmake"]["generator"].as<string>());
   EXPECT_EQ("-DCMAKE_BUILD_TYPE=Debug", cbuild0["build"]["cmake"]["configure"][0].as<string>());
+  EXPECT_EQ("-DTARGET_TYPE=CM0", cbuild0["build"]["cmake"]["configure"][1].as<string>());
   EXPECT_EQ("core0-target", cbuild0["build"]["cmake"]["target"].as<string>());
-  EXPECT_EQ("build/core0.elf", cbuild0["build"]["cmake"]["images"][0]["image"].as<string>());
+  EXPECT_EQ("build/Debug/core0.elf", cbuild0["build"]["cmake"]["images"][0]["image"].as<string>());
   EXPECT_EQ("elf", cbuild0["build"]["cmake"]["images"][0]["type"].as<string>());
   EXPECT_EQ("build/core0.hex", cbuild0["build"]["cmake"]["images"][1]["image"].as<string>());
   EXPECT_EQ("hex", cbuild0["build"]["cmake"]["images"][1]["type"].as<string>());
@@ -7818,7 +7819,7 @@ TEST_F(ProjMgrUnitTests, CmakeSupport) {
   EXPECT_EQ("bin", cbuild0["build"]["output"][0]["type"].as<string>());
   EXPECT_EQ("build/core0.bin", cbuild0["build"]["output"][0]["file"].as<string>());
   EXPECT_EQ("elf", cbuild0["build"]["output"][1]["type"].as<string>());
-  EXPECT_EQ("build/core0.elf", cbuild0["build"]["output"][1]["file"].as<string>());
+  EXPECT_EQ("build/Debug/core0.elf", cbuild0["build"]["output"][1]["file"].as<string>());
   EXPECT_EQ("hex", cbuild0["build"]["output"][2]["type"].as<string>());
   EXPECT_EQ("build/core0.hex", cbuild0["build"]["output"][2]["file"].as<string>());
   EXPECT_EQ("ARM::RteTest_ARMCM0_Dual:cm0_core0", cbuild0["build"]["device"].as<string>());
@@ -7834,7 +7835,7 @@ TEST_F(ProjMgrUnitTests, CmakeSupport) {
 
   const YAML::Node& cbuildRun = YAML::LoadFile(base + "solution+CM0.cbuild-run.yml");
   EXPECT_EQ("elf", cbuildRun["cbuild-run"]["output"][0]["type"].as<string>());
-  EXPECT_EQ("core0/CM0/Debug/build/core0.elf", cbuildRun["cbuild-run"]["output"][0]["file"].as<string>());
+  EXPECT_EQ("core0/CM0/Debug/build/Debug/core0.elf", cbuildRun["cbuild-run"]["output"][0]["file"].as<string>());
   EXPECT_EQ("hex", cbuildRun["cbuild-run"]["output"][1]["type"].as<string>());
   EXPECT_EQ("core0/CM0/Debug/build/core0.hex", cbuildRun["cbuild-run"]["output"][1]["file"].as<string>());
   EXPECT_EQ("bin", cbuildRun["cbuild-run"]["output"][2]["type"].as<string>());
@@ -7845,6 +7846,67 @@ TEST_F(ProjMgrUnitTests, CmakeSupport) {
   const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/CmakeSupport/solution.cbuild-idx.yml");
   EXPECT_TRUE(cbuildIdx["build-idx"]["cbuilds"][0]["cmake"].as<bool>());
   EXPECT_TRUE(cbuildIdx["build-idx"]["cbuilds"][1]["cmake"].as<bool>());
+}
+
+TEST_F(ProjMgrUnitTests, CmakeSupportBuildTypes) {
+  char* argv[5];
+  const string csolution = testinput_folder + "/CmakeSupport/solution.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--context";
+  argv[4] = (char*)"core0.*+CM0";
+  ASSERT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  for (const string buildType : { "Debug", "Release" }) {
+    const string path = testinput_folder + "/CmakeSupport/out/core0/CM0/" + buildType +
+      "/core0." + buildType + "+CM0.cbuild.yml";
+    const YAML::Node cbuild = YAML::LoadFile(path);
+    EXPECT_EQ("-DCMAKE_BUILD_TYPE=" + buildType, cbuild["build"]["cmake"]["configure"][0].as<string>());
+    EXPECT_EQ("-DTARGET_TYPE=CM0", cbuild["build"]["cmake"]["configure"][1].as<string>());
+    EXPECT_EQ("build/" + buildType + "/core0.elf", cbuild["build"]["cmake"]["images"][0]["image"].as<string>());
+    EXPECT_EQ("build/" + buildType + "/core0.elf", cbuild["build"]["output"][1]["file"].as<string>());
+  }
+}
+
+TEST_F(ProjMgrUnitTests, CmakeSupportInvalidAccessSequences) {
+  StdStreamRedirect streamRedirect;
+  const string csolution = testinput_folder + "/CmakeSupport/invalid-access-sequences.csolution.yml";
+  struct FailureCase {
+    bool configure;
+    string value;
+    string expectedError;
+  };
+  const vector<FailureCase> failureCases = {
+    { true, "-DVALUE=$SolutionDir()$", "unknown access sequence: 'SolutionDir()'" },
+    { true, "-DVALUE=$Unknown$", "unknown access sequence: 'Unknown'" },
+    { true, "-DVALUE=$BuildType", "malformed access sequence: '-DVALUE=$BuildType" },
+    { false, "build/$Unknown$.elf", "unknown access sequence: 'Unknown'" },
+    { false, "$SolutionDir()$/core0.elf", "unknown access sequence: 'SolutionDir()'" },
+    { false, "build/$BuildType", "malformed access sequence: 'build/$BuildType" },
+  };
+  for (const auto& [configure, value, expectedError] : failureCases) {
+    SCOPED_TRACE(value);
+    YAML::Node root = YAML::LoadFile(testinput_folder + "/CmakeSupport/solution.csolution.yml");
+    if (configure) {
+      root["solution"]["projects"][0]["cmake"]["configure"].push_back(value);
+    } else {
+      root["solution"]["projects"][0]["cmake"]["images"][0]["image"] = value;
+    }
+    std::ofstream output(csolution);
+    output << root;
+    output.close();
+    ASSERT_TRUE(output.good());
+
+    char* argv[5];
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)csolution.c_str();
+    argv[3] = (char*)"--context";
+    argv[4] = (char*)"core0.Debug+CM0";
+    streamRedirect.ClearStringStreams();
+    EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+    EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedError));
+  }
+  RteFsUtils::RemoveFile(csolution);
 }
 
 TEST_F(ProjMgrUnitTests, TargetSetDependencies) {

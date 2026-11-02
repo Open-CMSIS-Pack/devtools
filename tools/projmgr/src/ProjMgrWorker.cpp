@@ -3593,6 +3593,13 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem & context, bool rerun)
     }
   }
 
+  for (auto& configure : context.cmake.configure) {
+    configure = RteUtils::ExpandAccessSequences(configure, context.variables);
+    if (!GetAndValidateAccessSequence(context, configure)) {
+      return false;
+    }
+  }
+
   // project, solution, target-type and build-type translation controls
   if (!ProcessSequencesRelatives(context, context.controls.cproject, context.cproject->directory) ||
       !ProcessSequencesRelatives(context, context.controls.csolution, context.csolution->directory) ||
@@ -3707,6 +3714,40 @@ void ProjMgrWorker::ExpandPackDir(ContextItem& context, const string& pack, stri
   item = regex_replace(item, regEx, replacement);
 }
 
+bool ProjMgrWorker::GetAndValidateAccessSequence(const ContextItem& context, const string& input) {
+  size_t offset = 0;
+  string sequence;
+  return GetAndValidateAccessSequence(context, input, offset, sequence, false);
+}
+
+bool ProjMgrWorker::GetAndValidateAccessSequence(const ContextItem& context, const string& input, size_t& offset,
+  string& sequence, bool allowDynamic) {
+  while ((offset = input.find('$', offset)) != string::npos && input.compare(offset, 2, "${") == 0) {
+    const auto closingBrace = input.find('}', offset + 2);
+    if (closingBrace == string::npos) {
+      break;
+    }
+    offset = closingBrace + 1;
+  }
+  if (offset == string::npos) {
+    return true;
+  }
+  if (!RteUtils::GetAccessSequence(offset, input, sequence, '$', '$')) {
+    ProjMgrLogger::Get().Error("malformed access sequence: '" + input, context.name);
+    return false;
+  }
+  if (offset != string::npos) {
+    smatch matches;
+    if (!allowDynamic ||
+      !((regex_match(sequence, matches, packDirRegEx) && matches.size() == 3) ||
+        (regex_match(sequence, matches, accessSequencesRegEx) && matches.size() == 3))) {
+      ProjMgrLogger::Get().Error("unknown access sequence: '" + sequence + "'", context.name);
+      return false;
+    }
+  }
+  return true;
+}
+
 bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref,
   bool genDep, string outDir, bool withHeadingDot, bool solutionLevel) {
   size_t offset = 0;
@@ -3718,8 +3759,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
   while (offset != string::npos) {
     string sequence;
     // get next access sequence
-    if (!RteUtils::GetAccessSequence(offset, input, sequence, '$', '$')) {
-      ProjMgrLogger::Get().Error("malformed access sequence: '" + input, context.name);
+    if (!GetAndValidateAccessSequence(context, input, offset, sequence, true)) {
       return false;
     }
     if (offset != string::npos) {
@@ -3778,10 +3818,6 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
             "' does not exist or is not selected", context.name);
           return false;
         }
-      } else {
-        // access sequence is unknown
-        ProjMgrLogger::Get().Error("unknown access sequence: '" + sequence + "'", context.name);
-        return false;
       }
     }
   }
@@ -5595,6 +5631,9 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   if (baseName.empty()) {
     baseName = context.cproject->name;
   }
+  if (!GetAndValidateAccessSequence(context, baseName)) {
+    return false;
+  }
 
   for (const auto& image : context.cmake.images) {
     ProjMgrUtils::SetOutputType(image.type, context.outputTypes);
@@ -5632,7 +5671,11 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   if (context.outputTypes.bin.on) {
     context.outputTypes.bin.filename = baseName + ".bin";
   }
-  for (const auto& image : context.cmake.images) {
+  for (auto& image : context.cmake.images) {
+    image.image = RteUtils::ExpandAccessSequences(image.image, context.variables);
+    if (!GetAndValidateAccessSequence(context, image.image)) {
+      return false;
+    }
     if (image.type == RteConstants::OUTPUT_TYPE_ELF) {
       context.outputTypes.elf.filename = image.image;
     } else if (image.type == RteConstants::OUTPUT_TYPE_HEX) {

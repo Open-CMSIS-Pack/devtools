@@ -17,6 +17,7 @@ solution:
 
   build-types:
     - type: Debug
+    - type: Release
 
   projects:
     - cmake:
@@ -24,10 +25,11 @@ solution:
         device: :cm0_core0
         generator: Ninja
         configure:
-          - -DCMAKE_BUILD_TYPE=Debug
+          - -DCMAKE_BUILD_TYPE=$BuildType$
+          - -DTARGET_TYPE=$TargetType$
         target: core0-target
         images:
-          - image: build/core0.elf
+          - image: build/$BuildType$/core0.elf
             type: elf
           - image: build/core0.hex
             type: hex

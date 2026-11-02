@@ -43,6 +43,56 @@ void ProjMgrWorkerUnitTests::SetCsolutionPacks(CsolutionItem* csolution, std::ve
   m_contexts.insert(std::pair<string, ContextItem>(string(targetType), context));
 }
 
+TEST_F(ProjMgrWorkerUnitTests, AccessSequenceShellVariables) {
+  ContextItem context;
+  for (const string input : { "${variable}", "${first}/${second}", "-DVALUE=${variable}/file" }) {
+    SCOPED_TRACE(input);
+    EXPECT_TRUE(GetAndValidateAccessSequence(context, input));
+  }
+  for (const string input : { "${variable}/$Unknown$", "$Unknown$/${variable}",
+      "${variable}/$BuildType", "$BuildType/${variable}" }) {
+    SCOPED_TRACE(input);
+    EXPECT_FALSE(GetAndValidateAccessSequence(context, input));
+  }
+
+  const string input = "${prefix}/$SolutionDir()$/${suffix}";
+  size_t offset = 0;
+  string sequence;
+  ASSERT_TRUE(GetAndValidateAccessSequence(context, input, offset, sequence, true));
+  EXPECT_EQ("SolutionDir()", sequence);
+  ASSERT_TRUE(GetAndValidateAccessSequence(context, input, offset, sequence, true));
+  EXPECT_EQ(string::npos, offset);
+}
+
+TEST_F(ProjMgrWorkerUnitTests, OutputBaseNameAccessSequences) {
+  for (bool fromSetup : { false, true }) {
+    for (const string value : { "firmware-$Unknown$", "$SolutionDir()$", "$BuildType" }) {
+      SCOPED_TRACE(value);
+      SCOPED_TRACE(fromSetup);
+      CprojectItem project;
+      ContextItem context;
+      context.cproject = &project;
+      context.variables["BuildType"] = "Debug";
+      if (fromSetup) {
+        project.setups.emplace_back();
+        project.setups.back().output.baseName = value;
+      } else {
+        project.output.baseName = value;
+      }
+      EXPECT_FALSE(ProcessOutputFilenames(context));
+    }
+  }
+
+  CprojectItem project;
+  project.output.baseName = "firmware-$BuildType$";
+  ContextItem context;
+  context.cproject = &project;
+  context.variables["BuildType"] = "Debug";
+  context.cmakeOn = true;
+  EXPECT_TRUE(ProcessOutputFilenames(context));
+  EXPECT_EQ("firmware-Debug.elf", context.outputTypes.elf.filename);
+}
+
 TEST_F(ProjMgrWorkerUnitTests, ProcessToolchain) {
   ToolchainItem expected;
   expected.name = "AC6";
