@@ -22,6 +22,7 @@
 #include "YmlTree.h"
 
 #include <memory>
+#include <set>
 
 class RteCprjProject;
 class CprjFile;
@@ -214,9 +215,11 @@ public:
    * @brief load and insert pack into global model
    * @param packs list of loaded packages
    * @param pdscFiles list of packs to be loaded
-   * @return true if executed successfully
+   * @param requiredPdscFiles files whose loading errors must be reported
+   * @return true if the model and all required packs were loaded successfully
   */
-  bool LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles);
+  bool LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles,
+    const std::set<std::string>& requiredPdscFiles = {});
 
   /**
    * @brief get installed and local pdsc files as list sorted by pack ID
@@ -292,9 +295,11 @@ public:
    * @brief load pdsc or gpdsc file and construct it
    * @param pdscFile pathname to load
    * @param packState PackageState to assign to a loaded pack
+   * @param reportErrors report parsing errors through the RTE callback
    * @return pointer to loaded RtePackage
   */
-  RtePackage* LoadPack(const std::string& pdscFile, PackageState packState = PackageState::PS_UNKNOWN) const ;
+  RtePackage* LoadPack(const std::string& pdscFile, PackageState packState = PackageState::PS_UNKNOWN,
+    bool reportErrors = true) const;
 
   /**
    * @brief load specified pdsc files, but does not insert them in the model

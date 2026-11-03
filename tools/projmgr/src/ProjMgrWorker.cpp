@@ -563,6 +563,7 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
     ProjMgrLogger::Get().Error("required packs must be specified");
     return false;
   }
+  const set<string> requiredPdscFiles(pdscFiles.begin(), pdscFiles.end());
   // Get installed packs
   if (noPackRequirements || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
     const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
@@ -571,7 +572,7 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
       return false;
     }
   }
-  if (!m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles)) {
+  if (!m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles, requiredPdscFiles)) {
     ProjMgrLogger::Get().Error("failed to load and insert packs");
     return CheckRteErrors();
   }
@@ -4207,6 +4208,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
       ProjMgrLogger::Get().Error("required packs must be specified");
       return false;
     }
+    const set<string> requiredPdscFiles(pdscFiles.begin(), pdscFiles.end());
     if (pdscFiles.empty() || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
       // Get installed packs
       const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
@@ -4214,7 +4216,10 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
     }
     if (!pdscFiles.empty()) {
       // Load packs and get loaded packs identifiers
-      m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles);
+      if (!m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles, requiredPdscFiles)) {
+        CheckRteErrors();
+        reqOk = false;
+      }
       for (const auto& pack : m_loadedPacks) {
         packsMap[pack->GetID()] = pack->GetPackageFileName();
       }
