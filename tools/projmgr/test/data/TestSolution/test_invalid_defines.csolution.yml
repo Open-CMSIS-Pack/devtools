@@ -31,7 +31,7 @@ solution:
     - KEY4: \"No_ending_escape_quotes
     - KEY5: \"sam.h\
     - KEY6: Invalid_equal=character
-    - KEY7: Invalid_colon:character
+    - KEY7: Valid_colon:character
     - KEY8: \"Invalid_ending"\
     - KEY9: No_Starting_escaped_quotes\"
     - KEY10: \"Mixed_quotes"

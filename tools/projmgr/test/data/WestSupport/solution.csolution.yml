@@ -11,6 +11,7 @@ solution:
       board: RteTest Dummy board
       west-defs:
         - TARGET-DEF: on
+        - TARGET-PACK: $Pack(ARM::RteTest_DFP)$
       target-set:
         - set:
           images:
@@ -21,6 +22,7 @@ solution:
     - type: Debug
       west-defs:
         - CONFIG-DEBUG: y
+        - BUILD-PACK: $Pack(ARM::RteTest_DFP)$Config
 
   # List related projects.
   projects:
@@ -29,6 +31,9 @@ solution:
         device: :cm0_core0
         west-defs:
           - CORE: 0
+          - PROJECT-PACK: $Pack(ARM::RteTest_DFP)$
+          - EXTRA_ZEPHYR_MODULES: $Pack(ARM::RteTest_DFP)$;$Pack(ARM::RteTest_DFP@0.2.0)$
+          - DTC_OVERLAY_FILE: $ProjectDir()$/app.overlay
     - west:
         app-path: ./west/core1
         project-id: core1
