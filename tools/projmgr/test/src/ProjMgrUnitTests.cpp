@@ -2830,6 +2830,17 @@ TEST_F(ProjMgrUnitTests, ListPacksLatest) {
   EXPECT_EQ(latestPacks, expected);
 }
 
+TEST_F(ProjMgrUnitTests, ListPacksRequiredWithoutRequirements) {
+  StdStreamRedirect streamRedirect;
+  vector<string> packs;
+  ASSERT_TRUE(m_worker.ParseContextSelection({}));
+  m_worker.SetLoadPacksPolicy(LoadPacksPolicy::REQUIRED);
+
+  EXPECT_FALSE(m_worker.ListPacks(packs, false, false, ""));
+  EXPECT_TRUE(packs.empty());
+  EXPECT_EQ("error csolution: required packs must be specified\n", streamRedirect.GetErrorString());
+}
+
 TEST_F(ProjMgrUnitTests, ListBoards) {
   set<string> expected = {
     "Keil::RteTest Dummy board:1.2.3 (ARM::RteTest_DFP@0.2.0)"
@@ -3004,6 +3015,19 @@ TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
   EXPECT_TRUE(pdscFiles.empty());
 
   EXPECT_TRUE(m_worker.LoadAllRelevantPacks());
+
+  kernel->SetCmsisPackRoot(cmsisPackRoot);
+}
+
+TEST_F(ProjMgrUnitTests, LoadPacksEmptyPackRoot) {
+  StdStreamRedirect streamRedirect;
+  ASSERT_TRUE(m_worker.InitializeModel());
+  auto kernel = ProjMgrKernel::Get();
+  const string cmsisPackRoot = kernel->GetCmsisPackRoot();
+  kernel->SetCmsisPackRoot("");
+
+  EXPECT_FALSE(m_worker.LoadAllRelevantPacks());
+  EXPECT_EQ("error csolution: parsing installed packs failed\n", streamRedirect.GetErrorString());
 
   kernel->SetCmsisPackRoot(cmsisPackRoot);
 }
@@ -6212,6 +6236,15 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ValidateContextSpecificPacksBroken) {
   argv[4] = (char*)"--missing";
   EXPECT_EQ(0, RunProjMgr(5, argv, 0));
   EXPECT_EQ("ARM::Missing_DFP@0.0.9\n", streamRedirect.GetOutString());
+
+  // Listing a context that requires a broken pack must fail with its parsing error.
+  streamRedirect.ClearStringStreams();
+  char* listPackArgs[] = { (char*)"csolution", (char*)"list", (char*)"packs",
+    (char*)csolution.c_str(), (char*)"--context", (char*)"test1+Gen" };
+  EXPECT_EQ(1, RunProjMgr(6, listPackArgs, 0));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr2));
+  EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find("not installed"));
+  EXPECT_TRUE(streamRedirect.GetOutString().empty());
 
   // Loading unrelated installed packs must still leave the solution usable.
   streamRedirect.ClearStringStreams();
