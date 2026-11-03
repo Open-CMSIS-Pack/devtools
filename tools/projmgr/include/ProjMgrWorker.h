@@ -1213,6 +1213,26 @@ public:
     bool genDep = true, std::string outDir = std::string(), bool withHeadingDot = false, bool solutionLevel = false);
 
   /**
+   * @brief get the next access sequence and report malformed or unsupported sequences
+   * @param context current context used for error reporting
+   * @param input string to scan after static variable expansion
+   * @param offset starting position; updated past the sequence or to string::npos if none remains
+   * @param sequence extracted access sequence without dollar delimiters
+   * @param allowDynamic accept supported dynamic sequences when true; reject any remaining sequence otherwise
+   * @return true if no sequence remains or the sequence is supported, otherwise false
+  */
+  bool GetAndValidateAccessSequence(const ContextItem& context, const std::string& input, size_t& offset,
+    std::string& sequence, bool allowDynamic);
+
+  /**
+   * @brief report any malformed or unexpanded access sequence without returning scan state
+   * @param context current context used for error reporting
+   * @param input string to scan after static variable expansion
+   * @return true if no access sequence remains, otherwise false
+  */
+  bool GetAndValidateAccessSequence(const ContextItem& context, const std::string& input);
+
+  /**
    * @brief parse and load context layers
    * @param context item
    * @return true if there is no error
