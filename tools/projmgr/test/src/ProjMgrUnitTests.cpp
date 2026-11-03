@@ -2830,6 +2830,17 @@ TEST_F(ProjMgrUnitTests, ListPacksLatest) {
   EXPECT_EQ(latestPacks, expected);
 }
 
+TEST_F(ProjMgrUnitTests, ListPacksRequiredWithoutRequirements) {
+  StdStreamRedirect streamRedirect;
+  vector<string> packs;
+  ASSERT_TRUE(m_worker.ParseContextSelection({}));
+  m_worker.SetLoadPacksPolicy(LoadPacksPolicy::REQUIRED);
+
+  EXPECT_FALSE(m_worker.ListPacks(packs, false, false, ""));
+  EXPECT_TRUE(packs.empty());
+  EXPECT_EQ("error csolution: required packs must be specified\n", streamRedirect.GetErrorString());
+}
+
 TEST_F(ProjMgrUnitTests, ListBoards) {
   set<string> expected = {
     "Keil::RteTest Dummy board:1.2.3 (ARM::RteTest_DFP@0.2.0)"
@@ -3004,6 +3015,19 @@ TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
   EXPECT_TRUE(pdscFiles.empty());
 
   EXPECT_TRUE(m_worker.LoadAllRelevantPacks());
+
+  kernel->SetCmsisPackRoot(cmsisPackRoot);
+}
+
+TEST_F(ProjMgrUnitTests, LoadPacksEmptyPackRoot) {
+  StdStreamRedirect streamRedirect;
+  ASSERT_TRUE(m_worker.InitializeModel());
+  auto kernel = ProjMgrKernel::Get();
+  const string cmsisPackRoot = kernel->GetCmsisPackRoot();
+  kernel->SetCmsisPackRoot("");
+
+  EXPECT_FALSE(m_worker.LoadAllRelevantPacks());
+  EXPECT_EQ("error csolution: parsing installed packs failed\n", streamRedirect.GetErrorString());
 
   kernel->SetCmsisPackRoot(cmsisPackRoot);
 }
@@ -6179,6 +6203,59 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ValidateContextSpecificPacksMissing) {
   string errStr = streamRedirect.GetErrorString();
   EXPECT_NE(string::npos, errStr.find(expectedErr1));
   EXPECT_NE(string::npos, errStr.find(expectedErr2));
+}
+
+TEST_F(ProjMgrUnitTests, RunProjMgr_ValidateContextSpecificPacksBroken) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string packRoot = testoutput_folder + "/BrokenPackRoot";
+  ASSERT_TRUE(RteFsUtils::CopyTree(testcmsispack_folder, packRoot));
+  ASSERT_TRUE(RteFsUtils::CopyTree(testinput_folder + "/TestSolution/BrokenPack", packRoot));
+  const string originalPackRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", packRoot);
+  const string& csolution = testinput_folder + "/TestSolution/pack_broken.csolution.yml";
+  string expectedErr1 = "error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed";
+  string expectedErr2 = "Error R802: Error parsing XML file: " + packRoot +
+    "/SomeVendor/ErrorPack/0.0.1/SomeVendor.ErrorPack.pdsc";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"--cbuildgen";
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  string errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expectedErr1));
+  EXPECT_NE(string::npos, errStr.find(expectedErr2));
+  EXPECT_EQ(string::npos, errStr.find("required pack: SomeVendor::ErrorPack@0.0.1 not installed"));
+
+  // A broken installed pack must not trigger installation as a missing pack.
+  streamRedirect.ClearStringStreams();
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"--missing";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  EXPECT_EQ("ARM::Missing_DFP@0.0.9\n", streamRedirect.GetOutString());
+
+  // Listing a context that requires a broken pack must fail with its parsing error.
+  streamRedirect.ClearStringStreams();
+  char* listPackArgs[] = { (char*)"csolution", (char*)"list", (char*)"packs",
+    (char*)csolution.c_str(), (char*)"--context", (char*)"test1+Gen" };
+  EXPECT_EQ(1, RunProjMgr(6, listPackArgs, 0));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr2));
+  EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find("not installed"));
+  EXPECT_TRUE(streamRedirect.GetOutString().empty());
+
+  // Loading unrelated installed packs must still leave the solution usable.
+  streamRedirect.ClearStringStreams();
+  const string unrelatedSolution = testinput_folder + "/TestRpc/minimal.csolution.yml";
+  char* listArgs[] = { (char*)"csolution", (char*)"list", (char*)"devices",
+    (char*)unrelatedSolution.c_str(), (char*)"--load", (char*)"all",
+    (char*)"--filter", (char*)"RteTest_ARMCM4_NOFP" };
+  EXPECT_EQ(0, RunProjMgr(8, listArgs, 0));
+  EXPECT_NE(string::npos, streamRedirect.GetOutString().find("ARM::RteTest_ARMCM4_NOFP"));
+  EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find("Error R802"));
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", originalPackRoot);
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_errors_node) {
