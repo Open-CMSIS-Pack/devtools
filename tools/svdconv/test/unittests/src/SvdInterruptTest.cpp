@@ -138,6 +138,7 @@ INSTANTIATE_TEST_SUITE_P(CpuInterruptLimits, SvdInterruptTest,
     InterruptLimit{"CA9", SvdTypes::CpuType::CA9, 256U},
     InterruptLimit{"CA15", SvdTypes::CpuType::CA15, 256U},
     InterruptLimit{"CM3", SvdTypes::CpuType::CM3, 240U},
+    InterruptLimit{"CM42", SvdTypes::CpuType::CM42, 480U},
     InterruptLimit{"CM33", SvdTypes::CpuType::CM33, 480U}),
   [](const testing::TestParamInfo<InterruptLimit>& info) { return info.param.name; });
 
@@ -185,6 +186,27 @@ INSTANTIATE_TEST_SUITE_P(NoCpuInterruptLimit, SvdNoCpuInterruptLimitTest,
     InterruptLimit{"CA72", SvdTypes::CpuType::CA72, CpuFeature::NO_CPU_INTERRUPT_LIMIT},
     InterruptLimit{"OTHER", SvdTypes::CpuType::OTHER, CpuFeature::NO_CPU_INTERRUPT_LIMIT}),
   [](const testing::TestParamInfo<InterruptLimit>& info) { return info.param.name; });
+
+TEST(SvdCpuTypeTest, CortexM42NamesAndFeatures) {
+  EXPECT_EQ("CM42", SvdTypes::GetCpuType(SvdTypes::CpuType::CM42));
+  EXPECT_EQ("ARM Cortex-M42", SvdTypes::GetCpuName(SvdTypes::CpuType::CM42));
+  const auto& cm42 = SvdTypes::GetCpuFeatures(SvdTypes::CpuType::CM42);
+  const auto& star = SvdTypes::GetCpuFeatures(SvdTypes::CpuType::SMC3);
+  EXPECT_EQ(star.VTOR, cm42.VTOR);
+  EXPECT_EQ(star.MPU, cm42.MPU);
+  EXPECT_EQ(star.FPU, cm42.FPU);
+  EXPECT_EQ(star.FPUDP, cm42.FPUDP);
+  EXPECT_EQ(star.ICACHE, cm42.ICACHE);
+  EXPECT_EQ(star.DCACHE, cm42.DCACHE);
+  EXPECT_EQ(star.ITCM, cm42.ITCM);
+  EXPECT_EQ(star.DTCM, cm42.DTCM);
+  EXPECT_EQ(star.SAU, cm42.SAU);
+  EXPECT_EQ(star.DSP, cm42.DSP);
+  EXPECT_EQ(star.PMU, cm42.PMU);
+  EXPECT_EQ(star.MVE, cm42.MVE);
+  EXPECT_EQ(star.MVEFP, cm42.MVEFP);
+  EXPECT_EQ(star.NUMEXTIRQ, cm42.NUMEXTIRQ);
+}
 
 TEST(SvdCpuTypeTest, CortexA55Names) {
   EXPECT_EQ("CA55", SvdTypes::GetCpuType(SvdTypes::CpuType::CA55));
