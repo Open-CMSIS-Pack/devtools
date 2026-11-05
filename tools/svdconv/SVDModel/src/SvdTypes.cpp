@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2010-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -122,6 +122,7 @@ const map <SvdTypes::CpuType, CpuTypeFeature> SvdTypes::cpuTypeName = {
   { SvdTypes::CpuType::CM23     , {"CM23"               , "ARM Cortex-M23"    ,  0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1,     1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 240 } },
   { SvdTypes::CpuType::CM35     , {"CM35"               , "ARM Cortex-M35"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 480 } },
   { SvdTypes::CpuType::CM35P    , {"CM35P"              , "ARM Cortex-M35P"   ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 480 } },
+  { SvdTypes::CpuType::CM42     , {"CM42"               , "ARM Cortex-M42"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } },
   { SvdTypes::CpuType::CM52     , {"CM52"               , "ARM Cortex-M52"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } }, // MVE: 0, not generated atm
   { SvdTypes::CpuType::CM55     , {"CM55"               , "ARM Cortex-M55"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } }, // MVE: 0, not generated atm
   { SvdTypes::CpuType::CM85     , {"CM85"               , "ARM Cortex-M85"    ,  0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1,     1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 480 } }, // MVE: 0, not generated atm

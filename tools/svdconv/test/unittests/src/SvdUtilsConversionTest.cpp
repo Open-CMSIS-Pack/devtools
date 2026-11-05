@@ -203,7 +203,7 @@ TEST_F(SvdUtilsConversionTest, NormalizesCpuTypeNamesAndCortexM0PlusAlias) {
   using Cpu = SvdTypes::CpuType;
   const vector<pair<string, Cpu>> cases{
     {"CM0", Cpu::CM0}, {"cm0+", Cpu::CM0PLUS}, {"Cm0Plus", Cpu::CM0PLUS},
-    {"cm33", Cpu::CM33}, {"armv81mml", Cpu::V81MML}, {"other", Cpu::OTHER},
+    {"CM42", Cpu::CM42}, {"cm42", Cpu::CM42}, {"cm33", Cpu::CM33}, {"armv81mml", Cpu::V81MML}, {"other", Cpu::OTHER},
   };
   for(const auto& [text, expected] : cases) {
     SCOPED_TRACE(text);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2020-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -489,6 +489,7 @@ const map<string, list<string>> processorFeaturesMap = {
   { "Cortex-M23"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
   { "Cortex-M33"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp",                              "Dendian", "Dclock","DcoreVersion" } },
   { "Cortex-M35P" , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
+  { "Cortex-M42"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
   { "Cortex-M52"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
   { "Cortex-M55"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
   { "Cortex-M85"  , { "Dfpu", "Dmpu", "Dtz", "Ddsp", "Dmve",                      "Dendian", "Dclock","DcoreVersion" } },
