@@ -240,6 +240,11 @@ struct TargetSetItem {
   DebuggerItem debugger;
 };
 
+struct WestDefineItem {
+  std::vector<std::string> defines;
+  std::vector<std::string> forCompiler;
+};
+
 /**
  * @brief build types containing
  *        toolchain,
@@ -277,7 +282,7 @@ struct BuildType {
   ProcessorItem processor;
   std::vector<std::pair<std::string, std::string>> variables;
   std::vector<ContextName> contextMap;
-  std::vector<std::string> westDefs;
+  std::vector<WestDefineItem> westDefines;
 };
 
 /**
@@ -513,7 +518,8 @@ struct WestDesc {
   std::string app;
   std::string board;
   std::string device;
-  std::vector<std::string> westDefs;
+  std::vector<std::string> resolvedWestDefines;
+  std::vector<WestDefineItem> westDefines;
   std::vector<std::string> westOpt;
 };
 

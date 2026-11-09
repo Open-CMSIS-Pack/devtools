@@ -131,7 +131,7 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
     context.cproject->output.baseName = "zephyr/zephyr";
     context.cproject->name = context.west.projectId;
     context.cproject->output.type = { "elf", "hex" };
-    CollectionUtils::PushBackUniquely(context.west.westDefs, "CONFIG_BUILD_OUTPUT_HEX=y");
+    CollectionUtils::PushBackUniquely(context.west.resolvedWestDefines, "CONFIG_BUILD_OUTPUT_HEX=y");
   }
 
   // CMake native project
@@ -3334,9 +3334,20 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
   }
 
   // Merge west defines
-  CollectionUtils::AddStringItemsUniquely(context.west.westDefs, context.controls.target.westDefs);
-  CollectionUtils::AddStringItemsUniquely(context.west.westDefs, context.controls.build.westDefs);
-  if (!ProcessSequencesRelatives(context, context.west.westDefs)) {
+  const auto appendWestDefines = [&](const vector<WestDefineItem>& entries) {
+    for (const auto& entry : entries) {
+      if (CheckCompiler(entry.forCompiler, context.compiler)) {
+        CollectionUtils::AddStringItemsUniquely(context.west.resolvedWestDefines, entry.defines);
+      }
+    }
+  };
+  const auto generatedWestDefines = context.west.resolvedWestDefines;
+  context.west.resolvedWestDefines.clear();
+  appendWestDefines(context.west.westDefines);
+  CollectionUtils::AddStringItemsUniquely(context.west.resolvedWestDefines, generatedWestDefines);
+  appendWestDefines(context.controls.target.westDefines);
+  appendWestDefines(context.controls.build.westDefines);
+  if (!ProcessSequencesRelatives(context, context.west.resolvedWestDefines)) {
     return false;
   }
 

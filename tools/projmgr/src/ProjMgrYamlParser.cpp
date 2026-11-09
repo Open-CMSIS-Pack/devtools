@@ -482,6 +482,26 @@ bool ProjMgrYamlParser::ParseDefine(const YAML::Node& defineNode, vector<string>
   return success;
 }
 
+bool ProjMgrYamlParser::ParseWestDefines(const YAML::Node& defineNode, vector<WestDefineItem>& defines) {
+  if (defineNode.IsDefined() && defineNode.IsSequence()) {
+    for (const auto& item : defineNode) {
+      WestDefineItem entry;
+      YAML::Node definition = YAML::Clone(item);
+      if (definition.IsMap()) {
+        ParseVectorOrString(definition, YAML_FORCOMPILER, entry.forCompiler);
+        definition.remove(YAML_FORCOMPILER);
+      }
+      YAML::Node sequence(YAML::NodeType::Sequence);
+      sequence.push_back(definition);
+      if (!ParseDefine(sequence, entry.defines)) {
+        return false;
+      }
+      defines.push_back(entry);
+    }
+  }
+  return true;
+}
+
 void ProjMgrYamlParser::ParseVectorOfStringPairs(const YAML::Node& parent, const string& key, vector<pair<string, string>>& value) {
   if (parent[key].IsDefined() && parent[key].IsSequence()) {
     for (const auto& item : parent[key]) {
@@ -902,7 +922,9 @@ bool ProjMgrYamlParser::ParseContexts(const YAML::Node& parent, CsolutionItem& c
         ParseString(westEntry, YAML_PROJECT_ID, west.projectId);
         ParseString(westEntry, YAML_BOARD, west.board);
         ParseString(westEntry, YAML_DEVICE, west.device);
-        ParseDefine(westEntry[YAML_WEST_DEFS], west.westDefs);
+        if (!ParseWestDefines(westEntry[YAML_WEST_DEFS], west.westDefines)) {
+          return false;
+        }
         ParseVectorOrString(westEntry, YAML_WEST_OPT, west.westOpt);
         if (west.projectId.empty()) {
           west.projectId = fs::path(west.app).filename().generic_string();
@@ -1076,7 +1098,7 @@ bool ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, const string& f
   if (!ParseDefine(parent[YAML_DEFINE_ASM], buildType.definesAsm)) {
     return false;
   }
-  if (!ParseDefine(parent[YAML_WEST_DEFS], buildType.westDefs)) {
+  if (!ParseWestDefines(parent[YAML_WEST_DEFS], buildType.westDefines)) {
     return false;
   }
   ParseVector(parent, YAML_UNDEFINE, buildType.undefines);

@@ -12,6 +12,12 @@ solution:
       west-defs:
         - TARGET-DEF: on
         - TARGET-PACK: $Pack(ARM::RteTest_DFP)$
+        - TARGET-COMPILER: clang
+          for-compiler: CLANG
+        - TARGET-COMPILER: gcc
+          for-compiler: GCC
+        - SHARED-COMPILERS: true
+          for-compiler: [CLANG, GCC]
       target-set:
         - set:
           images:
@@ -23,6 +29,10 @@ solution:
       west-defs:
         - CONFIG-DEBUG: y
         - BUILD-PACK: $Pack(ARM::RteTest_DFP)$Config
+        - BUILD-COMPILER: clang
+          for-compiler: CLANG
+        - BUILD-COMPILER: gcc
+          for-compiler: GCC
 
   # List related projects.
   projects:
@@ -31,6 +41,10 @@ solution:
         device: :cm0_core0
         west-defs:
           - CORE: 0
+          - PROJECT-COMPILER: clang
+            for-compiler: CLANG
+          - PROJECT-COMPILER: gcc
+            for-compiler: GCC
           - PROJECT-PACK: $Pack(ARM::RteTest_DFP)$
           - EXTRA_ZEPHYR_MODULES: $Pack(ARM::RteTest_DFP)$;$Pack(ARM::RteTest_DFP@0.2.0)$
           - DTC_OVERLAY_FILE: $ProjectDir()$/app.overlay
