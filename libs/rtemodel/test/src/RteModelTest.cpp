@@ -666,6 +666,41 @@ TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
   EXPECT_EQ(pathName, "RTE With Spaces/Device/RteTest_ARMCM3/system_ARMCM3.c");
 }
 
+TEST_F(RteModelPrjTest, LoadCprj_ConfigFileUpdatesWithoutRTEUpdate) {
+  const string instanceName = "CONFIG_FOLDER/Device/RteTest_ARMCM3/system_ARMCM3.c";
+  const string configFile = RteUtils::ExtractFilePath(RteTestM3_ConfigFolder_cprj, true) + instanceName;
+  const string baseFile = configFile + ".base@1.0.1";
+  const string updateFile = configFile + ".update@1.2.2";
+  string configContents, baseContents;
+  ASSERT_TRUE(RteFsUtils::ReadFile(configFile, configContents));
+  ASSERT_TRUE(RteFsUtils::ReadFile(baseFile, baseContents));
+  ASSERT_FALSE(RteFsUtils::Exists(updateFile));
+
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_ConfigFolder_cprj, RteUtils::EMPTY_STRING, true, false);
+  ASSERT_NE(loadedCprjProject, nullptr);
+  EXPECT_FALSE(loadedCprjProject->ShouldUpdateRte());
+
+  RteFileInstance* fi = loadedCprjProject->GetFileInstance(instanceName);
+  ASSERT_NE(fi, nullptr);
+  EXPECT_EQ(fi->GetVersionString(), "1.0.1");
+  RteItem* f = fi->GetFile(loadedCprjProject->GetActiveTargetName());
+  ASSERT_NE(f, nullptr);
+
+  // The pack update is available for merging even when RTE updates are disabled.
+  ASSERT_TRUE(RteFsUtils::Exists(updateFile));
+  EXPECT_TRUE(RteFsUtils::CmpFiles(updateFile, f->GetOriginalAbsolutePath()));
+  EXPECT_TRUE(RteFsUtils::CmpFileMem(configFile, configContents));
+  EXPECT_TRUE(RteFsUtils::CmpFileMem(baseFile, baseContents));
+  EXPECT_FALSE(RteFsUtils::Exists(configFile + ".base@1.2.2"));
+
+  error_code ec;
+  const fs::perms write_mask = fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write;
+  EXPECT_EQ(fs::status(updateFile, ec).permissions() & write_mask, fs::perms::none);
+  EXPECT_FALSE(ec);
+}
+
 TEST_F(RteModelPrjTest, LoadCprj_PackPath) {
 
   RteFsUtils::CopyTree(RteModelTestConfig::CMSIS_PACK_ROOT, RteTestM3_PrjPackPath);

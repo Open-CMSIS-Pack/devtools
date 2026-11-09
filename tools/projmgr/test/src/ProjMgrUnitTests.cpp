@@ -7049,7 +7049,11 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
   };
 
   for (const auto& [build, errCode, errMsg, status] : testDataVector1) {
+    SCOPED_TRACE(build);
     const string contextOption = "." + build;
+    const string updateFile = testinput_folder + "/TestSolution/ConfigFilesUpdate/" + build +
+      "/Device/RteTest_ARMCM3/startup_ARMCM3.c.update@2.0.3";
+    ASSERT_FALSE(RteFsUtils::Exists(updateFile));
     streamRedirect.ClearStringStreams();
     argv[3] = (char*)"--no-update-rte";
     argv[4] = (char*)"-c";
@@ -7060,6 +7064,13 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
     const YAML::Node& cbuild = YAML::LoadFile(testinput_folder +
       "/TestSolution/ConfigFilesUpdate/out/config/RteTest_ARMCM3/" + build + "/config." + build + "+RteTest_ARMCM3.cbuild.yml");
     EXPECT_EQ(status, cbuild["build"]["components"][0]["files"][3]["status"].as<string>());
+    if (build == "Patch" || build == "Minor" || build == "Major") {
+      ASSERT_TRUE(RteFsUtils::Exists(updateFile));
+      EXPECT_TRUE(RteFsUtils::CmpFiles(updateFile,
+        testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Source/startup_ARMCM3.c"));
+    } else {
+      EXPECT_FALSE(RteFsUtils::Exists(updateFile));
+    }
   }
 
   // --update-rte
