@@ -1,606 +1,672 @@
 # Instruction Trace Implementation Plan
 
-Status: minimal implementation agreed as the starting scope; broader design remains a working draft.
-The proposed CSV extension is local to this plan and is not yet part of the published CMSIS contract.
-Research date: 2026-10-28. Baseline: devtools `17f8f54a`, branch `feat/ctrace-instruction-trace`.
-OpenCSD baseline: **v1.8.3**, commit `59f15320637ce6e510604e7bed550d7ad109d15d`.
+Updated: 2026-11-06. Branch: `feat/ctrace-instruction-trace`.
+OpenCSD: **1.8.3**, commit `59f15320637ce6e510604e7bed550d7ad109d15d`.
 
-This document separates verified library behavior, ctrace implementation gaps, and proposed decisions.
-It describes offline decoding of captured files. Target configuration and capture remain producer responsibilities.
-The separate ITM-channel-0 change is not part of this branch.
+## Experimental specification
 
-## 1. Findings and proposed direction
+Basis: [CMSIS-Toolbox Experimental Features][experimental-spec], `ctrace` and `*.ctrace-run.yml`.
 
-Instruction trace requires more than enabling another OpenCSD decoder for a `.raw` file:
+### Trace
 
-1. Identify the protocol and capture-time decoder configuration for every trace source.
-2. Supply the actual executable code bytes at their execution addresses.
-3. Consume OpenCSD generic instruction ranges, context, exceptions, time information, and discontinuities.
-4. Define a semantic event model and an output contract that can retain this information.
+#### Directory and File Structure
 
-**OpenCSD already contains the instruction decoder needed for program-flow reconstruction.** A separate instruction
-codec is not required for that task. An ELF/AXF reader and an address-aware image provider are needed if executable
-files are the image source; raw binary images with explicit mappings are another valid input. Assembly text,
-symbols, source lines, call graphs, and coverage are separate processing layers. [O2][O3][O4][O5]
+| Directory or File | Created by | Description |
+| :---|:---|:--- |
+| `.trace/<solution-set>.ctrace-run.yml` | pyTS / capture tooling | Source configuration and image inventory. |
+| `.trace/<solution-set>.<channel>.raw` | Capture backend | ETM input: formatted `TB` or `TB_<name>`. |
+| `.trace/<solution-set>.<channel>.<mode>.csv` | ctrace | CSV including instruction trace |
 
-Start with the minimal implementation in section 1.1. The reference capture and its exact protocol still need to
-be selected; a verified Cortex-M ETMv4 instruction-only capture from M7 or M33 is the preferred candidate.
-Mixed ITM/ETM routing, additional protocols, ELF/AXF support and richer outputs belong to subsequent milestones.
-Treat MTB as a separate decoder project. Qualify Armv8.1-M support by feature and test evidence rather than
-advertising all M52/M55/M85 captures as supported.
+- One trace-buffer RAW file contains multiple trace sources, identified by their ATB `stream` IDs.
+- Decode each source with its own configuration and state; combine all sources in one CSV, retaining `stream`.
 
-### 1.1 Minimal implementation — agreed starting point
+#### File Structure of `*.ctrace-run.yml`
 
-The first deliverable decodes **one recorded instruction-trace input, one known ETM protocol and one CPU** to CSV.
-Use one matching static binary image at an explicit execution address. Emit one row per decoded instruction range,
-with observable gaps and missing-code conditions. This is the starting scope agreed on 2026-10-28.
+| `ctrace-run:` | | Content |
+| :---|:---|:--- |
+| &nbsp;&nbsp;&nbsp; `ctrace-images:` | Optional | Processor image inventory for instruction reconstruction. |
 
-```text
-RAW -> existing framing -> OpenCSD ETM full decoder -> instruction-range event -> CSV
-                                      ^
-                         matching binary code bytes
+| `ctrace-images:` | | Content |
+| :---|:---|:--- |
+| `- pname:` | **Required** | Unique processor instance name, including single-core captures. |
+| &nbsp;&nbsp;&nbsp; `elf:` | Optional | List of `.elf`/`.axf` paths, relative to `*.ctrace-run.yml`. |
+| &nbsp;&nbsp;&nbsp; `hex:` | Optional | List of Intel HEX paths, relative to `*.ctrace-run.yml`. |
+
+- Declared image entries need a nonempty file list; processors without images may be omitted.
+- Select one format per processor; selection when both lists exist: TBD. HEX production remains open.
+- Map matching code to execution addresses; reject invalid files and conflicting overlaps.
+
+> **Possible extension:** Mixed ELF/HEX files per `pname`.
+
+ETM source entries:
+
+| `ctrace-refs:` | | Content |
+| :---|:---|:--- |
+| `- ref:` | **Required** | Trace-setting reference, for example `CM7/instructions`. |
+| &nbsp;&nbsp;&nbsp; `type:` | **Required** | New trace source type: `etm`. |
+| &nbsp;&nbsp;&nbsp; `pname:` | Conditional | Required with image inventory; agrees with any processor prefix in `ref`. |
+| &nbsp;&nbsp;&nbsp; `stream:` | **Required** | Capture-time CoreSight ATB ID; decoder Trace ID. |
+| &nbsp;&nbsp;&nbsp; `decoder:` | **Required** | Capture-specific ETM decoder configuration. |
+
+| `decoder:` | | Content |
+| :---|:---|:--- |
+| &nbsp;&nbsp;&nbsp; `core:` | **Required** | `Cortex-M4` (ETMv3.5) or `Cortex-M7` (ETMv4.0). |
+| &nbsp;&nbsp;&nbsp; `regs:` | **Required** | Fixed qualified Cortex-M implementation values, written to YAML by pyTS. |
+| &nbsp;&nbsp;&nbsp; `regsToRead:` | **Required** | Variable configuration registers read by pyOCD. |
+
+- ETM references need no `index`; reject ambiguous processor/source bindings.
+- A source's `pname` may have no image entry; this selects image-free fallback, not another processor's images.
+- Retain unambiguous legacy processor inference without an inventory and existing DWT `symbol-file` provenance.
+
+##### Register Accesses
+
+| Cortex-M profile | `regs` (pyTS) | `regsToRead` (pyOCD) |
+| :---|:---|:--- |
+| Cortex-M4 / ETMv3.5 | `ETMIDR`, `ETMCCER` | `ETMCR` |
+| Cortex-M7 / ETMv4.0 | `TRCIDR0`, `TRCIDR1`, `TRCIDR2`, `TRCIDR8` | `TRCCONFIGR` |
+
+| `regs:`, `regsToRead:` | | Content |
+| :---|:---|:--- |
+| `- name:` | **Required** | Symbolic register name. |
+| &nbsp;&nbsp;&nbsp; `value:` | Conditional | Required in `regs`; filled by pyOCD in `regsToRead`. |
+
+- `ETMCR` / `TRCCONFIGR`: complete effective configuration.
+
+##### Example
+
+M7 reference values; existing setup/disable entries omitted. ELF and HEX lists illustrate the pending format selection:
+
+```yml
+ctrace-run:
+  ctrace-images:
+    - pname: CM7
+      elf: [Bootloader.axf, Firmware.elf]
+      hex: [Bootloader.hex, Firmware.hex]
+  ctrace-refs:
+    - ref: CM7/instructions
+      pname: CM7
+      type: etm
+      stream: 0x12
+      decoder:
+        core: Cortex-M7
+        regs:
+          - name: TRCIDR0
+            value: 0x080006e1
+          - name: TRCIDR1
+            value: 0x4100f401
+          - name: TRCIDR2
+            value: 0x00000004
+          - name: TRCIDR8
+            value: 0x00000001
+        regsToRead:
+          - name: TRCCONFIGR
+            value: 0x00000001  # Filled by pyOCD
 ```
 
-Reuse the existing input convention, for example `Board.TB.raw` with `Board.ctrace-run.yml` in a trace directory.
-A freely named `trace.raw` is not currently a standalone CLI input. Adding direct-file CLI support is a later option.
-The buffer must already contain valid bytes in chronological order with known framing. [C8]
+#### Initial Implementation
 
-The necessary inputs are the actual decoder configuration, architecture/profile, source Trace ID where formatted,
-and the matching `.bin` with its execution mapping. A RAW file alone does not establish these facts. Agree the
-minimal metadata fields against the first capture; do not infer missing configuration or code bytes.
+- ETMv3 and ETMv4: default one PC per line (`instructions`), using ELF or HEX; optional image-free `packets`.
 
-Implement these five connected extensions:
+#### Remaining Design Questions
 
-1. **ETM configuration and route:** extend `TraceRunConfig`, `YmlTraceRunConfigReader` and `CtraceRunMeta` to retain
-   one ETM source, its decoder configuration and the binary-image mapping. ETM metadata is currently ignored. [C2][C4]
-2. **Code-memory access:** attach a binary file/region accessor to the OpenCSD tree, supplying the actual bytes at
-   execution addresses. One static mapping is sufficient for this milestone. An ELF/AXF reader is not required. [O4]
-3. **ETM decoder path:** create the selected ETM full decoder and connect it through `DecodePipeline` and
-   `FileDecodeJob`. Reuse bounded RAW reads, compatible deformatting and the existing tree lifecycle; keep ITM-specific
-   packet monitoring, recovery and timestamp accumulation out of the ETM path. [C3][C9]
-4. **Instruction-element adapter:** consume `INSTR_RANGE` and the state needed to interpret it. The current collector
-   accepts only `ITMTRACE`. Preserve range/count/execution flags and expose synchronization loss, missing code and
-   unsupported context transitions; retain valid partial output. [C3][O3]
-5. **Events, selection and CSV:** add an instruction-range payload to `TraceEvent`, a selectable event type and its
-   `CsvRowMapper` mapping. Shared event visitors, including CTF, must handle the added variant; instruction CTF
-   requests must report unsupported output until that backend is implemented. [C5][C6][C10]
+- Whether to offer `--etm-output decoded`: generic OpenCSD output elements, using ELF or HEX.
+- ELF/HEX selection when both lists are present; ownership of image-inventory and HEX production.
+- Producer/CMSIS schema alignment for these extensions.
 
-The minimal CSV extension retains the existing eight columns and introduces `type=instr_range`:
+#### Out-of-Scope
+
+- Disassembly and ETM CTF.
+
+### `pyTS` Utility
+
+- Emit consistent `pname` values on DWT/ETM references and any image entries.
+- Populate `decoder.regs` from the qualified Cortex-M implementation; list variable registers in `decoder.regsToRead`.
+
+### `ctrace` Utility
+
+```txt
+Usage:
+  ctrace <trace-dir> [options]
+
+Options:
+      --csv                        Export CSV (ETM default: instructions)
+      --type sel [...]              Filter output types; additional ETM selectors: etmv3, etmv4
+      --etm-output mode             Select ETM mode for --csv (default: instructions)
+        instructions               One PC per line (ELF or HEX)
+        packets                    ETM protocol packets (no image)
+        decoded                    OpenCSD generic elements (ELF or HEX; TBD)
+```
+
+- `--csv`: ETM output uses `instructions`.
+- Optionally add `--etm-output mode` to select another ETM output mode.
+
+#### `--type` option
+
+- Selectors `etmv3`, `etmv4` select CSV types `ETMv3`, `ETMv4`.
+
+#### `--etm-output` option
+
+| Mode | Required images | Output records |
+| :---|:---|:--- |
+| `instructions` (default) | ELF or HEX; fallback if absent | PCs, events/status and fallback packets. |
+| `packets` | None; no image opened | ETM protocol packets, parser status and diagnostics. |
+| `decoded` (TBD) | ELF or HEX | Generic OpenCSD ranges, events and status. |
+
+- No matching image inventory: warn once per source/input and use packet fallback in `instructions`.
+- Image-backed modes: missing/unreadable declared files, invalid images and ambiguous format selection are errors.
+  `packets` neither validates image files nor selects a format. Unmapped code uses local packet fallback.
+- `decoded` remains unavailable until offering it is decided; if offered, absent images are an error.
+- `--etm-output` requires CSV output (`--csv` or `--all`); it does not change ITM/DWT decoding.
+- Without an output option, validate/decode using the default mode and fallback; write no output file.
+- Unknown/unimplemented modes are errors. Fallback retains the selected filename and header.
+
+**Example:**
+
+```bash
+ctrace .trace --csv
+ctrace .trace --csv --channel TB --etm-output packets
+```
+
+#### CSV Format
+
+**Common fields:** existing column meanings and relative order, with `packet` added.
 
 ```csv
-cycles,stream,type,index,value,pc,address,note
-,18,instr_range,,,0x08000100,0x08000108,"count=3; isa=T32; last_executed=1"
+cycles,stream,type,packet,index,value,pc,address,note
 ```
 
-- `stream`: source Trace ID for this formatted example; preserve existing unformatted stream conventions.
-- `pc`: range start; `address`: exclusive range end.
-- `note`: instruction count, ISA and last-instruction execution flag; retain additional validity/flow flags as needed.
-- `index` and `value`: empty for this record type.
-- `cycles`: empty without qualified cycle information. Row order preserves decoded order; no synthetic time is added.
+| Mode | Additional fields before `note` | Total columns |
+| :---|:---|:--- |
+| `instructions` | `execution` | 10 |
+| `packets` | `packet_size`, `packet_bytes` | 11 |
+| `decoded` (TBD) | `instruction_count` | 10 |
 
-This is the agreed initial mapping for implementation, not an existing specification claim. Document its type-specific
-semantics and diagnostic mapping before exposing it. Existing ITM/DWT row meanings remain unchanged.
-The count describes represented instructions; execution flags still govern whether the last instruction executed.
+| Column | ETM meaning |
+| :---|:--- |
+| `cycles` | Attributable CPU-cycle position; otherwise empty. |
+| `stream` | CoreSight ATB ID; a processor may own several sources. |
+| `type` | `ETMv3` or `ETMv4`; distinct from YAML `type: etm`. |
+| `packet` | `INSTRUCTION`, protocol class, generic record kind or parser status. |
+| `index` | Architectural exception/vector number when known; otherwise empty. |
+| `value` | Instruction opcode, exception transition or valid timing value, in hexadecimal. |
+| `pc` | Instruction/range start; empty for protocol-only address reports. |
+| `address` | Range end, inaccessible code address, protocol address or preferred exception-return address. |
+| `execution` | Predication: `executed`, `not_executed`, `unknown`; not retirement/completion. |
+| `instruction_count` | Decoded range count; unknown counts stay empty. |
+| `packet_size` | Captured ETM source-byte count, including packet headers. |
+| `packet_bytes` | Space-separated hex bytes in trace order, after CoreSight deformatting. |
+| `note` | Structured execution reasons, packet/event fields and diagnostics. |
 
-Completion evidence is an actual capture with complete configuration, matching bytes and independently expected
-ranges; correct handling of missing code and synchronization gaps; chunk-boundary-independent results; and unchanged
-existing ITM/DWT CSV behavior. The first capture must fit the declared static image/context scope; report unsupported
-transitions instead of silently claiming a complete path.
+- One CSV per RAW input. Configured ETM sources select the mode filename/header before row filtering,
+  even when a file contains no ETM bytes. ITM/DWT rows retain their payload fields;
+  `packet` and ETM-only fields stay empty. Inputs without configured ETM retain the eight-column CSV.
+- Unavailable/inapplicable values stay empty. Preserve per-source order; no cross-source execution-time claim.
+- ETM `note`: `key=value` pairs separated by `;`; escape backslash, semicolon and line endings as
+  `\\`, `\;`, `\r`, `\n`, then apply normal CSV quoting. Free diagnostic text uses `message`.
+  Absent keys mean unavailable, not zero. Existing ITM/DWT notes keep their format.
 
-Subsequent work includes ELF/AXF parsing, assembly text, symbols/DWARF, full context output, additional protocols,
-mixed sources/multiple CPUs, time correlation, CTF, coverage and call-graph analysis. OpenCSD's existing instruction
-decoder supplies flow decoding for the first milestone; no additional instruction-codec dependency is needed.
+**`instructions`:**
 
-## 2. OpenCSD support and its limits
+- Expand complete ranges once, one PC per line; `packet=INSTRUCTION`, opcode in `value`, `index`/`address` empty.
+  Retain not-executed/unknown PCs and all other decoded events/status; never fabricate missing PCs.
+- Explain execution state with `execution_basis` in `note`. CBZ/CBNZ can execute without taking the branch.
+- Preserve opcode width in `value`; Thumb-32 uses first then second little-endian halfword:
+  bytes `2d e9 f0 41` become `value=0xe92d41f0`.
+- Uncovered code: preserve valid PC prefixes and gaps, then emit the corresponding complete protocol packet once.
+  Continue packets through the gap; resume PCs only when code and decoder state permit reconstruction.
+  A packet may cover several ranges and overlap retained PCs: mark this with `partial=1`.
+- Fallback notes contain `record=packet`, `reason=no_image|image_gap`, `packet_size`, `packet_bytes` and packet fields.
+  Instruction-specific columns stay empty. At a shared origin, decoded rows precede the complete fallback packet.
+  Fallback preserves observed packets; it is not an independently decodable subtrace.
 
-### 2.1 Trace protocols
+```csv
+cycles,stream,type,packet,index,value,pc,address,execution,note
+,18,ETMv4,INSTRUCTION,,0x2902,0x08009a1c,,unknown,execution_basis=IT_state_unavailable
+,18,ETMv4,INSTRUCTION,,0xd127,0x08009a1e,,not_executed,execution_basis=conditional_branch_predicate
+,18,ETMv4,INSTRUCTION,,0x6a74,0x08009a20,,executed,execution_basis=unpredicated_path
+```
 
-The pinned README and decoder implementations establish the following support. A protocol being implemented
-does not establish correct decoding of every processor, trace option, or instruction extension. [O1][O6]
+**`packets`:** one row per protocol packet or parser status; no instruction reconstruction.
 
-| Trace source | OpenCSD v1.8.3 | Consequence for ctrace |
-| --- | --- | --- |
-| ETMv3 instructions | Full decode, through v3.5 | M3/M4 candidate; qualify M23. |
-| ETMv3 data | Packet processing only | Full decoder rejects data and mixed instruction/data modes. |
-| ETMv4 instructions | Full decode; v4.6 A/R, v4.4 M advertised | Main candidate; qualify actual features. |
-| ETMv4 data | Packet processing/decode are future work | Outside initial scope. |
-| PTM v1.1 | Full instruction decode | Future A-profile extension. |
-| ETE v1.3 | Full instruction decode | Future processor-trace extension. |
-| ITM v1.0, STM v1.1 | Full software-trace decode | Not an executed instruction path. |
-| MTB | No built-in decoder | Separate record decoder and input contract. |
-| Earlier ETMv1/v2 | No built-in decoder registered | Generic ETM naming does not establish support. |
+```csv
+cycles,stream,type,packet,index,value,pc,address,packet_size,packet_bytes,note
+,18,ETMv4,atom_f1,,,,,1,f7,atoms=E
+```
 
-OpenCSD supports both packet-processing-only and full-decode configurations. Packet inspection can work without
-code images; the desired reconstructed instruction path generally cannot. All decoder families are present in
-the OpenCSD source dependency; ctrace currently instantiates only ITM. [O2][O6]
+**`decoded` (TBD):** one row per generic OpenCSD element; ranges remain ranges.
 
-ETMv3 full decode explicitly accepts only instruction-only mode. A capture configured for combined instruction/data
-trace is not handled by simply ignoring its data packets. [O11]
+```csv
+cycles,stream,type,packet,index,value,pc,address,instruction_count,note
+,18,ETMv4,instr_range,,,0x08000100,0x08000108,3,last_executed=1
+,20,ETMv4,instr_range,,,0x08000100,0x08000104,2,last_executed=1
+```
 
-### 2.2 Cortex-M architecture and trace-source mapping
+**Record fields:** apply only when valid for the record; other payload columns stay empty. [O3], [O17]
 
-The architecture generation and the trace-protocol generation are different axes. The physical device must
-actually implement the optional trace source and a usable capture path. A processor name alone is insufficient
-decoder configuration. The following matrix is a planning guide, not a device support declaration. [A1][A2][A3]
+| Record | CSV mapping |
+| :---|:--- |
+| `instr_range` | `pc` = start, `address` = exclusive end; `instruction_count`; final flags in `note`. |
+| `i_range_nopath` | `pc` = start, `address` = continuation; valid count; no PC expansion. |
+| Generic `exception` | Normalized `index`; `value=0x1` only for architectural entry; valid return `address`. |
+| `exception_ret` | Return marker in `note`; no inferred destination exception or ITM exit/return transition. |
+| `pe_context` | Context/security fields and validity in `note`. |
+| `addr_nacc` | `address` = inaccessible code address. |
+| `timestamp`, `cycle_count` | Valid complete value in `value`; domain/association and partial fields in `note`. |
+| `event`, `sync_marker` | Event/marker kind and value in `note`; an event mask is not an exception index. |
+| `trace_on`, `no_sync`, `eo_trace`, `addr_unknown`, `unknown` | Reason/state in `note`. |
+| Protocol address | Complete valid address in `address`; partial address bits/mask in `note`. |
+| Protocol exception fields | Normalized `index` when known; raw code, event kind and flags in `note`. |
+| Other protocol fields | Structured atoms, context, counts, speculation and validity in `note`. |
+| Parser status | `record=status`, status-specific reason and available source bytes; no invented packet. |
 
-| Architecture / processor examples | Relevant instruction-trace source | Assessment for this OpenCSD baseline |
-| --- | --- | --- |
-| Armv6-M: M0, M1 | No ETM path established here | ISA alone does not establish trace support. |
-| Armv6-M: M0+ | Optional MTB [A10] | No built-in MTB decoder. |
-| v7-M / v7E-M: M3, M4 | Optional ETMv3 | Protocol implemented; qualify captures/exceptions. |
-| Armv7E-M: M7 | ETM-M7, ETMv4 | Upstream M7 fixture exists. |
-| v8-M Baseline: M23 | ETM-M23: **ETMv3.5**; or MTB | OpenCSD compatibility risk; see below. |
-| v8-M Mainline: M33 | ETM-M33 r0p2: **ETMv4.2** | Within advertised scope; M33-profile fixture exists. |
-| v8-M Mainline: M35P | Optional ETMv4.2 / MTB | Protocol within advertised scope; qualify captures. |
-| Armv8.1-M: M55, M85 | ETM-M55/M85 r1p1: **ETMv4.5** | Partial evidence; not complete qualification. |
-| Armv8.1-M: M52 | ETM-M52 r0p2: **ETMv4.5** | Same Armv8.1-M qualification gate. |
+- Normalize Cortex-M exceptions using the protocol-specific tables; OpenCSD's generic number is still protocol-raw.
+  Preserve `exception_raw` and `exception_kind` in `note`. Debug halt, lazy FP push and lockup leave `index`/`value` empty.
+- ETMv4 reset has no known return address despite the generic API flag: leave `address` empty.
+  Preserve the transmitted address only as a protocol field with `address_role=unknown`. [A10, p. 270][A10]
+- Preserve valid generic final-instruction flags as `last_executed`, `last_size`, `last_conditional`, `last_type`,
+  `last_subtype` in `decoded` notes; in `instructions` they are classifier inputs, not range-wide execution claims.
+- Copy remaining semantic fields using OpenCSD member names under `packet.` or `element.` in `note`;
+  omit the constant ISA, duplicate mappings, inactive union members and internal bookkeeping.
+  Do not parse display strings.
+- Preserve ETMv3 cancellation information (`cancel_previous=1`) even when images cover the entire trace.
+- `cycles` needs qualified association; raw timestamps/counts do not imply per-PC timing or cross-core synchronization.
+  Preserve their domain, validity and association in `note`; do not distribute cycles across PCs.
 
-The M7 mapping is confirmed by ETM-M7 TRM DDI0494D, PDF p.7, and by an upstream snapshot.
-ETM-M23 TRM DDI0563C confirms ETMv3.5 on PDF p.11 and p.20. ETM-M55 TRM
-101053_0101_03_en and ETM-M85 TRM 101926_0101_07_en identify ETMv4.5 on PDF p.14.
-ETM-M33 TRM 100232_0002_06_en identifies ETMv4.2 on PDF p.7. Its OpenCSD snapshot labels the device `ETM4.4`;
-that test metadata is not evidence that ETM-M33 hardware implements v4.4.
-Arm's M35P introduction identifies ETMv4.2 on PDF p.15; ETM-M52 TRM 102774_0002_05_en identifies ETMv4.5
-on PDF p.14. [A2][A3][A4][A5][A7][A8][A9][O7]
+Packet names and parser status: Appendix B. Exception normalization: section 3.3.
 
-Two specific OpenCSD gaps affect the design:
+##### Loopback Requests
 
-- **M23:** `EtmV3Config::isV7MArch()` requires exactly `ARCH_V7` and `profile_CortexM`. The ETMv3 packet processor
-  uses this check in M-profile exception handling, whereas the processor-name map associates M23 with `ARCH_V8`.
-  This is a concrete compatibility risk, not proof that all M23 trace fails. Require M23 exception/security fixtures
-  and an upstream assessment. Do not misdeclare M23 as Armv7 to bypass the check. [O8][O12][O13]
-- **Armv8.1-M:** the README explicitly leaves M-class branch-forward instruction support as future work.
-  There is already an `armv8_1m_branches` M55 snapshot and Thumb code for low-overhead loops, so support is not
-  simply absent. Equally, that fixture does not establish complete Armv8.1-M support. A separate disassembler
-  cannot automatically repair missing OpenCSD path-reconstruction semantics. [O1][O7][O9]
+- `ETMv3` / `ETMv4` resolve to `type: etm` references using `solution-set` and `stream`.
+- `packet` and ETM exception `index` do not select separate trace settings.
+- Recognize the mode suffix in `<solution-set>.<channel>.<mode>.csv`; input-wide diagnostics have no source reference.
 
-## 3. Required input: capture, configuration, and code
+#### CTF Format
 
-### 3.1 Trace-buffer bytes
+- Evaluate CTF eligibility for configured sources after source/type selection.
+  Selected ETM sources make that input's CTF unsupported, even if no ETM bytes were observed.
+- With `--all`, report the CTF error and return nonzero; still generate CSV and process other inputs.
+  Excluding ETM permits existing ITM/DWT CTF output.
 
-Existing discovery already accepts `<solution-set>.TB.raw` and `<solution-set>.TB_<name>.raw`.
-The extension `.raw` and the channel name identify a captured input, not its protocol. A buffer can contain
-formatted ETM, mixed ETM/ITM, an unformatted single source, or MTB records. [C1]
+[experimental-spec]: https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/Experimental-Features.md
 
-For formatter-based captures, the producer must export the valid bytes in chronological order. A raw memory dump
-of a circular buffer is insufficient if its write pointer, wrap state, valid length, or alignment is unknown.
-The producer must either normalize the buffer or provide enough metadata to do so before deformatting.
-Document padding and flush behavior; do not decode unwritten capacity as trace.
+## 1. Status and scope
 
-The current ctrace transport accepts 16-byte memory-aligned CoreSight frames, without FSYNC/HSYNC framing.
-That is reusable for compatible ETB/ETF/ETR-style exports. Other framing modes require an explicit contract.
-The current `TB => formatted` default must not cause an MTB byte array to enter the CoreSight deformatter. [C1][O2]
-
-### 3.2 Source configuration
-
-Each source needs a stable source-instance identity, processor association, protocol/revision, architecture/profile,
-and an architectural ATB Trace ID when formatted. Unformatted input still needs an explicit source/protocol binding.
-Trace ID identifies the source within an input; it is neither an ITM stimulus channel nor a universal CPU number.
-
-The public OpenCSD configuration structures require the following fields. These names describe software API
-inputs, not proposed new YAML keys or instructions to program target registers. [O10]
-
-| Decoder family | OpenCSD configuration inputs |
+| Item | State |
 | --- | --- |
-| ETMv3 | `reg_idr`, `reg_ctrl`, `reg_ccer`, `reg_trc_id`, `arch_ver`, `core_prof` |
-| ETMv4I | IDR0/1/2/8–13, CONFIGR, TRACEIDR, architecture/profile |
-| ETE, future scope | IDR0/1/2/8, DEVARCH, CONFIGR, TRACEIDR, architecture/profile |
+| Production | ITM/DWT supported; ctrace ETM integration pending. Experimental specification above is the contract. |
+| Required profiles | Cortex-M4/ETMv3.5 and Cortex-M7/ETMv4.0. |
+| Capture evidence | Both profiles decoded with the host helper; PC/classifier validation currently M7 only. |
+| Decoder blockers | Pinned OpenCSD ETMv3 cancellation and truncation defects; section 5. |
+| Images | ELF/HEX import and parity with archived BIN references remain to be implemented/qualified. |
 
-The latter two rows abbreviate register-backed API fields with their register names; see the complete structures
-for their `reg_` field names. ETMv3 and ETE have separate configuration structures. [O14][O15]
+## 2. Code-image provider
 
-The producer must distinguish unavailable fields from valid zero values. Determine required/unused fields for the
-selected decoder configuration explicitly. A list of masked register writes is not necessarily a complete decoder
-snapshot: identification registers and the resulting active configuration may be absent.
+- Merge selected regions per `pname`; different processors may map different bytes at the same address.
+- Static instruction bytes at execution addresses, including RAM code; no relocation, gap padding or dynamic overlays.
+- `.bin` is historical reference data, not an input format. Inventory and HEX production ownership remain open.
 
-The current CMSIS `instructions:` intent and `ctrace-refs` do not by themselves supply this complete contract.
-ctrace does not currently retain ETM references, their register state, or code-image descriptions.
-Agree ownership with the debugger/pyTS producer before inventing a ctrace-private schema. [C2][A6]
-
-### 3.3 Executable images
-
-Full instruction decode combines compressed trace with code bytes. Direct branches and sequential instructions
-are reconstructed from those bytes; the trace is not a recording of every instruction opcode. [O2][O3]
-
-Every image mapping must identify:
-
-- File/snapshot identity and preferably a capture-time content hash or build identity.
-- Processor/source association and Secure/Non-secure address space where applicable.
-- Execution address range, file offset and available file-backed length.
-- Any explicit relocation, RAM execution mapping, ROM alias, or time-dependent overlay.
-
-The minimal milestone uses one static binary mapping and a capture within that supported execution context.
-For broader captures, include bootloader, application, Secure/Non-secure firmware, and required ROM code when crossed.
-A valid ELF with the wrong build can produce plausible but incorrect reconstruction. Source symbols alone do not
-provide the code bytes. Modified RAM code, software breakpoint patches, or dynamically generated code require
-matching capture-time bytes or a documented limitation.
-
-## 4. ELF/AXF reader and instruction decoder responsibilities
-
-### 4.1 What ctrace needs
-
-The first milestone uses raw `.bin` plus an explicit execution address; OpenCSD can access it without an ELF parser.
-For a later ELF/AXF milestone, ctrace needs a **read-only image reader**, not a target programmer or dynamic linker.
-Detect the format from its contents. The proposed first ELF support is validated ELF32 Arm `ET_EXEC` images and
-file-backed load regions at execution VMAs. A stripped executable can be sufficient; symbols and DWARF are optional.
-The ELF-specific rules below apply to that later milestone. [E1][E2]
-
-Use program-header file offsets and `p_filesz` to expose actual bytes, mapped to the execution address `p_vaddr`.
-Do not use flash load address / `p_paddr` as a universal substitute for where the processor executes RAM code.
-Validate toolchain-specific AXF/scatter-loading behavior with fixtures; any section-based fallback must be specified.
-Do not synthesize missing instruction bytes from `p_memsz`, BSS, or gaps. Reject ambiguous overlaps, unsupported
-relocations, and address arithmetic outside the supported domain. An initial implementation can reject `ET_REL`
-and dynamically relocated images until their mapping contract is defined.
-
-No reusable ELF/DWARF reader was found in the current ctrace/devtools C++ path. The implementation decision remains
-open between a bounded reader and a portable library. ELFIO is a candidate to evaluate: it is header-only C++ with
-an MIT license. Review a pinned version, validation behavior, footprint, and all release platforms before adoption.
-A full LLVM dependency is not justified solely by the need to extract ELF code regions. [E3]
-
-#### 4.1.1 ELFIO licensing and distribution
-
-ELFIO uses the MIT license. It can be included in an Apache-2.0 project; the Apache Software Foundation explicitly
-lists MIT as a Category A license accepted in its products. Our ctrace code and wrapper can remain Apache-2.0;
-retain the MIT license and attribution for the ELFIO portions. [L1][L2]
-
-When integrating ELFIO:
-
-- Preserve upstream copyright and license notices in the imported headers.
-- Include the complete upstream MIT license text, including copyright and warranty disclaimer, in distributed
-  source packages and binary release packages containing ELFIO code. Use the license from the pinned version.
-- Include those notices with binaries even though ELFIO is header-only and has no separately linked library file.
-  A website link alone is not a substitute for shipping the notices. [L1]
-
-MIT does not require publication of our source code or modifications, and does not require a file specifically
-named `NOTICE`. A practical integration is an ELFIO entry in the third-party component overview plus its original
-license in the package's license directory, for example `licenses/ELFIO.txt`. The filename is a packaging choice;
-the required notice content must reach recipients. Existing Apache-2.0 license and NOTICE obligations continue
-to apply independently. [L1][L3]
-
-Before distributing a build using ELFIO, verify that the source archive and every platform's binary package contain
-its license and attribution. This is a condition of the later ELFIO integration; it adds no dependency to the minimal
-binary-image milestone.
-
-### 4.2 Connecting images to OpenCSD
-
-OpenCSD offers buffers, binary files, file regions, and callback accessors. File-region access maps a file offset
-to an execution start address and length; OpenCSD does not interpret the ELF container for the client. [O2][O4]
-
-For the minimal single-CPU/static-image milestone, a binary file/region accessor is sufficient.
-For the later multi-source design, prefer an image provider behind the Trace-ID-aware callback:
-
-```text
-DecodeTree::addCallbackIDMemAcc(...)
-    -> read(address, memory_space, trace_id, requested_length)
-    -> resolve input/source -> processor -> matching image region
-    -> return available code bytes and actual byte count
-```
-
-The equivalent C API is `ocsd_dt_add_callback_trcid_mem_acc`. Return a short read or zero for inaccessible bytes;
-do not supply fabricated opcodes. Keep backing storage alive for the decode session.
-
-The built-in mapper is global: it does not select images by CPU/Trace ID and rejects conflicting mappings in the
-same memory space. Distinct cores can execute different images at identical VMAs. Therefore a single collection
-of overlapping global file accessors is insufficient; ctrace must resolve source/security-aware mappings itself.
-Track context changes for future context-dependent mappings. The callback alone does not provide a full process
-or overlay history. [O2][O4]
-
-OpenCSD's memory cache keys reads by Trace ID and address range, which separates static images on different cores.
-Memory space, context ID and image generation are not cache keys; a cache hit bypasses the image callback.
-ETMv4 invalidates on an updated context packet, but equivalent behavior must not be assumed for every protocol.
-Dynamic mappings or code changes at the same source/address need explicit invalidation or disabled caching.
-Initially reject unsupported time-dependent mappings; test Secure/Non-secure aliases and context transitions.
-The APIs include `InvalidateMemAccCache(traceID)` and `DecodeTree::setMemAccCacheing(...)`. [O4][O19][O23][O24][O25]
-
-### 4.3 Is another instruction codec needed?
-
-OpenCSD attaches its built-in `TrcIDecode` to full decoders. Its `IInstrDecode` contract supplies the instruction
-length and flow-relevant properties, including branch classification, direct target, and conditional/link/return
-information. It supports A32, T32, and A64 internally; the initial Cortex-M scope is T32/Thumb. [O5]
-
-Keep three responsibilities distinct:
-
-| Responsibility | Required initially? | Provider |
-| --- | --- | --- |
-| Read executable bytes at execution addresses | Yes for full path reconstruction | New ctrace image reader/provider |
-| Decode flow-relevant instruction properties | Yes | Existing OpenCSD instruction decoder |
-| Format assembly text | Optional | Later, separately evaluated disassembler |
-| Resolve symbols/source/inline frames | Optional | Later ELF symbol / DWARF layer |
-
-An optional per-instruction view must walk code using correct 16-/32-bit Thumb instruction lengths. It must also
-preserve execution decisions and incomplete-path states; formatting a range as assembly does not establish that
-every instruction printed was executed. OpenCSD's instruction-decoder interface can be evaluated for this walk
-before adding a dependency. Its missing architecture features remain an upstream integration issue.
-
-## 5. What OpenCSD outputs
-
-### 5.1 Generic elements, not an assembly listing
-
-Full decode calls `ITrcGenElemIn::TraceElemIn` with an input index, source Trace ID, and a
-`const OcsdTraceElement&`, derived from `ocsd_generic_trace_elem`. The C API exposes the generic C structure.
-The principal instruction result is `OCSD_GEN_TRC_ELEM_INSTR_RANGE`. [O3][O16]
-
-Important fields are:
-
-- Start address and exclusive end address: `[st_addr, en_addr)`.
-- ISA and `num_instr_range`; mixed Thumb instruction widths prevent deriving count from byte length alone.
-- Last instruction size, type/subtype, conditional flag, and `last_instr_exec`.
-- Optional cycle-count information, indicated by its validity flag.
-- Source and position supplied by the callback; processor/security/context maintained from related elements.
-
-The upstream M7 fixture contains this generic-element text output: [O22]
-
-```text
-Idx:21; ID:6; OCSD_GEN_TRC_ELEM_INSTR_RANGE(exec range=0x10000140:[0x1000014a] num_i(3) last_sz(2) (ISA=T32) E --- )
-Idx:21; ID:6; OCSD_GEN_TRC_ELEM_EXCEPTION(pref ret addr:0x1000014a; excep num (0x0b) )
-Idx:25; ID:6; OCSD_GEN_TRC_ELEM_TIMESTAMP( [ TS=0x000000000060]; )
-```
-
-This is checked-in OpenCSD test output, not a new ctrace execution or a proposed ctrace file syntax.
-It represents three Thumb instructions in `[0x10000140, 0x1000014a)`, an exception and a time anchor for source 6.
-Range end is the exclusive boundary of the represented code, not a universal branch-destination field. Keep
-subsequent addresses and flow metadata rather than inventing a target from `en_addr`.
-
-### 5.2 Information that must survive normalization
-
-This is the full target semantics. The minimal milestone retains instruction ranges and the state/diagnostics
-needed for its declared scope; richer context/time records follow later. Unsupported transitions must remain visible.
-
-| Generic element / property | Required interpretation |
+| Reader | Import contract |
 | --- | --- |
-| `INSTR_RANGE`, last-instruction flags | Preserve range/count and E/N execution decisions. |
-| `I_RANGE_NOPATH` | Incomplete path; no complete instruction list or exact coverage. |
-| `PE_CONTEXT` | Update ISA/security/context validity; keep unknown fields unknown. |
-| `EXCEPTION`, `EXCEPTION_RET` | Preserve addresses, number validity, return and tail-chain information. |
-| `TRACE_ON`, `NO_SYNC`, `EO_TRACE` | Preserve start/restart/end and reasons, including gaps and overflow. |
-| `ADDR_NACC`, `ADDR_UNKNOWN`, `UNKNOWN` | Expose missing code/address/invalid-decode state as an observable result. |
-| `TIMESTAMP`, `CYCLE_COUNT`, `SYNC_MARKER` | Preserve time, association, units and validity. |
+| Intel HEX | Validate record syntax/counts/checksums, EOF and bounds; `00`, `01`, `02`, `04` address/data records. |
+| HEX start records | Validate `03`/`05`; do not use them as image bases or trace starting PCs. |
+| ELF/AXF | ELF32, little-endian `EM_ARM`, static `ET_EXEC`, usable section headers. |
+| ELF code | `SHT_PROGBITS`, `SHF_ALLOC`, `SHF_EXECINSTR`; nonempty bytes at `sh_addr`, any section name. |
 
-The last instruction of a range can be conditional and unexecuted. `num_instr_range` counts represented
-instructions; do not blindly treat it as the number executed without applying the execution flags. [O3][O17]
+Validate bounds, address overflow, available data and conflicting overlaps before copying into owned regions.
+Reject unsupported compression, relocation and sectionless ELF; leave BSS and holes unmapped. [E2], [E4], [H1], [H2]
+For scatter-loaded RAM code, `sh_addr` is the execution address; a segment load address is insufficient. [E1], [E6]
 
-The `ADDR_NACC` condition can leave the decoder waiting for a subsequent trace address before it can reconstruct
-flow again. Retain partial output and the gap. Decoder success alone does not prove image identity or complete
-instruction coverage. Input positions from a formatted stream must keep the existing distinction between exact
-offsets and formatter hints. [O3][C3]
+Direct ELF import candidate: ELFIO, header-only C++, MIT; pin the dependency and retain its notices. [E3], [L1]
+Copy bytes before releasing ELFIO storage. HEX and ELF feed the same provider; no HEX conversion is required. [E5]
 
-## 6. Time and downstream processing
+## 3. Integration boundaries
 
-Instruction order, covered instruction count, CPU cycle count, and timestamp are different quantities.
-Timestamp elements provide source-specific trace-time anchors. Preserve protocol-specific association and any
-`SYNC_MARKER` locating an anchor earlier in the stream. They do not assign an exact time to every instruction.
-ETMv3/PTM can attach cycle counts to ranges or other elements. ETMv4 has explicit cycle-count elements, and a
-cycle count accompanying an ETMv4 timestamp has special association semantics and must not simply be added to
-the cumulative count. [O3]
+### 3.1 Source configuration
 
-The semantic model should preserve sequence order, raw time anchors and optional cycle information with an explicit
-time-domain identity and quality. Do not feed ETM through the existing ITM local-timestamp accumulator/prescaler.
-Do not distribute cycles equally across instructions, treat instruction count as time, or infer cross-source
-ITM/ETM clock correlation merely because both sources belong to one processor.
+| YAML | OpenCSD mapping |
+| --- | --- |
+| `core: Cortex-M4` | `OCSD_BUILTIN_DCD_ETMV3`, `ARCH_V7`, `profile_CortexM`. |
+| `core: Cortex-M7` | `OCSD_BUILTIN_DCD_ETMV4I`, `ARCH_V7`, `profile_CortexM`. |
+| `stream` | ETMv3 `reg_trc_id` / ETMv4 `reg_traceidr`. |
+| `ETMIDR`, `ETMCCER`, `ETMCR` | `reg_idr`, `reg_ccer`, `reg_ctrl`. |
+| `TRCIDR0`, `TRCIDR1`, `TRCIDR2`, `TRCIDR8` | `reg_idr0`, `reg_idr1`, `reg_idr2`, `reg_idr8`. |
+| `TRCCONFIGR` | `reg_configr`. |
 
-Suggested processing layers:
+- Make `core_prof` configurable; default to `Cortex-M` (`profile_CortexM`).
+  Its configuration interface is not part of the Experimental specification yet.
+- Pending specification update: obtain `TRCCONFIGR` from the pyOCD "write registers" block,
+  not the "ID regs" block. Keep the Experimental specification unchanged for now.
+- `decoder.regs` is metadata; existing reference/disable `regs` retain hardware-write semantics.
+- Fixed values belong to the qualified ETM implementation/revision, not every instance of a Cortex-M name.
+  Offline decoding needs resolved capture-time configuration; pyOCD supplies no static replacement.
+- Initialize unused OpenCSD ETMv4 IDR9–13 fields deterministically; they are not measured registers. [O10], [O14]
+- Bind `stream -> reference -> pname -> code regions`; preserve DWT symbol-file provenance separately. [C4], [C13]
 
-1. **Range preservation:** source, addresses, ISA, counts, flow flags, context, status and timing evidence.
-2. **Optional instruction expansion:** read exact bytes, advance by decoded instruction size, retain E/N and gaps.
-3. **Optional presentation:** disassembly, symbols and source lines.
-4. **Optional analysis:** coverage, branch statistics, call/return analysis and profiling.
+M4 source example; the corresponding image entry, when present, uses `pname: CM4`:
 
-Call-graph construction additionally needs exception/tail-chain, indirect branch, synchronization-loss and return
-handling. Trace-buffer wrap or trace filtering can remove the matching entry of a call. Report incomplete stacks
-instead of presenting an inferred complete call tree. Coverage needs a definition of executed versus merely covered
-or skipped conditional instructions. Time profiling requires qualified time data.
-
-## 7. Required ctrace extensions
-
-This section maps the complete target design. Section 1.1 defines the first implementation milestone.
-
-### 7.1 Reusable boundaries and missing behavior
-
-| Area | Existing implementation | Required extension |
-| --- | --- | --- |
-| Discovery / file jobs | TB discovery, bounded reads | Reuse; specify protocol and buffer normalization. |
-| Trace-run reader | ETM references discarded | Parse source instances, decoder state and image metadata. |
-| Routing | One ITM binding per processor | Allow ITM and ETM sources for the same processor. |
-| OpenCSD lifecycle | Named decoder plus `CSConfig` | Reuse; add ETM configs, memory callback and dispatch. |
-| Adapter | Only `ITMTRACE` elements consumed | Add instruction generic-element normalization. |
-| Semantic pipeline | ITM/DWT-specific | Dispatch by protocol; separate time/state logic. |
-| Events / filters | ITM/DWT, sampled PC, `tcyc` | Add ranges, context, gaps and timing evidence. |
-| CSV | Eight fixed columns | Minimal `instr_range` mapping; richer schema later if needed. |
-| CTF | ITM/DWT profile, clock requirements | Later: instruction/context events and time policy. |
-| Diagnostics / tests | Catalog, RAW context, partial results | Add source/image/path diagnostics and fixtures. |
-
-See [C1] through [C7] for the implementation boundaries. A sampled `pcsample` event is not an instruction path and
-must not be repurposed to encode ranges.
-
-### 7.2 Proposed pipeline
-
-This is the broader target architecture. The minimal path uses one binary image, one ETM source and CSV as in
-section 1.1; ELF/AXF, mixed sources, analysis and instruction CTF are later additions.
-
-```mermaid
-flowchart TD
-    Capture[TB raw bytes and capture metadata] --> Input[Existing input job and framing]
-    Images[ELF AXF bin and runtime mappings] --> Memory[Source-aware code image provider]
-    Input --> Tree[OpenCSD tree and typed source routes]
-    Memory --> Tree
-    Tree --> ITM[Existing ITM and DWT adapter]
-    Tree --> Instr[Instruction generic-element adapter]
-    ITM --> Events[Backend-independent semantic events]
-    Instr --> Events
-    Events --> CSV[CSV output]
-    Events --> CTF[CTF output]
-    Events --> Diagnostics[Diagnostics and quality]
-    Instr --> Later[Optional expansion symbols and analysis]
+```yaml
+- ref: CM4/instructions
+  pname: CM4
+  type: etm
+  stream: 0x22
+  decoder:
+    core: Cortex-M4
+    regs:
+      - name: ETMIDR
+        value: 0x4114f250
+      - name: ETMCCER
+        value: 0x18541800
+    regsToRead:
+      - name: ETMCR
+        value: 0x00000810  # Filled by pyOCD
 ```
 
-Keep the existing single-tree lifecycle constraints and independent per-file state. Mixed ITM/ETM input must not
-create competing decode trees or reuse an ITM-specific raw-packet monitor/recovery strategy for ETM.
-Use protocol-specific synchronization rules; bounded input reads and formatter state can remain shared. [C3]
+### 3.2 Decoder and packet monitoring
 
-### 7.3 Initial CSV contract and later output options
+| Boundary | Responsibility |
+| --- | --- |
+| CLI / output planning | ETM selectors/mode, fixed schema/name per input; independent CSV/CTF eligibility. |
+| YAML / source routing | Neutral configuration fields and source/image binding; no OpenCSD types in YAML models. |
+| `FileDecodeJob` / image readers | Owned code regions and Trace-ID-aware memory access. |
+| `DecodePipeline` / ETM session | One tree per file, independent ETMv3/ETMv4/ITM sources and diagnostics. |
+| ETM adapters / CSV | Structured packets, generic events, range expansion and deterministic fallback merge. |
 
-Preserve instruction ranges as the primary semantic representation. Expanding every instruction by default can
-greatly increase output volume and unnecessarily couples decode to presentation.
+- Use `OCSD_TRC_SRC_FRAME_FORMATTED` / `OCSD_DFRMTR_FRAME_MEM_ALIGN` for TB input. [O2]
+- `packets` and full-source fallback: `OCSD_CREATE_FLG_PACKET_PROC` plus `OCSD_C_API_CB_PKT_MON`.
+  MON provides packet bytes and length; `OCSD_C_API_CB_PKT_SINK` alone does not. Add SINK only for flow control. [O30]
+- Image-backed `instructions` / proposed `decoded`: `OCSD_CREATE_FLG_FULL_DECODER`, memory accessor before data,
+  `ocsd_dt_set_gen_elem_outfn` and MON. Copy callback-owned fields/bytes immediately. [O26]
+- Use `ocsd_dt_add_callback_trcid_mem_acc` for processor-local mappings; return actual available bytes.
+  A missing accessor is fatal; an unmapped read returns short/zero and may emit `ADDR_NACC`. [O26], [O27]
+- Provider/storage outlive the tree. The cache keys Trace ID + address; dynamic code/security mappings need separate
+  qualification and invalidation, not just a different callback response. [O19], [O23], [O24], [O25]
+- Route identity includes source/ATB ID; `pname` alone is not a route key. [C16]
 
-For the first milestone, use the existing eight-column CSV with the new `instr_range` type and mapping in section 1.1.
-Define how status/gap records and retained flow flags map to that output, and keep existing ITM/DWT semantics stable.
-If later requirements outgrow this mapping, evaluate a separate instruction artifact or an explicitly versioned
-common schema for richer context, timing and analysis data. These extensions require specification alignment;
-they are not currently part of the published CMSIS contract.
+**Mixed-output merge:**
 
-For the later CTF milestone, define instruction/status/context records and schema/version compatibility. CTF requires
-a valid clock frequency for selected streams and timestamps that do not regress. An ordered but untimed range stream
-does not automatically meet that contract. Options include deferring CTF until timing is qualified, or defining an
-explicit sequence-clock profile with documented viewer limitations. Never label a sequence counter as elapsed
-nanoseconds. Existing ITM/DWT CTF and Trace Compass XML contracts must be preserved. [C6][C7]
+- Retain packets and generic elements per source, with packet order, protocol position and local element order.
+  Association is many-to-many; decoder positions are not physical RAW offsets.
+- Finalize after decoder EOT; spool if necessary to bound memory. Preserve generic-element order and complete
+  valid PC prefixes. Let the full decoder resolve commit, cancel, mispredict and discard before PC export.
+- `ADDR_NACC` opens an image-gap interval at its originating packet. Keep that complete packet and subsequent
+  packets through the interval; stop before the next successfully reconstructed packet origin.
+  If that origin also contains a gap, retain its valid PCs and its packet once.
+- For one origin: generic rows/expanded PCs first, then its fallback packet. Set `partial=1` when it also produced PCs.
+  Missing generic output alone does not establish an image gap; canceled/unresolved atoms are not PC rows.
+- Only generic output drives instruction/context classification. MON additionally preserves source fields omitted
+  by generic events, including ETMv3 cancellation; unresolved EOT state remains explicit.
 
-## 8. Implementation sequence and validation gates
+### 3.3 Cortex-M exception normalization
 
-| Step | Deliverable | Completion evidence |
+`index` uses architectural exception/vector numbers, not protocol encodings or an IPSR sample.
+Reset is vector 1; exception-return/tail-chain markers alone do not identify the destination exception.
+Read raw structured fields; OpenCSD passes them unchanged into generic `exception_number`. [O25], [O31]
+
+| Protocol | Raw code | Architectural number |
 | --- | --- | --- |
-| 0. Select reference | One protocol/CPU, configuration and matching bin | Reviewed chronological capture bundle. |
-| 1. Minimal implementation | Five extensions in section 1.1; range CSV | Expected ranges/gaps; ITM/DWT compatibility. |
-| 2. Image formats | ELF/AXF reader and richer mappings | Valid/invalid files; execution-address fixtures. |
-| 3. Routing/context | ITM/ETM, multiple CPUs, richer context | Correct routing with overlapping VMAs. |
-| 4. CTF/viewers | Qualified instruction/time profile | Independent consumer and viewer validation. |
-| 5. Additional coverage | Further protocols; M23/Armv8.1-M qualification | Feature fixtures; upstream gaps addressed. |
+| ETMv3 | `0x01..0x07` | `raw + 16` (IRQ1..7). |
+| ETMv3 | `0x08` | 16 (IRQ0). |
+| ETMv3 | `0x09`, `0x0a`, `0x0d` | 6 (UsageFault), 2 (NMI), 4 (MemManage). |
+| ETMv3 | `0x0b`, `0x0c`, `0x0e`, `0x0f` | Unchanged. |
+| ETMv3 | `0x11`, `0x13`, `0x15` | 1 (reset), 3 (HardFault), 5 (BusFault). |
+| ETMv3 | `0x18..0x1ff` | Unchanged (IRQ8..495). |
+| ETMv4 M | `0x01..0x06`, `0x0b`, `0x0c`, `0x0e`, `0x0f` | Unchanged. |
+| ETMv4 M | `0x10..0x17` | Unchanged (IRQ0..7). |
+| ETMv4 M | `0x208..0x3ef` | `raw - 0x1f0` (IRQ8..495). |
+| ETMv4 M | `0x18`, `0x19`, `0x1a` | Empty: debug halt, lazy FP push, lockup. |
 
-MTB is separate from step 5: it needs its own record-format/circular-buffer contract and decoder, though the image
-provider, instruction-range model and output layers should be reusable. PTM/ETE are future scope unless explicitly
-selected. Changing the OpenCSD dependency or fixing upstream feature gaps also requires a separate reviewed change.
+ETMv3 code zero means no exception. Other reserved/implementation-defined codes remain unnormalized;
+SecureFault is outside M4/M7. Preserve raw code and event kind. Sources: IHI0014Q Table 7-11, pp. 319–320;
+IHI0064H.a Table 6-13, pp. 268–269; DDI0403E.e pp. 517, 525. [A11], [A10], [A12]
 
-Apply validation as the corresponding capability is implemented; section 1.1 defines the minimal milestone's gate.
-The complete validation plan should cover:
+## 4. Instruction execution classification
 
-- Reproducibly built small firmware with mixed-width Thumb, taken/not-taken branches, direct/indirect control flow,
-  calls/returns, exceptions, tail-chaining and, where relevant, Security transitions.
-- Actual instruction-trace capture, decoder configuration, matching images and independent expected ranges.
-  Existing `TB-Trace` ITM captures are not evidence of ETM instruction decode.
-- Upstream M7/M33 snapshots as integration references, with licensing/provenance reviewed before copying fixtures.
-- Variable byte-chunk boundaries through formatter frames and protocol packets; identical semantic output.
-- Capture starting mid-stream, buffer wrap, synchronization loss, overflow, incomplete tail and missing code bytes.
-- Wrong image identity, corrupted ELF bounds, overlapping mappings, RAM execution and multiple core-local VMAs.
-- Preservation of conditional execution, unknown-path ranges and partial results after unavailable memory.
-- Timestamp/cycle-count association and explicit absence of timing; no invented cross-source correlation.
-- M23 exception encoding and Armv8.1-M features as separate qualification gates rather than generic smoke tests.
+- Verify range instruction count, exclusive end and final size against code bytes. M4/M7 use mixed-width Thumb;
+  neither PC bit zero nor range byte length establishes instruction count.
+- `execution` describes the predicate, not completion. Canceled/interrupted instruction facts remain separate events;
+  no invented completed PC for a partially resumed instruction.
+- Track IT state: ordinary taken branches leave an IT block; Armv7-M exception entry starts with ITSTATE=0.
+  Exception return restores unknown IT state until evidence establishes it. Repeated unchanged context preserves state.
+  Debug halt, lazy FP push and lockup are not handler-entry indications and do not by themselves clear IT state.
+- Omitted Context-ID/VMID fields retain knowledge, including unknown. Gaps/unexplained context changes invalidate IT state.
+- ETMv3 E/N normally reports passed/failed predicates; apply instruction-specific exceptions such as CBZ/CBNZ first.
+  Use resolved endpoints after cancellation. ETMv4 interpretation also depends on enabled features. [A11], [A10]
+- `last_executed` describes only the range endpoint. An N atom may mean branch not taken; it does not always mean an
+  unexecuted instruction. A non-branch endpoint with `last_executed=1` alone does not prove an IT predicate. [O3], [A12]
+- Use structured context and protocol fields. The prototype's display-string parser is not the production interface.
 
-Upstream fixtures demonstrate relevant decoder paths; they are not a substitute for running ctrace against those
-paths. This research did not build a new decoder or execute ETM qualification tests.
+| `execution_basis` | Meaning |
+| --- | --- |
+| `unpredicated_path` | Known outside IT predication. |
+| `conditional_branch_predicate` | Conditional branch result establishes its predicate. |
+| `etmv3_atom_predicate` | Resolved E/N predicate after instruction-specific exceptions, including CBZ/CBNZ. |
+| `IT_state_unavailable` | IT state cannot be reconstructed. |
+| `IT_predicate_not_traced` | IT block known, predicate result absent from trace. |
+| `CBZ_CBNZ_comparison` | Comparison executes even when the branch is not taken. |
+| `IT_instruction` | IT instruction establishes the following block. |
+| `branch_taken` | Observed taken branch establishes that instruction's predicate. |
+| `IT_branch_predicate_failed` | Untaken branch in a known IT block has a failed predicate. |
+| `missing_branch_outcome` | Branch outcome is unavailable. |
+| `branch_predicate_context_unavailable` | Untaken branch without sufficient predicate context. |
+| `nonbranch_last_flag_unqualified` | Endpoint flag alone cannot establish a non-branch predicate. |
+| `predicate_analysis_profile_unqualified` | No qualified classifier for this profile/ISA. |
 
-## 9. Remaining decisions
+Do not infer missing predicate results from later register snapshots.
+ETMv3 PC expansion/classification still needs independent qualification.
 
-The single-source/bin-to-range-CSV milestone and its initial column mapping are agreed in section 1.1.
-Before implementing it, settle:
+## 5. OpenCSD restrictions and qualification risks
 
-1. Which first real capture is available: M7 ETMv4, M33 ETMv4, or a qualified M3/M4 ETMv3 source?
-2. Which fields carry its complete decoder configuration and static binary execution mapping in trace-run metadata?
-3. Which observable CSV status/gap records and flow flags accompany `instr_range` for this capture?
+Details and reproducible defects: [Known OpenCSD issues](opencsd-issues.md).
 
-For later milestones, decide producer ownership of image identity/security/runtime mappings, the ELF reader,
-whether richer CSV needs a new schema, the timing/CTF contract, additional processor qualification and desired
-analyses. These decisions do not require an ELF loader, CTF or multi-CPU implementation in the first milestone.
+| Area | Pinned-version result / consequence |
+| --- | --- |
+| ETMv3 cancellation | Packed EE followed by cancellation can retain a canceled PC; decoder correction required. |
+| ETMv3 IRQ8 field | `cm_irq_n` is 24 instead of 8; normalize from the raw exception code. |
+| ETMv3 truncated branch at EOT | Reported as a valid branch with stale fields; truncation handling needs correction. |
+| ETMv3 exception metadata | Generic `EXCEPTION` omits the raw Cancel bit; preserve it through packet monitoring. |
+| ETMv4 reset address | Generic return-address flag does not establish architectural validity for reset. |
+| ETMv4 conditional non-branch trace | Parser recognizes it; full decoder rejects configuration with `HW_CFG_UNSUPP`. |
+| Armv8.1-M branch-forward | Not qualified here; fixtures do not establish complete support. |
+| Cortex-M23 / ETMv3 | Decoder checks `ARCH_V7`, core map selects `ARCH_V8`; qualification required. |
 
-## 10. Evidence and references
+- ETMv3 support remains required; correct cancellation and EOT handling before qualifying its outputs.
+  The CM4 hardware capture contains no cancellation packet and does not cover that defect.
+- The M7 reference has conditional non-branch tracing disabled; absent IT predicate results remain `unknown`.
+  Enabling it requires a decoder that supports the configuration; changing archived metadata cannot recover results.
+- Additional cores, security/dynamic mappings and protocol revisions need separate qualification. Unsupported features
+  must remain explicit; packet-parser support is not full instruction-decoder support. [O1], [O8], [O13], [O25], [O28]
 
-OpenCSD links below are pinned to the inspected revision. Hardware manuals were fetched and read through the
-CMSIS documentation tools; page numbers above refer to PDF pages. Their product revisions matter.
-The support matrix is bounded by this evidence, not a claim about every SoC integrating these processor cores.
+## 6. Reference evidence
 
-- [O1] OpenCSD README, support list and pending features.
-- [O2] OpenCSD programming guide: tree, configuration, memory images, callbacks and data flow.
-- [O3] Generic-element interpretation guide; [structure and fields][O17].
-- [O4] Memory accessor API; [callback types][O18] and [global mapper implementation][O19].
-- [O5] Instruction-decoder interface; [implementation][O20] and [automatic tree attachment][O21].
-- [O6] Decoder registry and protocol implementation directories.
-- [O7] Upstream M7, M33 and Armv8.1-M snapshots.
-- [O8] ETMv3 M-profile gate and core architecture map.
-- [O9] Thumb low-overhead-loop instruction support.
-- [O10] Protocol configuration structures.
-- [O11] ETMv3 full-decoder mode validation.
-- [O12] ETMv3 M-profile exception packet parsing.
-- [O13] Processor-name to architecture/profile map.
-- [O14] ETMv3 configuration structure.
-- [O15] ETE configuration structure.
-- [O16] C++ generic-element callback interface.
-- [O22] Checked-in M7 generic-element output example.
-- [O23] Memory-cache keys and context assumptions; [cache read implementation][O24].
-- [O25] ETMv4 context update and memory-cache invalidation.
-- [A1] Arm Cortex-M resources: architecture and trace documentation map.
-- [A2] Arm CoreSight ETM-M7 TRM, DDI0494D, r0p1.
-- [A3] Arm CoreSight ETM-M23 TRM, DDI0563C, r0p1.
-- [A4] Arm CoreSight ETM-M55 TRM, 101053_0101_03_en, r1p1.
-- [A5] Arm CoreSight ETM-M85 TRM, 101926_0101_07_en, r1p1.
-- [A6] Published CMSIS experimental trace configuration and output contract.
-- [A7] Arm CoreSight ETM-M33 TRM, 100232_0002_06_en, r0p2, issue 06.
-- [A8] Arm Cortex-M35P introduction, integrated debug and trace, PDF p.15.
-- [A9] Arm China CoreSight ETM-M52 TRM, 102774_0002_05_en, r0p2, issue 05.
-- [A10] Arm employee explanation of M0/M0+ trace and MTB.
-- [E1] ELF program-header/loading contract.
-- [E2] Arm ELF ABI.
-- [E3] ELFIO upstream project and license.
-- [L1] ELFIO MIT license, copyright and distribution condition.
-- [L2] Apache Software Foundation third-party license policy, Category A including MIT.
-- [L3] Apache License 2.0, redistribution and NOTICE requirements.
-- [C1] ctrace architecture and input constraints.
-- [C2] Current trace-run schema and [YAML reader](../src/tracerun/YmlTraceRunConfigReader.cpp).
-- [C3] OpenCSD adapter, [tree lifecycle](../src/decode/OpenCsdTreeSession.cpp)
-  and [pipeline](../src/decode/DecodePipeline.cpp).
-- [C4] Current route metadata and normalization.
-- [C5] Semantic events and output selectors.
-- [C6] CTF output requirements and [CSV row mapping](../src/output/csv/CsvRowMapper.cpp).
-- [C7] Current CTF profile and deferred decoder work.
-- [C8] Current trace-directory naming and CLI contract.
-- [C9] File decode job and pipeline creation.
-- [C10] Shared CTF event-payload visitor.
+Companion workspace: `/Users/thode01/work/github/TraceBufferExamples`; captures retain their original schemas.
+
+| Reference | Evidence | Remaining limit |
+| --- | --- | --- |
+| [STM32H7B3I-DK / M7][ref-m7] | 4-KiB ETF, ATB `0x12`; packets, ranges and PC validation. | ELF/HEX parity. |
+| [STM32H747I-DISCO / M4][ref-m4] | 4-KiB ETF, ATB `0x22`; packets and ranges. | PC/classifier qualification. |
+| [ETMv3 cancellation][ref-cancel] | Synthetic packed/split atom comparison. | Host reproduction. |
+| [ETMv3 packet fields][ref-fields] | IRQ8 field and truncated-branch cases. | Host reproduction. |
+
+- Hardware bundles contain matching RAW, images, decoder metadata and validation reports; both capture windows wrap.
+- M7 PC evidence: `validation/pc-expansion/README.md`; hardware/project configuration: each board's `TRACE_SETUP.md`.
+- Shared host helpers: `STM32H7B3I-DK/tools/`. They establish reference evidence, not production ctrace ETM support.
+
+## Appendix A. Trace representations
+
+| Representation | Meaning |
+| --- | --- |
+| Architectural elements | ETMv4 P0: atoms, exceptions, Q, M-profile returns; other elements: state/resolution. |
+| Protocol packets | Encodings of elements, potentially several per packet; Appendix B. |
+| OpenCSD generic elements | Decoded ranges, events and status; mapped in the CSV specification. |
+| Instruction rows | Image-backed expansion of complete generic ranges, with qualified predication. |
+
+ETMv4 element groups: IHI0064H.a Figure 2-3, p. 34. [A10]
+One protocol packet is not one range or one instruction; packet names do not imply instruction execution.
+
+## Appendix B. CSV types and packet names
+
+### B.1 Trace types
+
+| Family or existing output | CSV `type` | Status |
+| --- | --- | --- |
+| ITM / DWT | `itm`, `dwt` | Existing software/data trace. |
+| DWT events and PMU | `event`, `pmu` | Existing event categories. |
+| Exceptions and PC samples | `exception`, `pcsample` | Existing records; not ETM instruction reconstruction. |
+| Timing and diagnostics | `global_ts`, `overflow`, `error`, `info` | Existing output categories. |
+| ETMv3 | `ETMv3` | Required; Cortex-M4/ETMv3.5 hardware reference. |
+| ETMv4 | `ETMv4` | Required; Cortex-M7/ETMv4.0 hardware reference. |
+| PTM / ETE | `ptm`, `ete` | Possible later instruction protocols; OpenCSD decoders exist. |
+| STM | `stm` | Possible later software trace; OpenCSD decoder exists. |
+
+Existing source/event categories retain their meanings. `info` marks skipped input bytes and is not selectable.
+[C10], [C11] DWT travels through ITM, not a separate protocol decoder. Minor ETM revisions remain configuration,
+not distinct `type` values. Profile qualification and decoder restrictions are in section 5. [O1], [O6]
+
+### B.2 Packet inventory
+
+Packet classes below include formats beyond the required M4/M7 profiles.
+Names use lowercase enum suffixes, normalizing `A_SYNC` to `async`, `CTXT` to `context`, `EXCEPT` to `exception`,
+and `EXCEPT_RTN` to `exception_return`. Format/address variants stay distinct.
+Availability depends on revision, capabilities and capture configuration; not every core emits every listed packet.
+
+Sources: IHI0014Q Table 7-1, pp. 301–302 [A11], and IHI0064H.a Table 6-1, pp. 239–241 [A10], checked against
+OpenCSD enums/processors. [O10], [O12], [O14], [O28] Appendix A separates architectural and decoded elements.
+
+#### Shared ETMv3 / ETMv4 packet names
+
+| `packet` | Meaning / qualification |
+| --- | --- |
+| `async` | Alignment synchronization (A-Sync). |
+| `timestamp` | Transmitted timestamp; ETMv3.5+ and configured timestamp support. |
+| `ignore` | Ignored padding packet; ETMv4.3+ for the ETMv4 instruction stream. |
+
+Shared names describe roles; encoding and validity remain protocol-specific. Other shared concepts use different
+classes: atoms are ETMv3 `p_hdr` versus ETMv4 `atom_f1`–`atom_f6`; context uses ETMv3 `i_sync`/`context_id`/`vmid`
+versus ETMv4 `context`/address-with-context. The lists separate encodings, not exclusive capabilities.
+
+#### ETMv3-only packet classes
+
+| `packet` | Meaning / qualification |
+| --- | --- |
+| `branch_address` | Branch address; can also carry exception information. |
+| `i_sync`, `i_sync_cycle` | Instruction synchronization, without/with cycle count. |
+| `p_hdr` | E/N atoms; retain P-header format 1–4 in the packet fields. |
+| `cycle_count` | Standalone cycle count. |
+| `trigger` | Trigger indication. |
+| `context_id`, `vmid` | Context-ID / VMID update; VMID is an ETMv3.5 feature. |
+| `exception_exit` | Exception-return marker. |
+
+Instruction-only exception entry uses branch-address fields. Trace enable/overflow are I-Sync reasons;
+there are no standalone ETMv3 `trace_on`/`overflow` packets. [A11], [O12]
+
+#### ETMv4-only instruction-stream packet classes represented in OpenCSD
+
+| `packet` | Meaning / qualification |
+| --- | --- |
+| `trace_info`, `trace_on` | Decoder synchronization state / trace becoming active. |
+| `discard`, `overflow` | Discarded speculative state / trace overflow. |
+| `exception`, `exception_return` | Exception and exception-return indication. |
+| `ccnt_f1`, `ccnt_f2`, `ccnt_f3` | Cycle-count formats 1–3. |
+| `commit`, `mispredict` | Speculation resolution. |
+| `cancel_f1`, `cancel_f1_mispred`, `cancel_f2`, `cancel_f3` | Cancellation formats; F1 can include misprediction. |
+| `cond_i_f1`, `cond_i_f2`, `cond_i_f3` | Conditional-instruction formats 1–3. |
+| `cond_res_f1`, `cond_res_f2`, `cond_res_f3`, `cond_res_f4` | Conditional-result formats 1–4. |
+| `cond_flush` | Conditional trace flush. |
+| `event` | Trace event indication. |
+| `context` | Processor context, including implemented/transmitted Context-ID and VMID fields. |
+| `addr_ctxt_l_32is0`, `addr_ctxt_l_32is1` | Long 32-bit address with context, instruction-set encoding IS0/IS1. |
+| `addr_ctxt_l_64is0`, `addr_ctxt_l_64is1` | Long 64-bit address with context, IS0/IS1. |
+| `addr_match` | Exact match with a retained address. |
+| `addr_s_is0`, `addr_s_is1` | Short address, IS0/IS1. |
+| `addr_l_32is0`, `addr_l_32is1` | Long 32-bit address, IS0/IS1. |
+| `addr_l_64is0`, `addr_l_64is1` | Long 64-bit address, IS0/IS1. |
+| `q` | Q packet; preserve its subtype and valid fields. |
+| `atom_f1`, `atom_f2`, `atom_f3` | E/N atom formats 1–3. |
+| `atom_f4`, `atom_f5`, `atom_f6` | E/N atom formats 4–6. |
+| `ts_marker` | Timestamp marker; ETMv4.6+ with the feature implemented. |
+
+Enum membership does not establish hardware capability or full-decoder support (section 5).
+IS0/IS1 are protocol instruction-set encodings whose meaning depends on processor state. [O28], [A10]
+
+#### Additional parsed ETMv4 classes outside the initial M4/M7 instruction-only profile
+
+| `packet` | Scope |
+| --- | --- |
+| `func_ret` | Function-return packet; additional profile/revision qualification required. |
+| `num_ds_mkr`, `unnum_ds_mkr` | Numbered/unnumbered data-synchronization markers; data-trace association. |
+
+These classes have parser handlers; omission from the initial profile is not an OpenCSD parser defect. [O28]
+
+#### Additional ETMv4 architecture packets absent from the pinned OpenCSD processor
+
+| Proposed `packet` | Architecture / status |
+| --- | --- |
+| `branch_future_flush` | Added in ETMv4.5; branch-future state handling is not implemented here. |
+| `resynchronization` | Added in ETMv4.5; no corresponding packet class/handler in this OpenCSD pin. |
+
+These architectural entries require decoder work; see IHI0064H Table 6-1 and the ETMv4.5 change summary, p. 536.
+[A10], [O1], [O28]
+
+### B.3 Parser status
+
+- Map `NOTSYNC`, `INCOMPLETE_EOT`, `BAD_SEQUENCE`, `BAD_TRACEMODE`, `RESERVED`, `RESERVED_CFG` to
+  `notsync`, `incomplete_eot`, `bad_sequence`, `bad_tracemode`, `reserved`, `reserved_cfg` with `record=status`.
+  They are parser states, not on-wire packets. Preserve reason and available bytes.
+- `NOERROR` / `NO_ERR_TYPE` are sentinels; `BRANCH_OR_BYPASS_EOT` and `EXTENSION` are internal dispatch states,
+  not exported packet classes. Extension headers resolve to concrete types.
+- The pinned ETMv3 processor can report a truncated branch at EOT as a valid branch with stale fields;
+  see [Known OpenCSD issues](opencsd-issues.md#etmv3-unfinished-packet-emitted-without-eot-error-status).
+- Decoder diagnostics retain existing `error`, `overflow`, `info` categories and source attribution when known.
+- ETE-only source-address, transaction and PE-reset entries in the shared header are outside this proposal.
+
+## Sources
+
+OpenCSD links identify the inspected pin; architecture editions/pages are stated at each use.
 
 [O1]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/README.md
 [O2]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/docs/prog_guide/prog_guide_main.md
 [O3]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/docs/prog_guide/prog_guide_generic_pkts.md
-[O4]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/common/ocsd_dcd_tree.h
-[O5]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/interfaces/trc_instr_decode_i.h
 [O6]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/ocsd_lib_dcd_register.cpp
-[O7]: https://github.com/Linaro/OpenCSD/tree/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/tests/snapshots
 [O8]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/opencsd/etmv3/trc_cmp_cfg_etmv3.h
-[O9]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/i_dec/trc_idec_arminst.cpp
 [O10]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/opencsd/etmv4/trc_pkt_types_etmv4.h
-[O11]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/etmv3/trc_pkt_decode_etmv3.cpp
 [O12]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/etmv3/trc_pkt_proc_etmv3_impl.cpp
 [O13]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/trc_core_arch_map.cpp
 [O14]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/opencsd/etmv3/trc_pkt_types_etmv3.h
-[O15]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/opencsd/ete/trc_pkt_types_ete.h
-[O16]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/interfaces/trc_gen_elem_in_i.h
 [O17]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/opencsd/trc_gen_elem_types.h
-[O18]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/opencsd/ocsd_if_types.h
 [O19]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/mem_acc/trc_mem_acc_mapper.cpp
-[O20]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/i_dec/trc_i_decode.cpp
-[O21]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/ocsd_dcd_tree.cpp
-[O22]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/tests/snapshots/v7m_svc_vector/pkt_proc_logs/v7m_svc_vector.ppl
 [O23]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/mem_acc/trc_mem_acc_cache.h
 [O24]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/mem_acc/trc_mem_acc_cache.cpp
 [O25]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/etmv4/trc_pkt_decode_etmv4i.cpp
-[A1]: https://developer.arm.com/community/arm-community-blogs/b/architectures-and-processors-blog/posts/cortex-m-resources
-[A2]: https://documentation-service.arm.com/static/5e906dfe8259fe2368e2ac54
-[A3]: https://documentation-service.arm.com/static/5e90936fc8052b16087620d0
-[A4]: https://documentation-service.arm.com/static/6622c0bbfabc8c11c7b53135
-[A5]: https://documentation-service.arm.com/static/662a6ea9c7622e1c31ae08ee
-[A6]: https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/
-[A7]: https://documentation-service.arm.com/static/66be2251882fec713ef49f7b
-[A8]: https://armkeil.blob.core.windows.net/developer/Files/pdf/white-paper/introduction-to-cortex-m35p.pdf
-[A9]: https://documentation-service.arm.com/static/65849e9cb52744113be61b26
-[A10]: https://community.arm.com/forums/f/architectures-and-processors-forum/8383/trace-debug-functionality-in-arm-cortex-m0/28550
+[O26]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/opencsd/c_api/opencsd_c_api.h
+[O27]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/common/trc_pkt_decode_base.h
+[O28]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/etmv4/trc_pkt_proc_etmv4i.cpp
+
+[A10]: https://documentation-service.arm.com/static/60017fbb3f22832ff1d6872b
+[A11]: https://documentation-service.arm.com/static/5f90158b4966cd7c95fd5b5e
+[A12]: https://documentation-service.arm.com/static/606dc36485368c4c2b1bf62f
+
 [E1]: https://gabi.xinuos.com/elf/07-pheader.html
 [E2]: https://github.com/ARM-software/abi-aa/blob/main/aaelf32/aaelf32.rst
 [E3]: https://github.com/serge1/ELFIO
+[E4]: https://gabi.xinuos.com/elf/03-sheader.html
+[E5]: https://github.com/serge1/ELFIO/blob/main/elfio/elfio_section.hpp
+[E6]: https://developer.arm.com/documentation/100070/0612
+
+[H1]: https://www.keil.com/support/docs/1584/default.htm
+[H2]: https://onlinedocs.microchip.com/oxy/GUID-C3F66E96-7CDD-47A0-9AB7-9068BADB46C0-en-US-4/GUID-DF9E479D-6BA8-49E3-A2A5-997BBA49D34D.html
+
 [L1]: https://github.com/serge1/ELFIO/blob/main/LICENSE.txt
-[L2]: https://www.apache.org/legal/resolved.html#category-a
-[L3]: https://www.apache.org/licenses/LICENSE-2.0
-[C1]: architecture.md
-[C2]: ../src/tracerun/TraceRunConfig.h
-[C3]: ../src/decode/OpenCsdPacketCollector.cpp
+
 [C4]: ../src/tracerun/CtraceRunMeta.cpp
-[C5]: ../src/model/TraceEvent.h
-[C6]: ../src/output/OutputRequirements.cpp
-[C7]: ctf-format.md
-[C8]: ../README.md
-[C9]: ../src/control/FileDecodeJob.cpp
-[C10]: ../src/output/ctf/CtfEncoder.cpp
+[C10]: ../src/model/TraceSelection.h
+[C11]: ../src/output/csv/CsvRowMapper.cpp
+[C13]: ../src/tracerun/YmlTraceRunConfigReader.cpp
+[C16]: ../src/tracerun/CtraceRunMeta.h
+
+[O30]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/opencsd/c_api/ocsd_c_api_types.h
+[O31]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/etmv3/trc_pkt_decode_etmv3.cpp
+
+[ref-m7]: ../../../../TraceBufferExamples/ReferenceTraces/STM32H7B3I-DK-ETMv4/README.md
+[ref-m4]: ../../../../TraceBufferExamples/ReferenceTraces/STM32H747I-DISCO-CM4-ETMv3/README.md
+[ref-cancel]: ../../../../TraceBufferExamples/ReferenceTraces/OpenCSD-ETMv3-Cancellation/README.md
+[ref-fields]: ../../../../TraceBufferExamples/ReferenceTraces/OpenCSD-ETMv3-PacketFields/README.md
