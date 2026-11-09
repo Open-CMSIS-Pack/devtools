@@ -709,6 +709,9 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteItem* f)
     updateFile.clear(); // no need in that
   }
 
+  if (!ShouldUpdateRte()) {
+    return;
+  }
   // remove redundant current and origin files
   string baseName = name + '.' + RteUtils::BASE_STRING;
   string updateName = name + '.' + RteUtils::UPDATE_STRING;
