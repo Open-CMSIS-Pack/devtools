@@ -7041,11 +7041,11 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
 
   // --no-update-rte
   std::vector<std::tuple<std::string, int, std::string, std::string>> testDataVector1 = {
-    { "BaseUnknown", 0, "warning csolution: file '.*/startup_ARMCM3.c.base' not found; base version unknown",                                                     "missing base"       },
-    { "Patch",       0, "warning csolution: update suggested for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'; use --update-rte",   "update suggested"   },
-    { "Minor",       0, "warning csolution: update recommended for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'; use --update-rte", "update recommended" },
-    { "Major",       1, "error csolution: update required for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'; use --update-rte",      "update required"    },
-    { "Missing",     1, "error csolution: file '.*/startup_ARMCM3.c' not found; use --update-rte",                                                                "missing file"       },
+    { "BaseUnknown", 0, "warning csolution: file '.*/startup_ARMCM3.c.base' not found; base version unknown",                                   "missing base"       },
+    { "Patch",       0, "warning csolution: update suggested for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'",   "update suggested"   },
+    { "Minor",       0, "warning csolution: update recommended for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'", "update recommended" },
+    { "Major",       1, "error csolution: update required for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'",      "update required"    },
+    { "Missing",     1, "error csolution: file '.*/startup_ARMCM3.c' not found; use --update-rte",                                              "missing file"       },
   };
 
   for (const auto& [build, errCode, errMsg, status] : testDataVector1) {
