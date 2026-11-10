@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<package schemaVersion="1.4" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+  <vendor>TestVendor</vendor>
+  <url>https://Packs.Example.com/device-family-Pack/</url>
+  <name>UrlReference</name>
+  <description>Package URL comparison tests</description>
+
+  <releases>
+    <release version="1.0.0" date="2026-01-01">Initial release.</release>
+  </releases>
+</package>

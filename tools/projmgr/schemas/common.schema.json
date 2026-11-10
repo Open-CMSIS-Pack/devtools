@@ -426,33 +426,45 @@
             "type": "object",
             "patternProperties": {
               "^.*$": {
-                "oneOf": [
-                  {
-                    "type": "string",
-                    "pattern": "^([^=:]+)$",
-                    "minLength": 1
-                  },
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "boolean"
-                  }
-                ]
+                "$ref": "#/definitions/DefineValueType"
               }
             }
           },
-          {
-            "type": "string",
-            "pattern": "^([^=:]+)$"
-          }
+          { "$ref": "#/definitions/DefineSymbolType" }
         ]
       }
+    },
+    "DefineSymbolType": {
+      "type": "string",
+      "pattern": "^([^=:]+)$"
+    },
+    "DefineValueType": {
+      "oneOf": [
+        { "type": "string", "pattern": "^([^=]+)$", "minLength": 1 },
+        { "type": "number" },
+        { "type": "boolean" }
+      ]
     },
     "WestDefinesType": {
       "title": "west-defs:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#west-defs",
       "description": "Defines forwarded to CMake via west build system.",
-      "$ref": "#/definitions/DefinesType"
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/DefineSymbolType" },
+          {
+            "type": "object",
+            "properties": {
+              "for-compiler": { "$ref": "#/definitions/CompilersType" }
+            },
+            "additionalProperties": {
+              "$ref": "#/definitions/DefineValueType"
+            }
+          }
+        ]
+      }
     },
     "DefinesType": {
       "title": "define:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#define",
@@ -466,26 +478,11 @@
             "type": "object",
             "patternProperties": {
               "^.*$": {
-                "oneOf": [
-                  {
-                    "type": "string",
-                    "pattern": "^([^=:]+)$",
-                    "minLength": 1
-                  },
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "boolean"
-                  }
-                ]
+                "$ref": "#/definitions/DefineValueType"
               }
             }
           },
-          {
-            "type": "string",
-            "pattern": "^([^=:]+)$"
-          }
+          { "$ref": "#/definitions/DefineSymbolType" }
         ]
       }
     },
@@ -501,26 +498,11 @@
             "type": "object",
             "patternProperties": {
               "^.*$": {
-                "oneOf": [
-                  {
-                    "type": "string",
-                    "pattern": "^([^=:]+)$",
-                    "minLength": 1
-                  },
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "boolean"
-                  }
-                ]
+                "$ref": "#/definitions/DefineValueType"
               }
             }
           },
-          {
-            "type": "string",
-            "pattern": "^([^=:]+)$"
-          }
+          { "$ref": "#/definitions/DefineSymbolType" }
         ]
       }
     },

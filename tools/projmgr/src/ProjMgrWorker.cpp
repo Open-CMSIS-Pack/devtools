@@ -127,10 +127,11 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
     context.westOn = true;
     context.west = descriptor.west;
     RteFsUtils::NormalizePath(context.west.app, context.csolution->directory);
+    context.cproject->directory = context.west.app;
     context.cproject->output.baseName = "zephyr/zephyr";
     context.cproject->name = context.west.projectId;
     context.cproject->output.type = { "elf", "hex" };
-    CollectionUtils::PushBackUniquely(context.west.westDefs, "CONFIG_BUILD_OUTPUT_HEX=y");
+    CollectionUtils::PushBackUniquely(context.west.resolvedWestDefines, "CONFIG_BUILD_OUTPUT_HEX=y");
   }
 
   // CMake native project
@@ -563,6 +564,7 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
     ProjMgrLogger::Get().Error("required packs must be specified");
     return false;
   }
+  const set<string> requiredPdscFiles(pdscFiles.begin(), pdscFiles.end());
   // Get installed packs
   if (noPackRequirements || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
     const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
@@ -571,7 +573,7 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
       return false;
     }
   }
-  if (!m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles)) {
+  if (!m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles, requiredPdscFiles)) {
     ProjMgrLogger::Get().Error("failed to load and insert packs");
     return CheckRteErrors();
   }
@@ -3133,15 +3135,15 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
     error |= true;
   }
 
-  // Output filenames must be processed after board, device and compiler precedences
-  // but before processing other access sequences
-  if (!ProcessOutputFilenames(context)) {
-    error |= true;
-  }
-
   // Process device and board
   if (process != BoardOrDevice::None && !ProcessDevice(context, process)) {
     CheckMissingPackRequirements(context.name);
+    error |= true;
+  }
+
+  // Output filenames must be processed after board, device and compiler precedences
+  // but before processing other access sequences
+  if (!ProcessOutputFilenames(context)) {
     error |= true;
   }
 
@@ -3332,8 +3334,22 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
   }
 
   // Merge west defines
-  CollectionUtils::AddStringItemsUniquely(context.west.westDefs, context.controls.target.westDefs);
-  CollectionUtils::AddStringItemsUniquely(context.west.westDefs, context.controls.build.westDefs);
+  const auto appendWestDefines = [&](const vector<WestDefineItem>& entries) {
+    for (const auto& entry : entries) {
+      if (CheckCompiler(entry.forCompiler, context.compiler)) {
+        CollectionUtils::AddStringItemsUniquely(context.west.resolvedWestDefines, entry.defines);
+      }
+    }
+  };
+  const auto generatedWestDefines = context.west.resolvedWestDefines;
+  context.west.resolvedWestDefines.clear();
+  appendWestDefines(context.west.westDefines);
+  CollectionUtils::AddStringItemsUniquely(context.west.resolvedWestDefines, generatedWestDefines);
+  appendWestDefines(context.controls.target.westDefines);
+  appendWestDefines(context.controls.build.westDefines);
+  if (!ProcessSequencesRelatives(context, context.west.resolvedWestDefines)) {
+    return false;
+  }
 
   // Includes
   vector<string> projectAddPaths, projectDelPaths;
@@ -3593,6 +3609,13 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem & context, bool rerun)
     }
   }
 
+  for (auto& configure : context.cmake.configure) {
+    configure = RteUtils::ExpandAccessSequences(configure, context.variables);
+    if (!GetAndValidateAccessSequence(context, configure)) {
+      return false;
+    }
+  }
+
   // project, solution, target-type and build-type translation controls
   if (!ProcessSequencesRelatives(context, context.controls.cproject, context.cproject->directory) ||
       !ProcessSequencesRelatives(context, context.controls.csolution, context.csolution->directory) ||
@@ -3703,8 +3726,41 @@ void ProjMgrWorker::ExpandPackDir(ContextItem& context, const string& pack, stri
     ProjMgrLogger::Get().Warn("access sequence pack was not loaded: '$Pack(" + pack + ")$'", context.name);
     return;
   }
-  regex regEx = regex(string("\\$") + RteConstants::AS_PACK_DIR + "\\(.*\\)\\$");
-  item = regex_replace(item, regEx, replacement);
+  RteUtils::ReplaceAll(item, string("$") + RteConstants::AS_PACK_DIR + "(" + pack + ")$", replacement);
+}
+
+bool ProjMgrWorker::GetAndValidateAccessSequence(const ContextItem& context, const string& input) {
+  size_t offset = 0;
+  string sequence;
+  return GetAndValidateAccessSequence(context, input, offset, sequence, false);
+}
+
+bool ProjMgrWorker::GetAndValidateAccessSequence(const ContextItem& context, const string& input, size_t& offset,
+  string& sequence, bool allowDynamic) {
+  while ((offset = input.find('$', offset)) != string::npos && input.compare(offset, 2, "${") == 0) {
+    const auto closingBrace = input.find('}', offset + 2);
+    if (closingBrace == string::npos) {
+      break;
+    }
+    offset = closingBrace + 1;
+  }
+  if (offset == string::npos) {
+    return true;
+  }
+  if (!RteUtils::GetAccessSequence(offset, input, sequence, '$', '$')) {
+    ProjMgrLogger::Get().Error("malformed access sequence: '" + input, context.name);
+    return false;
+  }
+  if (offset != string::npos) {
+    smatch matches;
+    if (!allowDynamic ||
+      !((regex_match(sequence, matches, packDirRegEx) && matches.size() == 3) ||
+        (regex_match(sequence, matches, accessSequencesRegEx) && matches.size() == 3))) {
+      ProjMgrLogger::Get().Error("unknown access sequence: '" + sequence + "'", context.name);
+      return false;
+    }
+  }
+  return true;
 }
 
 bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, const string& ref,
@@ -3718,8 +3774,7 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
   while (offset != string::npos) {
     string sequence;
     // get next access sequence
-    if (!RteUtils::GetAccessSequence(offset, input, sequence, '$', '$')) {
-      ProjMgrLogger::Get().Error("malformed access sequence: '" + input, context.name);
+    if (!GetAndValidateAccessSequence(context, input, offset, sequence, true)) {
       return false;
     }
     if (offset != string::npos) {
@@ -3778,10 +3833,6 @@ bool ProjMgrWorker::ProcessSequenceRelative(ContextItem& context, string& item, 
             "' does not exist or is not selected", context.name);
           return false;
         }
-      } else {
-        // access sequence is unknown
-        ProjMgrLogger::Get().Error("unknown access sequence: '" + sequence + "'", context.name);
-        return false;
       }
     }
   }
@@ -4207,6 +4258,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
       ProjMgrLogger::Get().Error("required packs must be specified");
       return false;
     }
+    const set<string> requiredPdscFiles(pdscFiles.begin(), pdscFiles.end());
     if (pdscFiles.empty() || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
       // Get installed packs
       const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
@@ -4214,7 +4266,10 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
     }
     if (!pdscFiles.empty()) {
       // Load packs and get loaded packs identifiers
-      m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles);
+      if (!m_kernel->LoadAndInsertPacks(m_loadedPacks, pdscFiles, requiredPdscFiles)) {
+        CheckRteErrors();
+        reqOk = false;
+      }
       for (const auto& pack : m_loadedPacks) {
         packsMap[pack->GetID()] = pack->GetPackageFileName();
       }
@@ -5595,6 +5650,9 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   if (baseName.empty()) {
     baseName = context.cproject->name;
   }
+  if (!GetAndValidateAccessSequence(context, baseName)) {
+    return false;
+  }
 
   for (const auto& image : context.cmake.images) {
     ProjMgrUtils::SetOutputType(image.type, context.outputTypes);
@@ -5632,7 +5690,11 @@ bool ProjMgrWorker::ProcessOutputFilenames(ContextItem& context) {
   if (context.outputTypes.bin.on) {
     context.outputTypes.bin.filename = baseName + ".bin";
   }
-  for (const auto& image : context.cmake.images) {
+  for (auto& image : context.cmake.images) {
+    image.image = RteUtils::ExpandAccessSequences(image.image, context.variables);
+    if (!GetAndValidateAccessSequence(context, image.image)) {
+      return false;
+    }
     if (image.type == RteConstants::OUTPUT_TYPE_ELF) {
       context.outputTypes.elf.filename = image.image;
     } else if (image.type == RteConstants::OUTPUT_TYPE_HEX) {

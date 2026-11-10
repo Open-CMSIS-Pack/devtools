@@ -290,7 +290,7 @@ void RteKernel::ClearExternalGenerators()
   m_externalGeneratorFiles.clear();
 }
 
-RtePackage* RteKernel::LoadPack(const string& pdscFile, PackageState packState) const
+RtePackage* RteKernel::LoadPack(const string& pdscFile, PackageState packState, bool reportErrors) const
 {
   if(pdscFile.empty()) {
     return nullptr;
@@ -306,8 +306,11 @@ RtePackage* RteKernel::LoadPack(const string& pdscFile, PackageState packState) 
   bool success = xmlTree->AddFileName(pdscFile, true);
   pack = rteItemBuilder->GetPack();
   if (!success || !pack) {
-    GetRteCallback()->Err("R802", R802, pdscFile);
-    GetRteCallback()->OutputMessages(xmlTree->GetErrorStrings());
+    if (reportErrors) {
+      GetRteCallback()->Err("R802", R802, pdscFile);
+      GetRteCallback()->OutputMessages(xmlTree->GetErrorStrings());
+    }
+    rteItemBuilder->Clear(true);
     return nullptr;
   }
   if(packState != PackageState::PS_GENERATED) {
@@ -462,18 +465,22 @@ bool RteKernel::GetEffectivePdscFiles(std::list<std::string>& pdscFiles, bool la
 }
 
 
-bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles) {
+bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std::string>& pdscFiles,
+  const std::set<std::string>& requiredPdscFiles) {
   RteGlobalModel* globalModel = GetGlobalModel();
   if(!globalModel) {
     return false;
   }
+  bool success = true;
   std::list<RtePackage*> newPacks;
   pdscFiles.unique();
   for(const auto& pdscFile : pdscFiles) {
     PackageState state = pdscFile.find(GetCmsisPackRoot()) == 0 ? PS_INSTALLED : PS_EXPLICIT_PATH;
-    RtePackage* pack = LoadPack(pdscFile, state);
-    if(!pack) {
-      return false;
+    const bool required = requiredPdscFiles.find(pdscFile) != requiredPdscFiles.end();
+    RtePackage* pack = LoadPack(pdscFile, state, required);
+    if (!pack) {
+      success &= !required;
+      continue;
     }
     newPacks.push_back(pack);
   }
@@ -484,7 +491,7 @@ bool RteKernel::LoadAndInsertPacks(std::list<RtePackage*>& packs, std::list<std:
   for(const auto& [_, pack] : globalModel->GetPackages()) {
     packs.push_back(pack);
   }
-  return true;
+  return success;
 }
 
 
@@ -527,6 +534,11 @@ pair<string, string> RteKernel::GetEffectivePdscFile(const XmlItem& attributes) 
             effectivePdsc = pdsc;
             break;
           }
+        }
+        // A broken local pack has no known version. Keep its path so a required
+        // pack reports a parsing failure instead of being treated as missing.
+        if (effectivePdsc.first.empty() && RtePackage::VersionFromId(pdscs.back().first).empty()) {
+          effectivePdsc = pdscs.back();
         }
       }
       auto& id = effectivePdsc.first;
@@ -588,13 +600,17 @@ bool RteKernel::GetLocalPdscFiles(const XmlItem& attr, std::map<std::string, std
         url = RteFsUtils::MakePathCanonical(item->GetRootFilePath() + url) + '/';
       }
       const string localPdscFile = url + item->GetAttribute("vendor") + '.' + item->GetAttribute("name") + ".pdsc";
-      RtePackage* pack = LoadPack(localPdscFile);
+      RtePackage* pack = LoadPack(localPdscFile, PS_UNKNOWN, false);
       if(pack) {
         const string& version = pack->GetVersionString();
         if(versionRange.empty() || VersionCmp::RangeCompare(version, versionRange) == 0) {
           pdscMap[RteUtils::ToLower(pack->GetID())] = localPdscFile;
           found = true;
         }
+      } else if (RteFsUtils::Exists(localPdscFile)) {
+        pdscMap[RteUtils::ToLower(RtePackage::ComposePackageID(
+          item->GetAttribute("vendor"), item->GetAttribute("name"), RteUtils::EMPTY_STRING))] = localPdscFile;
+        found = true;
       }
     }
   }
@@ -658,7 +674,7 @@ bool RteKernel::ReadPackLatestVerAndPath(map<string, pair<string, string>>& late
   map<string, string, RtePackageComparator> effectivePdscMap;
   if (GetEffectivePdscFilesAsMap(effectivePdscMap, true)) {
     for (const auto& [_, localPdscFile] : effectivePdscMap) {
-      RtePackage* pack = LoadPack(localPdscFile);
+      RtePackage* pack = LoadPack(localPdscFile, PS_UNKNOWN, false);
       if (!pack) {
         continue;
       }

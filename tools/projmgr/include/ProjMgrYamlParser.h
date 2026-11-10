@@ -373,6 +373,7 @@ protected:
   bool ParseCbuildPack(const std::string& input, CbuildPackItem& cbuildPack, bool checkSchema);
   void ParseMisc(const YAML::Node& parent, std::vector<MiscItem>& misc);
   bool ParseDefine(const YAML::Node& defineNode, std::vector<std::string>& define);
+  bool ParseWestDefines(const YAML::Node& defineNode, std::vector<WestDefineItem>& defines);
   void ParsePacks(const YAML::Node& parent, const std::string& file, std::vector<PackItem>& packs);
   void ParseResolvedPacks(const YAML::Node& parent, std::vector<ResolvedPackItem>& resolvedPacks);
   void ParseProcessor(const YAML::Node& parent, ProcessorItem& processor);

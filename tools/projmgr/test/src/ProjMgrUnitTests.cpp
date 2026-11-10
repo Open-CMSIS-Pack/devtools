@@ -2830,6 +2830,17 @@ TEST_F(ProjMgrUnitTests, ListPacksLatest) {
   EXPECT_EQ(latestPacks, expected);
 }
 
+TEST_F(ProjMgrUnitTests, ListPacksRequiredWithoutRequirements) {
+  StdStreamRedirect streamRedirect;
+  vector<string> packs;
+  ASSERT_TRUE(m_worker.ParseContextSelection({}));
+  m_worker.SetLoadPacksPolicy(LoadPacksPolicy::REQUIRED);
+
+  EXPECT_FALSE(m_worker.ListPacks(packs, false, false, ""));
+  EXPECT_TRUE(packs.empty());
+  EXPECT_EQ("error csolution: required packs must be specified\n", streamRedirect.GetErrorString());
+}
+
 TEST_F(ProjMgrUnitTests, ListBoards) {
   set<string> expected = {
     "Keil::RteTest Dummy board:1.2.3 (ARM::RteTest_DFP@0.2.0)"
@@ -3004,6 +3015,19 @@ TEST_F(ProjMgrUnitTests, GetInstalledPacks) {
   EXPECT_TRUE(pdscFiles.empty());
 
   EXPECT_TRUE(m_worker.LoadAllRelevantPacks());
+
+  kernel->SetCmsisPackRoot(cmsisPackRoot);
+}
+
+TEST_F(ProjMgrUnitTests, LoadPacksEmptyPackRoot) {
+  StdStreamRedirect streamRedirect;
+  ASSERT_TRUE(m_worker.InitializeModel());
+  auto kernel = ProjMgrKernel::Get();
+  const string cmsisPackRoot = kernel->GetCmsisPackRoot();
+  kernel->SetCmsisPackRoot("");
+
+  EXPECT_FALSE(m_worker.LoadAllRelevantPacks());
+  EXPECT_EQ("error csolution: parsing installed packs failed\n", streamRedirect.GetErrorString());
 
   kernel->SetCmsisPackRoot(cmsisPackRoot);
 }
@@ -6181,6 +6205,59 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ValidateContextSpecificPacksMissing) {
   EXPECT_NE(string::npos, errStr.find(expectedErr2));
 }
 
+TEST_F(ProjMgrUnitTests, RunProjMgr_ValidateContextSpecificPacksBroken) {
+  char* argv[5];
+  StdStreamRedirect streamRedirect;
+  const string packRoot = testoutput_folder + "/BrokenPackRoot";
+  ASSERT_TRUE(RteFsUtils::CopyTree(testcmsispack_folder, packRoot));
+  ASSERT_TRUE(RteFsUtils::CopyTree(testinput_folder + "/TestSolution/BrokenPack", packRoot));
+  const string originalPackRoot = CrossPlatformUtils::GetEnv("CMSIS_PACK_ROOT");
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", packRoot);
+  const string& csolution = testinput_folder + "/TestSolution/pack_broken.csolution.yml";
+  string expectedErr1 = "error csolution: required pack: ARM::Missing_DFP@0.0.9 not installed";
+  string expectedErr2 = "Error R802: Error parsing XML file: " + packRoot +
+    "/SomeVendor/ErrorPack/0.0.1/SomeVendor.ErrorPack.pdsc";
+
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)"--solution";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"--cbuildgen";
+  EXPECT_EQ(1, RunProjMgr(5, argv, 0));
+  string errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(expectedErr1));
+  EXPECT_NE(string::npos, errStr.find(expectedErr2));
+  EXPECT_EQ(string::npos, errStr.find("required pack: SomeVendor::ErrorPack@0.0.1 not installed"));
+
+  // A broken installed pack must not trigger installation as a missing pack.
+  streamRedirect.ClearStringStreams();
+  argv[1] = (char*)"list";
+  argv[2] = (char*)"packs";
+  argv[3] = (char*)csolution.c_str();
+  argv[4] = (char*)"--missing";
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  EXPECT_EQ("ARM::Missing_DFP@0.0.9\n", streamRedirect.GetOutString());
+
+  // Listing a context that requires a broken pack must fail with its parsing error.
+  streamRedirect.ClearStringStreams();
+  char* listPackArgs[] = { (char*)"csolution", (char*)"list", (char*)"packs",
+    (char*)csolution.c_str(), (char*)"--context", (char*)"test1+Gen" };
+  EXPECT_EQ(1, RunProjMgr(6, listPackArgs, 0));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedErr2));
+  EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find("not installed"));
+  EXPECT_TRUE(streamRedirect.GetOutString().empty());
+
+  // Loading unrelated installed packs must still leave the solution usable.
+  streamRedirect.ClearStringStreams();
+  const string unrelatedSolution = testinput_folder + "/TestRpc/minimal.csolution.yml";
+  char* listArgs[] = { (char*)"csolution", (char*)"list", (char*)"devices",
+    (char*)unrelatedSolution.c_str(), (char*)"--load", (char*)"all",
+    (char*)"--filter", (char*)"RteTest_ARMCM4_NOFP" };
+  EXPECT_EQ(0, RunProjMgr(8, listArgs, 0));
+  EXPECT_NE(string::npos, streamRedirect.GetOutString().find("ARM::RteTest_ARMCM4_NOFP"));
+  EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find("Error R802"));
+  CrossPlatformUtils::SetEnv("CMSIS_PACK_ROOT", originalPackRoot);
+}
+
 TEST_F(ProjMgrUnitTests, RunProjMgr_cbuild_files_with_errors_node) {
   char* argv[8];
   StdStreamRedirect streamRedirect;
@@ -6964,15 +7041,19 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
 
   // --no-update-rte
   std::vector<std::tuple<std::string, int, std::string, std::string>> testDataVector1 = {
-    { "BaseUnknown", 0, "warning csolution: file '.*/startup_ARMCM3.c.base' not found; base version unknown",                                                     "missing base"       },
-    { "Patch",       0, "warning csolution: update suggested for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'; use --update-rte",   "update suggested"   },
-    { "Minor",       0, "warning csolution: update recommended for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'; use --update-rte", "update recommended" },
-    { "Major",       1, "error csolution: update required for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'; use --update-rte",      "update required"    },
-    { "Missing",     1, "error csolution: file '.*/startup_ARMCM3.c' not found; use --update-rte",                                                                "missing file"       },
+    { "BaseUnknown", 0, "warning csolution: file '.*/startup_ARMCM3.c.base' not found; base version unknown",                                   "missing base"       },
+    { "Patch",       0, "warning csolution: update suggested for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'",   "update suggested"   },
+    { "Minor",       0, "warning csolution: update recommended for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'", "update recommended" },
+    { "Major",       1, "error csolution: update required for file '.*/startup_ARMCM3.c' from component 'Device:Startup&RteTest Startup'",      "update required"    },
+    { "Missing",     1, "error csolution: file '.*/startup_ARMCM3.c' not found; use --update-rte",                                              "missing file"       },
   };
 
   for (const auto& [build, errCode, errMsg, status] : testDataVector1) {
+    SCOPED_TRACE(build);
     const string contextOption = "." + build;
+    const string updateFile = testinput_folder + "/TestSolution/ConfigFilesUpdate/" + build +
+      "/Device/RteTest_ARMCM3/startup_ARMCM3.c.update@2.0.3";
+    ASSERT_FALSE(RteFsUtils::Exists(updateFile));
     streamRedirect.ClearStringStreams();
     argv[3] = (char*)"--no-update-rte";
     argv[4] = (char*)"-c";
@@ -6983,6 +7064,13 @@ TEST_F(ProjMgrUnitTests, ConfigFilesUpdate) {
     const YAML::Node& cbuild = YAML::LoadFile(testinput_folder +
       "/TestSolution/ConfigFilesUpdate/out/config/RteTest_ARMCM3/" + build + "/config." + build + "+RteTest_ARMCM3.cbuild.yml");
     EXPECT_EQ(status, cbuild["build"]["components"][0]["files"][3]["status"].as<string>());
+    if (build == "Patch" || build == "Minor" || build == "Major") {
+      ASSERT_TRUE(RteFsUtils::Exists(updateFile));
+      EXPECT_TRUE(RteFsUtils::CmpFiles(updateFile,
+        testcmsispack_folder + "/ARM/RteTest_DFP/0.2.0/Device/ARM/ARMCM3/Source/startup_ARMCM3.c"));
+    } else {
+      EXPECT_FALSE(RteFsUtils::Exists(updateFile));
+    }
   }
 
   // --update-rte
@@ -7388,7 +7476,6 @@ TEST_F(ProjMgrUnitTests, Test_Check_Define_Value) {
   // Test1: Check schema error
   string expected = "\
 .*test_invalid_defines.csolution.yml:33:7 - error csolution: schema check failed, verify syntax\n\
-.*test_invalid_defines.csolution.yml:34:7 - error csolution: schema check failed, verify syntax\n\
 .*test_invalid_defines.csolution.yml:85:7 - error csolution: schema check failed, verify syntax\n\
 .*test_invalid_defines.csolution.yml:86:7 - error csolution: schema check failed, verify syntax\n\
 .*test_invalid_defines.csolution.yml:87:7 - error csolution: schema check failed, verify syntax\n\
@@ -7419,6 +7506,26 @@ error csolution: invalid define: \\\"Mixed_quotes\", improper quotes
   EXPECT_EQ(1, RunProjMgr(6, argv, m_envp));
   errStr = streamRedirect.GetErrorString();
   EXPECT_TRUE(regex_search(errStr, regex(expected)));
+}
+
+TEST_F(ProjMgrUnitTests, ColonDefineValue) {
+  char* argv[5];
+  const string& csolution = testinput_folder + "/TestSolution/colon_defines.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"-o";
+  argv[4] = (char*)testoutput_folder.c_str();
+  ASSERT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  const auto cbuild = YAML::LoadFile(testoutput_folder + "/out/test1/CM0/Debug/test1.Debug+CM0.cbuild.yml");
+  bool found = false;
+  for (const auto& define : cbuild["build"]["define"]) {
+    if (define.IsMap() && define["DEF_SOLUTION_STRING_VALUE"].IsDefined()) {
+      EXPECT_EQ("std::value", define["DEF_SOLUTION_STRING_VALUE"].as<string>());
+      found = true;
+    }
+  }
+  EXPECT_TRUE(found);
 }
 
 TEST_F(ProjMgrUnitTests, ComponentVersions) {
@@ -7776,20 +7883,65 @@ CMSIS-DAP@Arm-Debugger\n\
 TEST_F(ProjMgrUnitTests, WestSupport) {
   char* argv[5];
   const string& csolution = testinput_folder + "/WestSupport/solution.csolution.yml";
+  const string clangConfig = testcmsiscompiler_folder + "/CLANG.18.0.0.cmake";
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(clangConfig, ""));
+  RteFsUtils::RemoveFile(testinput_folder + "/WestSupport/solution.cbuild-pack.yml");
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"--active";
   argv[4] = (char*)"CM0";
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  RteFsUtils::RemoveFile(clangConfig);
 
   ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/solution.cbuild-idx.yml",
     testinput_folder + "/WestSupport/ref/solution.cbuild-idx.yml");
   ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/out/solution+CM0.cbuild-run.yml",
     testinput_folder + "/WestSupport/ref/solution+CM0.cbuild-run.yml");
-  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/out/core0/CM0/Debug/core0.Debug+CM0.cbuild.yml",
-    testinput_folder + "/WestSupport/ref/core0.Debug+CM0.cbuild.yml");
-  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/out/core1/CM0/Debug/core1.Debug+CM0.cbuild.yml",
-    testinput_folder + "/WestSupport/ref/core1.Debug+CM0.cbuild.yml");
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/ref/core0.Debug+CM0.cbuild.yml",
+    testinput_folder + "/WestSupport/out/core0/CM0/Debug/core0.Debug+CM0.cbuild.yml", ProjMgrTestEnv::StripAbsoluteFunc);
+  ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/ref/core1.Debug+CM0.cbuild.yml",
+    testinput_folder + "/WestSupport/out/core1/CM0/Debug/core1.Debug+CM0.cbuild.yml", ProjMgrTestEnv::StripAbsoluteFunc);
+}
+
+TEST_F(ProjMgrUnitTests, WestSupportCompilerFilters) {
+  const string csolution = testinput_folder + "/WestSupport/solution.csolution.yml";
+  const string clangConfig = testcmsiscompiler_folder + "/CLANG.18.0.0.cmake";
+  string clang = "CLANG_TOOLCHAIN_18_0_0=" + testinput_folder;
+  char* envp[] = { m_envp[0], m_envp[1], m_envp[2], (char*)clang.c_str(), nullptr };
+  for (const string compiler : { "CLANG", "GCC" }) {
+    SCOPED_TRACE(compiler);
+    ASSERT_TRUE(RteFsUtils::CreateTextFile(clangConfig, ""));
+    char* argv[] = { nullptr, (char*)"convert", (char*)csolution.c_str(),
+      (char*)"--active", (char*)"CM0", (char*)"--toolchain", (char*)compiler.c_str() };
+    const auto result = RunProjMgr(7, argv, envp);
+    RteFsUtils::RemoveFile(clangConfig);
+    ASSERT_EQ(0, result);
+    for (const string project : { "core0", "core1" }) {
+      SCOPED_TRACE(project);
+      const auto cbuild = YAML::LoadFile(testinput_folder + "/WestSupport/out/" + project +
+        "/CM0/Debug/" + project + ".Debug+CM0.cbuild.yml");
+      map<string, string> definitions;
+      for (const auto& entry : cbuild["build"]["west"]["west-defs"]) {
+        for (const auto& definition : entry) {
+          EXPECT_TRUE(definitions.emplace(definition.first.as<string>(), definition.second.as<string>()).second);
+        }
+      }
+      const string expected = compiler == "CLANG" ? "clang" : "gcc";
+      EXPECT_EQ(expected, definitions.at("TARGET-COMPILER"));
+      EXPECT_EQ(expected, definitions.at("BUILD-COMPILER"));
+      EXPECT_EQ("true", definitions.at("SHARED-COMPILERS"));
+      EXPECT_EQ("on", definitions.at("TARGET-DEF"));
+      EXPECT_EQ("y", definitions.at("CONFIG-DEBUG"));
+      EXPECT_EQ("y", definitions.at("CONFIG_BUILD_OUTPUT_HEX"));
+      EXPECT_EQ(project == "core0" ? "0" : "1", definitions.at("CORE"));
+      EXPECT_EQ(0, definitions.count("for-compiler"));
+      if (project == "core0") {
+        EXPECT_EQ(expected, definitions.at("PROJECT-COMPILER"));
+      } else {
+        EXPECT_EQ(0, definitions.count("PROJECT-COMPILER"));
+      }
+    }
+  }
 }
 
 TEST_F(ProjMgrUnitTests, CmakeSupport) {
@@ -7808,8 +7960,9 @@ TEST_F(ProjMgrUnitTests, CmakeSupport) {
   EXPECT_EQ("../../../../cmake/core0", cbuild0["build"]["cmake"]["source"].as<string>());
   EXPECT_EQ("Ninja", cbuild0["build"]["cmake"]["generator"].as<string>());
   EXPECT_EQ("-DCMAKE_BUILD_TYPE=Debug", cbuild0["build"]["cmake"]["configure"][0].as<string>());
+  EXPECT_EQ("-DTARGET_TYPE=CM0", cbuild0["build"]["cmake"]["configure"][1].as<string>());
   EXPECT_EQ("core0-target", cbuild0["build"]["cmake"]["target"].as<string>());
-  EXPECT_EQ("build/core0.elf", cbuild0["build"]["cmake"]["images"][0]["image"].as<string>());
+  EXPECT_EQ("build/Debug/core0.elf", cbuild0["build"]["cmake"]["images"][0]["image"].as<string>());
   EXPECT_EQ("elf", cbuild0["build"]["cmake"]["images"][0]["type"].as<string>());
   EXPECT_EQ("build/core0.hex", cbuild0["build"]["cmake"]["images"][1]["image"].as<string>());
   EXPECT_EQ("hex", cbuild0["build"]["cmake"]["images"][1]["type"].as<string>());
@@ -7818,7 +7971,7 @@ TEST_F(ProjMgrUnitTests, CmakeSupport) {
   EXPECT_EQ("bin", cbuild0["build"]["output"][0]["type"].as<string>());
   EXPECT_EQ("build/core0.bin", cbuild0["build"]["output"][0]["file"].as<string>());
   EXPECT_EQ("elf", cbuild0["build"]["output"][1]["type"].as<string>());
-  EXPECT_EQ("build/core0.elf", cbuild0["build"]["output"][1]["file"].as<string>());
+  EXPECT_EQ("build/Debug/core0.elf", cbuild0["build"]["output"][1]["file"].as<string>());
   EXPECT_EQ("hex", cbuild0["build"]["output"][2]["type"].as<string>());
   EXPECT_EQ("build/core0.hex", cbuild0["build"]["output"][2]["file"].as<string>());
   EXPECT_EQ("ARM::RteTest_ARMCM0_Dual:cm0_core0", cbuild0["build"]["device"].as<string>());
@@ -7834,7 +7987,7 @@ TEST_F(ProjMgrUnitTests, CmakeSupport) {
 
   const YAML::Node& cbuildRun = YAML::LoadFile(base + "solution+CM0.cbuild-run.yml");
   EXPECT_EQ("elf", cbuildRun["cbuild-run"]["output"][0]["type"].as<string>());
-  EXPECT_EQ("core0/CM0/Debug/build/core0.elf", cbuildRun["cbuild-run"]["output"][0]["file"].as<string>());
+  EXPECT_EQ("core0/CM0/Debug/build/Debug/core0.elf", cbuildRun["cbuild-run"]["output"][0]["file"].as<string>());
   EXPECT_EQ("hex", cbuildRun["cbuild-run"]["output"][1]["type"].as<string>());
   EXPECT_EQ("core0/CM0/Debug/build/core0.hex", cbuildRun["cbuild-run"]["output"][1]["file"].as<string>());
   EXPECT_EQ("bin", cbuildRun["cbuild-run"]["output"][2]["type"].as<string>());
@@ -7845,6 +7998,67 @@ TEST_F(ProjMgrUnitTests, CmakeSupport) {
   const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/CmakeSupport/solution.cbuild-idx.yml");
   EXPECT_TRUE(cbuildIdx["build-idx"]["cbuilds"][0]["cmake"].as<bool>());
   EXPECT_TRUE(cbuildIdx["build-idx"]["cbuilds"][1]["cmake"].as<bool>());
+}
+
+TEST_F(ProjMgrUnitTests, CmakeSupportBuildTypes) {
+  char* argv[5];
+  const string csolution = testinput_folder + "/CmakeSupport/solution.csolution.yml";
+  argv[1] = (char*)"convert";
+  argv[2] = (char*)csolution.c_str();
+  argv[3] = (char*)"--context";
+  argv[4] = (char*)"core0.*+CM0";
+  ASSERT_EQ(0, RunProjMgr(5, argv, m_envp));
+
+  for (const string buildType : { "Debug", "Release" }) {
+    const string path = testinput_folder + "/CmakeSupport/out/core0/CM0/" + buildType +
+      "/core0." + buildType + "+CM0.cbuild.yml";
+    const YAML::Node cbuild = YAML::LoadFile(path);
+    EXPECT_EQ("-DCMAKE_BUILD_TYPE=" + buildType, cbuild["build"]["cmake"]["configure"][0].as<string>());
+    EXPECT_EQ("-DTARGET_TYPE=CM0", cbuild["build"]["cmake"]["configure"][1].as<string>());
+    EXPECT_EQ("build/" + buildType + "/core0.elf", cbuild["build"]["cmake"]["images"][0]["image"].as<string>());
+    EXPECT_EQ("build/" + buildType + "/core0.elf", cbuild["build"]["output"][1]["file"].as<string>());
+  }
+}
+
+TEST_F(ProjMgrUnitTests, CmakeSupportInvalidAccessSequences) {
+  StdStreamRedirect streamRedirect;
+  const string csolution = testinput_folder + "/CmakeSupport/invalid-access-sequences.csolution.yml";
+  struct FailureCase {
+    bool configure;
+    string value;
+    string expectedError;
+  };
+  const vector<FailureCase> failureCases = {
+    { true, "-DVALUE=$SolutionDir()$", "unknown access sequence: 'SolutionDir()'" },
+    { true, "-DVALUE=$Unknown$", "unknown access sequence: 'Unknown'" },
+    { true, "-DVALUE=$BuildType", "malformed access sequence: '-DVALUE=$BuildType" },
+    { false, "build/$Unknown$.elf", "unknown access sequence: 'Unknown'" },
+    { false, "$SolutionDir()$/core0.elf", "unknown access sequence: 'SolutionDir()'" },
+    { false, "build/$BuildType", "malformed access sequence: 'build/$BuildType" },
+  };
+  for (const auto& [configure, value, expectedError] : failureCases) {
+    SCOPED_TRACE(value);
+    YAML::Node root = YAML::LoadFile(testinput_folder + "/CmakeSupport/solution.csolution.yml");
+    if (configure) {
+      root["solution"]["projects"][0]["cmake"]["configure"].push_back(value);
+    } else {
+      root["solution"]["projects"][0]["cmake"]["images"][0]["image"] = value;
+    }
+    std::ofstream output(csolution);
+    output << root;
+    output.close();
+    ASSERT_TRUE(output.good());
+
+    char* argv[5];
+    argv[1] = (char*)"convert";
+    argv[2] = (char*)csolution.c_str();
+    argv[3] = (char*)"--context";
+    argv[4] = (char*)"core0.Debug+CM0";
+    streamRedirect.ClearStringStreams();
+    EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+    EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(expectedError));
+  }
+  RteFsUtils::RemoveFile(csolution);
 }
 
 TEST_F(ProjMgrUnitTests, TargetSetDependencies) {
