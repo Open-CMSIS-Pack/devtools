@@ -105,10 +105,10 @@ The [ETMv3 P-header decoder][etmv3-retain] calls this method to protect the last
 range, but the later [exception cancellation][etmv3-cancel] can remove only
 pending elements. The canceled PC has already been exported.
 
-Durable [evidence and reproduction][cancel-evidence] are in the separate TraceBufferExamples
-workspace: README, reproduction script,
-text fixtures, packet/element output, results and provenance. No executable or
-build directory is archived. The existing CM4 hardware reference contains no
+Evidence and reproduction are retained in the separate `TraceBufferExamples` workspace:
+`ReferenceTraces/OpenCSD-ETMv3-Cancellation/README.md` describes the reproduction script,
+text fixtures, packet/element output, results and provenance. These artifacts are not included in this repository.
+No executable or build directory is archived. The existing CM4 hardware reference contains no
 canceling packets, so its successful decode does not validate this case.
 
 No cancellation fix is applied. Correct cancellation and packing-invariant output are
@@ -145,9 +145,9 @@ Packet and mixed-fallback output must retain the byte as incomplete and suppress
 unverified address fields. The design already identified this qualification risk;
 the synthetic case now confirms it without a source patch.
 
-Both packet-field cases, including IRQ7/IRQ9 controls, have [evidence and reproduction][field-evidence]
-in the separate TraceBufferExamples workspace, with the C++ probe, reproduction script, fixtures, callback output,
-results and provenance. No compiled products are archived.
+Both packet-field cases, including IRQ7/IRQ9 controls, are documented in the separate `TraceBufferExamples` workspace
+at `ReferenceTraces/OpenCSD-ETMv3-PacketFields/README.md`. The C++ probe, reproduction script, fixtures, callback output,
+results and provenance are maintained there, outside this repository. No compiled products are archived.
 
 ## ETMv3 cancellation metadata in generic output
 
@@ -186,9 +186,6 @@ and decoder source, not a reproduced wrong-PC claim.
 [etmv3-irq]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/etmv3/trc_pkt_proc_etmv3_impl.cpp#L989-L1013
 [etmv3-irq-text]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/etmv3/trc_pkt_elem_etmv3.cpp#L669-L674
 [etmv3-eot]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/etmv3/trc_pkt_proc_etmv3_impl.cpp#L129-L139
-
-[cancel-evidence]: ../../../../TraceBufferExamples/ReferenceTraces/OpenCSD-ETMv3-Cancellation/README.md
-[field-evidence]: ../../../../TraceBufferExamples/ReferenceTraces/OpenCSD-ETMv3-PacketFields/README.md
 
 [etmv4-exception]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/etmv4/trc_pkt_decode_etmv4i.cpp#L1690-L1704
 [etmv4-spec]: https://documentation-service.arm.com/static/60017fbb3f22832ff1d6872b

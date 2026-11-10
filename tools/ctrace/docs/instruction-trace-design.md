@@ -630,14 +630,15 @@ Details and reproducible defects: [Known OpenCSD issues](opencsd-issues.md).
 
 ### 6.1 Reference evidence
 
-Companion workspace: `/Users/thode01/work/github/TraceBufferExamples`; captures retain their original schemas.
+Reference artifacts are maintained in the separate `TraceBufferExamples` workspace and are not included in this repository.
+Locations below are relative to its `ReferenceTraces/` directory; captures retain their original schemas.
 
-| Reference | Evidence | Remaining limit |
+| Reference location | Evidence | Remaining limit |
 | --- | --- | --- |
-| [STM32H7B3I-DK / M7][ref-m7] | 4-KiB ETF, ATB `0x12`; packets, ranges and PC validation. | AXF import parity and production terminal-DISCARD handling. |
-| [STM32H747I-DISCO / M4][ref-m4] | 4-KiB ETF, ATB `0x22`; packets and ranges. | AXF import parity, confirmed-tail handling and PC/classifier qualification. |
-| [ETMv3 cancellation][ref-cancel] | Synthetic packed/split atom comparison. | Host reproduction. |
-| [ETMv3 packet fields][ref-fields] | IRQ8 field and truncated-branch cases. | Host reproduction. |
+| `STM32H7B3I-DK-ETMv4/README.md` | M7, 4-KiB ETF, ATB `0x12`; packets/ranges/PCs. | AXF import, DISCARD. |
+| `STM32H747I-DISCO-CM4-ETMv3/README.md` | M4, 4-KiB ETF, ATB `0x22`; packets/ranges. | AXF, EOT, PC/classifier. |
+| `OpenCSD-ETMv3-Cancellation/README.md` | Synthetic packed/split atom comparison. | Host reproduction. |
+| `OpenCSD-ETMv3-PacketFields/README.md` | IRQ8 field and truncated-branch cases. | Host reproduction. |
 
 - Hardware bundles contain matching RAW, images, decoder metadata and validation reports; both capture windows wrap.
 - M7 PC evidence: `validation/pc-expansion/README.md`; hardware/project configuration: each board's `TRACE_SETUP.md`.
@@ -919,8 +920,3 @@ OpenCSD links identify the inspected pin; architecture editions/pages are stated
 
 [O30]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/include/opencsd/c_api/ocsd_c_api_types.h
 [O31]: https://github.com/Linaro/OpenCSD/blob/59f15320637ce6e510604e7bed550d7ad109d15d/decoder/source/etmv3/trc_pkt_decode_etmv3.cpp
-
-[ref-m7]: ../../../../TraceBufferExamples/ReferenceTraces/STM32H7B3I-DK-ETMv4/README.md
-[ref-m4]: ../../../../TraceBufferExamples/ReferenceTraces/STM32H747I-DISCO-CM4-ETMv3/README.md
-[ref-cancel]: ../../../../TraceBufferExamples/ReferenceTraces/OpenCSD-ETMv3-Cancellation/README.md
-[ref-fields]: ../../../../TraceBufferExamples/ReferenceTraces/OpenCSD-ETMv3-PacketFields/README.md
