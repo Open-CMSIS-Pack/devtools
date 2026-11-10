@@ -10,9 +10,9 @@ if(NOT EXISTS "${CTRACE_OPENCSD_SOURCE_DIR}/CMakeLists.txt")
   )
 endif()
 
-function(ctrace_apply_opencsd_patch)
+function(ctrace_apply_opencsd_patch patch_name)
   find_package(Git REQUIRED QUIET)
-  set(patch_file "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/OpenCSD.patch")
+  set(patch_file "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/${patch_name}")
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${patch_file}")
 
   # Reconfiguration must preserve both the patch and unrelated local edits.
@@ -34,7 +34,7 @@ function(ctrace_apply_opencsd_patch)
     ERROR_VARIABLE patch_error
   )
   if(NOT patch_result EQUAL 0)
-    message(FATAL_ERROR "Failed to apply the ctrace OpenCSD patch: ${patch_error}")
+    message(FATAL_ERROR "Failed to apply the ctrace OpenCSD patch ${patch_name}: ${patch_error}")
   endif()
 endfunction()
 
@@ -61,7 +61,9 @@ set(BUILD_TESTING OFF CACHE BOOL "Build the testing tree." FORCE)
 set(ctrace_saved_install_prefix_default "${CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT}")
 set(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT FALSE)
 
-ctrace_apply_opencsd_patch()
+# Apply independently so an existing ITM-patched checkout can receive later fixes.
+ctrace_apply_opencsd_patch(OpenCSD.patch)
+ctrace_apply_opencsd_patch(OpenCSD-thumb-fetch.patch)
 add_subdirectory(
   "${CTRACE_OPENCSD_SOURCE_DIR}"
   "${CMAKE_BINARY_DIR}/external/OpenCSD"

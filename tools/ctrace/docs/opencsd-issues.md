@@ -44,6 +44,44 @@ The patch is applied idempotently without resetting the submodule or discarding
 unrelated local changes. Once OpenCSD releases the fix, update the pinned
 submodule revision and remove the local patch.
 
+## Complete Thumb-16 instruction rejected after a short memory read
+
+OpenCSD **1.8.3**, pinned at `59f15320637ce6e510604e7bed550d7ad109d15d`,
+requests four bytes before decoding an instruction and treats a shorter read as
+inaccessible code, even when the returned two bytes form a complete Thumb-16
+instruction. This affects the ETMv3 code follower, the ETMv4 instruction-fetch
+paths (including Q and shared ETE source-address handling), and PTM.
+
+A synthetic Cortex-M4/ETMv3.5 trace reproduced the defect on 2026-11-09:
+`00 bf fd e7` at `0x1000` contains `NOP; B 0x1000`. Six E atoms should produce
+`0x1000, 0x1002` three times. The decoder instead emits only `0x1000`, then
+`ADDR_NACC(0x1002)`, and still returns success. Adding two unexecuted bytes after
+the branch restores all six PCs. Padding images is not a valid remedy: the
+branch is already complete, and the image provider must preserve genuine gaps.
+
+The ctrace build applies
+[`OpenCSD-thumb-fetch.patch`](../cmake/dependencies/OpenCSD-thumb-fetch.patch)
+independently of the ITM patch. Each affected fetch accepts a short read only
+when at least two bytes are available, the ISA is Thumb, and the existing
+`is_wide_thumb` predicate identifies a complete 16-bit instruction. Partial
+Thumb-32, A32 and A64 instructions remain inaccessible. The opcode buffer is
+cleared before each read; instruction decoding and its state changes occur only
+after this completeness check.
+
+The dependency regressions in
+[`OpenCsdInstructionBoundaryTests.cpp`](../test/unit/src/decode/OpenCsdInstructionBoundaryTests.cpp)
+exercise full ETMv3, ETMv4 atom, ETMv4 Q and PTM decoders with an exact memory
+callback. They cover two- and three-byte Thumb-16 reads, zero/one-byte reads,
+all three incomplete Thumb-32 prefix classes, complete Thumb-32 instructions,
+and partial/complete A32 and A64 controls. On macOS arm64 Release, eight valid
+Thumb-16 cases fail before the patch; all 21 cases pass afterward, together
+with all seven ctrace CTest entries. Reconfiguration leaves the patched source
+unchanged. Shared ETE source-address paths were source-reviewed, not runtime-qualified.
+
+This dependency correction does not implement ctrace ETM output or qualify ETE
+support. Cancellation, packet truncation and the IRQ8 field issue below remain
+separate defects.
+
 ## ETMv3 canceling exceptions after packed atoms
 
 OpenCSD **1.8.3**, pinned at `59f15320637ce6e510604e7bed550d7ad109d15d`,
@@ -73,7 +111,7 @@ text fixtures, packet/element output, results and provenance. No executable or
 build directory is archived. The existing CM4 hardware reference contains no
 canceling packets, so its successful decode does not validate this case.
 
-No ETMv3 fix is applied. Correct cancellation and packing-invariant output are
+No cancellation fix is applied. Correct cancellation and packing-invariant output are
 required before qualifying the default ETMv3 instruction output. This host test
 covers the OpenCSD full decoder, not the future production ctrace classifier.
 
