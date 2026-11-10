@@ -18,6 +18,24 @@ protected:
   virtual ~ProjMgrYamlParserUnitTests() {}
 };
 
+TEST_F(ProjMgrYamlParserUnitTests, ParseWestDefines) {
+  const auto node = YAML::Load(R"(
+- FLAG
+- FIRST: one
+  SECOND: two
+  for-compiler: GCC
+)");
+  vector<WestDefineItem> entries;
+  ASSERT_TRUE(ParseWestDefines(node, entries));
+  ASSERT_EQ(2, entries.size());
+  EXPECT_EQ(vector<string>({ "FLAG" }), entries[0].defines);
+  EXPECT_TRUE(entries[0].forCompiler.empty());
+  EXPECT_EQ(vector<string>({ "FIRST=one", "SECOND=two" }), entries[1].defines);
+  EXPECT_EQ(vector<string>({ "GCC" }), entries[1].forCompiler);
+  EXPECT_TRUE(node[1]["for-compiler"]);
+  EXPECT_FALSE(ParseWestDefines(YAML::Load("- INVALID: 'bad\"quote'"), entries));
+}
+
 TEST_F(ProjMgrYamlParserUnitTests, ParseCbuildSet) {
   string cbuildSetFile = testinput_folder + "/TestSolution/invalid_test.cbuild-set.yml";
   CbuildSetItem buildSetItem;

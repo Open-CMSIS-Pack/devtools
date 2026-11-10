@@ -631,7 +631,7 @@ void ProjMgrCbuild::SetWestNode(YAML::Node node, const ContextItem* context) {
   SetNodeValue(node[YAML_APP_PATH], FormatPath(context->west.app, context->directories.cbuild));
   SetNodeValue(node[YAML_BOARD], context->west.board);
   SetNodeValue(node[YAML_DEVICE], context->west.device);
-  SetDefineNode(node[YAML_WEST_DEFS], context->west.westDefs);
+  SetDefineNode(node[YAML_WEST_DEFS], context->west.resolvedWestDefines);
   SetNodeValue(node[YAML_WEST_OPT], context->west.westOpt);
 }
 

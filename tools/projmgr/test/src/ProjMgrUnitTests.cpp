@@ -7883,12 +7883,15 @@ CMSIS-DAP@Arm-Debugger\n\
 TEST_F(ProjMgrUnitTests, WestSupport) {
   char* argv[5];
   const string& csolution = testinput_folder + "/WestSupport/solution.csolution.yml";
+  const string clangConfig = testcmsiscompiler_folder + "/CLANG.18.0.0.cmake";
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(clangConfig, ""));
   RteFsUtils::RemoveFile(testinput_folder + "/WestSupport/solution.cbuild-pack.yml");
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
   argv[3] = (char*)"--active";
   argv[4] = (char*)"CM0";
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
+  RteFsUtils::RemoveFile(clangConfig);
 
   ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/solution.cbuild-idx.yml",
     testinput_folder + "/WestSupport/ref/solution.cbuild-idx.yml");
@@ -7898,6 +7901,47 @@ TEST_F(ProjMgrUnitTests, WestSupport) {
     testinput_folder + "/WestSupport/out/core0/CM0/Debug/core0.Debug+CM0.cbuild.yml", ProjMgrTestEnv::StripAbsoluteFunc);
   ProjMgrTestEnv::CompareFile(testinput_folder + "/WestSupport/ref/core1.Debug+CM0.cbuild.yml",
     testinput_folder + "/WestSupport/out/core1/CM0/Debug/core1.Debug+CM0.cbuild.yml", ProjMgrTestEnv::StripAbsoluteFunc);
+}
+
+TEST_F(ProjMgrUnitTests, WestSupportCompilerFilters) {
+  const string csolution = testinput_folder + "/WestSupport/solution.csolution.yml";
+  const string clangConfig = testcmsiscompiler_folder + "/CLANG.18.0.0.cmake";
+  string clang = "CLANG_TOOLCHAIN_18_0_0=" + testinput_folder;
+  char* envp[] = { m_envp[0], m_envp[1], m_envp[2], (char*)clang.c_str(), nullptr };
+  for (const string compiler : { "CLANG", "GCC" }) {
+    SCOPED_TRACE(compiler);
+    ASSERT_TRUE(RteFsUtils::CreateTextFile(clangConfig, ""));
+    char* argv[] = { nullptr, (char*)"convert", (char*)csolution.c_str(),
+      (char*)"--active", (char*)"CM0", (char*)"--toolchain", (char*)compiler.c_str() };
+    const auto result = RunProjMgr(7, argv, envp);
+    RteFsUtils::RemoveFile(clangConfig);
+    ASSERT_EQ(0, result);
+    for (const string project : { "core0", "core1" }) {
+      SCOPED_TRACE(project);
+      const auto cbuild = YAML::LoadFile(testinput_folder + "/WestSupport/out/" + project +
+        "/CM0/Debug/" + project + ".Debug+CM0.cbuild.yml");
+      map<string, string> definitions;
+      for (const auto& entry : cbuild["build"]["west"]["west-defs"]) {
+        for (const auto& definition : entry) {
+          EXPECT_TRUE(definitions.emplace(definition.first.as<string>(), definition.second.as<string>()).second);
+        }
+      }
+      const string expected = compiler == "CLANG" ? "clang" : "gcc";
+      EXPECT_EQ(expected, definitions.at("TARGET-COMPILER"));
+      EXPECT_EQ(expected, definitions.at("BUILD-COMPILER"));
+      EXPECT_EQ("true", definitions.at("SHARED-COMPILERS"));
+      EXPECT_EQ("on", definitions.at("TARGET-DEF"));
+      EXPECT_EQ("y", definitions.at("CONFIG-DEBUG"));
+      EXPECT_EQ("y", definitions.at("CONFIG_BUILD_OUTPUT_HEX"));
+      EXPECT_EQ(project == "core0" ? "0" : "1", definitions.at("CORE"));
+      EXPECT_EQ(0, definitions.count("for-compiler"));
+      if (project == "core0") {
+        EXPECT_EQ(expected, definitions.at("PROJECT-COMPILER"));
+      } else {
+        EXPECT_EQ(0, definitions.count("PROJECT-COMPILER"));
+      }
+    }
+  }
 }
 
 TEST_F(ProjMgrUnitTests, CmakeSupport) {
