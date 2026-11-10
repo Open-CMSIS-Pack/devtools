@@ -167,13 +167,44 @@ private:
   std::unique_ptr<DecodeTree, decltype(&DecodeTree::DestroyDecodeTree)> m_tree;
 };
 
-class OpenCsdInstructionBoundaryTests : public ::testing::TestWithParam<OpenCsdInstructionBoundaryDecoder::Protocol> {
-protected:
+class OpenCsdInstructionBoundaryChecks {
+public:
   using Decoder = OpenCsdInstructionBoundaryDecoder;
 
-  void expectInstruction(const std::vector<std::uint8_t>& image, std::uint32_t width)
+  static void expectCompleteThumb16AtImageEnd(Decoder::Protocol protocol)
   {
-    const Decoder decoder(GetParam(), image);
+    expectInstruction(protocol, {0xfeU, 0xe7U}, 2U); // B 0x1000.
+  }
+
+  static void expectCompleteThumb16WithOneTrailingByte(Decoder::Protocol protocol)
+  {
+    expectInstruction(protocol, {0xfeU, 0xe7U, 0xffU}, 2U);
+  }
+
+  static void expectMissingOrPartialFirstHalfword(Decoder::Protocol protocol)
+  {
+    expectUnavailable(protocol, {});
+    expectUnavailable(protocol, {0xfeU});
+  }
+
+  static void expectIncompleteThumb32ForEveryWidePrefix(Decoder::Protocol protocol)
+  {
+    for (const auto prefix : {0xe8U, 0xf0U, 0xf8U}) {
+      SCOPED_TRACE(prefix);
+      expectUnavailable(protocol, {0U, static_cast<std::uint8_t>(prefix)});
+      expectUnavailable(protocol, {0U, static_cast<std::uint8_t>(prefix), 0xffU});
+    }
+  }
+
+  static void expectCompleteThumb32AtImageEnd(Decoder::Protocol protocol)
+  {
+    expectInstruction(protocol, {0xffU, 0xf7U, 0xfeU, 0xbfU}, 4U); // B.W 0x1000.
+  }
+
+private:
+  static void expectInstruction(Decoder::Protocol protocol, const std::vector<std::uint8_t>& image, std::uint32_t width)
+  {
+    const Decoder decoder(protocol, image);
     const auto ranges = decoder.elementsOfType(OCSD_GEN_TRC_ELEM_INSTR_RANGE);
     ASSERT_EQ(ranges.size(), 1U);
     EXPECT_EQ(ranges.front().st_addr, Decoder::CodeAddress);
@@ -184,46 +215,136 @@ protected:
     EXPECT_TRUE(decoder.elementsOfType(OCSD_GEN_TRC_ELEM_I_RANGE_NOPATH).empty());
   }
 
-  void expectUnavailable(const std::vector<std::uint8_t>& image)
+  static void expectUnavailable(Decoder::Protocol protocol, const std::vector<std::uint8_t>& image)
   {
-    const Decoder decoder(GetParam(), image);
+    const Decoder decoder(protocol, image);
     EXPECT_TRUE(decoder.elementsOfType(OCSD_GEN_TRC_ELEM_INSTR_RANGE).empty());
-    const auto type = GetParam() == Decoder::Protocol::Etmv4Q ? OCSD_GEN_TRC_ELEM_I_RANGE_NOPATH
-                                                           : OCSD_GEN_TRC_ELEM_ADDR_NACC;
+    const auto type = protocol == Decoder::Protocol::Etmv4Q ? OCSD_GEN_TRC_ELEM_I_RANGE_NOPATH
+                                                          : OCSD_GEN_TRC_ELEM_ADDR_NACC;
     const auto unavailable = decoder.elementsOfType(type);
     ASSERT_EQ(unavailable.size(), 1U);
     EXPECT_EQ(unavailable.front().st_addr, Decoder::CodeAddress);
   }
 };
 
-TEST_P(OpenCsdInstructionBoundaryTests, DecodesCompleteThumb16AtImageEnd)
+TEST(CtraceUnitTests, testOpenCsdEtmv3DecodesCompleteThumb16AtImageEnd)
 {
-  expectInstruction({0xfeU, 0xe7U}, 2U); // B 0x1000.
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb16AtImageEnd(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv3);
 }
 
-TEST_P(OpenCsdInstructionBoundaryTests, DecodesCompleteThumb16WithOneTrailingByte)
+TEST(CtraceUnitTests, testOpenCsdEtmv3DecodesCompleteThumb16WithOneTrailingByte)
 {
-  expectInstruction({0xfeU, 0xe7U, 0xffU}, 2U);
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb16WithOneTrailingByte(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv3);
 }
 
-TEST_P(OpenCsdInstructionBoundaryTests, RejectsMissingOrPartialFirstHalfword)
+TEST(CtraceUnitTests, testOpenCsdEtmv3RejectsMissingOrPartialFirstHalfword)
 {
-  expectUnavailable({});
-  expectUnavailable({0xfeU});
+  OpenCsdInstructionBoundaryChecks::expectMissingOrPartialFirstHalfword(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv3);
 }
 
-TEST_P(OpenCsdInstructionBoundaryTests, RejectsIncompleteThumb32ForEveryWidePrefix)
+TEST(CtraceUnitTests, testOpenCsdEtmv3RejectsIncompleteThumb32ForEveryWidePrefix)
 {
-  for (const auto prefix : {0xe8U, 0xf0U, 0xf8U}) {
-    SCOPED_TRACE(prefix);
-    expectUnavailable({0U, static_cast<std::uint8_t>(prefix)});
-    expectUnavailable({0U, static_cast<std::uint8_t>(prefix), 0xffU});
-  }
+  OpenCsdInstructionBoundaryChecks::expectIncompleteThumb32ForEveryWidePrefix(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv3);
 }
 
-TEST_P(OpenCsdInstructionBoundaryTests, DecodesCompleteThumb32AtImageEnd)
+TEST(CtraceUnitTests, testOpenCsdEtmv3DecodesCompleteThumb32AtImageEnd)
 {
-  expectInstruction({0xffU, 0xf7U, 0xfeU, 0xbfU}, 4U); // B.W 0x1000.
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb32AtImageEnd(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv3);
+}
+
+TEST(CtraceUnitTests, testOpenCsdEtmv4DecodesCompleteThumb16AtImageEnd)
+{
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb16AtImageEnd(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4);
+}
+
+TEST(CtraceUnitTests, testOpenCsdEtmv4DecodesCompleteThumb16WithOneTrailingByte)
+{
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb16WithOneTrailingByte(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4);
+}
+
+TEST(CtraceUnitTests, testOpenCsdEtmv4RejectsMissingOrPartialFirstHalfword)
+{
+  OpenCsdInstructionBoundaryChecks::expectMissingOrPartialFirstHalfword(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4);
+}
+
+TEST(CtraceUnitTests, testOpenCsdEtmv4RejectsIncompleteThumb32ForEveryWidePrefix)
+{
+  OpenCsdInstructionBoundaryChecks::expectIncompleteThumb32ForEveryWidePrefix(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4);
+}
+
+TEST(CtraceUnitTests, testOpenCsdEtmv4DecodesCompleteThumb32AtImageEnd)
+{
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb32AtImageEnd(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4);
+}
+
+TEST(CtraceUnitTests, testOpenCsdEtmv4QDecodesCompleteThumb16AtImageEnd)
+{
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb16AtImageEnd(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4Q);
+}
+
+TEST(CtraceUnitTests, testOpenCsdEtmv4QDecodesCompleteThumb16WithOneTrailingByte)
+{
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb16WithOneTrailingByte(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4Q);
+}
+
+TEST(CtraceUnitTests, testOpenCsdEtmv4QRejectsMissingOrPartialFirstHalfword)
+{
+  OpenCsdInstructionBoundaryChecks::expectMissingOrPartialFirstHalfword(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4Q);
+}
+
+TEST(CtraceUnitTests, testOpenCsdEtmv4QRejectsIncompleteThumb32ForEveryWidePrefix)
+{
+  OpenCsdInstructionBoundaryChecks::expectIncompleteThumb32ForEveryWidePrefix(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4Q);
+}
+
+TEST(CtraceUnitTests, testOpenCsdEtmv4QDecodesCompleteThumb32AtImageEnd)
+{
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb32AtImageEnd(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4Q);
+}
+
+TEST(CtraceUnitTests, testOpenCsdPtmDecodesCompleteThumb16AtImageEnd)
+{
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb16AtImageEnd(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Ptm);
+}
+
+TEST(CtraceUnitTests, testOpenCsdPtmDecodesCompleteThumb16WithOneTrailingByte)
+{
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb16WithOneTrailingByte(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Ptm);
+}
+
+TEST(CtraceUnitTests, testOpenCsdPtmRejectsMissingOrPartialFirstHalfword)
+{
+  OpenCsdInstructionBoundaryChecks::expectMissingOrPartialFirstHalfword(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Ptm);
+}
+
+TEST(CtraceUnitTests, testOpenCsdPtmRejectsIncompleteThumb32ForEveryWidePrefix)
+{
+  OpenCsdInstructionBoundaryChecks::expectIncompleteThumb32ForEveryWidePrefix(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Ptm);
+}
+
+TEST(CtraceUnitTests, testOpenCsdPtmDecodesCompleteThumb32AtImageEnd)
+{
+  OpenCsdInstructionBoundaryChecks::expectCompleteThumb32AtImageEnd(
+      OpenCsdInstructionBoundaryDecoder::Protocol::Ptm);
 }
 
 TEST(CtraceUnitTests, testOpenCsdFixedWidthInstructionsStillRequireFourBytes)
@@ -255,9 +376,3 @@ TEST(CtraceUnitTests, testOpenCsdFixedWidthInstructionsStillRequireFourBytes)
     EXPECT_EQ(ranges.front().last_instr_sz, 4U);
   }
 }
-
-INSTANTIATE_TEST_SUITE_P(FullDecoders, OpenCsdInstructionBoundaryTests,
-                        ::testing::Values(OpenCsdInstructionBoundaryDecoder::Protocol::Etmv3,
-                                          OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4,
-                                          OpenCsdInstructionBoundaryDecoder::Protocol::Etmv4Q,
-                                          OpenCsdInstructionBoundaryDecoder::Protocol::Ptm));
