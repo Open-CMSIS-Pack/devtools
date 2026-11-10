@@ -276,6 +276,7 @@ static constexpr const char* YAML_TARGETTYPE = "target-type";
 static constexpr const char* YAML_TARGETTYPES = "target-types";
 static constexpr const char* YAML_TEMPLATE = "template";
 static constexpr const char* YAML_TELNET = "telnet";
+static constexpr const char* YAML_TRACE = "trace";
 static constexpr const char* YAML_TRACE_SINKS = "trace-sinks";
 static constexpr const char* YAML_TRACEBUFFER = "tracebuffer";
 static constexpr const char* YAML_SERIALWIRE = "serialwire";
@@ -411,6 +412,7 @@ protected:
   void ParseRte(const YAML::Node& parent, std::string& rteBaseDir);
   void ParseDebugDefaults(const YAML::Node& parent, const std::string& file, DebugAdapterDefaultsItem& defaults);
   void ParseTelnet(const YAML::Node& parent, const std::string& file, std::vector<TelnetItem>& telnet);
+  void ParseTrace(const YAML::Node& parent, const std::string& file, std::vector<TraceItem>& trace);
   void ParseSystemView(const YAML::Node& parent, const std::string& file, SystemViewItem& systemView);
   void ParseCustom(const YAML::Node& parent, const std::vector<std::string>& skip, CustomItem& custom);
   bool GetTypes(const std::string& type, std::string& buildType, std::string& targetType, std::string& pattern);

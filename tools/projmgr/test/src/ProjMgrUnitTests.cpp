@@ -7359,6 +7359,45 @@ TEST_F(ProjMgrUnitTests, TestRunDebugMulticore) {
     testinput_folder + "/TestRunDebug/ref/run-debug+TestHW3.cbuild-run.yml");
 }
 
+TEST_F(ProjMgrUnitTests, TestRunDebugTrace) {
+  const string csolution = testinput_folder + "/TestRunDebug/trace.csolution.yml";
+  ASSERT_TRUE(RteFsUtils::Exists(csolution)) << "Missing test fixture: " << csolution;
+  const string cproject = testinput_folder + "/TestRunDebug/trace.cproject.yml";
+  ASSERT_TRUE(RteFsUtils::Exists(cproject)) << "Missing test fixture: " << cproject;
+  for (const auto& output : { testinput_folder + "/TestRunDebug", testoutput_folder }) {
+    StdStreamRedirect streamRedirect;
+    char* argv[7] = { nullptr, (char*)"convert", (char*)csolution.c_str(),
+      (char*)"--active", (char*)"SingleCore", (char*)"--output", (char*)output.c_str() };
+    const auto result = RunProjMgr(7, argv, m_envp);
+    ASSERT_EQ(0, result) << streamRedirect.GetErrorString();
+    const auto cbuildrun = YAML::LoadFile(output + "/out/trace+SingleCore.cbuild-run.yml");
+    const auto trace = cbuildrun["cbuild-run"]["debugger"]["trace"];
+    ASSERT_EQ(3, trace.size());
+    EXPECT_EQ("trace/SingleCore/trace.SWO.raw", trace[0]["file"].as<string>());
+    EXPECT_TRUE(trace[0]["swo-uart"].IsNull());
+    EXPECT_EQ(120000000, trace[0]["input-clock"].as<unsigned long long>());
+    EXPECT_EQ(RteFsUtils::RelativePath(testinput_folder + "/TestRunDebug/captures/trace.TB_MTB.raw",
+      output + "/out"), trace[1]["file"].as<string>());
+    EXPECT_EQ("MTB", trace[1]["trace-buffer"].as<string>());
+    EXPECT_FALSE(trace[2]["file"].IsDefined());
+    EXPECT_TRUE(trace[2]["trace-buffer"].IsNull());
+    EXPECT_EQ(5555, trace[2]["server-port"].as<unsigned>());
+  }
+
+  const string invalidSolution = testinput_folder + "/TestRunDebug/trace-invalid.csolution.yml";
+  auto root = YAML::LoadFile(csolution);
+  root["solution"]["target-types"][0]["target-set"][0]["debugger"]["trace"][0]["file"] = "$Unknown$/trace.raw";
+  std::stringstream content;
+  content << root;
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(invalidSolution, content.str()));
+  StdStreamRedirect streamRedirect;
+  char* argv[5] = { nullptr, (char*)"convert", (char*)invalidSolution.c_str(),
+    (char*)"--active", (char*)"SingleCore" };
+  EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find("unknown access sequence: 'Unknown'"));
+  EXPECT_TRUE(RteFsUtils::RemoveFile(invalidSolution));
+}
+
 TEST_F(ProjMgrUnitTests, TestRunDebugTelnet) {
   char* argv[5];
   const string& csolution = testinput_folder + "/TestRunDebug/telnet.csolution.yml";

@@ -182,6 +182,11 @@ struct CustomItem {
   std::vector<std::pair<std::string, CustomItem>> map;
 };
 
+struct TraceItem {
+  std::string file;
+  CustomItem custom;
+};
+
 /**
  * @brief debugger item containing
  *        name of debug configuration
@@ -202,6 +207,7 @@ struct DebuggerItem {
   std::map<std::string, std::string> deviceSettings;
   std::string startPname;
   std::vector<TelnetItem> telnet;
+  std::vector<TraceItem> trace;
   SystemViewItem systemView;
   CustomItem custom;
 };
