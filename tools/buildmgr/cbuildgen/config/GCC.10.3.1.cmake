@@ -2,6 +2,8 @@
 #
 #   - Applies to toolchain: GNU Toolchain for the Arm Architecture 10.3.1 and greater
 
+include("${CMAKE_CURRENT_LIST_DIR}/CMSIS-Build-Utils.cmake")
+
 set(AS "as")
 set(CC "gcc")
 set(CXX "g++")
@@ -343,8 +345,7 @@ set (ELF2BIN -O binary "${OUT_DIR}/$<TARGET_PROPERTY:${TARGET},OUTPUT_NAME>$<TAR
 set (LD_MAP -Wl,-Map="${OUT_DIR}/${LD_MAP_FILE}")
 
 # Set CMake variables for toolchain initialization
-set(CMAKE_C_FLAGS_INIT "${CC_CPU}")
-set(CMAKE_CXX_FLAGS_INIT "${CXX_CPU}")
+cbuild_set_cmake_initial_flags()
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_CROSSCOMPILING TRUE)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
