@@ -276,6 +276,62 @@ TEST_F(ProjMgrWorkerUnitTests, ParseContextLayersDefersMissingClayer) {
   EXPECT_NE(m_missingFiles.end(), m_missingFiles.find(missingClayer));
 }
 
+TEST_F(ProjMgrWorkerUnitTests, ParseContextLayersExcludesAccessSequences) {
+  for (const string sequence : { "SolutionDir()", "ProjectDir()", "OutDir()", "OutDir(other+Target)",
+      "bin()", "elf()", "hex()", "lib()", "map()", "cmse-lib()", "Pack(ARM::RteTest)" }) {
+    SCOPED_TRACE(sequence);
+    m_missingFiles.clear();
+    ContextItem context;
+    CsolutionItem csolution;
+    CprojectItem cproject;
+    csolution.directory = testinput_folder + "/TestLayers";
+    cproject.directory = testinput_folder;
+    cproject.clayers.push_back({ "$" + sequence + "$/../Board/M55_HP/Board_HP.clayer", "Board", false, {} });
+    context.csolution = &csolution;
+    context.cproject = &cproject;
+
+    StdStreamRedirect streamRedirect;
+    EXPECT_TRUE(ParseContextLayers(context));
+    EXPECT_TRUE(streamRedirect.GetErrorString().empty());
+    EXPECT_TRUE(context.layerVariables.empty());
+    EXPECT_TRUE(m_undefLayerVars.empty());
+    EXPECT_TRUE(context.clayers.empty());
+    ASSERT_EQ(1, m_missingFiles.size());
+    if (sequence == "SolutionDir()") {
+      EXPECT_EQ(csolution.directory + "/../Board/M55_HP/Board_HP.clayer", m_missingFiles.begin()->first);
+    }
+    EXPECT_FALSE(CheckMissingFiles());
+    EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(
+      "file '" + m_missingFiles.begin()->first + "' was not found"));
+  }
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ParseContextLayersPreservesLayerVariables) {
+  ContextItem context;
+  CsolutionItem csolution;
+  CprojectItem cproject;
+  csolution.directory = testinput_folder;
+  cproject.directory = testinput_folder;
+  cproject.clayers.push_back({ "$Board-Layer$", "Board", false, {} });
+  context.csolution = &csolution;
+  context.cproject = &cproject;
+
+  EXPECT_TRUE(ParseContextLayers(context));
+  EXPECT_EQ("Board-Layer", context.layerVariables.at("Board"));
+  EXPECT_EQ((set<string>{ "Board-Layer" }), m_undefLayerVars);
+  EXPECT_TRUE(m_missingFiles.empty());
+
+  m_undefLayerVars.clear();
+  csolution.target.build.variables = {
+    { "Board-Layer", "$SolutionDir()$/TestLayers/variables/solutionDir.clayer.yml" },
+  };
+  EXPECT_TRUE(ParseContextLayers(context));
+  EXPECT_EQ(1, context.clayers.size());
+  EXPECT_TRUE(m_missingFiles.empty());
+  EXPECT_TRUE(m_undefLayerVars.empty());
+  EXPECT_EQ("Board-Layer", context.layerVariables.at("Board"));
+}
+
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {
   set<string> expected = {
     "ARM::Device:Startup&RteTest Startup@2.0.3",
