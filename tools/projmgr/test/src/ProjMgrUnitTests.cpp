@@ -7364,11 +7364,31 @@ TEST_F(ProjMgrUnitTests, TestRunDebugTrace) {
   ASSERT_TRUE(RteFsUtils::Exists(csolution)) << "Missing test fixture: " << csolution;
   const string cproject = testinput_folder + "/TestRunDebug/trace.cproject.yml";
   ASSERT_TRUE(RteFsUtils::Exists(cproject)) << "Missing test fixture: " << cproject;
+  const string debugAdaptersPath = etc_folder + "/debug-adapters.yml";
+  auto debugAdapters = YAML::LoadFile(debugAdaptersPath);
+  bool adapterFound = false;
+  for (auto adapter : debugAdapters["debug-adapters"]) {
+    if (adapter["name"].as<string>() == "CMSIS-DAP@pyOCD") {
+      adapter["defaults"]["trace"][0]["trace-buffer"] = "adapter-default";
+      adapterFound = true;
+    }
+  }
+  ASSERT_TRUE(adapterFound);
+  stringstream adapterContent;
+  adapterContent << debugAdapters;
   for (const auto& output : { testinput_folder + "/TestRunDebug", testoutput_folder }) {
+    const string backup = RteFsUtils::BackupFile(debugAdaptersPath);
+    ASSERT_FALSE(backup.empty());
+    const bool written = RteFsUtils::CreateTextFile(debugAdaptersPath, adapterContent.str());
     StdStreamRedirect streamRedirect;
     char* argv[7] = { nullptr, (char*)"convert", (char*)csolution.c_str(),
       (char*)"--active", (char*)"SingleCore", (char*)"--output", (char*)output.c_str() };
-    const auto result = RunProjMgr(7, argv, m_envp);
+    const auto result = written ? RunProjMgr(7, argv, m_envp) : -1;
+    error_code ec;
+    fs::copy_file(backup, debugAdaptersPath, fs::copy_options::overwrite_existing, ec);
+    ASSERT_FALSE(ec) << ec.message();
+    EXPECT_TRUE(RteFsUtils::RemoveFile(backup));
+    ASSERT_TRUE(written);
     ASSERT_EQ(0, result) << streamRedirect.GetErrorString();
     const auto cbuildrun = YAML::LoadFile(output + "/out/trace+SingleCore.cbuild-run.yml");
     const auto trace = cbuildrun["cbuild-run"]["debugger"]["trace"];

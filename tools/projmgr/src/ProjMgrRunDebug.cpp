@@ -8,8 +8,10 @@
 #include "ProjMgrWorker.h"
 #include "ProjMgrLogger.h"
 #include "ProjMgrYamlEmitter.h"
+#include "ProjMgrYamlParser.h"
 #include "RteFsUtils.h"
 
+#include <algorithm>
 #include <regex>
 
 using namespace std;
@@ -477,6 +479,12 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
 
   // merge custom options
   ProjMgrUtils::MergeCustomItems(context.debugger.custom, m_runDebug.debugger.custom);
+  if (!context.debugger.trace.empty()) {
+    auto& custom = m_runDebug.debugger.custom.map;
+    custom.erase(remove_if(custom.begin(), custom.end(), [](const auto& item) {
+      return item.first == YAML_TRACE;
+    }), custom.end());
+  }
 }
 
 void ProjMgrRunDebug::CollectTelnetOptions(const ContextItem& context, DebugAdapterItem& adapter,
