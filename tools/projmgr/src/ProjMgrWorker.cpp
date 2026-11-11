@@ -6,6 +6,7 @@
 
 #include "ProjMgrWorker.h"
 #include "ProjMgrLogger.h"
+#include "ProjMgrMlops.h"
 #include "ProjMgrYamlEmitter.h"
 
 #include "CrossPlatformUtils.h"
@@ -518,16 +519,32 @@ bool ProjMgrWorker::InitializeModel() {
   return m_kernel->Init();
 }
 
+bool ProjMgrWorker::UpdatePackContexts() {
+  m_packRelevantContexts = m_selectedContexts;
+  if (m_parser && !ProjMgrMlops(this).CollectContexts(m_parser->GetCsolution(), m_packRelevantContexts)) {
+    m_packRelevantContexts.clear();
+    return false;
+  }
+  return true;
+}
+
+const vector<string>& ProjMgrWorker::GetPackContexts() const {
+  return m_packRelevantContexts;
+}
+
 bool ProjMgrWorker::CollectAllRequiredPdscFiles() {
   // Check and collect requirements
   if (m_selectedContexts.empty()) {
     for (const auto& [context,_] : m_contexts) {
       m_selectedContexts.push_back(context);
     }
+    if (!UpdatePackContexts()) {
+      return false;
+    }
   }
   bool success = true;
   m_contextErrMap.clear();
-  for (const auto& context : m_selectedContexts) {
+  for (const auto& context : m_packRelevantContexts) {
     auto& contextItem = m_contexts.at(context);
     if (!CollectRequiredPdscFiles(contextItem, m_packRoot)) {
       success &= false;
@@ -542,7 +559,7 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
   // Get required pdsc files
   std::list<std::string> pdscFiles;
   bool noPackRequirements = true;
-  for (const auto& context : m_selectedContexts) {
+  for (const auto& context : m_packRelevantContexts) {
     auto& contextItem = m_contexts.at(context);
     noPackRequirements &= contextItem.packRequirements.empty();
     for (const auto& [pdscFile, pathVer] : contextItem.pdscFiles) {
@@ -605,7 +622,9 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   }
   bool deferredFail = false;
   if (!CollectAllRequiredPdscFiles()) {
-    PrintContextErrors(context.name);
+    for (const auto& [contextName, errors] : m_contextErrMap) {
+      PrintContextErrors(contextName);
+    }
     // defer return due to pdsc collection failure
     deferredFail = true;
   }
@@ -4229,7 +4248,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
   }
   bool reqOk = true;
   m_contextErrMap.clear();
-  for (const auto& selectedContext : m_selectedContexts) {
+  for (const auto& selectedContext : m_packRelevantContexts) {
     ContextItem& context = m_contexts[selectedContext];
     if(!CollectRequiredPdscFiles(context, m_packRoot)) {
       // in case of explicit query for missing pack list,
@@ -4290,7 +4309,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
       }
       // get available updates for locked packs
       if (bLocked) {
-        for (const auto& selectedContext : m_selectedContexts) {
+        for (const auto& selectedContext : m_packRelevantContexts) {
           ContextItem& context = m_contexts[selectedContext];
           availablePackVersions.merge(context.availablePackVersions);
         }
@@ -4298,7 +4317,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
     }
 
     if (!m_contextErrMap.empty()) {
-      for (const auto& selectedContext : m_selectedContexts) {
+      for (const auto& selectedContext : m_packRelevantContexts) {
         PrintContextErrors(selectedContext);
       }
       reqOk = false;
@@ -5290,6 +5309,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
 bool ProjMgrWorker::ParseContextSelection(
   const vector<string>& contextSelection, const bool checkCbuildSet)
 {
+  m_packRelevantContexts.clear();
   vector<string> ymlOrderedContexts;
   ListContexts(ymlOrderedContexts, RteUtils::EMPTY_STRING, true);
 
@@ -5380,7 +5400,10 @@ bool ProjMgrWorker::ParseContextSelection(
     }
 
     // Parse context layers
-    for (const auto& context : m_selectedContexts) {
+    if (!UpdatePackContexts()) {
+      return false;
+    }
+    for (const auto& context : m_packRelevantContexts) {
       if (!ParseContextLayers(m_contexts[context])) {
         return false;
       }
@@ -5856,6 +5879,9 @@ bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const 
       }
       m_selectedContexts.push_back(context.name);
     }
+    if (!UpdatePackContexts()) {
+      return false;
+    }
   }
   // parse layers and process selected contexts
   bool deferredFail = false;
@@ -5914,7 +5940,7 @@ bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const 
       projectType = type;
       siblings = contexts;
       m_selectedContexts = siblings;
-      return true;
+      return UpdatePackContexts();
     }
   }
   return false;
@@ -6506,7 +6532,7 @@ void ProjMgrWorker::FormatResolvedPackIds() {
     const auto& realPackId = loadedPack->GetPackageID();
     realPackIds[RteUtils::ToLower(realPackId)] = realPackId;
   }
-  for (auto& contextName : m_selectedContexts) {
+  for (const auto& contextName : m_packRelevantContexts) {
     auto& contextItem = m_contexts[contextName];
     for (auto& [_, resolvedPackIds] : contextItem.userInputToResolvedPackIdMap) {
       map<string, PackageItem> formattedPackIds;
