@@ -646,6 +646,17 @@ void ProjMgrYamlParser::ParseTelnet(const YAML::Node& parent, const std::string&
   }
 }
 
+void ProjMgrYamlParser::ParseTrace(const YAML::Node& parent, const std::string& file, std::vector<TraceItem>& trace) {
+  if (parent[YAML_TRACE].IsDefined()) {
+    for (const auto& traceEntry : parent[YAML_TRACE]) {
+      TraceItem traceItem;
+      ParseString(traceEntry, YAML_FILE, traceItem.file);
+      ParseCustom(traceEntry, { YAML_FILE }, traceItem.custom);
+      trace.push_back(traceItem);
+    }
+  }
+}
+
 void ProjMgrYamlParser::ParseSystemView(const YAML::Node& parent, const std::string& file, SystemViewItem& systemView) {
   if (parent[YAML_SYSTEMVIEW].IsDefined()) {
     const YAML::Node& systemViewNode = parent[YAML_SYSTEMVIEW];
@@ -669,8 +680,9 @@ void ProjMgrYamlParser::ParseDebugger(const YAML::Node& parent, const string& fi
     ParseMapOfStrings(debuggerNode, YAML_DEVICE_SETTINGS, debugger.deviceSettings);
     ParseString(debuggerNode, YAML_START_PNAME, debugger.startPname);
     ParseTelnet(debuggerNode, file, debugger.telnet);
+    ParseTrace(debuggerNode, file, debugger.trace);
 	ParseSystemView(debuggerNode, file, debugger.systemView);
-    ParseCustom(debuggerNode, { YAML_NAME, YAML_PROTOCOL, YAML_CLOCK, YAML_DBGCONF, YAML_DEVICE_SETTINGS, YAML_START_PNAME, YAML_TELNET, YAML_SYSTEMVIEW }, debugger.custom);
+    ParseCustom(debuggerNode, { YAML_NAME, YAML_PROTOCOL, YAML_CLOCK, YAML_DBGCONF, YAML_DEVICE_SETTINGS, YAML_START_PNAME, YAML_TELNET, YAML_TRACE, YAML_SYSTEMVIEW }, debugger.custom);
   }
 }
 

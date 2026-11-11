@@ -403,6 +403,7 @@ struct DebuggerType {
   std::string startPname;
   std::vector<GdbServerItem> gdbserver;
   std::map<std::string, TelnetOptionsItem> telnet;
+  std::vector<TraceItem> trace;
   SystemViewItem systemView;
   CustomItem custom;
 };

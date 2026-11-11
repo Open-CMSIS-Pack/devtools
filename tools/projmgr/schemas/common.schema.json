@@ -2317,11 +2317,31 @@
         "gdbserver":       { "$ref": "#/definitions/GdbServersType" },
         "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
         "rtt":             { "$ref": "#/definitions/RttOptionsType" },
+        "trace":           { "$ref": "#/definitions/TraceOptionsType" },
         "systemview":      { "$ref": "#/definitions/SystemViewOptionType" },
         "device-settings": { "$ref": "#/definitions/DeviceSettingsType" }
       },
       "additionalProperties": true,
       "required": ["name"]
+    },
+    "TraceOptionsType": {
+      "title": "trace:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#trace",
+      "description": "Configuration for trace transports.",
+      "type": "array",
+      "items": { "$ref": "#/definitions/TraceOptionType" }
+    },
+    "TraceOptionType": {
+      "type": "object",
+      "properties": {
+        "swo-uart":     { "type": "null", "description": "Selects SWO trace output in UART mode." },
+        "trace-buffer": { "type": ["string", "null"], "description": "Selects an on-device trace buffer by name. The name may be omitted for a single unnamed trace buffer." },
+        "mode":         { "anyOf": [{ "enum": [ "off", "server", "file" ] }, { "type": "string" }], "description": "Trace output mode. Default: off." },
+        "server-port":  { "type": "integer", "minimum": 1, "maximum": 65535, "description": "TCP port for trace output in server mode. Default: 5555." },
+        "file":         { "type": "string", "description": "Path to the raw trace output file in file mode." },
+        "input-clock":  { "type": "number", "exclusiveMinimum": 0, "description": "Trace input clock frequency in Hz." },
+        "output-clock": { "type": "number", "minimum": 0, "description": "SWO output clock frequency in Hz. Omitted or zero selects an automatically calculated frequency." }
+      },
+      "additionalProperties": true
     },
     "DeviceSettingsType": {
       "title": "device-settings:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#device-settings",
@@ -2640,6 +2660,7 @@
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
         "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
         "rtt":             { "$ref": "#/definitions/RttOptionsType" },
+        "trace":           { "$ref": "#/definitions/TraceOptionsType" },
         "systemview":      { "$ref": "#/definitions/SystemViewOptionType" },
         "device-settings": { "$ref": "#/definitions/DeviceSettingsType" }
       },
