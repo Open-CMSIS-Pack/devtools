@@ -125,8 +125,7 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
   worker->GetContexts(availableContexts);
   for (const auto& contextName : worker->GetPackContexts()) {
     auto* packContext = &availableContexts->at(contextName);
-    if (!packContext->missingPacks.empty() &&
-      find(processedContexts.begin(), processedContexts.end(), packContext) == processedContexts.end()) {
+    if (find(processedContexts.begin(), processedContexts.end(), packContext) == processedContexts.end()) {
       additionalPackContexts.push_back(packContext);
     }
   }

@@ -583,7 +583,14 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
   }
   const set<string> requiredPdscFiles(pdscFiles.begin(), pdscFiles.end());
   // Get installed packs
-  if (noPackRequirements || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
+  // Additional MLOps requirements must not disable the default installed-pack fallback
+  // when the selected contexts have no pack requirements.
+  const bool useDefaultPackFallback = (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT) &&
+    all_of(m_selectedContexts.begin(), m_selectedContexts.end(), [this](const string& context) {
+      return m_contexts.at(context).packRequirements.empty();
+    });
+  if (noPackRequirements || useDefaultPackFallback ||
+    (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
     const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
     if (!m_kernel->GetEffectivePdscFiles(pdscFiles, latest)) {
       ProjMgrLogger::Get().Error("parsing installed packs failed");
