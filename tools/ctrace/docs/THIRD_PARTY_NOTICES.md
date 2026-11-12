@@ -26,9 +26,15 @@ ctrace consumes the repository-wide cxxopts and yaml-cpp targets configured by d
 
 `tools/ctrace/cmake/dependencies/ConfigureOpenCSD.cmake` builds OpenCSD's
 upstream minimal static target, enables large trace-source IDs, and adjusts its
-MSVC build options. It applies `tools/ctrace/cmake/dependencies/OpenCSD.patch`,
-which replaces an invalid empty-vector subscript in the ITM sync search with
-`std::vector::data()`. See the [OpenCSD issue notes](opencsd-issues.md).
+MSVC build options. It applies two local patches independently:
+
+- `tools/ctrace/cmake/dependencies/OpenCSD.patch` replaces an invalid empty-vector
+  subscript in the ITM sync search with `std::vector::data()`.
+- `tools/ctrace/cmake/dependencies/OpenCSD-thumb-fetch.patch` permits complete
+  Thumb-16 instructions after short memory reads in the ETMv3, ETMv4 and PTM
+  fetch paths, while retaining inaccessible-code handling for partial instructions.
+
+See the [OpenCSD issue notes](opencsd-issues.md).
 
 The OpenCSD minimal static target still contains upstream decoders other than
 ITM because OpenCSD 1.8.3 does not expose a supported ITM-only CMake target.
