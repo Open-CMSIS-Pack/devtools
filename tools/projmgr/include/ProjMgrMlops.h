@@ -124,6 +124,7 @@ public:
    * @return true if executed successfully
   */
   bool CollectSettings(const CsolutionItem& csolution, MlopsType& mlops);
+  bool CollectContexts(const CsolutionItem& csolution, std::vector<std::string>& contexts) const;
 
 private:
   ProjMgrWorker* m_worker = nullptr;

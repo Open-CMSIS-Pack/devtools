@@ -43,6 +43,58 @@ void ProjMgrWorkerUnitTests::SetCsolutionPacks(CsolutionItem* csolution, std::ve
   m_contexts.insert(std::pair<string, ContextItem>(string(targetType), context));
 }
 
+TEST_F(ProjMgrWorkerUnitTests, PackContextsRefresh) {
+  auto& solution = parser.GetCsolution();
+  solution.mlops.enabled = true;
+  TargetSetItem hardwareSet;
+  hardwareSet.images.emplace_back();
+  hardwareSet.images.back().context = "app";
+  TargetType hardwareType;
+  hardwareType.targetSet.push_back(hardwareSet);
+  TargetSetItem simulatorSet = hardwareSet;
+  simulatorSet.debugger.name = "Arm-FVP";
+  TargetType simulatorType;
+  simulatorType.targetSet.push_back(simulatorSet);
+  solution.targetTypes = { { "Hardware", hardwareType }, { "Simulator", simulatorType } };
+  m_contexts["app+Hardware"] = {};
+  m_contexts["app+Simulator"] = {};
+  m_selectedContexts = { "app+Hardware" };
+
+  ASSERT_TRUE(UpdatePackContexts());
+  EXPECT_EQ((vector<string>{ "app+Hardware", "app+Simulator" }), GetPackContexts());
+  EXPECT_EQ((vector<string>{ "app+Hardware" }), GetSelectedContexts());
+  ASSERT_TRUE(UpdatePackContexts());
+  EXPECT_EQ(2, GetPackContexts().size());
+
+  solution.mlops.simulator.targetType = "Missing";
+  EXPECT_FALSE(UpdatePackContexts());
+  EXPECT_TRUE(GetPackContexts().empty());
+
+  solution.mlops.enabled = false;
+  m_selectedContexts = { "app+Simulator" };
+  ASSERT_TRUE(UpdatePackContexts());
+  EXPECT_EQ(m_selectedContexts, GetPackContexts());
+  Clear();
+  EXPECT_TRUE(GetPackContexts().empty());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, PackContextsReselection) {
+  CprojectItem project;
+  ContextItem context;
+  context.cproject = &project;
+  context.csolution = &parser.GetCsolution();
+  m_contexts["first"] = context;
+  m_contexts["second"] = context;
+  m_ymlOrderedContexts = { "first", "second" };
+
+  ASSERT_TRUE(ParseContextSelection({ "first" }));
+  EXPECT_EQ((vector<string>{ "first" }), GetPackContexts());
+  ASSERT_TRUE(ParseContextSelection({ "second" }));
+  EXPECT_EQ((vector<string>{ "second" }), GetPackContexts());
+  EXPECT_FALSE(ParseContextSelection({ "unknown" }));
+  EXPECT_TRUE(GetPackContexts().empty());
+}
+
 TEST_F(ProjMgrWorkerUnitTests, AccessSequenceShellVariables) {
   ContextItem context;
   for (const string input : { "${variable}", "${first}/${second}", "-DVALUE=${variable}/file" }) {

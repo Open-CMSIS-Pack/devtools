@@ -144,6 +144,29 @@ bool ProjMgrMlops::SetMlopsRunType(MlopsRunType& run, const string& targetType, 
   return true;
 }
 
+bool ProjMgrMlops::CollectContexts(const CsolutionItem& csolution, vector<string>& contexts) const {
+  if (!csolution.mlops.enabled) {
+    return true;
+  }
+  map<string, ContextItem>* availableContexts = nullptr;
+  m_worker->GetContexts(availableContexts);
+  for (const bool simulator : { false, true }) {
+    string targetType;
+    TargetSetItem targetSet;
+    if (!ResolveTargetSet(csolution, simulator ? csolution.mlops.simulator : csolution.mlops.hardware,
+      simulator, targetType, targetSet)) {
+      return false;
+    }
+    for (const auto& image : targetSet.images) {
+      const string contextName = (image.context.empty() ? csolution.name : image.context) + "+" + targetType;
+      if (availableContexts->find(contextName) != availableContexts->end()) {
+        CollectionUtils::PushBackUniquely(contexts, contextName);
+      }
+    }
+  }
+  return true;
+}
+
 bool ProjMgrMlops::CollectSettings(const CsolutionItem& csolution, MlopsType& mlops) {
   mlops = {};
 

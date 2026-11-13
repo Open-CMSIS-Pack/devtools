@@ -8284,6 +8284,87 @@ TEST_F(ProjMgrUnitTests, GenerateMLOps) {
   RteFsUtils::RemoveDir(mlopsOutput);
 }
 
+TEST_F(ProjMgrUnitTests, GenerateMLOps_PackContexts) {
+  StdStreamRedirect streamRedirect;
+  const string csolution = testinput_folder + "/MLOps/pack_contexts.csolution.yml";
+  YAML::Node root = YAML::LoadFile(csolution);
+  YAML::Node solution = root["solution"];
+
+  char* convertArgv[] = { nullptr, (char*)"convert", (char*)csolution.c_str(),
+    (char*)"--active", (char*)"Hardware" };
+  EXPECT_EQ(1, RunProjMgr(5, convertArgv, m_envp));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find("Missing::Simulator"));
+  EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find("Missing::Inactive"));
+
+  const YAML::Node missingIndex = YAML::LoadFile(testinput_folder + "/MLOps/pack_contexts.cbuild-idx.yml");
+  ASSERT_EQ(2, missingIndex["build-idx"]["cbuilds"].size());
+  for (const auto& build : missingIndex["build-idx"]["cbuilds"]) {
+    EXPECT_EQ("+Hardware", build["configuration"].as<string>());
+    ASSERT_EQ(1, build["packs-missing"].size());
+    EXPECT_EQ("Missing::Simulator", build["packs-missing"][0]["pack"].as<string>());
+    EXPECT_NE(string::npos, YAML::Dump(build["messages"]["errors"]).find("Missing::Simulator"));
+    EXPECT_EQ(string::npos, YAML::Dump(build).find("Missing::Inactive"));
+  }
+
+  streamRedirect.ClearStringStreams();
+  char* packsArgv[] = { nullptr, (char*)"list", (char*)"packs", (char*)csolution.c_str(),
+    (char*)"--active", (char*)"Hardware", (char*)"--missing" };
+  EXPECT_EQ(0, RunProjMgr(7, packsArgv, m_envp));
+  EXPECT_NE(string::npos, streamRedirect.GetOutString().find("Missing::Simulator"));
+  EXPECT_EQ(string::npos, streamRedirect.GetOutString().find("Missing::Inactive"));
+
+  convertArgv[3] = (char*)"--context";
+  convertArgv[4] = (char*)"core0+Hardware";
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(1, RunProjMgr(5, convertArgv, m_envp));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find("Missing::Simulator"));
+  convertArgv[3] = (char*)"--active";
+  convertArgv[4] = (char*)"Hardware";
+
+  solution["packs"][1]["pack"] = "ARM::RteTest";
+  {
+    ofstream stream(csolution);
+    stream << root;
+  }
+  streamRedirect.ClearStringStreams();
+  char* frozenArgv[] = { nullptr, (char*)"convert", (char*)csolution.c_str(),
+    (char*)"--active", (char*)"Hardware", (char*)"--frozen-packs" };
+  EXPECT_EQ(1, RunProjMgr(6, frozenArgv, m_envp));
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(5, convertArgv, m_envp));
+  EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find("Missing::Inactive"));
+  EXPECT_EQ(0, RunProjMgr(7, packsArgv, m_envp));
+  EXPECT_EQ(string::npos, streamRedirect.GetOutString().find("Missing::"));
+  const YAML::Node index = YAML::LoadFile(testinput_folder + "/MLOps/pack_contexts.cbuild-idx.yml");
+  EXPECT_EQ(2, index["build-idx"]["cbuilds"].size());
+  for (const auto& build : index["build-idx"]["cbuilds"]) {
+    EXPECT_FALSE(build["packs-missing"].IsDefined());
+  }
+  const YAML::Node packLock = YAML::LoadFile(testinput_folder + "/MLOps/pack_contexts.cbuild-pack.yml");
+  bool simulatorPackLocked = false;
+  for (const auto& pack : packLock["cbuild-pack"]["resolved-packs"]) {
+    if (pack["resolved-pack"].as<string>().find("ARM::RteTest@") == 0) {
+      simulatorPackLocked = true;
+    }
+  }
+  EXPECT_TRUE(simulatorPackLocked);
+  EXPECT_EQ(0, RunProjMgr(6, frozenArgv, m_envp));
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(6, packsArgv, m_envp));
+  EXPECT_NE(string::npos, streamRedirect.GetOutString().find("ARM::RteTest@"));
+
+  solution.remove("mlops");
+  solution["packs"][1]["pack"] = "Missing::Simulator";
+  {
+    ofstream stream(csolution);
+    stream << root;
+  }
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(5, convertArgv, m_envp));
+  EXPECT_EQ(0, RunProjMgr(7, packsArgv, m_envp));
+  EXPECT_EQ(string::npos, streamRedirect.GetOutString().find("Missing::"));
+}
+
 TEST_F(ProjMgrUnitTests, GenerateMLOps_ImageOnly) {
   char* argv[5];
   string csolution = testinput_folder + "/MLOps/minimal_image_only.csolution.yml";

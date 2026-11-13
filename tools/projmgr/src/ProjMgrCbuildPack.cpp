@@ -143,7 +143,16 @@ bool ProjMgrYamlEmitter::GenerateCbuildPack(const vector<ContextItem*> contexts,
   }
   // generate cbuild-pack.yml
   const string& filename = m_parser->GetCsolution().directory + "/" + m_parser->GetCsolution().name + ".cbuild-pack.yml";
+  vector<ContextItem*> packContexts = contexts;
+  map<string, ContextItem>* availableContexts = nullptr;
+  m_worker->GetContexts(availableContexts);
+  for (const auto& contextName : m_worker->GetPackContexts()) {
+    auto* packContext = &availableContexts->at(contextName);
+    if (std::find(packContexts.begin(), packContexts.end(), packContext) == packContexts.end()) {
+      packContexts.push_back(packContext);
+    }
+  }
   YAML::Node rootNode;
-  ProjMgrCbuildPack cbuildPack(rootNode[YAML_CBUILD_PACK], contexts, m_parser, keepExistingPackContent);
+  ProjMgrCbuildPack cbuildPack(rootNode[YAML_CBUILD_PACK], packContexts, m_parser, keepExistingPackContent);
   return WriteFile(rootNode, filename, "", !cbuildPackFrozen);
 }
