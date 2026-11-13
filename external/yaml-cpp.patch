@@ -1,11 +1,12 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 46dc180..b746ac1 100644
+index 631bfa3..a450934 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -1,5 +1,5 @@
- # 3.5 is actually available almost everywhere, but this a good minimum
--cmake_minimum_required(VERSION 3.4)
-+cmake_minimum_required(VERSION 3.10)
+@@ -1,6 +1,6 @@
+ # 3.5 is actually available almost everywhere.
+ # 3.30 as the upper policy limit avoids CMake deprecation warnings.
+-cmake_minimum_required(VERSION 3.5...3.30)
++cmake_minimum_required(VERSION 3.10...3.30)
  
  # enable MSVC_RUNTIME_LIBRARY target property
  # see https://cmake.org/cmake/help/latest/policy/CMP0091.html
@@ -22,10 +23,10 @@ index 976d149..ba73a48 100644
    // bool manipulators
    YesNoBool,      // yes, no
 diff --git a/include/yaml-cpp/exceptions.h b/include/yaml-cpp/exceptions.h
-index f6b2602..a4c5537 100644
+index 99e06b2..2a642a4 100644
 --- a/include/yaml-cpp/exceptions.h
 +++ b/include/yaml-cpp/exceptions.h
-@@ -87,6 +87,7 @@ const char* const INVALID_ANCHOR = "invalid anchor";
+@@ -89,6 +89,7 @@ const char* const INVALID_ANCHOR = "invalid anchor";
  const char* const INVALID_ALIAS = "invalid alias";
  const char* const INVALID_TAG = "invalid tag";
  const char* const BAD_FILE = "bad file";
@@ -33,7 +34,7 @@ index f6b2602..a4c5537 100644
  
  template <typename T>
  inline const std::string KEY_NOT_FOUND_WITH_KEY(
-@@ -298,6 +299,16 @@ class YAML_CPP_API BadFile : public Exception {
+@@ -300,6 +301,16 @@ class YAML_CPP_API BadFile : public Exception {
    BadFile(const BadFile&) = default;
    ~BadFile() YAML_CPP_NOEXCEPT override;
  };
@@ -77,19 +78,19 @@ index 07cf81a..ed7d9cd 100644
    void convert_sequence_to_map(const shared_memory_holder& pMemory);
  
 diff --git a/src/emitter.cpp b/src/emitter.cpp
-index 4d48307..a188cca 100644
+index e5fc0ea..f98c605 100644
 --- a/src/emitter.cpp
 +++ b/src/emitter.cpp
-@@ -721,7 +721,7 @@ Emitter& Emitter::Write(const std::string& str) {
+@@ -722,7 +722,7 @@ Emitter& Emitter::Write(const char* str, std::size_t size) {
  
    StringEscaping::value stringEscaping = GetStringEscapingStyle(m_pState->GetOutputCharset());
  
 -  const StringFormat::value strFormat =
-+  const StringFormat::value strFormat = str.compare(0, 2, "|\n") == 0 ? StringFormat::Literal :
-       Utils::ComputeStringFormat(str, m_pState->GetStringFormat(),
++  const StringFormat::value strFormat = size >= 2 && str[0] == '|' && str[1] == '\n' ? StringFormat::Literal :
+       Utils::ComputeStringFormat(str, size, m_pState->GetStringFormat(),
                                   m_pState->CurGroupFlowType(), stringEscaping == StringEscaping::NonAscii);
  
-@@ -816,6 +816,8 @@ const char* Emitter::ComputeNullName() const {
+@@ -821,6 +821,8 @@ const char* Emitter::ComputeNullName() const {
        return "NULL";
      case CamelNull:
        return "Null";
@@ -111,18 +112,18 @@ index 3dbe401..0dd0b17 100644
        _Set(m_nullFmt, value, scope);
        return true;
 diff --git a/src/emitterutils.cpp b/src/emitterutils.cpp
-index 6cdf6de..b48b7c0 100644
+index 1541e17..f64a2ec 100644
 --- a/src/emitterutils.cpp
 +++ b/src/emitterutils.cpp
-@@ -365,7 +365,7 @@ bool WriteDoubleQuotedString(ostream_wrapper& out, const std::string& str,
+@@ -366,7 +366,7 @@ bool WriteDoubleQuotedString(ostream_wrapper& out, const char* str, std::size_t
  
- bool WriteLiteralString(ostream_wrapper& out, const std::string& str,
+ bool WriteLiteralString(ostream_wrapper& out, const char* str, std::size_t size,
                          std::size_t indent) {
 -  out << "|\n";
-+  out << (str.compare(0, 2, "|\n") == 0 ? "" : "|\n");
++  out << (size >= 2 && str[0] == '|' && str[1] == '\n' ? "" : "|\n");
    int codePoint;
-   for (std::string::const_iterator i = str.begin();
-        GetNextCodePointAndAdvance(codePoint, i, str.end());) {
+   for (const char* i = str;
+        GetNextCodePointAndAdvance(codePoint, i, str + size);) {
 diff --git a/src/exceptions.cpp b/src/exceptions.cpp
 index 43a7976..af99fd6 100644
 --- a/src/exceptions.cpp
@@ -147,7 +148,7 @@ index c8837f0..5db3ee4 100644
  }
  inline const RegEx Comment() {
 diff --git a/src/node_data.cpp b/src/node_data.cpp
-index 8f5422a..23ad892 100644
+index 6653bc1..dbfb941 100644
 --- a/src/node_data.cpp
 +++ b/src/node_data.cpp
 @@ -279,7 +279,12 @@ void node_data::reset_map() {
@@ -165,12 +166,12 @@ index 8f5422a..23ad892 100644
  
    if (!key.is_defined() || !value.is_defined())
 diff --git a/test/integration/load_node_test.cpp b/test/integration/load_node_test.cpp
-index 9d0c790..37355aa 100644
+index 49f2b61..653c487 100644
 --- a/test/integration/load_node_test.cpp
 +++ b/test/integration/load_node_test.cpp
-@@ -360,5 +360,9 @@ TEST(LoadNodeTest, BlockCRNLEncoded) {
-   EXPECT_EQ(1, node["followup"].as<int>());
+@@ -447,5 +447,9 @@ TEST(LoadNodeTest, BlockCREncoded) {
  }
+ 
  
 +TEST(LoadNodeTest, NonUniqueMapKey) {
 +  EXPECT_THROW(Load("{a: A, b: B, a: A}"), NonUniqueMapKey);

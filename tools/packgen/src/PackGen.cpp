@@ -85,7 +85,7 @@ int PackGen::RunPackGen(int argc, char **argv) {
       cout << options.help() << endl;
       return 0;
     }
-  } catch (cxxopts::OptionException& e) {
+  } catch (cxxopts::exceptions::exception& e) {
     // Print error
     cerr << "packgen error: parsing command line failed!" << endl << e.what() << endl;
     return 1;
