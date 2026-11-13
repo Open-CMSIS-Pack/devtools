@@ -1,0 +1,98 @@
+{
+  "$comment": "For documentation refer to https://open-cmsis-pack.github.io/cmsis-toolbox/Experimental-Features/#file-structure-of-ctrace-runyml",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "<placeholder>/ctrace-run.schema.json",
+  "title": "CMSIS ctrace-run",
+  "description": "contains resolved trace generation settings and register accesses for a solution set",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "ctrace-run": { "$ref": "#/definitions/TraceRunDescType" }
+  },
+  "additionalProperties": false,
+  "required": [ "ctrace-run" ],
+  "definitions": {
+    "TraceRunDescType": {
+      "type": "object",
+      "properties": {
+        "generated-by": { "type": "string", "description": "Tool name along with version information used to generate this file." },
+        "ctrace-setup": { "$ref": "./ctrace.schema.json#/definitions/TraceSetupType" },
+        "ctrace-disable": { "$ref": "#/definitions/TraceDisableType" },
+        "ctrace-refs": { "$ref": "#/definitions/TraceRefsType" }
+      },
+      "additionalProperties": false,
+      "required": [ "ctrace-disable", "ctrace-refs" ]
+    },
+    "TraceDisableType": {
+      "type": [ "array", "null" ],
+      "description": "Per-processor register writes applied before the active trace references. A bare node means no disable writes.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pname": { "type": "string", "description": "Processor name for a multi-processor system." },
+          "regs": { "$ref": "#/definitions/RegisterSetupType" }
+        },
+        "additionalProperties": false,
+        "required": [ "regs" ]
+      }
+    },
+    "TraceRefsType": {
+      "type": [ "array", "null" ],
+      "description": "Active trace references. A bare node means no active references.",
+      "items": { "$ref": "#/definitions/TraceRefType" }
+    },
+    "TraceRefType": {
+      "type": "object",
+      "properties": {
+        "ref": { "type": "string", "minLength": 1, "description": "Reference to the ctrace setup node that generated this entry." },
+        "type": { "enum": [ "dwt", "event", "exception", "itm", "pmu", "overflow", "pcsample", "global_ts" ], "description": "Trace output type." },
+        "pname": { "type": "string", "description": "Processor name for a multi-processor system." },
+        "info": { "$ref": "#/definitions/DiagnosticType", "description": "Additional information about the resolved setup." },
+        "warning": { "$ref": "#/definitions/DiagnosticType", "description": "Warning produced while resolving the setup." },
+        "error": { "$ref": "#/definitions/DiagnosticType", "description": "Error produced when the setup could not be completed." },
+        "symbol-file": { "type": "string", "description": "Path to the symbol file used in this reference, relative to the ctrace-run.yml file." },
+        "address": { "$ref": "./ctrace.schema.json#/definitions/UnsignedValueType" },
+        "size": { "type": "integer", "minimum": 1, "description": "Size of the capture data in bytes." },
+        "data-type": { "enum": [ "unsigned", "signed", "float" ], "default": "unsigned", "description": "Display format of the captured data." },
+        "label": { "type": "string", "description": "User-defined short label for Trace Compass." },
+        "stream": { "type": "integer", "minimum": 1, "maximum": 111, "description": "Normal CoreSight ATB trace source ID (0x01 through 0x6F)." },
+        "index": { "$ref": "#/definitions/IndexType" },
+        "regs": { "$ref": "#/definitions/RegisterSetupType" }
+      },
+      "additionalProperties": false,
+      "required": [ "ref", "type" ]
+    },
+    "DiagnosticType": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    },
+    "IndexType": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "integer", "minimum": 0 }
+        }
+      ],
+      "description": "ITM channel or DWT comparator indices."
+    },
+    "RegisterSetupType": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "description": "Symbolic register name." },
+          "value": { "$ref": "./ctrace.schema.json#/definitions/UnsignedValueType" },
+          "mask": { "$ref": "./ctrace.schema.json#/definitions/UnsignedValueType" }
+        },
+        "additionalProperties": false,
+        "required": [ "name", "value" ]
+      }
+    }
+  }
+}
