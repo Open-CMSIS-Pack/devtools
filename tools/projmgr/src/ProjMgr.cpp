@@ -576,6 +576,12 @@ bool ProjMgr::PopulateContexts(void) {
 }
 
 bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
+  bool result = true;
+  MlopsType mlops;
+  if (m_parser.GetCsolution().mlops.enabled && !m_mlops.CollectSettings(m_parser.GetCsolution(), mlops)) {
+    result = false;
+  }
+
   // Generate cbuild pack file
   const bool isUsingContexts = m_contextSet || m_activeTargetSet.has_value() || m_context.size() != 0;
   if (!m_emitter.GenerateCbuildPack(m_processedContexts, isUsingContexts, m_frozenPacks)) {
@@ -583,7 +589,7 @@ bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
   }
 
   // Update the RTE files
-  bool result = UpdateRte();
+  result &= UpdateRte();
 
   // Generate cbuild files
   for (auto& contextItem : m_processedContexts) {
@@ -615,10 +621,6 @@ bool ProjMgr::GenerateYMLConfigurationFiles(bool previousResult) {
 
   // Generate cbuild-mlops file
   if (m_parser.GetCsolution().mlops.enabled) {
-    MlopsType mlops;
-    if (!m_mlops.CollectSettings(m_parser.GetCsolution(), mlops)) {
-      result = false;
-    }
     if (!m_emitter.GenerateMlops(mlops)) {
       result = false;
     }
@@ -709,9 +711,9 @@ bool ProjMgr::Configure() {
     vector<string> configFiles;
     m_worker.ListConfigFiles(configFiles);
     if (!configFiles.empty()) {
-      string infoMsg = "config files for each component:";
+      string infoMsg = "config files";
       for (const auto& configFile : configFiles) {
-        infoMsg += "\n  " + configFile;
+        infoMsg += "\n" + configFile;
       }
       ProjMgrLogger::Get().Info(infoMsg);
     }

@@ -618,6 +618,10 @@ TEST_F(RteModelPrjTest, LoadCprjPacReq) {
 
 TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
 
+  const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + "RTE/";
+  const string CompConfig_1 = rteDir + "RteTest/" + "ComponentLevelConfig_1.h";
+  RteFsUtils::RemoveFile(CompConfig_1);
+
   RteKernelSlim rteKernel;
   rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
   RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_cprj, RteUtils::EMPTY_STRING, true, false);
@@ -625,15 +629,20 @@ TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
   RteTarget* activeTarget = loadedCprjProject->GetActiveTarget();
   ASSERT_NE(activeTarget, nullptr);
 
-  const string rteDir = RteUtils::ExtractFilePath(RteTestM3_cprj, true) + "RTE/";
+  EXPECT_FALSE(RteFsUtils::Exists(CompConfig_1)); // file itself is not gets copied
   const string CompConfig_0_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_0.h.base@0.0.1";
   const string CompConfig_1_Base_Version = rteDir + "RteTest/" + "ComponentLevelConfig_1.h.base@0.0.1";
-  EXPECT_FALSE(RteFsUtils::Exists(CompConfig_0_Base_Version));
+  EXPECT_FALSE(RteFsUtils::Exists(CompConfig_0_Base_Version)); // base file gets copied
   EXPECT_FALSE(RteFsUtils::Exists(CompConfig_1_Base_Version));
   RteFileInstance* fi = loadedCprjProject->GetFileInstance("RTE/RteTest/ComponentLevelConfig_0.h");
   ASSERT_NE(fi, nullptr);
   EXPECT_EQ(fi->GetInfoString(activeTarget->GetName()),
     "RTE/RteTest/ComponentLevelConfig_0.h@0.0.1 (up to date) from ARM::RteTest:ComponentLevel@0.0.1");
+
+  RteFileInstance* fi1 = loadedCprjProject->GetFileInstance("RTE/RteTest/ComponentLevelConfig_1.h");
+  ASSERT_NE(fi1, nullptr);
+  EXPECT_EQ(fi1->GetInfoString(activeTarget->GetName()),
+    "RTE/RteTest/ComponentLevelConfig_1.h@0.0.1 (not exist) from ARM::RteTest:ComponentLevel@0.0.1");
 
   const string deviceDir = rteDir + "Device/RteTest_ARMCM3/";
   EXPECT_FALSE(RteFsUtils::Exists(deviceDir + "ARMCM3_ac6.sct.update@1.2.0"));
@@ -655,6 +664,41 @@ TEST_F(RteModelPrjTest, LoadCprj_NoRTEFileCreation) {
   ASSERT_NE(f, nullptr);
   string pathName = f->GetInstancePathName(activeTarget, 0 , "RTE With Spaces");
   EXPECT_EQ(pathName, "RTE With Spaces/Device/RteTest_ARMCM3/system_ARMCM3.c");
+}
+
+TEST_F(RteModelPrjTest, LoadCprj_ConfigFileUpdatesWithoutRTEUpdate) {
+  const string instanceName = "CONFIG_FOLDER/Device/RteTest_ARMCM3/system_ARMCM3.c";
+  const string configFile = RteUtils::ExtractFilePath(RteTestM3_ConfigFolder_cprj, true) + instanceName;
+  const string baseFile = configFile + ".base@1.0.1";
+  const string updateFile = configFile + ".update@1.2.2";
+  string configContents, baseContents;
+  ASSERT_TRUE(RteFsUtils::ReadFile(configFile, configContents));
+  ASSERT_TRUE(RteFsUtils::ReadFile(baseFile, baseContents));
+  ASSERT_FALSE(RteFsUtils::Exists(updateFile));
+
+  RteKernelSlim rteKernel;
+  rteKernel.SetCmsisPackRoot(RteModelTestConfig::CMSIS_PACK_ROOT);
+  RteCprjProject* loadedCprjProject = rteKernel.LoadCprj(RteTestM3_ConfigFolder_cprj, RteUtils::EMPTY_STRING, true, false);
+  ASSERT_NE(loadedCprjProject, nullptr);
+  EXPECT_FALSE(loadedCprjProject->ShouldUpdateRte());
+
+  RteFileInstance* fi = loadedCprjProject->GetFileInstance(instanceName);
+  ASSERT_NE(fi, nullptr);
+  EXPECT_EQ(fi->GetVersionString(), "1.0.1");
+  RteItem* f = fi->GetFile(loadedCprjProject->GetActiveTargetName());
+  ASSERT_NE(f, nullptr);
+
+  // The pack update is available for merging even when RTE updates are disabled.
+  ASSERT_TRUE(RteFsUtils::Exists(updateFile));
+  EXPECT_TRUE(RteFsUtils::CmpFiles(updateFile, f->GetOriginalAbsolutePath()));
+  EXPECT_TRUE(RteFsUtils::CmpFileMem(configFile, configContents));
+  EXPECT_TRUE(RteFsUtils::CmpFileMem(baseFile, baseContents));
+  EXPECT_FALSE(RteFsUtils::Exists(configFile + ".base@1.2.2"));
+
+  error_code ec;
+  const fs::perms write_mask = fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write;
+  EXPECT_EQ(fs::status(updateFile, ec).permissions() & write_mask, fs::perms::none);
+  EXPECT_FALSE(ec);
 }
 
 TEST_F(RteModelPrjTest, LoadCprj_PackPath) {

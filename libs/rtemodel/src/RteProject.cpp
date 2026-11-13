@@ -670,8 +670,6 @@ void RteProject::UpdateFileInstanceVersion(RteFileInstance* fi, const string& sa
 
 void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteItem* f)
 {
-  if (!ShouldUpdateRte())
-    return;
   if (!f || !fi) {
     return;
   }
@@ -685,7 +683,7 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteItem* f)
   string baseFile = RteUtils::AppendFileBaseVersion(absPath, baseVersion);
   if (!RteFsUtils::Exists(baseFile)) {
     // create base file if possible
-    if (baseVersion == updateVersion) {
+    if (ShouldUpdateRte() && baseVersion == updateVersion) {
       // we can use current version as base one
       RteFsUtils::CopyMergeFile(src, baseFile, fi->GetInstanceIndex(), false);
       RteFsUtils::SetFileReadOnly(baseFile, true);
@@ -711,6 +709,9 @@ void RteProject::UpdateConfigFileBackups(RteFileInstance* fi, RteItem* f)
     updateFile.clear(); // no need in that
   }
 
+  if (!ShouldUpdateRte()) {
+    return;
+  }
   // remove redundant current and origin files
   string baseName = name + '.' + RteUtils::BASE_STRING;
   string updateName = name + '.' + RteUtils::UPDATE_STRING;

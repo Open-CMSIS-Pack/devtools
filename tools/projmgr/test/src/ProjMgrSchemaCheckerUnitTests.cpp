@@ -30,6 +30,21 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Pass) {
   EXPECT_TRUE(GetErrors().empty());
 }
 
+TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_WestInvalidCompilerFilter) {
+  const string filename = testoutput_folder + "/west-compiler.csolution.yml";
+  {
+    ofstream fileStream(filename);
+    fileStream << "solution:\n"
+      "  target-types:\n"
+      "    - type: CM0\n"
+      "      west-defs:\n"
+      "        - VALUE: y\n"
+      "          for-compiler: 42\n";
+  }
+  EXPECT_FALSE(Validate(filename));
+  RteFsUtils::RemoveFile(filename);
+}
+
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Empty_Object) {
   const string& filename = testinput_folder + "/TestProject/test_empty_object.cproject.yml";
 

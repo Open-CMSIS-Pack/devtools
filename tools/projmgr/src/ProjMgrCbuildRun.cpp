@@ -37,6 +37,7 @@ protected:
   void SetDatapatchNode(YAML::Node node, const std::vector<DatapatchType>& datapatch);
   void SetGdbServerNode(YAML::Node node, const std::vector<GdbServerItem>& gdbserver);
   void SetTelnetNode(YAML::Node node, const std::map<std::string, TelnetOptionsItem>& telnet);
+  void SetTraceNode(YAML::Node node, const std::vector<TraceItem>& trace);
   void SetSystemViewNode(YAML::Node node, const SystemViewItem& systemView);
 };
 
@@ -189,6 +190,7 @@ void ProjMgrCbuildRun::SetDebuggerNode(YAML::Node node, const DebuggerType& debu
     SetNodeValue(node[YAML_START_PNAME], debugger.startPname);
     SetGdbServerNode(node[YAML_GDBSERVER], debugger.gdbserver);
     SetTelnetNode(node[YAML_TELNET], debugger.telnet);
+    SetTraceNode(node[YAML_TRACE], debugger.trace);
     SetSystemViewNode(node[YAML_SYSTEMVIEW], debugger.systemView);
     SetDeviceSettingsNode(node[YAML_DEVICE_SETTINGS], debugger.deviceSettings);
     SetCustomNodes(node, debugger.custom);
@@ -220,6 +222,17 @@ void ProjMgrCbuildRun::SetTelnetNode(YAML::Node node, const std::map<std::string
       SetNodeValue(telnetNode[YAML_FILE], FormatPath(item.file, m_directory));
     }
     node.push_back(telnetNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetTraceNode(YAML::Node node, const std::vector<TraceItem>& trace) {
+  for (const auto& item : trace) {
+    YAML::Node traceNode(YAML::NodeType::Map);
+    SetCustomNodes(traceNode, item.custom);
+    if (!item.file.empty()) {
+      SetNodeValue(traceNode[YAML_FILE], FormatPath(item.file, m_directory));
+    }
+    node.push_back(traceNode);
   }
 }
 

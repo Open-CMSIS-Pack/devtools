@@ -182,6 +182,11 @@ struct CustomItem {
   std::vector<std::pair<std::string, CustomItem>> map;
 };
 
+struct TraceItem {
+  std::string file;
+  CustomItem custom;
+};
+
 /**
  * @brief debugger item containing
  *        name of debug configuration
@@ -202,6 +207,7 @@ struct DebuggerItem {
   std::map<std::string, std::string> deviceSettings;
   std::string startPname;
   std::vector<TelnetItem> telnet;
+  std::vector<TraceItem> trace;
   SystemViewItem systemView;
   CustomItem custom;
 };
@@ -238,6 +244,11 @@ struct TargetSetItem {
   std::string info;
   std::vector<ImageItem> images;
   DebuggerItem debugger;
+};
+
+struct WestDefineItem {
+  std::vector<std::string> defines;
+  std::vector<std::string> forCompiler;
 };
 
 /**
@@ -277,7 +288,7 @@ struct BuildType {
   ProcessorItem processor;
   std::vector<std::pair<std::string, std::string>> variables;
   std::vector<ContextName> contextMap;
-  std::vector<std::string> westDefs;
+  std::vector<WestDefineItem> westDefines;
 };
 
 /**
@@ -513,7 +524,8 @@ struct WestDesc {
   std::string app;
   std::string board;
   std::string device;
-  std::vector<std::string> westDefs;
+  std::vector<std::string> resolvedWestDefines;
+  std::vector<WestDefineItem> westDefines;
   std::vector<std::string> westOpt;
 };
 

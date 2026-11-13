@@ -403,6 +403,7 @@ struct DebuggerType {
   std::string startPname;
   std::vector<GdbServerItem> gdbserver;
   std::map<std::string, TelnetOptionsItem> telnet;
+  std::vector<TraceItem> trace;
   SystemViewItem systemView;
   CustomItem custom;
 };
@@ -961,6 +962,18 @@ public:
   std::vector<std::string> GetSelectedContexts() const;
 
   /**
+   * @brief update pack-relevant contexts from selected contexts and MLOps contexts
+   * @return true if executed successfully, false if context collection failed and the list was cleared
+  */
+  bool UpdatePackContexts();
+
+  /**
+   * @brief get the list of pack-relevant contexts
+   * @return const reference to the list of pack-relevant context names
+  */
+  const std::vector<std::string>& GetPackContexts() const;
+
+  /**
    * @brief get the active target in the format <target-type>[@<target-set>]
    * @return active target
   */
@@ -1263,6 +1276,7 @@ public:
     m_processedContexts.clear();
     m_contextErrMap.clear();
     m_selectedContexts.clear();
+    m_packRelevantContexts.clear();
     m_outputDir.clear();
     m_selectedToolchain.clear();
     m_rootDir.clear();
@@ -1296,6 +1310,7 @@ protected:
   std::map<std::string, ContextItem> m_contexts;
   std::map<std::string, std::set<std::string>> m_contextErrMap;
   std::vector<std::string> m_selectedContexts;
+  std::vector<std::string> m_packRelevantContexts;
   std::vector<ContextItem*> m_processedContexts;
   std::string m_outputDir;
   std::string m_packRoot;

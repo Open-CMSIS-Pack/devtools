@@ -43,6 +43,58 @@ void ProjMgrWorkerUnitTests::SetCsolutionPacks(CsolutionItem* csolution, std::ve
   m_contexts.insert(std::pair<string, ContextItem>(string(targetType), context));
 }
 
+TEST_F(ProjMgrWorkerUnitTests, PackContextsRefresh) {
+  auto& solution = parser.GetCsolution();
+  solution.mlops.enabled = true;
+  TargetSetItem hardwareSet;
+  hardwareSet.images.emplace_back();
+  hardwareSet.images.back().context = "app";
+  TargetType hardwareType;
+  hardwareType.targetSet.push_back(hardwareSet);
+  TargetSetItem simulatorSet = hardwareSet;
+  simulatorSet.debugger.name = "Arm-FVP";
+  TargetType simulatorType;
+  simulatorType.targetSet.push_back(simulatorSet);
+  solution.targetTypes = { { "Hardware", hardwareType }, { "Simulator", simulatorType } };
+  m_contexts["app+Hardware"] = {};
+  m_contexts["app+Simulator"] = {};
+  m_selectedContexts = { "app+Hardware" };
+
+  ASSERT_TRUE(UpdatePackContexts());
+  EXPECT_EQ((vector<string>{ "app+Hardware", "app+Simulator" }), GetPackContexts());
+  EXPECT_EQ((vector<string>{ "app+Hardware" }), GetSelectedContexts());
+  ASSERT_TRUE(UpdatePackContexts());
+  EXPECT_EQ(2, GetPackContexts().size());
+
+  solution.mlops.simulator.targetType = "Missing";
+  EXPECT_FALSE(UpdatePackContexts());
+  EXPECT_TRUE(GetPackContexts().empty());
+
+  solution.mlops.enabled = false;
+  m_selectedContexts = { "app+Simulator" };
+  ASSERT_TRUE(UpdatePackContexts());
+  EXPECT_EQ(m_selectedContexts, GetPackContexts());
+  Clear();
+  EXPECT_TRUE(GetPackContexts().empty());
+}
+
+TEST_F(ProjMgrWorkerUnitTests, PackContextsReselection) {
+  CprojectItem project;
+  ContextItem context;
+  context.cproject = &project;
+  context.csolution = &parser.GetCsolution();
+  m_contexts["first"] = context;
+  m_contexts["second"] = context;
+  m_ymlOrderedContexts = { "first", "second" };
+
+  ASSERT_TRUE(ParseContextSelection({ "first" }));
+  EXPECT_EQ((vector<string>{ "first" }), GetPackContexts());
+  ASSERT_TRUE(ParseContextSelection({ "second" }));
+  EXPECT_EQ((vector<string>{ "second" }), GetPackContexts());
+  EXPECT_FALSE(ParseContextSelection({ "unknown" }));
+  EXPECT_TRUE(GetPackContexts().empty());
+}
+
 TEST_F(ProjMgrWorkerUnitTests, AccessSequenceShellVariables) {
   ContextItem context;
   for (const string input : { "${variable}", "${first}/${second}", "-DVALUE=${variable}/file" }) {
@@ -274,6 +326,62 @@ TEST_F(ProjMgrWorkerUnitTests, ParseContextLayersDefersMissingClayer) {
   EXPECT_TRUE(ParseContextLayers(context));
   EXPECT_TRUE(context.clayers.empty());
   EXPECT_NE(m_missingFiles.end(), m_missingFiles.find(missingClayer));
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ParseContextLayersExcludesAccessSequences) {
+  for (const string sequence : { "SolutionDir()", "ProjectDir()", "OutDir()", "OutDir(other+Target)",
+      "bin()", "elf()", "hex()", "lib()", "map()", "cmse-lib()", "Pack(ARM::RteTest)" }) {
+    SCOPED_TRACE(sequence);
+    m_missingFiles.clear();
+    ContextItem context;
+    CsolutionItem csolution;
+    CprojectItem cproject;
+    csolution.directory = testinput_folder + "/TestLayers";
+    cproject.directory = testinput_folder;
+    cproject.clayers.push_back({ "$" + sequence + "$/../Board/M55_HP/Board_HP.clayer", "Board", false, {} });
+    context.csolution = &csolution;
+    context.cproject = &cproject;
+
+    StdStreamRedirect streamRedirect;
+    EXPECT_TRUE(ParseContextLayers(context));
+    EXPECT_TRUE(streamRedirect.GetErrorString().empty());
+    EXPECT_TRUE(context.layerVariables.empty());
+    EXPECT_TRUE(m_undefLayerVars.empty());
+    EXPECT_TRUE(context.clayers.empty());
+    ASSERT_EQ(1, m_missingFiles.size());
+    if (sequence == "SolutionDir()") {
+      EXPECT_EQ(csolution.directory + "/../Board/M55_HP/Board_HP.clayer", m_missingFiles.begin()->first);
+    }
+    EXPECT_FALSE(CheckMissingFiles());
+    EXPECT_NE(string::npos, streamRedirect.GetErrorString().find(
+      "file '" + m_missingFiles.begin()->first + "' was not found"));
+  }
+}
+
+TEST_F(ProjMgrWorkerUnitTests, ParseContextLayersPreservesLayerVariables) {
+  ContextItem context;
+  CsolutionItem csolution;
+  CprojectItem cproject;
+  csolution.directory = testinput_folder;
+  cproject.directory = testinput_folder;
+  cproject.clayers.push_back({ "$Board-Layer$", "Board", false, {} });
+  context.csolution = &csolution;
+  context.cproject = &cproject;
+
+  EXPECT_TRUE(ParseContextLayers(context));
+  EXPECT_EQ("Board-Layer", context.layerVariables.at("Board"));
+  EXPECT_EQ((set<string>{ "Board-Layer" }), m_undefLayerVars);
+  EXPECT_TRUE(m_missingFiles.empty());
+
+  m_undefLayerVars.clear();
+  csolution.target.build.variables = {
+    { "Board-Layer", "$SolutionDir()$/TestLayers/variables/solutionDir.clayer.yml" },
+  };
+  EXPECT_TRUE(ParseContextLayers(context));
+  EXPECT_EQ(1, context.clayers.size());
+  EXPECT_TRUE(m_missingFiles.empty());
+  EXPECT_TRUE(m_undefLayerVars.empty());
+  EXPECT_EQ("Board-Layer", context.layerVariables.at("Board"));
 }
 
 TEST_F(ProjMgrWorkerUnitTests, ProcessComponents) {

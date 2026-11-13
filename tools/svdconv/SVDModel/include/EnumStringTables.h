@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2021 Arm Limited. All rights reserved.
+ * Copyright (c) 2010-2026 Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -21,6 +21,7 @@
   CPUTYPE(CM33             , "CM33"     )
   CPUTYPE(CM35             , "CM35"     )
   CPUTYPE(CM35P            , "CM35P"    )
+  CPUTYPE(CM42             , "CM42"     )
   CPUTYPE(CM52             , "CM52"     )
   CPUTYPE(CM55             , "CM55"     )
   CPUTYPE(CM85             , "CM85"     )

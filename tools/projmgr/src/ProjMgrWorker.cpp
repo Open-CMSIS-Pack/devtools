@@ -6,6 +6,7 @@
 
 #include "ProjMgrWorker.h"
 #include "ProjMgrLogger.h"
+#include "ProjMgrMlops.h"
 #include "ProjMgrYamlEmitter.h"
 
 #include "CrossPlatformUtils.h"
@@ -131,7 +132,7 @@ bool ProjMgrWorker::AddContexts(ProjMgrParser& parser, ContextDesc& descriptor, 
     context.cproject->output.baseName = "zephyr/zephyr";
     context.cproject->name = context.west.projectId;
     context.cproject->output.type = { "elf", "hex" };
-    CollectionUtils::PushBackUniquely(context.west.westDefs, "CONFIG_BUILD_OUTPUT_HEX=y");
+    CollectionUtils::PushBackUniquely(context.west.resolvedWestDefines, "CONFIG_BUILD_OUTPUT_HEX=y");
   }
 
   // CMake native project
@@ -293,7 +294,10 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
       continue;
     }
     if (CheckContextFilters(clayer.typeFilter, context)) {
-      const auto variable = ProjMgrUtils::GetVariableName(clayer.layer);
+      auto variable = ProjMgrUtils::GetVariableName(clayer.layer);
+      if (regex_match(variable, accessSequencesRegEx) || regex_match(variable, packDirRegEx)) {
+        variable.clear();
+      }
       if (!variable.empty()) {
         context.layerVariables[clayer.type] = variable;
       }
@@ -518,16 +522,32 @@ bool ProjMgrWorker::InitializeModel() {
   return m_kernel->Init();
 }
 
+bool ProjMgrWorker::UpdatePackContexts() {
+  m_packRelevantContexts = m_selectedContexts;
+  if (m_parser && !ProjMgrMlops(this).CollectContexts(m_parser->GetCsolution(), m_packRelevantContexts)) {
+    m_packRelevantContexts.clear();
+    return false;
+  }
+  return true;
+}
+
+const vector<string>& ProjMgrWorker::GetPackContexts() const {
+  return m_packRelevantContexts;
+}
+
 bool ProjMgrWorker::CollectAllRequiredPdscFiles() {
   // Check and collect requirements
   if (m_selectedContexts.empty()) {
     for (const auto& [context,_] : m_contexts) {
       m_selectedContexts.push_back(context);
     }
+    if (!UpdatePackContexts()) {
+      return false;
+    }
   }
   bool success = true;
   m_contextErrMap.clear();
-  for (const auto& context : m_selectedContexts) {
+  for (const auto& context : m_packRelevantContexts) {
     auto& contextItem = m_contexts.at(context);
     if (!CollectRequiredPdscFiles(contextItem, m_packRoot)) {
       success &= false;
@@ -542,7 +562,7 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
   // Get required pdsc files
   std::list<std::string> pdscFiles;
   bool noPackRequirements = true;
-  for (const auto& context : m_selectedContexts) {
+  for (const auto& context : m_packRelevantContexts) {
     auto& contextItem = m_contexts.at(context);
     noPackRequirements &= contextItem.packRequirements.empty();
     for (const auto& [pdscFile, pathVer] : contextItem.pdscFiles) {
@@ -566,7 +586,14 @@ bool ProjMgrWorker::LoadAllRelevantPacks() {
   }
   const set<string> requiredPdscFiles(pdscFiles.begin(), pdscFiles.end());
   // Get installed packs
-  if (noPackRequirements || (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
+  // Additional MLOps requirements must not disable the default installed-pack fallback
+  // when the selected contexts have no pack requirements.
+  const bool useDefaultPackFallback = (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT) &&
+    all_of(m_selectedContexts.begin(), m_selectedContexts.end(), [this](const string& context) {
+      return m_contexts.at(context).packRequirements.empty();
+    });
+  if (noPackRequirements || useDefaultPackFallback ||
+    (m_loadPacksPolicy == LoadPacksPolicy::ALL) || (m_loadPacksPolicy == LoadPacksPolicy::LATEST)) {
     const bool latest = (m_loadPacksPolicy == LoadPacksPolicy::LATEST) || (m_loadPacksPolicy == LoadPacksPolicy::DEFAULT);
     if (!m_kernel->GetEffectivePdscFiles(pdscFiles, latest)) {
       ProjMgrLogger::Get().Error("parsing installed packs failed");
@@ -605,7 +632,9 @@ bool ProjMgrWorker::LoadPacks(ContextItem& context) {
   }
   bool deferredFail = false;
   if (!CollectAllRequiredPdscFiles()) {
-    PrintContextErrors(context.name);
+    for (const auto& [contextName, errors] : m_contextErrMap) {
+      PrintContextErrors(contextName);
+    }
     // defer return due to pdsc collection failure
     deferredFail = true;
   }
@@ -2779,6 +2808,17 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
       }
       context.debugger.telnet[telnet.pname] = { telnet };
     }
+    for (auto trace : m_activeTargetSet.debugger.trace) {
+      if (!trace.file.empty()) {
+        if (!ProcessSequenceRelative(context, trace.file, context.csolution->directory, false)) {
+          return false;
+        }
+        if (RteFsUtils::IsRelative(trace.file)) {
+          RteFsUtils::NormalizePath(trace.file, context.directories.cprj);
+        }
+      }
+      context.debugger.trace.push_back(trace);
+    }
     auto systemView = m_activeTargetSet.debugger.systemView;
     if (!systemView.file.empty()) {
       if (!ProcessSequenceRelative(context, systemView.file, context.csolution->directory, false)) {
@@ -3334,9 +3374,20 @@ bool ProjMgrWorker::ProcessPrecedences(ContextItem& context, BoardOrDevice proce
   }
 
   // Merge west defines
-  CollectionUtils::AddStringItemsUniquely(context.west.westDefs, context.controls.target.westDefs);
-  CollectionUtils::AddStringItemsUniquely(context.west.westDefs, context.controls.build.westDefs);
-  if (!ProcessSequencesRelatives(context, context.west.westDefs)) {
+  const auto appendWestDefines = [&](const vector<WestDefineItem>& entries) {
+    for (const auto& entry : entries) {
+      if (CheckCompiler(entry.forCompiler, context.compiler)) {
+        CollectionUtils::AddStringItemsUniquely(context.west.resolvedWestDefines, entry.defines);
+      }
+    }
+  };
+  const auto generatedWestDefines = context.west.resolvedWestDefines;
+  context.west.resolvedWestDefines.clear();
+  appendWestDefines(context.west.westDefines);
+  CollectionUtils::AddStringItemsUniquely(context.west.resolvedWestDefines, generatedWestDefines);
+  appendWestDefines(context.controls.target.westDefines);
+  appendWestDefines(context.controls.build.westDefines);
+  if (!ProcessSequencesRelatives(context, context.west.resolvedWestDefines)) {
     return false;
   }
 
@@ -4207,7 +4258,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
   }
   bool reqOk = true;
   m_contextErrMap.clear();
-  for (const auto& selectedContext : m_selectedContexts) {
+  for (const auto& selectedContext : m_packRelevantContexts) {
     ContextItem& context = m_contexts[selectedContext];
     if(!CollectRequiredPdscFiles(context, m_packRoot)) {
       // in case of explicit query for missing pack list,
@@ -4268,7 +4319,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
       }
       // get available updates for locked packs
       if (bLocked) {
-        for (const auto& selectedContext : m_selectedContexts) {
+        for (const auto& selectedContext : m_packRelevantContexts) {
           ContextItem& context = m_contexts[selectedContext];
           availablePackVersions.merge(context.availablePackVersions);
         }
@@ -4276,7 +4327,7 @@ bool ProjMgrWorker::ListPacks(vector<string>&packs, bool bListMissingPacksOnly, 
     }
 
     if (!m_contextErrMap.empty()) {
-      for (const auto& selectedContext : m_selectedContexts) {
+      for (const auto& selectedContext : m_packRelevantContexts) {
         PrintContextErrors(selectedContext);
       }
       reqOk = false;
@@ -5268,6 +5319,7 @@ bool ProjMgrWorker::ProcessSequencesRelatives(ContextItem& context, BuildType& b
 bool ProjMgrWorker::ParseContextSelection(
   const vector<string>& contextSelection, const bool checkCbuildSet)
 {
+  m_packRelevantContexts.clear();
   vector<string> ymlOrderedContexts;
   ListContexts(ymlOrderedContexts, RteUtils::EMPTY_STRING, true);
 
@@ -5358,7 +5410,10 @@ bool ProjMgrWorker::ParseContextSelection(
     }
 
     // Parse context layers
-    for (const auto& context : m_selectedContexts) {
+    if (!UpdatePackContexts()) {
+      return false;
+    }
+    for (const auto& context : m_packRelevantContexts) {
       if (!ParseContextLayers(m_contexts[context])) {
         return false;
       }
@@ -5796,11 +5851,10 @@ bool ProjMgrWorker::ListConfigFiles(vector<string>& configFiles) {
     const auto& context = m_contexts.at(contextName);
     if (!context.configFiles.empty()) {
       for (const auto& [component, fileInstances] : context.configFiles) {
-        string configEntry = component + ":";
         for (const auto& fi : fileInstances) {
           // get absolute path to file instance
           const string absFile = fs::path(context.cproject->directory).append(fi.second->GetInstanceName()).generic_string();
-          configEntry += "\n    - " + absFile;
+          string configEntry = absFile;
           // get base version
           const string baseVersion = fi.second->GetSemVer(true);
           configEntry += " (base@" + baseVersion + ")";
@@ -5809,8 +5863,11 @@ bool ProjMgrWorker::ListConfigFiles(vector<string>& configFiles) {
           if (updateVersion != baseVersion) {
             configEntry += " (update@" + updateVersion + ")";
           }
+          if (!component.empty()) {
+            configEntry += " - component: " + component;
+          }
+          CollectionUtils::PushBackUniquely(configFiles, configEntry);
         }
-        CollectionUtils::PushBackUniquely(configFiles, configEntry);
       }
     }
   }
@@ -5833,6 +5890,9 @@ bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const 
         continue;
       }
       m_selectedContexts.push_back(context.name);
+    }
+    if (!UpdatePackContexts()) {
+      return false;
     }
   }
   // parse layers and process selected contexts
@@ -5892,7 +5952,7 @@ bool ProjMgrWorker::ProcessGlobalGenerators(ContextItem* selectedContext, const 
       projectType = type;
       siblings = contexts;
       m_selectedContexts = siblings;
-      return true;
+      return UpdatePackContexts();
     }
   }
   return false;
@@ -6484,7 +6544,7 @@ void ProjMgrWorker::FormatResolvedPackIds() {
     const auto& realPackId = loadedPack->GetPackageID();
     realPackIds[RteUtils::ToLower(realPackId)] = realPackId;
   }
-  for (auto& contextName : m_selectedContexts) {
+  for (const auto& contextName : m_packRelevantContexts) {
     auto& contextItem = m_contexts[contextName];
     for (auto& [_, resolvedPackIds] : contextItem.userInputToResolvedPackIdMap) {
       map<string, PackageItem> formattedPackIds;

@@ -1,0 +1,26 @@
+solution:
+  compiler: AC6
+  packs:
+    - pack: ARM::RteTest_DFP
+  target-types:
+    - type: SingleCore
+      device: RteTest_ARMCM0
+      target-set:
+        - set:
+          debugger:
+            name: CMSIS-DAP
+            trace:
+              - swo-uart:
+                input-clock: 120000000
+                mode: file
+                file: $OutDir(trace)$/trace.SWO.raw
+              - trace-buffer: MTB
+                mode: file
+                file: captures/trace.TB_MTB.raw
+              - trace-buffer:
+                mode: server
+                server-port: 5555
+          images:
+            - project-context: trace
+  projects:
+    - project: trace.cproject.yml

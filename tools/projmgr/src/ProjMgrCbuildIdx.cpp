@@ -120,6 +120,16 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
     node[YAML_CPROJECTS].push_back(cprojectNode);
   }
 
+  vector<ContextItem*> additionalPackContexts;
+  map<string, ContextItem>* availableContexts = nullptr;
+  worker->GetContexts(availableContexts);
+  for (const auto& contextName : worker->GetPackContexts()) {
+    auto* packContext = &availableContexts->at(contextName);
+    if (find(processedContexts.begin(), processedContexts.end(), packContext) == processedContexts.end()) {
+      additionalPackContexts.push_back(packContext);
+    }
+  }
+
   for (const auto& context : processedContexts) {
     if (context) {
       error_code ec;
@@ -163,17 +173,26 @@ ProjMgrCbuildIdx::ProjMgrCbuildIdx(YAML::Node node,
             for (const auto& msg : msgVec) {
               cbuildNode[YAML_MESSAGES][node].push_back(msg);
             }
+          } else if (any_of(additionalPackContexts.begin(), additionalPackContexts.end(),
+            [&messageContextName = contextName](const ContextItem* packContext) { return packContext->name == messageContextName; })) {
+            for (const auto& msg : msgVec) {
+              cbuildNode[YAML_MESSAGES][node].push_back(contextName + ": " + msg);
+            }
           }
         }
       }
 
       vector<string> missingPacks;
-      for (const auto& packInfo : context->missingPacks) {
-        std::string missingPackName =
-          (packInfo.vendor.empty() ? "" : packInfo.vendor + "::") +
-          packInfo.name +
-          (packInfo.version.empty() ? "" : "@" + packInfo.version);
-        CollectionUtils::PushBackUniquely(missingPacks, missingPackName);
+      auto missingPackContexts = additionalPackContexts;
+      missingPackContexts.insert(missingPackContexts.begin(), context);
+      for (const auto* packContext : missingPackContexts) {
+        for (const auto& packInfo : packContext->missingPacks) {
+          const string missingPackName =
+            (packInfo.vendor.empty() ? "" : packInfo.vendor + "::") +
+            packInfo.name +
+            (packInfo.version.empty() ? "" : "@" + packInfo.version);
+          CollectionUtils::PushBackUniquely(missingPacks, missingPackName);
+        }
       }
 
       for (const auto& pack : missingPacks) {
