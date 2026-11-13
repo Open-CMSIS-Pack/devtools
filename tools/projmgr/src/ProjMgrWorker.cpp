@@ -5818,11 +5818,10 @@ bool ProjMgrWorker::ListConfigFiles(vector<string>& configFiles) {
     const auto& context = m_contexts.at(contextName);
     if (!context.configFiles.empty()) {
       for (const auto& [component, fileInstances] : context.configFiles) {
-        string configEntry = component + ":";
         for (const auto& fi : fileInstances) {
           // get absolute path to file instance
           const string absFile = fs::path(context.cproject->directory).append(fi.second->GetInstanceName()).generic_string();
-          configEntry += "\n    - " + absFile;
+          string configEntry = absFile;
           // get base version
           const string baseVersion = fi.second->GetSemVer(true);
           configEntry += " (base@" + baseVersion + ")";
@@ -5831,8 +5830,11 @@ bool ProjMgrWorker::ListConfigFiles(vector<string>& configFiles) {
           if (updateVersion != baseVersion) {
             configEntry += " (update@" + updateVersion + ")";
           }
+          if (!component.empty()) {
+            configEntry += " - component: " + component;
+          }
+          CollectionUtils::PushBackUniquely(configFiles, configEntry);
         }
-        CollectionUtils::PushBackUniquely(configFiles, configEntry);
       }
     }
   }

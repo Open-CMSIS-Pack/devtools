@@ -709,9 +709,9 @@ bool ProjMgr::Configure() {
     vector<string> configFiles;
     m_worker.ListConfigFiles(configFiles);
     if (!configFiles.empty()) {
-      string infoMsg = "config files for each component:";
+      string infoMsg = "config files";
       for (const auto& configFile : configFiles) {
-        infoMsg += "\n  " + configFile;
+        infoMsg += "\n" + configFile;
       }
       ProjMgrLogger::Get().Info(infoMsg);
     }

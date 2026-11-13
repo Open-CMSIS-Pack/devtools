@@ -5150,13 +5150,11 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_UpdateRte) {
 
   // Check info message
   const string expected = "\
-info csolution: config files for each component:\n\
-  :\n\
-    - .*/TestSolution/.cmsis/test\\+CM0.dbgconf \\(base@0.0.2\\)\n\
-  ARM::Device:Startup&RteTest Startup@2.0.3:\n\
-    - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct \\(base@1.0.0\\)\n\
-    - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c \\(base@2.0.1\\) \\(update@2.0.3\\)\n\
-    - .*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c \\(base@1.0.0\\)\n\
+info csolution: config files\n\
+[^\\s-].*/TestSolution/.cmsis/test\\+CM0.dbgconf \\(base@0.0.2\\)\n\
+[^\\s-].*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/ARMCM0_ac6.sct \\(base@1.0.0\\) - component: ARM::Device:Startup&RteTest Startup@2.0.3\n\
+[^\\s-].*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/startup_ARMCM0.c \\(base@2.0.1\\) \\(update@2.0.3\\) - component: ARM::Device:Startup&RteTest Startup@2.0.3\n\
+[^\\s-].*/TestSolution/TestProject1/RTE/Device/RteTest_ARMCM0/system_ARMCM0.c \\(base@1.0.0\\) - component: ARM::Device:Startup&RteTest Startup@2.0.3\n\
 ";
 
   auto outStr = streamRedirect.GetOutString();
