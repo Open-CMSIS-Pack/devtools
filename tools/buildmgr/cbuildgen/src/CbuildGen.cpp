@@ -139,7 +139,7 @@ int CbuildGen::RunCbuildGen(int argc, char **argv, char** envp) {
     options.parse_positional({"args"});
     parseResult = options.parse(argc, argv);
   }
-  catch (cxxopts::OptionException& e) {
+  catch (cxxopts::exceptions::exception& e) {
     LogMsg("M217", VAL("MSG", e.what()));
     console.Usage();
     return 1;
