@@ -294,7 +294,10 @@ bool ProjMgrWorker::ParseContextLayers(ContextItem& context) {
       continue;
     }
     if (CheckContextFilters(clayer.typeFilter, context)) {
-      const auto variable = ProjMgrUtils::GetVariableName(clayer.layer);
+      auto variable = ProjMgrUtils::GetVariableName(clayer.layer);
+      if (regex_match(variable, accessSequencesRegEx) || regex_match(variable, packDirRegEx)) {
+        variable.clear();
+      }
       if (!variable.empty()) {
         context.layerVariables[clayer.type] = variable;
       }
