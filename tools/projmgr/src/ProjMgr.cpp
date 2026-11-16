@@ -312,7 +312,7 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
       m_outputDir = parseResult[key].as<std::string>();
       m_outputDir = RteFsUtils::AbsolutePath(m_outputDir).generic_string();
     }
-  } catch (cxxopts::OptionException& e) {
+  } catch (cxxopts::exceptions::exception& e) {
     ProjMgrLogger::Get().Error(e.what());
     return ErrorCode::ERROR;
   }

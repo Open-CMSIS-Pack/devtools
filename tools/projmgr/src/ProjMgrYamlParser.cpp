@@ -406,7 +406,8 @@ void ProjMgrYamlParser::ParseInt(const YAML::Node& parent, const string& key, in
 void ProjMgrYamlParser::ParseMapOfStrings(const YAML::Node& parent, const string& key, map<string, string>& value) {
   if (parent[key].IsDefined() && parent[key].IsMap()) {
     for (const auto& item : parent[key]) {
-      value[item.first.as<string>()] = YAML::IsNullString(item.second.as<string>()) ? "" : item.second.as<string>();
+      const auto text = item.second.as<string>();
+      value[item.first.as<string>()] = YAML::IsNullString(text.data(), text.size()) ? "" : text;
     }
   }
 }
@@ -461,7 +462,7 @@ bool ProjMgrYamlParser::ParseDefine(const YAML::Node& defineNode, vector<string>
             if (item.IsMap()) {
           const auto& elements = item.as<map<string, string>>();
           for (auto element : elements) {
-            if (YAML::IsNullString(element.second)) {
+            if (YAML::IsNullString(element.second.data(), element.second.size())) {
               element.second = "";
             }
             success &= ValidateDefineStr(element.second);
@@ -514,7 +515,7 @@ void ProjMgrYamlParser::ParseVectorOfStringPairs(const YAML::Node& parent, const
             // This is a special case used by the CMSIS csolution extension
             // and may involve redefinitions
             if (element.first != "copied-from") {
-              if (YAML::IsNullString(element.second)) {
+              if (YAML::IsNullString(element.second.data(), element.second.size())) {
                 element.second = "";
               }
               value.push_back(element);

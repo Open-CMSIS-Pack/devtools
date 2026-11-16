@@ -7,14 +7,14 @@ provided in `THIRD_PARTY_LICENSES/OpenCSD-NOTICE.txt`.
 
 | Component | Version | License      | Source                                 |
 | --------- | ------: | ------------ | -------------------------------------- |
-| cxxopts   |   3.0.0 | MIT          | <https://github.com/jarro2783/cxxopts> |
-| yaml-cpp  |   0.8.0 | MIT          | <https://github.com/jbeder/yaml-cpp>   |
+| cxxopts   |   3.3.1 | MIT          | <https://github.com/jarro2783/cxxopts> |
+| yaml-cpp  |   0.9.0 | MIT          | <https://github.com/jbeder/yaml-cpp>   |
 | OpenCSD   |   1.8.3 | BSD-3-Clause | <https://github.com/Linaro/OpenCSD>    |
 
 The source revisions used for this notice are pinned by the devtools gitlinks:
 
-- cxxopts: `df229cff0d5b96e146f3f11441f714e8e240cad0`
-- yaml-cpp: `f7320141120f720aecc4c32be25586e7da9eb978`
+- cxxopts: `44380e5a44706ab7347f400698c703eb2a196202`
+- yaml-cpp: `56e3bb550c91fd7005566f19c079cb7a503223cf`
 - OpenCSD: `59f15320637ce6e510604e7bed550d7ad109d15d`
 
 GoogleTest is used only to build the test executable and is not incorporated

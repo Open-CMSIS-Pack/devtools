@@ -10,6 +10,7 @@
 #include "RteFsUtils.h"
 #include "XmlFormatter.h"
 #include "YmlFormatter.h"
+#include "yaml-cpp/yaml.h"
 
 #include <vector>
 #include <list>
@@ -54,6 +55,40 @@ protected:
   }
 
 };
+
+TEST(YmlTreeTest, PatchedYamlBehavior) {
+  EXPECT_THROW(YAML::Load("{a: A, b: B, a: A}"), YAML::NonUniqueMapKey);
+
+  YAML::Node map(YAML::NodeType::Map);
+  map.force_insert("key", "first");
+  EXPECT_NO_THROW(map.force_insert("key", "second"));
+  EXPECT_EQ(2u, map.size());
+
+  YAML::Emitter nullEmitter;
+  ASSERT_TRUE(nullEmitter.SetNullFormat(YAML::EmptyNull));
+  nullEmitter << YAML::BeginMap << YAML::Key << "key" << YAML::Value
+              << YAML::Null << YAML::EndMap;
+  EXPECT_STREQ("key: ", nullEmitter.c_str());
+
+  YAML::Emitter literalEmitter;
+  literalEmitter << std::string("|\n  first\n  second");
+  EXPECT_STREQ("  |\n    first\n    second", literalEmitter.c_str());
+
+  const std::string literal = "|\n  first\n  second";
+  YAML::Emitter literalBufferEmitter;
+  literalBufferEmitter.Write(literal.data(), literal.size());
+  EXPECT_STREQ(literalEmitter.c_str(), literalBufferEmitter.c_str());
+
+  const char shortBuffer[] = {'|', '\n'};
+  YAML::Emitter bufferEmitter;
+  bufferEmitter.Write(shortBuffer, 1);
+  EXPECT_STREQ("\"|\"", bufferEmitter.c_str());
+
+  YAML::Emitter ampersandEmitter;
+  ampersandEmitter << "A&B";
+  EXPECT_STREQ("A&B", ampersandEmitter.c_str());
+  EXPECT_EQ("A&B", YAML::Load(ampersandEmitter.c_str()).as<std::string>());
+}
 
 TEST(YmlTreeTest, InvalidInput) {
   const string yaml_input ="invalid: 1 : 2";

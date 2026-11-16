@@ -331,7 +331,7 @@ ParseOptions::Result ParseOptions::Parse(int argc, const char** argv)
       }
     }
   }
-  catch (cxxopts::OptionException& e) {
+  catch (cxxopts::exceptions::exception& e) {
     cerr << fileName << " error: " << e.what() << endl;
     return Result::Error;
   }

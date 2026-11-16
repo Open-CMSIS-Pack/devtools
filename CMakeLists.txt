@@ -154,7 +154,6 @@ set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
 # Apply patch on submodules
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/json-schema-validator)
-apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/cxxopts)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/xerces-c)
 apply_patch(${CMAKE_CURRENT_SOURCE_DIR}/external/yaml-cpp)
 
