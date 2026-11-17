@@ -11,6 +11,7 @@
 #include "CrossPlatformUtils.h"
 #include "RteFsUtils.h"
 #include "gtest/gtest.h"
+#include "yaml-cpp/yaml.h"
 
 #include <fstream>
 
@@ -693,4 +694,66 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_CbuildRun) {
             });
         EXPECT_TRUE(errList.end() != errItr);
     }
+}
+
+TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_StdioRttFiles) {
+  const auto debugger = YAML::Load(R"(
+name: CMSIS-DAP
+stdio:
+  - mode: file
+    file-in: ../stdio.in
+    file-out: ../stdio.out
+rtt:
+  - channel:
+      - number: 2
+        mode: file
+        file-in: ../rtt2.in
+        file-out: ../rtt2.out
+      - number: 3
+        mode: file
+)");
+  for (const auto& extension : { "csolution", "cbuild-run" }) {
+    YAML::Node root;
+    YAML::Node debugNode;
+    if (string(extension) == "csolution") {
+      root = YAML::Load("solution: {target-types: [{type: SingleCore, target-set: [{set: null}]}]}");
+      root["solution"]["target-types"][0]["target-set"][0]["debugger"] = YAML::Clone(debugger);
+      debugNode.reset(root["solution"]["target-types"][0]["target-set"][0]["debugger"]);
+    }
+    else {
+      root = YAML::Load("cbuild-run: {generated-by: test, output: [{file: test.elf, type: elf, load: image+symbols}]}");
+      root["cbuild-run"]["debugger"] = YAML::Clone(debugger);
+      debugNode.reset(root["cbuild-run"]["debugger"]);
+    }
+    const string filename = testoutput_folder + "/stdio-rtt." + extension + ".yml";
+    const auto validate = [&]() {
+      stringstream content;
+      content << root;
+      EXPECT_TRUE(RteFsUtils::CreateTextFile(filename, content.str()));
+      return Validate(filename);
+    };
+    EXPECT_TRUE(validate());
+    debugNode["telnet"] = YAML::Clone(debugNode["stdio"]);
+    debugNode.remove("stdio");
+    EXPECT_TRUE(validate());
+    debugNode["telnet"][0]["mode"] = "rtt";
+    EXPECT_FALSE(validate());
+    debugNode["telnet"][0]["mode"] = "file";
+    for (const auto& key : { "file-in", "file-out" }) {
+      debugNode["telnet"][0][key] = 123;
+      EXPECT_FALSE(validate());
+      debugNode["telnet"][0][key] = "capture";
+      debugNode["rtt"][0]["channel"][0][key] = 123;
+      EXPECT_FALSE(validate());
+      debugNode["rtt"][0]["channel"][0][key] = "capture";
+    }
+    debugNode["stdio"] = YAML::Clone(debugNode["telnet"]);
+    debugNode.remove("telnet");
+    debugNode["stdio"][0]["mode"] = "rtt";
+    EXPECT_FALSE(validate());
+    debugNode["stdio"][0]["mode"] = "file";
+    debugNode["rtt"][0]["channel"][0]["mode"] = "invalid";
+    EXPECT_FALSE(validate());
+    EXPECT_TRUE(RteFsUtils::RemoveFile(filename));
+  }
 }

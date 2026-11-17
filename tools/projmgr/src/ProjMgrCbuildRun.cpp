@@ -36,7 +36,8 @@ protected:
   void SetAccessPortsNode(YAML::Node node, const std::vector<AccessPortType>& accessPorts);
   void SetDatapatchNode(YAML::Node node, const std::vector<DatapatchType>& datapatch);
   void SetGdbServerNode(YAML::Node node, const std::vector<GdbServerItem>& gdbserver);
-  void SetTelnetNode(YAML::Node node, const std::map<std::string, TelnetOptionsItem>& telnet);
+  void SetRttNode(YAML::Node node, const std::vector<RttItem>& rtt);
+  void SetStdioNode(YAML::Node node, const std::map<std::string, StdioOptionsItem>& stdio);
   void SetTraceNode(YAML::Node node, const std::vector<TraceItem>& trace);
   void SetSystemViewNode(YAML::Node node, const SystemViewItem& systemView);
 };
@@ -189,7 +190,8 @@ void ProjMgrCbuildRun::SetDebuggerNode(YAML::Node node, const DebuggerType& debu
     }
     SetNodeValue(node[YAML_START_PNAME], debugger.startPname);
     SetGdbServerNode(node[YAML_GDBSERVER], debugger.gdbserver);
-    SetTelnetNode(node[YAML_TELNET], debugger.telnet);
+    SetStdioNode(node[YAML_STDIO], debugger.stdio);
+    SetRttNode(node[YAML_RTT], debugger.rtt);
     SetTraceNode(node[YAML_TRACE], debugger.trace);
     SetSystemViewNode(node[YAML_SYSTEMVIEW], debugger.systemView);
     SetDeviceSettingsNode(node[YAML_DEVICE_SETTINGS], debugger.deviceSettings);
@@ -212,16 +214,42 @@ void ProjMgrCbuildRun::SetGdbServerNode(YAML::Node node, const std::vector<GdbSe
   }
 }
 
-void ProjMgrCbuildRun::SetTelnetNode(YAML::Node node, const std::map<std::string, TelnetOptionsItem>& telnet) {
-  for (const auto& [pname, item] : telnet) {
-    YAML::Node telnetNode;
-    SetNodeValue(telnetNode[YAML_MODE], item.mode);
-    SetNodeValue(telnetNode[YAML_PNAME], pname);
-    telnetNode[YAML_PORT] = item.ullPort;
+void ProjMgrCbuildRun::SetStdioNode(YAML::Node node, const std::map<std::string, StdioOptionsItem>& stdio) {
+  for (const auto& [pname, item] : stdio) {
+    YAML::Node stdioNode;
+    SetNodeValue(stdioNode[YAML_MODE], item.mode);
+    SetNodeValue(stdioNode[YAML_PNAME], pname);
+    stdioNode[YAML_PORT] = item.ullPort;
     if (!item.file.empty()) {
-      SetNodeValue(telnetNode[YAML_FILE], FormatPath(item.file, m_directory));
+      SetNodeValue(stdioNode[YAML_FILE], FormatPath(item.file, m_directory));
     }
-    node.push_back(telnetNode);
+    if (!item.fileIn.empty()) {
+      SetNodeValue(stdioNode[YAML_FILE_IN], FormatPath(item.fileIn, m_directory));
+    }
+    if (!item.fileOut.empty()) {
+      SetNodeValue(stdioNode[YAML_FILE_OUT], FormatPath(item.fileOut, m_directory));
+    }
+    node.push_back(stdioNode);
+  }
+}
+
+void ProjMgrCbuildRun::SetRttNode(YAML::Node node, const std::vector<RttItem>& rtt) {
+  for (const auto& item : rtt) {
+    YAML::Node rttNode(YAML::NodeType::Map);
+    SetCustomNodes(rttNode, item.custom);
+    rttNode[YAML_CHANNEL] = YAML::Node(YAML::NodeType::Sequence);
+    for (const auto& channel : item.channels) {
+      YAML::Node channelNode(YAML::NodeType::Map);
+      SetCustomNodes(channelNode, channel.custom);
+      if (!channel.fileIn.empty()) {
+        SetNodeValue(channelNode[YAML_FILE_IN], FormatPath(channel.fileIn, m_directory));
+      }
+      if (!channel.fileOut.empty()) {
+        SetNodeValue(channelNode[YAML_FILE_OUT], FormatPath(channel.fileOut, m_directory));
+      }
+      rttNode[YAML_CHANNEL].push_back(channelNode);
+    }
+    node.push_back(rttNode);
   }
 }
 

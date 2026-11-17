@@ -2316,7 +2316,8 @@
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
         "gdbserver":       { "$ref": "#/definitions/GdbServersType" },
-        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
+        "stdio":           { "$ref": "#/definitions/StdioOptionsType" },
+        "telnet":          { "$ref": "#/definitions/StdioOptionsType", "description": "Legacy alias for stdio." },
         "rtt":             { "$ref": "#/definitions/RttOptionsType" },
         "trace":           { "$ref": "#/definitions/TraceOptionsType" },
         "systemview":      { "$ref": "#/definitions/SystemViewOptionType" },
@@ -2400,26 +2401,32 @@
       "type": "object",
       "properties": {
         "number":   { "type": "number", "description": "RTT channel number." },
-        "mode":     { "enum": [ "stdio", "server", "systemview", "systemview-server" ], "description": "RTT channel mode." },
-        "port":     { "type": "number", "description": "TCP port number (required for server and systemview-server)." }
+        "mode":     { "enum": [ "stdio", "server", "file", "systemview", "systemview-server" ], "description": "RTT channel mode." },
+        "port":     { "type": "number", "description": "TCP port number (required for server and systemview-server)." },
+        "file-in":  { "type": "string", "description": "Path to the RTT channel input file in file mode." },
+        "file-out": { "type": "string", "description": "Path to the RTT channel output file in file mode." }
       },
       "additionalProperties": false,
       "required": [ "number", "mode" ]
     },
-    "TelnetOptionsType": {
-      "title": "telnet:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#telnet",
-      "description": "Telnet port for connecting remote tools.",
+    "TelnetOptionsType": { "$ref": "#/definitions/StdioOptionsType" },
+    "TelnetOptionType": { "$ref": "#/definitions/StdioOptionType" },
+    "StdioOptionsType": {
+      "title": "stdio:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/pyOCD-Debugger/#stdio",
+      "description": "Standard I/O configuration.",
       "type": "array",
       "uniqueItems": true,
-      "items": { "$ref": "#/definitions/TelnetOptionType" }
+      "items": { "$ref": "#/definitions/StdioOptionType" }
     },
-    "TelnetOptionType": {
+    "StdioOptionType": {
       "type": "object",
       "properties": {
-        "mode": { "enum": [ "off", "server", "file", "console", "monitor" ], "description": "Redirect output mode." },
-        "pname": { "type": "string", "description": "Processor name of the processor (only required for multi-core systems)." },
-        "port": { "type": "number", "description": "Set TCP/IP port number of Telnet Server." },
-        "file": { "type": "string", "description": "Base path and name of the telnet output file (without extension)."}
+        "mode":     { "enum": [ "off", "server", "file", "console", "monitor" ], "description": "Redirect output mode." },
+        "pname":    { "type": "string", "description": "Processor name of the processor (only required for multi-core systems)." },
+        "port":     { "type": "number", "description": "Set TCP/IP port number of Telnet Server." },
+        "file":     { "type": "string", "description": "Legacy explicit path and name of the standard I/O output file." },
+        "file-in":  { "type": "string", "description": "Complete path and filename of the standard I/O input file." },
+        "file-out": { "type": "string", "description": "Complete path and filename of the standard I/O output file." }
       },
       "additionalProperties": false,
       "required": ["mode"]
@@ -2659,7 +2666,8 @@
         "clock":           { "type": "number", "description": "Selected debug clock speed (in Hz)." },
         "dbgconf":         { "type": "string", "description": "Debugger configuration file (pinout, trace)." },
         "start-pname":     { "type": "string", "description": "Debugger connects at start to this processor." },
-        "telnet":          { "$ref": "#/definitions/TelnetOptionsType" },
+        "stdio":           { "$ref": "#/definitions/StdioOptionsType" },
+        "telnet":          { "$ref": "#/definitions/StdioOptionsType", "description": "Legacy alias for stdio." },
         "rtt":             { "$ref": "#/definitions/RttOptionsType" },
         "trace":           { "$ref": "#/definitions/TraceOptionsType" },
         "systemview":      { "$ref": "#/definitions/SystemViewOptionType" },

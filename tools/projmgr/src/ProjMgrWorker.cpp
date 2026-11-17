@@ -2797,16 +2797,31 @@ bool ProjMgrWorker::ProcessDebuggers(ContextItem& context) {
     }
     context.debugger.startPname = m_activeTargetSet.debugger.startPname;
     context.debugger.deviceSettings = m_activeTargetSet.debugger.deviceSettings;
-    for (auto telnet : m_activeTargetSet.debugger.telnet) {
-      if (!telnet.file.empty()) {
-        if (!ProcessSequenceRelative(context, telnet.file, context.csolution->directory, false)) {
+    const auto processFile = [&](std::string& path) {
+      if (path.empty()) {
+        return true;
+      }
+      if (!ProcessSequenceRelative(context, path, context.csolution->directory, false)) {
+        return false;
+      }
+      if (RteFsUtils::IsRelative(path)) {
+        RteFsUtils::NormalizePath(path, context.directories.cprj);
+      }
+      return true;
+    };
+    for (auto stdio : m_activeTargetSet.debugger.stdio) {
+      if (!processFile(stdio.file) || !processFile(stdio.fileIn) || !processFile(stdio.fileOut)) {
+        return false;
+      }
+      context.debugger.stdio[stdio.pname] = { stdio };
+    }
+    for (auto rtt : m_activeTargetSet.debugger.rtt) {
+      for (auto& channel : rtt.channels) {
+        if (!processFile(channel.fileIn) || !processFile(channel.fileOut)) {
           return false;
         }
-        if (RteFsUtils::IsRelative(telnet.file)) {
-          RteFsUtils::NormalizePath(telnet.file, context.directories.cprj);
-        }
       }
-      context.debugger.telnet[telnet.pname] = { telnet };
+      context.debugger.rtt.push_back(rtt);
     }
     for (auto trace : m_activeTargetSet.debugger.trace) {
       if (!trace.file.empty()) {

@@ -1,0 +1,46 @@
+solution:
+  compiler: AC6
+  packs:
+    - pack: ARM::RteTest_DFP
+  target-types:
+    - type: SingleCore
+      device: RteTest_ARMCM0
+      target-set:
+        - set:
+          debugger:
+            name: CMSIS-DAP
+            stdio:
+              - mode: file
+                file-in: $OutDir(telnet)$/stdio.in
+                file-out: captures/stdio.out
+            rtt:
+              - control-block:
+                  address: 0x20000000
+                  size: 0x10000
+                  auto-detect: false
+                channel:
+                  - number: 0
+                    mode: stdio
+                  - number: 1
+                    mode: server
+                    port: 4453
+                  - number: 2
+                    mode: file
+                    file-in: ../rtt2.in
+                    file-out: $OutDir(telnet)$/rtt2.out
+                  - number: 3
+                    mode: file
+                  - number: 4
+                    mode: systemview
+                  - number: 5
+                    mode: systemview-server
+                    port: 4454
+              - pname: Core1
+                channel:
+                  - number: 0
+                    mode: file
+                    file-out: captures/Core1.out
+          images:
+            - project-context: telnet
+  projects:
+    - project: telnet.cproject.yml

@@ -471,81 +471,90 @@ void ProjMgrRunDebug::CollectDebuggerSettings(const ContextItem& context, const 
     }
   }
 
-  // collect telnet options
-  CollectTelnetOptions(context, adapter, pnames);
+  // collect stdio options
+  CollectStdioOptions(context, adapter, pnames);
 
   // collect system view options
   CollectSystemViewOptions(context.debugger.systemView);
 
   // merge custom options
   ProjMgrUtils::MergeCustomItems(context.debugger.custom, m_runDebug.debugger.custom);
-  if (!context.debugger.trace.empty()) {
+  if (!context.debugger.trace.empty() || !context.debugger.rtt.empty()) {
     auto& custom = m_runDebug.debugger.custom.map;
-    custom.erase(remove_if(custom.begin(), custom.end(), [](const auto& item) {
-      return item.first == YAML_TRACE;
+    custom.erase(remove_if(custom.begin(), custom.end(), [&](const auto& item) {
+      return (item.first == YAML_TRACE && !context.debugger.trace.empty()) ||
+        (item.first == YAML_RTT && !context.debugger.rtt.empty());
     }), custom.end());
   }
 }
 
-void ProjMgrRunDebug::CollectTelnetOptions(const ContextItem& context, DebugAdapterItem& adapter,
+void ProjMgrRunDebug::CollectStdioOptions(const ContextItem& context, DebugAdapterItem& adapter,
   const std::map<std::string, RteDeviceProperty*>& pnames) {
-  if (!context.debugger.telnet.empty() || adapter.defaults.telnet.active) {
+  if (!context.debugger.stdio.empty() || adapter.defaults.stdio.active) {
     set<unsigned long long> usedPorts;
     const string fileBase = context.directories.cprj + "/" + context.directories.outBaseDir + "/" +
       m_runDebug.solutionName + "+" + m_runDebug.targetType;
 
     // get values from user definitions
-    for (const auto& [pname, value] : context.debugger.telnet) {
+    for (const auto& [pname, value] : context.debugger.stdio) {
       if (pnames.size() > 1 && value.pname.empty()) {
-        ProjMgrLogger::Get().Warn("'telnet:' pname is required (multicore device)");
+        ProjMgrLogger::Get().Warn("'stdio:' pname is required (multicore device)");
         continue;
       }
       if (pnames.find(pname) == pnames.end()) {
         ProjMgrLogger::Get().Warn("pname '" + pname + "' does not match any device pname");
         continue;
       }
-      m_runDebug.debugger.telnet[pname] = { value };
+      m_runDebug.debugger.stdio[pname] = { value };
       if (!value.port.empty()) {
-        m_runDebug.debugger.telnet[pname].ullPort = RteUtils::StringToULL(value.port);
-        usedPorts.insert(m_runDebug.debugger.telnet[pname].ullPort);
+        m_runDebug.debugger.stdio[pname].ullPort = RteUtils::StringToULL(value.port);
+        usedPorts.insert(m_runDebug.debugger.stdio[pname].ullPort);
       }
       if (value.mode.empty()) {
-        m_runDebug.debugger.telnet[pname].mode = adapter.defaults.telnet.mode.empty() ? "off" : adapter.defaults.telnet.mode;
-      }
-      if (value.mode == "file" && value.file.empty()) {
-        m_runDebug.debugger.telnet[pname].file = fileBase + (pname.empty() ? "" : '.' + pname);
+        m_runDebug.debugger.stdio[pname].mode = adapter.defaults.stdio.mode.empty() ? "off" : adapter.defaults.stdio.mode;
       }
     }
-    // active flag: enable telnet options for all cores
-    if (adapter.defaults.telnet.active) {
+    // active flag: enable stdio options for all cores
+    if (adapter.defaults.stdio.active) {
       for (const auto& [pname, _] : pnames) {
-        auto& telnet = m_runDebug.debugger.telnet[pname];
-        if (telnet.mode.empty()) {
-          telnet.mode = adapter.defaults.telnet.mode.empty() ? "off" : adapter.defaults.telnet.mode;
+        auto& stdio = m_runDebug.debugger.stdio[pname];
+        if (stdio.mode.empty()) {
+          stdio.mode = adapter.defaults.stdio.mode.empty() ? "off" : adapter.defaults.stdio.mode;
+        }
+      }
+    }
+    for (auto& [pname, stdio] : m_runDebug.debugger.stdio) {
+      if (stdio.mode == "file" && stdio.file.empty()) {
+        const auto base = fileBase + (pname.empty() ? "" : '.' + pname);
+        if (stdio.fileIn.empty()) {
+          stdio.fileIn = base + ".in";
+        }
+        if (stdio.fileOut.empty()) {
+          stdio.fileOut = base + ".out";
         }
       }
     }
     // port number handling
-    unsigned long long port = adapter.defaults.telnet.port.empty() ? 0 : RteUtils::StringToULL(adapter.defaults.telnet.port);
-    if (m_runDebug.debugger.telnet.find(m_runDebug.debugger.startPname) != m_runDebug.debugger.telnet.end()) {
+    unsigned long long port = adapter.defaults.stdio.port.empty() ? 0 : RteUtils::StringToULL(adapter.defaults.stdio.port);
+    if (m_runDebug.debugger.stdio.find(m_runDebug.debugger.startPname) != m_runDebug.debugger.stdio.end()) {
       // add primary processor port first
-      auto& start = m_runDebug.debugger.telnet[m_runDebug.debugger.startPname];
+      auto& start = m_runDebug.debugger.stdio[m_runDebug.debugger.startPname];
       // set next available port
-      SetTelnetPort(start, port, usedPorts);
+      SetStdioPort(start, port, usedPorts);
       // set starting port for other processors
       port = start.ullPort;
     }
-    for (auto& [pname, telnet] : m_runDebug.debugger.telnet) {
+    for (auto& [pname, stdio] : m_runDebug.debugger.stdio) {
       // add ports for other processors
       if (pname != m_runDebug.debugger.startPname) {
         // set next available port
-        SetTelnetPort(telnet, port, usedPorts);
+        SetStdioPort(stdio, port, usedPorts);
       }
     }
   }
 }
 
-void ProjMgrRunDebug::SetTelnetPort(TelnetOptionsItem& item, unsigned long long& port, std::set<unsigned long long>& usedPorts) {
+void ProjMgrRunDebug::SetStdioPort(StdioOptionsItem& item, unsigned long long& port, std::set<unsigned long long>& usedPorts) {
   // only assign a port number if it has not been already specified
   if (item.port.empty()) {
     while (usedPorts.find(port) != usedPorts.end()) {

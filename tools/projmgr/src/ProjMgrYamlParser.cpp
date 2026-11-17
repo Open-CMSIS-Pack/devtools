@@ -633,16 +633,36 @@ void ProjMgrYamlParser::ParseExecutes(const YAML::Node& parent, const string& fi
   }
 }
 
-void ProjMgrYamlParser::ParseTelnet(const YAML::Node& parent, const std::string& file, std::vector<TelnetItem>& telnet) {
-  if (parent[YAML_TELNET].IsDefined()) {
-    const YAML::Node& telnetNode = parent[YAML_TELNET];
-    for (const auto& telnetEntry : telnetNode) {
-      TelnetItem telnetItem;
-      ParseString(telnetEntry, YAML_MODE, telnetItem.mode);
-      ParseString(telnetEntry, YAML_PORT, telnetItem.port);
-      ParseString(telnetEntry, YAML_FILE, telnetItem.file);
-      ParseString(telnetEntry, YAML_PNAME, telnetItem.pname);
-      telnet.push_back(telnetItem);
+void ProjMgrYamlParser::ParseStdio(const YAML::Node& parent, const std::string& file, std::vector<StdioItem>& stdio) {
+  // The current spelling wins when both it and the legacy alias are present.
+  const auto& stdioNode = parent[YAML_STDIO].IsDefined() ? parent[YAML_STDIO] : parent[YAML_TELNET];
+  if (stdioNode.IsDefined()) {
+    for (const auto& stdioEntry : stdioNode) {
+      StdioItem stdioItem;
+      ParseString(stdioEntry, YAML_MODE, stdioItem.mode);
+      ParseString(stdioEntry, YAML_PORT, stdioItem.port);
+      ParseString(stdioEntry, YAML_FILE, stdioItem.file);
+      ParseString(stdioEntry, YAML_FILE_IN, stdioItem.fileIn);
+      ParseString(stdioEntry, YAML_FILE_OUT, stdioItem.fileOut);
+      ParseString(stdioEntry, YAML_PNAME, stdioItem.pname);
+      stdio.push_back(stdioItem);
+    }
+  }
+}
+
+void ProjMgrYamlParser::ParseRtt(const YAML::Node& parent, const std::string& file, std::vector<RttItem>& rtt) {
+  if (parent[YAML_RTT].IsDefined()) {
+    for (const auto& rttEntry : parent[YAML_RTT]) {
+      RttItem item;
+      ParseCustom(rttEntry, { YAML_CHANNEL }, item.custom);
+      for (const auto& channelEntry : rttEntry[YAML_CHANNEL]) {
+        RttChannelItem channel;
+        ParseString(channelEntry, YAML_FILE_IN, channel.fileIn);
+        ParseString(channelEntry, YAML_FILE_OUT, channel.fileOut);
+        ParseCustom(channelEntry, { YAML_FILE_IN, YAML_FILE_OUT }, channel.custom);
+        item.channels.push_back(channel);
+      }
+      rtt.push_back(item);
     }
   }
 }
@@ -680,10 +700,11 @@ void ProjMgrYamlParser::ParseDebugger(const YAML::Node& parent, const string& fi
     ParsePortablePath(debuggerNode, file, YAML_DBGCONF, debugger.dbgconf);
     ParseMapOfStrings(debuggerNode, YAML_DEVICE_SETTINGS, debugger.deviceSettings);
     ParseString(debuggerNode, YAML_START_PNAME, debugger.startPname);
-    ParseTelnet(debuggerNode, file, debugger.telnet);
+    ParseStdio(debuggerNode, file, debugger.stdio);
+    ParseRtt(debuggerNode, file, debugger.rtt);
     ParseTrace(debuggerNode, file, debugger.trace);
-	ParseSystemView(debuggerNode, file, debugger.systemView);
-    ParseCustom(debuggerNode, { YAML_NAME, YAML_PROTOCOL, YAML_CLOCK, YAML_DBGCONF, YAML_DEVICE_SETTINGS, YAML_START_PNAME, YAML_TELNET, YAML_TRACE, YAML_SYSTEMVIEW }, debugger.custom);
+    ParseSystemView(debuggerNode, file, debugger.systemView);
+    ParseCustom(debuggerNode, { YAML_NAME, YAML_PROTOCOL, YAML_CLOCK, YAML_DBGCONF, YAML_DEVICE_SETTINGS, YAML_START_PNAME, YAML_STDIO, YAML_TELNET, YAML_RTT, YAML_TRACE, YAML_SYSTEMVIEW }, debugger.custom);
   }
 }
 
@@ -702,15 +723,15 @@ void ProjMgrYamlParser::ParseDebugDefaults(const YAML::Node& parent, const strin
       ParseString(gdbserverNode, YAML_PORT, defaults.gdbserver.port);
       defaults.gdbserver.active = gdbserverNode[YAML_ACTIVE].IsDefined();
     }
-    if (defaultsNode[YAML_TELNET].IsDefined()) {
-      const YAML::Node& telnetNode = defaultsNode[YAML_TELNET];
-      ParseString(telnetNode, YAML_PORT, defaults.telnet.port);
-      ParseString(telnetNode, YAML_MODE, defaults.telnet.mode);
-      defaults.telnet.active = telnetNode[YAML_ACTIVE].IsDefined();
+    const auto& stdioNode = defaultsNode[YAML_STDIO].IsDefined() ? defaultsNode[YAML_STDIO] : defaultsNode[YAML_TELNET];
+    if (stdioNode.IsDefined()) {
+      ParseString(stdioNode, YAML_PORT, defaults.stdio.port);
+      ParseString(stdioNode, YAML_MODE, defaults.stdio.mode);
+      defaults.stdio.active = stdioNode[YAML_ACTIVE].IsDefined();
     }
     ParseString(defaultsNode, YAML_PROTOCOL, defaults.protocol);
     ParseNumber(defaultsNode, file, YAML_CLOCK, defaults.clock);
-    ParseCustom(defaultsNode, { YAML_GDBSERVER, YAML_TELNET, YAML_SYSTEMVIEW, YAML_PROTOCOL, YAML_CLOCK }, defaults.custom);
+    ParseCustom(defaultsNode, { YAML_GDBSERVER, YAML_STDIO, YAML_TELNET, YAML_SYSTEMVIEW, YAML_PROTOCOL, YAML_CLOCK }, defaults.custom);
   }
 }
 

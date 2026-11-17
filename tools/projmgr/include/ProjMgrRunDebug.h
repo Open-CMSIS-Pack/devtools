@@ -292,10 +292,10 @@ protected:
     const std::map<std::string, RteDeviceProperty*>& pnames);
   void CollectDebugTopology(const ContextItem& context, std::vector<std::pair<const RteItem*, std::vector<std::string>>> debugs,
     const std::map<std::string, RteDeviceProperty*>& pnames);
-  void CollectTelnetOptions(const ContextItem& context, DebugAdapterItem& adapter,
+  void CollectStdioOptions(const ContextItem& context, DebugAdapterItem& adapter,
     const std::map<std::string, RteDeviceProperty*>& pnames);
   void CollectSystemViewOptions(const SystemViewItem& context);
-  void SetTelnetPort(TelnetOptionsItem& item, unsigned long long& port, std::set<unsigned long long>& usedPorts);
+  void SetStdioPort(StdioOptionsItem& item, unsigned long long& port, std::set<unsigned long long>& usedPorts);
 };
 
 #endif  // PROJMGRRUNDEBUG_H
