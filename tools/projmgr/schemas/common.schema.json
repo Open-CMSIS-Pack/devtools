@@ -1147,7 +1147,8 @@
         "layer": {
           "title": "layer:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#layers",
           "type": "string",
-          "description": "Path to the '*.clayer.yml' file that defines the layer."
+          "pattern": "^.*[/]([^.+]*\\.clayer\\.(yml|yaml))$|^([^.+]+)\\.clayer\\.(yml|yaml)$|^\\$[^$]+\\$$|^$",
+          "description": "Path to the valid layer file or layer variable. May be empty to leave the layer unspecified."
         },
         "type": {
           "title": "type:\nDocumentation: https://open-cmsis-pack.github.io/cmsis-toolbox/YML-Input-Format/#layer-type",
