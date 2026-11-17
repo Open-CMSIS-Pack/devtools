@@ -52,6 +52,39 @@ TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Empty_Object) {
   EXPECT_TRUE(GetErrors().empty());
 }
 
+TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_LayerPattern) {
+  const vector<pair<string, bool>> testCases = {
+    { "test.clayer.yml", true },
+    { "test.clayer.yaml", true },
+    { "../path.with+symbols/test.clayer.yml", true },
+    { "../path.with+symbols/test.clayer.yaml", true },
+    { "$variable$", true },
+    { "$Layer_Path$/test.clayer.yml", true },
+    { "test.yml", false },
+    { "test.cproject.yml", false },
+    { "test.clayer.yml.bak", false },
+    { "test.layer.clayer.yml", false },
+    { "../layers/test+layer.clayer.yml", false },
+    { "$variable", false },
+    { "variable$", false },
+    { "$$", false },
+    { "$one$two$", false },
+    { "", true },
+  };
+  const string filename = testoutput_folder + "/layer-pattern.cproject.yml";
+  for (const auto& [layer, expected] : testCases) {
+    {
+      ofstream fileStream(filename);
+      fileStream << "project:\n"
+        "  layers:\n"
+        "    - layer: '" << layer << "'\n";
+    }
+    EXPECT_EQ(expected, Validate(filename)) << "layer: " << layer;
+    EXPECT_EQ(expected, GetErrors().empty()) << "layer: " << layer;
+  }
+  RteFsUtils::RemoveFile(filename);
+}
+
 TEST_F(ProjMgrSchemaCheckerUnitTests, SchemaCheck_Fail) {
   vector<std::pair<int, int>> expectedErrPos = {
     // line, col
