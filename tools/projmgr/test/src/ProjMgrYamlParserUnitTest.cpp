@@ -104,3 +104,77 @@ TEST_F(ProjMgrYamlParserUnitTests, ValidateCbuildSet) {
   invalidRoot["processor"] = "invalid";
   EXPECT_FALSE(ValidateCbuildSet(cbuildSetFile, invalidRoot));
 }
+
+TEST_F(ProjMgrYamlParserUnitTests, ParseStdioAliases) {
+  for (const auto& key : { "stdio", "telnet" }) {
+    const auto node = YAML::Load(string("debugger:\n  ") + key + R"(:
+    - mode: file
+      port: 4444
+      pname: Core0
+      file: legacy.txt
+      file-in: explicit.in
+      file-out: explicit.out
+    - mode: file
+      file-out: explicit.out
+    - mode: file
+      file: capture.txt
+)");
+    DebuggerItem debugger;
+    ParseDebugger(node, "test.csolution.yml", debugger);
+    ASSERT_EQ(3, debugger.stdio.size());
+    EXPECT_EQ("file", debugger.stdio[0].mode);
+    EXPECT_EQ("4444", debugger.stdio[0].port);
+    EXPECT_EQ("Core0", debugger.stdio[0].pname);
+    EXPECT_EQ("legacy.txt", debugger.stdio[0].file);
+    EXPECT_EQ("explicit.in", debugger.stdio[0].fileIn);
+    EXPECT_EQ("explicit.out", debugger.stdio[0].fileOut);
+    EXPECT_TRUE(debugger.stdio[1].fileIn.empty());
+    EXPECT_EQ("explicit.out", debugger.stdio[1].fileOut);
+    EXPECT_EQ("capture.txt", debugger.stdio[2].file);
+    EXPECT_TRUE(debugger.stdio[2].fileIn.empty());
+    EXPECT_TRUE(debugger.stdio[2].fileOut.empty());
+    EXPECT_TRUE(debugger.custom.map.empty());
+
+    DebugAdapterDefaultsItem defaults;
+    ParseDebugDefaults(YAML::Load(string("defaults:\n  ") + key + R"(:
+    active:
+    port: 4444
+    mode: file
+)"), "debug-adapters.yml", defaults);
+    EXPECT_TRUE(defaults.stdio.active);
+    EXPECT_EQ("4444", defaults.stdio.port);
+    EXPECT_EQ("file", defaults.stdio.mode);
+    EXPECT_TRUE(defaults.custom.map.empty());
+  }
+}
+
+TEST_F(ProjMgrYamlParserUnitTests, ParseStdioPrecedence) {
+  const auto node = YAML::Load(R"(
+debugger:
+  stdio:
+    - mode: console
+  telnet:
+    - mode: file
+)");
+  DebuggerItem debugger;
+  ParseDebugger(node, "test.csolution.yml", debugger);
+  ASSERT_EQ(1, debugger.stdio.size());
+  EXPECT_EQ("console", debugger.stdio[0].mode);
+  EXPECT_TRUE(debugger.custom.map.empty());
+
+  DebugAdapterDefaultsItem defaults;
+  ParseDebugDefaults(YAML::Load(R"(
+defaults:
+  stdio:
+    mode: console
+    port: 5555
+  telnet:
+    active:
+    mode: file
+    port: 4444
+)"), "debug-adapters.yml", defaults);
+  EXPECT_EQ("console", defaults.stdio.mode);
+  EXPECT_EQ("5555", defaults.stdio.port);
+  EXPECT_FALSE(defaults.stdio.active);
+  EXPECT_TRUE(defaults.custom.map.empty());
+}

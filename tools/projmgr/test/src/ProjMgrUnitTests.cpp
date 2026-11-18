@@ -7416,6 +7416,112 @@ TEST_F(ProjMgrUnitTests, TestRunDebugTrace) {
   EXPECT_TRUE(RteFsUtils::RemoveFile(invalidSolution));
 }
 
+TEST_F(ProjMgrUnitTests, TestRunDebugStdioRttFiles) {
+  const string csolution = testinput_folder + "/TestRunDebug/stdio.csolution.yml";
+  for (const auto& output : { testinput_folder + "/TestRunDebug", testoutput_folder }) {
+    StdStreamRedirect streamRedirect;
+    char* argv[7] = { nullptr, (char*)"convert", (char*)csolution.c_str(),
+      (char*)"--active", (char*)"SingleCore", (char*)"--output", (char*)output.c_str() };
+    ASSERT_EQ(0, RunProjMgr(7, argv, m_envp)) << streamRedirect.GetErrorString();
+    const auto root = YAML::LoadFile(output + "/out/stdio+SingleCore.cbuild-run.yml");
+    const auto debugger = root["cbuild-run"]["debugger"];
+    EXPECT_FALSE(debugger["telnet"].IsDefined());
+    const auto stdio = debugger["stdio"][0];
+    EXPECT_EQ("file", stdio["mode"].as<string>());
+    EXPECT_EQ(4444, stdio["port"].as<unsigned>());
+    EXPECT_EQ("telnet/SingleCore/stdio.in", stdio["file-in"].as<string>());
+    EXPECT_EQ(RteFsUtils::RelativePath(testinput_folder + "/TestRunDebug/captures/stdio.out", output + "/out"),
+      stdio["file-out"].as<string>());
+    EXPECT_FALSE(stdio["file"].IsDefined());
+    const auto rtt = debugger["rtt"];
+    ASSERT_EQ(2, rtt.size());
+    EXPECT_EQ(0x20000000, rtt[0]["control-block"]["address"].as<unsigned>());
+    EXPECT_EQ(0x10000, rtt[0]["control-block"]["size"].as<unsigned>());
+    EXPECT_FALSE(rtt[0]["control-block"]["auto-detect"].as<bool>());
+    const auto channels = rtt[0]["channel"];
+    ASSERT_EQ(6, channels.size());
+    EXPECT_EQ("stdio", channels[0]["mode"].as<string>());
+    EXPECT_EQ(4453, channels[1]["port"].as<unsigned>());
+    EXPECT_EQ(2, channels[2]["number"].as<unsigned>());
+    EXPECT_EQ("file", channels[2]["mode"].as<string>());
+    EXPECT_EQ(RteFsUtils::RelativePath(testinput_folder + "/rtt2.in", output + "/out"),
+      channels[2]["file-in"].as<string>());
+    EXPECT_EQ("telnet/SingleCore/rtt2.out", channels[2]["file-out"].as<string>());
+    // Omitted RTT paths are defaulted by the debugger.
+    EXPECT_FALSE(channels[3]["file-in"].IsDefined());
+    EXPECT_FALSE(channels[3]["file-out"].IsDefined());
+    EXPECT_EQ("systemview", channels[4]["mode"].as<string>());
+    EXPECT_EQ("systemview-server", channels[5]["mode"].as<string>());
+    EXPECT_EQ(4454, channels[5]["port"].as<unsigned>());
+    EXPECT_EQ("Core1", rtt[1]["pname"].as<string>());
+    EXPECT_EQ(RteFsUtils::RelativePath(testinput_folder + "/TestRunDebug/captures/Core1.out", output + "/out"),
+      rtt[1]["channel"][0]["file-out"].as<string>());
+  }
+
+  // Invalid access sequences must fail for either service and direction.
+  for (const auto& service : { "stdio", "rtt" }) {
+    for (const auto& key : { "file-in", "file-out" }) {
+      auto root = YAML::LoadFile(csolution);
+      auto debugger = root["solution"]["target-types"][0]["target-set"][0]["debugger"];
+      if (string(service) == "stdio") {
+        debugger[service][0][key] = "$Unknown$/capture";
+      }
+      else {
+        debugger[service][0]["channel"][2][key] = "$Unknown$/capture";
+      }
+      const string invalidSolution = testinput_folder + "/TestRunDebug/stdio-invalid.csolution.yml";
+      stringstream content;
+      content << root;
+      ASSERT_TRUE(RteFsUtils::CreateTextFile(invalidSolution, content.str()));
+      StdStreamRedirect streamRedirect;
+      char* argv[5] = { nullptr, (char*)"convert", (char*)invalidSolution.c_str(),
+        (char*)"--active", (char*)"SingleCore" };
+      EXPECT_EQ(1, RunProjMgr(5, argv, m_envp));
+      EXPECT_NE(string::npos, streamRedirect.GetErrorString().find("unknown access sequence: 'Unknown'"));
+      EXPECT_TRUE(RteFsUtils::RemoveFile(invalidSolution));
+    }
+  }
+}
+
+TEST_F(ProjMgrUnitTests, TestRunDebugStdioDefaults) {
+  const string csolution = testinput_folder + "/TestRunDebug/stdio-defaults.csolution.yml";
+  auto root = YAML::LoadFile(testinput_folder + "/TestRunDebug/stdio.csolution.yml");
+  root["solution"]["target-types"][0]["target-set"][0]["debugger"].remove("stdio");
+  stringstream content;
+  content << root;
+  ASSERT_TRUE(RteFsUtils::CreateTextFile(csolution, content.str()));
+  const string adapterPath = etc_folder + "/debug-adapters.yml";
+  auto adapters = YAML::LoadFile(adapterPath);
+  for (auto adapter : adapters["debug-adapters"]) {
+    if (adapter["name"].as<string>() == "CMSIS-DAP@pyOCD") {
+      adapter["defaults"].remove("telnet");
+      adapter["defaults"]["stdio"] = YAML::Load("{active: null, mode: file, port: 6000}");
+    }
+  }
+  const string backup = RteFsUtils::BackupFile(adapterPath);
+  ASSERT_FALSE(backup.empty());
+  stringstream adapterContent;
+  adapterContent << adapters;
+  const bool written = RteFsUtils::CreateTextFile(adapterPath, adapterContent.str());
+  StdStreamRedirect streamRedirect;
+  char* argv[5] = { nullptr, (char*)"convert", (char*)csolution.c_str(),
+    (char*)"--active", (char*)"SingleCore" };
+  const auto result = written ? RunProjMgr(5, argv, m_envp) : -1;
+  error_code ec;
+  fs::copy_file(backup, adapterPath, fs::copy_options::overwrite_existing, ec);
+  ASSERT_FALSE(ec) << ec.message();
+  EXPECT_TRUE(RteFsUtils::RemoveFile(backup));
+  EXPECT_TRUE(RteFsUtils::RemoveFile(csolution));
+  ASSERT_TRUE(written);
+  ASSERT_EQ(0, result) << streamRedirect.GetErrorString();
+  const auto cbuildrun = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/stdio-defaults+SingleCore.cbuild-run.yml");
+  const auto stdio = cbuildrun["cbuild-run"]["debugger"]["stdio"][0];
+  EXPECT_EQ("file", stdio["mode"].as<string>());
+  EXPECT_EQ(6000, stdio["port"].as<unsigned>());
+  EXPECT_EQ("stdio-defaults+SingleCore.in", stdio["file-in"].as<string>());
+  EXPECT_EQ("stdio-defaults+SingleCore.out", stdio["file-out"].as<string>());
+}
+
 TEST_F(ProjMgrUnitTests, TestRunDebugTelnet) {
   char* argv[5];
   const string& csolution = testinput_folder + "/TestRunDebug/telnet.csolution.yml";
@@ -7428,7 +7534,7 @@ TEST_F(ProjMgrUnitTests, TestRunDebugTelnet) {
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
   stringstream sstream0, sstreamRTT, sstreamSystemView;
   const YAML::Node& cbuildrun0 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+SingleCore.cbuild-run.yml");
-  sstream0 << cbuildrun0["cbuild-run"]["debugger"]["telnet"];
+  sstream0 << cbuildrun0["cbuild-run"]["debugger"]["stdio"];
   EXPECT_EQ(
 R"(- mode: file
   port: 4444
@@ -7457,7 +7563,7 @@ auto-stop: false)", sstreamSystemView.str());
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
   const YAML::Node& cbuildrun1 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream1;
-  sstream1 << cbuildrun1["cbuild-run"]["debugger"]["telnet"];
+  sstream1 << cbuildrun1["cbuild-run"]["debugger"]["stdio"];
   EXPECT_EQ(
 R"(- mode: server
   pname: cm0_core0
@@ -7471,7 +7577,7 @@ R"(- mode: server
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
   const YAML::Node& cbuildrun2 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream2;
-  sstream2 << cbuildrun2["cbuild-run"]["debugger"]["telnet"];
+  sstream2 << cbuildrun2["cbuild-run"]["debugger"]["stdio"];
   EXPECT_EQ(
 R"(- mode: monitor
   pname: cm0_core0
@@ -7479,14 +7585,15 @@ R"(- mode: monitor
 - mode: file
   pname: cm0_core1
   port: 5555
-  file: telnet+DualCore.cm0_core1)", sstream2.str());
+  file-in: telnet+DualCore.cm0_core1.in
+  file-out: telnet+DualCore.cm0_core1.out)", sstream2.str());
 
   // dual core with jlink and no telnet
   argv[4] = (char*)"DualCore@JLinkNoTelnet";
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
   const YAML::Node& cbuildrun3 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream3;
-  sstream3 << cbuildrun3["cbuild-run"]["debugger"]["telnet"];
+  sstream3 << cbuildrun3["cbuild-run"]["debugger"]["stdio"];
   EXPECT_EQ(
 R"(- mode: off
   pname: cm0_core0
@@ -7500,7 +7607,7 @@ R"(- mode: off
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
   const YAML::Node& cbuildrun4 = YAML::LoadFile(testinput_folder + "/TestRunDebug/out/telnet+DualCore.cbuild-run.yml");
   stringstream sstream4;
-  sstream4 << cbuildrun4["cbuild-run"]["debugger"]["telnet"];
+  sstream4 << cbuildrun4["cbuild-run"]["debugger"]["stdio"];
   EXPECT_EQ(
     R"(- mode: monitor
   pname: cm0_core0
@@ -7514,7 +7621,7 @@ R"(- mode: off
   argv[4] = (char*)"DualCore@Warnings";
   EXPECT_EQ(0, RunProjMgr(5, argv, m_envp));
   string expected = "\
-warning csolution: \\'telnet:\\' pname is required \\(multicore device\\)\n\
+warning csolution: \\'stdio:\\' pname is required \\(multicore device\\)\n\
 warning csolution: pname \\'unknown\\' does not match any device pname\n\
 ";
   string errStr = streamRedirect.GetErrorString();
@@ -8131,7 +8238,7 @@ TEST_F(ProjMgrUnitTests, TargetSetDependencies) {
   EXPECT_EQ("project/CM4/project.bin", cbuildRun["cbuild-run"]["output"][2]["file"].as<string>());
   EXPECT_EQ("project2/CM4/project2.bin", cbuildRun["cbuild-run"]["output"][3]["file"].as<string>());
   EXPECT_EQ("../RteTest_ARMCM4_NOFP.dbgconf", cbuildRun["cbuild-run"]["debugger"]["dbgconf"].as<string>());
-  EXPECT_EQ("project2/CM4/telnet.log", cbuildRun["cbuild-run"]["debugger"]["telnet"][0]["file"].as<string>());
+  EXPECT_EQ("project2/CM4/telnet.log", cbuildRun["cbuild-run"]["debugger"]["stdio"][0]["file"].as<string>());
 
   // ensure dependencies are not set
   const YAML::Node& cbuildIdx = YAML::LoadFile(testinput_folder + "/TestTargetSet/cross-dependency.cbuild-idx.yml");

@@ -310,10 +310,10 @@ struct GdbServerItem {
 };
 
 /**
- * @brief telnet port item extends TelnetItem containing
+ * @brief stdio port item extends StdioItem containing
    resolved port number
 */
-struct TelnetOptionsItem : TelnetItem {
+struct StdioOptionsItem : StdioItem {
   unsigned long long ullPort;
 };
 
@@ -390,7 +390,7 @@ struct TemplateItem {
  *        device settings
  *        start pname
  *        list of gdbserver items
- *        list of telnet options items
+ *        list of stdio options items
  *        custom options
 */
 struct DebuggerType {
@@ -402,7 +402,8 @@ struct DebuggerType {
   std::map<std::string, std::string> deviceSettings;
   std::string startPname;
   std::vector<GdbServerItem> gdbserver;
-  std::map<std::string, TelnetOptionsItem> telnet;
+  std::map<std::string, StdioOptionsItem> stdio;
+  std::vector<RttItem> rtt;
   std::vector<TraceItem> trace;
   SystemViewItem systemView;
   CustomItem custom;

@@ -136,16 +136,19 @@ struct MemoryItem {
 };
 
 /**
- * @brief telnet item containing
+ * @brief stdio item containing
  *        mode
  *        port
- *        file
+ *        legacy output file
+ *        input and output files
  *        pname
 */
-struct TelnetItem {
+struct StdioItem {
   std::string mode;
   std::string port;
   std::string file;
+  std::string fileIn;
+  std::string fileOut;
   std::string pname;
 };
 
@@ -182,6 +185,19 @@ struct CustomItem {
   std::vector<std::pair<std::string, CustomItem>> map;
 };
 
+// Keep RTT configuration extensible, processing file paths separately from
+// the remaining channel and control-block properties, as for trace options.
+struct RttChannelItem {
+  std::string fileIn;
+  std::string fileOut;
+  CustomItem custom;
+};
+
+struct RttItem {
+  std::vector<RttChannelItem> channels;
+  CustomItem custom;
+};
+
 struct TraceItem {
   std::string file;
   CustomItem custom;
@@ -195,7 +211,7 @@ struct TraceItem {
  *        debug configuration file
  *        device settings
  *        start pname
- *        telnet options
+ *        stdio options
  *        systemview options
  *        custom properties
 */
@@ -206,7 +222,8 @@ struct DebuggerItem {
   std::string dbgconf;
   std::map<std::string, std::string> deviceSettings;
   std::string startPname;
-  std::vector<TelnetItem> telnet;
+  std::vector<StdioItem> stdio;
+  std::vector<RttItem> rtt;
   std::vector<TraceItem> trace;
   SystemViewItem systemView;
   CustomItem custom;
@@ -795,12 +812,12 @@ struct GdbServerDefaults {
 };
 
 /**
- * @brief telnet defaults item containing
- *        telnet port
- *        telnet mode
+ * @brief stdio defaults item containing
+ *        stdio port
+ *        stdio mode
  *        active flag
 */
-struct TelnetDefaults {
+struct StdioDefaults {
   std::string port;
   std::string mode;
   bool active = false;
@@ -809,14 +826,14 @@ struct TelnetDefaults {
 /**
  * @brief debug-adapter defaults item containing
  *        gdbserver defaults
- *        telnet defaults
+ *        stdio defaults
  *        systemview defaults
  *        debug protocol(jtag or swd)
  *        debug clock speed
 */
 struct DebugAdapterDefaultsItem {
   GdbServerDefaults gdbserver;
-  TelnetDefaults telnet;
+  StdioDefaults stdio;
   std::string protocol;
   std::string clock;
   CustomItem custom;
