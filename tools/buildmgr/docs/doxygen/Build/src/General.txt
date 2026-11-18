@@ -57,6 +57,16 @@ Software layers and Virtual I/O simplify these use cases:
     <th>Description</th>
   </tr>
   <tr>
+    <td>2.16.0</td>
+    <td>Release notes:
+      - added Cortex-M42 support for AC6, GCC and CLANG
+      - fixed XC32 `-mdfp` path resolution
+      - updated cbridge utility v0.10.4
+      - updated cbuild2cmake utility v0.13.0
+      - updated cbuild utility v2.16.0
+      - updated cpackget utility v2.3.0
+      - updated csolution utility v2.16.0
+    </td>
     <td>2.15.0</td>
     <td>Release notes:
       - added Infineon Device Configurator and Infineon MCU Config Wizard generators
