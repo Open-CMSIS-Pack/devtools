@@ -1,0 +1,130 @@
+diff --git a/decoder/source/ocsd_code_follower.cpp b/decoder/source/ocsd_code_follower.cpp
+--- a/decoder/source/ocsd_code_follower.cpp
++++ b/decoder/source/ocsd_code_follower.cpp
+@@ -35,5 +35,6 @@
+
+ #include "common/ocsd_code_follower.h"
++#include "i_dec/trc_idec_arminst.h"
+
+ OcsdCodeFollower::OcsdCodeFollower()
+ {
+@@ -141,2 +142,2 @@
+-    uint32_t opcode;    // buffer for opcode
++    uint32_t opcode = 0;    // buffer for opcode, including a partial read
+
+@@ -147,7 +148,9 @@
+     if(err != OCSD_OK)
+         return err;
+
+-    if(bytesReq == 4)       // check that we got all memory requested.
++    // A complete Thumb-16 instruction needs only the first halfword.
++    if((bytesReq == 4) || ((bytesReq >= 2) && (m_instr_info.isa == ocsd_isa_thumb2) &&
++        !is_wide_thumb((uint16_t)opcode)))
+     {
+         m_instr_info.opcode = opcode;
+         err = m_pIDecode->first()->DecodeInstruction(&m_instr_info);
+diff --git a/decoder/source/etmv4/trc_pkt_decode_etmv4i.cpp b/decoder/source/etmv4/trc_pkt_decode_etmv4i.cpp
+--- a/decoder/source/etmv4/trc_pkt_decode_etmv4i.cpp
++++ b/decoder/source/etmv4/trc_pkt_decode_etmv4i.cpp
+@@ -37,6 +37,7 @@
+ #include "opencsd/etmv4/trc_pkt_decode_etmv4i.h"
+
+ #include "common/trc_gen_elem.h"
++#include "i_dec/trc_idec_arminst.h"
+
+
+ #define DCD_NAME "DCD_ETMV4"
+@@ -1772,13 +1773,14 @@
+     // walk iCount instructions
+     for (int i = 0; i < iCount; i++)
+     {
+-        uint32_t opcode;
++        uint32_t opcode = 0;
+         uint32_t bytesReq = 4;
+
+         err = accessMemory(m_instr_info.instr_addr, getCurrMemSpace(), &bytesReq, (uint8_t *)&opcode);
+         if (err != OCSD_OK) break;
+
+-        if (bytesReq == 4) // got data back
++        if ((bytesReq == 4) || ((bytesReq >= 2) && (m_instr_info.isa == ocsd_isa_thumb2) &&
++            !is_wide_thumb((uint16_t)opcode)))
+         {
+             m_instr_info.opcode = opcode;
+             err = instrDecode(&m_instr_info);
+@@ -1845,7 +1847,7 @@
+     ocsd_err_t err = OCSD_OK;
+     TrcStackElemAddr *pElem = dynamic_cast<TrcStackElemAddr *>(m_P0_stack.back());  // get the address element
+     etmv4_addr_val_t srcAddr = pElem->getAddr();
+-    uint32_t opcode, bytesReq = 4;
++    uint32_t opcode = 0, bytesReq = 4;
+     ocsd_vaddr_t currAddr = m_instr_info.instr_addr;    // get the latest decoded address.
+     instr_range_t out_range;
+     bool bSplitRangeOnN = getComponentOpMode() & ETE_OPFLG_PKTDEC_SRCADDR_N_ATOMS ? true : false;
+@@ -1858,7 +1860,8 @@
+         return err;
+     }
+
+-    if (bytesReq != 4)
++    if ((bytesReq != 4) && ((bytesReq < 2) || (m_instr_info.isa != ocsd_isa_thumb2) ||
++        is_wide_thumb((uint16_t)opcode)))
+     {
+         // can't access - no bytes returned - output nacc.
+         err = m_out_elem.addElemType(pElem->getRootIndex(), OCSD_GEN_TRC_ELEM_ADDR_NACC);
+@@ -1917,6 +1920,7 @@
+             while ((instr.instr_addr < out_range.en_addr) && !bMemAccErr)
+             {
+                 bytesReq = 4;
++                opcode = 0;
+                 err = accessMemory(instr.instr_addr, getCurrMemSpace(), &bytesReq, (uint8_t *)&opcode);
+                 if (err != OCSD_OK)
+                 {
+@@ -1924,7 +1928,8 @@
+                     return err;
+                 }
+
+-                if (bytesReq == 4)
++                if ((bytesReq == 4) || ((bytesReq >= 2) && (instr.isa == ocsd_isa_thumb2) &&
++                    !is_wide_thumb((uint16_t)opcode)))
+                 {
+                     instr.opcode = opcode;
+                     err = instrDecode(&instr);
+@@ -2023,10 +2028,12 @@
+     {
+         // start off by reading next opcode;
+         bytesReq = 4;
++        opcode = 0;
+         err = accessMemory(m_instr_info.instr_addr, getCurrMemSpace(),&bytesReq,(uint8_t *)&opcode);
+         if(err != OCSD_OK) break;
+
+-        if(bytesReq == 4) // got data back
++        if((bytesReq == 4) || ((bytesReq >= 2) && (m_instr_info.isa == ocsd_isa_thumb2) &&
++            !is_wide_thumb((uint16_t)opcode)))
+         {
+             m_instr_info.opcode = opcode;
+             err = instrDecode(&m_instr_info);
+diff --git a/decoder/source/ptm/trc_pkt_decode_ptm.cpp b/decoder/source/ptm/trc_pkt_decode_ptm.cpp
+--- a/decoder/source/ptm/trc_pkt_decode_ptm.cpp
++++ b/decoder/source/ptm/trc_pkt_decode_ptm.cpp
+@@ -34,6 +34,7 @@
+
+ #include <sstream>
+ #include "opencsd/ptm/trc_pkt_decode_ptm.h"
++#include "i_dec/trc_idec_arminst.h"
+
+ #define DCD_NAME "DCD_PTM"
+
+@@ -633,11 +634,13 @@
+     {
+         // start off by reading next opcode;
+         bytesReq = 4;
++        opcode = 0;
+         curr_op_address = m_instr_info.instr_addr;  // save the start address for the current opcode
+         err = accessMemory(m_instr_info.instr_addr,mem_space,&bytesReq,(uint8_t *)&opcode);
+         if(err != OCSD_OK) break;
+
+-        if(bytesReq == 4) // got data back
++        if((bytesReq == 4) || ((bytesReq >= 2) && (m_instr_info.isa == ocsd_isa_thumb2) &&
++            !is_wide_thumb((uint16_t)opcode)))
+         {
+             m_instr_info.opcode = opcode;
+             err = instrDecode(&m_instr_info);
