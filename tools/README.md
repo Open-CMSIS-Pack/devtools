@@ -20,6 +20,10 @@ the [**CMSIS-Toolbox**](https://github.com/Open-CMSIS-Pack/cmsis-toolbox).
 - [**csolution**](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/build-tools.md#csolution-invocation)
   creates build information for embedded applications that consist of one or more related projects.
 
+  The `--context-set` (`-S`) option is deprecated; use `target-set` instead, selecting the active target with
+  `--active <target-type>[@<target-set>]`. The YAML `context-map` setting is also deprecated.
+  Both remain supported and emit warnings when used (unless `--quiet` is specified).
+
 ## Build management
 
 - [**cbuild**](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/blob/main/docs/build-tools.md#cbuild-invocation)

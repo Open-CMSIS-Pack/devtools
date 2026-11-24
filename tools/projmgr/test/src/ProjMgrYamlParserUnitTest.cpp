@@ -5,6 +5,7 @@
  */
 
 #include "ProjMgr.h"
+#include "ProjMgrLogger.h"
 #include "ProjMgrTestEnv.h"
 #include "ProjMgrYamlParser.h"
 
@@ -16,6 +17,11 @@ class ProjMgrYamlParserUnitTests : public ProjMgrYamlParser, public ::testing::T
 protected:
   ProjMgrYamlParserUnitTests() {}
   virtual ~ProjMgrYamlParserUnitTests() {}
+
+  void SetUp() override {
+    ProjMgrLogger::m_quiet = false;
+    ProjMgrLogger::m_silent = false;
+  }
 };
 
 TEST_F(ProjMgrYamlParserUnitTests, ParseWestDefines) {
@@ -34,6 +40,32 @@ TEST_F(ProjMgrYamlParserUnitTests, ParseWestDefines) {
   EXPECT_EQ(vector<string>({ "GCC" }), entries[1].forCompiler);
   EXPECT_TRUE(node[1]["for-compiler"]);
   EXPECT_FALSE(ParseWestDefines(YAML::Load("- INVALID: 'bad\"quote'"), entries));
+}
+
+TEST_F(ProjMgrYamlParserUnitTests, ParseDeprecatedContextMap) {
+  StdStreamRedirect streamRedirect;
+  BuildType buildType;
+  ASSERT_TRUE(ParseBuildType(YAML::Load("context-map: .MappedDebug"), "test.csolution.yml", buildType));
+  ASSERT_EQ(1, buildType.contextMap.size());
+  EXPECT_EQ("MappedDebug", buildType.contextMap[0].build);
+  EXPECT_EQ("test.csolution.yml:1:14 - warning csolution: 'context-map' is deprecated\n",
+    streamRedirect.GetErrorString());
+
+  streamRedirect.ClearStringStreams();
+  BuildType sequenceBuildType;
+  ASSERT_TRUE(ParseBuildType(YAML::Load("context-map:\n  - .MappedDebug\n  - +MappedTarget"),
+    "test.csolution.yml", sequenceBuildType));
+  ASSERT_EQ(2, sequenceBuildType.contextMap.size());
+  EXPECT_EQ("MappedDebug", sequenceBuildType.contextMap[0].build);
+  EXPECT_EQ("MappedTarget", sequenceBuildType.contextMap[1].target);
+  EXPECT_EQ("test.csolution.yml:2:3 - warning csolution: 'context-map' is deprecated\n",
+    streamRedirect.GetErrorString());
+
+  streamRedirect.ClearStringStreams();
+  BuildType unmappedBuildType;
+  ASSERT_TRUE(ParseBuildType(YAML::Load("compiler: GCC"), "test.csolution.yml", unmappedBuildType));
+  EXPECT_TRUE(unmappedBuildType.contextMap.empty());
+  EXPECT_TRUE(streamRedirect.GetErrorString().empty());
 }
 
 TEST_F(ProjMgrYamlParserUnitTests, ParseCbuildSet) {

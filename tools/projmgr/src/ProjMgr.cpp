@@ -337,6 +337,9 @@ int ProjMgr::ParseCommandLine(int argc, char** argv) {
   if (!SetLoadPacksPolicy()) {
     return ErrorCode::ERROR;
   }
+  if (m_contextSet) {
+    ProjMgrLogger::Get().Warn("'--context-set' is deprecated, use 'target-set' instead");
+  }
   return ErrorCode::SUCCESS;
 }
 
