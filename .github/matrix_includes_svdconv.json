@@ -28,7 +28,7 @@
         "binary": "svdconv.exe"
     },
     {
-        "runs_on":"windows-2022",
+        "runs_on":"windows-11-vs2026-arm",
         "target":"windows",
         "arch": "arm64",
         "runOn": "always",
