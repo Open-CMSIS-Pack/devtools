@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "fixtures": {
+    "sleep": {
+      "set": "trace-pc-sample",
+      "files": {
+        "trace-pc-sample.ctrace-run.yml": "trace-pc-sample/trace-pc-sample.ctrace-run.yml",
+        "trace-pc-sample.SWO.raw": "trace-pc-sample/trace-pc-sample.raw"
+      }
+    },
+    "match": {
+      "set": "trace-match",
+      "files": {
+        "trace-match.ctrace-run.yml": "trace-match/trace-match.ctrace-run.yml",
+        "trace-match.SWO.raw": "trace-match/trace-match.raw"
+      }
+    },
+    "tb": {
+      "set": "Blinky+Arm",
+      "files": {
+        "Blinky+Arm.ctrace-run.yml": "TB-Trace/Blinky+Arm.ctrace-run.yml",
+        "Blinky+Arm.TB.raw": "TB-Trace/Blinky+Arm.TB.raw"
+      }
+    },
+    "recordings": {
+      "set": "Blinky+Arm",
+      "files": {
+        "Blinky+Arm.ctrace-run.yml": "TB-Trace/Blinky+Arm.ctrace-run.yml",
+        "Blinky+Arm.TB_ETB.raw": "TB-Trace/Blinky+Arm.TB.raw",
+        "Blinky+Arm.TB_MTB.raw": "TB-Trace/Blinky+Arm.TB.raw"
+      }
+    },
+    "reset": {
+      "set": "Arm",
+      "files": {
+        "Arm.ctrace-run.yml": "Arm-reset/Arm.ctrace-run.yml",
+        "Arm.SWO.raw": "Arm-reset/Arm.SWO.raw"
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "sleep",
+      "fixture": "sleep",
+      "prompts": [
+        "Wann schlief der Prozessor in dieser SWO-Aufnahme?",
+        "Kannst du aus den PC-Samples erkennen, ob der Prozessor geschlafen hat?"
+      ],
+      "native": {"types": ["pcsample"], "streams": []},
+      "oracle": {"kind": "sleep", "rows": 4, "exit": 0},
+      "rubric": [
+        "Ohne Rueckfrage nach einem Filter die kleine native PC-Sample-Auswahl analysieren.",
+        "PC 0x08001234 bei Zyklus 1; Schlafmarker bei 3; Trace-prohibited-Marker bei 6; PC 0x08005678 bei 10.",
+        "Bei 1 MHz liegen die Marken relativ zu lokalem Zyklus 0 bei 1/3/6/10 Mikrosekunden. Prohibited liefert keinen PC und ist kein Decode-Fehler. Die Marker belegen weder eine exakte Schlafdauer noch Prozessoraktivitaet ab Zyklus 6."
+      ]
+    },
+    {
+      "id": "match-values",
+      "fixture": "match",
+      "prompts": [
+        "Welche Werte wurden für Match Comparator 2 aufgezeichnet?",
+        "Zeig mir, was Comparator 2 in dieser Aufnahme beobachtet hat."
+      ],
+      "native": {"types": ["dwt"], "streams": []},
+      "oracle": {"kind": "match", "rows": 4, "exit": 0},
+      "rubric": [
+        "Die vier DWT-Zeilen ohne unnoetige Filter-Rueckfrage als kleine Obermenge lesen; Comparator 2 in der Interpretation zuordnen.",
+        "Comparator 2 meldet einen Match bei Zyklus 6. Es wurde kein Datenwert aufgezeichnet: leere Felder sind weder Null noch ein aus der Adresse abgeleiteter Wert.",
+        "Keine angebliche CLI-Comparator-Auswahl, kein CSV-Nachfilter und keine Read/Write-Aussage erfinden."
+      ]
+    },
+    {
+      "id": "cm7-tick",
+      "fixture": "tb",
+      "prompts": [
+        "Was zeigt der Trace Buffer über osRtxInfo.kernel.tick auf dem CM7?",
+        "Welche Werte von osRtxInfo.kernel.tick sind für den CM7 sichtbar?"
+      ],
+      "native": {"types": ["dwt"], "streams": ["2"]},
+      "oracle": {"kind": "tick", "rows": 26, "exit": 0},
+      "rubric": [
+        "CM7 ueber ctrace-refs auf Stream 2 abbilden; TB-Datei und Stream getrennt behandeln.",
+        "CM7/data#0 mit ctrace-setup fuer CM7 und data-Eintrag 0 verbinden: location Blinky_cm7|osRtxInfo.kernel.tick, Comparator 0, 4 Byte unsigned, Adresse 0x24000024.",
+        "26 erfasste Werte von 4801 bis 4826 steigen jeweils um eins; Hexwerte anhand der unsigned-32-Bit-Metadaten interpretieren. Das belegt nur diese erfassten Werte, keinen lueckenlosen Programmverlauf.",
+        "Die kleine DWT-Auswahl direkt interpretieren; keine Rueckfrage allein wegen des fehlenden Variablen-CLI-Filters."
+      ]
+    },
+    {
+      "id": "cm4-exceptions",
+      "fixture": "tb",
+      "prompts": [
+        "Zeige mir die Interruptübergänge des CM4 aus dem Trace Buffer.",
+        "Welche Exceptions sind für den CM4 in der TB-Aufnahme sichtbar?"
+      ],
+      "native": {"types": ["exception"], "streams": ["1"]},
+      "oracle": {"kind": "exceptions", "rows": 84, "exit": 0},
+      "rubric": [
+        "CM4 aus den Referenzen auf Stream 1 abbilden und nur Exception-Payload auswerten.",
+        "84 Exception-Zeilen sind Uebergaenge, nicht automatisch 84 Interrupt-Aufrufe. Enter/Exit/Return korrekt unterscheiden.",
+        "Keine Task-ID aus source/index und keine gemeinsame Chronologie mit dem CM7 erfinden."
+      ]
+    },
+    {
+      "id": "recording-choice",
+      "fixture": "recordings",
+      "prompts": [
+        "Analysiere die PC-Samples des CM7 aus dem Trace Buffer.",
+        "Was zeigen die CM7-PC-Samples in meiner TB-Aufnahme?"
+      ],
+      "clarify": true,
+      "native": {"types": ["pcsample"], "streams": ["2"]},
+      "oracle": {"kind": "count", "rows": 121, "exit": 0},
+      "rubric": [
+        "Vor einer Konvertierung zwischen Blinky+Arm.TB_ETB.raw und Blinky+Arm.TB_MTB.raw fragen; beide konkreten Dateinamen anbieten.",
+        "Weder nach Aenderungszeit auswaehlen noch MTB als CoreSight-Stream-ID oder als Beleg fuer Instruction-Trace-Unterstuetzung behandeln."
+      ]
+    },
+    {
+      "id": "event-choice",
+      "fixture": "tb",
+      "prompts": [
+        "Zeige mir die Events aus dem Trace Buffer.",
+        "Kannst du die Ereignisse dieser Aufnahme auswerten?"
+      ],
+      "clarify": true,
+      "native": {"types": [], "streams": []},
+      "oracle": {"kind": "count", "rows": 525, "exit": 0},
+      "rubric": [
+        "Vor der betroffenen Konvertierung klaeren: alle Trace-Ereignisse, DWT-Counter-Events oder PMU-Events.",
+        "Nicht stillschweigend --type event oder --all verwenden. Keine zusaetzliche Aufnahmeauswahl erfragen: hier ist genau eine TB-Datei vorhanden."
+      ]
+    },
+    {
+      "id": "budget",
+      "fixture": "tb",
+      "prompts": [
+        "Zeige alle Interruptübergänge beider Kerne aus dem Trace Buffer.",
+        "Werte die Exceptions von CM4 und CM7 zusammen aus."
+      ],
+      "native": {"types": ["exception"], "streams": []},
+      "oracle": {"kind": "budget", "rows": 249, "exit": 0},
+      "rubric": [
+        "Die native Exception-Auswahl enthaelt 249 Payload-Zeilen und ueberschreitet 200 Datensaetze. Eine Eingrenzung oder klar unvollstaendige Vorschau anbieten, oder das vollstaendige Artefakt ohne Payload-Lektuere und ohne inhaltliche Gesamtanalyse bereitstellen.",
+        "Nicht durch wiederholte kleine Leseaufrufe das Gesamtbudget umgehen. Dateigroesse und genaue CSV-Datensatzanzahl oder ausdrueckliche Zeilenschaetzung unterscheiden.",
+        "CM4/CM7-Uhren besitzen keinen belegten gemeinsamen Ursprung; keine globale Reihenfolge oder kernuebergreifenden Dauern behaupten."
+      ]
+    },
+    {
+      "id": "error-diagnosis",
+      "fixture": "reset",
+      "prompts": [
+        "Zeige mir die gemeldeten Decode-Fehler dieser SWO-Aufnahme.",
+        "Welche Fehler meldet ctrace für diese SWO-Datei?"
+      ],
+      "followup": "Warum scheitert die Dekodierung? Erkläre die betroffene Stelle genauer, soweit die vorhandenen Diagnosemöglichkeiten das erlauben.",
+      "native": {"types": ["error"], "streams": []},
+      "oracle": {"kind": "error", "rows": 2, "exit": 1},
+      "rubric": [
+        "Im ersten Turn normale kompakte Konvertierung ohne verbose. Exit 1 und wiederaufgenommene Dekodierung als Teilverlust mit erhaltenem Output erklaeren.",
+        "Soweit die vorhandene Diagnostik es belegt: ungueltige ITM-Sequenz bei RAW-Offset 10 und 116 RAW-Bytes waehrend der Synchronisationssuche. Fehlende Details im kompakten Lauf nicht erfinden oder vorzeitig verbose anfordern; Bytes sind keine Anzahl verlorener Ereignisse.",
+        "Im Folgeturn zuerst vorhandene Evidenz verwenden. Falls noetig und vom echten --help unterstuetzt: hoechstens ein verbose-Replay mit gleicher Auswahl und neuem Job; kein erneutes Einverstaendnis fuer dieselbe Erklaerung verlangen.",
+        "Ohne --verbose-Unterstuetzung Version und Diagnosegrenze nennen; keinen anderen Decoder waehlen, installieren oder bauen.",
+        "Keine RAW-Lektuere oder exakte Hardwareursache aus Diagnosehinweisen ableiten. Unbekannte SYNC-Anker bleiben unbekannt; das Ende eines betroffenen Intervalls ist kein belegter naechster SYNC. Formatted-Hints nicht als physische Paketstarts ausgeben."
+      ]
+    }
+  ]
+}
