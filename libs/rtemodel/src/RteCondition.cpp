@@ -620,7 +620,7 @@ std::string RteDependencyResult::GetComponentExplanationText(RteItem::ConditionR
   string message;
   switch(res) {
   case RteItem::CONFLICT:
-    message = "Conflict, select exactly one of available matches";
+    message = "Conflict, select exactly one";
     break;
   case RteItem::INSTALLED:
   case RteItem::SELECTABLE:
@@ -632,7 +632,7 @@ std::string RteDependencyResult::GetComponentExplanationText(RteItem::ConditionR
   case RteItem::INCOMPATIBLE:
   case RteItem::INCOMPATIBLE_VERSION:
   case RteItem::INCOMPATIBLE_VARIANT:
-    message = "Incompatible dependency selection";
+    message = "Incompatible dependency";
     break;
 
   default:
@@ -647,10 +647,10 @@ std::string RteDependencyResult::GetExpressionExplanationText(RteItem::Condition
   string message;
   switch(res) {
     case RteItem::INSTALLED:
-      message = "Select bundle and component from list";
+      message = "Select bundle and component";
       break;
     case RteItem::SELECTABLE:
-      message = "Select component from list";
+      message = "Select a component";
       break;
     case RteItem::MISSING:
       message = "Install missing component";
@@ -668,16 +668,16 @@ std::string RteDependencyResult::GetExpressionExplanationText(RteItem::Condition
       message = "Install required API version";
       break;
     case RteItem::CONFLICT:
-      message = "Conflict, select exactly one component from list";
+      message = "Conflict, select exactly one:";
       break;
     case RteItem::INCOMPATIBLE:
-      message = "Select compatible component";
+      message = "Select a compatible component";
       break;
     case RteItem::INCOMPATIBLE_VERSION:
-      message = "Select compatible component version";
+      message = "Select a compatible version";
       break;
     case RteItem::INCOMPATIBLE_VARIANT:
-      message = "Select compatible component variant";
+      message = "Select a compatible variant";
       break;
     default:
       break;
@@ -685,24 +685,24 @@ std::string RteDependencyResult::GetExpressionExplanationText(RteItem::Condition
   return message;
 }
 
-std::string RteDependencyResult::GetAggregateExplanationText(RteItem::ConditionResult res)
+std::string RteDependencyResult::GetAggregateExplanationText(RteItem::ConditionResult res, const string& description)
 {
   string message;
   switch(res) {
   case RteItem::CONFLICT:
-    message = "conflicted selection";
+    message = description;
     break;
   case RteItem::SELECTABLE:
-    message = "available selection";
+    message = description;
     break;
   case RteItem::INCOMPATIBLE:
-    message = "incompatible selection";
+    message = "incompatible";
     break;
   case RteItem::INCOMPATIBLE_VERSION:
-    message = "incompatible version selection";
+    message = "incompatible version";
     break;
   case RteItem::INCOMPATIBLE_VARIANT:
-    message = "incompatible variant selection";
+    message = "incompatible variant";
     break;
   default:
     break;
