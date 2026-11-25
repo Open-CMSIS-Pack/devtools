@@ -5101,6 +5101,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListEnvironment) {
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ContextMap) {
   char* argv[8];
+  StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/ContextMap/context-map.csolution.yml";
   argv[1] = (char*)"convert";
   argv[2] = (char*)csolution.c_str();
@@ -5110,6 +5111,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ContextMap) {
   argv[6] = (char*)testoutput_folder.c_str();
   argv[7] = (char*)"--cbuildgen";
   EXPECT_EQ(0, RunProjMgr(8, argv, m_envp));
+  EXPECT_NE(string::npos, streamRedirect.GetErrorString().find("warning csolution: 'context-map' is deprecated"));
 
   // Check generated cbuild YMLs
   ProjMgrTestEnv::CompareFile(testoutput_folder + "/project1.Debug+RteTest_ARMCM3.cbuild.yml",
@@ -6914,7 +6916,7 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_MultiBundleComponent) {
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_ContextSet) {
-  char* argv[6];
+  char* argv[7];
   StdStreamRedirect streamRedirect;
   const string& csolution = testinput_folder + "/TestSolution/contexts.csolution.yml";
 
@@ -6928,6 +6930,27 @@ TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_ContextSet) {
 
   auto outStr = streamRedirect.GetOutString();
   EXPECT_NE(outStr.find("ARM::RteTest_DFP@0.2.0"), string::npos);
+  const string warning = "warning csolution: '--context-set' is deprecated, use 'target-set' instead\n";
+  auto errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(warning));
+  EXPECT_EQ(errStr.find(warning), errStr.rfind(warning));
+
+  streamRedirect.ClearStringStreams();
+  argv[5] = (char*)"--context-set";
+  EXPECT_EQ(0, RunProjMgr(6, argv, 0));
+  EXPECT_NE(string::npos, streamRedirect.GetOutString().find("ARM::RteTest_DFP@0.2.0"));
+  errStr = streamRedirect.GetErrorString();
+  EXPECT_NE(string::npos, errStr.find(warning));
+  EXPECT_EQ(errStr.find(warning), errStr.rfind(warning));
+
+  streamRedirect.ClearStringStreams();
+  argv[6] = (char*)"--quiet";
+  EXPECT_EQ(0, RunProjMgr(7, argv, 0));
+  EXPECT_TRUE(streamRedirect.GetErrorString().empty());
+
+  streamRedirect.ClearStringStreams();
+  EXPECT_EQ(0, RunProjMgr(5, argv, 0));
+  EXPECT_EQ(string::npos, streamRedirect.GetErrorString().find("'--context-set' is deprecated"));
 }
 
 TEST_F(ProjMgrUnitTests, RunProjMgr_ListPacks_LockedOption) {
@@ -7944,7 +7967,8 @@ TEST_F(ProjMgrUnitTests, ConvertActiveTargetSet) {
   argv[5] = (char*)"--context-set";
   EXPECT_EQ(1, RunProjMgr(6, argv, 0));
   errStr = streamRedirect.GetErrorString();
-  EXPECT_STREQ(errStr.c_str(), "error csolution: invalid arguments: '-a' option cannot be used in combination with '-S'\n");
+  EXPECT_STREQ(errStr.c_str(), "warning csolution: '--context-set' is deprecated, use 'target-set' instead\n"
+    "error csolution: invalid arguments: '-a' option cannot be used in combination with '-S'\n");
 
   streamRedirect.ClearStringStreams();
   argv[4] = (char*)"Type1@Custom3";

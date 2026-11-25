@@ -35,3 +35,4 @@
 [submodule "external/OpenCSD"]
 	path = external/OpenCSD
 	url = https://github.com/Linaro/OpenCSD.git
+	ignore = dirty

@@ -1142,6 +1142,10 @@ bool ProjMgrYamlParser::ParseBuildType(const YAML::Node& parent, const string& f
   ParseVectorOfStringPairs(parent, YAML_VARIABLES, buildType.variables);
 
   std::vector<std::string> contextMap, invalidContexts;
+  if (parent[YAML_CONTEXT_MAP].IsDefined()) {
+    const auto& mark = parent[YAML_CONTEXT_MAP].Mark();
+    ProjMgrLogger::Get().Warn("'context-map' is deprecated", "", file, mark.line + 1, mark.column + 1);
+  }
   ParseVectorOrString(parent, YAML_CONTEXT_MAP, contextMap);
   for (const auto& contextEntry : contextMap) {
     ContextName context;
